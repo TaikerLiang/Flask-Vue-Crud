@@ -1,0 +1,10 @@
+# shub deploy
+/src/setup.py
+/src/build/
+/src/project.egg-info/
+
+# pyenv
+.python-version
+
+# local development
+src/scrapinghub.yml
