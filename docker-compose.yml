@@ -12,11 +12,7 @@ services:
     build:
       dockerfile: Dockerfile
       context: ./server
-    volumes:
-      - ./server:/app
   client:
     build:
       dockerfile: Dockerfile
       context: ./client
-    volumes:
-      - ./client:/app
