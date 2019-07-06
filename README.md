@@ -29,3 +29,17 @@ Check out the [post](https://testdriven.io/developing-a-single-page-app-with-fla
     ```
 
     Navigate to [http://localhost:8080](http://localhost:8080)
+
+## Start Container
+
+```
+$ docker-compose up --build
+```
+
+After starting, navigate to http://localhost:3000. Enjoy it.
+
+P.S. If you have error `sh: vue-cli-service: not found`, just reinstall it.
+
+```
+$ npm install -g @vue/cli
+```
