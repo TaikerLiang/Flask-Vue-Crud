@@ -188,7 +188,7 @@ export default {
       this.updateBook(payload, this.editForm.id);
     },
     updateBook(payload, bookID) {
-      const path = 'http://localhost:5000/books/' + bookID;
+      const path = `http://localhost:5000/books/${bookID}`;
       axios.put(path, payload)
         .then(() => {
           this.getBooks();
@@ -208,7 +208,7 @@ export default {
       this.getBooks(); // why?
     },
     removeBook(bookID) {
-      const path = 'http://localhost:5000/books/' + bookID;
+      const path = `http://localhost:5000/books/${bookID}`;
       axios.delete(path)
         .then(() => {
           this.getBooks();
