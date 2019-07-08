@@ -25,7 +25,7 @@ jobs:
           command: |
             set -e
             export FLASK_APP=/home/circleci/app/server/run.py
-            cd ~/app/server/venv
+            cd ~/app/server
             flask renewdb
             pytest -x
 
