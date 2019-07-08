@@ -79,9 +79,7 @@ workflows:
   build_and_test:
     jobs:
       - build-server
-      - build-client
-  push-images:
-    jobs:    
+      - build-client  
       - build-puhs-images
           requires:
-            - build_and_test
+            - build-server
