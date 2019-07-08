@@ -53,6 +53,7 @@ jobs:
           key: deps1-{{ .Branch }}-{{ checksum "client/package.json" }}
       - run: sudo apt-get update
       - run: sudo apt-get install python3 python3-dev python3-pip
+      - run: pip -V
       - run:
           name: Show current branch
           command: echo ${CIRCLE_BRANCH}
@@ -61,7 +62,7 @@ jobs:
           command: echo ${CIRCLE_SHA1}
       - run:
           name: Install aws cli
-          command: pip3 install awscli --upgrade --user
+          command: sudo pip install awscli --upgrade --user
       - run:
           name: "Log in to AWS ECR"
           command: eval $(aws ecr get-login)
