@@ -18,13 +18,14 @@ jobs:
             . venv/bin/activate
             sudo pip3 install -r requirements.txt
       - save_cache:
-          key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
+          key: deps1-{{ .Branch }}-{{ checksum "server/requirements.txt" }}
           paths:
               -  ~/app/server/venv
       - run:
           command: |
             set -e
             export FLASK_APP=/home/circleci/app/server/run.py
+            cd ~/app/server/venv
             flask renewdb
             pytest -x
 
