@@ -1,6 +1,6 @@
 version: 2
 jobs:
-  build:
+  build-server:
     working_directory: ~/app
     docker:
       - image: circleci/python:3.6.4
@@ -20,20 +20,11 @@ jobs:
       - save_cache:
           key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
           paths:
-              - venv
-  test:
-    working_directory: ~/app
-    docker:
-      - image: circleci/python:3.6.4
-        environment:
-          PIPENV_VENV_IN_PROJECT: true
-      - image: circleci/node:latest
-    steps:
-      - checkout
+              -  ~/app/server/venv
       - run:
           command: |
             set -e
-            export FLASK_APP=/home/circleci/app/run.py
+            export FLASK_APP=/home/circleci/app/server/run.py
             flask renewdb
             pytest -x
   push-image:
