@@ -42,9 +42,45 @@ jobs:
           paths:
               -  ~/app/client/node_modules
       - run: echo "run test command"
+
+  build-puhs-images:
+    machine: true
+    steps:
+      - checkout
+      - restore_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "server/requirements.txt" }}
+      - restore_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "client/package.json" }}
+      - run:
+          name: Show current branch
+          command: echo ${CIRCLE_BRANCH}
+      - run:
+          name: Show git commit id
+          command: echo ${CIRCLE_SHA1}
+      - run: sudo apt-get update
+      - run: sudo apt-get install python3-pip
+      - run: sudo apt-get install groff
+      - run: sudo pip3 install --upgrade pip
+      - run:
+          name: Install aws cli
+          command: pip3 install awscli --upgrade --user
+      - run: ~/.local/bin/aws --version
+      - run: chmod +x ~/.local/bin/aws
+      - run:
+          name: "Set AWS region"
+          command: ~/.local/bin/aws configure set region ap-northeast-1
+      - run: docker build -t taikerliang/flask-vue-crud-server ./server
+      - run: docker build -t taikerliang/flask-vue-crud-client ./client
+      - run: docker build -t taikerliang/flask-vue-crud-nginx ./nginx
+
+
 workflows:
   version: 2
   build_and_test:
     jobs:
       - build-server
       - build-client
+      - build-puhs-images
+          requires:
+            - build-server
+            - build-client
