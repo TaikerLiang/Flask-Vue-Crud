@@ -6,7 +6,7 @@ jobs:
       - image: circleci/python:3.6.4
         environment:
           PIPENV_VENV_IN_PROJECT: true
-      - image: circleci/node:12.6.0-alpine
+      - image: circleci/node:latest
     steps:
       - checkout
       - run: sudo apt-get install python3-pip
@@ -27,7 +27,7 @@ jobs:
       - image: circleci/python:3.6.4
         environment:
           PIPENV_VENV_IN_PROJECT: true
-      - image: circleci/node:12.6.0-alpine
+      - image: circleci/node:latest
     steps:
       - checkout
       - run:
@@ -47,3 +47,5 @@ workflows:
     jobs:
       - build
       - test
+          requires:
+            - build
