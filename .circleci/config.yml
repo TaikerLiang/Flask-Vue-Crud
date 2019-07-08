@@ -81,5 +81,6 @@ workflows:
       - build-server
       - build-client  
       - build-puhs-images
+          type: approval
           requires:
             - build-server
