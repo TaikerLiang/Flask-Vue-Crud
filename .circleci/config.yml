@@ -67,10 +67,14 @@ jobs:
           name: "Log in to AWS ECR"
           command: eval $(aws ecr get-login --no-include-email)
       - run: docker build -t taikerliang/flask-vue-crud-server ./server
-      #- run: docker build -t taikerliang/flask-vue-crud-client ./client
-      #- run: docker build -t taikerliang/flask-vue-crud-nginx ./nginx
+      - run: docker build -t taikerliang/flask-vue-crud-client ./client
+      - run: docker build -t taikerliang/flask-vue-crud-nginx ./nginx
       - run: docker tag taikerliang/flask-vue-crud-server ${ECR_URL}/flask-vue-crud:flask-vue-crud-server-${CIRCLE_BRANCH}
+      - run: docker tag taikerliang/flask-vue-crud-client ${ECR_URL}/flask-vue-crud:flask-vue-crud-client-${CIRCLE_BRANCH}
+      - run: docker tag taikerliang/flask-vue-crud-nginx ${ECR_URL}/flask-vue-crud:flask-vue-crud-nginx-${CIRCLE_BRANCH}
       - run: docker push ${ECR_URL}/flask-vue-crud:flask-vue-crud-server-${CIRCLE_BRANCH}
+      - run: docker push ${ECR_URL}/flask-vue-crud:flask-vue-crud-client-${CIRCLE_BRANCH}
+      - run: docker push ${ECR_URL}/flask-vue-crud:flask-vue-crud-nginx-${CIRCLE_BRANCH}
 workflows:
   version: 2
   build_and_test:
