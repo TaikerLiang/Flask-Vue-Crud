@@ -6,7 +6,6 @@ jobs:
       - image: circleci/python:3.6.4
         environment:
           PIPENV_VENV_IN_PROJECT: true
-      - image: circleci/node:latest
     steps:
       - checkout
       - run: sudo apt-get install python3-pip
@@ -28,8 +27,24 @@ jobs:
             cd ~/app/server
             pytest -x
 
+  build-client:
+    working_directory: ~/app
+    docker:
+      - image: circleci/node:latest
+    steps:
+      - checkout
+      - run:
+          command: |
+            cd ~/app/client 
+            npm install
+      - save_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "client/package.json" }}
+          paths:
+              -  ~/app/client/node_modules
+      - run: echo "run test command"
 workflows:
   version: 2
   build_and_test:
     jobs:
       - build-server
+      - build-client
