@@ -1,0 +1,87 @@
+version: 2
+jobs:
+  build-server:
+    working_directory: ~/app
+    docker:
+      - image: circleci/python:3.6.4
+        environment:
+          PIPENV_VENV_IN_PROJECT: true
+    steps:
+      - checkout
+      - run: sudo apt-get install python3-pip
+      - run: sudo pip3 install --upgrade pip
+      - run:
+          command: |
+            cd ~/app/server
+            python3 -m venv venv
+            . venv/bin/activate
+            sudo pip3 install -r requirements.txt
+      - save_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "server/requirements.txt" }}
+          paths:
+              -  ~/app/server/venv
+      - run:
+          command: |
+            set -e
+            export FLASK_APP=/home/circleci/app/server/run.py
+            cd ~/app/server
+            pytest -x
+
+  build-client:
+    working_directory: ~/app
+    docker:
+      - image: circleci/node:latest
+    steps:
+      - checkout
+      - run:
+          command: |
+            cd ~/app/client 
+            npm install
+      - save_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "client/package.json" }}
+          paths:
+              -  ~/app/client/node_modules
+      - run: echo "run test command"
+
+  build-puhs-images:
+    machine: true
+    steps:
+      - checkout
+      - restore_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "server/requirements.txt" }}
+      - restore_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "client/package.json" }}
+      - run: sudo apt-get update
+      - run: sudo apt-get install python3 python3-dev python3-pip
+      - run: pip -V
+      - run:
+          name: Show current branch
+          command: echo ${CIRCLE_BRANCH}
+      - run:
+          name: Show git commit id
+          command: echo ${CIRCLE_SHA1}
+      - run:
+          name: Install aws cli
+          command: sudo pip install awscli --upgrade --user
+      - run:
+          name: "Log in to AWS ECR"
+          command: eval $(aws ecr get-login --no-include-email)
+      - run: docker build -t taikerliang/flask-vue-crud-server ./server
+      - run: docker build -t taikerliang/flask-vue-crud-client ./client
+      - run: docker build -t taikerliang/flask-vue-crud-nginx ./nginx
+      - run: docker tag taikerliang/flask-vue-crud-server ${ECR_URL}/flask-vue-crud:flask-vue-crud-server-${CIRCLE_BRANCH}
+      - run: docker tag taikerliang/flask-vue-crud-client ${ECR_URL}/flask-vue-crud:flask-vue-crud-client-${CIRCLE_BRANCH}
+      - run: docker tag taikerliang/flask-vue-crud-nginx ${ECR_URL}/flask-vue-crud:flask-vue-crud-nginx-${CIRCLE_BRANCH}
+      - run: docker push ${ECR_URL}/flask-vue-crud:flask-vue-crud-server-${CIRCLE_BRANCH}
+      - run: docker push ${ECR_URL}/flask-vue-crud:flask-vue-crud-client-${CIRCLE_BRANCH}
+      - run: docker push ${ECR_URL}/flask-vue-crud:flask-vue-crud-nginx-${CIRCLE_BRANCH}
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build-server
+      - build-client  
+      - build-puhs-images:
+          requires:
+            - build-server
+            - build-client  
