@@ -6,5 +6,8 @@
 # pyenv
 .python-version
 
+# pycharm
+.idea/
+
 # local development
 src/scrapinghub.yml
