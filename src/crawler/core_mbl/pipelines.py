@@ -45,7 +45,7 @@ class _MblResultCollector:
         self._request_args = dict(request_args)
         self._basic = {}
         self._vessels = defaultdict(dict)
-        self._containers = defaultdict(dict)
+        self._containers = {}
 
     def collect_mbl_item(self, item: mbl_items.MblItem):
         clean_dict = self._clean_item(item)
@@ -57,7 +57,14 @@ class _MblResultCollector:
 
     def collect_container_status_item(self, item: mbl_items.ContainerStatusItem):
         clean_dict = self._clean_item(item)
-        self._containers[item.key].update(clean_dict)
+
+        if item.key not in self._containers:
+            self._containers[item.key] = {
+                'container_no': item['container_no'],
+                'status': [],
+            }
+
+        self._containers[item.key]['status'].append(clean_dict)
 
     def build_final_data(self) -> Dict:
         return {
@@ -65,7 +72,7 @@ class _MblResultCollector:
             'request_args': self._request_args,
             'basic': self._basic,
             'vessels': dict(self._vessels),
-            'containers': dict(self._containers),
+            'containers': self._containers,
         }
 
     def build_error_data(self, item: mbl_items.ExportErrorData) -> Dict:
