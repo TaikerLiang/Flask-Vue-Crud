@@ -3,6 +3,9 @@
 /src/build/
 /src/project.egg-info/
 
+# python
+*.pyc
+
 # pyenv
 .python-version
 
