@@ -27,6 +27,8 @@ class MblItemPipeline(object):
             self._collector.collect_mbl_item(item=item)
         elif isinstance(item, mbl_items.VesselItem):
             self._collector.collect_vessel_item(item=item)
+        elif isinstance(item, mbl_items.ContainerItem):
+            self._collector.collect_container_item(item=item)
         elif isinstance(item, mbl_items.ContainerStatusItem):
             self._collector.collect_container_status_item(item=item)
         elif isinstance(item, mbl_items.ExportFinalData):
@@ -55,16 +57,28 @@ class _MblResultCollector:
         clean_dict = self._clean_item(item)
         self._vessels[item.key].update(clean_dict)
 
+    def collect_container_item(self, item: mbl_items.ContainerItem):
+        clean_dict = self._clean_item(item)
+
+        if item.key not in self._containers:
+            self._containers[item.key] = self._get_default_container_data(container_no=item['container_no'])
+
+        self._containers[item.key].update(clean_dict)
+
     def collect_container_status_item(self, item: mbl_items.ContainerStatusItem):
         clean_dict = self._clean_item(item)
 
         if item.key not in self._containers:
-            self._containers[item.key] = {
-                'container_no': item['container_no'],
-                'status': [],
-            }
+            self._containers[item.key] = self._get_default_container_data(container_no=item['container_no'])
 
         self._containers[item.key]['status'].append(clean_dict)
+
+    @staticmethod
+    def _get_default_container_data(container_no: str):
+        return {
+            'container_no': container_no,
+            'status': [],
+        }
 
     def build_final_data(self) -> Dict:
         return {

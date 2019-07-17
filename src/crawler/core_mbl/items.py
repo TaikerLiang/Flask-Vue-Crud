@@ -53,12 +53,20 @@ class VesselItem(scrapy.Item):
         return self['vessel']
 
 
+class ContainerItem(scrapy.Item):
+    container_no = scrapy.Field()
+    last_free_day = scrapy.Field()
+
+    @property
+    def key(self):
+        return self['container_no']
+
+
 class ContainerStatusItem(scrapy.Item):
     container_no = scrapy.Field()
     description = scrapy.Field()
     timestamp = scrapy.Field()
     location = scrapy.Field(serializer=LocationItem)
-    last_free_day = scrapy.Field()
 
     @property
     def key(self):
