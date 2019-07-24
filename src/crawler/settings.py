@@ -15,6 +15,29 @@ SPIDER_MODULES = ['crawler.spiders']
 NEWSPIDER_MODULE = 'crawler.spiders'
 
 
+AVAILABLE_USER_AGENTS = [
+    # chrome
+    (
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5)'
+        ' AppleWebKit/537.36 (KHTML, like Gecko)'
+        ' Chrome/75.0.3770.142'
+        ' Safari/537.36'
+    ),
+
+    # firefox
+    (
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:67.0)'
+        ' Gecko/20100101'
+        ' Firefox/67.0'
+    ),
+    (
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:68.0)'
+        ' Gecko/20100101'
+        ' Firefox/68.0'
+    ),
+]
+
+
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 # USER_AGENT = 'crawler (+http://www.yourdomain.com)'
 
@@ -51,9 +74,10 @@ ROBOTSTXT_OBEY = False
 
 # Enable or disable downloader middlewares
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
-# DOWNLOADER_MIDDLEWARES = {
-#    'crawler.middlewares.CrawlerDownloaderMiddleware': 543,
-# }
+DOWNLOADER_MIDDLEWARES = {
+    'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
+    'crawler.general.middlewares.UserAgentDownloaderMiddleware': 100,
+}
 
 # Enable or disable extensions
 # See https://doc.scrapy.org/en/latest/topics/extensions.html
