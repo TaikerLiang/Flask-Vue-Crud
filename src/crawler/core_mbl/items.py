@@ -13,8 +13,8 @@ class ExportFinalData(scrapy.Item):
 
 
 class ExportErrorData(scrapy.Item):
-    category = scrapy.Field()
-    reason = scrapy.Field()
+    status = scrapy.Field()
+    detail = scrapy.Field()
 
 
 class LocationItem(scrapy.Item):

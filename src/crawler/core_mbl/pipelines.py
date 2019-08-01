@@ -6,6 +6,7 @@ from typing import Dict
 from scrapy.exceptions import DropItem
 
 from crawler.core_mbl import items as mbl_items
+from crawler.core_mbl.base import CARRIER_RESULT_STATUS_OK, CARRIER_RESULT_STATUS_FATAL
 
 
 class MblItemPipeline(object):
@@ -82,7 +83,7 @@ class _MblResultCollector:
 
     def build_final_data(self) -> Dict:
         return {
-            'status': 'OK',
+            'status': CARRIER_RESULT_STATUS_OK,
             'request_args': self._request_args,
             'basic': self._basic,
             'vessels': dict(self._vessels),
@@ -91,10 +92,11 @@ class _MblResultCollector:
 
     def build_error_data(self, item: mbl_items.ExportErrorData) -> Dict:
         clean_dict = self._clean_item(item)
+
         return {
-            'status': 'ERROR',
+            'status': CARRIER_RESULT_STATUS_FATAL,  # default status
             'request_args': self._request_args,
-            'error': clean_dict,
+            **clean_dict,
         }
 
     @staticmethod

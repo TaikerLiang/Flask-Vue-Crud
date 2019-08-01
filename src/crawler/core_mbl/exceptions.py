@@ -1,39 +1,34 @@
 # -*- coding: utf-8 -*-
+from crawler.core_mbl.base import CARRIER_RESULT_STATUS_FATAL, CARRIER_RESULT_STATUS_ERROR
 from crawler.core_mbl.items import ExportErrorData
-
-CATEGORY_WARNING = 'warning'
-CATEGORY_ERROR = 'error'
-CATEGORY_MBL_NO_ERROR = 'mbl_no_error'
-CATEGORY_FORMAT_ERROR = 'format_error'
-CATEGORY_EXCEPTION = 'exception'
 
 
 class MblExceptionBase(Exception):
-    category = CATEGORY_ERROR
+    status = CARRIER_RESULT_STATUS_FATAL
 
     def build_error_data(self):
         raise NotImplementedError
 
 
 class MblInvalidMblNoError(MblExceptionBase):
-    category = CATEGORY_MBL_NO_ERROR
+    status = CARRIER_RESULT_STATUS_ERROR
 
     def build_error_data(self):
-        return ExportErrorData(category=self.category)
+        return ExportErrorData(status=self.status, detail='<invalid-mbl-no>')
 
 
 class MblInfoNotReady(MblExceptionBase):
-    category = CATEGORY_WARNING
+    status = CARRIER_RESULT_STATUS_ERROR
 
     def build_error_data(self):
-        return ExportErrorData(category=self.category, reason='mbl not ready')
+        return ExportErrorData(status=self.status, detail='<mbl-not-ready>')
 
 
 class MblResponseFormatError(MblExceptionBase):
-    category = CATEGORY_FORMAT_ERROR
+    status = CARRIER_RESULT_STATUS_FATAL
 
     def __init__(self, reason: str):
         self.reason = reason
 
     def build_error_data(self):
-        return ExportErrorData(category=self.category, reason=f'{self.reason}')
+        return ExportErrorData(status=self.status, detail=f'<format-error> {self.reason}')

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from scrapy.exceptions import CloseSpider
 
-from crawler.core_mbl.exceptions import CATEGORY_EXCEPTION, MblExceptionBase
+from crawler.core_mbl.base import CARRIER_RESULT_STATUS_FATAL
+from crawler.core_mbl.exceptions import MblExceptionBase
 from crawler.core_mbl.items import ExportFinalData, ExportErrorData
 
 
@@ -40,13 +41,13 @@ class MblSpiderMiddleware(object):
         spider.mark_error()
 
         if isinstance(exception, MblExceptionBase):
-            category = exception.category
+            status = exception.status
             error_data = exception.build_error_data()
         else:
-            category = CATEGORY_EXCEPTION
-            reason = f'{exception!r}'
-            error_data = ExportErrorData(category=category, reason=reason)
+            status = CARRIER_RESULT_STATUS_FATAL
+            detail = f'{exception!r}'
+            error_data = ExportErrorData(status=status, detail=detail)
 
         yield error_data
 
-        raise CloseSpider(category)
+        raise CloseSpider(status)
