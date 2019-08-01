@@ -40,8 +40,10 @@ class MblItem(scrapy.Item):
     bl_type = scrapy.Field()
     deliv_eta = scrapy.Field()
     deliv_ata = scrapy.Field()
+    trans_eta = scrapy.Field()
     cargo_cutoff_date = scrapy.Field()
     surrendered_status = scrapy.Field()
+    container_quantity = scrapy.Field()
 
 
 class VesselItem(scrapy.Item):
@@ -53,6 +55,10 @@ class VesselItem(scrapy.Item):
     eta = scrapy.Field()
     atd = scrapy.Field()
     ata = scrapy.Field()
+    discharge_date = scrapy.Field()
+    shipping_date = scrapy.Field()
+    row_no = scrapy.Field()
+    sequence_no = scrapy.Field()
 
     @property
     def key(self):
@@ -62,10 +68,12 @@ class VesselItem(scrapy.Item):
 class ContainerItem(scrapy.Item):
     container_no = scrapy.Field()
     last_free_day = scrapy.Field()
+    depot_last_free_day = scrapy.Field()
     empty_pickup_date = scrapy.Field()
     empty_return_date = scrapy.Field()
     full_pickup_date = scrapy.Field()
     full_return_date = scrapy.Field()
+    ams_release = scrapy.Field()
 
     @property
     def key(self):
