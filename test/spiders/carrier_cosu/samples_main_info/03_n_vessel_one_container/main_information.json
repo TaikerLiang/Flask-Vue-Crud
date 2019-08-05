@@ -1,0 +1,97 @@
+{
+    "code": "200",
+    "message": "",
+    "data": {
+        "content": {
+            "transportationType3": "0",
+            "transportationType4": "NO_TRANS",
+            "cargoTrackingContainer": [
+                {
+                    "cntrNum": "FCIU5635365",
+                    "emptyPickUpDt": "2019-06-06 08:29",
+                    "ladenReturnDt": "2019-06-11 07:36",
+                    "firstPOL": "2019-06-21 09:37",
+                    "ndLoadDt1": "2019-06-27 12:57",
+                    "ndDischDt1": "2019-07-13 20:00",
+                    "ndLoadDt2": "2019-07-16 02:00",
+                    "ndDischDt2": null,
+                    "ndLoadDt3": null,
+                    "ndDischDt3": null,
+                    "ladenPickUpDt": null,
+                    "emptyReturnDt": null,
+                    "devan": null,
+                    "lfd": null,
+                    "pickUpNumber": null,
+                    "depotLfd": null,
+                    "amsRelease": "Clear",
+                    "dtLoc": "2019-07-17 08:59:00.0",
+                    "hsCode": []
+                }
+            ],
+            "bookingNumbersInBillOfLadingTrackingGroupAssociationList": [],
+            "trackingNA": null,
+            "actualShipment": [
+                {
+                    "rownum": "1",
+                    "sequenceNumber": "1",
+                    "vesselName": "XIN BEIJING",
+                    "voyageNo": "109S",
+                    "portOfLoading": "Vancouver",
+                    "actualDepartureDate": "2019-06-29 18:10",
+                    "expectedDateOfDeparture": "2019-06-29 01:00",
+                    "portOfDischarge": "Shanghai",
+                    "actualArrivalDate": "2019-07-12 22:26",
+                    "estimatedDateOfArrival": "2019-07-12 14:00",
+                    "actualShippingDate": "2019-06-27 12:57",
+                    "city": "Shanghai,China",
+                    "service": "CPNW",
+                    "actualDischargeDate": "2019-07-13 20:00",
+                    "vesselCde": "QL7"
+                },
+                {
+                    "rownum": "2",
+                    "sequenceNumber": "3",
+                    "vesselName": "MARCLOUD",
+                    "voyageNo": "253E",
+                    "portOfLoading": "Shanghai",
+                    "actualDepartureDate": "2019-07-16 02:12",
+                    "expectedDateOfDeparture": "2019-07-16 02:00",
+                    "portOfDischarge": "Yokohama",
+                    "actualArrivalDate": null,
+                    "estimatedDateOfArrival": "2019-07-19 13:00",
+                    "actualShippingDate": "2019-07-16 02:00",
+                    "city": "Yokohama,Japan",
+                    "service": "SKT2",
+                    "actualDischargeDate": null,
+                    "vesselCde": "RH9"
+                }
+            ],
+            "fastLabel": null,
+            "lfd": "LFD",
+            "slowLabel": null,
+            "usDisplay": false,
+            "trackingPath": {
+                "billOfladingRefCode": "8021543080",
+                "trackingGroupReferenceCode": "8021543080",
+                "fromCity": "Minneapolis ,Minnesota ,United States",
+                "toCity": "Yokohama ,Kanagawa ,Japan",
+                "cgoAvailTm": "2019-07-20 09:00",
+                "cgoFinalTm": null,
+                "vslNme": "XIN BEIJING",
+                "voyNumber": "109S",
+                "pol": "Vancouver - DP World-Centerm Container Terminal",
+                "pod": "Yokohama - Honmoku BC-2 Container Terminal",
+                "flag": null,
+                "svvd": "CPNWQL7109S",
+                "blType": "Sea WayBill",
+                "blRealStatus": "Sea Waybill"
+            },
+            "cargoCutOff": null,
+            "isShow": false,
+            "usOrCanadaDisplay": false,
+            "itNumber": "N.A.",
+            "checkHanJin": false,
+            "isbillOfLadingExist": true
+        }
+    }
+}
