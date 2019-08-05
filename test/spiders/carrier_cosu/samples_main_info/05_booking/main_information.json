@@ -1,0 +1,96 @@
+{
+    "code": "200",
+    "message": "",
+    "data": {
+        "content": {
+            "full_return_location": null,
+            "cargoTrackingContainer": [
+                {
+                    "cntrNum": "CSNU6293040",
+                    "emptyPickUpDt": "2019-07-30 17:01",
+                    "ladenReturnDt": "2019-07-31 20:09",
+                    "firstPOL": "2019-07-31 20:09",
+                    "ndLoadDt1": null,
+                    "ndDischDt1": null,
+                    "ndLoadDt2": null,
+                    "ndDischDt2": null,
+                    "ndLoadDt3": null,
+                    "ndDischDt3": null,
+                    "ladenPickUpDt": null,
+                    "emptyReturnDt": null,
+                    "devan": null,
+                    "lfd": null,
+                    "pickUpNumber": null,
+                    "depotLfd": null,
+                    "amsRelease": "Not Clear",
+                    "dtLoc": "2019-08-01 10:25:00.0",
+                    "hsCode": []
+                }
+            ],
+            "trackingNA": {
+                "destinationFacility": "LGB01",
+                "podTerinal": "LGB01",
+                "destinationCountry": "United States",
+                "podFacilityName": "Pacific Container Terminal",
+                "podFacilityNameShow": null,
+                "destinationFacilityName": "Pacific Container Terminal",
+                "destinationFacilityNameShow": null,
+                "destinationFirmsCode": "W182",
+                "destinationFirmsCodeShow": "W182",
+                "podFirmsCode": "W182",
+                "podFirmsCodeShow": "W182",
+                "ir4FirmsCode": null,
+                "ir4FirmsCodeShow": null
+            },
+            "actualShipment": [
+                {
+                    "rownum": "1",
+                    "sequenceNumber": "1",
+                    "vesselName": "KOTA PERDANA",
+                    "voyageNo": "E011",
+                    "portOfLoading": "Shanghai",
+                    "actualShippingDate": null,
+                    "expectedDateOfDeparture": "2019-08-05 15:30",
+                    "actualDepartureDate": null,
+                    "portOfDischarge": "Long Beach",
+                    "estimatedDateOfArrival": "2019-08-19 16:00",
+                    "actualArrivalDate": null,
+                    "actualDischargeDate": null,
+                    "city": null,
+                    "service": "AAC3",
+                    "vesselCde": "N6X"
+                }
+            ],
+            "betdNotice": false,
+            "eirs": null,
+            "lfd": "LFD",
+            "empty_pick_up_location": null,
+            "usDisplay": true,
+            "vgmCutOff": "2019-07-31 12:00",
+            "trackingPath": {
+                "trackingGroupReferenceCode": "6216853000",
+                "billOfladingRefCode": null,
+                "fromCity": "Shanghai ,China",
+                "toCity": "Long Beach ,California ,United States",
+                "cgoAvailTm": "2019-08-20 18:00",
+                "cgoFinalTm": "2019-08-19 16:00",
+                "fPol": "Shanghai ,Shanghai ,China",
+                "lPod": "Long Beach ,California ,United States",
+                "vslNme": "KOTA PERDANA",
+                "voyNumber": "E011",
+                "pol": "Shanghai - ShanghaiPort Ctn Waigaoqiao Tml Brh",
+                "pod": "Long Beach - Pacific Container Terminal",
+                "flag": "0",
+                "svvd": "1",
+                "currentlyState": "Confirmed",
+                "containerQuantity": "40HQ*1",
+                "billNumber": ""
+            },
+            "cargoCutOff": "2019-07-31 00:00",
+            "blRealStatus": null,
+            "usOrCanadaDisplay": false,
+            "itNumber": null,
+            "checkHanJin": false
+        }
+    }
+}

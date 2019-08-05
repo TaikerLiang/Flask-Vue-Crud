@@ -1,0 +1,46 @@
+{
+    "code": "200",
+    "message": "",
+    "data": {
+        "content": [
+            {
+                "containerUuid": "2",
+                "containerNumber": "TCNU6875089",
+                "containerType": "40HQ",
+                "grossWeight": "5992.3KG",
+                "piecesNumber": 638,
+                "label": "Empty Equipment Returned",
+                "sealNumber": "COSA248164",
+                "location": "Evergreen Container Terminal,Los Angeles,California,United States",
+                "locationDateTime": "2019-05-30 12:09",
+                "transportation": "Truck",
+                "flag": "0",
+                "railRef": null,
+                "inlandMvId": " ",
+                "containerLocation": "0",
+                "isShow": false,
+                "hsCode": [],
+                "isNorthAmericaRails": true
+            },
+            {
+                "containerUuid": "1",
+                "containerNumber": "CCLU6912907",
+                "containerType": "40HQ",
+                "grossWeight": "10088.4KG",
+                "piecesNumber": 1467,
+                "label": "Empty Equipment Returned",
+                "sealNumber": "COSA248178",
+                "location": "American President Line,Los Angeles,California,United States",
+                "locationDateTime": "2019-05-31 08:43",
+                "transportation": "Truck",
+                "flag": "1",
+                "railRef": null,
+                "inlandMvId": " ",
+                "containerLocation": "1",
+                "isShow": false,
+                "hsCode": [],
+                "isNorthAmericaRails": true
+            }
+        ]
+    }
+}

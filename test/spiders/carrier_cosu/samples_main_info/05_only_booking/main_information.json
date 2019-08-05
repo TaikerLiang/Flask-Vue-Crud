@@ -1,0 +1,34 @@
+{
+    "code": "200",
+    "message": "No data",
+    "data": {
+        "content": {
+            "transportationType3": null,
+            "transportationType4": null,
+            "cargoTrackingContainer": null,
+            "bookingNumbersInBillOfLadingTrackingGroupAssociationList": [
+                {
+                    "trackingGroupUuid": 6313614284158583,
+                    "billOfLadingUuid": 6473684302777950,
+                    "billOfLadingReferenceCode": "6216853000",
+                    "trackingGroupReferenceCode": "6216853000",
+                    "sequenceNumber": 1,
+                    "recordUpdateDate": "2019-07-31 14:30:59"
+                }
+            ],
+            "trackingNA": null,
+            "actualShipment": null,
+            "fastLabel": null,
+            "lfd": null,
+            "slowLabel": null,
+            "usDisplay": null,
+            "trackingPath": null,
+            "cargoCutOff": null,
+            "isShow": null,
+            "usOrCanadaDisplay": null,
+            "itNumber": null,
+            "checkHanJin": null,
+            "isbillOfLadingExist": false
+        }
+    }
+}

@@ -1,0 +1,56 @@
+{
+    "code": "200",
+    "message": "",
+    "data": {
+        "content": [
+            {
+                "uuid": "CCLU7463826",
+                "containerNumber": "CCLU7463821",
+                "containerNumberStatus": "Loaded at T/S POL",
+                "location": "Ningbo Yuandong Terminals Limited,Ningbo,Zhejiang,China",
+                "timeOfIssue": "2019-07-16 08:00",
+                "transportation": "Vessel"
+            },
+            {
+                "uuid": "CCLU7463825",
+                "containerNumber": "CCLU7463821",
+                "containerNumberStatus": "Discharged at T/S POD",
+                "location": "Ningbo Beilun Int'l Container Co.,Ningbo,Zhejiang,China",
+                "timeOfIssue": "2019-07-11 01:03",
+                "transportation": " "
+            },
+            {
+                "uuid": "CCLU7463824",
+                "containerNumber": "CCLU7463821",
+                "containerNumberStatus": "Loaded at First POL",
+                "location": "Long Beach Container Terminal , LLC,Long Beach,California,United States",
+                "timeOfIssue": "2019-06-15 18:41",
+                "transportation": "Vessel"
+            },
+            {
+                "uuid": "CCLU7463822",
+                "containerNumber": "CCLU7463821",
+                "containerNumberStatus": "Cargo Received",
+                "location": "Long Beach Container Terminal , LLC,Long Beach,California,United States",
+                "timeOfIssue": "2019-06-05 21:45",
+                "transportation": "Truck"
+            },
+            {
+                "uuid": "CCLU7463823",
+                "containerNumber": "CCLU7463821",
+                "containerNumberStatus": "Gate-In at First POL",
+                "location": "Long Beach Container Terminal , LLC,Long Beach,California,United States",
+                "timeOfIssue": "2019-06-05 21:45",
+                "transportation": "Truck"
+            },
+            {
+                "uuid": "CCLU7463821",
+                "containerNumber": "CCLU7463821",
+                "containerNumberStatus": "Empty Equipment Despatched",
+                "location": "Long Beach Container Terminal , LLC,Long Beach,California,United States",
+                "timeOfIssue": "2019-06-05 15:02",
+                "transportation": "Truck"
+            }
+        ]
+    }
+}
