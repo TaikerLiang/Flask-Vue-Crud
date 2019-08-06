@@ -5,7 +5,7 @@ from typing import Dict
 
 from scrapy.exceptions import DropItem
 
-from . import items as mbl_items
+from . import items as carrier_items
 from .base import CARRIER_RESULT_STATUS_OK, CARRIER_RESULT_STATUS_FATAL
 
 
@@ -18,23 +18,23 @@ class CarrierItemPipeline(object):
     def open_spider(self, spider):
         spider.logger.info(f'[{self.__class__.__name__}] ----- open_spider -----')
 
-        self._collector = MblResultCollector(request_args=spider.request_args)
+        self._collector = CarrierResultCollector(request_args=spider.request_args)
 
     def process_item(self, item, spider):
         spider.logger.info(f'[{self.__class__.__name__}] ----- process_item -----')
         spider.logger.info(f'item : {pprint.pformat(item)}')
 
-        if isinstance(item, mbl_items.MblItem):
+        if isinstance(item, carrier_items.MblItem):
             self._collector.collect_mbl_item(item=item)
-        elif isinstance(item, mbl_items.VesselItem):
+        elif isinstance(item, carrier_items.VesselItem):
             self._collector.collect_vessel_item(item=item)
-        elif isinstance(item, mbl_items.ContainerItem):
+        elif isinstance(item, carrier_items.ContainerItem):
             self._collector.collect_container_item(item=item)
-        elif isinstance(item, mbl_items.ContainerStatusItem):
+        elif isinstance(item, carrier_items.ContainerStatusItem):
             self._collector.collect_container_status_item(item=item)
-        elif isinstance(item, mbl_items.ExportFinalData):
+        elif isinstance(item, carrier_items.ExportFinalData):
             return self._collector.build_final_data()
-        elif isinstance(item, mbl_items.ExportErrorData):
+        elif isinstance(item, carrier_items.ExportErrorData):
             return self._collector.build_error_data(item)
         else:
             raise DropItem(f'unknown item: {item}')
@@ -42,7 +42,7 @@ class CarrierItemPipeline(object):
         raise DropItem('item processed')
 
 
-class MblResultCollector:
+class CarrierResultCollector:
 
     def __init__(self, request_args):
         self._request_args = dict(request_args)
@@ -50,15 +50,15 @@ class MblResultCollector:
         self._vessels = defaultdict(dict)
         self._containers = {}
 
-    def collect_mbl_item(self, item: mbl_items.MblItem):
+    def collect_mbl_item(self, item: carrier_items.MblItem):
         clean_dict = self._clean_item(item)
         self._basic.update(clean_dict)
 
-    def collect_vessel_item(self, item: mbl_items.VesselItem):
+    def collect_vessel_item(self, item: carrier_items.VesselItem):
         clean_dict = self._clean_item(item)
         self._vessels[item.key].update(clean_dict)
 
-    def collect_container_item(self, item: mbl_items.ContainerItem):
+    def collect_container_item(self, item: carrier_items.ContainerItem):
         clean_dict = self._clean_item(item)
 
         if item.key not in self._containers:
@@ -66,7 +66,7 @@ class MblResultCollector:
 
         self._containers[item.key].update(clean_dict)
 
-    def collect_container_status_item(self, item: mbl_items.ContainerStatusItem):
+    def collect_container_status_item(self, item: carrier_items.ContainerStatusItem):
         clean_dict = self._clean_item(item)
 
         if item.key not in self._containers:
@@ -90,7 +90,7 @@ class MblResultCollector:
             'containers': self._containers,
         }
 
-    def build_error_data(self, item: mbl_items.ExportErrorData) -> Dict:
+    def build_error_data(self, item: carrier_items.ExportErrorData) -> Dict:
         clean_dict = self._clean_item(item)
 
         return {
