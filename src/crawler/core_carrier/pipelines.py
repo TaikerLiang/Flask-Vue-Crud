@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import pprint
-from collections import defaultdict
+from collections import OrderedDict
 from typing import Dict
 
 from scrapy.exceptions import DropItem
@@ -47,8 +47,8 @@ class CarrierResultCollector:
     def __init__(self, request_args):
         self._request_args = dict(request_args)
         self._basic = {}
-        self._vessels = defaultdict(dict)
-        self._containers = {}
+        self._vessels = OrderedDict()
+        self._containers = OrderedDict()
 
     def collect_mbl_item(self, item: carrier_items.MblItem):
         clean_dict = self._clean_item(item)
@@ -56,6 +56,10 @@ class CarrierResultCollector:
 
     def collect_vessel_item(self, item: carrier_items.VesselItem):
         clean_dict = self._clean_item(item)
+
+        if item.key not in self._vessels:
+            self._vessels[item.key] = self._get_default_vessel_data()
+
         self._vessels[item.key].update(clean_dict)
 
     def collect_container_item(self, item: carrier_items.ContainerItem):
@@ -75,6 +79,10 @@ class CarrierResultCollector:
         self._containers[item.key]['status'].append(clean_dict)
 
     @staticmethod
+    def _get_default_vessel_data():
+        return {}
+
+    @staticmethod
     def _get_default_container_data(container_no: str):
         return {
             'container_no': container_no,
@@ -86,8 +94,8 @@ class CarrierResultCollector:
             'status': CARRIER_RESULT_STATUS_OK,
             'request_args': self._request_args,
             'basic': self._basic,
-            'vessels': dict(self._vessels),
-            'containers': self._containers,
+            'vessels': list(self._vessels.values()),
+            'containers': list(self._containers.values()),
         }
 
     def build_error_data(self, item: carrier_items.ExportErrorData) -> Dict:
