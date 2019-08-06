@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 from scrapy.exceptions import CloseSpider
 
-from crawler.core_mbl.base import CARRIER_RESULT_STATUS_FATAL
-from crawler.core_mbl.exceptions import MblExceptionBase
-from crawler.core_mbl.items import ExportFinalData, ExportErrorData
+from .base import CARRIER_RESULT_STATUS_FATAL
+from .exceptions import CarrierExceptionBase
+from .items import ExportFinalData, ExportErrorData
 
 
-class MblSpiderMiddleware(object):
+class CarrierSpiderMiddleware(object):
 
     @classmethod
     def get_setting_name(cls):
@@ -40,7 +40,7 @@ class MblSpiderMiddleware(object):
 
         spider.mark_error()
 
-        if isinstance(exception, MblExceptionBase):
+        if isinstance(exception, CarrierExceptionBase):
             status = exception.status
             error_data = exception.build_error_data()
         else:

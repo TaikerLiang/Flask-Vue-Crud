@@ -1,30 +1,30 @@
 # -*- coding: utf-8 -*-
-from crawler.core_mbl.base import CARRIER_RESULT_STATUS_FATAL, CARRIER_RESULT_STATUS_ERROR
-from crawler.core_mbl.items import ExportErrorData
+from .base import CARRIER_RESULT_STATUS_FATAL, CARRIER_RESULT_STATUS_ERROR
+from .items import ExportErrorData
 
 
-class MblExceptionBase(Exception):
+class CarrierExceptionBase(Exception):
     status = CARRIER_RESULT_STATUS_FATAL
 
     def build_error_data(self):
         raise NotImplementedError
 
 
-class MblInvalidMblNoError(MblExceptionBase):
+class CarrierInvalidMblNoError(CarrierExceptionBase):
     status = CARRIER_RESULT_STATUS_ERROR
 
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail='<invalid-mbl-no>')
 
 
-class MblInfoNotReady(MblExceptionBase):
+class CarrierMblNotReady(CarrierExceptionBase):
     status = CARRIER_RESULT_STATUS_ERROR
 
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail='<mbl-not-ready>')
 
 
-class MblResponseFormatError(MblExceptionBase):
+class CarrierResponseFormatError(CarrierExceptionBase):
     status = CARRIER_RESULT_STATUS_FATAL
 
     def __init__(self, reason: str):

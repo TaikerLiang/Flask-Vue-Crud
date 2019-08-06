@@ -5,11 +5,11 @@ from typing import Dict
 
 from scrapy.exceptions import DropItem
 
-from crawler.core_mbl import items as mbl_items
-from crawler.core_mbl.base import CARRIER_RESULT_STATUS_OK, CARRIER_RESULT_STATUS_FATAL
+from . import items as mbl_items
+from .base import CARRIER_RESULT_STATUS_OK, CARRIER_RESULT_STATUS_FATAL
 
 
-class MblItemPipeline(object):
+class CarrierItemPipeline(object):
 
     @classmethod
     def get_setting_name(cls):
@@ -18,7 +18,7 @@ class MblItemPipeline(object):
     def open_spider(self, spider):
         spider.logger.info(f'[{self.__class__.__name__}] ----- open_spider -----')
 
-        self._collector = _MblResultCollector(request_args=spider.request_args)
+        self._collector = MblResultCollector(request_args=spider.request_args)
 
     def process_item(self, item, spider):
         spider.logger.info(f'[{self.__class__.__name__}] ----- process_item -----')
@@ -42,7 +42,7 @@ class MblItemPipeline(object):
         raise DropItem('item processed')
 
 
-class _MblResultCollector:
+class MblResultCollector:
 
     def __init__(self, request_args):
         self._request_args = dict(request_args)

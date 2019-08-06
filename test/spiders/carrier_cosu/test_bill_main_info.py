@@ -4,7 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_mbl.exceptions import MblInvalidMblNoError, MblInfoNotReady
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierMblNotReady
 from src.crawler.spiders import carrier_cosu
 
 from . import samples_main_info
@@ -56,10 +56,10 @@ def test_parse_main_info(sample_loader, sub, mbl_no, monkeypatch):
     verifier.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no', [
-    ('06_error', '6213846642'),
+@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
+    ('06_error', '6213846642', CarrierInvalidMblNoError),
 ])
-def test_parse_main_info_error(sample_loader, sub, mbl_no):
+def test_parse_main_info_error(sample_loader, sub, mbl_no, expect_exception):
     # load json text
     main_json_file = str(sample_loader.build_file_path(sub, 'main_information.json'))
     with open(main_json_file) as fp:
@@ -79,5 +79,5 @@ def test_parse_main_info_error(sample_loader, sub, mbl_no):
     # action
     spider = carrier_cosu.CarrierCosuSpider(name=None, mbl_no=mbl_no)
 
-    with pytest.raises((MblInvalidMblNoError, MblInfoNotReady)):
+    with pytest.raises(expect_exception):
         spider.parse_main_info(resp)

@@ -1,9 +1,3 @@
-from scrapy import Request
-
-from crawler.core_mbl.items import MblItem, VesselItem, LocationItem
-from crawler.spiders import carrier_cosu
-
-
 class Verifier:
 
     def __init__(self, mbl_no):

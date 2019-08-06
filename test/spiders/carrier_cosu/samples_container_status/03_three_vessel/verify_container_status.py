@@ -1,4 +1,4 @@
-from crawler.core_mbl.items import ContainerStatusItem, LocationItem
+from crawler.core_carrier.items import ContainerStatusItem, LocationItem
 
 
 class Verifier:

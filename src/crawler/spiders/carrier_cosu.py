@@ -5,9 +5,9 @@ from typing import List, Dict
 
 import scrapy
 
-from crawler.core_mbl.exceptions import MblInvalidMblNoError
-from crawler.core_mbl.items import LocationItem, MblItem, VesselItem, ContainerStatusItem, ContainerItem
-from crawler.core_mbl.spiders import MblSpiderBase
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
+from crawler.core_carrier.items import LocationItem, MblItem, VesselItem, ContainerStatusItem, ContainerItem
+from crawler.core_carrier.spiders import CarrierSpiderBase
 from crawler.utils import merge_yields
 
 
@@ -47,7 +47,7 @@ class UrlFactory:
         return int(time.time() * 1000)
 
 
-class CarrierCosuSpider(MblSpiderBase):
+class CarrierCosuSpider(CarrierSpiderBase):
     name = 'carrier_cosu'
 
     urlFactory = UrlFactory()
@@ -71,7 +71,7 @@ class CarrierCosuSpider(MblSpiderBase):
                 url = self.urlFactory.build_booking_url(mbl_no=self.mbl_no)
                 yield scrapy.Request(url=url, callback=self.parse_booking_main_info)
             else:
-                raise MblInvalidMblNoError()
+                raise CarrierInvalidMblNoError()
 
     def handle_bill_main_info(self, response, content):
         extractor = _MainInfoExtractor()

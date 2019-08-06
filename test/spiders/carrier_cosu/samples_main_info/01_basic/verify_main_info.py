@@ -1,7 +1,6 @@
 from scrapy import Request
 
-from crawler.core_mbl.items import MblItem, VesselItem, LocationItem, ContainerItem
-from crawler.spiders import carrier_cosu
+from crawler.core_carrier.items import MblItem, VesselItem, LocationItem, ContainerItem
 
 
 class Verifier:
