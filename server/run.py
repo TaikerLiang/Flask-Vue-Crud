@@ -10,6 +10,7 @@
 from flask import Flask, jsonify, request
 from src import app
 import os
+import logging
 
 
 @app.cli.command()
@@ -24,4 +25,9 @@ def ping_pong():
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(use_reloader=False)
+
+if __name__ != "__main__":
+    gunicorn_logger = logging.getLogger("gunicorn.error")
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
