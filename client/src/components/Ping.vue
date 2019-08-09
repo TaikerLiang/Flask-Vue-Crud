@@ -14,8 +14,6 @@ export default {
       axios.get(path)
         .then((res) => {
           this.msg = res.data;
-          console.log(this.appConfig.$api_url);
-          console.log('hi');
         })
         .catch((error) => {
           // eslint-disable-next-line
