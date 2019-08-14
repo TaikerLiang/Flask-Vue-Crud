@@ -9,24 +9,32 @@ class Config(object):
 
 class ProductionConfig(Config):
     DEBUG = False
-    DOMAIN = "https://api.console.talksis.com"
+    DOMAIN = "http://127.0.0.1:5000"
+    BRANCH = "prd"
 
 
 class DevelopmentConfig(Config):
     DEVELOPMENT = True
     DEBUG = True
     DOMAIN = "http://127.0.0.1:5000"
-
+    BRANCH = "dev"
 
 class TestingConfig(Config):
     TESTING = True
     DEBUG = True
-    DOMAIN = "https://api.qa.console.talksis.com"
+    DOMAIN = "http://127.0.0.1:5000"
+    BRANCH = "qa"
+
+class StagingConfig(Config):
+    DEBUG = False
+    DOMAIN = "http://127.0.0.1:5000"
+    BRANCH = "stg"
 
 
 config = {
-    "development": DevelopmentConfig,
-    "testing": TestingConfig,
-    "production": ProductionConfig,
+    "dev": DevelopmentConfig,
+    "qa": TestingConfig,
+    "stg": StagingConfig,
+    "prd": ProductionConfig,
     "default": DevelopmentConfig,
 }
