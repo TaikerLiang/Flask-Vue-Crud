@@ -26,7 +26,7 @@ def ping_pong():
 
 @app.route("/", methods=["GET"])
 def hello():
-    return jsonify({"err": 0, "err_msg": "Welcome to Flask asg {}!!".format(app.config["BRANCH"])})
+    return jsonify({"err": 0, "env": os.getenv("ENV"), "err_msg": "Welcome to Flask asg {}!!".format(app.config["BRANCH"])})
 
 
 if __name__ == "__main__":

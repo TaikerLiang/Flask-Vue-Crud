@@ -1,5 +1,6 @@
 from config import config
 from flask import Flask
+import os
 
 app = Flask(__name__)
 
@@ -9,5 +10,7 @@ try:
 except:
     app.config.from_object(config["default"])
     _evn = "dev"
+
+app.logger.error(os.getenv("ENV"))
 
 from src import books

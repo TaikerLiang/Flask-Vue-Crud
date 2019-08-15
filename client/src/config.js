@@ -1,8 +1,8 @@
 let config;
 
-//console.log(process.env);
+console.log(process.env);
 
-if (process.env.NODE_ENV === "development") {
+if (process.env.VUE_APP_ENV === "dev") {
   config = {
     $api_url: "http://localhost",
     timeoutDuration: 30000,

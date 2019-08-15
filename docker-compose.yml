@@ -14,8 +14,12 @@ services:
     build:
       dockerfile: Dockerfile
       context: ./server
+      args:
+        ENV: ${BRANCH}
   client:
     image: ${DOCKER_REGISTRY}/client:${BRANCH}
     build:
       dockerfile: Dockerfile
       context: ./client
+      args:
+        ENV: ${BRANCH}
