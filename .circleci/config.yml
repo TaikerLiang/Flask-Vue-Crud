@@ -78,7 +78,7 @@ jobs:
             elif [ "${CIRCLE_BRANCH}" == "stg" ]; then
               echo BRANCH=${CIRCLE_BRANCH} >> .env
             fi
-      - run: echo DOCKER_REGISTRY=${ECR_URL} >> .env
+      - run: echo DOCKER_REGISTRY=${ECR_URL}/flask-vue-crud >> .env
       #- run: cat .env
       - run: docker-compose build
       - run: docker-compose push
