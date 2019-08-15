@@ -1,7 +1,7 @@
 version: '3'
 services:
   nginx:
-    image: flask-vue-crud-nginx
+    image: ${DOCKER_REGISTRY}/nginx
     restart: always
     build:
       dockerfile: Dockerfile
@@ -10,12 +10,12 @@ services:
       - '3000:3000'
       - '5000:5000'
   api:
-    image: flask-vue-crud-api
+    image: ${DOCKER_REGISTRY}/server
     build:
       dockerfile: Dockerfile
       context: ./server
   client:
-    image: flask-vue-crud-client
+    image: ${DOCKER_REGISTRY}/client
     build:
       dockerfile: Dockerfile
       context: ./client
