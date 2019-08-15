@@ -1,7 +1,7 @@
 version: '3'
 services:
   nginx:
-    image: ${DOCKER_REGISTRY}/nginx
+    image: ${DOCKER_REGISTRY}/nginx:${BRANCH}
     restart: always
     build:
       dockerfile: Dockerfile
@@ -10,12 +10,12 @@ services:
       - '3000:3000'
       - '5000:5000'
   api:
-    image: ${DOCKER_REGISTRY}/server
+    image: ${DOCKER_REGISTRY}/server:${BRANCH}
     build:
       dockerfile: Dockerfile
       context: ./server
   client:
-    image: ${DOCKER_REGISTRY}/client
+    image: ${DOCKER_REGISTRY}/client:${BRANCH}
     build:
       dockerfile: Dockerfile
       context: ./client
