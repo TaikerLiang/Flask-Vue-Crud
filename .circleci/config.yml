@@ -52,9 +52,6 @@ jobs:
           key: deps1-{{ .Branch }}-{{ checksum "server/requirements.txt" }}
       - restore_cache:
           key: deps1-{{ .Branch }}-{{ checksum "client/package.json" }}
-      #- run: sudo rm /var/lib/apt/lists/lock
-      #- run: sudo apt-get update
-      #- run: sudo apt-get install python3 python3-dev python3-pip
       - run:
           name: Show current branch
           command: echo ${CIRCLE_BRANCH}
@@ -82,15 +79,12 @@ jobs:
       #- run: cat .env
       - run: docker-compose build
       - run: docker-compose push
-      #- run: docker build -t taikerliang/flask-vue-crud-server --build-arg ENV=qa ./server
-      #- run: docker build -t taikerliang/flask-vue-crud-client ./client
-      #- run: docker build -t taikerliang/flask-vue-crud-nginx ./nginx
-      #- run: docker tag taikerliang/flask-vue-crud-server ${ECR_URL}/flask-vue-crud:flask-vue-crud-server-${CIRCLE_BRANCH}
-      #- run: docker tag taikerliang/flask-vue-crud-client ${ECR_URL}/flask-vue-crud:flask-vue-crud-client-${CIRCLE_BRANCH}
-      #- run: docker tag taikerliang/flask-vue-crud-nginx ${ECR_URL}/flask-vue-crud:flask-vue-crud-nginx-${CIRCLE_BRANCH}
-      #- run: docker push ${ECR_URL}/flask-vue-crud:flask-vue-crud-server-${CIRCLE_BRANCH}
-      #- run: docker push ${ECR_URL}/flask-vue-crud:flask-vue-crud-client-${CIRCLE_BRANCH}
-      #- run: docker push ${ECR_URL}/flask-vue-crud:flask-vue-crud-nginx-${CIRCLE_BRANCH}
+      - run:
+          name: AWS codedeploy
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "qa" ]; then
+                ~/.local/bin/aws deploy create-deployment --application-name flask-vue-crud --deployment-group-name flask-vue-crud-qa --auto-rollback-configuration enabled=true,events="DEPLOYMENT_FAILURE" --file-exists-behavior OVERWRITE --github-location repository="TaikerLiang/flask-vue-crud",commitId="$CIRCLE_SHA1"
+            fi
 workflows:
   version: 2
   build_and_test:

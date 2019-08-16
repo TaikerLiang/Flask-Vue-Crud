@@ -1,0 +1,14 @@
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /home/ubuntu/flask-vue-crud
+hooks:
+  BeforeInstall:
+    - location: scripts/before-install.sh
+      runas: ubuntu
+      timeout: 300
+  AfterInstall:
+    - location: scripts/after-install.sh
+      runas: ubuntu
+      timeout: 300
