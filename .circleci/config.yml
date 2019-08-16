@@ -83,7 +83,7 @@ jobs:
           name: AWS codedeploy
           command: |
             if [ "${CIRCLE_BRANCH}" == "qa" ]; then
-                ~/.local/bin/aws deploy create-deployment --application-name flask-vue-crud --deployment-group-name flask-vue-crud-qa --auto-rollback-configuration enabled=true,events="DEPLOYMENT_FAILURE" --file-exists-behavior OVERWRITE --github-location repository="TaikerLiang/flask-vue-crud",commitId="$CIRCLE_SHA1"
+                aws deploy create-deployment --application-name flask-vue-crud --deployment-group-name flask-vue-crud-qa --auto-rollback-configuration enabled=true,events="DEPLOYMENT_FAILURE" --file-exists-behavior OVERWRITE --github-location repository="TaikerLiang/flask-vue-crud",commitId="$CIRCLE_SHA1"
             fi
 workflows:
   version: 2
