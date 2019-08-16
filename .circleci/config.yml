@@ -62,6 +62,7 @@ jobs:
           name: Install aws cli
           command: sudo pip install awscli --upgrade --user
       - run: docker-compose version
+      - run: aws --version
       - run:
           name: "Log in to AWS ECR"
           command: eval $(aws ecr get-login --no-include-email)
