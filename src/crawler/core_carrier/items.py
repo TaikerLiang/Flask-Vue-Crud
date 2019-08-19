@@ -30,9 +30,11 @@ class MblItem(scrapy.Item):
     por = scrapy.Field(serializer=LocationItem)
     pol = scrapy.Field(serializer=LocationItem)
     pod = scrapy.Field(serializer=LocationItem)
+    place_of_deliv = scrapy.Field(serializer=LocationItem)
     final_dest = scrapy.Field(serializer=LocationItem)
     por_etd = scrapy.Field()
     por_atd = scrapy.Field()
+    pol_ata = scrapy.Field()
     etd = scrapy.Field()
     atd = scrapy.Field()
     eta = scrapy.Field()
@@ -44,6 +46,20 @@ class MblItem(scrapy.Item):
     cargo_cutoff_date = scrapy.Field()
     surrendered_status = scrapy.Field()
     container_quantity = scrapy.Field()
+    us_ams_status = scrapy.Field()
+    ca_aci_status = scrapy.Field()
+    eu_ens_status = scrapy.Field()
+    cn_cams_status = scrapy.Field()
+    ja_afr_status = scrapy.Field()
+    freight_status = scrapy.Field()
+    us_customs_status = scrapy.Field()
+    us_customs_date = scrapy.Field()
+    way_bill_status = scrapy.Field()
+    way_bill_date = scrapy.Field()
+    deliv_order = scrapy.Field()
+    latest_update = scrapy.Field()
+    firms_code = scrapy.Field()
+    freight_date = scrapy.Field()
 
 
 class VesselItem(scrapy.Item):
@@ -74,6 +90,12 @@ class ContainerItem(scrapy.Item):
     full_pickup_date = scrapy.Field()
     full_return_date = scrapy.Field()
     ams_release = scrapy.Field()
+    mt_location = scrapy.Field()
+    det_free_time_exp_date = scrapy.Field()
+    por_etd = scrapy.Field()
+    pol_etd = scrapy.Field()
+    final_dest_eta = scrapy.Field()
+    ready_for_pick_up = scrapy.Field()
 
     @property
     def key(self):
@@ -86,6 +108,7 @@ class ContainerStatusItem(scrapy.Item):
     timestamp = scrapy.Field()
     location = scrapy.Field(serializer=LocationItem)
     transport = scrapy.Field()
+    est_or_actual = scrapy.Field()
 
     @property
     def key(self):
