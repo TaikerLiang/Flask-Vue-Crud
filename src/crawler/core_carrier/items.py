@@ -90,10 +90,10 @@ class ContainerItem(scrapy.Item):
     full_pickup_date = scrapy.Field()
     full_return_date = scrapy.Field()
     ams_release = scrapy.Field()
-    mt_location = scrapy.Field()
+    mt_location = scrapy.Field(serializer=LocationItem)
     det_free_time_exp_date = scrapy.Field()
     por_etd = scrapy.Field()
-    pol_etd = scrapy.Field()
+    pol_eta = scrapy.Field()
     final_dest_eta = scrapy.Field()
     ready_for_pick_up = scrapy.Field()
 
