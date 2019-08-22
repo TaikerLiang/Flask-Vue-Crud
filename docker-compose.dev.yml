@@ -1,0 +1,45 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:11.5
+    restart: always
+    ports:
+        - '5432:5432'
+    environment:
+        POSTGRES_USER: taiker
+        POSTGRES_DB: flask-vue
+
+  nginx:
+    image: ${DOCKER_REGISTRY}/nginx:${BRANCH}
+    restart: always
+    build:
+      dockerfile: Dockerfile
+      context: ./nginx
+    ports:
+      - '3000:3000'
+      - '5000:5000'
+
+  api:
+    image: ${DOCKER_REGISTRY}/server:${BRANCH}
+    environment:
+      - PGUSER=taiker
+      - PGDATABASE=flask-vue
+      - PGHOST=postgres
+      - PGPORT=5432
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./server
+      args:
+        ENV: ${BRANCH}
+    depends_on:
+      - postgres
+    volumes:
+      - ./server:/app
+
+  client:
+    image: ${DOCKER_REGISTRY}/client:${BRANCH}
+    build:
+      dockerfile: Dockerfile
+      context: ./client
+      args:
+        ENV: ${BRANCH}

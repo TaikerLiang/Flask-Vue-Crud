@@ -11,7 +11,7 @@ import json
 import pytest
 
 
-def test_get(app_client):
+def test_get(app_client, books):
 
     response = app_client.get("/books", content_type="application/json")
     res = json.loads(response.get_data(as_text=True))
@@ -21,7 +21,8 @@ def test_get(app_client):
 
 
 def test_post(app_client):
-    data = {"title": "Python3", "author": "Paul Liang", "read": False}
+
+    data = {"title": "Python3", "author": "Paul Liang", "read": 0}
 
     response = app_client.post(
         "/books", data=json.dumps(data), content_type="application/json"
@@ -44,7 +45,7 @@ def test_put(app_client):
     res = json.loads(response.get_data(as_text=True))
     assert response.status_code == 200
     book_id = res["books"][0]["id"]
-    data = {"title": "Python3 for beginner", "author": "Paul Liang", "read": True}
+    data = {"title": "Python3 for beginner", "author": "Paul Liang", "read": 1}
 
     response = app_client.put(
         "/books/" + str(book_id), data=json.dumps(data), content_type="application/json"
@@ -55,6 +56,7 @@ def test_put(app_client):
 
 
 def test_delete(app_client):
+    
     response = app_client.get("/books", content_type="application/json")
     res = json.loads(response.get_data(as_text=True))
     assert response.status_code == 200
