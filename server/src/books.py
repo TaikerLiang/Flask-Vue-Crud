@@ -137,7 +137,7 @@ class RBooks(Resource):
         try:
             _title = req_data["title"]
             _author = req_data["author"]
-            _read = req_data["read"]
+            _read = int(req_data["read"])
 
             _book = Book(uuid.uuid4().hex, _title, _author, _read)
             db.session.add(_book)
@@ -157,10 +157,11 @@ class RBooks(Resource):
         """
         response_object = {"status": "success"}
         req_data = request.get_json()
+
         try:
             _title = req_data["title"]
             _author = req_data["author"]
-            _read = req_data["read"]
+            _read = int(req_data["read"])
         except:
             return make_response(
                 jsonify({"status": "failed", "message": "miss some parameters"}), 400

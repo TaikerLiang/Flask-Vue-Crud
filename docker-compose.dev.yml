@@ -27,7 +27,7 @@ services:
       - PGHOST=postgres
       - PGPORT=5432
     build:
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
       context: ./server
       args:
         ENV: ${BRANCH}
