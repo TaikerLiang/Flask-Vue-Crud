@@ -5,7 +5,11 @@ jobs:
     docker:
       - image: circleci/python:3.6.4
         environment:
-          PIPENV_VENV_IN_PROJECT: true
+          PIPENV_VENV_IN_PROJECT: true'
+      - image: circleci/postgres:11.5-alpine
+        environment:
+          POSTGRES_USER: taiker
+          POSTGRES_DB: flask_vue
     steps:
       - checkout
       - run: sudo apt-get install python3-pip

@@ -11,6 +11,11 @@ services:
       - '5000:5000'
   api:
     image: ${DOCKER_REGISTRY}/server:${BRANCH}
+    environment:
+      - PGUSER=taiker
+      - PGDATABASE=flask_vue
+      - PGHOST=postgres
+      - PGPORT=5432
     build:
       dockerfile: Dockerfile
       context: ./server

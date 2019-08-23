@@ -1,13 +1,13 @@
 version: '3'
 services:
   postgres:
-    image: postgres:11.5
+    image: postgres:11.5-alpine
     restart: always
     ports:
         - '5432:5432'
     environment:
         POSTGRES_USER: taiker
-        POSTGRES_DB: flask-vue
+        POSTGRES_DB: flask_vue
 
   nginx:
     image: ${DOCKER_REGISTRY}/nginx:${BRANCH}
@@ -23,7 +23,7 @@ services:
     image: ${DOCKER_REGISTRY}/server:${BRANCH}
     environment:
       - PGUSER=taiker
-      - PGDATABASE=flask-vue
+      - PGDATABASE=flask_vue
       - PGHOST=postgres
       - PGPORT=5432
     build:
