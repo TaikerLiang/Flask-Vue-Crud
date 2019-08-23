@@ -9,34 +9,14 @@
 
 from flask import jsonify, redirect, request, abort, make_response
 from flask_restful import Resource, Api
-from src import app
+from src.models.books import Book
+from src import app, db
 from pprint import pprint
 import json
 import datetime
 import uuid
 
 api = Api(app)
-
-BOOKS = [
-    {
-        "id": uuid.uuid4().hex,
-        "title": "On the Road",
-        "author": "Jack Kerouac",
-        "read": True,
-    },
-    {
-        "id": uuid.uuid4().hex,
-        "title": "Harry Potter and the Philosopher's Stone",
-        "author": "J. K. Rowling",
-        "read": False,
-    },
-    {
-        "id": uuid.uuid4().hex,
-        "title": "Green Eggs and Ham",
-        "author": "Dr. Seuss",
-        "read": True,
-    },
-]
 
 
 class RBooks(Resource):
@@ -88,9 +68,24 @@ class RBooks(Resource):
             'status': 'success'
         }
         """
-        response_object = {"status": "success"}
-        response_object["books"] = BOOKS
-        return jsonify(response_object)
+        def __process_return_value(obj):
+            tmp = dict()
+            tmp["id"] = obj.book_id
+            tmp["title"] = obj.title
+            tmp["author"] = obj.author
+            tmp["read"] = obj.read
+            return tmp
+
+        res = dict()
+        res["status"] = "success"
+        res["books"] = list()
+        _books = Book.query.all()
+        for r in _books:
+            tmp = __process_return_value(r)
+            res["books"].append(tmp)
+            print(tmp)
+        
+        return jsonify(res)
 
     def post(self):
         """
@@ -117,21 +112,20 @@ class RBooks(Resource):
         }
         """
         req_data = request.get_json(force=True)
+
         try:
             _title = req_data["title"]
             _author = req_data["author"]
-            _read = req_data["read"]
+            _read = int(req_data["read"])
+
+            _book = Book(uuid.uuid4().hex, _title, _author, _read)
+            db.session.add(_book)
+            db.session.commit()
+            return make_response(jsonify({"status": "success", "message": "Book added!"}), 200)
         except:
             return make_response(
-                jsonify({"err": -40001, "err_msg": "miss some parameters"}), 400
+                jsonify({"status": "failed", "message": "miss some parameters"}), 400
             )
-
-        response_object = {"status": "success"}
-        BOOKS.append(
-            {"id": uuid.uuid4().hex, "title": _title, "author": _author, "read": _read}
-        )
-        response_object["message"] = "Book added!"
-        return jsonify(response_object)
 
     def put(self, book_id):
         """
@@ -142,23 +136,26 @@ class RBooks(Resource):
         """
         response_object = {"status": "success"}
         req_data = request.get_json()
+
         try:
             _title = req_data["title"]
             _author = req_data["author"]
-            _read = req_data["read"]
+            _read = int(req_data["read"])
         except:
             return make_response(
-                jsonify({"err": -40001, "err_msg": "miss some parameters"}), 400
+                jsonify({"status": "failed", "message": "miss some parameters"}), 400
             )
 
-        for book in BOOKS:
-            if book["id"] == book_id:
-                book["title"] = _title
-                book["author"] = _author
-                book["read"] = _read
-                break
-        response_object["message"] = "Book updated!"
-        return jsonify(response_object)
+        _book = Book.query.filter(Book.book_id == book_id).first()
+
+        if _book:
+            _book.title = _title
+            _book.author = _author
+            _book.read = _read
+
+            db.session.commit()
+
+        return make_response(jsonify({"status": "success", "message": "Book updated!"}), 200)
 
     def delete(self, book_id):
         """
@@ -168,18 +165,15 @@ class RBooks(Resource):
         @apiGroup Books
         """
 
-        def __remove_book(book_id):
-            for book in BOOKS:
-                if book["id"] == book_id:
-                    BOOKS.remove(book)
-                    app.logger.error(BOOKS)
-                    return True
-            return False
-
-        response_object = {"status": "success"}
-        __remove_book(book_id)
-        response_object["message"] = "Book removed!"
-        return jsonify(response_object)
+        try:
+            _book = Book.query.filter(Book.book_id == book_id).first()
+            db.session.delete(_book)
+            db.session.commit()
+            return make_response(jsonify({"status": "success", "message": "Book updated!"}), 200)
+        except:
+            return make_response(
+                jsonify({"status": "failed", "message": "something wrong"}), 400
+            )
 
 
 api.add_resource(RBooks, "/books", endpoint="/books")

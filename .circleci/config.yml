@@ -5,7 +5,11 @@ jobs:
     docker:
       - image: circleci/python:3.6.4
         environment:
-          PIPENV_VENV_IN_PROJECT: true
+          PIPENV_VENV_IN_PROJECT: true'
+      - image: circleci/postgres:11.5-alpine
+        environment:
+          POSTGRES_USER: taiker
+          POSTGRES_DB: flask_vue
     steps:
       - checkout
       - run: sudo apt-get install python3-pip
@@ -21,11 +25,12 @@ jobs:
           paths:
               -  ~/app/server/venv
       - run:
+          name: init db & run pytest
           command: |
-            set -e
             export FLASK_APP=/home/circleci/app/server/run.py
             cd ~/app/server
-            pytest -x
+            flask initdb
+            flask test
 
   build-client:
     working_directory: ~/app
@@ -95,4 +100,10 @@ workflows:
       - build-puhs-images:
           requires:
             - build-server
-            - build-client  
+            - build-client
+          filters:
+            branches:
+              only:
+                - master
+                - qa
+                - stg

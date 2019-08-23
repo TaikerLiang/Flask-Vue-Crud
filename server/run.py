@@ -8,15 +8,26 @@
 """
 
 from flask import Flask, jsonify, request
-from src import app
+from src import app, db
 import os
 import logging
 
 
 @app.cli.command()
 def test():
+    
+    with app.app_context():
+        db.reflect()
+        db.drop_all()
+        db.create_all()
+    
     os.system("pytest -x")
 
+@app.cli.command()
+def initdb():
+    """Initialize the database."""
+    print("Init the db")
+    db.create_all()
 
 # sanity check route
 @app.route("/ping", methods=["GET"])
