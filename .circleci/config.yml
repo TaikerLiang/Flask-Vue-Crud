@@ -27,7 +27,6 @@ jobs:
       - run:
           name: init db & run pytest
           command: |
-            set -e
             export FLASK_APP=/home/circleci/app/server/run.py
             cd ~/app/server
             flask initdb
@@ -101,4 +100,10 @@ workflows:
       - build-puhs-images:
           requires:
             - build-server
-            - build-client  
+            - build-client
+          filters:
+            branches:
+              only:
+                - master
+                - qa
+                - stg
