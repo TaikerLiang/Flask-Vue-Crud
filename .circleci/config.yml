@@ -25,11 +25,13 @@ jobs:
           paths:
               -  ~/app/server/venv
       - run:
+          name: init db & run pytest
           command: |
             set -e
             export FLASK_APP=/home/circleci/app/server/run.py
             cd ~/app/server
-            pytest -x
+            flask initdb
+            flask test
 
   build-client:
     working_directory: ~/app
