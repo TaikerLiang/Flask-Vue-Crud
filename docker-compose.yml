@@ -6,9 +6,13 @@ services:
     build:
       dockerfile: Dockerfile
       context: ./nginx
+      args:
+        ENV: ${BRANCH}
+    environment:
+      CERTBOT_EMAIL: "liang0816tw@gmail.com"
     ports:
-      - '3000:3000'
-      - '5000:5000'
+      - "80:80"
+      - "443:443"
   api:
     image: ${DOCKER_REGISTRY}/server:${BRANCH}
     build:
