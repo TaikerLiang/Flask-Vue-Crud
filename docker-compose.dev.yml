@@ -13,8 +13,10 @@ services:
     image: ${DOCKER_REGISTRY}/nginx:${BRANCH}
     restart: always
     build:
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
       context: ./nginx
+      args:
+        ENV: ${BRANCH}
     ports:
       - '3000:3000'
       - '5000:5000'
