@@ -27,3 +27,5 @@ services:
       context: ./client
       args:
         ENV: ${BRANCH}
+    volumes:
+      - ./client/src:/app/src

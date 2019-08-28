@@ -4,7 +4,7 @@ console.log(process.env);
 
 if (process.env.VUE_APP_ENV === "dev") {
   config = {
-    $api_url: "http://localhost",
+    $api_url: "http://localhost:5000",
     timeoutDuration: 30000,
   };
 } else {

@@ -10,7 +10,7 @@ export default {
   },
   methods: {
     getMessage() {
-      const path = this.appConfig.$api_url + ':5000/ping';
+      const path = this.appConfig.$api_url + '/ping';
       axios.get(path)
         .then((res) => {
           this.msg = res.data;
