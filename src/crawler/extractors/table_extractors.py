@@ -127,7 +127,7 @@ class LeftHeaderTableLocator(BaseTableLocator):
     def parse(self, table: Selector):
         top_index_set = set()
 
-        for tr in table.css('tbody tr'):
+        for tr in table.css('tr'):
             left_header = tr.css('th ::text').get().strip()
             self._left_header_set.add(left_header)
 
