@@ -37,7 +37,7 @@ class TableInfo:
         return td_extractor.extract(td=td)
 
     def has_header(self, top=None, left=None) -> bool:
-        return self.has_header(top=top, left=left)
+        return self._table_locator.has_header(top=top, left=left)
 
 
 class TableExtractor:
