@@ -1,7 +1,7 @@
 import pytest
 from scrapy.selector import Selector
 
-from crawler.extractors.table_extractors import LeftHeaderTableExtractor, HeaderMismatchError
+from crawler.extractors.table_extractors import TableExtractor, LeftHeaderTableLocator, HeaderMismatchError
 
 
 @pytest.fixture
@@ -46,8 +46,8 @@ def left_header_table_selector():
     (2, 'left3', '(3, 3)'),
 ])
 def test_get_td(top, left, expect, left_header_table_selector):
-    extractor = LeftHeaderTableExtractor()
-    table_info = extractor.extract(table=left_header_table_selector)
+    extractor = TableExtractor()
+    table_info = extractor.extract(table=left_header_table_selector, locator=LeftHeaderTableLocator())
     result = table_info.get_td(top=top, left=left)
     assert result == expect
 
@@ -59,8 +59,8 @@ def test_get_td(top, left, expect, left_header_table_selector):
 def test_header_mismatch_error(top, left, left_header_table_selector):
     expect_exception = HeaderMismatchError
 
-    extractor = LeftHeaderTableExtractor()
-    table_info = extractor.extract(table=left_header_table_selector)
+    extractor = TableExtractor()
+    table_info = extractor.extract(table=left_header_table_selector, locator=LeftHeaderTableLocator())
 
     with pytest.raises(expect_exception):
         table_info.get_td(top=top, left=left)
