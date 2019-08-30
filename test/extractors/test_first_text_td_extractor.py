@@ -1,6 +1,6 @@
 from scrapy import Selector
 
-from crawler.extractors.table_td_extractors import FirstTextTdExtractor
+from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 
 
 class TestFirstTextTdExtractor:
@@ -13,7 +13,7 @@ class TestFirstTextTdExtractor:
         td_extractor = FirstTextTdExtractor()
 
         # action
-        result = td_extractor.extract(td=td_selector)
+        result = td_extractor.extract(cell=td_selector)
 
         # assert
         assert result == expect
@@ -32,7 +32,7 @@ class TestFirstTextTdExtractor:
         td_extractor = FirstTextTdExtractor(css_query=css_query)
 
         # action
-        result = td_extractor.extract(td=td_selector)
+        result = td_extractor.extract(cell=td_selector)
 
         # assert
         assert result == expect

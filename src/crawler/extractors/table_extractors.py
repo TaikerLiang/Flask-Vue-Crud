@@ -2,7 +2,7 @@ import abc
 
 from scrapy import Selector
 
-from crawler.extractors.table_td_extractors import BaseTdExtractor, FirstTextTdExtractor
+from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 
 
 class HeaderMismatchError(Exception):
@@ -16,7 +16,7 @@ class BaseTableLocator:
         pass
 
     @abc.abstractmethod
-    def get_td(self, top, left) -> Selector:
+    def get_cell(self, top, left) -> Selector:
         pass
 
     @abc.abstractmethod
@@ -29,12 +29,12 @@ class TableInfo:
     def __init__(self, table_locator: BaseTableLocator):
         self._table_locator = table_locator
 
-    def get_td(self, top, left, td_extractor: BaseTdExtractor = None):
-        if not td_extractor:
-            td_extractor = FirstTextTdExtractor()  # default
+    def extract_cell(self, top, left, extractor: BaseTableCellExtractor = None):
+        if not extractor:
+            extractor = FirstTextTdExtractor()  # default
 
-        td = self._table_locator.get_td(top=top, left=left)
-        return td_extractor.extract(td=td)
+        td = self._table_locator.get_cell(top=top, left=left)
+        return extractor.extract(cell=td)
 
     def has_header(self, top=None, left=None) -> bool:
         return self._table_locator.has_header(top=top, left=left)
@@ -66,7 +66,7 @@ class TopHeaderTableLocator(BaseTableLocator):
                 top = top_header_list[top_index]
                 self._td_map[top].append(td)
 
-    def get_td(self, top, left) -> Selector:
+    def get_cell(self, top, left) -> Selector:
         try:
             return self._td_map[top][left]
         except (KeyError, IndexError) as err:
@@ -103,7 +103,7 @@ class TopLeftHeaderTableLocator(BaseTableLocator):
                 top = top_header_map[top_index]
                 self._td_map[top][left_header] = td
 
-    def get_td(self, top, left) -> Selector:
+    def get_cell(self, top, left) -> Selector:
         try:
             return self._td_map[top][left]
         except KeyError as err:
@@ -136,7 +136,7 @@ class LeftHeaderTableLocator(BaseTableLocator):
                 td_dict = self._td_map.setdefault(top_index, {})
                 td_dict[left_header] = td
 
-    def get_td(self, top, left) -> Selector:
+    def get_cell(self, top, left) -> Selector:
         try:
             return self._td_map[top][left]
         except KeyError as err:
