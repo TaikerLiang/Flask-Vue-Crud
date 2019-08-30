@@ -2,25 +2,11 @@ import abc
 
 from scrapy import Selector
 
+from crawler.extractors.table_td_extractors import BaseTdExtractor, FirstTextTdExtractor
+
 
 class HeaderMismatchError(Exception):
     pass
-
-
-class BaseTdExtractor:
-
-    def extract(self, td: Selector):
-        raise NotImplementedError
-
-
-class FirstTextTdExtractor(BaseTdExtractor):
-
-    def __init__(self, css_query: str = '::text'):
-        self.css_query = css_query
-
-    def extract(self, td: Selector) -> str:
-        td_text = td.css(self.css_query).get()
-        return td_text.strip() if td_text else ''
 
 
 class BaseTableLocator:
@@ -45,7 +31,7 @@ class TableInfo:
 
     def get_td(self, top, left, td_extractor: BaseTdExtractor = None):
         if not td_extractor:
-            td_extractor = FirstTextTdExtractor()
+            td_extractor = FirstTextTdExtractor()  # default
 
         td = self._table_locator.get_td(top=top, left=left)
         return td_extractor.extract(td=td)

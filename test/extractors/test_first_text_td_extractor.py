@@ -1,7 +1,6 @@
-import pytest
 from scrapy import Selector
 
-from crawler.extractors.table_extractors import FirstTextTdExtractor
+from crawler.extractors.table_td_extractors import FirstTextTdExtractor
 
 
 class TestFirstTextTdExtractor:
