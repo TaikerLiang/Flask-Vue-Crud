@@ -13,6 +13,11 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
   api:
     image: ${DOCKER_REGISTRY}/server:${BRANCH}
     build:
@@ -20,6 +25,11 @@ services:
       context: ./server
       args:
         ENV: ${BRANCH}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
   client:
     image: ${DOCKER_REGISTRY}/client:${BRANCH}
     build:
@@ -27,3 +37,8 @@ services:
       context: ./client
       args:
         ENV: ${BRANCH}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
