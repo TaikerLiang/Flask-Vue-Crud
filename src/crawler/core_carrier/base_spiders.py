@@ -16,7 +16,7 @@ class BaseCarrierSpider(scrapy.Spider):
     }
 
     def __init__(self, name=None, **kwargs):
-        super(BaseCarrierSpider, self).__init__(name=name, **kwargs)
+        super().__init__(name=name, **kwargs)
 
         self.request_args = kwargs
         self.mbl_no = kwargs['mbl_no']

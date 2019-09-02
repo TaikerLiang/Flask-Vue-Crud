@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from scrapy.exceptions import CloseSpider
 
 from .base import CARRIER_RESULT_STATUS_FATAL
@@ -6,7 +5,7 @@ from .exceptions import CarrierExceptionBase
 from .items import ExportFinalData, ExportErrorData
 
 
-class CarrierSpiderMiddleware(object):
+class CarrierSpiderMiddleware:
 
     @classmethod
     def get_setting_name(cls):

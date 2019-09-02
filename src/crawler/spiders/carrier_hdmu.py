@@ -74,7 +74,7 @@ class CarrierHdmuSpider(BaseCarrierSpider):
     }
     
     def __init__(self, *args, **kwargs):
-        super(CarrierHdmuSpider, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.url_factory = UrlFactory()
         self.formdata_factory = FormDataFactory()
 

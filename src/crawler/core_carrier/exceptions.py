@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from .base import CARRIER_RESULT_STATUS_FATAL, CARRIER_RESULT_STATUS_ERROR
 from .items import ExportErrorData
 

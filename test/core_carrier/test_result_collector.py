@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from crawler.core_carrier.items import VesselItem, ContainerItem
 from crawler.core_carrier.pipelines import CarrierResultCollector
 

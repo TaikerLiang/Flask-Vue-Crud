@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import pprint
 from collections import OrderedDict
 from typing import Dict
@@ -9,7 +8,7 @@ from . import items as carrier_items
 from .base import CARRIER_RESULT_STATUS_OK, CARRIER_RESULT_STATUS_FATAL
 
 
-class CarrierItemPipeline(object):
+class CarrierItemPipeline:
 
     @classmethod
     def get_setting_name(cls):
