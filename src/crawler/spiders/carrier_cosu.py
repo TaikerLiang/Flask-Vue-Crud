@@ -7,7 +7,7 @@ import scrapy
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.items import LocationItem, MblItem, VesselItem, ContainerStatusItem, ContainerItem
-from crawler.core_carrier.spiders import CarrierSpiderBase
+from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.utils import merge_yields
 
 
@@ -47,7 +47,7 @@ class UrlFactory:
         return int(time.time() * 1000)
 
 
-class CarrierCosuSpider(CarrierSpiderBase):
+class CarrierCosuSpider(BaseCarrierSpider):
     name = 'carrier_cosu'
 
     urlFactory = UrlFactory()

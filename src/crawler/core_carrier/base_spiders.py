@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 import scrapy
 
 from .middlewares import CarrierSpiderMiddleware
 from .pipelines import CarrierItemPipeline
 
 
-class CarrierSpiderBase(scrapy.Spider):
+class BaseCarrierSpider(scrapy.Spider):
 
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
@@ -17,7 +16,7 @@ class CarrierSpiderBase(scrapy.Spider):
     }
 
     def __init__(self, name=None, **kwargs):
-        super(CarrierSpiderBase, self).__init__(name=name, **kwargs)
+        super(BaseCarrierSpider, self).__init__(name=name, **kwargs)
 
         self.request_args = kwargs
         self.mbl_no = kwargs['mbl_no']

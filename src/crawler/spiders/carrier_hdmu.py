@@ -3,7 +3,7 @@ import dataclasses
 import scrapy
 from scrapy import Selector
 
-import src.crawler.core_carrier.spiders as spider
+from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
 from crawler.core_carrier.items import MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
@@ -67,7 +67,7 @@ class FormDataFactory:
         }
 
 
-class CarrierHdmuSpider(spider.CarrierSpiderBase):
+class CarrierHdmuSpider(BaseCarrierSpider):
     name = 'carrier_hdmu'
     headers = {
         'Upgrade-Insecure-Requests': '1',

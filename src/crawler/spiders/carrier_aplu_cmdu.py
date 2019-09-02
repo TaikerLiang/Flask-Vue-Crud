@@ -6,7 +6,7 @@ from scrapy import Selector
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
 from crawler.core_carrier.items import BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem
-from crawler.core_carrier.spiders import CarrierSpiderBase
+from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor, HeaderMismatchError
 from crawler.utils import merge_yields
@@ -44,7 +44,7 @@ class SharedUrlFactory:
 # -----------------------------------------------------------------------------------------------------------
 
 
-class SharedSpider(CarrierSpiderBase):
+class SharedSpider(BaseCarrierSpider):
     home_url = ''
 
     def __init__(self, *args, **kwargs):
