@@ -1,3 +1,4 @@
+import abc
 import dataclasses
 from typing import Dict
 
@@ -96,8 +97,10 @@ class CarrierCmduSpider(SharedSpider):
 
 
 class BaseHandler:
+
+    @abc.abstractmethod
     def handle(self, response):
-        raise NotImplementedError
+        pass
 
 
 @dataclasses.dataclass

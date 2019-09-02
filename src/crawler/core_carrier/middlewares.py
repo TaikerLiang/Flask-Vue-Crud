@@ -1,7 +1,7 @@
 from scrapy.exceptions import CloseSpider
 
 from .base import CARRIER_RESULT_STATUS_FATAL
-from .exceptions import CarrierExceptionBase
+from .exceptions import BaseCarrierError
 from .items import ExportFinalData, ExportErrorData
 
 
@@ -39,7 +39,7 @@ class CarrierSpiderMiddleware:
 
         spider.mark_error()
 
-        if isinstance(exception, CarrierExceptionBase):
+        if isinstance(exception, BaseCarrierError):
             status = exception.status
             error_data = exception.build_error_data()
         else:
