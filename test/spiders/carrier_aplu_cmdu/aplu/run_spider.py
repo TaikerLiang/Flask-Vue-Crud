@@ -23,6 +23,6 @@ if __name__ == '__main__':
         kwargs = {
             'mbl_no': mbl_no,
         }
-        process.crawl(CarrierApluSpider(mbl_no=mbl_no), **kwargs)
+        process.crawl(CarrierApluSpider, **kwargs)
 
     process.start()
