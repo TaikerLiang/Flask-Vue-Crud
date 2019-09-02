@@ -8,22 +8,26 @@
 import scrapy
 
 
-class ExportFinalData(scrapy.Item):
+class BaseCarrierItem(scrapy.Item):
     pass
 
 
-class ExportErrorData(scrapy.Item):
+class ExportFinalData(BaseCarrierItem):
+    pass
+
+
+class ExportErrorData(BaseCarrierItem):
     status = scrapy.Field()
     detail = scrapy.Field()
 
 
-class LocationItem(scrapy.Item):
+class LocationItem(BaseCarrierItem):
     name = scrapy.Field()
     un_lo_code = scrapy.Field()
     firms_code = scrapy.Field()
 
 
-class MblItem(scrapy.Item):
+class MblItem(BaseCarrierItem):
     mbl_no = scrapy.Field()
     vessel = scrapy.Field()
     voyage = scrapy.Field()
@@ -62,7 +66,7 @@ class MblItem(scrapy.Item):
     freight_date = scrapy.Field()
 
 
-class VesselItem(scrapy.Item):
+class VesselItem(BaseCarrierItem):
     vessel = scrapy.Field()
     voyage = scrapy.Field()
     pol = scrapy.Field(serializer=LocationItem)
@@ -81,7 +85,7 @@ class VesselItem(scrapy.Item):
         return self['vessel']
 
 
-class ContainerItem(scrapy.Item):
+class ContainerItem(BaseCarrierItem):
     container_no = scrapy.Field()
     last_free_day = scrapy.Field()
     depot_last_free_day = scrapy.Field()
@@ -102,7 +106,7 @@ class ContainerItem(scrapy.Item):
         return self['container_no']
 
 
-class ContainerStatusItem(scrapy.Item):
+class ContainerStatusItem(BaseCarrierItem):
     container_no = scrapy.Field()
     description = scrapy.Field()
     timestamp = scrapy.Field()
