@@ -27,8 +27,9 @@ def test_parse(sample_loader, sub, mbl_no, container_no):
         html_text = fp.read()
 
     url_factory = SharedUrlFactory(home_url=CarrierCmduSpider.home_url, mbl_no=mbl_no)
+    url_builder = url_factory.get_container_url_builder()
     url_spec = UrlSpec(container_no=container_no)
-    url = url_factory.build_container_url(url_spec=url_spec)
+    url = url_builder.build_url_from_spec(spec=url_spec)
 
     response = TextResponse(
         url=url,

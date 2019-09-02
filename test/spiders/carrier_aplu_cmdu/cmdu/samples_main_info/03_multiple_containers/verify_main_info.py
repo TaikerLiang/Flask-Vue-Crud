@@ -8,13 +8,15 @@ class Verifier:
     def verify(self, results):
 
         url_factory = SharedUrlFactory(home_url=CarrierCmduSpider.home_url, mbl_no=self.mbl_no)
-        assert results[0].url == url_factory.build_container_url(
+        url_builder = url_factory.get_container_url_builder()
+
+        assert results[0].url == url_builder.build_url_from_spec(
             UrlSpec(
                     container_no='ECMU9893257',
             ),
         )
 
-        assert results[1].url == url_factory.build_container_url(
+        assert results[1].url == url_builder.build_url_from_spec(
             UrlSpec(
                     container_no='ECMU9836072',
             ),

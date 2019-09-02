@@ -5,7 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.spiders.carrier_aplu_cmdu import RoutingManager, CarrierCmduSpider, SharedUrlFactory
+from crawler.spiders.carrier_aplu_cmdu import RoutingManager, CarrierCmduSpider, SharedUrlFactory, UrlSpec
 from . import samples_main_info
 
 
@@ -32,7 +32,8 @@ def test_parse(sample_loader, sub, mbl_no):
         html_text = fp.read()
 
     url_factory = SharedUrlFactory(home_url=CarrierCmduSpider.home_url, mbl_no=mbl_no)
-    url = url_factory.build_bill_url()
+    url_builder = url_factory.get_bill_url_builder()
+    url = url_builder.build_url_from_spec(spec=UrlSpec())
 
     response = TextResponse(
         url=url,
@@ -61,7 +62,8 @@ def test_parse_error(sample_loader, sub, mbl_no, expect_exception):
         html_text = fp.read()
 
     url_factory = SharedUrlFactory(home_url=CarrierCmduSpider.home_url, mbl_no=mbl_no)
-    url = url_factory.build_bill_url()
+    url_builder = url_factory.get_bill_url_builder()
+    url = url_builder.build_url_from_spec(spec=UrlSpec())
 
     response = TextResponse(
         url=url,
