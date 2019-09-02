@@ -5,7 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.spiders.carrier_aplu_cmdu import UrlSpec, RoutingManager, CarrierCmduSpider, SharedUrlFactory
+from crawler.spiders.carrier_aplu_cmdu import RoutingManager, CarrierCmduSpider, SharedUrlFactory
 from . import samples_main_info
 
 

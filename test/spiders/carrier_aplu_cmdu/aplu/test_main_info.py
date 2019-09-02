@@ -4,7 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.spiders.carrier_aplu_cmdu import UrlSpec, CarrierApluSpider, RoutingManager, SharedUrlFactory
 from . import samples_main_info
 
