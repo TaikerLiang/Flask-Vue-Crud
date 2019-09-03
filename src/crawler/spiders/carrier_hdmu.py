@@ -263,8 +263,9 @@ class _Extractor:
     @staticmethod
     def extract_tracking_results(response):
         table_selector = response.css('#trackingForm div.base_table01')[0]
-        table_extractor = TableExtractor()
-        table = table_extractor.extract(table=table_selector, locator=TopLeftHeaderTableLocator())
+        table_locator = TopLeftHeaderTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
         red_blue_td_extractor = RedBlueTdExtractor()
 
         return {
@@ -287,8 +288,9 @@ class _Extractor:
     @staticmethod
     def extract_vessel(response):
         table_selector = response.css('#trackingForm div.base_table01')[3]
-        table_extractor = TableExtractor()
-        table = table_extractor.extract(table=table_selector, locator=TopHeaderTableLocator())
+        table_locator=TopHeaderTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
         red_blue_td_extractor = RedBlueTdExtractor()
 
         vessel_voyage_str = table.extract_cell('Vessel / Voyage', 0).split()
@@ -309,8 +311,9 @@ class _Extractor:
     @staticmethod
     def extract_customs_status(response):
         table_selector = response.css('#trackingForm div.base_table01')[4]
-        table_extractor = TableExtractor()
-        table = table_extractor.extract(table=table_selector, locator=TopLeftHeaderTableLocator())
+        table_locator = TopLeftHeaderTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
 
         return{
             'us_ams': table.extract_cell('US / AMS', 'Status') or None,
@@ -323,8 +326,9 @@ class _Extractor:
     @staticmethod
     def extract_cargo_delivery_info(response):
         table_selector = response.css('#trackingForm div.left_table01')[1]
-        table_extractor = TableExtractor()
-        table = table_extractor.extract(table=table_selector, locator=LeftHeaderTableLocator())
+        table_locator = LeftHeaderTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
 
         if table.has_header(left='Way Bill'):
             bl_type = 'Way Bill'
@@ -353,8 +357,9 @@ class _Extractor:
     @staticmethod
     def extract_empty_return_location(response):
         table_selector = response.css('#trackingForm div.left_table01')[2]
-        table_extractor = TableExtractor()
-        table = table_extractor.extract(table=table_selector, locator=LeftHeaderTableLocator())
+        table_locator = LeftHeaderTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
         fdd = table.extract_cell(0, 'Detention Freetime Expiry Date', extractor=IgnoreDashTdExtractor())
 
         return {
@@ -408,8 +413,9 @@ class _ContainerExtractor:
 
     def extract_container_info(self, response, container_content: ContainerContent):
         table_selector = self._get_conatiner_table(response=response)
-        table_extractor = TableExtractor()
-        table = table_extractor.extract(table=table_selector, locator=TopHeaderTableLocator())
+        table_locator = TopHeaderTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
         index = container_content.index
 
         if table.has_header(top='Last Free Day (Basic)'):
@@ -428,8 +434,9 @@ class _ContainerStatusExtractor:
     @staticmethod
     def extract_container_status(response):
         table_selector = response.css('#trackingForm div.base_table01')[5]
-        table_extractor = TableExtractor()
-        table = table_extractor.extract(table=table_selector, locator=TopHeaderTableLocator())
+        table_locator = TopHeaderTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
 
         for index, tr in enumerate(table_selector.css('tbody tr')):
             date = table.extract_cell('Date', index)
@@ -449,6 +456,7 @@ class _AvailabilityExtractor:
     @staticmethod
     def extract_availability(response):
         table_selector = response.css('table.ty03')
-        table_extractor = TableExtractor()
-        table = table_extractor.extract(table=table_selector, locator=TopHeaderTableLocator())
+        table_locator = TopHeaderTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
         return table.extract_cell('STATUS', 0)

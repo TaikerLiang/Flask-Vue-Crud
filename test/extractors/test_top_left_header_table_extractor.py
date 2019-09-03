@@ -52,10 +52,11 @@ def top_left_header_table_selector():
     ('top3', 'left3', '(3, 3)'),
 ])
 def test_get_td(top, left, expect, top_left_header_table_selector):
-    extractor = TableExtractor()
-    table_info = extractor.extract(table=top_left_header_table_selector, locator=TopLeftHeaderTableLocator())
+    locator = TopLeftHeaderTableLocator()
+    locator.parse(table=top_left_header_table_selector)
+    extractor = TableExtractor(table_locator=locator)
 
-    result = table_info.extract_cell(top=top, left=left)
+    result = extractor.extract_cell(top=top, left=left)
     assert result == expect
 
 
@@ -66,8 +67,9 @@ def test_get_td(top, left, expect, top_left_header_table_selector):
 def test_header_mismatch_error(top, left, top_left_header_table_selector):
     expect_exception = HeaderMismatchError
 
-    extractor = TableExtractor()
-    table_info = extractor.extract(table=top_left_header_table_selector, locator=TopLeftHeaderTableLocator())
+    locator = TopLeftHeaderTableLocator()
+    locator.parse(table=top_left_header_table_selector)
+    extractor = TableExtractor(table_locator=locator)
 
     with pytest.raises(expect_exception):
-        table_info.extract_cell(top=top, left=left)
+        extractor.extract_cell(top=top, left=left)

@@ -24,7 +24,7 @@ class BaseTableLocator:
         pass
 
 
-class TableInfo:
+class TableExtractor:
 
     def __init__(self, table_locator: BaseTableLocator):
         self._table_locator = table_locator
@@ -38,14 +38,6 @@ class TableInfo:
 
     def has_header(self, top=None, left=None) -> bool:
         return self._table_locator.has_header(top=top, left=left)
-
-
-class TableExtractor:
-
-    @staticmethod
-    def extract(table: Selector, locator: BaseTableLocator) -> TableInfo:
-        locator.parse(table=table)
-        return TableInfo(table_locator=locator)
 
 
 class TopHeaderTableLocator(BaseTableLocator):

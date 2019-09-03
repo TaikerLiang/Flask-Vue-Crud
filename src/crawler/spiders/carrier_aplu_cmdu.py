@@ -273,8 +273,9 @@ class _ContainerStatusTableExtractor:
     @staticmethod
     def extract(response) -> Dict:
         table_selector = response.css('div.o-datatable table')
-        table_extractor = TableExtractor()
-        table = table_extractor.extract(table=table_selector, locator=ContainerStatusTableLocator())
+        table_locator = ContainerStatusTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
 
         for index, selector in enumerate(response.css('table tbody tr')):
             is_actual = bool(table.extract_cell('Status', index, extractor=ActualIconTdExtractor()))
