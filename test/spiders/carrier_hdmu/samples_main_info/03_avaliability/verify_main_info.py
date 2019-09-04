@@ -61,7 +61,7 @@ class Verifier:
         assert results[3] == ContainerStatusItem(
             container_no='HMMU6015688',
             description='Empty returned',
-            timestamp='03-May-2019 1:23 PM',
+            local_date_time='03-May-2019 1:23 PM',
             location=LocationItem(name=None),
             transport=None,
         )
@@ -69,7 +69,7 @@ class Verifier:
         assert results[19] == ContainerStatusItem(
             container_no='HMMU6015688',
             description='Discharged',
-            timestamp='17-Apr-2019 2:40 PM',
+            local_date_time='17-Apr-2019 2:40 PM',
             location=LocationItem(name='TACOMA, WA'),
             transport='HYUNDAI CONFIDENCE V 577E',
         )
@@ -77,7 +77,7 @@ class Verifier:
         assert results[23] == ContainerStatusItem(
             container_no='HMMU6015688',
             description='Inland transportation started',
-            timestamp='29-Mar-2019 2:11 PM',
+            local_date_time='29-Mar-2019 2:11 PM',
             location=LocationItem(name='TAICHUNG, TAIWAN'),
             transport='Truck',
         )

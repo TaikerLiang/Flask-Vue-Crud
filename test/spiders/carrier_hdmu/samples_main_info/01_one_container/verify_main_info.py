@@ -63,7 +63,7 @@ class Verifier:
         assert results[3] == ContainerStatusItem(
             container_no='HDMU6681135',
             description='Empty returned',
-            timestamp='24-May-2019 8:54 AM',
+            local_date_time='24-May-2019 8:54 AM',
             location=LocationItem(name=None),
             transport=None,
         )
@@ -71,7 +71,7 @@ class Verifier:
         assert results[5] == ContainerStatusItem(
             container_no='HDMU6681135',
             description='Discharged',
-            timestamp='18-May-2019 12:50 AM',
+            local_date_time='18-May-2019 12:50 AM',
             location=LocationItem(name='LOS ANGELES, CA'),
             transport='MAERSK ENSENADA V 917N',
         )
@@ -79,7 +79,7 @@ class Verifier:
         assert results[9] == ContainerStatusItem(
             container_no='HDMU6681135',
             description='Gate In loading port',
-            timestamp='19-Apr-2019 11:18 AM',
+            local_date_time='19-Apr-2019 11:18 AM',
             location=LocationItem(name='YANTIAN, SHENZHEN, CHINA'),
             transport='Truck',
         )

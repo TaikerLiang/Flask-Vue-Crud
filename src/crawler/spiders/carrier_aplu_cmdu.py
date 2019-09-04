@@ -189,7 +189,7 @@ class ContainerHandler(BaseHandler):
         for container_status in _ContainerStatusTableExtractor.extract(response=response):
             yield ContainerStatusItem(
                 container_no=container_info['container_no'],
-                timestamp=container_status['timestamp'],
+                local_date_time=container_status['local_date_time'],
                 description=container_status['description'],
                 location=LocationItem(name=container_status['location']),
                 est_or_actual=container_status['est_or_actual'],
@@ -280,7 +280,7 @@ class _ContainerStatusTableExtractor:
         for index, selector in enumerate(response.css('table tbody tr')):
             is_actual = bool(table.extract_cell('Status', index, extractor=ActualIconTdExtractor()))
             yield {
-                'timestamp': table.extract_cell('Date', index),
+                'local_date_time': table.extract_cell('Date', index),
                 'description': table.extract_cell('Moves', index),
                 'location': table.extract_cell('Location', index),
                 'est_or_actual': 'A' if is_actual else 'E',

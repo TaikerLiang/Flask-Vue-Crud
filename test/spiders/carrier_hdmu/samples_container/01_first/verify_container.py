@@ -22,7 +22,7 @@ class Verifier:
         assert results[1] == ContainerStatusItem(
             container_no='DFSU6717570',
             description='Empty returned',
-            timestamp='24-Jul-2019 4:08 PM',
+            local_date_time='24-Jul-2019 4:08 PM',
             location=LocationItem(name=None),
             transport=None,
         )
@@ -30,7 +30,7 @@ class Verifier:
         assert results[3] == ContainerStatusItem(
             container_no='DFSU6717570',
             description='Discharged',
-            timestamp='21-Jul-2019 12:23 AM',
+            local_date_time='21-Jul-2019 12:23 AM',
             location=LocationItem(name='LOS ANGELES, CA'),
             transport='HYUNDAI FAITH V 082E',
         )
@@ -38,7 +38,7 @@ class Verifier:
         assert results[7] == ContainerStatusItem(
             container_no='DFSU6717570',
             description='Gate In loading port',
-            timestamp='03-Jul-2019 2:01 AM',
+            local_date_time='03-Jul-2019 2:01 AM',
             location=LocationItem(name='SHANGHAI,CHINA'),
             transport='Truck',
         )

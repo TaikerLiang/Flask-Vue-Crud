@@ -63,7 +63,7 @@ class Verifier:
         assert results[3] == ContainerStatusItem(
             container_no='CAIU6185140',
             description='Vessel Departed',
-            timestamp='08-Aug-2019 3:30 AM',
+            local_date_time='08-Aug-2019 3:30 AM',
             location=LocationItem(name='SHANGHAI,CHINA'),
             transport='HYUNDAI COURAGE V 081E',
         )
@@ -71,7 +71,7 @@ class Verifier:
         assert results[4] == ContainerStatusItem(
             container_no='CAIU6185140',
             description='Shipped on',
-            timestamp='08-Aug-2019 3:30 AM',
+            local_date_time='08-Aug-2019 3:30 AM',
             location=LocationItem(name='SHANGHAI,CHINA'),
             transport='HYUNDAI COURAGE V 081E',
         )
@@ -79,7 +79,7 @@ class Verifier:
         assert results[5] == ContainerStatusItem(
             container_no='CAIU6185140',
             description='Gate In loading port',
-            timestamp='06-Aug-2019 1:53 AM',
+            local_date_time='06-Aug-2019 1:53 AM',
             location=LocationItem(name='SHANGHAI,CHINA'),
             transport='Truck',
         )
@@ -87,7 +87,7 @@ class Verifier:
         assert results[6] == ContainerStatusItem(
             container_no='CAIU6185140',
             description='Released to the shipper for stuffing',
-            timestamp='02-Aug-2019 4:57 AM',
+            local_date_time='02-Aug-2019 4:57 AM',
             location=LocationItem(name='SHANGHAI,CHINA'),
             transport='Truck',
         )

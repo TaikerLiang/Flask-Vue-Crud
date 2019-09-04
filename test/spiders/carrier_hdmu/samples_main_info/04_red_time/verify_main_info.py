@@ -75,7 +75,7 @@ class Verifier:
         assert results[3] == ContainerStatusItem(
             container_no='DFSU6966171',
             description='Gate In loading port',
-            timestamp='02-Aug-2019 11:06 PM',
+            local_date_time='02-Aug-2019 11:06 PM',
             location=LocationItem(name='NINGBO, CHINA'),
             transport='Truck',
         )

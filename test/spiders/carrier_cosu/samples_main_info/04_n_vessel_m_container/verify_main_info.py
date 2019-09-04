@@ -109,7 +109,7 @@ class Verifier:
         #     'description': {
         #         ''
         #     },
-        #     'timestamp': '',
+        #     'local_date_time': '',
         #     'location': ''
         # })
 

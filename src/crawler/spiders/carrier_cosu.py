@@ -223,7 +223,7 @@ class CarrierCosuSpider(BaseCarrierSpider):
             yield ContainerStatusItem(
                 container_no=container['container_no'],
                 description=container['status'],
-                timestamp=container['timestamp'],
+                local_date_time=container['local_date_time'],
                 location=LocationItem(name=container['location']),
                 transport=container['transport'],
             )
@@ -340,7 +340,7 @@ class _ContainerStatusExtractor:
                 'container_no': info['containerNumber'],
                 'status': info['containerNumberStatus'],
                 'transport': info['transportation'],
-                'timestamp': info['timeOfIssue'],
+                'local_date_time': info['timeOfIssue'],
                 'location': info['location']
             })
         return return_list

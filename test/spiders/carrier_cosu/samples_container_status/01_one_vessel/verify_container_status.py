@@ -11,7 +11,7 @@ class Verifier:
         assert results[0] == ContainerStatusItem(**{
             'container_no': 'CSNU6276212',
             'description': 'Empty Equipment Returned',
-            'timestamp': '2019-06-06 13:14',
+            'local_date_time': '2019-06-06 13:14',
             'location': LocationItem(**{'name': 'Pacific Container Terminal,Long Beach,California,United States'}),
             'transport': 'Truck',
         })
@@ -19,7 +19,7 @@ class Verifier:
         assert results[1] == ContainerStatusItem(**{
             'container_no': 'CSNU6276212',
             'description': 'Gate-out from Final Hub',
-            'timestamp': '2019-06-05 08:34',
+            'local_date_time': '2019-06-05 08:34',
             'location': LocationItem(**{'name': 'American President Line,Los Angeles,California,United States'}),
             'transport': 'Truck',
         })
@@ -27,7 +27,7 @@ class Verifier:
         assert results[2] == ContainerStatusItem(**{
             'container_no': 'CSNU6276212',
             'description': 'Discharged at Last POD',
-            'timestamp': '2019-06-01 15:19',
+            'local_date_time': '2019-06-01 15:19',
             'location': LocationItem(**{'name': 'American President Line,Los Angeles,California,United States'}),
             'transport': ' ',
 
@@ -36,7 +36,7 @@ class Verifier:
         assert results[3] == ContainerStatusItem(**{
             'container_no': 'CSNU6276212',
             'description': 'Loaded at First POL',
-            'timestamp': '2019-05-07 23:00',
+            'local_date_time': '2019-05-07 23:00',
             'location': LocationItem(**{'name': 'JICT.1 (UTC-1),Jakarta,Jakarta Raya,Indonesia'}),
             'transport': 'Vessel'
         })
@@ -44,7 +44,7 @@ class Verifier:
         assert results[4] == ContainerStatusItem(**{
             'container_no': 'CSNU6276212',
             'description': 'Cargo Received',
-            'timestamp': '2019-05-04 21:46',
+            'local_date_time': '2019-05-04 21:46',
             'location': LocationItem(**{'name': 'JICT.1 (UTC-1),Jakarta,Jakarta Raya,Indonesia'}),
             'transport': 'Truck',
         })
@@ -52,7 +52,7 @@ class Verifier:
         assert results[5] == ContainerStatusItem(**{
             'container_no': 'CSNU6276212',
             'description': 'Gate-In at First POL',
-            'timestamp': '2019-05-04 21:46',
+            'local_date_time': '2019-05-04 21:46',
             'location': LocationItem(**{'name': 'JICT.1 (UTC-1),Jakarta,Jakarta Raya,Indonesia'}),
             'transport': 'Truck',
         })

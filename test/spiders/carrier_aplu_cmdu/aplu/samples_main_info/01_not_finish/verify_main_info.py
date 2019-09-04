@@ -22,7 +22,7 @@ class Verifier:
 
         assert results[2] == ContainerStatusItem(
             container_no='TGCU0067220',
-            timestamp='Thu 08 Aug 2019 21:25',
+            local_date_time='Thu 08 Aug 2019 21:25',
             description='Empty in depot',
             location=LocationItem(name='HAIPHONG'),
             est_or_actual='A',
@@ -30,7 +30,7 @@ class Verifier:
 
         assert results[6] == ContainerStatusItem(
             container_no='TGCU0067220',
-            timestamp='Mon 19 Aug 2019 11:04',
+            local_date_time='Mon 19 Aug 2019 11:04',
             description='Discharged in transhipment',
             location=LocationItem(name='NANSHA'),
             est_or_actual='A'
@@ -38,7 +38,7 @@ class Verifier:
 
         assert results[8] == ContainerStatusItem(
             container_no='TGCU0067220',
-            timestamp='Sun 08 Sep 2019 15:00',
+            local_date_time='Sun 08 Sep 2019 15:00',
             description='Arrival final port of discharge',
             location=LocationItem(name='LONG BEACH, CA'),
             est_or_actual='E'

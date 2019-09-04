@@ -22,7 +22,7 @@ class Verifier:
 
         assert results[2] == ContainerStatusItem(
             container_no='TCLU9692715',
-            timestamp='Wed 03 Jul 2019 07:21',
+            local_date_time='Wed 03 Jul 2019 07:21',
             description='Empty to shipper',
             location=LocationItem(name='XIAMEN'),
             est_or_actual='A',
@@ -30,7 +30,7 @@ class Verifier:
 
         assert results[7] == ContainerStatusItem(
             container_no='TCLU9692715',
-            timestamp='Fri 02 Aug 2019 14:15',
+            local_date_time='Fri 02 Aug 2019 14:15',
             description='Empty in depot',
             location=LocationItem(name='LOS ANGELES, CA'),
             est_or_actual='A'

@@ -71,7 +71,7 @@ class Verifier:
         assert results[3] == ContainerStatusItem(
             container_no='CAIU7479659',
             description='Vessel Departed',
-            timestamp='06-Aug-2019 3:36 AM',
+            local_date_time='06-Aug-2019 3:36 AM',
             location=LocationItem(name='KAOHSIUNG, TAIWAN'),
             transport='WIDE INDIA V 010N',
         )
@@ -79,7 +79,7 @@ class Verifier:
         assert results[4] == ContainerStatusItem(
             container_no='CAIU7479659',
             description='Shipped on',
-            timestamp='05-Aug-2019 11:34 PM',
+            local_date_time='05-Aug-2019 11:34 PM',
             location=LocationItem(name='KAOHSIUNG, TAIWAN'),
             transport='WIDE INDIA V 010N',
         )
@@ -87,7 +87,7 @@ class Verifier:
         assert results[5] == ContainerStatusItem(
             container_no='CAIU7479659',
             description='Gate In loading port',
-            timestamp='02-Aug-2019 8:30 PM',
+            local_date_time='02-Aug-2019 8:30 PM',
             location=LocationItem(name='KAOHSIUNG, TAIWAN'),
             transport='Truck',
         )
@@ -95,7 +95,7 @@ class Verifier:
         assert results[6] == ContainerStatusItem(
             container_no='CAIU7479659',
             description='Inland transportation started',
-            timestamp='02-Aug-2019 1:58 PM',
+            local_date_time='02-Aug-2019 1:58 PM',
             location=LocationItem(name='KEELUNG, TAIWAN'),
             transport='Truck',
         )
@@ -103,7 +103,7 @@ class Verifier:
         assert results[7] == ContainerStatusItem(
             container_no='CAIU7479659',
             description='Gate in',
-            timestamp='31-Jul-2019 5:00 PM',
+            local_date_time='31-Jul-2019 5:00 PM',
             location=LocationItem(name='KEELUNG, TAIWAN'),
             transport='Truck',
         )
@@ -111,7 +111,7 @@ class Verifier:
         assert results[8] == ContainerStatusItem(
             container_no='CAIU7479659',
             description='Released to the shipper for stuffing',
-            timestamp='31-Jul-2019 4:55 PM',
+            local_date_time='31-Jul-2019 4:55 PM',
             location=LocationItem(name='KEELUNG, TAIWAN'),
             transport='Truck',
         )

@@ -63,7 +63,7 @@ class Verifier:
         assert results[3] == ContainerStatusItem(
             container_no='HDMU2752605',
             description='Discharged',
-            timestamp='16-Aug-2019 12:24 AM',
+            local_date_time='16-Aug-2019 12:24 AM',
             location=LocationItem(name='LOS ANGELES, CA'),
             transport='HYUNDAI BRAVE V 079E',
         )
@@ -71,7 +71,7 @@ class Verifier:
         assert results[5] == ContainerStatusItem(
             container_no='HDMU2752605',
             description='Vessel Departed',
-            timestamp='01-Aug-2019 11:00 AM',
+            local_date_time='01-Aug-2019 11:00 AM',
             location=LocationItem(name='SHANGHAI,CHINA'),
             transport='HYUNDAI BRAVE V 079E',
         )
@@ -79,7 +79,7 @@ class Verifier:
         assert results[7] == ContainerStatusItem(
             container_no='HDMU2752605',
             description='Gate In loading port',
-            timestamp='27-Jul-2019 3:46 PM',
+            local_date_time='27-Jul-2019 3:46 PM',
             location=LocationItem(name='SHANGHAI,CHINA'),
             transport='Truck',
         )
