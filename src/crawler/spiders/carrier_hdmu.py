@@ -9,7 +9,6 @@ from crawler.core_carrier.items import MblItem, LocationItem, VesselItem, Contai
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import (
     TableExtractor, TopHeaderTableLocator, TopLeftHeaderTableLocator, LeftHeaderTableLocator)
-from crawler.utils import merge_yields
 
 
 class UrlFactory:
@@ -102,7 +101,6 @@ class CarrierHdmuSpider(BaseCarrierSpider):
             callback=self.parse_main_info,
         )
 
-    @merge_yields
     def parse_main_info(self, response):
         err_message = _Extractor.extract_error_message(response=response)
         if err_message == 'B/L number is invalid.  Please try it again with correct number.':
@@ -182,7 +180,6 @@ class CarrierHdmuSpider(BaseCarrierSpider):
                     },
                 )
 
-    @merge_yields
     def parse_container(self, response):
         container_content = response.meta['container_content']
 
