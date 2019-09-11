@@ -140,6 +140,7 @@ class CarrierCosuSpider(BaseCarrierSpider):
             )
             yield response.follow(url=url, callback=self.parse_container)
     
+    @merge_yields
     def parse_booking_main_info(self, response):
         response_dict = json.loads(response.text)
         content = response_dict['data']['content']
@@ -212,6 +213,7 @@ class CarrierCosuSpider(BaseCarrierSpider):
             )
             yield response.follow(url=url, callback=self.parse_container)
 
+    @merge_yields
     def parse_container(self, response):
         # test extract
         container_status_extractor = _ContainerStatusExtractor()
