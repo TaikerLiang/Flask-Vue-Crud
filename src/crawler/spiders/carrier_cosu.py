@@ -7,6 +7,7 @@ import scrapy
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.items import LocationItem, MblItem, VesselItem, ContainerStatusItem, ContainerItem
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
+from crawler.utils.decorators import merge_yields
 
 
 class UrlFactory:
@@ -54,6 +55,7 @@ class CarrierCosuSpider(BaseCarrierSpider):
         url = self.urlFactory.build_bill_url(mbl_no=self.mbl_no)
         yield scrapy.Request(url=url, callback=self.parse_main_info)
 
+    @merge_yields
     def parse_main_info(self, response):
         response_dict = json.loads(response.text)
         message = response_dict['message']

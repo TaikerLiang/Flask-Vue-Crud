@@ -9,6 +9,7 @@ from crawler.core_carrier.items import MblItem, LocationItem, VesselItem, Contai
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import (
     TableExtractor, TopHeaderTableLocator, TopLeftHeaderTableLocator, LeftHeaderTableLocator)
+from crawler.utils.decorators import merge_yields
 
 
 class UrlFactory:
@@ -89,8 +90,11 @@ class CarrierHdmuSpider(BaseCarrierSpider):
     def parse(self, response):
         raise RuntimeError()
 
-    # for cookies purpose
+    @merge_yields
     def parse_home_page(self, response):
+        """
+        for cookies purpose
+        """
         formdata = self.formdata_factory.build_main_info_formdata(mbl_no=self.mbl_no)
         url = self.url_factory.build_mbl_url()
 
@@ -101,6 +105,7 @@ class CarrierHdmuSpider(BaseCarrierSpider):
             callback=self.parse_main_info,
         )
 
+    @merge_yields
     def parse_main_info(self, response):
         err_message = _Extractor.extract_error_message(response=response)
         if err_message == 'B/L number is invalid.  Please try it again with correct number.':
@@ -180,6 +185,7 @@ class CarrierHdmuSpider(BaseCarrierSpider):
                     },
                 )
 
+    @merge_yields
     def parse_container(self, response):
         container_content = response.meta['container_content']
 
@@ -230,6 +236,7 @@ class CarrierHdmuSpider(BaseCarrierSpider):
                 transport=container['mode']
             )
 
+    @merge_yields
     def parse_availability(self, response):
         container_item = response.meta['container_item']
 
