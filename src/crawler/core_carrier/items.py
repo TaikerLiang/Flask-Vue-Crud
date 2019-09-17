@@ -62,6 +62,13 @@ class MblItem(BaseCarrierItem):
     latest_update = scrapy.Field()
     firms_code = scrapy.Field()
     freight_date = scrapy.Field()
+    est_onboard_date = scrapy.Field()
+    us_filing_status = scrapy.Field()
+    us_filing_date = scrapy.Field()
+    carrier_status = scrapy.Field()
+    carrier_release_date = scrapy.Field()
+    customs_release_status = scrapy.Field()
+    customs_release_date = scrapy.Field()
 
 
 class VesselItem(BaseCarrierItem):
