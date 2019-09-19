@@ -14,3 +14,6 @@
 
 # local development
 src/scrapinghub.yml
+
+# coverage
+.coverage

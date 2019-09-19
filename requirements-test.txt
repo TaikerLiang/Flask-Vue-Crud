@@ -1,0 +1,4 @@
+Scrapy==1.7.3
+pytest==5.1.2
+pytest-cov==2.7.1
+requests==2.22.0

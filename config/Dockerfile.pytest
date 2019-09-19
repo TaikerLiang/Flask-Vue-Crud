@@ -1,0 +1,19 @@
+FROM python:3.7
+
+ENV PYTHONPATH /code/src
+ENV PYTHONUNBUFFERED 1
+
+COPY ./requirements-test.txt /code/requirements-test.txt
+WORKDIR /code
+
+# clean up pycache and pyc files
+RUN rm -rf __pycache__ && \
+    find . -name '*.pyc' -delete && \
+    pip install -r requirements-test.txt
+
+COPY ./src /code/src
+COPY ./test /code/test
+
+CMD pytest --junitxml=./test_result/test_report.xml \
+           --cov=./src/ --cov-report=xml:./test_result/coverage.xml \
+           ./test/
