@@ -1,0 +1,6 @@
+---
+- name: SCRAPINGHUB-XML | prepare scrapinghub.yml
+  local_action:
+    module: template
+    src: templates/scrapinghub.yml.j2
+    dest: '{{ local_proj_dir }}/src/scrapinghub.yml'

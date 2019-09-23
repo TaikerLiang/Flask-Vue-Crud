@@ -1,0 +1,9 @@
+---
+- name: SCRAPINGHUB-DEPLOY | run shub deploy
+  local_action:
+    module: command
+    args:
+      chdir: '{{ local_proj_dir }}/src/'
+    argv:
+      - shub
+      - deploy

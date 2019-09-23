@@ -2,6 +2,8 @@
 import groovy.transform.Field
 
 
+@Field def SHUB_APIKEY_CREDENTIAL_ID = 'scrapinghub-hardcore-apikey'
+
 @Field def STATUS_SUCCESS = 'Success'
 @Field def STATUS_FAILURE = 'Failure'
 
@@ -45,11 +47,15 @@ pipeline {
             }
         }
         stage('Deploy') {
-            when { expression { env.BRANCH_NAME in ['stage'] } }
+            when { expression { env.BRANCH_NAME in ['stage', 'master'] } }
             steps {
+                setupDeployEnv()
                 runDeploy()
             }
             post {
+                success {
+                    onSuccess('Deploy')
+                }
                 failure {
                     onFail('Deploy')
                 }
@@ -69,7 +75,25 @@ def runTest() {
 
 def runDeploy() {
     echo "runDeploy base on branch=${env.BRANCH_NAME}"
+    withCredentials([string(credentialsId: SHUB_APIKEY_CREDENTIAL_ID, variable: 'SHUB_APIKEY')]) {
+        execAnsiblePlaybook("-i servers/${env.BRANCH_NAME} -v deploy.yml")
+    }
 }
+
+def setupDeployEnv() {
+    withPythonEnv('python') {
+        sh 'pip install -r requirements-deploy.txt'
+    }
+}
+
+def execAnsiblePlaybook(argv) {
+    withPythonEnv('python') {
+        dir('playbooks') {
+            sh "ansible-playbook ${argv}"
+        }
+    }
+}
+
 
 def onSuccess(stage) {
     def info = "${stage} Success"

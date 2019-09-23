@@ -4,6 +4,7 @@
 #
 #    pip-compile --output-file=requirements-dev.txt requirements-dev.in
 #
+ansible==2.8.5
 appnope==0.1.0            # via ipython
 asn1crypto==0.24.0
 atomicwrites==1.3.0
@@ -14,13 +15,15 @@ bleach==3.1.0             # via nbconvert
 certifi==2019.9.11
 cffi==1.12.3
 chardet==3.0.4
-click==7.0                # via pip-tools
+click==7.0
 constantly==15.1.0
 coverage==4.5.4
 cryptography==2.7
 cssselect==1.1.0
 decorator==4.4.0          # via ipython, traitlets
 defusedxml==0.6.0         # via nbconvert
+docker-py==1.10.6
+docker-pycreds==0.4.0
 entrypoints==0.3          # via nbconvert
 hyperlink==19.0.0
 idna==2.8
@@ -31,14 +34,14 @@ ipython-genutils==0.2.0   # via nbformat, notebook, qtconsole, traitlets
 ipython==7.8.0            # via ipykernel, ipywidgets, jupyter-console
 ipywidgets==7.5.1         # via jupyter
 jedi==0.15.1              # via ipython
-jinja2==2.10.1            # via nbconvert, notebook
+jinja2==2.10.1
 jsonschema==3.0.2         # via nbformat
 jupyter-client==5.3.3     # via ipykernel, jupyter-console, notebook, qtconsole
 jupyter-console==6.0.0    # via jupyter
 jupyter-core==4.5.0       # via jupyter-client, nbconvert, nbformat, notebook, qtconsole
 jupyter==1.0.0
 lxml==4.4.1
-markupsafe==1.1.1         # via jinja2
+markupsafe==1.1.1
 mistune==0.8.4            # via nbconvert
 more-itertools==7.2.0
 nbconvert==5.6.0          # via jupyter, notebook
@@ -68,26 +71,34 @@ pyrsistent==0.15.4        # via jsonschema
 pytest-cov==2.7.1
 pytest==5.1.2
 python-dateutil==2.8.0    # via jupyter-client
+pyyaml==5.1.2
 pyzmq==18.1.0             # via jupyter-client, notebook
 qtconsole==4.5.5          # via jupyter
 queuelib==1.5.0
 requests==2.22.0
+retrying==1.3.3
+scrapinghub==2.2.1
 scrapy==1.7.3
 send2trash==1.5.0         # via notebook
 service-identity==18.1.0
+shub==2.9.0
 six==1.12.0
 terminado==0.8.2          # via notebook
 testpath==0.4.2           # via nbconvert
+toml==0.10.0
 tornado==6.0.3            # via ipykernel, jupyter-client, notebook, terminado
+tqdm==4.36.1
 traitlets==4.3.2          # via ipykernel, ipython, ipywidgets, jupyter-client, jupyter-core, nbconvert, nbformat, notebook, qtconsole
 twisted==19.7.0
 urllib3==1.25.5
 w3lib==1.21.0
 wcwidth==0.1.7
 webencodings==0.5.1       # via bleach
+websocket-client==0.56.0
 widgetsnbextension==3.5.1  # via ipywidgets
 zipp==0.6.0
 zope.interface==4.6.0
 
 # The following packages are considered to be unsafe in a requirements file:
+# pip==19.2.3               # via shub
 # setuptools==41.2.0        # via ipython, jsonschema, pyhamcrest, zope.interface
