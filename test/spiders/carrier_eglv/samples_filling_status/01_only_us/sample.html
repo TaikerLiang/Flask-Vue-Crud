@@ -1,0 +1,55 @@
+
+
+<script>
+function amsDetail(customs,filing_pod)
+{
+    winContent = window.open("","amsDetail","left=50,top=80,width=800,height=350,toolbar=no,menubar=yes,scrollbars=yes,resizable=yes");
+    if (customs != null || customs != null){
+        document.frmAMSDetail.customs.value = customs;
+        document.frmAMSDetail.filing_pod.value = filing_pod;
+    }
+    document.frmAMSDetail.submit();
+    winContent.focus();
+}
+</script>
+          
+        <br/>
+        <table width="97%" cellspacing="1" cellpadding="2" border="0" bgcolor="#999999" align="center">
+        <tr><td colspan="8" class="f13tabb2" align="left">Advance Filing Status</td></tr>
+          
+                <tr class="f12rown2" align="center">
+                    
+                                <td>Customs</td> 
+                    
+                                <td>Description</td> 
+                    
+                                <td>Filing POL</td> 
+                    
+                                <td>Filing POD</td> 
+                    
+                                <td>Filing VSL&#x2f;VOY</td> 
+                    
+                                <td>Date</td> 
+                                            
+                </tr>
+                  
+                <tr class="f12rown1" align="center">
+                    
+                                <td>US</td> 
+                    
+                                <td><a href="javascript:amsDetail('US','USBOS');">Filing OK</a></td>
+                    
+                                <td>PUSAN &#x28;KR&#x29;</td> 
+                    
+                                <td>BOSTON, MA &#x28;US&#x29;</td> 
+                    
+                                <td>EVER LIVEN 0915E</td> 
+                    
+                                <td>AUG-16-2019</td> 
+                                            
+                </tr>
+        
+        </table>
+
+
+      

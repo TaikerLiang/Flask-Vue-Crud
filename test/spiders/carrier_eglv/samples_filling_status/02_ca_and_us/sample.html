@@ -1,0 +1,71 @@
+
+
+<script>
+function amsDetail(customs,filing_pod)
+{
+    winContent = window.open("","amsDetail","left=50,top=80,width=800,height=350,toolbar=no,menubar=yes,scrollbars=yes,resizable=yes");
+    if (customs != null || customs != null){
+        document.frmAMSDetail.customs.value = customs;
+        document.frmAMSDetail.filing_pod.value = filing_pod;
+    }
+    document.frmAMSDetail.submit();
+    winContent.focus();
+}
+</script>
+          
+        <br/>
+        <table width="97%" cellspacing="1" cellpadding="2" border="0" bgcolor="#999999" align="center">
+        <tr><td colspan="8" class="f13tabb2" align="left">Advance Filing Status</td></tr>
+          
+                <tr class="f12rown2" align="center">
+                    
+                                <td>Customs</td> 
+                    
+                                <td>Description</td> 
+                    
+                                <td>Filing POL</td> 
+                    
+                                <td>Filing POD</td> 
+                    
+                                <td>Filing VSL&#x2f;VOY</td> 
+                    
+                                <td>Date</td> 
+                                            
+                </tr>
+                  
+                <tr class="f12rown1" align="center">
+                    
+                                <td>CA</td> 
+                    
+                                <td><a href="javascript:amsDetail('CA','CAVCR');">Filing OK</a></td>
+                    
+                                <td>NINGBO, CHINA &#x28;CN&#x29;</td> 
+                    
+                                <td>VANCOUVER, BC &#x28;CA&#x29;</td> 
+                    
+                                <td>EVER EXCEL 0219-139E</td> 
+                    
+                                <td>JUL-10-2019</td> 
+                                            
+                </tr>
+                  
+                <tr class="f12rown1" align="center">
+                    
+                                <td>US</td> 
+                    
+                                <td><a href="javascript:amsDetail('US','USTCM');">Filing OK</a></td>
+                    
+                                <td>NINGBO, CHINA &#x28;CN&#x29;</td> 
+                    
+                                <td>TACOMA, WA &#x28;US&#x29;</td> 
+                    
+                                <td>EVER EXCEL 0219E</td> 
+                    
+                                <td>JUL-10-2019</td> 
+                                            
+                </tr>
+        
+        </table>
+
+
+      
