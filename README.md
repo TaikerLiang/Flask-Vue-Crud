@@ -29,9 +29,9 @@ pip install -U pip-tools
 Compile
 
 ```bash
-pip-compile --output-file src/requirements-scrapy_cloud.txt src/requirements-scrapy_cloud.in
-pip-compile --output-file requirements-base.txt requirements-base.in
-pip-compile --output-file requirements-test.txt requirements-test.in
-pip-compile --output-file requirements-deploy.txt requirements-deploy.in
-pip-compile --output-file requirements-dev.txt requirements-dev.in
+pip-compile -U --output-file src/requirements-scrapy_cloud.txt src/requirements-scrapy_cloud.in
+pip-compile -U --output-file requirements-base.txt requirements-base.in
+pip-compile -U --output-file requirements-test.txt requirements-test.in
+pip-compile -U --output-file requirements-deploy.txt requirements-deploy.in
+pip-compile -U --output-file requirements-dev.txt requirements-dev.in
 ```

@@ -21,11 +21,11 @@ pyyaml==5.1.2             # via ansible, shub
 requests==2.22.0          # via docker-py, scrapinghub, shub
 retrying==1.3.3           # via scrapinghub, shub
 scrapinghub==2.2.1        # via shub
-shub==2.9.0
+shub==2.10.0
 six==1.12.0               # via cryptography, docker-py, docker-pycreds, retrying, scrapinghub, shub, websocket-client
 toml==0.10.0              # via shub
 tqdm==4.36.1              # via shub
-urllib3==1.25.5           # via requests
+urllib3==1.25.6           # via requests
 websocket-client==0.56.0  # via docker-py
 
 # The following packages are considered to be unsafe in a requirements file:
