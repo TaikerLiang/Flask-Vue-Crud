@@ -16,20 +16,15 @@ pipeline {
     agent any
 
     stages {
-        stage('Checkout') {
-            steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: scm.branches,
-                    extensions: scm.extensions + [[$class: 'LocalBranch']],
-                ])
-                script {
-                    env.git_commit_short = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+        stage('Test') {
+            when {
+                anyOf {
+                    branch 'develop'
+                    branch 'stage'
+                    branch 'master'
+                    changeRequest()
                 }
             }
-        }
-        stage('Test') {
-            when { expression { env.BRANCH_NAME in ['develop', 'stage', 'master'] } }
             steps {
                 runTest()
             }
@@ -47,7 +42,12 @@ pipeline {
             }
         }
         stage('Deploy') {
-            when { expression { env.BRANCH_NAME in ['stage', 'master'] } }
+            when {
+                anyOf {
+                    branch 'stage'
+                    branch 'master'
+                }
+            }
             steps {
                 setupDeployEnv()
                 runDeploy()
