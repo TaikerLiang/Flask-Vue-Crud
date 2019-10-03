@@ -72,7 +72,7 @@ class MblItem(BaseCarrierItem):
 
 
 class VesselItem(BaseCarrierItem):
-    key = scrapy.Field()
+    vessel_key = scrapy.Field()
     vessel = scrapy.Field()
     voyage = scrapy.Field()
     pol = scrapy.Field(serializer=LocationItem)
@@ -88,11 +88,11 @@ class VesselItem(BaseCarrierItem):
 
     @property
     def key(self):
-        return self['key'] or self['vessel']
+        return self.get('vessel_key') or self['vessel']
 
 
 class ContainerItem(BaseCarrierItem):
-    key = scrapy.Field()
+    container_key = scrapy.Field()
     container_no = scrapy.Field()
     last_free_day = scrapy.Field()
     depot_last_free_day = scrapy.Field()
@@ -110,11 +110,11 @@ class ContainerItem(BaseCarrierItem):
 
     @property
     def key(self):
-        return self['key'] or self['container_no']
+        return self.get('container_key') or self['container_no']
 
 
 class ContainerStatusItem(BaseCarrierItem):
-    key = scrapy.Field()
+    container_key = scrapy.Field()
     container_no = scrapy.Field()
     description = scrapy.Field()
     local_date_time = scrapy.Field()
@@ -124,4 +124,4 @@ class ContainerStatusItem(BaseCarrierItem):
 
     @property
     def key(self):
-        return self['key'] or self['container_no']
+        return self.get('container_key') or self['container_no']
