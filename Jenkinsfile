@@ -17,6 +17,11 @@ pipeline {
 
     stages {
         stage('Test') {
+            agent {
+                docker {
+                    image 'python:3.7'
+                }
+            }
             when {
                 anyOf {
                     branch 'develop'
@@ -24,9 +29,6 @@ pipeline {
                     branch 'master'
                     changeRequest()
                 }
-            }
-            docker {
-                image 'python:3.7'
             }
             environment {
                 HOME = "$WORKSPACE"
