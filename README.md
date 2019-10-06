@@ -6,15 +6,14 @@ Install requirements
 
 ```bash
 pip install -U pip setuptools
-pip install -r requirements-dev.txt
+pip install -e '.[dev]'
 ```
 
 
 ## Run Tests
 
 ```bash
-docker-compose -f docker-compose.test.yml up --build --force-recreate
-docker-compose -f docker-compose.test.yml down --remove-orphans
+epsc test
 ```
 
 
@@ -31,7 +30,13 @@ Compile
 ```bash
 pip-compile -U --output-file src/requirements-scrapy_cloud.txt src/requirements-scrapy_cloud.in
 pip-compile -U --output-file requirements-base.txt requirements-base.in
-pip-compile -U --output-file requirements-test.txt requirements-test.in
+pip-compile -U --output-file requirements-tests.txt requirements-tests.in
 pip-compile -U --output-file requirements-deploy.txt requirements-deploy.in
 pip-compile -U --output-file requirements-dev.txt requirements-dev.in
+```
+
+Verify
+
+```
+pip install -e '.[dev,tests,deploy]'
 ```

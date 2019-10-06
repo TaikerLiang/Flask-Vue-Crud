@@ -9,6 +9,9 @@
 # pyenv
 .python-version
 
+# setuptools
+*.egg-info
+
 # pycharm
 .idea/
 

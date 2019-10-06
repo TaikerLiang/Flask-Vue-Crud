@@ -1,5 +1,1 @@
--r requirements-base.txt
--r requirements-test.txt
--r requirements-deploy.txt
-jupyter
-pip-tools
+pytest

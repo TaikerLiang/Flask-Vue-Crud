@@ -25,13 +25,21 @@ pipeline {
                     changeRequest()
                 }
             }
+            docker {
+                image 'python:3.7'
+            }
+            environment {
+                HOME = "$WORKSPACE"
+                PYTHONDONTWRITEBYTECODE = 1
+                PYTHONUNBUFFERED = 1
+            }
             steps {
                 runTest()
             }
             post {
                 always {
-                    junit 'test_result/test_report.xml'
-                    cobertura coberturaReportFile: 'test_result/coverage.xml'
+                    junit 'pytest_report.xml'
+                    cobertura coberturaReportFile: 'pytest_coverage.xml'
                 }
                 success {
                     onSuccess('Test')
@@ -69,8 +77,11 @@ pipeline {
 
 
 def runTest() {
-    sh 'docker-compose -f docker-compose.test.yml up --build --force-recreate'
-    sh 'docker-compose -f docker-compose.test.yml down --remove-orphans'
+    def userPipPackageBase = sh([returnStdout: true, script: 'python -m site --user-base']).trim()
+    echo "userPipPackageBase=${userPipPackageBase}"
+
+    sh "pip install -e '.[dev,tests]' --user --no-cache"
+    sh "${userPipPackageBase}/bin/mycli test --pytest-args='-p no:cacheprovider --junitxml=pytest_report.xml --cov=src/ --cov-report=xml:pytest_coverage.xml'"
 }
 
 def runDeploy() {
