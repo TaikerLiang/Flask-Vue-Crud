@@ -16,7 +16,9 @@ import groovy.transform.Field
 
 pipeline {
     agent any
-
+    environment {
+        GIT_COMMIT_SHORT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+    }
     stages {
         stage('Test') {
             agent {
@@ -89,9 +91,9 @@ def runTest() {
 }
 
 def runDeploy() {
-    echo "runDeploy base on branch=${env.BRANCH_NAME}"
+    echo "runDeploy base on branch=${BRANCH_NAME}"
     withCredentials([string(credentialsId: SHUB_APIKEY_CREDENTIAL_ID, variable: 'SHUB_APIKEY')]) {
-        execAnsiblePlaybook("-i servers/${env.BRANCH_NAME} -v deploy.yml")
+        execAnsiblePlaybook("-i servers/${BRANCH_NAME} -v deploy.yml")
     }
 }
 
@@ -123,7 +125,7 @@ def onFail(stage) {
 def notifySlackStatus(status, info) {
     def duration = getBuildDuration()
     def color = (status == STATUS_SUCCESS) ? COLOR_OK : COLOR_ERROR
-    def message = "${env.JOB_NAME} - ${env.BUILD_DISPLAY_NAME} (${env.git_commit_short}) ${info} after ${duration} (<${env.BUILD_URL}|URL>)"
+    def message = "${JOB_NAME} - ${BUILD_DISPLAY_NAME} (${GIT_COMMIT_SHORT}) ${info} after ${duration} (<${BUILD_URL}|URL>)"
     echo message
 
     slackSend([channel: SLACK_CHANNEL, color: color, message: message])
