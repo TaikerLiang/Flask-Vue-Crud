@@ -4,6 +4,8 @@ import groovy.transform.Field
 
 @Field def SHUB_APIKEY_CREDENTIAL_ID = 'scrapinghub-hardcore-apikey'
 
+@Field def SLACK_CHANNEL = '#jenkins-feed-edi'
+
 @Field def STATUS_SUCCESS = 'Success'
 @Field def STATUS_FAILURE = 'Failure'
 
@@ -83,7 +85,7 @@ def runTest() {
     echo "userPipPackageBase=${userPipPackageBase}"
 
     sh "pip install -e '.[dev,tests]' --user --no-cache"
-    sh "${userPipPackageBase}/bin/mycli test --pytest-args='-p no:cacheprovider --junitxml=pytest_report.xml --cov=src/ --cov-report=xml:pytest_coverage.xml'"
+    sh "${userPipPackageBase}/bin/epsc test --pytest-args='-p no:cacheprovider --junitxml=pytest_report.xml --cov=src/ --cov-report=xml:pytest_coverage.xml'"
 }
 
 def runDeploy() {
@@ -110,27 +112,21 @@ def execAnsiblePlaybook(argv) {
 
 def onSuccess(stage) {
     def info = "${stage} Success"
-    // notifySlackStatus(STATUS_SUCCESS, info)
+    notifySlackStatus(STATUS_SUCCESS, info)
 }
 
 def onFail(stage) {
     def info = "${stage} Failure"
-    // notifySlackStatus(STATUS_FAILURE, info)
+    notifySlackStatus(STATUS_FAILURE, info)
 }
 
 def notifySlackStatus(status, info) {
     def duration = getBuildDuration()
+    def color = (status == STATUS_SUCCESS) ? COLOR_OK : COLOR_ERROR
     def message = "${env.JOB_NAME} - ${env.BUILD_DISPLAY_NAME} (${env.git_commit_short}) ${info} after ${duration} (<${env.BUILD_URL}|URL>)"
     echo message
 
-    def color = ''
-    if(status == STATUS_SUCCESS) {
-        color = COLOR_OK
-    }
-    else {
-        color = COLOR_ERROR
-    }
-    slackSend(color: color, message: message)
+    slackSend([channel: SLACK_CHANNEL, color: color, message: message])
 }
 
 def getBuildDuration() {
@@ -138,10 +134,10 @@ def getBuildDuration() {
     def sec = (duration / 1000).intValue() % 60
     def min = (duration / (1000*60)).intValue() % 60
     def hr = (duration / (1000*60*60)).intValue() % 24
-    if(hr > 0) {
+
+    if (hr > 0) {
         return "${hr} hours ${min} min ${sec} sec"
-    }
-    else{
+    } else {
         return "${min} min ${sec} sec"
     }
 }
