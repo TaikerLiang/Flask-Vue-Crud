@@ -1,2 +1,3 @@
 -r src/requirements-scrapy_cloud.txt
 Scrapy
+click
