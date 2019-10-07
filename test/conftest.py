@@ -25,4 +25,10 @@ def sample_loader():
         def build_file_path(self, *path_list: str) -> Path:
             return self.sample_path / Path(*path_list)
 
+        def read_file(self, *path_list: str) -> str:
+            file_path = self.build_file_path(*path_list)
+            with open(str(file_path), 'r') as fp:
+                text = fp.read()
+            return text
+
     return _Loader()
