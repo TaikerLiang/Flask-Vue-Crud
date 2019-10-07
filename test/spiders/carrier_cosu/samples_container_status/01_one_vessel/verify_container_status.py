@@ -29,7 +29,7 @@ class Verifier:
             'description': 'Discharged at Last POD',
             'local_date_time': '2019-06-01 15:19',
             'location': LocationItem(**{'name': 'American President Line,Los Angeles,California,United States'}),
-            'transport': ' ',
+            'transport': '',
 
         })
 

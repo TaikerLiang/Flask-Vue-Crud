@@ -11,7 +11,6 @@ class Verifier:
     def verify(self, results):
         assert isinstance(results[0], Request)
 
-        url_factory = carrier_cosu.UrlFactory()
-        expect_url = url_factory.build_booking_url(self.mbl_no)
+        expect_url = f'http://elines.coscoshipping.com/ebtracking/public/booking/{self.mbl_no}'
 
-        assert results[0].url == expect_url
+        assert expect_url in results[0].url

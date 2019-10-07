@@ -47,7 +47,6 @@ class Verifier:
         })
 
         assert results[2] == ContainerItem(**{
-            'container_no': 'CSNU6293040',
             'last_free_day': None,
             'empty_pickup_date': '2019-07-30 17:01',
             'empty_return_date': None,

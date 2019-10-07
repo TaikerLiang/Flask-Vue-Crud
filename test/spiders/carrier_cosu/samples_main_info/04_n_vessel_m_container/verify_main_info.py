@@ -1,3 +1,5 @@
+import scrapy
+
 from crawler.core_carrier.items import MblItem, VesselItem, LocationItem, ContainerItem
 
 
@@ -7,7 +9,7 @@ class Verifier:
         self.mbl_no = mbl_no
 
     def verify(self, results):
-        assert len(results) == 9
+        assert len(results) == 7
 
         assert results[0] == MblItem(**{
             'mbl_no': '8021483250',
@@ -64,7 +66,6 @@ class Verifier:
         })
 
         assert results[3] == ContainerItem(**{
-            'container_no': 'CSLU1737989',
             'last_free_day': None,
             'empty_pickup_date': '2019-04-16 12:04',
             'empty_return_date': '2019-06-12 13:55',
@@ -74,8 +75,7 @@ class Verifier:
             'depot_last_free_day': None,
         })
 
-        assert results[5] == ContainerItem(**{
-            'container_no': 'CSLU2356415',
+        assert results[4] == ContainerItem(**{
             'last_free_day': None,
             'empty_pickup_date': '2019-04-16 13:16',
             'empty_return_date': '2019-06-10 09:44',
@@ -85,8 +85,7 @@ class Verifier:
             'depot_last_free_day': None,
         })
 
-        assert results[7] == ContainerItem(**{
-            'container_no': 'SEGU1499450',
+        assert results[5] == ContainerItem(**{
             'last_free_day': None,
             'empty_pickup_date': '2019-04-17 14:41',
             'empty_return_date': '2019-06-10 08:56',
@@ -96,60 +95,4 @@ class Verifier:
             'depot_last_free_day': None,
         })
         #
-        # assert isinstance(results[6], Request)
-        # assert isinstance(results[7], Request)
-        # assert isinstance(results[8], Request)
-
-        pass
-
-
-
-        # assert results[3] == ContainerItem(**{
-        #     'container_no': '',
-        #     'description': {
-        #         ''
-        #     },
-        #     'local_date_time': '',
-        #     'location': ''
-        # })
-
-        # verify requests
-        # assert isinstance(results[3], Request)
-
-
-# def check_mbl_item(item1, item2):
-#     assert isinstance(item1, MblItem)
-#     for k, v in item1.items():
-#         assert item2[k] == v
-#
-#
-# def check_vessel_item(item1, item2):
-#     # assert isinstance(item1, VesselItem)
-#     a = item1
-#     b = item2
-#     assert a == b
-#     # for k, v in item1.items():
-#     #     assert item2[k] == v
-#
-#
-# def check_container_item(item1, item2):
-#     assert isinstance(item1, ContainerItem)
-#     for k, v in item1.items():
-#         assert item2[k] == v
-
-
-# def draw_item(results: list, item) -> list:
-#     return_list = []
-#     for result in results:
-#         if isinstance(result, item):
-#             return_list.append(result)
-#     return return_list
-
-
-# """
-# <class 'dict'>:
-# {
-#     'mbl_no': '6085396930', 'vessel': 'OOCL HO CHI MINH CITY', 'voyage': '033E', 'por': {'name': 'Kaohsiung ,Taiwan'}, 'pol': {'name': 'Kaohsiung - OOCL (Taiwan) Co., Ltd.'}, 'pod': {'name': 'Long Beach - Long Beach Container Terminal , LLC'}, 'final_dest': {'name': 'Los Angeles ,California ,United States - Long Beach Container '
-#          'Terminal , LLC'}, 'etd': '2019-05-09 02:00', 'atd': '2019-05-09 00:26', 'eta': '2019-05-22 08:00', 'ata': '2019-05-22 06:06',
-# }
-# """
+        assert isinstance(results[6], scrapy.Request)

@@ -4,7 +4,9 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierMblNotReady
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
+from crawler.core_carrier.rules import RuleManager
+from crawler.spiders.carrier_cosu import BillMainInfoRoutingRule
 from src.crawler.spiders import carrier_cosu
 
 from . import samples_main_info
@@ -28,27 +30,28 @@ def sample_loader(sample_loader):
     ('05_only_booking', '6216853000'),
 ])
 def test_parse_main_info(sample_loader, sub, mbl_no, monkeypatch):
-    monkeypatch.setattr(carrier_cosu.UrlFactory, '_timestamp', '0000000000')
+    # monkeypatch.setattr(carrier_cosu, 'build_timestamp', '0000000000')
 
     # load json text
     main_json_file = str(sample_loader.build_file_path(sub, 'main_information.json'))
     with open(main_json_file) as fp:
         json_text = fp.read()
 
-    # mock response
-    url_factory = carrier_cosu.UrlFactory()
-    url = url_factory.build_bill_url(mbl_no=mbl_no)
+    url = f'http://elines.coscoshipping.com/ebtracking/public/bill/{mbl_no}?timestamp=0000000000'
 
     resp = TextResponse(
         url=url,
         encoding='utf-8',
         body=json_text,
-        request=Request(url=url, meta={'mbl_no': mbl_no})
+        request=Request(url=url, meta={
+            'mbl_no': mbl_no,
+            RuleManager.META_CARRIER_CORE_RULE_NAME: BillMainInfoRoutingRule.name,
+        })
     )
 
     # action
     spider = carrier_cosu.CarrierCosuSpider(name=None, mbl_no=mbl_no)
-    results = list(spider.parse_main_info(resp))
+    results = list(spider.parse(resp))
 
     # assert
     verify_module = sample_loader.load_sample_module(sub, 'verify_main_info')
@@ -65,19 +68,20 @@ def test_parse_main_info_error(sample_loader, sub, mbl_no, expect_exception):
     with open(main_json_file) as fp:
         json_text = fp.read()
 
-    # mock response
-    url_factory = carrier_cosu.UrlFactory()
-    url = url_factory.build_bill_url(mbl_no=mbl_no)
+    url = f'http://elines.coscoshipping.com/ebtracking/public/bill/{mbl_no}?timestamp=0000000000'
 
     resp = TextResponse(
         url=url,
         encoding='utf-8',
         body=json_text,
-        request=Request(url=url, meta={'mbl_no': mbl_no})
+        request=Request(url=url, meta={
+            'mbl_no': mbl_no,
+            RuleManager.META_CARRIER_CORE_RULE_NAME: BillMainInfoRoutingRule.name,
+        })
     )
 
     # action
     spider = carrier_cosu.CarrierCosuSpider(name=None, mbl_no=mbl_no)
 
     with pytest.raises(expect_exception):
-        spider.parse_main_info(resp)
+        spider.parse(resp)

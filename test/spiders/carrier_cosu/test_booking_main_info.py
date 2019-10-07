@@ -4,6 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
+from crawler.core_carrier.rules import RuleManager
+from crawler.spiders.carrier_cosu import BookingMainInfoRoutingRule
 from src.crawler.spiders import carrier_cosu
 
 from . import samples_main_info
@@ -28,20 +30,21 @@ def test_parse_booking_main_info(sample_loader, sub, mbl_no):
     with open(main_json_file) as fp:
         json_text = fp.read()
 
-    # mock response
-    url_factory = carrier_cosu.UrlFactory()
-    url = url_factory.build_booking_url(mbl_no=mbl_no)
+    url = f'http://elines.coscoshipping.com/ebtracking/public/booking/{mbl_no}?timestamp=0000000000'
 
     resp = TextResponse(
         url=url,
         encoding='utf-8',
         body=json_text,
-        request=Request(url=url, meta={'mbl_no': mbl_no})
+        request=Request(url=url, meta={
+            'mbl_no': mbl_no,
+            RuleManager.META_CARRIER_CORE_RULE_NAME: BookingMainInfoRoutingRule.name,
+        })
     )
 
     # action
     spider = carrier_cosu.CarrierCosuSpider(name=None, mbl_no=mbl_no)
-    results = list(spider.parse_booking_main_info(resp))
+    results = list(spider.parse(resp))
 
     # assert
     verify_module = sample_loader.load_sample_module(sub, 'verify_main_info')

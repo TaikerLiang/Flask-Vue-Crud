@@ -21,7 +21,7 @@ class Verifier:
             'description': 'Discharged at T/S POD',
             'local_date_time': '2019-07-13 20:00',
             'location': LocationItem(**{'name': 'Shanghai Shengdong (I), Yangshan,Shanghai,Shanghai,China'}),
-            'transport': ' ',
+            'transport': '',
         })
 
         assert results[2] == ContainerStatusItem(**{

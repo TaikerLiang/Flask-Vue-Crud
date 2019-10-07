@@ -21,7 +21,7 @@ class Verifier:
             'description': 'Discharged at T/S POD',
             'local_date_time': '2019-07-11 01:03',
             'location': LocationItem(**{'name': "Ningbo Beilun Int'l Container Co.,Ningbo,Zhejiang,China"}),
-            'transport': ' ',
+            'transport': '',
         })
 
         assert results[2] == ContainerStatusItem(**{
