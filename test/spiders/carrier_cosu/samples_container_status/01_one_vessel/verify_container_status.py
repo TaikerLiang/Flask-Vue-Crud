@@ -14,6 +14,7 @@ class Verifier:
             'local_date_time': '2019-06-06 13:14',
             'location': LocationItem(**{'name': 'Pacific Container Terminal,Long Beach,California,United States'}),
             'transport': 'Truck',
+            'container_key': '1',
         })
 
         assert results[1] == ContainerStatusItem(**{
@@ -22,6 +23,7 @@ class Verifier:
             'local_date_time': '2019-06-05 08:34',
             'location': LocationItem(**{'name': 'American President Line,Los Angeles,California,United States'}),
             'transport': 'Truck',
+            'container_key': '1',
         })
 
         assert results[2] == ContainerStatusItem(**{
@@ -30,7 +32,7 @@ class Verifier:
             'local_date_time': '2019-06-01 15:19',
             'location': LocationItem(**{'name': 'American President Line,Los Angeles,California,United States'}),
             'transport': '',
-
+            'container_key': '1',
         })
 
         assert results[3] == ContainerStatusItem(**{
@@ -38,7 +40,8 @@ class Verifier:
             'description': 'Loaded at First POL',
             'local_date_time': '2019-05-07 23:00',
             'location': LocationItem(**{'name': 'JICT.1 (UTC-1),Jakarta,Jakarta Raya,Indonesia'}),
-            'transport': 'Vessel'
+            'transport': 'Vessel',
+            'container_key': '1',
         })
 
         assert results[4] == ContainerStatusItem(**{
@@ -47,6 +50,7 @@ class Verifier:
             'local_date_time': '2019-05-04 21:46',
             'location': LocationItem(**{'name': 'JICT.1 (UTC-1),Jakarta,Jakarta Raya,Indonesia'}),
             'transport': 'Truck',
+            'container_key': '1',
         })
 
         assert results[5] == ContainerStatusItem(**{
@@ -55,4 +59,5 @@ class Verifier:
             'local_date_time': '2019-05-04 21:46',
             'location': LocationItem(**{'name': 'JICT.1 (UTC-1),Jakarta,Jakarta Raya,Indonesia'}),
             'transport': 'Truck',
+            'container_key': '1',
         })

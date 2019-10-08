@@ -57,7 +57,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
     def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
         timestamp = build_timestamp()
         url = f'{URL}/{BASE}/bill/{mbl_no}?timestamp={timestamp}'
-        request = scrapy.Request(url=url, meta={'mbl_no': mbl_no})
+        request = scrapy.Request(url=url)
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def handle(self, response):
@@ -66,7 +66,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
         content = response_dict['data']['content']
 
         if message == '':
-            for item in self._handle_bill_main_info(response=response, content=content):
+            for item in self._handle_bill_main_info(content=content):
                 yield item
         else:
             # without bill
@@ -77,15 +77,16 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
             else:
                 raise CarrierInvalidMblNoError()
 
-    def _handle_bill_main_info(self, response, content):
+    def _handle_bill_main_info(self, content):
         tracking_info = self._extract_bill_tracking(content=content)
         ship_list = self._extract_actual_shipment(content=content)
 
         first_ship = ship_list[0]
         last_ship = ship_list[-1]
+        mbl_no = tracking_info['mbl_no']
 
         yield MblItem(
-            mbl_no=tracking_info['mbl_no'],
+            mbl_no=mbl_no,
             vessel=tracking_info['vessel'],
             voyage=tracking_info['voyage'],
             por=LocationItem(name=tracking_info['por_name']),
@@ -128,6 +129,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
         container_list = self._extract_container(content=content)
         for cargo in container_list:
             yield ContainerItem(
+                container_key=cargo['container_key'],
                 last_free_day=cargo['last_free_day'],
                 empty_pickup_date=cargo['empty_pick_up'],
                 empty_return_date=cargo['empty_return'],
@@ -137,7 +139,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
                 depot_last_free_day=cargo['depot_lfd'],
             )
 
-        yield BillContainerRoutingRule.build_routing_request(mbl_no=response.meta['mbl_no'])
+        yield BillContainerRoutingRule.build_routing_request(mbl_no=mbl_no)
 
     @staticmethod
     def _extract_bill_tracking(content: Dict) -> Dict:
@@ -199,10 +201,11 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
     @staticmethod
     def _extract_container(content: Dict) -> List:
         container_list = content['cargoTrackingContainer']
+
         return_list = []
-        for cargo in container_list:
+        for index, cargo in enumerate(container_list, 1):
             return_list.append({
-                'container_no': cargo['cntrNum'],
+                'container_key': str(index),    # index == uuid(in second api)
                 'empty_pick_up': cargo['emptyPickUpDt'],
                 'full_return': cargo['ladenReturnDt'],
                 'full_pick_up': cargo['ladenPickUpDt'],
@@ -211,6 +214,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
                 'ams_release': cargo['amsRelease'],
                 'depot_lfd': cargo['depotLfd'],
             })
+
         return return_list
 
 
@@ -221,7 +225,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
     def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
         timestamp = build_timestamp()
         url = f'{URL}/{BASE}/booking/{mbl_no}?timestamp={timestamp}'
-        request = scrapy.Request(url=url, meta={'mbl_no': mbl_no})
+        request = scrapy.Request(url=url)
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def handle(self, response):
@@ -233,9 +237,10 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
 
         first_ship = ship_list[0]
         last_ship = ship_list[-1]
+        mbl_no = tracking_info['mbl_no']
 
         yield MblItem(
-            mbl_no=tracking_info['mbl_no'],
+            mbl_no=mbl_no,
             vessel=tracking_info['vessel'],
             voyage=tracking_info['voyage'],
             por=LocationItem(name=tracking_info['por_name']),
@@ -288,7 +293,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
                 depot_last_free_day=cargo['depot_lfd'],
             )
 
-        yield BookingContainerRoutingRule.build_routing_request(mbl_no=response.meta['mbl_no'])
+        yield BookingContainerRoutingRule.build_routing_request(mbl_no=mbl_no)
 
     @staticmethod
     def _extract_booking_tracking(content: Dict) -> Dict:
@@ -352,9 +357,9 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
         container_list = content['cargoTrackingContainer']
 
         return_list = []
-        for cargo in container_list:
+        for index, cargo in enumerate(container_list, 1):
             return_list.append({
-                'container_no': cargo['cntrNum'],
+                'container_key': str(index),  # index == uuid(in second api)
                 'empty_pick_up': cargo['emptyPickUpDt'],
                 'full_return': cargo['ladenReturnDt'],
                 'full_pick_up': cargo['ladenPickUpDt'],
@@ -363,6 +368,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
                 'ams_release': cargo['amsRelease'],
                 'depot_lfd': cargo['depotLfd'],
             })
+
         return return_list
 
 
@@ -377,25 +383,32 @@ class BillContainerRoutingRule(BaseRoutingRule):
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+
         response_dict = json.loads(response.text)
         content = response_dict['data']['content']
         container_info = self._extract_container_info(content=content)
 
         for container in container_info:
+            container_key = container['container_key']
+            container_no = container['container_no']
+
             yield ContainerItem(
-                container_no=container['container_no'],
+                container_key=container_key,
+                container_no=container_no,
             )
 
-            container_no = container['container_no']
             yield BillContainerStatusRoutingRule.build_routing_request(
-                mbl_no=response.meta['mbl_no'], container_no=container_no)
+                mbl_no=mbl_no, container_no=container_no, container_key=container_key)
 
     @staticmethod
     def _extract_container_info(content: Dict) -> List:
         container_list = []
         for container in content:
-            container_list.append(container['containerNumber'])
-
+            container_list.append({
+                'container_key': container['containerUuid'],  # 'containerUuid' == 'index'
+                'container_no': container['containerNumber'],
+            })
         return container_list
 
 
@@ -410,25 +423,32 @@ class BookingContainerRoutingRule(BaseRoutingRule):
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+
         response_dict = json.loads(response.text)
         content = response_dict['data']['content']
         container_info = self._extract_container_info(content=content)
 
         for container in container_info:
+            container_key = container['container_key']
+            container_no = container['container_no']
+
             yield ContainerItem(
-                container_no=container['container_no'],
+                container_key=container_key,
+                container_no=container_no,
             )
 
-            container_no = container['container_no']
             BookingContainerStatusRoutingRule.build_routing_request(
-                mbl_no=response.meta['mbl_no'], container_no=container_no)
+                mbl_no=mbl_no, container_no=container_no, container_key=container_key)
 
     @staticmethod
     def _extract_container_info(content: Dict) -> List:
         container_list = []
         for container in content:
-            container_list.append(container['containerNumber'])
-
+            container_list.append({
+                'container_key': container['containerUuid'],  # 'containerUuid' == 'index'
+                'container_no': container['containerNumber'],
+            })
         return container_list
 
 
@@ -436,17 +456,20 @@ class BillContainerStatusRoutingRule(BaseRoutingRule):
     name = 'BILL_CONTAINER_STATUS'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, container_no: str) -> RoutingRequest:
+    def build_routing_request(cls, mbl_no: str, container_no: str, container_key: str) -> RoutingRequest:
         timestamp = build_timestamp()
         url = f'{URL}/{BASE}/container/status/{container_no}?billNumber={mbl_no}&timestamp={timestamp}'
-        request = scrapy.Request(url=url)
+        request = scrapy.Request(url=url, meta={'container_key': container_key})
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def handle(self, response):
+        container_key = response.meta['container_key']
+
         container_list = self._extract_container_status(response_str=response.text)
 
         for container in container_list:
             yield ContainerStatusItem(
+                container_key=container_key,
                 container_no=container['container_no'],
                 description=container['status'],
                 local_date_time=container['local_date_time'],
@@ -481,17 +504,20 @@ class BookingContainerStatusRoutingRule(BaseRoutingRule):
     name = 'BOOKING_CONTAINER_STATUS'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, container_no: str) -> RoutingRequest:
+    def build_routing_request(cls, mbl_no: str, container_no: str, container_key: str) -> RoutingRequest:
         timestamp = build_timestamp()
         url = f'{URL}/{BASE}/container/status/{container_no}?bookingNumber={mbl_no}&timestamp={timestamp}'
-        request = scrapy.Request(url=url)
+        request = scrapy.Request(url=url, meta={'container_key': container_key})
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def handle(self, response):
+        container_key = response.meta['container_key']
+
         container_list = self._extract_container_status(response_str=response.text)
 
         for container in container_list:
             yield ContainerStatusItem(
+                container_key=container_key,
                 container_no=container['container_no'],
                 description=container['status'],
                 local_date_time=container['local_date_time'],

@@ -58,6 +58,7 @@ class Verifier:
             'full_return_date': '2019-05-02 12:48',
             'ams_release': 'Clear',
             'depot_last_free_day': None,
+            'container_key': '1',
         })
 
         assert results[3] == ContainerItem(**{
@@ -68,6 +69,7 @@ class Verifier:
             'full_return_date': '2019-05-02 20:12',
             'ams_release': 'Clear',
             'depot_last_free_day': None,
+            'container_key': '2',
         })
 
         # verify requests

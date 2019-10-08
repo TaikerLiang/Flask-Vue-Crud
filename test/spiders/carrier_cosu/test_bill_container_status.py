@@ -46,6 +46,7 @@ def test_parse_container(sample_loader, sub, mbl_no, container):
         body=json_text,
         request=Request(url=url, meta={
             'mbl_no': mbl_no,
+            'container_key': '1',
             RuleManager.META_CARRIER_CORE_RULE_NAME: BillContainerStatusRoutingRule.name,
         })
     )

@@ -73,6 +73,7 @@ class Verifier:
             'full_return_date': '2019-06-11 07:36',
             'ams_release': 'Clear',
             'depot_last_free_day': None,
+            'container_key': '1',
         })
 
         # verify requests
