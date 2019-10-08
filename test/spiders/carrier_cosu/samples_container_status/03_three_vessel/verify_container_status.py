@@ -13,7 +13,8 @@ class Verifier:
             'description': 'Discharged at T/S POD',
             'local_date_time': '2019-07-21 07:11',
             'location': LocationItem(**{'name': "Ningbo Beilun Int'l Container Co.,Ningbo,Zhejiang,China"}),
-            'transport': ' ',
+            'transport': '',
+            'container_key': '1',
         })
 
         assert results[1] == ContainerStatusItem(**{
@@ -22,6 +23,7 @@ class Verifier:
             'local_date_time': '2019-06-28 16:23',
             'location': LocationItem(**{'name': "Long Beach Container Terminal , LLC,Long Beach,California,United States"}),
             'transport': 'Vessel',
+            'container_key': '1',
         })
 
         assert results[2] == ContainerStatusItem(**{
@@ -30,6 +32,7 @@ class Verifier:
             'local_date_time': '2019-06-17 09:22',
             'location': LocationItem(**{'name': 'Long Beach Container Terminal , LLC,Long Beach,California,United States'}),
             'transport': 'Truck',
+            'container_key': '1',
         })
 
         assert results[3] == ContainerStatusItem(**{
@@ -38,6 +41,7 @@ class Verifier:
             'local_date_time': '2019-06-17 09:22',
             'location': LocationItem(**{'name': 'Long Beach Container Terminal , LLC,Long Beach,California,United States'}),
             'transport': 'Truck',
+            'container_key': '1',
         })
 
         assert results[4] == ContainerStatusItem(**{
@@ -46,4 +50,5 @@ class Verifier:
             'local_date_time': '2019-06-13 19:00',
             'location': LocationItem(**{'name': 'Pacific Container Terminal,Long Beach,California,United States'}),
             'transport': 'Truck',
+            'container_key': '1',
         })

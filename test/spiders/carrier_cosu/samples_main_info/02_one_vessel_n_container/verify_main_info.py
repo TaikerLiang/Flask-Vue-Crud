@@ -1,3 +1,5 @@
+import scrapy
+
 from crawler.core_carrier.items import MblItem, VesselItem, LocationItem, ContainerItem
 
 
@@ -7,7 +9,7 @@ class Verifier:
         self.mbl_no = mbl_no
 
     def verify(self, results):
-        assert len(results) == 6
+        assert len(results) == 5
 
         assert results[0] == MblItem(**{
             'mbl_no': '6085396930',
@@ -49,7 +51,6 @@ class Verifier:
         })
 
         assert results[2] == ContainerItem(**{
-            'container_no': 'CCLU691290',
             'last_free_day': '2019-05-29',
             'empty_pickup_date': '2019-04-29 10:36',
             'empty_return_date': '2019-05-31 08:43',
@@ -57,10 +58,10 @@ class Verifier:
             'full_return_date': '2019-05-02 12:48',
             'ams_release': 'Clear',
             'depot_last_free_day': None,
+            'container_key': '1',
         })
 
-        assert results[4] == ContainerItem(**{
-            'container_no': 'TCNU6875089',
+        assert results[3] == ContainerItem(**{
             'last_free_day': '2019-05-29',
             'empty_pickup_date': '2019-04-30 13:54',
             'empty_return_date': '2019-05-30 12:09',
@@ -68,10 +69,11 @@ class Verifier:
             'full_return_date': '2019-05-02 20:12',
             'ams_release': 'Clear',
             'depot_last_free_day': None,
+            'container_key': '2',
         })
 
         # verify requests
-        # assert isinstance(results[4], Request)
+        assert isinstance(results[4], scrapy.Request)
 
 
 def check_mbl_item(item1, item2):

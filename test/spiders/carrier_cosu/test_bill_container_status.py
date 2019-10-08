@@ -4,6 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
+from crawler.core_carrier.rules import RuleManager
+from crawler.spiders.carrier_cosu import BillContainerStatusRoutingRule
 from src.crawler.spiders import carrier_cosu
 
 from . import samples_container_status
@@ -35,20 +37,23 @@ def test_parse_container(sample_loader, sub, mbl_no, container):
         json_text = fp.read()
 
     # mock response
-    url_factory = carrier_cosu.UrlFactory()
-
-    url = url_factory.build_bill_container_status_url(mbl_no=mbl_no, container_no=container_no)
+    url = f'http://elines.coscoshipping.com/ebtracking/public/container/status/{container_no}' \
+          f'?billNumber={mbl_no}&timestamp=0000000000'
 
     resp = TextResponse(
         url=url,
         encoding='utf-8',
         body=json_text,
-        request=Request(url=url, meta={'mbl_no': mbl_no})
+        request=Request(url=url, meta={
+            'mbl_no': mbl_no,
+            'container_key': '1',
+            RuleManager.META_CARRIER_CORE_RULE_NAME: BillContainerStatusRoutingRule.name,
+        })
     )
 
     # action
     spider = carrier_cosu.CarrierCosuSpider(name=None, mbl_no=mbl_no)
-    results = list(spider.parse_container(resp))
+    results = list(spider.parse(resp))
 
     # assert
     verify_module = sample_loader.load_sample_module(sub, 'verify_container_status')

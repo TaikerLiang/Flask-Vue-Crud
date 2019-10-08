@@ -14,6 +14,7 @@ class Verifier:
             'local_date_time': '2019-07-16 02:00',
             'location': LocationItem(**{'name': 'Sha Port Ctn Waigaoqiao Phase V Tml,Shanghai,Shanghai,China'}),
             'transport': 'Vessel',
+            'container_key': '1',
         })
 
         assert results[1] == ContainerStatusItem(**{
@@ -21,7 +22,8 @@ class Verifier:
             'description': 'Discharged at T/S POD',
             'local_date_time': '2019-07-13 20:00',
             'location': LocationItem(**{'name': 'Shanghai Shengdong (I), Yangshan,Shanghai,Shanghai,China'}),
-            'transport': ' ',
+            'transport': '',
+            'container_key': '1',
         })
 
         assert results[2] == ContainerStatusItem(**{
@@ -29,7 +31,8 @@ class Verifier:
             'description': 'Loaded at First POL',
             'local_date_time': '2019-06-27 12:57',
             'location': LocationItem(**{'name': 'DP World-Centerm Container Terminal,Vancouver,British Columbia,Canada'}),
-            'transport': 'Vessel'
+            'transport': 'Vessel',
+            'container_key': '1',
         })
 
         assert results[3] == ContainerStatusItem(**{
@@ -38,6 +41,7 @@ class Verifier:
             'local_date_time': '2019-06-21 09:37',
             'location': LocationItem(**{'name': 'DP World-Centerm Container Terminal,Vancouver,British Columbia,Canada'}),
             'transport': 'Rail',
+            'container_key': '1',
         })
 
         assert results[4] == ContainerStatusItem(**{
@@ -46,6 +50,7 @@ class Verifier:
             'local_date_time': '2019-06-13 17:27',
             'location': LocationItem(**{'name': 'CP (Minneapolis),Minneapolis,Minnesota,United States'}),
             'transport': 'Rail',
+            'container_key': '1',
         })
 
         assert results[5] == ContainerStatusItem(**{
@@ -54,6 +59,7 @@ class Verifier:
             'local_date_time': '2019-06-13 17:27',
             'location': LocationItem(**{'name': 'CP (Minneapolis),Minneapolis,Minnesota,United States'}),
             'transport': 'Rail',
+            'container_key': '1',
         })
 
         assert results[6] == ContainerStatusItem(**{
@@ -62,6 +68,7 @@ class Verifier:
             'local_date_time': '2019-06-13 17:27',
             'location': LocationItem(**{'name': 'CP (Minneapolis),Minneapolis,Minnesota,United States'}),
             'transport': 'Rail',
+            'container_key': '1',
         })
 
         assert results[7] == ContainerStatusItem(**{
@@ -70,6 +77,7 @@ class Verifier:
             'local_date_time': '2019-06-13 10:50',
             'location': LocationItem(**{'name': 'CP (Minneapolis),Minneapolis,Minnesota,United States'}),
             'transport': 'Rail',
+            'container_key': '1',
         })
 
         assert results[8] == ContainerStatusItem(**{
@@ -78,6 +86,7 @@ class Verifier:
             'local_date_time': '2019-06-13 10:50',
             'location': LocationItem(**{'name': 'CP (Minneapolis),Minneapolis,Minnesota,United States'}),
             'transport': 'Rail',
+            'container_key': '1',
         })
 
         assert results[9] == ContainerStatusItem(**{
@@ -85,8 +94,8 @@ class Verifier:
             'description': 'Cargo Received',
             'local_date_time': '2019-06-11 07:36',
             'location': LocationItem(**{'name': 'CP (Minneapolis),Minneapolis,Minnesota,United States'}),
-            'transport': 'Truck'
-
+            'transport': 'Truck',
+            'container_key': '1',
         })
 
         assert results[10] == ContainerStatusItem(**{
@@ -95,5 +104,6 @@ class Verifier:
             'local_date_time': '2019-06-06 08:29',
             'location': LocationItem(**{'name': 'M&N Equipment Services,Minneapolis,Minnesota,United States'}),
             'transport': 'Truck',
+            'container_key': '1',
         })
 
