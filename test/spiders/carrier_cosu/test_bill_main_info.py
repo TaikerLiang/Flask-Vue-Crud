@@ -28,6 +28,7 @@ def sample_loader(sample_loader):
     ('03_n_vessel_one_container', '8021543080'),
     ('04_n_vessel_m_container', '8021483250'),
     ('05_only_booking', '6216853000'),
+    ('06_container_no_is_wrong', '6205749080'),
 ])
 def test_parse_main_info(sample_loader, sub, mbl_no, monkeypatch):
     # monkeypatch.setattr(carrier_cosu, 'build_timestamp', '0000000000')
@@ -60,7 +61,7 @@ def test_parse_main_info(sample_loader, sub, mbl_no, monkeypatch):
 
 
 @pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('06_error', '6213846642', CarrierInvalidMblNoError),
+    ('e01_invalid_mbl_no', '6213846642', CarrierInvalidMblNoError),
 ])
 def test_parse_main_info_error(sample_loader, sub, mbl_no, expect_exception):
     # load json text

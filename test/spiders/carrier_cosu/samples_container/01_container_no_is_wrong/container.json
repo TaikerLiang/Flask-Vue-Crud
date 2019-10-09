@@ -1,0 +1,27 @@
+{
+    "code": "200",
+    "message": "",
+    "data": {
+        "content": [
+            {
+                "containerUuid": "1",
+                "containerNumber": "OOLU3647169",
+                "containerType": "20GP",
+                "grossWeight": "2990KG",
+                "piecesNumber": 72,
+                "label": "Empty Equipment Returned",
+                "sealNumber": "10244910",
+                "location": "Harding Containers,Long Beach,California,United States",
+                "locationDateTime": "2019-09-17 15:00",
+                "transportation": "Truck",
+                "flag": "2",
+                "railRef": null,
+                "inlandMvId": " ",
+                "containerLocation": "0",
+                "isShow": false,
+                "hsCode": [],
+                "isNorthAmericaRails": false
+            }
+        ]
+    }
+}
