@@ -63,7 +63,7 @@ pipeline {
                 }
             }
             steps {
-                setupDeployEnv()
+                setupDevEnv()
                 runDeploy()
             }
             post {
@@ -86,7 +86,7 @@ def runTest() {
     def userPipPackageBase = sh([returnStdout: true, script: 'python -m site --user-base']).trim()
     echo "userPipPackageBase=${userPipPackageBase}"
 
-    sh "pip install -e '.[dev,tests]' --user --no-cache"
+    sh "pip install -e '.[dev]' --user --no-cache"
     sh "${userPipPackageBase}/bin/epsc test --pytest-args='-p no:cacheprovider --junitxml=pytest_report.xml --cov=src/ --cov-report=xml:pytest_coverage.xml'"
 }
 
@@ -97,9 +97,9 @@ def runDeploy() {
     }
 }
 
-def setupDeployEnv() {
+def setupDevEnv() {
     withPythonEnv('python') {
-        sh 'pip install -r requirements-deploy.txt'
+        sh 'pip install -r requirements-dev.txt'
     }
 }
 

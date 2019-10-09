@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 
-def get_requirements(env):
-    with open(f'requirements-{env}.txt') as fp:
+def get_requirements(req_file):
+    with open(req_file) as fp:
         return [
             x.strip()
             for x in fp.read().split('\n')
@@ -10,10 +10,8 @@ def get_requirements(env):
         ]
 
 
-install_requires = get_requirements('base')
-dev_requires = get_requirements('dev')
-tests_requires = get_requirements('tests')
-deploy_requires = get_requirements('deploy')
+install_requires = get_requirements('src/requirements-app.txt')
+dev_requires = get_requirements('requirements-dev.txt')
 
 
 setup(
@@ -25,8 +23,6 @@ setup(
     install_requires=install_requires,
     extras_require={
         'dev': dev_requires,
-        'tests': tests_requires,
-        'deploy': deploy_requires,
     },
     entry_points={
         'console_scripts': ['epsc = cli_main:cli'],
