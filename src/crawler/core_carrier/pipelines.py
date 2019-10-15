@@ -57,7 +57,7 @@ class CarrierResultCollector:
         clean_dict = self._clean_item(item)
 
         if item.key not in self._vessels:
-            self._vessels[item.key] = self._get_default_vessel_data()
+            self._vessels[item.key] = self._get_default_vessel_data(vessel_key=item.key)
 
         self._vessels[item.key].update(clean_dict)
 
@@ -65,7 +65,7 @@ class CarrierResultCollector:
         clean_dict = self._clean_item(item)
 
         if item.key not in self._containers:
-            self._containers[item.key] = self._get_default_container_data(container_no=item['container_no'])
+            self._containers[item.key] = self._get_default_container_data(container_key=item.key)
 
         self._containers[item.key].update(clean_dict)
 
@@ -73,18 +73,20 @@ class CarrierResultCollector:
         clean_dict = self._clean_item(item)
 
         if item.key not in self._containers:
-            self._containers[item.key] = self._get_default_container_data(container_no=item['container_no'])
+            self._containers[item.key] = self._get_default_container_data(container_key=item.key)
 
         self._containers[item.key]['status'].append(clean_dict)
 
     @staticmethod
-    def _get_default_vessel_data():
-        return {}
+    def _get_default_vessel_data(vessel_key: str):
+        return {
+            'vessel_key': vessel_key,
+        }
 
     @staticmethod
-    def _get_default_container_data(container_no: str):
+    def _get_default_container_data(container_key: str):
         return {
-            'container_no': container_no,
+            'container_key': container_key,
             'status': [],
         }
 
