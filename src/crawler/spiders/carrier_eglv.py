@@ -692,10 +692,11 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_status(response: scrapy.Selector) -> Dict:
-        table_selector = response.css('table table')
-        rule = NameOnTableMatchRule(name_startswith='Container Moves')
+        tables = response.css('table table')
 
-        if not rule.check(selector=table_selector):
+        rule = NameOnTableMatchRule(name_startswith='Container Moves')
+        table_selector = find_selector_from(selectors=tables, rule=rule)
+        if table_selector is None:
             raise CarrierResponseFormatError(reason='Can not found Container Status table!!!')
 
         table_locator = NameOnTopHeaderTableLocator()
