@@ -6,9 +6,9 @@ class TestCarrierResultCollector:
 
     def test_collect_vessel_item(self):
         expect_vessels = [
-            dict(vessel='V1', etd='2019-08-01', eta='2019-08-10'),
-            dict(vessel='', etd='2019-08-11', eta='2019-08-20'),
-            dict(vessel='V3', etd='2019-08-21', eta='2019-08-30'),
+            dict(vessel_key='V1', vessel='V1', etd='2019-08-01', eta='2019-08-10'),
+            dict(vessel_key='V2', vessel='', etd='2019-08-11', eta='2019-08-20'),
+            dict(vessel_key='V3', vessel='V3', etd='2019-08-21', eta='2019-08-30'),
         ]
 
         # arrange
@@ -25,9 +25,9 @@ class TestCarrierResultCollector:
 
     def test_collect_container_item(self):
         expect_containers = [
-            dict(container_no='CT1', last_free_day='2019-08-01', status=[]),
-            dict(container_no='', last_free_day='2019-08-11', status=[]),
-            dict(container_no='CT3', last_free_day='2019-08-21', status=[]),
+            dict(container_key='CT1', container_no='CT1', last_free_day='2019-08-01', status=[]),
+            dict(container_key='CT2', container_no='', last_free_day='2019-08-11', status=[]),
+            dict(container_key='CT3', container_no='CT3', last_free_day='2019-08-21', status=[]),
         ]
 
         # arrange
