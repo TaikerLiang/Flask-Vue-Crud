@@ -221,6 +221,9 @@ class _Extractor:
         elif status == 'Arrived at POD':
             pod_eta = None
             pod_ata = pod_time
+        elif status == 'Remaining':
+            pod_eta = None
+            pod_ata = None
         else:
             raise CarrierResponseFormatError(reason=f'Unknown status {status!r}')
 

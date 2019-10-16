@@ -24,6 +24,7 @@ def sample_loader(sample_loader):
     ('02_finish', 'XHMN810789'),
     ('03_multiple_containers', 'SHSE015942'),
     ('04_por_dest', 'AWB0135426'),
+    ('05_pod_status_is_remaining', 'NANZ001007'),
 ])
 def test_parse(sample_loader, sub, mbl_no):
     html_file = str(sample_loader.build_file_path(sub, 'main_information.html'))
