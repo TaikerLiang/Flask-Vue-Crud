@@ -284,6 +284,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
         container_list = self._extract_container(content=content)
         for cargo in container_list:
             yield ContainerItem(
+                container_key=cargo['container_key'],
                 last_free_day=cargo['last_free_day'],
                 empty_pickup_date=cargo['empty_pick_up'],
                 empty_return_date=cargo['empty_return'],
