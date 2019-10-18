@@ -53,7 +53,7 @@ def test_parse(sample_loader, sub, mbl_no):
 
 
 @pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('05_invalid_mbl_no', 'XHMN810788', CarrierInvalidMblNoError),
+    ('e01_invalid_mbl_no', 'XHMN810788', CarrierInvalidMblNoError),
 ])
 def test_parse_error(sample_loader, sub, mbl_no, expect_exception):
     html_file = str(sample_loader.build_file_path(sub, 'main_information.html'))
