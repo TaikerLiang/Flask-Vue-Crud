@@ -1,4 +1,5 @@
 import pprint
+import traceback
 from collections import OrderedDict
 from typing import Dict
 
@@ -23,20 +24,28 @@ class CarrierItemPipeline:
         spider.logger.info(f'[{self.__class__.__name__}] ----- process_item -----')
         spider.logger.info(f'item : {pprint.pformat(item)}')
 
-        if isinstance(item, carrier_items.MblItem):
-            self._collector.collect_mbl_item(item=item)
-        elif isinstance(item, carrier_items.VesselItem):
-            self._collector.collect_vessel_item(item=item)
-        elif isinstance(item, carrier_items.ContainerItem):
-            self._collector.collect_container_item(item=item)
-        elif isinstance(item, carrier_items.ContainerStatusItem):
-            self._collector.collect_container_status_item(item=item)
-        elif isinstance(item, carrier_items.ExportFinalData):
-            return self._collector.build_final_data()
-        elif isinstance(item, carrier_items.ExportErrorData):
-            return self._collector.build_error_data(item)
-        else:
-            raise DropItem(f'unknown item: {item}')
+        try:
+            if isinstance(item, carrier_items.MblItem):
+                self._collector.collect_mbl_item(item=item)
+            elif isinstance(item, carrier_items.VesselItem):
+                self._collector.collect_vessel_item(item=item)
+            elif isinstance(item, carrier_items.ContainerItem):
+                self._collector.collect_container_item(item=item)
+            elif isinstance(item, carrier_items.ContainerStatusItem):
+                self._collector.collect_container_status_item(item=item)
+            elif isinstance(item, carrier_items.ExportFinalData):
+                return self._collector.build_final_data()
+            elif isinstance(item, carrier_items.ExportErrorData):
+                return self._collector.build_error_data(item)
+            else:
+                raise DropItem(f'unknown item: {item}')
+
+        except:
+            spider.mark_error()
+            status = CARRIER_RESULT_STATUS_FATAL
+            detail = traceback.format_exc()
+            err_item = carrier_items.ExportErrorData(status=status, detail=detail)
+            return self._collector.build_error_data(err_item)
 
         raise DropItem('item processed')
 
