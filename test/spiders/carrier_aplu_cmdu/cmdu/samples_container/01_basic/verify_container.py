@@ -23,7 +23,6 @@ class Verifier:
 
         assert results[2] == ContainerStatusItem(
             container_key='ECMU9893257',
-            container_no='ECMU9893257',
             local_date_time='Tue 13 Aug 2019 03:54',
             description='Empty to shipper',
             location=LocationItem(name='NINGBO'),
@@ -32,7 +31,6 @@ class Verifier:
 
         assert results[5] == ContainerStatusItem(
             container_key='ECMU9893257',
-            container_no='ECMU9893257',
             local_date_time='Thu 05 Sep 2019 04:30',
             description='Arrival final port of discharge',
             location=LocationItem(name='LONG BEACH, CA'),

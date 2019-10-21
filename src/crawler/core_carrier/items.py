@@ -115,7 +115,6 @@ class ContainerItem(BaseCarrierItem):
 
 class ContainerStatusItem(BaseCarrierItem):
     container_key = scrapy.Field()
-    container_no = scrapy.Field()
     description = scrapy.Field()
     local_date_time = scrapy.Field()
     location = scrapy.Field(serializer=LocationItem)

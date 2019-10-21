@@ -686,7 +686,6 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         for container_status in self._extract_container_status(response=response):
             yield ContainerStatusItem(
                 container_key=container_no,
-                container_no=container_no,
                 description=container_status['description'],
                 local_date_time=container_status['timestamp'],
                 location=LocationItem(name=container_status['location_name'])

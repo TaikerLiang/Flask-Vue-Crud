@@ -23,7 +23,6 @@ class Verifier:
 
         assert results[2] == ContainerStatusItem(
             container_key='TCNU3341069',
-            container_no='TCNU3341069',
             local_date_time='Sun 13 Oct 2019 20:51',
             description='Empty to shipper',
             location=LocationItem(name='KANSAS CITY, KS'),
@@ -32,7 +31,6 @@ class Verifier:
 
         assert results[6] == ContainerStatusItem(
             container_key='TCNU3341069',
-            container_no='TCNU3341069',
             local_date_time='Sun 20 Oct 2019 12:06',
             description='Container on rail for export',
             location=LocationItem(name='BARSTOW, CA'),

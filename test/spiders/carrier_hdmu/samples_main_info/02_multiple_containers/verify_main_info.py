@@ -76,7 +76,6 @@ class Verifier:
 
         assert results[3] == ContainerStatusItem(
             container_key='CAIU7469202',
-            container_no='CAIU7469202',
             description='Empty returned',
             local_date_time='29-Jul-2019 11:43 AM',
             location=LocationItem(name=None),
@@ -85,7 +84,6 @@ class Verifier:
 
         assert results[5] == ContainerStatusItem(
             container_key='CAIU7469202',
-            container_no='CAIU7469202',
             description='Discharged',
             local_date_time='21-Jul-2019 12:16 AM',
             location=LocationItem(name='LOS ANGELES, CA'),
@@ -94,7 +92,6 @@ class Verifier:
 
         assert results[9] == ContainerStatusItem(
             container_key='CAIU7469202',
-            container_no='CAIU7469202',
             description='Gate In loading port',
             local_date_time='03-Jul-2019 3:57 AM',
             location=LocationItem(name='SHANGHAI,CHINA'),

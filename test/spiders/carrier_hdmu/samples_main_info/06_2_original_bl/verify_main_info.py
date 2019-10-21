@@ -64,7 +64,6 @@ class Verifier:
 
         assert results[3] == ContainerStatusItem(
             container_key='HDMU2752605',
-            container_no='HDMU2752605',
             description='Discharged',
             local_date_time='16-Aug-2019 12:24 AM',
             location=LocationItem(name='LOS ANGELES, CA'),
@@ -73,7 +72,6 @@ class Verifier:
 
         assert results[5] == ContainerStatusItem(
             container_key='HDMU2752605',
-            container_no='HDMU2752605',
             description='Vessel Departed',
             local_date_time='01-Aug-2019 11:00 AM',
             location=LocationItem(name='SHANGHAI,CHINA'),
@@ -82,7 +80,6 @@ class Verifier:
 
         assert results[7] == ContainerStatusItem(
             container_key='HDMU2752605',
-            container_no='HDMU2752605',
             description='Gate In loading port',
             local_date_time='27-Jul-2019 3:46 PM',
             location=LocationItem(name='SHANGHAI,CHINA'),

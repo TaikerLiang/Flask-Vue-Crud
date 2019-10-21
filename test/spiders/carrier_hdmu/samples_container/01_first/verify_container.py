@@ -22,7 +22,6 @@ class Verifier:
 
         assert results[1] == ContainerStatusItem(
             container_key='DFSU6717570',
-            container_no='DFSU6717570',
             description='Empty returned',
             local_date_time='24-Jul-2019 4:08 PM',
             location=LocationItem(name=None),
@@ -31,7 +30,6 @@ class Verifier:
 
         assert results[3] == ContainerStatusItem(
             container_key='DFSU6717570',
-            container_no='DFSU6717570',
             description='Discharged',
             local_date_time='21-Jul-2019 12:23 AM',
             location=LocationItem(name='LOS ANGELES, CA'),
@@ -40,7 +38,6 @@ class Verifier:
 
         assert results[7] == ContainerStatusItem(
             container_key='DFSU6717570',
-            container_no='DFSU6717570',
             description='Gate In loading port',
             local_date_time='03-Jul-2019 2:01 AM',
             location=LocationItem(name='SHANGHAI,CHINA'),

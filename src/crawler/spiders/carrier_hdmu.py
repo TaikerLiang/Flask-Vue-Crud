@@ -236,7 +236,6 @@ class CarrierHdmuSpider(BaseCarrierSpider):
 
             yield ContainerStatusItem(
                 container_key=container_no,
-                container_no=container_no,
                 description=container['status'],
                 local_date_time=container['date'],
                 location=LocationItem(name=container['location']),

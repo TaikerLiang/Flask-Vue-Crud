@@ -23,7 +23,6 @@ class Verifier:
 
         assert results[2] == ContainerStatusItem(
             container_key='UESU5087866',
-            container_no='UESU5087866',
             local_date_time='Wed 14 Aug 2019 23:07',
             description='Empty to shipper',
             location=LocationItem(name='SHANGHAI'),
@@ -32,7 +31,6 @@ class Verifier:
 
         assert results[5] == ContainerStatusItem(
             container_key='UESU5087866',
-            container_no='UESU5087866',
             local_date_time='Fri 27 Sep 2019 07:00',
             description='Arrival final port of discharge',
             location=LocationItem(name='MIAMI'),

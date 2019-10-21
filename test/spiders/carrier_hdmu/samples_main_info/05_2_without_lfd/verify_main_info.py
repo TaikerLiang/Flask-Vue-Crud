@@ -76,7 +76,6 @@ class Verifier:
 
         assert results[3] == ContainerStatusItem(
             container_key='TEMU7285430',
-            container_no='TEMU7285430',
             description='Vessel Departed',
             local_date_time='08-Aug-2019 3:30 AM',
             location=LocationItem(name='SHANGHAI,CHINA'),
@@ -85,7 +84,6 @@ class Verifier:
 
         assert results[5] == ContainerStatusItem(
             container_key='TEMU7285430',
-            container_no='TEMU7285430',
             description='Gate In loading port',
             local_date_time='06-Aug-2019 12:39 AM',
             location=LocationItem(name='SHANGHAI,CHINA'),

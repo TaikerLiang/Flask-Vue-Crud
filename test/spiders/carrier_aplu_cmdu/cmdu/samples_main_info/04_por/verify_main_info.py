@@ -23,7 +23,6 @@ class Verifier:
 
         assert results[2] == ContainerStatusItem(
             container_key='GLDU5292400',
-            container_no='GLDU5292400',
             local_date_time='Mon 29 Jul 2019 14:51',
             description='Empty to shipper',
             location=LocationItem(name='HUANGPU'),
@@ -32,7 +31,6 @@ class Verifier:
 
         assert results[7] == ContainerStatusItem(
             container_key='GLDU5292400',
-            container_no='GLDU5292400',
             local_date_time='Sat 31 Aug 2019 06:00',
             description='Arrival final port of discharge',
             location=LocationItem(name='OAKLAND, CA'),

@@ -477,7 +477,6 @@ class BillContainerStatusRoutingRule(BaseRoutingRule):
         for container in container_list:
             yield ContainerStatusItem(
                 container_key=container_key,
-                container_no=container['container_no'],
                 description=container['status'],
                 local_date_time=container['local_date_time'],
                 location=LocationItem(name=container['location']),
@@ -525,7 +524,6 @@ class BookingContainerStatusRoutingRule(BaseRoutingRule):
         for container in container_list:
             yield ContainerStatusItem(
                 container_key=container_key,
-                container_no=container['container_no'],
                 description=container['status'],
                 local_date_time=container['local_date_time'],
                 location=LocationItem(name=container['location']),
