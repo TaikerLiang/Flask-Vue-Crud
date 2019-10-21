@@ -217,15 +217,18 @@ class _Extractor:
     def extract_tracking_no_map(response: Selector):
         map_selector = response.css('div.o-trackingnomap')
 
-        pod_time = map_selector.css('dl.o-trackingnomap--info dd::text').get().strip()
-        status = map_selector.css('dl.o-trackingnomap--info dt::text').get().strip()
-        if status == 'ETA at POD':
-            pod_eta = pod_time
-            pod_ata = None
-        elif status == 'Arrived at POD':
+        pod_time = map_selector.css('dl.o-trackingnomap--info dd::text').get()
+        status = map_selector.css('dl.o-trackingnomap--info dt::text').get()
+        if status is None:
             pod_eta = None
-            pod_ata = pod_time
-        elif status == 'Remaining':
+            pod_ata = None
+        elif status.strip() == 'ETA at POD':
+            pod_eta = pod_time.strip()
+            pod_ata = None
+        elif status.strip() == 'Arrived at POD':
+            pod_eta = None
+            pod_ata = pod_time.strip()
+        elif status.strip() == 'Remaining':
             pod_eta = None
             pod_ata = None
         else:
@@ -303,7 +306,8 @@ class ContainerStatusTableLocator(BaseTableLocator):
         top_header_map = {}  # top_index: top_header
 
         for index, th in enumerate(table.css('thead th')):
-            top_header = th.css('::text').get().strip()
+            top_header_selector = th.css('::text').get()
+            top_header = top_header_selector.strip()
 
             if index == 1:
                 assert top_header == ''

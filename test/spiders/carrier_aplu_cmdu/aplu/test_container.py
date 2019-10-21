@@ -20,6 +20,7 @@ def sample_loader(sample_loader):
 
 @pytest.mark.parametrize('sub,mbl_no,container_no', [
     ('01_basic', 'SHSE015942', 'TCNU1868370'),
+    ('02_no_pod_time_and_status', 'AYU0320031', 'TCNU3341069'),
 ])
 def test_parse(sample_loader, sub, mbl_no, container_no):
     html_file = str(sample_loader.build_file_path(sub, f'{container_no}.html'))
