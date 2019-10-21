@@ -497,7 +497,6 @@ class BillContainerStatusRoutingRule(BaseRoutingRule):
 
         for info in container_content:
             return_list.append({
-                'container_no': info['containerNumber'],
                 'status': info['containerNumberStatus'],
                 'transport': info['transportation'],
                 'local_date_time': info['timeOfIssue'],
@@ -538,7 +537,6 @@ class BookingContainerStatusRoutingRule(BaseRoutingRule):
 
         for info in container_content:
             return_list.append({
-                'container_no': info['containerNumber'],
                 'status': info['containerNumberStatus'],
                 'transport': info['transportation'],
                 'local_date_time': info['timeOfIssue'],
