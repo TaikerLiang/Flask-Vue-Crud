@@ -17,10 +17,12 @@ class Verifier:
         )
 
         assert results[1] == ContainerItem(
+            container_key='CNCU1610540',
             container_no='CNCU1610540',
         )
 
         assert results[2] == ContainerStatusItem(
+            container_key='CNCU1610540',
             container_no='CNCU1610540',
             local_date_time='Wed 18 Sep 2019 23:53',
             description='Empty to shipper',
@@ -29,6 +31,7 @@ class Verifier:
         )
 
         assert results[7] == ContainerStatusItem(
+            container_key='CNCU1610540',
             container_no='CNCU1610540',
             local_date_time='Wed 16 Oct 2019 05:30',
             description='Arrival final port of discharge',

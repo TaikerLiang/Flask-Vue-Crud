@@ -17,10 +17,12 @@ class Verifier:
         )
 
         assert results[1] == ContainerItem(
+            container_key='CAIU9073761',
             container_no='CAIU9073761',
         )
 
         assert results[2] == ContainerStatusItem(
+            container_key='CAIU9073761',
             container_no='CAIU9073761',
             local_date_time='Mon 24 Jun 2019 08:40',
             description='Empty to shipper',
@@ -29,6 +31,7 @@ class Verifier:
         )
 
         assert results[17] == ContainerStatusItem(
+            container_key='CAIU9073761',
             container_no='CAIU9073761',
             local_date_time='Wed 31 Jul 2019 18:23',
             description='Empty in depot',

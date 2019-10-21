@@ -52,6 +52,7 @@ class Verifier:
         )
 
         assert results[2] == ContainerItem(
+            container_key='DFSU6966171',
             container_no='DFSU6966171',
             last_free_day=None,
             mt_location=LocationItem(name='TOTAL TERMINALS INTERNATIONAL - TTI (LONG BEACH, CA)'),
@@ -73,6 +74,7 @@ class Verifier:
         assert results[5].body == convert_formdata_to_bytes(expect_formdata)
 
         assert results[3] == ContainerStatusItem(
+            container_key='DFSU6966171',
             container_no='DFSU6966171',
             description='Gate In loading port',
             local_date_time='02-Aug-2019 11:06 PM',

@@ -66,6 +66,7 @@ class Verifier:
         })
 
         assert results[3] == ContainerItem(**{
+            'container_key': '1',
             'last_free_day': None,
             'empty_pickup_date': '2019-04-16 12:04',
             'empty_return_date': '2019-06-12 13:55',
@@ -73,10 +74,10 @@ class Verifier:
             'full_return_date': '2019-04-17 13:11',
             'ams_release': 'Clear',
             'depot_last_free_day': None,
-            'container_key': '1',
         })
 
         assert results[4] == ContainerItem(**{
+            'container_key': '2',
             'last_free_day': None,
             'empty_pickup_date': '2019-04-16 13:16',
             'empty_return_date': '2019-06-10 09:44',
@@ -84,10 +85,10 @@ class Verifier:
             'full_return_date': '2019-04-17 14:11',
             'ams_release': 'Clear',
             'depot_last_free_day': None,
-            'container_key': '2',
         })
 
         assert results[5] == ContainerItem(**{
+            'container_key': '3',
             'last_free_day': None,
             'empty_pickup_date': '2019-04-17 14:41',
             'empty_return_date': '2019-06-10 08:56',
@@ -95,7 +96,6 @@ class Verifier:
             'full_return_date': '2019-04-18 12:48',
             'ams_release': 'Clear',
             'depot_last_free_day': None,
-            'container_key': '3',
         })
         #
         assert isinstance(results[6], scrapy.Request)

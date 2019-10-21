@@ -21,6 +21,7 @@ class Verifier:
         )
 
         assert results[1] == ContainerItem(
+            container_key='GAOU6281170',
             container_no='GAOU6281170',
         )
 
@@ -32,6 +33,7 @@ class Verifier:
         }
 
         assert results[3] == ContainerItem(
+            container_key='FCIU9351388',
             container_no='FCIU9351388',
         )
 

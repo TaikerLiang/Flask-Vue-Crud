@@ -8,8 +8,8 @@ class Verifier:
 
     def verify(self, results):
         assert results[0] == ContainerItem(**{
-            'container_no': 'OOLU3647169',
             'container_key': '1',
+            'container_no': 'OOLU3647169',
         })
 
         expect_url = 'http://elines.coscoshipping.com/ebtracking/public/container/status/OOLU3647169?billNumber=6205749080&timestamp='

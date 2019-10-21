@@ -21,6 +21,7 @@ def sample_loader(sample_loader):
 @pytest.mark.parametrize('sub,mbl_no, container_item', [
     ('01_first', 'TAWB0789799',
      ContainerItem(
+         container_key='CAIU7479659',
          container_no='CAIU7479659',
          last_free_day='Gated-out',
          mt_location='M&N EQUIPMENT SERVICES ( EMPTIES ONLY) (MINNEAPOLIS, MN)',

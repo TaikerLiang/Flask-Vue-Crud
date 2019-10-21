@@ -182,13 +182,17 @@ class ContainerHandler(BaseHandler):
             ata=main_info['pod_ata'],
         )
 
+        container_no = container_info['container_no']
+
         yield ContainerItem(
-            container_no=container_info['container_no'],
+            container_key=container_no,
+            container_no=container_no,
         )
 
         for container_status in _ContainerStatusTableExtractor.extract(response=response):
             yield ContainerStatusItem(
-                container_no=container_info['container_no'],
+                container_key=container_no,
+                container_no=container_no,
                 local_date_time=container_status['local_date_time'],
                 description=container_status['description'],
                 location=LocationItem(name=container_status['location']),

@@ -110,7 +110,7 @@ class ContainerItem(BaseCarrierItem):
 
     @property
     def key(self):
-        return self.get('container_key') or self['container_no']
+        return self['container_key']
 
 
 class ContainerStatusItem(BaseCarrierItem):
@@ -124,4 +124,4 @@ class ContainerStatusItem(BaseCarrierItem):
 
     @property
     def key(self):
-        return self.get('container_key') or self['container_no']
+        return self['container_key']

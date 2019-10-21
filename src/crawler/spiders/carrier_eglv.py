@@ -160,6 +160,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         container_list = self._extract_container_info(response=response)
         for container in container_list:
             yield ContainerItem(
+                container_key=container['container_no'],
                 container_no=container['container_no'],
             )
 
@@ -684,6 +685,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
         for container_status in self._extract_container_status(response=response):
             yield ContainerStatusItem(
+                container_key=container_no,
                 container_no=container_no,
                 description=container_status['description'],
                 local_date_time=container_status['timestamp'],

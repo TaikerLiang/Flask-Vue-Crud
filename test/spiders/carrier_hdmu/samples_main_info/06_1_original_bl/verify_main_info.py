@@ -59,6 +59,7 @@ class Verifier:
         assert results[2].body == formdata_bytes
 
         # assert results[2] == ContainerItem(
+        #     container_key='CAIU7479659',
         #     container_no='CAIU7479659',
         #     last_free_day=None,
         #     mt_location=LocationItem(name='WASHINGTON UNITED TERMINALS INC. (TACOMA, WA)'),
@@ -69,6 +70,7 @@ class Verifier:
         # )
 
         assert results[3] == ContainerStatusItem(
+            container_key='CAIU7479659',
             container_no='CAIU7479659',
             description='Vessel Departed',
             local_date_time='06-Aug-2019 3:36 AM',
@@ -77,6 +79,7 @@ class Verifier:
         )
 
         assert results[4] == ContainerStatusItem(
+            container_key='CAIU7479659',
             container_no='CAIU7479659',
             description='Shipped on',
             local_date_time='05-Aug-2019 11:34 PM',
@@ -85,6 +88,7 @@ class Verifier:
         )
 
         assert results[5] == ContainerStatusItem(
+            container_key='CAIU7479659',
             container_no='CAIU7479659',
             description='Gate In loading port',
             local_date_time='02-Aug-2019 8:30 PM',
@@ -93,6 +97,7 @@ class Verifier:
         )
 
         assert results[6] == ContainerStatusItem(
+            container_key='CAIU7479659',
             container_no='CAIU7479659',
             description='Inland transportation started',
             local_date_time='02-Aug-2019 1:58 PM',
@@ -101,6 +106,7 @@ class Verifier:
         )
 
         assert results[7] == ContainerStatusItem(
+            container_key='CAIU7479659',
             container_no='CAIU7479659',
             description='Gate in',
             local_date_time='31-Jul-2019 5:00 PM',
@@ -109,6 +115,7 @@ class Verifier:
         )
 
         assert results[8] == ContainerStatusItem(
+            container_key='CAIU7479659',
             container_no='CAIU7479659',
             description='Released to the shipper for stuffing',
             local_date_time='31-Jul-2019 4:55 PM',

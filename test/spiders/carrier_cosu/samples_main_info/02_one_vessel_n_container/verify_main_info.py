@@ -51,6 +51,7 @@ class Verifier:
         })
 
         assert results[2] == ContainerItem(**{
+            'container_key': '1',
             'last_free_day': '2019-05-29',
             'empty_pickup_date': '2019-04-29 10:36',
             'empty_return_date': '2019-05-31 08:43',
@@ -58,10 +59,10 @@ class Verifier:
             'full_return_date': '2019-05-02 12:48',
             'ams_release': 'Clear',
             'depot_last_free_day': None,
-            'container_key': '1',
         })
 
         assert results[3] == ContainerItem(**{
+            'container_key': '2',
             'last_free_day': '2019-05-29',
             'empty_pickup_date': '2019-04-30 13:54',
             'empty_return_date': '2019-05-30 12:09',
@@ -69,7 +70,6 @@ class Verifier:
             'full_return_date': '2019-05-02 20:12',
             'ams_release': 'Clear',
             'depot_last_free_day': None,
-            'container_key': '2',
         })
 
         # verify requests

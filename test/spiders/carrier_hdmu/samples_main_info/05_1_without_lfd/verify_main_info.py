@@ -50,6 +50,7 @@ class Verifier:
         )
 
         assert results[2] == ContainerItem(
+            container_key='CAIU6185140',
             container_no='CAIU6185140',
             last_free_day=None,
             mt_location=LocationItem(name='APM TERMINALS (LOS ANGELES, CA)'),
@@ -61,6 +62,7 @@ class Verifier:
         )
 
         assert results[3] == ContainerStatusItem(
+            container_key='CAIU6185140',
             container_no='CAIU6185140',
             description='Vessel Departed',
             local_date_time='08-Aug-2019 3:30 AM',
@@ -69,6 +71,7 @@ class Verifier:
         )
 
         assert results[4] == ContainerStatusItem(
+            container_key='CAIU6185140',
             container_no='CAIU6185140',
             description='Shipped on',
             local_date_time='08-Aug-2019 3:30 AM',
@@ -77,6 +80,7 @@ class Verifier:
         )
 
         assert results[5] == ContainerStatusItem(
+            container_key='CAIU6185140',
             container_no='CAIU6185140',
             description='Gate In loading port',
             local_date_time='06-Aug-2019 1:53 AM',
@@ -85,6 +89,7 @@ class Verifier:
         )
 
         assert results[6] == ContainerStatusItem(
+            container_key='CAIU6185140',
             container_no='CAIU6185140',
             description='Released to the shipper for stuffing',
             local_date_time='02-Aug-2019 4:57 AM',

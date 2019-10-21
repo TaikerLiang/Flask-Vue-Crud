@@ -17,10 +17,12 @@ class Verifier:
         )
 
         assert results[1] == ContainerItem(
+            container_key='TCLU9692715',
             container_no='TCLU9692715',
         )
 
         assert results[2] == ContainerStatusItem(
+            container_key='TCLU9692715',
             container_no='TCLU9692715',
             local_date_time='Wed 03 Jul 2019 07:21',
             description='Empty to shipper',
@@ -29,6 +31,7 @@ class Verifier:
         )
 
         assert results[7] == ContainerStatusItem(
+            container_key='TCLU9692715',
             container_no='TCLU9692715',
             local_date_time='Fri 02 Aug 2019 14:15',
             description='Empty in depot',

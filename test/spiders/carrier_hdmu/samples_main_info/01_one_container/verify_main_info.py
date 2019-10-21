@@ -50,6 +50,7 @@ class Verifier:
         )
 
         assert results[2] == ContainerItem(
+            container_key='HDMU6681135',
             container_no='HDMU6681135',
             last_free_day='Gated-out',
             mt_location=LocationItem(name='APM TERMINALS (LOS ANGELES, CA)'),
@@ -61,6 +62,7 @@ class Verifier:
         )
 
         assert results[3] == ContainerStatusItem(
+            container_key='HDMU6681135',
             container_no='HDMU6681135',
             description='Empty returned',
             local_date_time='24-May-2019 8:54 AM',
@@ -69,6 +71,7 @@ class Verifier:
         )
 
         assert results[5] == ContainerStatusItem(
+            container_key='HDMU6681135',
             container_no='HDMU6681135',
             description='Discharged',
             local_date_time='18-May-2019 12:50 AM',
@@ -77,6 +80,7 @@ class Verifier:
         )
 
         assert results[9] == ContainerStatusItem(
+            container_key='HDMU6681135',
             container_no='HDMU6681135',
             description='Gate In loading port',
             local_date_time='19-Apr-2019 11:18 AM',

@@ -196,8 +196,11 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         empty_return_location = _Extractor.extract_empty_return_location(response=response)
         container_status = list(_ContainerStatusExtractor.extract_container_status(response=response))
 
+        container_no = container_info['container_no']
+
         container_item = ContainerItem(
-                container_no=container_info['container_no'],
+                container_key=container_no,
+                container_no=container_no,
                 last_free_day=container_info['lfd'],
                 mt_location=LocationItem(name=empty_return_location['empty_return_location']),
                 det_free_time_exp_date=empty_return_location['fdd'],
@@ -228,8 +231,11 @@ class CarrierHdmuSpider(BaseCarrierSpider):
             yield container_item
 
         for container in container_status:
+            container_no = container_info['container_no']
+
             yield ContainerStatusItem(
-                container_no=container_info['container_no'],
+                container_key=container_no,
+                container_no=container_no,
                 description=container['status'],
                 local_date_time=container['date'],
                 location=LocationItem(name=container['location']),

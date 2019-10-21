@@ -22,6 +22,7 @@ class Verifier:
         )
 
         assert results[1] == ContainerItem(
+            container_key='HMCU9173542',
             container_no='HMCU9173542',
         )
 
@@ -44,6 +45,7 @@ class Verifier:
         )
 
         assert results[3] == ContainerItem(
+            container_key='EITU1111240',
             container_no='EITU1111240',
         )
 

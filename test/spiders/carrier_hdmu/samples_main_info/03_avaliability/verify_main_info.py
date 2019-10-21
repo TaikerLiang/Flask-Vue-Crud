@@ -59,6 +59,7 @@ class Verifier:
         assert results[2].body == formdata_bytes
 
         assert results[3] == ContainerStatusItem(
+            container_key='HMMU6015688',
             container_no='HMMU6015688',
             description='Empty returned',
             local_date_time='03-May-2019 1:23 PM',
@@ -67,6 +68,7 @@ class Verifier:
         )
 
         assert results[19] == ContainerStatusItem(
+            container_key='HMMU6015688',
             container_no='HMMU6015688',
             description='Discharged',
             local_date_time='17-Apr-2019 2:40 PM',
@@ -75,6 +77,7 @@ class Verifier:
         )
 
         assert results[23] == ContainerStatusItem(
+            container_key='HMMU6015688',
             container_no='HMMU6015688',
             description='Inland transportation started',
             local_date_time='29-Mar-2019 2:11 PM',

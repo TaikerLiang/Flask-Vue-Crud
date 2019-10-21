@@ -52,6 +52,7 @@ class Verifier:
         )
 
         assert results[2] == ContainerItem(
+            container_key='CAIU7469202',
             container_no='CAIU7469202',
             last_free_day='Gated-out',
             mt_location=LocationItem(name='APM TERMINALS (LOS ANGELES, CA)'),
@@ -73,6 +74,7 @@ class Verifier:
         assert results[14].body == convert_formdata_to_bytes(expect_formdata)
 
         assert results[3] == ContainerStatusItem(
+            container_key='CAIU7469202',
             container_no='CAIU7469202',
             description='Empty returned',
             local_date_time='29-Jul-2019 11:43 AM',
@@ -81,6 +83,7 @@ class Verifier:
         )
 
         assert results[5] == ContainerStatusItem(
+            container_key='CAIU7469202',
             container_no='CAIU7469202',
             description='Discharged',
             local_date_time='21-Jul-2019 12:16 AM',
@@ -89,6 +92,7 @@ class Verifier:
         )
 
         assert results[9] == ContainerStatusItem(
+            container_key='CAIU7469202',
             container_no='CAIU7469202',
             description='Gate In loading port',
             local_date_time='03-Jul-2019 3:57 AM',

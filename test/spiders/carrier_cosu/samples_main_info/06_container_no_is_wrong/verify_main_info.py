@@ -51,8 +51,8 @@ class Verifier:
         })
 
         assert results[2] == ContainerItem(**{
-            'ams_release': 'Clear',
             'container_key': '1',
+            'ams_release': 'Clear',
             'depot_last_free_day': None,
             'empty_pickup_date': '2019-08-18 02:11',
             'empty_return_date': '2019-09-17 15:00',

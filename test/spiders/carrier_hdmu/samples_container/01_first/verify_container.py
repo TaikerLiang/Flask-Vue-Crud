@@ -9,6 +9,7 @@ class Verifier:
     def verify(self, results):
 
         assert results[0] == ContainerItem(
+            container_key='DFSU6717570',
             container_no='DFSU6717570',
             last_free_day='Gated-out',
             mt_location=LocationItem(name='APM TERMINALS (LOS ANGELES, CA)'),
@@ -20,6 +21,7 @@ class Verifier:
         )
 
         assert results[1] == ContainerStatusItem(
+            container_key='DFSU6717570',
             container_no='DFSU6717570',
             description='Empty returned',
             local_date_time='24-Jul-2019 4:08 PM',
@@ -28,6 +30,7 @@ class Verifier:
         )
 
         assert results[3] == ContainerStatusItem(
+            container_key='DFSU6717570',
             container_no='DFSU6717570',
             description='Discharged',
             local_date_time='21-Jul-2019 12:23 AM',
@@ -36,6 +39,7 @@ class Verifier:
         )
 
         assert results[7] == ContainerStatusItem(
+            container_key='DFSU6717570',
             container_no='DFSU6717570',
             description='Gate In loading port',
             local_date_time='03-Jul-2019 2:01 AM',
