@@ -36,6 +36,7 @@ class Verifier:
         })
 
         assert results[1] == VesselItem(**{
+            'vessel_key': 'COSCO AMERICA',
             'vessel': 'COSCO AMERICA',
             'voyage': '057W',
             'pol': LocationItem(**{'name': 'Seattle'}),
@@ -51,6 +52,7 @@ class Verifier:
         })
 
         assert results[2] == VesselItem(**{
+            'vessel_key': 'HYPERION',
             'vessel': 'HYPERION',
             'voyage': '065E',
             'pol': LocationItem(**{'name': 'Shanghai'}),

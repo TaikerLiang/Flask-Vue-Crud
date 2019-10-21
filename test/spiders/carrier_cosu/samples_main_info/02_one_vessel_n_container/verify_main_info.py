@@ -36,6 +36,7 @@ class Verifier:
         })
 
         assert results[1] == VesselItem(**{
+            'vessel_key': 'OOCL HO CHI MINH CITY',
             'vessel': 'OOCL HO CHI MINH CITY',
             'voyage': '033E',
             'pol': LocationItem(**{'name': 'Kaohsiung'}),

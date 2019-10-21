@@ -148,6 +148,7 @@ class CarrierHdmuSpider(BaseCarrierSpider):
 
         vessel = _Extractor.extract_vessel(response=response)
         yield VesselItem(
+            vessel_key=vessel['vessel'],
             vessel=vessel['vessel'],
             voyage=vessel['voyage'],
             pol=LocationItem(name=vessel['pol']),

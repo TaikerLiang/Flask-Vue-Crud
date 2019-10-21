@@ -36,6 +36,7 @@ class Verifier:
         })
 
         assert results[1] == VesselItem(**{
+            'vessel_key': 'CMA CGM TAGE',
             'vessel': 'CMA CGM TAGE',
             'voyage': '0TU5VE1MA',
             'pol': LocationItem(**{'name': 'Jakarta'}),

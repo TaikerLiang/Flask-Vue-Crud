@@ -88,7 +88,7 @@ class VesselItem(BaseCarrierItem):
 
     @property
     def key(self):
-        return self.get('vessel_key') or self['vessel']
+        return self['vessel_key']
 
 
 class ContainerItem(BaseCarrierItem):

@@ -36,6 +36,9 @@ class Verifier:
         })
 
         assert results[1] == VesselItem(**{
+            'vessel_key': 'COSCO EUROPE',
+            'vessel': 'COSCO EUROPE',
+            'voyage': '069E',
             'ata': '2019-09-09 05:28',
             'atd': '2019-08-26 00:38',
             'discharge_date': '2019-09-11 13:56',
@@ -46,8 +49,6 @@ class Verifier:
             'row_no': '1',
             'sequence_no': '1',
             'shipping_date': '2019-08-25 07:54',
-            'vessel': 'COSCO EUROPE',
-            'voyage': '069E'
         })
 
         assert results[2] == ContainerItem(**{

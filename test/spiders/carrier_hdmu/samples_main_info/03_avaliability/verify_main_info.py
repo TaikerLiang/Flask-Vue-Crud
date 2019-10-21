@@ -41,6 +41,7 @@ class Verifier:
         )
 
         assert results[1] == VesselItem(
+            vessel_key='HYUNDAI CONFIDENCE',
             vessel='HYUNDAI CONFIDENCE',
             voyage='577E',
             pol=LocationItem(name='TAICHUNG, TAIWAN'),

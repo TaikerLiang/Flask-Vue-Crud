@@ -39,6 +39,7 @@ class Verifier:
         )
 
         assert results[1] == VesselItem(
+            vessel_key='MAERSK ENSENADA',
             vessel='MAERSK ENSENADA',
             voyage='917N',
             pol=LocationItem(name='YANTIAN, SHENZHEN, CHINA'),

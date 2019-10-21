@@ -111,8 +111,11 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
 
         # Crawl information of vessel
         for ship in ship_list:
+            vessel = ship['vessel']
+
             yield VesselItem(
-                vessel=ship['vessel'],
+                vessel_key=vessel,
+                vessel=vessel,
                 voyage=ship['voyage'],
                 pol=LocationItem(name=ship['pol_name']),
                 pod=LocationItem(name=ship['pod_name']),
@@ -266,8 +269,11 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
 
         # Crawl information of vessel
         for ship in ship_list:
+            vessel = ship['vessel']
+
             yield VesselItem(
-                vessel=ship['vessel'],
+                vessel_key=vessel,
+                vessel=vessel,
                 voyage=ship['voyage'],
                 pol=LocationItem(name=ship['pol_name']),
                 pod=LocationItem(name=ship['pod_name']),
