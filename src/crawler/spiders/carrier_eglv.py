@@ -256,16 +256,20 @@ class MainInfoRoutingRule(BaseRoutingRule):
         table = TableExtractor(table_locator=table_locator)
 
         for left in table_locator.iter_left_headers():
-            if table.extract_cell('Location', left) != pod:
-                continue
+            if table.extract_cell('Location', left) == pod:
+                vessel_voyage = table.extract_cell('Estimated Arrival Vessel/Voyage', left)
+                vessel, voyage = self._split_vessel_voyage(vessel_voyage=vessel_voyage)
+                return {
+                    'eta': table.extract_cell('Estimated Arrival Date', left),
+                    'vessel': vessel,
+                    'voyage': voyage,
+                }
 
-            vessel_voyage = table.extract_cell('Estimated Arrival Vessel/Voyage', left)
-            vessel, voyage = self._split_vessel_voyage(vessel_voyage=vessel_voyage)
-            return {
-                'eta': table.extract_cell('Estimated Arrival Date', left),
-                'vessel': vessel,
-                'voyage': voyage,
-            }
+        return {
+            'eta': None,
+            'vessel': None,
+            'voyage': None,
+        }
 
     @staticmethod
     def _split_vessel_voyage(vessel_voyage: str):

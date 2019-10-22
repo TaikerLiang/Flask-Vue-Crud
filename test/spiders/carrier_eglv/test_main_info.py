@@ -20,6 +20,7 @@ def sample_loader(sample_loader):
 @pytest.mark.parametrize('sub,mbl_no,', [
     ('01_3_containers_not_arrive', '003902245109'),
     ('02_2_containers_arrived', '003901793951'),
+    ('05_different_vessel_voyage', '142901393381')
 ])
 def test_main_info_handler(sub, mbl_no, sample_loader):
     main_html_file = str(sample_loader.build_file_path(sub, 'sample.html'))
