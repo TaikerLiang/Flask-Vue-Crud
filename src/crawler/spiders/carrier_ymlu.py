@@ -92,7 +92,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             yield ContainerItem(
                 container_key=container_no,
                 container_no=container_no,
-                last_free_day=last_free_day
+                last_free_day=last_free_day,
             )
 
             follow_url = container_info['follow_url']
@@ -138,7 +138,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def _extract_routing_schedule(response: scrapy.Selector, pol: str, pod: str):
         table_selector = response.css('table#ContentPlaceHolder1_rptBLNo_gvRoutingSchedule_0')
 
-        table_locator = TopHeaderIsTdTableLocator()
+        table_locator = TopHeaderStartswithTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
 
@@ -149,7 +149,10 @@ class MainInfoRoutingRule(BaseRoutingRule):
             place = table.extract_cell(top='Routing', left=left, extractor=span_text_td_extractor)
             time_status = table.extract_cell(top='ETD/ETA', left=left, extractor=span_text_td_extractor)
 
-            actual_time, estimated_time = MainInfoRoutingRule._parse_time_status(time_status)
+            if time_status == 'To Be Advised …':
+                actual_time, estimated_time = None, None
+            else:
+                actual_time, estimated_time = MainInfoRoutingRule._parse_time_status(time_status)
 
             if pol.startswith(place):
                 atd = actual_time
@@ -318,6 +321,78 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return last_free_day_dict
 
 
+class TopHeaderStartswithTableLocator(BaseTableLocator):
+    """
+    +----------+----------+-----+----------+ <thead>
+    | Title 1  | Title 2  | ... | Title N  | <tr> <td>
+    +----------+----------+-----+----------+ <\thead>
+    +----------+----------+-----+----------+ <tbody>
+    | Data 1,1 | Data 2,1 | ... | Data N,1 | <tr> <td>
+    +----------+----------+-----+----------+
+    | Data 1,2 | Data 2,2 | ... | Data N,2 | <tr> <td>
+    +----------+----------+-----+----------+
+    | ...      |   ...    | ... |   ...    | <tr> <td>
+    +----------+----------+-----+----------+
+    | Data 1,M | Data 2,M | ... | Data N,M | <tr> <td>
+    +----------+----------+-----+----------+ <\tbody>
+    """
+
+    def __init__(self):
+        self._td_map = {}  # top_header: [td, ...]
+        self._data_len = 0
+
+    def parse(self, table: scrapy.Selector):
+        title_td_list = table.css('thead td')
+        data_tr_list = table.css('tbody tr')
+
+        for title_index, title_td in enumerate(title_td_list):
+            data_index = title_index
+
+            title = title_td.css('::text').get().strip()
+            self._td_map[title] = []
+
+            for data_tr in data_tr_list:
+                data_td = data_tr.css('td')[data_index]
+
+                self._td_map[title].append(data_td)
+
+        self._data_len = len(data_tr_list)
+
+    def get_cell(self, top, left: Union[int, None]) -> scrapy.Selector:
+        top_header = self._get_top_header(top=top)
+        left_header = 0 if left is None else left
+
+        try:
+            return self._td_map[top_header][left_header]
+        except (KeyError, IndexError) as err:
+            raise HeaderMismatchError(repr(err))
+
+    def has_header(self, top=None, left=None) -> bool:
+        try:
+            self._get_top_header(top=top)
+        except HeaderMismatchError:
+            return False
+
+        return left is None
+
+    def iter_left_headers(self):
+        for index in range(self._data_len):
+            yield index
+
+    def _get_top_header(self, top):
+        if top in self._td_map:
+            return top
+
+        for top_header in self._td_map:
+            if top_header.startswith(top):
+                return top_header
+
+        raise HeaderMismatchError(repr(top))
+
+
+# --------------------------------------------------------------------
+
+
 class TopHeaderThInTbodyTableLocator(BaseTableLocator):
     """
     +----------+----------+-----+----------+ <tbody>
@@ -460,8 +535,9 @@ class TopHeaderIsTdTableLocator(BaseTableLocator):
         self._data_len = len(data_tr_list)
 
     def get_cell(self, top, left: Union[int, None]) -> scrapy.Selector:
+        left = 0 if left is None else left
+
         try:
-            left = 0 if left is None else left
             return self._td_map[top][left]
         except (KeyError, IndexError) as err:
             raise HeaderMismatchError(repr(err))
