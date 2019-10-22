@@ -6,14 +6,14 @@ from scrapy.http import TextResponse
 
 from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_ymlu import CarrierYmluSpider, MainInfoRoutingRule, ContainerStatusRoutingRule
-from test.spiders.carrier_ymlu import samples_container_status
+from test.spiders.carrier_ymlu import container_status
 from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
 def sample_loader(sample_loader):
-    sample_path = Path(__file__).parent / 'samples_container_status'
-    sample_loader.setup(sample_package=samples_container_status, sample_path=sample_path)
+    sample_path = Path(__file__).parent
+    sample_loader.setup(sample_package=container_status, sample_path=sample_path)
     return sample_loader
 
 

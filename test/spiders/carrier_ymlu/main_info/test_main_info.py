@@ -7,14 +7,14 @@ from scrapy.http import TextResponse
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_ymlu import CarrierYmluSpider, MainInfoRoutingRule
-from test.spiders.carrier_ymlu import samples_main_info
+from test.spiders.carrier_ymlu import main_info
 from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
 def sample_loader(sample_loader):
-    sample_path = Path(__file__).parent / 'samples_main_info'
-    sample_loader.setup(sample_package=samples_main_info, sample_path=sample_path)
+    sample_path = Path(__file__).parent
+    sample_loader.setup(sample_package=main_info, sample_path=sample_path)
     return sample_loader
 
 
@@ -25,6 +25,7 @@ def sample_loader(sample_loader):
     ('04_no_carrier_and_customs_status', 'E491301617'),
     ('06_no_release', 'I209365239'),
     ('07_multi_containers', 'W241061370'),
+    ('08_different_title_on_routing_schedule', 'W125326102'),
 ])
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
