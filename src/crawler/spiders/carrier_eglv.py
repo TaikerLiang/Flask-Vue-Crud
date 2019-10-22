@@ -14,7 +14,7 @@ from crawler.core_carrier.items import ContainerStatusItem, LocationItem, Contai
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
-
+from crawler.utils.decorators import merge_yields
 
 CAPTCHA_RETRY_LIMIT = 3
 EGLV_INFO_URL = 'https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do'
@@ -41,6 +41,7 @@ class CarrierEglvSpider(BaseCarrierSpider):
         routing_request = CaptchaRoutingRule.build_routing_request(mbl_no=self.mbl_no)
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
+    @merge_yields
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
