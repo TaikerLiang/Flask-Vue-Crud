@@ -1,4 +1,4 @@
-from crawler.core_carrier.items import VesselItem
+from crawler.core_carrier.items import VesselItem, LocationItem
 
 
 def verify(results):
@@ -6,8 +6,8 @@ def verify(results):
         vessel_key='AS MORGANA',
         vessel='AS MORGANA',
         voyage='1905E',
-        pol='SHANGHAI,CHINA',
-        pod='VANCOUVER,BC,CANADA',
+        pol=LocationItem(name='SHANGHAI,CHINA'),
+        pod=LocationItem(name='VANCOUVER,BC,CANADA'),
         etd=None,
         atd='2019-09-04 02:30',
         eta=None,

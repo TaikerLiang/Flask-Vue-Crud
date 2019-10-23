@@ -1,4 +1,4 @@
-from crawler.core_carrier.items import VesselItem
+from crawler.core_carrier.items import VesselItem, LocationItem
 
 
 def verify(results):
@@ -6,8 +6,8 @@ def verify(results):
         vessel_key='BOMAR HAMBURG',
         vessel='BOMAR HAMBURG',
         voyage='1939E',
-        pol='QINGDAO,CHINA,CHINA',
-        pod='BUSAN,REPUBLIC OF KOREA',
+        pol=LocationItem(name='QINGDAO,CHINA,CHINA'),
+        pod=LocationItem(name='BUSAN,REPUBLIC OF KOREA'),
         etd=None,
         atd='2019-10-01 12:45',
         eta=None,
@@ -18,8 +18,8 @@ def verify(results):
         vessel_key='SM SHANGHAI',
         vessel='SM SHANGHAI',
         voyage='1907E',
-        pol='BUSAN,REPUBLIC OF KOREA',
-        pod='LONG BEACH,CA,UNITED STATES',
+        pol=LocationItem(name='BUSAN,REPUBLIC OF KOREA'),
+        pod=LocationItem(name='LONG BEACH,CA,UNITED STATES'),
         etd=None,
         atd='2019-10-06 21:47',
         eta='2019-10-18 14:30',

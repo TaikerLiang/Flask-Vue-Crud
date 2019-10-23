@@ -6,8 +6,8 @@ import scrapy
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
-from crawler.core_carrier.items import BaseCarrierItem, VesselItem, ContainerStatusItem, LocationItem, ContainerItem, \
-    MblItem
+from crawler.core_carrier.items import (BaseCarrierItem, VesselItem, ContainerStatusItem, LocationItem, ContainerItem,
+                                        MblItem)
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
 from crawler.utils.decorators import merge_yields
 
@@ -196,8 +196,8 @@ class VesselRoutingRule(BaseRoutingRule):
                 vessel_key=vessel_info['name'],
                 vessel=vessel_info['name'],
                 voyage=vessel_info['voyage'],
-                pol=vessel_info['pol'],
-                pod=vessel_info['pod'],
+                pol=LocationItem(name=vessel_info['pol']),
+                pod=LocationItem(name=vessel_info['pod']),
                 etd=vessel_info['etd'],
                 atd=vessel_info['atd'],
                 eta=vessel_info['eta'],
