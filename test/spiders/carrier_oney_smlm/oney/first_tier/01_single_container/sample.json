@@ -1,0 +1,173 @@
+{
+"TRANS_RESULT_KEY":"S",
+"Exception":"",
+"count":"1",
+"list": [
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "weight": "12,636.000 KGS",
+    "copNo": "CSHA9925486010",
+    "blNo": "SH9FSK690300",
+    "eventDt": "2019-10-06 04:00",
+    "cntrTpszCd": "D5",
+    "copStsCd": "T",
+    "sealNo": "CNB676614",
+    "placeCd": "CNSHA07",
+    "placeNm": "SHANGHAI, SHANGHAI, CHINA",
+    "yardNm": "SIPG (SHANGHAI INTL PORT GROUP) - WAIGAOQIAO",
+    "statusNm": "Vessel Departure from Port of Loading",
+    "bkgNo": "SH9FSK690300",
+    "poNo": "",
+    "yardCd": "CNSHA07",
+    "statusCd": "FLVMDO",
+    "cntrNo": "CLHU9129958",
+    "cntrTpszNm": "40'DRY HC.",
+    "cntrFlg": "Y",
+    "enblFlag": "Y",
+    "dspbkgNo": "SH9FSK690300",
+    "socFlg": "Y",
+    "mvmtStsCd": "VL",
+    "hashColumns": [
+      [
+        "vsl_eng_nm",
+        {}
+      ],
+      [
+        "mvmt_sts_cd",
+        "VL"
+      ],
+      [
+        "cntr_flg",
+        "Y"
+      ],
+      [
+        "weight",
+        "12,636.000 KGS"
+      ],
+      [
+        "nod_cd",
+        {}
+      ],
+      [
+        "cop_sts_cd",
+        "T"
+      ],
+      [
+        "no",
+        {}
+      ],
+      [
+        "enbl_flag",
+        "Y"
+      ],
+      [
+        "seal_no",
+        "CNB676614"
+      ],
+      [
+        "skd_dir_cd",
+        {}
+      ],
+      [
+        "place_nm",
+        "SHANGHAI, SHANGHAI, CHINA"
+      ],
+      [
+        "pagerows",
+        {}
+      ],
+      [
+        "ibflag",
+        {}
+      ],
+      [
+        "cntr_tpsz_nm",
+        "40'DRY HC."
+      ],
+      [
+        "status_cd",
+        "FLVMDO"
+      ],
+      [
+        "status_nm",
+        "Vessel Departure from Port of Loading"
+      ],
+      [
+        "bkg_no",
+        "SH9FSK690300"
+      ],
+      [
+        "bl_no",
+        "SH9FSK690300"
+      ],
+      [
+        "cop_dtl_seq",
+        {}
+      ],
+      [
+        "piece",
+        {}
+      ],
+      [
+        "act_tp_cd",
+        {}
+      ],
+      [
+        "soc_flg",
+        "Y"
+      ],
+      [
+        "cntr_tpsz_cd",
+        "D5"
+      ],
+      [
+        "yard_cd",
+        "CNSHA07"
+      ],
+      [
+        "vvd",
+        {}
+      ],
+      [
+        "place_cd",
+        "CNSHA07"
+      ],
+      [
+        "po_no",
+        ""
+      ],
+      [
+        "yard_nm",
+        "SIPG (SHANGHAI INTL PORT GROUP) - WAIGAOQIAO"
+      ],
+      [
+        "event_dt",
+        "2019-10-06 04:00"
+      ],
+      [
+        "cntr_no",
+        "CLHU9129958"
+      ],
+      [
+        "dsp_bkg_no",
+        "SH9FSK690300"
+      ],
+      [
+        "skd_voy_no",
+        {}
+      ],
+      [
+        "cop_no",
+        "CSHA9925486010"
+      ],
+      [
+        "vsl_cd",
+        {}
+      ]
+    ],
+    "hashFields": [
+    ]
+  }
+]}

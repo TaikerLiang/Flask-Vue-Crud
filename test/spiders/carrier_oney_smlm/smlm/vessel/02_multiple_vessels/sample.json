@@ -1,0 +1,128 @@
+{
+"Exception":"",
+"TRANS_RESULT_KEY":"S",
+"count":"2",
+"list": [
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "eta": "2019-10-03 16:55",
+    "vslCd": "SCBH",
+    "podNm": "BUSAN,REPUBLIC OF KOREA",
+    "etdFlag": "A",
+    "rn": "1",
+    "etd": "2019-10-01 12:45",
+    "polNm": "QINGDAO,CHINA,CHINA",
+    "skdVoyNo": "1939",
+    "vslSeq": "1",
+    "etaFlag": "A",
+    "skdDirCd": "E",
+    "podCd": "KRPUS",
+    "bkgNo": "TATH9C294100",
+    "polCd": "CNTAO",
+    "vslEngNm": "BOMAR HAMBURG",
+    "vslPrePstCd": "S",
+    "hashColumns": [
+      [
+        "vsl_eng_nm",
+        "BOMAR HAMBURG"
+      ],
+      [
+        "eta",
+        "2019-10-03 16:55"
+      ],
+      [
+        "rn",
+        "1"
+      ],
+      [
+        "vsl_pre_pst_cd",
+        "S"
+      ],
+      [
+        "etd",
+        "2019-10-01 12:45"
+      ],
+      [
+        "pol_cd",
+        "CNTAO"
+      ],
+      [
+        "skd_dir_cd",
+        "E"
+      ],
+      [
+        "pol_nm",
+        "QINGDAO,CHINA,CHINA"
+      ],
+      [
+        "etd_flag",
+        "A"
+      ],
+      [
+        "pod_nm",
+        "BUSAN,REPUBLIC OF KOREA"
+      ],
+      [
+        "pagerows",
+        {}
+      ],
+      [
+        "ibflag",
+        {}
+      ],
+      [
+        "eta_flag",
+        "A"
+      ],
+      [
+        "bkg_no",
+        "TATH9C294100"
+      ],
+      [
+        "pod_cd",
+        "KRPUS"
+      ],
+      [
+        "skd_voy_no",
+        "1939"
+      ],
+      [
+        "vsl_seq",
+        "1"
+      ],
+      [
+        "vsl_cd",
+        "SCBH"
+      ]
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "eta": "2019-10-18 14:30",
+    "vslCd": "SMSH",
+    "podNm": "LONG BEACH,CA,UNITED STATES",
+    "etdFlag": "A",
+    "rn": "1",
+    "etd": "2019-10-06 21:47",
+    "polNm": "BUSAN,REPUBLIC OF KOREA",
+    "skdVoyNo": "1907",
+    "vslSeq": "0",
+    "etaFlag": "C",
+    "skdDirCd": "E",
+    "podCd": "USLGB",
+    "bkgNo": "TATH9C294100",
+    "polCd": "KRPUS",
+    "vslEngNm": "SM SHANGHAI",
+    "vslPrePstCd": "T",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  }
+]}

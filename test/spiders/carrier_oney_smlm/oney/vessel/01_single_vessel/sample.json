@@ -1,0 +1,108 @@
+{
+"TRANS_RESULT_KEY":"S",
+"Exception":"",
+"count":"1",
+"list": [
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "eta": "2019-10-18 14:00",
+    "vslCd": "YUNT",
+    "podNm": "LOS ANGELES, CA,UNITED STATES",
+    "etdFlag": "A",
+    "rn": "1",
+    "etd": "2019-10-06 04:00",
+    "polNm": "SHANGHAI, SHANGHAI,CHINA",
+    "skdVoyNo": "0040",
+    "vslSeq": "0",
+    "etaFlag": "C",
+    "skdDirCd": "E",
+    "podCd": "USLAX",
+    "bkgNo": "SH9FSK690300",
+    "polCd": "CNSHA",
+    "vslEngNm": "YM UNICORN",
+    "vslPrePstCd": "T",
+    "vvd": "YM UNICORN 040E",
+    "hashColumns": [
+      [
+        "vsl_eng_nm",
+        "YM UNICORN"
+      ],
+      [
+        "eta",
+        "2019-10-18 14:00"
+      ],
+      [
+        "rn",
+        "1"
+      ],
+      [
+        "vsl_pre_pst_cd",
+        "T"
+      ],
+      [
+        "etd",
+        "2019-10-06 04:00"
+      ],
+      [
+        "pol_cd",
+        "CNSHA"
+      ],
+      [
+        "skd_dir_cd",
+        "E"
+      ],
+      [
+        "pol_nm",
+        "SHANGHAI, SHANGHAI,CHINA"
+      ],
+      [
+        "etd_flag",
+        "A"
+      ],
+      [
+        "pod_nm",
+        "LOS ANGELES, CA,UNITED STATES"
+      ],
+      [
+        "pagerows",
+        {}
+      ],
+      [
+        "vvd",
+        "YM UNICORN 040E"
+      ],
+      [
+        "ibflag",
+        {}
+      ],
+      [
+        "eta_flag",
+        "C"
+      ],
+      [
+        "bkg_no",
+        "SH9FSK690300"
+      ],
+      [
+        "pod_cd",
+        "USLAX"
+      ],
+      [
+        "skd_voy_no",
+        "0040"
+      ],
+      [
+        "vsl_seq",
+        "0"
+      ],
+      [
+        "vsl_cd",
+        "YUNT"
+      ]
+    ],
+    "hashFields": [
+    ]
+  }
+]}
