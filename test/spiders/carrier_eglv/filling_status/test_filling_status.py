@@ -5,21 +5,22 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_eglv import CarrierEglvSpider, ReleaseStatusRoutingRule
-from test.spiders.carrier_eglv import samples_release_status
+from crawler.spiders.carrier_eglv import CarrierEglvSpider, FilingStatusRoutingRule
+from test.spiders.carrier_eglv import filling_status
 
 
 @pytest.fixture
 def sample_loader(sample_loader):
-    sample_path = Path(__file__).parent / 'samples_release_status'
-    sample_loader.setup(sample_package=samples_release_status, sample_path=sample_path)
+    sample_path = Path(__file__).parent
+    sample_loader.setup(sample_package=filling_status, sample_path=sample_path)
     return sample_loader
 
 
 @pytest.mark.parametrize('sub,mbl_no,', [
-    ('01_all_fill', '143982920890'),
+    ('01_only_us', '003902245109'),
+    ('02_ca_and_us', '143986250473'),
 ])
-def test_release_status_handler(sub, mbl_no, sample_loader):
+def test_filing_status_handler(sub, mbl_no, sample_loader):
     html_file = str(sample_loader.build_file_path(sub, 'sample.html'))
     with open(html_file, 'r', encoding='utf-8') as fp:
         html_text = fp.read()
@@ -31,7 +32,7 @@ def test_release_status_handler(sub, mbl_no, sample_loader):
         request=Request(
             url='https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do',
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: ReleaseStatusRoutingRule.name,
+                RuleManager.META_CARRIER_CORE_RULE_NAME: FilingStatusRoutingRule.name,
             }
         )
     )
