@@ -1,0 +1,139 @@
+{
+"TRANS_RESULT_KEY":"S",
+"Exception":"",
+"count":"1",
+"list": [
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "inArrDate": "2019-09-29 21:40",
+    "pickUpAvail": "Y",
+    "inDepYardNm": "YTI (YUSEN TERMINAL INTL)",
+    "outDepYardNm": "",
+    "outArrYardNm": "",
+    "outArrYardResult": "",
+    "copNo": "CSZP9819161088",
+    "currLoc": "COUNCIL BLUFFS",
+    "inArrName": "OMAHA, NE, UNITED STATES",
+    "inDepDate": "2019-09-25 12:00",
+    "outArrName": "",
+    "inArrYardNm": "UP AND IAIS RAIL - COUNCIL BLUFFS(OMAHA)",
+    "lastStatus": "Notification of Last Free Day",
+    "eventDt": "2019-10-02 23:57",
+    "outArrNod": "",
+    "inDepNod": "USLAX01",
+    "ibflag": "I",
+    "outDepName": "",
+    "inArrNod": "USOMA62",
+    "outDepDate": "",
+    "outArrDate": "",
+    "inDepName": "LOS ANGELES, CA, UNITED STATES",
+    "outDepNod": "",
+    "pkupNo": "User Not Authorized",
+    "hashColumns": [
+      [
+        "in_dep_yard_nm",
+        "YTI (YUSEN TERMINAL INTL)"
+      ],
+      [
+        "last_status",
+        "Notification of Last Free Day"
+      ],
+      [
+        "out_dep_nod",
+        ""
+      ],
+      [
+        "out_dep_date",
+        ""
+      ],
+      [
+        "curr_loc",
+        "COUNCIL BLUFFS"
+      ],
+      [
+        "out_arr_yard_nm",
+        ""
+      ],
+      [
+        "out_arr_nod",
+        ""
+      ],
+      [
+        "out_dep_name",
+        ""
+      ],
+      [
+        "in_arr_date",
+        "2019-09-29 21:40"
+      ],
+      [
+        "in_arr_name",
+        "OMAHA, NE, UNITED STATES"
+      ],
+      [
+        "out_arr_date",
+        ""
+      ],
+      [
+        "pick_up_avail",
+        "Y"
+      ],
+      [
+        "pagerows",
+        {}
+      ],
+      [
+        "out_arr_name",
+        ""
+      ],
+      [
+        "in_arr_yard_nm",
+        "UP AND IAIS RAIL - COUNCIL BLUFFS(OMAHA)"
+      ],
+      [
+        "ibflag",
+        "I"
+      ],
+      [
+        "in_dep_nod",
+        "USLAX01"
+      ],
+      [
+        "out_dep_yard_nm",
+        ""
+      ],
+      [
+        "event_dt",
+        "2019-10-02 23:57"
+      ],
+      [
+        "pkup_no",
+        "User Not Authorized"
+      ],
+      [
+        "in_dep_name",
+        "LOS ANGELES, CA, UNITED STATES"
+      ],
+      [
+        "in_dep_date",
+        "2019-09-25 12:00"
+      ],
+      [
+        "out_arr_yard_result",
+        ""
+      ],
+      [
+        "cop_no",
+        "CSZP9819161088"
+      ],
+      [
+        "in_arr_nod",
+        "USOMA62"
+      ]
+    ],
+    "hashFields": [
+    ]
+  }
+]}

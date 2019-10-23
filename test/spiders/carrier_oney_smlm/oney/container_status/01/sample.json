@@ -1,0 +1,502 @@
+{
+"TRANS_RESULT_KEY":"S",
+"Exception":"",
+"count":"15",
+"list": [
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "1",
+    "copNo": "CSHA9925486010",
+    "eventDt": "2019-09-28 10:44",
+    "vslEngNm": "",
+    "placeNm": "SHANGHAI, SHANGHAI ,CHINA",
+    "skdVoyNo": "",
+    "yardNm": "SIPG (SHANGHAI INTL PORT GROUP) - WAIGAOQIAO",
+    "copDtlSeq": "1011",
+    "skdDirCd": "",
+    "actTpCd": "A",
+    "statusNm": "Empty Container Release to Shipper",
+    "statusCd": "MOTYDO",
+    "nodCd": "CNSHA07",
+    "vvd": "",
+    "hashColumns": [
+      [
+        "vsl_eng_nm",
+        ""
+      ],
+      [
+        "mvmt_sts_cd",
+        {}
+      ],
+      [
+        "cntr_flg",
+        {}
+      ],
+      [
+        "weight",
+        {}
+      ],
+      [
+        "nod_cd",
+        "CNSHA07"
+      ],
+      [
+        "cop_sts_cd",
+        {}
+      ],
+      [
+        "no",
+        "1"
+      ],
+      [
+        "enbl_flag",
+        {}
+      ],
+      [
+        "seal_no",
+        {}
+      ],
+      [
+        "skd_dir_cd",
+        ""
+      ],
+      [
+        "place_nm",
+        "SHANGHAI, SHANGHAI ,CHINA"
+      ],
+      [
+        "pagerows",
+        {}
+      ],
+      [
+        "ibflag",
+        {}
+      ],
+      [
+        "cntr_tpsz_nm",
+        {}
+      ],
+      [
+        "status_cd",
+        "MOTYDO"
+      ],
+      [
+        "status_nm",
+        "Empty Container Release to Shipper"
+      ],
+      [
+        "bkg_no",
+        {}
+      ],
+      [
+        "bl_no",
+        {}
+      ],
+      [
+        "cop_dtl_seq",
+        "1011"
+      ],
+      [
+        "piece",
+        {}
+      ],
+      [
+        "act_tp_cd",
+        "A"
+      ],
+      [
+        "soc_flg",
+        {}
+      ],
+      [
+        "cntr_tpsz_cd",
+        {}
+      ],
+      [
+        "yard_cd",
+        {}
+      ],
+      [
+        "vvd",
+        ""
+      ],
+      [
+        "place_cd",
+        {}
+      ],
+      [
+        "po_no",
+        {}
+      ],
+      [
+        "yard_nm",
+        "SIPG (SHANGHAI INTL PORT GROUP) - WAIGAOQIAO"
+      ],
+      [
+        "event_dt",
+        "2019-09-28 10:44"
+      ],
+      [
+        "cntr_no",
+        {}
+      ],
+      [
+        "dsp_bkg_no",
+        {}
+      ],
+      [
+        "skd_voy_no",
+        ""
+      ],
+      [
+        "cop_no",
+        "CSHA9925486010"
+      ],
+      [
+        "vsl_cd",
+        ""
+      ]
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "2",
+    "copNo": "CSHA9925486010",
+    "eventDt": "2019-09-28 10:46",
+    "vslEngNm": "",
+    "placeNm": "SHANGHAI, SHANGHAI ,CHINA",
+    "skdVoyNo": "",
+    "yardNm": "SIPG (SHANGHAI INTL PORT GROUP) - WAIGAOQIAO",
+    "copDtlSeq": "1031",
+    "skdDirCd": "",
+    "actTpCd": "A",
+    "statusNm": "Gate In to Outbound Terminal",
+    "statusCd": "FOTMAD",
+    "nodCd": "CNSHA07",
+    "vvd": "",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "YUNT",
+    "no": "3",
+    "copNo": "CSHA9925486010",
+    "eventDt": "2019-10-05 12:44",
+    "vslEngNm": "YM UNICORN",
+    "placeNm": "SHANGHAI, SHANGHAI ,CHINA",
+    "skdVoyNo": "0040",
+    "yardNm": "SIPG (SHANGHAI INTL PORT GROUP) - WAIGAOQIAO",
+    "copDtlSeq": "1032",
+    "skdDirCd": "E",
+    "actTpCd": "A",
+    "statusNm": "Loaded on 'YM UNICORN 040E' at Port of Loading",
+    "statusCd": "FLVMLO",
+    "nodCd": "CNSHA07",
+    "vvd": "YM UNICORN 040E",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "YUNT",
+    "no": "4",
+    "copNo": "CSHA9925486010",
+    "eventDt": "2019-10-06 04:00",
+    "vslEngNm": "YM UNICORN",
+    "placeNm": "SHANGHAI, SHANGHAI ,CHINA",
+    "skdVoyNo": "0040",
+    "yardNm": "SIPG (SHANGHAI INTL PORT GROUP) - WAIGAOQIAO",
+    "copDtlSeq": "4033",
+    "skdDirCd": "E",
+    "actTpCd": "A",
+    "statusNm": "'YM UNICORN 040E' Departure from Port of Loading",
+    "statusCd": "FLVMDO",
+    "nodCd": "CNSHA07",
+    "vvd": "YM UNICORN 040E",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "YUNT",
+    "no": "5",
+    "copNo": "CSHA9925486010",
+    "eventDt": "2019-10-18 14:00",
+    "vslEngNm": "YM UNICORN",
+    "placeNm": "LOS ANGELES, CA ,UNITED STATES",
+    "skdVoyNo": "0040",
+    "yardNm": "TRAPAC LOS ANGELES",
+    "copDtlSeq": "4051",
+    "skdDirCd": "E",
+    "actTpCd": "E",
+    "statusNm": "'YM UNICORN 040E' Arrival at Port of Discharging",
+    "statusCd": "FUVMAD",
+    "nodCd": "USLAX06",
+    "vvd": "YM UNICORN 040E",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "YUNT",
+    "no": "6",
+    "copNo": "CSHA9925486010",
+    "eventDt": "2019-10-18 15:00",
+    "vslEngNm": "YM UNICORN",
+    "placeNm": "LOS ANGELES, CA ,UNITED STATES",
+    "skdVoyNo": "0040",
+    "yardNm": "TRAPAC LOS ANGELES",
+    "copDtlSeq": "4052",
+    "skdDirCd": "E",
+    "actTpCd": "E",
+    "statusNm": "'YM UNICORN 040E' POD Berthing Destination",
+    "statusCd": "FUVMBD",
+    "nodCd": "USLAX06",
+    "vvd": "YM UNICORN 040E",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "YUNT",
+    "no": "7",
+    "copNo": "CSHA9925486010",
+    "eventDt": "2019-10-19 03:00",
+    "vslEngNm": "YM UNICORN",
+    "placeNm": "LOS ANGELES, CA ,UNITED STATES",
+    "skdVoyNo": "0040",
+    "yardNm": "TRAPAC LOS ANGELES",
+    "copDtlSeq": "6053",
+    "skdDirCd": "E",
+    "actTpCd": "E",
+    "statusNm": "Unloaded from 'YM UNICORN 040E' at Port of Discharging",
+    "statusCd": "FUVMUD",
+    "nodCd": "USLAX06",
+    "vvd": "YM UNICORN 040E",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "8",
+    "copNo": "CSHA9925486010",
+    "eventDt": "2019-10-20 15:00",
+    "vslEngNm": "",
+    "placeNm": "LOS ANGELES, CA ,UNITED STATES",
+    "skdVoyNo": "",
+    "yardNm": "TRAPAC LOS ANGELES",
+    "copDtlSeq": "6054",
+    "skdDirCd": "",
+    "actTpCd": "E",
+    "statusNm": "Gate Out from Inbound Terminal for Delivery to Consignee (or Port Shuttle)",
+    "statusCd": "FITMDO",
+    "nodCd": "USLAX06",
+    "vvd": "",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "9",
+    "copNo": "CSHA9925486010",
+    "eventDt": "2019-10-20 16:00",
+    "vslEngNm": "",
+    "placeNm": "LONG BEACH, CA ,UNITED STATES",
+    "skdVoyNo": "",
+    "yardNm": "UP RAIL - ICTF (INTL CONTAINER TRANSFER FACILITY)",
+    "copDtlSeq": "6071",
+    "skdDirCd": "",
+    "actTpCd": "E",
+    "statusNm": "Gate In to Inbound CY",
+    "statusCd": "FITRAD",
+    "nodCd": "USLGB62",
+    "vvd": "",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "10",
+    "copNo": "CSHA9925486010",
+    "eventDt": "2019-10-20 22:00",
+    "vslEngNm": "",
+    "placeNm": "LONG BEACH, CA ,UNITED STATES",
+    "skdVoyNo": "",
+    "yardNm": "UP RAIL - ICTF (INTL CONTAINER TRANSFER FACILITY)",
+    "copDtlSeq": "6072",
+    "skdDirCd": "",
+    "actTpCd": "E",
+    "statusNm": "Loaded on rail at inbound rail origin",
+    "statusCd": "FIRRLO",
+    "nodCd": "USLGB62",
+    "vvd": "",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "11",
+    "copNo": "CSHA9925486010",
+    "eventDt": "2019-10-20 22:00",
+    "vslEngNm": "",
+    "placeNm": "LONG BEACH, CA ,UNITED STATES",
+    "skdVoyNo": "",
+    "yardNm": "UP RAIL - ICTF (INTL CONTAINER TRANSFER FACILITY)",
+    "copDtlSeq": "6073",
+    "skdDirCd": "",
+    "actTpCd": "E",
+    "statusNm": "Inbound Rail Departure",
+    "statusCd": "FIRRDO",
+    "nodCd": "USLGB62",
+    "vvd": "",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "12",
+    "copNo": "CSHA9925486010",
+    "eventDt": "2019-10-23 17:00",
+    "vslEngNm": "",
+    "placeNm": "DENVER, CO ,UNITED STATES",
+    "skdVoyNo": "",
+    "yardNm": "UP RAIL - DENVER",
+    "copDtlSeq": "6091",
+    "skdDirCd": "",
+    "actTpCd": "E",
+    "statusNm": "Inbound Rail Arrival",
+    "statusCd": "FIRRAD",
+    "nodCd": "USDEN61",
+    "vvd": "",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "13",
+    "copNo": "CSHA9925486010",
+    "eventDt": "2019-10-23 18:30",
+    "vslEngNm": "",
+    "placeNm": "DENVER, CO ,UNITED STATES",
+    "skdVoyNo": "",
+    "yardNm": "UP RAIL - DENVER",
+    "copDtlSeq": "6092",
+    "skdDirCd": "",
+    "actTpCd": "E",
+    "statusNm": "Unloaded from rail at inbound rail destination",
+    "statusCd": "FIRRUD",
+    "nodCd": "USDEN61",
+    "vvd": "",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "14",
+    "copNo": "CSHA9925486010",
+    "eventDt": "2019-10-23 23:00",
+    "vslEngNm": "",
+    "placeNm": "DENVER, CO ,UNITED STATES",
+    "skdVoyNo": "",
+    "yardNm": "UP RAIL - DENVER",
+    "copDtlSeq": "6093",
+    "skdDirCd": "",
+    "actTpCd": "E",
+    "statusNm": "Gate Out from Inbound CY for Delivery to Consignee",
+    "statusCd": "FITRDO",
+    "nodCd": "USDEN61",
+    "vvd": "",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "15",
+    "copNo": "CSHA9925486010",
+    "eventDt": "2019-10-24 23:00",
+    "vslEngNm": "",
+    "placeNm": "HENDERSON, CO ,UNITED STATES",
+    "skdVoyNo": "",
+    "yardNm": "TSL FORMERLY CROWN CONTAINER  INC.",
+    "copDtlSeq": "6111",
+    "skdDirCd": "",
+    "actTpCd": "E",
+    "statusNm": "Empty Container Returned from Customer",
+    "statusCd": "MITYAD",
+    "nodCd": "USHDO31",
+    "vvd": "",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  }
+]}

@@ -1,0 +1,171 @@
+{
+"Exception":"",
+"TRANS_RESULT_KEY":"S",
+"count":"1",
+"list": [
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "enblFlag": "Y",
+    "weight": "10,068.000 KGS",
+    "copNo": "CSHA9827358813",
+    "blNo": "SHSM9C747300",
+    "eventDt": "2019-09-30 14:07",
+    "cntrTpszCd": "D2",
+    "copStsCd": "F",
+    "dspBkgNo": "SHSM9C747300",
+    "sealNo": "SMC207678",
+    "placeCd": "USCHIRF",
+    "placeNm": "CHICAGO,IL, UNITED STATES",
+    "yardNm": "CN RAIL JOLIET",
+    "statusNm": "Empty Container Returned from Customer",
+    "bkgNo": "SHSM9C747300",
+    "poNo": "",
+    "yardCd": "USCHIRF",
+    "statusCd": "MITYAD",
+    "cntrNo": "CCLU3451951",
+    "cntrTpszNm": "20'DRY ST.",
+    "cntrFlg": "Y",
+    "hashColumns": [
+      [
+        "vsl_eng_nm",
+        {}
+      ],
+      [
+        "cntr_flg",
+        "Y"
+      ],
+      [
+        "weight",
+        "10,068.000 KGS"
+      ],
+      [
+        "nod_cd",
+        {}
+      ],
+      [
+        "vgm_wgt",
+        {}
+      ],
+      [
+        "vgm_unit",
+        {}
+      ],
+      [
+        "no",
+        {}
+      ],
+      [
+        "cop_sts_cd",
+        "F"
+      ],
+      [
+        "enbl_flag",
+        "Y"
+      ],
+      [
+        "seal_no",
+        "SMC207678"
+      ],
+      [
+        "skd_dir_cd",
+        {}
+      ],
+      [
+        "place_nm",
+        "CHICAGO,IL, UNITED STATES"
+      ],
+      [
+        "pagerows",
+        {}
+      ],
+      [
+        "ibflag",
+        {}
+      ],
+      [
+        "cntr_tpsz_nm",
+        "20'DRY ST."
+      ],
+      [
+        "status_cd",
+        "MITYAD"
+      ],
+      [
+        "status_nm",
+        "Empty Container Returned from Customer"
+      ],
+      [
+        "bkg_no",
+        "SHSM9C747300"
+      ],
+      [
+        "bl_no",
+        "SHSM9C747300"
+      ],
+      [
+        "cop_dtl_seq",
+        {}
+      ],
+      [
+        "piece",
+        {}
+      ],
+      [
+        "act_tp_cd",
+        {}
+      ],
+      [
+        "vgm_status",
+        {}
+      ],
+      [
+        "cntr_tpsz_cd",
+        "D2"
+      ],
+      [
+        "yard_cd",
+        "USCHIRF"
+      ],
+      [
+        "po_no",
+        ""
+      ],
+      [
+        "place_cd",
+        "USCHIRF"
+      ],
+      [
+        "yard_nm",
+        "CN RAIL JOLIET"
+      ],
+      [
+        "event_dt",
+        "2019-09-30 14:07"
+      ],
+      [
+        "cntr_no",
+        "CCLU3451951"
+      ],
+      [
+        "dsp_bkg_no",
+        "SHSM9C747300"
+      ],
+      [
+        "skd_voy_no",
+        {}
+      ],
+      [
+        "cop_no",
+        "CSHA9827358813"
+      ],
+      [
+        "vsl_cd",
+        {}
+      ]
+    ],
+    "hashFields": [
+    ]
+  }
+]}
