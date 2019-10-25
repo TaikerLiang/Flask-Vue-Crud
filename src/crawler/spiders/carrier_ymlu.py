@@ -483,11 +483,14 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
         container_stauts_list = []
         for left in table_locator.iter_left_headers():
+            location_name_with_eol = table.extract_cell(
+                top='At Facility', left=left, extractor=span_all_text_td_extractor)
+            location_name = location_name_with_eol.replace('\n', ' ')
+
             container_stauts_list.append({
                 'timestamp': table.extract_cell(top='Date/Time', left=left, extractor=span_text_td_extractor),
                 'description': table.extract_cell(top='Event', left=left, extractor=span_text_td_extractor),
-                'location_name': table.extract_cell(
-                    top='At Facility', left=left, extractor=span_all_text_td_extractor),
+                'location_name': location_name,
                 'transport': table.extract_cell(top='Mode', left=left, extractor=span_all_text_td_extractor),
             })
 
