@@ -17,14 +17,14 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,cntr_no,cop_no,base_url', [
-    ('01', 'SZPVD5837613', 'BEAU5297455', 'CSZP9819161088', CarrierOneySpider.base_url),
+@pytest.mark.parametrize('sub,mbl_no,cntr_no,cop_no', [
+    ('01', 'SZPVD5837613', 'BEAU5297455', 'CSZP9819161088'),
 ])
-def test_rail_information_routing_rule(sub, mbl_no, cntr_no, cop_no, base_url, sample_loader):
+def test_rail_information_routing_rule(sub, mbl_no, cntr_no, cop_no, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
     routing_request = RailInfoRoutingRule.build_routing_request(
-        container_no=cntr_no, cooperation=cop_no, base_url=base_url)
+        container_no=cntr_no, cooperation=cop_no, base_url=CarrierOneySpider.base_url)
     url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(

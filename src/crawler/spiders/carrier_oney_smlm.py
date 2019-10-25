@@ -267,7 +267,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         container_status_info_list = []
         for container_status_data in container_status_data_list:
             status_with_br = container_status_data['statusNm'].strip()
-            status = replace_word_as_space_in(status_with_br, '<br>')
+            status = status_with_br.replace('<br>', ' ')
 
             container_status_info_list.append({
                 'status': status,
@@ -318,8 +318,17 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_release_info(response_dict):
-        release_data_list = response_dict.get('list', default=None)
-        if len(release_data_list) >= 2:
+        if 'list' not in response_dict:
+            return {
+                'freight_date': None,
+                'us_customs_date': None,
+                'us_filing_date': None,
+                'firms_code': None,
+                'last_free_day': None,
+            }
+
+        release_data_list = response_dict['list']
+        if len(release_data_list) != 1:
             raise CarrierResponseFormatError(reason=f'Release information format error: `{release_data_list}`')
 
         release_data = release_data_list[0]
@@ -379,8 +388,3 @@ class RailInfoRoutingRule(BaseRoutingRule):
 
 def build_timestamp():
     return int(time.time() * 1000)
-
-
-def replace_word_as_space_in(text: str, word: str):
-    text_list = text.split(f'{word}')
-    return ' '.join(text_list)

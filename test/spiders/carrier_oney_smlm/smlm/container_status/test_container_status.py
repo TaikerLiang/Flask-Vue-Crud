@@ -17,15 +17,15 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,cntr_no,bkg_no,cop_no,base_url', [
-    ('01', 'TATH9C294100', 'SMCU1098525', 'TATH9C294100', 'CTAO9916398264', CarrierSmlmSpider.base_url),
-    ('02_br_in_description', 'SHAM9B410100', 'SDCU6132558', 'SHAM9B410100', 'CSHA9A09444599', CarrierSmlmSpider.base_url),
+@pytest.mark.parametrize('sub,mbl_no,cntr_no,bkg_no,cop_no', [
+    ('01', 'TATH9C294100', 'SMCU1098525', 'TATH9C294100', 'CTAO9916398264'),
+    ('02_br_in_description', 'SHAM9B410100', 'SDCU6132558', 'SHAM9B410100', 'CSHA9A09444599'),
 ])
-def test_container_status_routing_rule(sub, mbl_no, cntr_no, bkg_no, cop_no, base_url, sample_loader):
+def test_container_status_routing_rule(sub, mbl_no, cntr_no, bkg_no, cop_no, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
     routing_request = ContainerStatusRoutingRule.build_routing_request(
-        container_no=cntr_no, booking_no=bkg_no, cooperation_no=cop_no, base_url=base_url)
+        container_no=cntr_no, booking_no=bkg_no, cooperation_no=cop_no, base_url=CarrierSmlmSpider.base_url)
     url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(

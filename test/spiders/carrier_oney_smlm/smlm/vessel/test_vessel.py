@@ -17,14 +17,14 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,bkg_no,base_url', [
-    ('01_single_vessel', 'SHSM9C747300', 'SHSM9C747300', CarrierSmlmSpider.base_url),
-    ('02_multiple_vessels', 'TATH9C294100', 'TATH9C294100', CarrierSmlmSpider.base_url),
+@pytest.mark.parametrize('sub,mbl_no,bkg_no', [
+    ('01_single_vessel', 'SHSM9C747300', 'SHSM9C747300'),
+    ('02_multiple_vessels', 'TATH9C294100', 'TATH9C294100'),
 ])
-def test_vessel_routing_rule(sub, mbl_no, bkg_no, base_url, sample_loader):
+def test_vessel_routing_rule(sub, mbl_no, bkg_no, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
-    routing_request = VesselRoutingRule.build_routing_request(booking_no=bkg_no, base_url=base_url)
+    routing_request = VesselRoutingRule.build_routing_request(booking_no=bkg_no, base_url=CarrierSmlmSpider.base_url)
     url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(

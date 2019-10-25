@@ -17,14 +17,14 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,cntr_no,bkg_no,cop_no,base_url', [
-    ('01', 'SH9FSK690300', 'CLHU9129958', 'SH9FSK690300', 'CSHA9925486010', CarrierOneySpider.base_url),
+@pytest.mark.parametrize('sub,mbl_no,cntr_no,bkg_no,cop_no', [
+    ('01', 'SH9FSK690300', 'CLHU9129958', 'SH9FSK690300', 'CSHA9925486010'),
 ])
-def test_container_status_routing_rule(sub, mbl_no, cntr_no, bkg_no, cop_no, base_url, sample_loader):
+def test_container_status_routing_rule(sub, mbl_no, cntr_no, bkg_no, cop_no, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
     routing_request = ContainerStatusRoutingRule.build_routing_request(
-        container_no=cntr_no, booking_no=bkg_no, cooperation_no=cop_no, base_url=base_url)
+        container_no=cntr_no, booking_no=bkg_no, cooperation_no=cop_no, base_url=CarrierOneySpider.base_url)
     url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(

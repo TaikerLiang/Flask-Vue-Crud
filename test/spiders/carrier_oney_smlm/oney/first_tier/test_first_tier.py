@@ -47,13 +47,13 @@ def test_first_tier_routing_rule(sub, mbl_no, base_url, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,base_url,expect_exception', [
-    ('e01_invalid_mbl_no', 'SH9ACBH1540', CarrierOneySpider.base_url, CarrierInvalidMblNoError),
+@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
+    ('e01_invalid_mbl_no', 'SH9ACBH1540', CarrierInvalidMblNoError),
 ])
-def test_main_info_handler_mbl_no_error(sub, mbl_no, base_url, expect_exception, sample_loader):
+def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
-    routing_request = FirstTierRoutingRule.build_routing_request(mbl_no=mbl_no, base_url=base_url)
+    routing_request = FirstTierRoutingRule.build_routing_request(mbl_no=mbl_no, base_url=CarrierOneySpider.base_url)
     url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(
