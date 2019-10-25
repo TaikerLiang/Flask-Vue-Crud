@@ -1,0 +1,1 @@
+{"error":{"type":0,"msg":"FN not set!"},"request":"Array\n(\n    [fn] => get_tracktrace_bl\n    [ref_num] => XXXX\n)\n","data":{"err":1,"err_msg":"No data found for B\/L Number XXXX.<br \/><br \/>Please Make sure you entered correct Reference Number.","refnum":null,"refnum_info":"","scheduletable":"","containers":"","scheduleinfo":"","transhipment_list":0}}
