@@ -1,3 +1,4 @@
+import scrapy
 from scrapy.exceptions import CloseSpider
 
 from .base import CARRIER_RESULT_STATUS_FATAL
@@ -16,6 +17,9 @@ class CarrierSpiderMiddleware:
 
         if not error:
             for i in result:
+                if isinstance(i, scrapy.Request):
+                    spider.logger.warning(f'[{self.__class__.__name__}] ----- send request: {i.url}')
+
                 yield i
 
         # [StackOverflow] How to get the number of requests in queue in scrapy?
