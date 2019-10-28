@@ -18,6 +18,7 @@ def sample_loader(sample_loader):
 
 @pytest.mark.parametrize('sub,mbl_no,', [
     ('01_all_fill', '143982920890'),
+    ('02_release_status_data_not_found', '003902773938'),
 ])
 def test_release_status_handler(sub, mbl_no, sample_loader):
     html_file = str(sample_loader.build_file_path(sub, 'sample.html'))

@@ -476,28 +476,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
     def _extract_release_status(response: scrapy.Selector) -> Dict:
         table_selector = response.css('table')
 
-        if table_selector:
-            carrier_status_table_locator = CarrierStatusTableLocator()
-            carrier_status_table_locator.parse(table=table_selector)
-            carrier_status_table = TableExtractor(table_locator=carrier_status_table_locator)
-
-            us_customs_status_table_locator = USCustomStatusTableLocator()
-            us_customs_status_table_locator.parse(table=table_selector)
-            us_customs_status_table = TableExtractor(table_locator=us_customs_status_table_locator)
-
-            custom_release_status_table_locator = CustomReleaseStatusTableLocator()
-            custom_release_status_table_locator.parse(table=table_selector)
-            custom_release_status_table = TableExtractor(table_locator=custom_release_status_table_locator)
-
-            return {
-                'carrier_status': carrier_status_table.extract_cell(top='Status', left=None) or None,
-                'carrier_release_date': carrier_status_table.extract_cell(top='Carrier Date', left=None) or None,
-                'us_customs_status': us_customs_status_table.extract_cell(top='I.T. NO.', left=None) or None,
-                'us_customs_date': us_customs_status_table.extract_cell(top='Date', left=None) or None,
-                'customs_release_status': custom_release_status_table.extract_cell(top='Status', left=None) or None,
-                'customs_release_date': custom_release_status_table.extract_cell(top='Date', left=None) or None,
-            }
-        else:
+        if not table_selector:
             return {
                 'carrier_status': None,
                 'carrier_release_date': None,
@@ -506,6 +485,38 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
                 'customs_release_status': None,
                 'customs_release_date': None,
             }
+
+        first_message = table_selector.css('tr td::text').get()
+        if first_message.strip() == 'Data not found.':
+            return {
+                'carrier_status': None,
+                'carrier_release_date': None,
+                'us_customs_status': None,
+                'us_customs_date': None,
+                'customs_release_status': None,
+                'customs_release_date': None,
+            }
+
+        carrier_status_table_locator = CarrierStatusTableLocator()
+        carrier_status_table_locator.parse(table=table_selector)
+        carrier_status_table = TableExtractor(table_locator=carrier_status_table_locator)
+
+        us_customs_status_table_locator = USCustomStatusTableLocator()
+        us_customs_status_table_locator.parse(table=table_selector)
+        us_customs_status_table = TableExtractor(table_locator=us_customs_status_table_locator)
+
+        custom_release_status_table_locator = CustomReleaseStatusTableLocator()
+        custom_release_status_table_locator.parse(table=table_selector)
+        custom_release_status_table = TableExtractor(table_locator=custom_release_status_table_locator)
+
+        return {
+            'carrier_status': carrier_status_table.extract_cell(top='Status', left=None) or None,
+            'carrier_release_date': carrier_status_table.extract_cell(top='Carrier Date', left=None) or None,
+            'us_customs_status': us_customs_status_table.extract_cell(top='I.T. NO.', left=None) or None,
+            'us_customs_date': us_customs_status_table.extract_cell(top='Date', left=None) or None,
+            'customs_release_status': custom_release_status_table.extract_cell(top='Status', left=None) or None,
+            'customs_release_date': custom_release_status_table.extract_cell(top='Date', left=None) or None,
+        }
 
 
 class CarrierStatusTableLocator(BaseTableLocator):
@@ -688,7 +699,8 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_no = response.meta['container_no']
 
-        for container_status in self._extract_container_status(response=response):
+        container_status_list = self._extract_container_status_list(response=response)
+        for container_status in container_status_list:
             yield ContainerStatusItem(
                 container_key=container_no,
                 description=container_status['description'],
@@ -697,7 +709,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             )
 
     @staticmethod
-    def _extract_container_status(response: scrapy.Selector) -> Dict:
+    def _extract_container_status_list(response: scrapy.Selector) -> List[Dict]:
         tables = response.css('table table')
 
         rule = NameOnTableMatchRule(name_startswith='Container Moves')
@@ -709,13 +721,15 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
 
+        container_status_list = []
         for left in table_locator.iter_left_headers():
-            yield {
+            container_status_list.append({
                 'timestamp': table.extract_cell('Date', left),
                 'description': table.extract_cell('Container Moves', left),
                 'location_name': table.extract_cell('Location', left),
-            }
+            })
 
+        return container_status_list
 
 # -------------------------------------------------------------------------------
 

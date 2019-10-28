@@ -1,0 +1,23 @@
+
+
+<script>
+function amsDetail(customs,filing_pod)
+{
+    winContent = window.open("","amsDetail","left=50,top=80,width=800,height=350,toolbar=no,menubar=yes,scrollbars=yes,resizable=yes");
+    if (customs != null || customs != null){
+        document.frmAMSDetail.customs.value = customs;
+        document.frmAMSDetail.filing_pod.value = filing_pod;
+    }
+    document.frmAMSDetail.submit();
+    winContent.focus();
+}
+</script>
+
+
+  
+        <table height="30" width="92%" cellspacing="1" cellpadding="1" border="0" align="center">
+            <tr>
+                <td class="f12rowb1" align="left">Data not found.</td>
+            </tr>
+        </table>
+      
