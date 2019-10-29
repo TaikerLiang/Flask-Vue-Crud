@@ -1,0 +1,410 @@
+[
+    {
+        "bookingNumber": "5432696",
+        "bookedDate": 1569222000000,
+        "containerNumber": "MATU231091",
+        "checkDigit": "0",
+        "consigneeName": "STRAIGHT FORWARDING INC.",
+        "shipperName": "T.H.I. GROUP LTD.",
+        "shipperContact": "OP PERSON",
+        "shipperPhone": "57487286777",
+        "originPort": "NINGBO",
+        "destPort": "LONG BEACH",
+        "originCode": "NGB",
+        "destCode": "MNA",
+        "loadPort": "NINGBO",
+        "dischargePort": "LONG BEACH",
+        "blOrigin": "",
+        "blDest": "",
+        "oversizeLeft": "0",
+        "oversizeRight": "0",
+        "oversizeFront": "0",
+        "oversizeRear": "0",
+        "oversizeHeight": "0",
+        "oversizeFlag": false,
+        "equipmentType": "Dry Container 40'",
+        "temperature": null,
+        "temperatureScale": null,
+        "releaseToParty": "STRAIGHT FORWARDING INC.",
+        "sealNumber": "796432",
+        "physicalLocation": null,
+        "stopInTransit": "N",
+        "availableDate": null,
+        "returnDate": null,
+        "storageDate": null,
+        "military": false,
+        "militaryTcn": null,
+        "militaryPort": null,
+        "militaryConsignor": null,
+        "militaryConsignee": null,
+        "militaryVoyDoc": null,
+        "gblNumber": null,
+        "emptyFull": null,
+        "trucker": null,
+        "locationCode": null,
+        "railSighting": null,
+        "eventCode": null,
+        "eventDetailCode": null,
+        "eventDate": null,
+        "bookingId": 3393883,
+        "containerId": 258579,
+        "netWeight": 23299.0,
+        "events": [
+            {
+                "date": 1571622900000,
+                "location": "SHIPPERS TRANSPORT (CA)",
+                "status": "INGATE                              Full by SHIPPERS TRANSPORT EXPRESS",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571622900000,
+                "location": "SHIPPERS TRANSPORT (CA)",
+                "status": "AVAILABLE                          ",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571621940000,
+                "location": "LONG BEACH (CA)",
+                "status": "OUTGATE                             to SHIPPERS TRANSPORT EXPRESS",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571603700000,
+                "location": "LONG BEACH (CA)",
+                "status": "DISCHARGE FROM VESSEL               MANOA 416",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571265300000,
+                "location": "",
+                "status": "HOLD RELEASED                       - Hold for Payment",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571253180000,
+                "location": "",
+                "status": "HOLD RELEASED                       - Customs Clearance",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570855320000,
+                "location": "",
+                "status": "CONTAINER ON HOLD                   - Hold for Payment",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570641780000,
+                "location": "",
+                "status": "CONTAINER ON HOLD                   - Customs Clearance",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570641180000,
+                "location": "",
+                "status": "CONTAINER ON HOLD                   - Customs Clearance",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570507200000,
+                "location": "NINGBO",
+                "status": "LOAD TO VESSEL                      MANOA 416",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570406160000,
+                "location": "NINGBO",
+                "status": "INGATE                              Full by NINGBO                                   ",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            }
+        ],
+        "shipperRefs": [],
+        "consigneePOs": [],
+        "commodities": [
+            "FREIGHT-ALL-KINDS OR CONSOLIDA"
+        ],
+        "containerOnly": false
+    },
+    {
+        "bookingNumber": "5432696",
+        "bookedDate": 1569222000000,
+        "containerNumber": "MATU231091",
+        "checkDigit": "0",
+        "consigneeName": "STRAIGHT FORWARDING INC.",
+        "shipperName": "T.H.I. GROUP LTD.",
+        "shipperContact": "OP PERSON",
+        "shipperPhone": "57487286777",
+        "originPort": "NINGBO",
+        "destPort": "LONG BEACH",
+        "originCode": "NGB",
+        "destCode": "MNA",
+        "loadPort": "NINGBO",
+        "dischargePort": "LONG BEACH",
+        "blOrigin": "",
+        "blDest": "",
+        "oversizeLeft": "0",
+        "oversizeRight": "0",
+        "oversizeFront": "0",
+        "oversizeRear": "0",
+        "oversizeHeight": "0",
+        "oversizeFlag": false,
+        "equipmentType": "Dry Container 40'",
+        "temperature": null,
+        "temperatureScale": null,
+        "releaseToParty": "STRAIGHT FORWARDING INC.",
+        "sealNumber": "796432",
+        "physicalLocation": null,
+        "stopInTransit": "N",
+        "availableDate": null,
+        "returnDate": null,
+        "storageDate": null,
+        "military": false,
+        "militaryTcn": null,
+        "militaryPort": null,
+        "militaryConsignor": null,
+        "militaryConsignee": null,
+        "militaryVoyDoc": null,
+        "gblNumber": null,
+        "emptyFull": null,
+        "trucker": null,
+        "locationCode": null,
+        "railSighting": null,
+        "eventCode": null,
+        "eventDetailCode": null,
+        "eventDate": null,
+        "bookingId": 3393883,
+        "containerId": 258579,
+        "netWeight": 23299.0,
+        "events": [
+            {
+                "date": 1571622900000,
+                "location": "SHIPPERS TRANSPORT (CA)",
+                "status": "INGATE                              Full by SHIPPERS TRANSPORT EXPRESS",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571622900000,
+                "location": "SHIPPERS TRANSPORT (CA)",
+                "status": "AVAILABLE                          ",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571621940000,
+                "location": "LONG BEACH (CA)",
+                "status": "OUTGATE                             to SHIPPERS TRANSPORT EXPRESS",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571603700000,
+                "location": "LONG BEACH (CA)",
+                "status": "DISCHARGE FROM VESSEL               MANOA 416",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571265300000,
+                "location": "",
+                "status": "HOLD RELEASED                       - Hold for Payment",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571253180000,
+                "location": "",
+                "status": "HOLD RELEASED                       - Customs Clearance",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570855320000,
+                "location": "",
+                "status": "CONTAINER ON HOLD                   - Hold for Payment",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570641780000,
+                "location": "",
+                "status": "CONTAINER ON HOLD                   - Customs Clearance",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570641180000,
+                "location": "",
+                "status": "CONTAINER ON HOLD                   - Customs Clearance",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570507200000,
+                "location": "NINGBO",
+                "status": "LOAD TO VESSEL                      MANOA 416",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570406160000,
+                "location": "NINGBO",
+                "status": "INGATE                              Full by NINGBO                                   ",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            }
+        ],
+        "shipperRefs": [],
+        "consigneePOs": [],
+        "commodities": [
+            "FREIGHT-ALL-KINDS OR CONSOLIDA"
+        ],
+        "containerOnly": false
+    },
+    {
+        "bookingNumber": "5432696",
+        "bookedDate": 1569222000000,
+        "containerNumber": "MATU231091",
+        "checkDigit": "0",
+        "consigneeName": "STRAIGHT FORWARDING INC.",
+        "shipperName": "T.H.I. GROUP LTD.",
+        "shipperContact": "OP PERSON",
+        "shipperPhone": "57487286777",
+        "originPort": "NINGBO",
+        "destPort": "LONG BEACH",
+        "originCode": "NGB",
+        "destCode": "MNA",
+        "loadPort": "NINGBO",
+        "dischargePort": "LONG BEACH",
+        "blOrigin": "",
+        "blDest": "",
+        "oversizeLeft": "0",
+        "oversizeRight": "0",
+        "oversizeFront": "0",
+        "oversizeRear": "0",
+        "oversizeHeight": "0",
+        "oversizeFlag": false,
+        "equipmentType": "Dry Container 40'",
+        "temperature": null,
+        "temperatureScale": null,
+        "releaseToParty": "STRAIGHT FORWARDING INC.",
+        "sealNumber": "796432",
+        "physicalLocation": null,
+        "stopInTransit": "N",
+        "availableDate": null,
+        "returnDate": null,
+        "storageDate": null,
+        "military": false,
+        "militaryTcn": null,
+        "militaryPort": null,
+        "militaryConsignor": null,
+        "militaryConsignee": null,
+        "militaryVoyDoc": null,
+        "gblNumber": null,
+        "emptyFull": null,
+        "trucker": null,
+        "locationCode": null,
+        "railSighting": null,
+        "eventCode": null,
+        "eventDetailCode": null,
+        "eventDate": null,
+        "bookingId": 3393883,
+        "containerId": 258579,
+        "netWeight": 23299.0,
+        "events": [
+            {
+                "date": 1571622900000,
+                "location": "SHIPPERS TRANSPORT (CA)",
+                "status": "INGATE                              Full by SHIPPERS TRANSPORT EXPRESS",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571622900000,
+                "location": "SHIPPERS TRANSPORT (CA)",
+                "status": "AVAILABLE                          ",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571621940000,
+                "location": "LONG BEACH (CA)",
+                "status": "OUTGATE                             to SHIPPERS TRANSPORT EXPRESS",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571603700000,
+                "location": "LONG BEACH (CA)",
+                "status": "DISCHARGE FROM VESSEL               MANOA 416",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571265300000,
+                "location": "",
+                "status": "HOLD RELEASED                       - Hold for Payment",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571253180000,
+                "location": "",
+                "status": "HOLD RELEASED                       - Customs Clearance",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570855320000,
+                "location": "",
+                "status": "CONTAINER ON HOLD                   - Hold for Payment",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570641780000,
+                "location": "",
+                "status": "CONTAINER ON HOLD                   - Customs Clearance",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570641180000,
+                "location": "",
+                "status": "CONTAINER ON HOLD                   - Customs Clearance",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570507200000,
+                "location": "NINGBO",
+                "status": "LOAD TO VESSEL                      MANOA 416",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570406160000,
+                "location": "NINGBO",
+                "status": "INGATE                              Full by NINGBO                                   ",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            }
+        ],
+        "shipperRefs": [],
+        "consigneePOs": [],
+        "commodities": [
+            "FREIGHT-ALL-KINDS OR CONSOLIDA"
+        ],
+        "containerOnly": false
+    }
+]
