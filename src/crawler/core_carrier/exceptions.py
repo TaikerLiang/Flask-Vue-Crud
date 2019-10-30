@@ -34,3 +34,10 @@ class CarrierResponseFormatError(BaseCarrierError):
 
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail=f'<format-error> {self.reason}')
+
+
+class LoadWebsiteTimeOutError(BaseCarrierError):
+    status = CARRIER_RESULT_STATUS_FATAL
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail='<load-website-timeout-error>')
