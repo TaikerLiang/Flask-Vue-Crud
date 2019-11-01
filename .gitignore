@@ -1,5 +1,4 @@
 # shub deploy
-/src/setup.py
 /src/build/
 /src/project.egg-info/
 /src/.releases
