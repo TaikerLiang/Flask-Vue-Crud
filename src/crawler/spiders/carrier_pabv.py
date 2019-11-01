@@ -88,13 +88,15 @@ class TrackRoutingRule(BaseRoutingRule):
         )
 
         for schedule_table in self._extract_schedule_table(content=content):
+            vessel = schedule_table['vessel']
+
             yield VesselItem(
-                vessel_key=schedule_table['vessel'],
-                etd=schedule_table['etd'],
-                pol=schedule_table['pol'],
-                vessel=schedule_table['vessel'],
+                vessel_key=vessel,
+                vessel=vessel,
                 voyage=schedule_table['voyage'],
-                pod=schedule_table['pod'],
+                pol=LocationItem(name=schedule_table['pol']),
+                pod=LocationItem(name=schedule_table['pod']),
+                etd=schedule_table['etd'],
                 eta=schedule_table['eta'],
             )
 
