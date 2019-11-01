@@ -17,6 +17,41 @@ epsc test
 ```
 
 
+## Deploy to Scrapy Cloud
+
+### (Prepare) Docker Login
+
+* Username is your API key
+* Password is '` `' (one empty space)
+
+```bash
+docker login images.scrapinghub.com
+```
+
+### (Prepare) scrapinghub.yml
+
+Sample
+
+```yaml
+projects:
+  default:
+    id: ######
+
+image: true
+```
+
+### Deploy Image 
+
+```bash
+shub image upload
+
+# ----- equivalent to -----
+# shub image build
+# shub image push
+# shub image deploy
+```
+
+
 ## Generate Package Requirements
 
 Install `pip-tools`
