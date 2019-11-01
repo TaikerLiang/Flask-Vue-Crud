@@ -108,7 +108,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         for status in status_list:
             return_list.append({
                 'timestamp': str(status['date']),
-                'description': multi_space_patt.sub(' ', status['status']),
+                'description': multi_space_patt.sub(' ', status['status']).strip(),
                 'location_name': status['location'].strip() or None,
             })
 
