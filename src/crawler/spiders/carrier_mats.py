@@ -109,7 +109,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             return_list.append({
                 'timestamp': str(status['date']),
                 'description': multi_space_patt.sub(' ', status['status']),
-                'location_name': status['location'] or None,
+                'location_name': status['location'].strip() or None,
             })
 
         return return_list
