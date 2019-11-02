@@ -1,0 +1,260 @@
+{
+    "Containers": [
+        {
+            "ContainerNo": "PCIU7979631",
+            "BLNo": "KHH19028854",
+            "BookingNo": "KHH19028854",
+            "Type": "20OH",
+            "DestinationName": "TOWNSVILLE",
+            "Activities": [
+                {
+                    "Code": "GIT",
+                    "Name": "GATE IN TRUCKING",
+                    "DateTime": "/Date(1572345360000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "Townsville Hubert Street Depot",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "163",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "GOF",
+                    "Name": "GATE OUT FULL",
+                    "DateTime": "/Date(1572344880000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "TSVNSS - BERTH 3 TERMINAL",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "163",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "GIA",
+                    "Name": "GATE IN AVAILABLE",
+                    "DateTime": "/Date(1572343380000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "Townsville Hubert Street Depot",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "163",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "UNP",
+                    "Name": "UNPACK",
+                    "DateTime": "/Date(1572343200000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "Townsville Hubert Street Depot",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "163",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "CQA",
+                    "Name": "CUSTOMS & QUARATINE AVAILABLE",
+                    "DateTime": "/Date(1572328740000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "TSVNSS - BERTH 3 TERMINAL",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "163",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "DSF",
+                    "Name": "DISCHARGE FULL",
+                    "DateTime": "/Date(1572326460000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "TSVNSS - BERTH 3 TERMINAL",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "163",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "LDF",
+                    "Name": "LOAD FULL",
+                    "DateTime": "/Date(1568930400000)/",
+                    "PortName": "KAOHSIUNG",
+                    "LocationName": "HMM KAOHSIUNG CNTR TERMINAL",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "162",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "GIF",
+                    "Name": "GATE IN FULL",
+                    "DateTime": "/Date(1568726100000)/",
+                    "PortName": "KAOHSIUNG",
+                    "LocationName": "HMM KAOHSIUNG CNTR TERMINAL",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "162",
+                        "Bound": "N"
+                    }
+                }
+            ]
+        },
+        {
+            "ContainerNo": "PCIU7988443",
+            "BLNo": "KHH19028854",
+            "BookingNo": "KHH19028854",
+            "Type": "20OH",
+            "DestinationName": "TOWNSVILLE",
+            "Activities": [
+                {
+                    "Code": "GIT",
+                    "Name": "GATE IN TRUCKING",
+                    "DateTime": "/Date(1572345120000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "Townsville Hubert Street Depot",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "163",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "GOF",
+                    "Name": "GATE OUT FULL",
+                    "DateTime": "/Date(1572344880000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "TSVNSS - BERTH 3 TERMINAL",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "163",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "GIA",
+                    "Name": "GATE IN AVAILABLE",
+                    "DateTime": "/Date(1572343380000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "Townsville Hubert Street Depot",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "163",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "UNP",
+                    "Name": "UNPACK",
+                    "DateTime": "/Date(1572343200000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "Townsville Hubert Street Depot",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "163",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "CQA",
+                    "Name": "CUSTOMS & QUARATINE AVAILABLE",
+                    "DateTime": "/Date(1572328740000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "TSVNSS - BERTH 3 TERMINAL",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "163",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "DSF",
+                    "Name": "DISCHARGE FULL",
+                    "DateTime": "/Date(1572326520000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "TSVNSS - BERTH 3 TERMINAL",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "163",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "LDF",
+                    "Name": "LOAD FULL",
+                    "DateTime": "/Date(1568930400000)/",
+                    "PortName": "KAOHSIUNG",
+                    "LocationName": "HMM KAOHSIUNG CNTR TERMINAL",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "162",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "GIF",
+                    "Name": "GATE IN FULL",
+                    "DateTime": "/Date(1568719800000)/",
+                    "PortName": "KAOHSIUNG",
+                    "LocationName": "HMM KAOHSIUNG CNTR TERMINAL",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "162",
+                        "Bound": "N"
+                    }
+                }
+            ]
+        }
+    ],
+    "FinalLeg": {
+        "LoadPortCode": "TWKHH",
+        "LoadPortName": "KAOHSIUNG",
+        "DischargePortCode": "AUTSV",
+        "DischargePortName": "TOWNSVILLE",
+        "LoadVoyage": {
+            "ServiceCode": "ANA",
+            "VesselCode": "KNG",
+            "VesselName": "KOTA NAGA",
+            "VoyageCode": "162",
+            "Bound": "N"
+        },
+        "ETA": "/Date(1572220800000)/"
+    }
+}
