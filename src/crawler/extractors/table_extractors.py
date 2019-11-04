@@ -44,6 +44,7 @@ class TopHeaderTableLocator(BaseTableLocator):
 
     def __init__(self):
         self._td_map = {}  # top_header: [td, ...]
+        self._data_len = 0
 
     def parse(self, table: Selector):
         top_header_list = []
@@ -53,10 +54,13 @@ class TopHeaderTableLocator(BaseTableLocator):
             top_header_list.append(top_header)
             self._td_map[top_header] = []
 
-        for tr in table.css('tbody tr'):
+        data_tr_list = table.css('tbody tr')
+        for tr in data_tr_list:
             for top_index, td in enumerate(tr.css('td')):
                 top = top_header_list[top_index]
                 self._td_map[top].append(td)
+
+        self._data_len = len(data_tr_list)
 
     def get_cell(self, top, left) -> Selector:
         try:
@@ -66,6 +70,10 @@ class TopHeaderTableLocator(BaseTableLocator):
 
     def has_header(self, top=None, left=None) -> bool:
         return (top in self._td_map) and (left is None)
+
+    def iter_left_header(self):
+        for i in range(self._data_len):
+            yield i
 
 
 class TopLeftHeaderTableLocator(BaseTableLocator):
