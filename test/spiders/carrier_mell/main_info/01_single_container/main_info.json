@@ -1,0 +1,139 @@
+{
+    "Containers": [
+        {
+            "ContainerNo": "PCIU7967353",
+            "BLNo": "KHH19028789",
+            "BookingNo": "KHH19028789",
+            "Type": "20OH",
+            "DestinationName": "TOWNSVILLE",
+            "Activities": [
+                {
+                    "Code": "GIA",
+                    "Name": "GATE IN AVAILABLE",
+                    "DateTime": "/Date(1568282580000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "Townsville Hubert Street Depot",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "162",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "UNP",
+                    "Name": "UNPACK",
+                    "DateTime": "/Date(1568282400000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "Townsville Hubert Street Depot",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "162",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "GIT",
+                    "Name": "GATE IN TRUCKING",
+                    "DateTime": "/Date(1568198400000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "Townsville Hubert Street Depot",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "162",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "GOF",
+                    "Name": "GATE OUT FULL",
+                    "DateTime": "/Date(1568195400000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "TSVNSS - BERTH 3 TERMINAL",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "162",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "CQA",
+                    "Name": "CUSTOMS & QUARATINE AVAILABLE",
+                    "DateTime": "/Date(1568008740000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "TSVNSS - BERTH 3 TERMINAL",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "162",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "DSF",
+                    "Name": "DISCHARGE FULL",
+                    "DateTime": "/Date(1567903020000)/",
+                    "PortName": "TOWNSVILLE",
+                    "LocationName": "TSVNSS - BERTH 3 TERMINAL",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "162",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "LDF",
+                    "Name": "LOAD FULL",
+                    "DateTime": "/Date(1565212500000)/",
+                    "PortName": "KAOHSIUNG",
+                    "LocationName": "HMM KAOHSIUNG CNTR TERMINAL",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "161",
+                        "Bound": "N"
+                    }
+                },
+                {
+                    "Code": "GIF",
+                    "Name": "GATE IN FULL",
+                    "DateTime": "/Date(1565088300000)/",
+                    "PortName": "KAOHSIUNG",
+                    "LocationName": "HMM KAOHSIUNG CNTR TERMINAL",
+                    "Voyage": {
+                        "ServiceCode": "ANA",
+                        "VesselCode": "KNG",
+                        "VesselName": "KOTA NAGA",
+                        "VoyageCode": "161",
+                        "Bound": "N"
+                    }
+                }
+            ]
+        }
+    ],
+    "FinalLeg": {
+        "LoadPortCode": "TWKHH",
+        "LoadPortName": "KAOHSIUNG",
+        "DischargePortCode": "AUTSV",
+        "DischargePortName": "TOWNSVILLE",
+        "LoadVoyage": {
+            "ServiceCode": "ANA",
+            "VesselCode": "KNG",
+            "VesselName": "KOTA NAGA",
+            "VoyageCode": "161",
+            "Bound": "N"
+        },
+        "ETA": "/Date(1567872360000)/"
+    }
+}
