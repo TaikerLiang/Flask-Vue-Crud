@@ -87,7 +87,7 @@ def runTest() {
     echo "userPipPackageBase=${userPipPackageBase}"
 
     sh "pip install -e '.[dev]' --user --no-cache"
-    sh "${userPipPackageBase}/bin/epsc test --pytest-args='-p no:cacheprovider --junitxml=pytest_report.xml --cov=src/ --cov-report=xml:pytest_coverage.xml'"
+    sh "${userPipPackageBase}/bin/epsc test --pytest-args='-vv -p no:cacheprovider --junitxml=pytest_report.xml --cov=src/ --cov-report=xml:pytest_coverage.xml'"
 }
 
 def runDeploy() {
