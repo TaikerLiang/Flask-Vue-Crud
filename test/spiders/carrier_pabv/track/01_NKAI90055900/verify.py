@@ -1,4 +1,4 @@
-from crawler.core_carrier.items import MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem
+from crawler.core_carrier.items import MblItem, LocationItem, VesselItem, ContainerItem
 
 
 class Verifier:
@@ -11,20 +11,20 @@ class Verifier:
 
         assert results[1] == VesselItem(
             vessel_key='DE LIN',
-            etd='2019-06-21',
-            pol='NANJING',
             vessel='DE LIN',
             voyage='XDEL0120N',
-            pod='CNSHA',
+            pol=LocationItem(name='NANJING'),
+            pod=LocationItem(name='CNSHA'),
+            etd='2019-06-21',
             eta='2019-06-24',
         )
         assert results[2] == VesselItem(
             vessel_key='COSCO SPAIN',
-            etd='2019-06-29',
-            pol='SHANGHAI',
             vessel='COSCO SPAIN',
             voyage='VCSP0029E',
-            pod='USLAX',
+            pol=LocationItem(name='SHANGHAI'),
+            pod=LocationItem(name='USLAX'),
+            etd='2019-06-29',
             eta='2019-07-18',
         )
 
