@@ -22,6 +22,7 @@ def sample_loader(sample_loader):
     ('01_only_pod_in_schedule', 'ZIMUSNH1160339'),
     ('02_multi_ships', 'ZIMUNGB9355973'),
     ('03_second_ship_not_show', 'ZIMUNGB9490976'),
+    ('04_without_ts_port', 'ZIMULAX0139127'),
 ])
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')

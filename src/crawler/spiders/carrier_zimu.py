@@ -250,7 +250,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         # add POD ?
         last_schedule = result[-1]
-        if last_schedule.port_type == 'Transshipment':
+        if last_schedule.port_type != 'POD':
             result.append(ScheduleInfo(
                 port_type='POD',
                 port_name=pod,
