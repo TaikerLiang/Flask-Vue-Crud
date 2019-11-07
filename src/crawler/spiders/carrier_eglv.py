@@ -6,7 +6,8 @@ import requests
 import scrapy
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL
-from crawler.core_carrier.base_spiders import BaseCarrierSpider
+from crawler.core_carrier.base_spiders import (
+    BaseCarrierSpider, CARRIER_CUSTOM_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError)
 from crawler.core_carrier.items import ContainerStatusItem, LocationItem, ContainerItem, MblItem, BaseCarrierItem, \
@@ -23,6 +24,11 @@ EGLV_CAPTCHA_URL = 'https://www.shipmentlink.com/servlet/TUF1_CaptchaUtils'
 
 class CarrierEglvSpider(BaseCarrierSpider):
     name = 'carrier_eglv'
+
+    custom_settings = {
+        **CARRIER_CUSTOM_SETTINGS,
+        **DISABLE_DUPLICATE_REQUEST_FILTER,
+    }
 
     def __init__(self, *args, **kwargs):
         super(CarrierEglvSpider, self).__init__(*args, **kwargs)
