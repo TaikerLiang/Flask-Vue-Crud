@@ -19,6 +19,7 @@ def sample_loader(sample_loader):
 
 @pytest.mark.parametrize('sub,mbl_no,', [
     ('01_NKAI90055900', 'NKAI90055900'),
+    ('02_HUPE90310700', 'HUPE90310700'),
 ])
 def test_track_handler(sub, mbl_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')

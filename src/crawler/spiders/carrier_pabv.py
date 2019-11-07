@@ -81,21 +81,26 @@ class TrackRoutingRule(BaseRoutingRule):
 
         mbl_no = content['refnum']['0']
         schedule_info = self._extract_schedule_info(content=content)
+        por = schedule_info['Place of Receipt']
+        place_of_deliv = schedule_info['Place of Delivery']
+
         yield MblItem(
             mbl_no=mbl_no,
-            por=LocationItem(name=schedule_info['Place of Receipt']),
-            place_of_deliv=LocationItem(name=schedule_info['Place of Delivery']),
+            por=LocationItem(name=por['name'], un_lo_code=por['un_lo_code']),
+            place_of_deliv=LocationItem(name=place_of_deliv['name'], un_lo_code=place_of_deliv['un_lo_code']),
         )
 
         for schedule_table in self._extract_schedule_table(content=content):
             vessel = schedule_table['vessel']
+            pol = schedule_table['pol']
+            pod = schedule_table['pod']
 
             yield VesselItem(
                 vessel_key=vessel,
                 vessel=vessel,
                 voyage=schedule_table['voyage'],
-                pol=LocationItem(name=schedule_table['pol']),
-                pod=LocationItem(name=schedule_table['pod']),
+                pol=LocationItem(name=pol['name'], un_lo_code=pol['un_lo_code']),
+                pod=LocationItem(un_lo_code=pod['un_lo_code']),
                 etd=schedule_table['etd'],
                 eta=schedule_table['eta'],
             )
@@ -119,9 +124,10 @@ class TrackRoutingRule(BaseRoutingRule):
             values = line.strip().split('<b>')
 
             key = values[0].strip()
-            value = values[1].strip().split(' ')[0]
+            name = values[1].split('[')[0].strip()
+            un_lo_code = values[1].split(']')[0].split('[')[-1]
 
-            schedule_info[key] = value
+            schedule_info[key] = {'name': name, 'un_lo_code': un_lo_code}
 
         return schedule_info
 
@@ -141,12 +147,19 @@ class TrackRoutingRule(BaseRoutingRule):
         cell_extractor = ScheduleTableCellExtractor()
 
         for left in schedule_table_locator.iter_left_headers():
+            pol = {
+                'name': schedule_table_extractor.extract_cell('Location', left, extractor=cell_extractor)[1],
+                'un_lo_code': schedule_table_extractor.extract_cell('Location', left, extractor=cell_extractor)[2],
+            }
+            pod = {
+                'un_lo_code': schedule_table_extractor.extract_cell('Next Location', left, extractor=cell_extractor)[0],
+            }
             yield {
                 'etd': schedule_table_extractor.extract_cell('Arrival/Delivery', left, extractor=cell_extractor)[1],
-                'pol': schedule_table_extractor.extract_cell('Location', left, extractor=cell_extractor)[1],
+                'pol': pol,
                 'vessel': schedule_table_extractor.extract_cell('Vessel/Voyage', left, extractor=cell_extractor)[0],
                 'voyage': schedule_table_extractor.extract_cell('Vessel/Voyage', left, extractor=cell_extractor)[1],
-                'pod': schedule_table_extractor.extract_cell('Next Location', left, extractor=cell_extractor)[0],
+                'pod': pod,
                 'eta': schedule_table_extractor.extract_cell('Next Location', left, extractor=cell_extractor)[1],
             }
 
@@ -193,7 +206,7 @@ class ContainerRoutingRule(BaseRoutingRule):
                 container_key=container_id,
                 description=container_item['description'],
                 local_date_time=container_item['local_date_time'],
-                location=container_item['location'],
+                location=LocationItem(name=container_item['location']),
                 transport=container_item['transport'],
             )
 

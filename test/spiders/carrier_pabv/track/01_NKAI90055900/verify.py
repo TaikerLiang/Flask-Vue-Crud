@@ -5,16 +5,16 @@ class Verifier:
     def verify(self, results):
         assert results[0] == MblItem(
             mbl_no='NKAI90055900',
-            place_of_deliv=LocationItem(name='LOS'),
-            por=LocationItem(name='NANJING'),
+            place_of_deliv=LocationItem(name='LOS ANGELES', un_lo_code='USLAX'),
+            por=LocationItem(name='NANJING', un_lo_code='CNNKG'),
         )
 
         assert results[1] == VesselItem(
             vessel_key='DE LIN',
             vessel='DE LIN',
             voyage='XDEL0120N',
-            pol=LocationItem(name='NANJING'),
-            pod=LocationItem(name='CNSHA'),
+            pol=LocationItem(name='NANJING', un_lo_code='CNNKG'),
+            pod=LocationItem(un_lo_code='CNSHA'),
             etd='2019-06-21',
             eta='2019-06-24',
         )
@@ -22,8 +22,8 @@ class Verifier:
             vessel_key='COSCO SPAIN',
             vessel='COSCO SPAIN',
             voyage='VCSP0029E',
-            pol=LocationItem(name='SHANGHAI'),
-            pod=LocationItem(name='USLAX'),
+            pol=LocationItem(name='SHANGHAI', un_lo_code='CNSHA'),
+            pod=LocationItem(un_lo_code='USLAX'),
             etd='2019-06-29',
             eta='2019-07-18',
         )
