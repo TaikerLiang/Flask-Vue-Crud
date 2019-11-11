@@ -208,6 +208,7 @@ class ContainerRoutingRule(BaseRoutingRule):
                 local_date_time=container_item['local_date_time'],
                 location=LocationItem(name=container_item['location']),
                 transport=container_item['transport'],
+                est_or_actual=container_item['est_or_actual'],
             )
 
     @staticmethod
@@ -224,11 +225,21 @@ class ContainerRoutingRule(BaseRoutingRule):
         schedule_table_extractor = TableExtractor(table_locator=schedule_table_locator)
 
         for left in schedule_table_locator.iter_left_headers():
+            date_str = schedule_table_extractor.extract_cell('Date', left)
+            est_or_actual = 'E'
+            if date_str == 'Pending':
+                date_str = None
+            elif '*' in date_str:
+                date_str = date_str.strip('* ')
+            else:
+                est_or_actual = 'A'
+
             yield {
                 'transport': schedule_table_extractor.extract_cell('Container #', left),
                 'description': schedule_table_extractor.extract_cell('Latest Event', left),
-                'local_date_time': schedule_table_extractor.extract_cell('Date', left),
+                'local_date_time': date_str,
                 'location': schedule_table_extractor.extract_cell('Place', left),
+                'est_or_actual': est_or_actual,
             }
 
 

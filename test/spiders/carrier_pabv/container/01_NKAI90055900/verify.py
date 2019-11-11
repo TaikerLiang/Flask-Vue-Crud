@@ -10,6 +10,7 @@ class Verifier:
             local_date_time='2019-06-18 18:00:00',
             location=LocationItem(name='NANJING'),
             transport='/',
+            est_or_actual='A',
         )
         assert results[1] == ContainerStatusItem(
             container_key='PCIU9477648',
@@ -17,4 +18,5 @@ class Verifier:
             local_date_time='2019-06-20 01:54:00',
             location=LocationItem(name='NANJING'),
             transport='/',
+            est_or_actual='A',
         )
