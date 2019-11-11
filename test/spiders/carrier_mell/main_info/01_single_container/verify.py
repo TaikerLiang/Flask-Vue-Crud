@@ -11,7 +11,7 @@ def verify(results):
             name='KAOHSIUNG',
             un_lo_code='TWKHH',
         ),
-        eta='2019-09-08 00:06:00',
+        eta='2019-09-07 16:06:00',
         vessel='KOTA NAGA',
         voyage='161N',
     )
@@ -27,14 +27,14 @@ def verify(results):
 
     assert results[3] == ContainerStatusItem(
         container_key='PCIU7967353',
-        local_date_time='2019-09-12 18:03:00',
+        local_date_time='2019-09-12 10:03:00',
         location=LocationItem(name='TOWNSVILLE (Townsville Hubert Street Depot)'),
         description='GATE IN AVAILABLE',
     )
 
     assert results[10] == ContainerStatusItem(
         container_key='PCIU7967353',
-        local_date_time='2019-08-06 18:45:00',
+        local_date_time='2019-08-06 10:45:00',
         location=LocationItem(name='KAOHSIUNG (HMM KAOHSIUNG CNTR TERMINAL)'),
         description='GATE IN FULL',
     )

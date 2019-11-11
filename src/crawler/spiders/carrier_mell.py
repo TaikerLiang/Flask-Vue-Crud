@@ -1,6 +1,6 @@
-import datetime
 import json
 import re
+from datetime import datetime, timezone
 from typing import List, Dict
 
 import scrapy
@@ -148,5 +148,5 @@ class MainInfoRoutingRule(BaseRoutingRule):
             CarrierResponseFormatError(reason=f'invalid timestamp: `{timestamp}`')
 
         t = int(m.group('time'))
-        local_date_time = datetime.datetime.fromtimestamp(t)
+        local_date_time = datetime.fromtimestamp(t, tz=timezone.utc)
         return local_date_time.strftime(DATETIME_FORMAT)
