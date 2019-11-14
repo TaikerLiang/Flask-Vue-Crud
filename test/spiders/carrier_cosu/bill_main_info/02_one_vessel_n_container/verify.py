@@ -47,7 +47,7 @@ def verify(results):
     })
 
     assert results[2] == ContainerItem(**{
-        'container_key': '1',
+        'container_key': 'CCLU691290',
         'last_free_day': '2019-05-29',
         'empty_pickup_date': '2019-04-29 10:36',
         'empty_return_date': '2019-05-31 08:43',
@@ -58,7 +58,7 @@ def verify(results):
     })
 
     assert results[3] == ContainerItem(**{
-        'container_key': '2',
+        'container_key': 'TCNU687508',
         'last_free_day': '2019-05-29',
         'empty_pickup_date': '2019-04-30 13:54',
         'empty_return_date': '2019-05-30 12:09',

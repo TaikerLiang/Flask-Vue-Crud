@@ -53,7 +53,7 @@ def test_parse_main_info(sample_loader, sub, mbl_no, monkeypatch):
 @pytest.mark.parametrize('sub,mbl_no', [
     ('s01_only_booking', '6216853000'),
 ])
-def test_parse_main_info(sample_loader, sub, mbl_no, monkeypatch):
+def test_parse_main_info_special(sample_loader, sub, mbl_no, monkeypatch):
     json_text = sample_loader.read_file(sub, 'main_information.json')
 
     url = f'http://elines.coscoshipping.com/ebtracking/public/bill/{mbl_no}?timestamp=0000000000'

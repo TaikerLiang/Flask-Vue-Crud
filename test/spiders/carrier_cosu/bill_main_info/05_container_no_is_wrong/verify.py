@@ -47,7 +47,7 @@ def verify(results):
     })
 
     assert results[2] == ContainerItem(**{
-        'container_key': '1',
+        'container_key': 'OOLU364716',
         'ams_release': 'Clear',
         'depot_last_free_day': None,
         'empty_pickup_date': '2019-08-18 02:11',

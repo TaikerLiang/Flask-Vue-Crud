@@ -1,0 +1,46 @@
+{
+    "code": "200",
+    "message": "",
+    "data": {
+        "content": [
+            {
+                "containerUuid": "4",
+                "containerNumber": "UETU5171688",
+                "containerType": "40HQ",
+                "grossWeight": "9230KG",
+                "piecesNumber": 710,
+                "label": "Empty Equipment Returned",
+                "sealNumber": "12933597",
+                "location": "BNSF (Omaha) Railroad,Omaha,Nebraska,United States",
+                "locationDateTime": "2019-11-07 09:27",
+                "transportation": "Truck",
+                "flag": "0",
+                "railRef": null,
+                "inlandMvId": " ",
+                "containerLocation": "0",
+                "isShow": false,
+                "hsCode": [],
+                "isNorthAmericaRails": true
+            },
+            {
+                "containerUuid": "1",
+                "containerNumber": "TEMU6966419",
+                "containerType": "40HQ",
+                "grossWeight": "8352KG",
+                "piecesNumber": 696,
+                "label": "Gate-in at Final Hub",
+                "sealNumber": "10929969",
+                "location": "BNSF (Omaha) Railroad,Omaha,Nebraska,United States",
+                "locationDateTime": "2019-11-13 03:40",
+                "transportation": "Rail",
+                "flag": "1",
+                "railRef": null,
+                "inlandMvId": " ",
+                "containerLocation": "1",
+                "isShow": false,
+                "hsCode": [],
+                "isNorthAmericaRails": true
+            }
+        ]
+    }
+}

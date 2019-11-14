@@ -4,9 +4,9 @@ from typing import List, Dict, Union
 
 import scrapy
 
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.core_carrier.items import LocationItem, MblItem, VesselItem, ContainerStatusItem, ContainerItem, \
-    BaseCarrierItem
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
+from crawler.core_carrier.items import (
+    LocationItem, MblItem, VesselItem, ContainerStatusItem, ContainerItem, BaseCarrierItem)
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest, RuleManager
 from crawler.utils.decorators import merge_yields
@@ -206,9 +206,12 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
         container_list = content['cargoTrackingContainer']
 
         return_list = []
-        for index, cargo in enumerate(container_list, 1):
+        for cargo in container_list:
+            container_no = cargo['cntrNum']
+            container_key = get_container_key(container_no=container_no)
+
             return_list.append({
-                'container_key': str(index),    # index == uuid(in second api)
+                'container_key': container_key,
                 'empty_pick_up': cargo['emptyPickUpDt'],
                 'full_return': cargo['ladenReturnDt'],
                 'full_pick_up': cargo['ladenPickUpDt'],
@@ -364,9 +367,12 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
         container_list = content['cargoTrackingContainer']
 
         return_list = []
-        for index, cargo in enumerate(container_list, 1):
+        for cargo in container_list:
+            container_no = cargo['cntrNum']
+            container_key = get_container_key(container_no=container_no)
+
             return_list.append({
-                'container_key': str(index),  # index == uuid(in second api)
+                'container_key': container_key,
                 'empty_pick_up': cargo['emptyPickUpDt'],
                 'full_return': cargo['ladenReturnDt'],
                 'full_pick_up': cargo['ladenPickUpDt'],
@@ -412,9 +418,12 @@ class BillContainerRoutingRule(BaseRoutingRule):
     def _extract_container_info(content: Dict) -> List:
         container_list = []
         for container in content:
+            container_no = container['containerNumber']
+            container_key = get_container_key(container_no=container_no)
+
             container_list.append({
-                'container_key': container['containerUuid'],  # 'containerUuid' == 'index'
-                'container_no': container['containerNumber'],
+                'container_key': container_key,
+                'container_no': container_no,
             })
         return container_list
 
@@ -452,9 +461,12 @@ class BookingContainerRoutingRule(BaseRoutingRule):
     def _extract_container_info(content: Dict) -> List:
         container_list = []
         for container in content:
+            container_no = container['containerNumber']
+            container_key = get_container_key(container_no=container_no)
+
             container_list.append({
-                'container_key': container['containerUuid'],  # 'containerUuid' == 'index'
-                'container_no': container['containerNumber'],
+                'container_key': container_key,
+                'container_no': container_no,
             })
         return container_list
 
@@ -547,6 +559,15 @@ class BookingContainerStatusRoutingRule(BaseRoutingRule):
 
 def build_timestamp():
     return int(time.time() * 1000)
+
+
+def get_container_key(container_no: str):
+    container_key = container_no[:10]
+
+    if len(container_key) != 10:
+        raise CarrierResponseFormatError(f'Invalid container_no `{container_no}`')
+
+    return container_key
 
 
 def strip_dict_value(dic: Union[Dict, None]) -> Union[Dict, None]:
