@@ -93,6 +93,11 @@ class CarrierCmduSpider(SharedSpider):
     home_url = 'http://www.cma-cgm.com'
 
 
+class CarrierAnluSpider(SharedSpider):
+    name = 'carrier_anlu'
+    home_url = 'https://www.anl.com.au'
+
+
 # -----------------------------------------------------------------------------------------------------------
 
 
