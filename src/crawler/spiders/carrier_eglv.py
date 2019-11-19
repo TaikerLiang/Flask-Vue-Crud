@@ -1,4 +1,3 @@
-import abc
 import base64
 from typing import Dict, List
 
@@ -10,9 +9,11 @@ from crawler.core_carrier.base_spiders import (
     BaseCarrierSpider, CARRIER_CUSTOM_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError)
-from crawler.core_carrier.items import ContainerStatusItem, LocationItem, ContainerItem, MblItem, BaseCarrierItem, \
-    ExportErrorData
+from crawler.core_carrier.items import (
+    ContainerStatusItem, LocationItem, ContainerItem, MblItem, BaseCarrierItem, ExportErrorData)
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.extractors.selector_finder import (
+    find_selector_from, CssQueryExistMatchRule, CssQueryTextStartswithMatchRule)
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 from crawler.utils.decorators import merge_yields
@@ -205,7 +206,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         tables = response.css('table table')
 
         hidden_form_query = 'form[name=frmCntrMove]'
-        rule = ExistMatchRule(element_query=hidden_form_query)
+        rule = CssQueryExistMatchRule(css_query=hidden_form_query)
         table_selector = find_selector_from(selectors=tables, rule=rule)
         if table_selector is None:
             raise CarrierResponseFormatError(reason='Can not found Basic Information table!!!')
@@ -222,7 +223,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def _extract_basic_info(response: scrapy.Selector) -> Dict:
         tables = response.css('table table')
 
-        rule = NameOnTableMatchRule(name_startswith='Basic Information')
+        rule = CssQueryTextStartswithMatchRule(css_query='td.f13tabb2::text', startswith='Basic Information')
         table_selector = find_selector_from(selectors=tables, rule=rule)
         if table_selector is None:
             raise CarrierResponseFormatError(reason='Can not found Basic Information table!!!')
@@ -248,7 +249,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def _extract_vessel_info(self, response: scrapy.Selector, pod: str) -> Dict:
         tables = response.css('table table')
 
-        rule = NameOnTableMatchRule(name_startswith='Plan Moves')
+        rule = CssQueryTextStartswithMatchRule(css_query='td.f13tabb2::text', startswith='Plan Moves')
         table_selector = find_selector_from(selectors=tables, rule=rule)
         if table_selector is None:
             return {
@@ -286,7 +287,10 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def _extract_container_info(response: scrapy.Selector) -> List:
         tables = response.css('table table')
 
-        rule = NameOnTableMatchRule(name_startswith='Container(s) information on B/L and Current Status')
+        rule = CssQueryTextStartswithMatchRule(
+            css_query='td.f13tabb2::text',
+            startswith='Container(s) information on B/L and Current Status',
+        )
         table_selector = find_selector_from(selectors=tables, rule=rule)
         if table_selector is None:
             raise CarrierResponseFormatError(reason='Can not found Container Information table!!!')
@@ -718,7 +722,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     def _extract_container_status_list(response: scrapy.Selector) -> List[Dict]:
         tables = response.css('table table')
 
-        rule = NameOnTableMatchRule(name_startswith='Container Moves')
+        rule = CssQueryTextStartswithMatchRule(css_query='td.f13tabb2::text', startswith='Container Moves')
         table_selector = find_selector_from(selectors=tables, rule=rule)
         if table_selector is None:
             raise CarrierResponseFormatError(reason='Can not found Container Status table!!!')
@@ -796,44 +800,6 @@ class NameOnTopHeaderTableLocator(BaseTableLocator):
     def iter_left_headers(self):
         for index in range(self._data_len):
             yield index
-
-
-class BaseMatchRule:
-
-    @abc.abstractmethod
-    def check(self, selector: scrapy.Selector) -> bool:
-        pass
-
-
-class ExistMatchRule(BaseMatchRule):
-    def __init__(self, element_query: str):
-        self.element_query = element_query
-
-    def check(self, selector: scrapy.Selector) -> bool:
-        existence = selector.css(self.element_query)
-        return bool(existence)
-
-
-class NameOnTableMatchRule(BaseMatchRule):
-    TABLE_NAME_QUERY = 'td.f13tabb2::text'
-
-    def __init__(self, name_startswith: str):
-        self.name_startswith = name_startswith
-
-    def check(self, selector: scrapy.Selector) -> bool:
-        table_name = selector.css(self.TABLE_NAME_QUERY).get()
-
-        if not isinstance(table_name, str):
-            return False
-
-        return table_name.strip().startswith(self.name_startswith)
-
-
-def find_selector_from(selectors: List[scrapy.Selector], rule: BaseMatchRule):
-    for selector in selectors:
-        if rule.check(selector=selector):
-            return selector
-    return None
 
 
 # -------------------------------------------------------------------------------

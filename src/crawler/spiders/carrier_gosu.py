@@ -1,4 +1,3 @@
-import abc
 import re
 from typing import Dict, List
 
@@ -8,6 +7,7 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
 from crawler.core_carrier.items import BaseCarrierItem, MblItem, ContainerItem, ContainerStatusItem, LocationItem
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from, CssQueryTextStartswithMatchRule
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 from crawler.utils.decorators import merge_yields
@@ -96,8 +96,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def _extract_mbl_no(response) -> str:
         pattern = re.compile(r'^B/L Number (?P<mbl_no>\w+)$')
 
-        match_rule = TextStartswithMatchRule(name_startswith='B/L Number')
-        selector = find_selector_from(selectors=response.css('td.BlackText'), rule=match_rule)
+        rule = CssQueryTextStartswithMatchRule(css_query='strong::text', startswith='B/L Number')
+        selector = find_selector_from(selectors=response.css('td.BlackText'), rule=rule)
         mbl_no_text = selector.css('strong::text').get()
 
         m = pattern.match(mbl_no_text)
@@ -109,8 +109,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_top_main_info(response) -> Dict:
-        match_rule = FirstTitleMatchRule(first_title='Place of Receipt')
-        table = find_selector_from(selectors=response.css('td #tbPrint'), rule=match_rule)
+        rule = FirstTitleMatchRule(first_title='Place of Receipt')
+        table = find_selector_from(selectors=response.css('td #tbPrint'), rule=rule)
 
         table_locator = SingleTrDataTableLocator()
         table_locator.parse(table=table)
@@ -344,28 +344,6 @@ class MultipleTrDataTableLocator(BaseTableLocator):
             yield index
 
 
-class BaseMatchRule:
-
-    @abc.abstractmethod
-    def check(self, selector: scrapy.Selector) -> bool:
-        pass
-
-
-class TextStartswithMatchRule(BaseMatchRule):
-    TEXT_QUERY = 'strong::text'
-
-    def __init__(self, name_startswith):
-        self.name_startswith = name_startswith
-
-    def check(self, selector: scrapy.Selector) -> bool:
-        text_name = selector.css(self.TEXT_QUERY).get()
-
-        if not isinstance(text_name, str):
-            return False
-
-        return text_name.strip().startswith(self.name_startswith)
-
-
 class FirstTitleMatchRule(BaseMatchRule):
     FIRST_TITLE_TEXT_QUERY = 'tr td strong::text'
 
@@ -373,16 +351,9 @@ class FirstTitleMatchRule(BaseMatchRule):
         self.first_title = first_title
 
     def check(self, selector: scrapy.Selector) -> bool:
-        first_title = selector.css(self.FIRST_TITLE_TEXT_QUERY)[0].get().strip()
+        first_title = selector.css(self.FIRST_TITLE_TEXT_QUERY)[0].get()
 
         if not isinstance(first_title, str):
             return False
 
-        return first_title == self.first_title
-
-
-def find_selector_from(selectors: List[scrapy.Selector], rule: BaseMatchRule):
-    for selector in selectors:
-        if rule.check(selector=selector):
-            return selector
-    return None
+        return first_title.strip() == self.first_title
