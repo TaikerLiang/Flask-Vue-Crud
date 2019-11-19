@@ -454,7 +454,7 @@ class BookingContainerRoutingRule(BaseRoutingRule):
                 container_no=container_no,
             )
 
-            BookingContainerStatusRoutingRule.build_routing_request(
+            yield BookingContainerStatusRoutingRule.build_routing_request(
                 mbl_no=mbl_no, container_no=container_no, container_key=container_key)
 
     @staticmethod

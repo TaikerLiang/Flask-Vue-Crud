@@ -7,13 +7,13 @@ from scrapy.http import TextResponse
 from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_cosu import BillContainerRoutingRule
 from src.crawler.spiders import carrier_cosu
-from test.spiders.carrier_cosu import container
+from test.spiders.carrier_cosu import bill_container
 
 
 @pytest.fixture
 def sample_loader(sample_loader):
     sample_path = Path(__file__).parent
-    sample_loader.setup(sample_package=container, sample_path=sample_path)
+    sample_loader.setup(sample_package=bill_container, sample_path=sample_path)
     return sample_loader
 
 
