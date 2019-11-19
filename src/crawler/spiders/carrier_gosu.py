@@ -189,9 +189,11 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def _get_local_date_time(local_date_time_text: str):
         pattern = re.compile(r'^(?P<local_date_time>\d{2}-\w{3}-\d{4}), .+$')
         m = pattern.match(local_date_time_text)
-        if not m:
-            raise CarrierResponseFormatError(reason='local_date_time not match')
-        local_date_time = m.group('local_date_time')
+        if m:
+            local_date_time = m.group('local_date_time')
+        else:
+            local_date_time = None
+
         return local_date_time
 
 
@@ -247,6 +249,7 @@ class SingleTrDataTableLocator(BaseTableLocator):
     """
 
     TR_DATA_BEGIN = 1
+    TR_DATA_END = 2
 
     def __init__(self):
         self._td_map = {}
@@ -254,7 +257,7 @@ class SingleTrDataTableLocator(BaseTableLocator):
 
     def parse(self, table: scrapy.Selector):
         title_td_list = table.css('tr')[0].css('td strong')
-        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN:]
+        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN:self.TR_DATA_END]
 
         for title_index, title_td in enumerate(title_td_list):
             data_index = title_index

@@ -18,6 +18,7 @@ if __name__ == '__main__':
         'GOSUNGB9490840',
         'GOSUNGB9490813',
         'GOSUNGB9490815',
+        'GOSUNGB9490840',
     ]
 
     for mbl_no in mbl_nos:
