@@ -5,8 +5,8 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.spiders.carrier_aplu_cmdu_anlu import SharedUrlFactory, UrlSpec, RoutingManager, CarrierAnluSpider
-from test.spiders.carrier_aplu_cmdu_anlu.anlu import main_info
+from crawler.spiders.carrier_aplu_cmdu_anlc import UrlSpec, CarrierApluSpider, RoutingManager, SharedUrlFactory
+from test.spiders.carrier_aplu_cmdu_anlc.aplu import main_info
 
 
 @pytest.fixture
@@ -17,15 +17,16 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize('sub,mbl_no', [
-    ('01_not_finish', 'AWT0143054'),
-    ('02_finish', 'AWT0143291'),
-    ('03_multiple_containers', 'AWT0143454'),
-    ('04_pod_status_is_remaining', 'AWT0143370'),
+    ('01_not_finish', 'AXK0185154'),
+    ('02_finish', 'XHMN810789'),
+    ('03_multiple_containers', 'SHSE015942'),
+    ('04_por_dest', 'AWB0135426'),
+    ('05_pod_status_is_remaining', 'NANZ001007'),
 ])
 def test_parse(sample_loader, sub, mbl_no):
     html_text = sample_loader.read_file(sub, 'main_info.html')
 
-    url_factory = SharedUrlFactory(home_url=CarrierAnluSpider.home_url, mbl_no=mbl_no)
+    url_factory = SharedUrlFactory(home_url=CarrierApluSpider.home_url, mbl_no=mbl_no)
     url_builder = url_factory.get_bill_url_builder()
     url = url_builder.build_url_from_spec(spec=UrlSpec())
 
@@ -39,7 +40,7 @@ def test_parse(sample_loader, sub, mbl_no):
         )
     )
 
-    spider = CarrierAnluSpider(name=None, mbl_no=mbl_no)
+    spider = CarrierApluSpider(name=None, mbl_no=mbl_no)
     results = list(spider.parse(response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
@@ -47,12 +48,12 @@ def test_parse(sample_loader, sub, mbl_no):
 
 
 @pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'AWT0143111', CarrierInvalidMblNoError),
+    ('e01_invalid_mbl_no', 'XHMN810788', CarrierInvalidMblNoError),
 ])
 def test_parse_error(sample_loader, sub, mbl_no, expect_exception):
     html_text = sample_loader.read_file(sub, 'main_info.html')
 
-    url_factory = SharedUrlFactory(home_url=CarrierAnluSpider.home_url, mbl_no=mbl_no)
+    url_factory = SharedUrlFactory(home_url=CarrierApluSpider.home_url, mbl_no=mbl_no)
     url_builder = url_factory.get_bill_url_builder()
     url = url_builder.build_url_from_spec(spec=UrlSpec())
 
@@ -66,7 +67,8 @@ def test_parse_error(sample_loader, sub, mbl_no, expect_exception):
         ),
     )
 
-    spider = CarrierAnluSpider(name=None, mbl_no=mbl_no)
+    spider = CarrierApluSpider(name=None, mbl_no=mbl_no)
 
     with pytest.raises(expect_exception):
         spider.parse(response)
+

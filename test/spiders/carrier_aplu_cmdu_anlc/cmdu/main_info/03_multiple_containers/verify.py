@@ -1,4 +1,4 @@
-from crawler.spiders.carrier_aplu_cmdu_anlu import SharedUrlFactory, UrlSpec, CarrierCmduSpider
+from crawler.spiders.carrier_aplu_cmdu_anlc import SharedUrlFactory, UrlSpec, CarrierCmduSpider
 
 
 def verify(results):

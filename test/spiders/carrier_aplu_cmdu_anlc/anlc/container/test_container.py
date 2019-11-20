@@ -4,8 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.spiders.carrier_aplu_cmdu_anlu import UrlSpec, RoutingManager, CarrierCmduSpider, SharedUrlFactory
-from test.spiders.carrier_aplu_cmdu_anlu.cmdu import container
+from crawler.spiders.carrier_aplu_cmdu_anlc import SharedUrlFactory, UrlSpec, RoutingManager, CarrierAnlcSpider
+from test.spiders.carrier_aplu_cmdu_anlc.anlc import container
 
 
 @pytest.fixture
@@ -15,16 +15,16 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,container_no', [
-    ('01_basic', 'NBSF301194', 'ECMU9893257'),
+@pytest.mark.parametrize('sub,mbl_no', [
+    ('01_basic', 'BHCU2231403'),
+    ('02_pod_status_is_remaining', 'TEXU1028151'),
 ])
-def test_parse(sample_loader, sub, mbl_no, container_no):
+def test_parse(sample_loader, sub, mbl_no):
     html_text = sample_loader.read_file(sub, 'container.html')
 
-    url_factory = SharedUrlFactory(home_url=CarrierCmduSpider.home_url, mbl_no=mbl_no)
+    url_factory = SharedUrlFactory(home_url=CarrierAnlcSpider.home_url, mbl_no=mbl_no)
     url_builder = url_factory.get_container_url_builder()
-    url_spec = UrlSpec(container_no=container_no)
-    url = url_builder.build_url_from_spec(spec=url_spec)
+    url = url_builder.build_url_from_spec(spec=UrlSpec())
 
     response = TextResponse(
         url=url,
@@ -32,11 +32,11 @@ def test_parse(sample_loader, sub, mbl_no, container_no):
         body=html_text,
         request=Request(
             url=url,
-            meta={RoutingManager.META_ROUTING_RULE: 'HANDLE_CONTAINER'},
-        ),
+            meta={RoutingManager.META_ROUTING_RULE: 'HANDLE_FIRST_TIER'}
+        )
     )
 
-    spider = CarrierCmduSpider(name=None, mbl_no=mbl_no)
+    spider = CarrierAnlcSpider(name=None, mbl_no=mbl_no)
     results = list(spider.parse(response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
