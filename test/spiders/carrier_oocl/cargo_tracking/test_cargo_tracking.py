@@ -18,8 +18,8 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize('sub,mbl_no,', [
-    ('01_OOLU2625845270', '2625845270'),
-    ('02_2109051600', '2109051600'),
+    ('01_single_container', '2625845270'),
+    ('02_multi_containers', '2109051600'),
 ])
 def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
     html_file = sample_loader.read_file(sub, 'sample.html')
@@ -45,8 +45,7 @@ def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
     results = list(spider.parse(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
-    verifier = verify_module.Verifier()
-    verifier.verify(results=results)
+    verify_module.verify(results=results)
 
 
 @pytest.mark.parametrize('sub,mbl_no,expect_exception', [

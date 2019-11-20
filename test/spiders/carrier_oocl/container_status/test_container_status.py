@@ -7,7 +7,6 @@ from scrapy.http import TextResponse
 from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_oocl import CarrierOoclSpider, ContainerStatusRule
 from test.spiders.carrier_oocl import container_status
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 
 
 @pytest.fixture
@@ -18,7 +17,7 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize('sub,mbl_no,container_no', [
-    ('01_OOLU910898', '2109051600', 'OOLU910898'),
+    ('01_first', '2109051600', 'OOLU910898'),
 ])
 def test_container_status_handler(sub, mbl_no, container_no, sample_loader):
     html_file = sample_loader.read_file(sub, 'sample.html')
@@ -45,6 +44,4 @@ def test_container_status_handler(sub, mbl_no, container_no, sample_loader):
     results = list(spider.parse(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
-    verifier = verify_module.Verifier()
-    verifier.verify(results=results)
-
+    verify_module.verify(results=results)
