@@ -39,11 +39,11 @@ def verify(results):
 
     assert results[33] == MblItem(
         mbl_no='MEDUMY898253',
-        pol='TANJUNG PELEPAS, MY',
-        pod='LOS ANGELES, US',
+        pol=LocationItem(name='TANJUNG PELEPAS, MY'),
+        pod=LocationItem(name='LOS ANGELES, US'),
         etd='17/09/2019',
         vessel='GUDRUN MAERSK',
-        place_of_deliv='LOS ANGELES, US',
+        place_of_deliv=LocationItem(name='LOS ANGELES, US'),
         latest_update='05.11.2019 at 11:33 W. Europe Standard Time',
     )
 

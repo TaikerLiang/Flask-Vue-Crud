@@ -81,11 +81,11 @@ class CarrierMscuSpider(BaseCarrierSpider):
 
         yield MblItem(
             mbl_no=mbl_no,
-            pol=main_info['pol'],
-            pod=main_info['pod'],
+            pol=LocationItem(name=main_info['pol']),
+            pod=LocationItem(name=main_info['pod']),
             etd=main_info['etd'],
             vessel=main_info['vessel'],
-            place_of_deliv=list(place_of_deliv_set)[0],
+            place_of_deliv=LocationItem(name=list(place_of_deliv_set)[0]),
             latest_update=latest_update,
         )
 
