@@ -5,9 +5,9 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_oocl import CarrierOoclSpider, CargoTrackingRule
-from test.spiders.carrier_oocl import cargo_tracking
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
+from crawler.spiders.carrier_oolu import CarrierOoluSpider, CargoTrackingRule
+from test.spiders.carrier_oolu import cargo_tracking
 
 
 @pytest.fixture
@@ -41,7 +41,7 @@ def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
         )
     )
 
-    spider = CarrierOoclSpider(mbl_no=mbl_no)
+    spider = CarrierOoluSpider(mbl_no=mbl_no)
     results = list(spider.parse(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
@@ -71,6 +71,6 @@ def test_cargo_tracking_handler_no_mbl_error(sub, mbl_no, expect_exception, samp
         )
     )
 
-    spider = CarrierOoclSpider(mbl_no=mbl_no)
+    spider = CarrierOoluSpider(mbl_no=mbl_no)
     with pytest.raises(expect_exception):
         list(spider.parse(response=response))

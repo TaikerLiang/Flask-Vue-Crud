@@ -5,8 +5,8 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_oocl import CarrierOoclSpider, ContainerStatusRule
-from test.spiders.carrier_oocl import container_status
+from crawler.spiders.carrier_oolu import CarrierOoluSpider, ContainerStatusRule
+from test.spiders.carrier_oolu import container_status
 
 
 @pytest.fixture
@@ -40,7 +40,7 @@ def test_container_status_handler(sub, mbl_no, container_no, sample_loader):
         )
     )
 
-    spider = CarrierOoclSpider(mbl_no=mbl_no)
+    spider = CarrierOoluSpider(mbl_no=mbl_no)
     results = list(spider.parse(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')

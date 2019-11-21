@@ -13,11 +13,11 @@ from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatch
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 
 
-class CarrierOoclSpider(BaseCarrierSpider):
-    name = 'carrier_oocl'
+class CarrierOoluSpider(BaseCarrierSpider):
+    name = 'carrier_oolu'
 
     def __init__(self, *args, **kwargs):
-        super(CarrierOoclSpider, self).__init__(*args, **kwargs)
+        super(CarrierOoluSpider, self).__init__(*args, **kwargs)
 
         rules = [
             CargoTrackingRule(),
