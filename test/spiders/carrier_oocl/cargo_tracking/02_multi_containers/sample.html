@@ -1,0 +1,1437 @@
+
+	<script><!--
+
+	  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	  ga('create', 'UA-29495278-1', {
+	      'cookieExpires' : 60 * 60 * 24 * 365  // Time in seconds.
+      });
+	  ga('send', 'pageview');
+
+//--></script><html xmlns="http://www.w3.org/1999/xhtml"><!-- PreLoad View -->
+    <head>
+<script language="javascript"><!--
+<!--
+var global_image_path = "/app/skin/mcc_oocl/images/";
+var global_style_path = "/app/skin/mcc_oocl/styles/";
+var global_context_path = "/party";
+var global_parameter_string = "USER_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&ENTRY=MCC&ENTRY_TYPE=OOCL&PREFER_LANGUAGE=en-US&OPERATOR_USER_ID=";
+var admin_domain_url = "/admin";
+
+function navigateMccSiteMap(){
+	window.location = admin_domain_url + "/sitemap/site_map.jsf?" + global_parameter_string;
+}
+try {
+	document.execCommand("BackgroundImageCache", false, true);
+} catch(err) {}
+//-->
+//--></script><script type="text/javascript">if(!JAWR){var JAWR = {};};;JAWR.jawr_dwr_path='/party/dwr';JAWR.dwr_scriptSessionId='3EAF9971E05ED7832BB21EFA2A8802ED';JAWR.app_context_path='/party';</script>
+<script type="text/javascript" src="/party/jsJawrPath/gzip_1356002129/bundles/mcc_oocl.js" ></script>
+
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+      <title>OOCL - Cargo Tracking
+      </title>
+<link rel="stylesheet" type="text/css" href="/app/skin/mcc_oocl/styles/forEnglish.css" />
+        <link href="/admin/zone/resource.js?zoneId=OOCL&amp;resourceName=CUSTOMIZED_CSS" rel="stylesheet" type="text/css" />
+
+
+    <style type="text/css"><!--
+ <!-- .class_fwk_table1 { border-
+    style: none; border-width: 0px thin; left: 6px; top: 2px;
+    width: 100%; height: 100%; right:0px; bottom:1px
+
+    } .class_fwk_table2 { border-style: none; border-width: 0px thin; left: -3px;
+    top: -3px; width: 765px; height: 100%;
+
+    } .class_fwk_table3 { border-style: none; border-width: 0px thin; left: -3px;
+    top: -3px; width:100px; height: 100%;
+
+    }
+    .class_fwk_table_td1 { height: 37px } -->
+
+--></style>
+<script type="text/javascript" src="/admin/scripts/jquery.cargosmart.core.js"><!--
+
+//--></script>
+<script type="text/javascript" src="/admin/scripts/jquery.cargosmart.easydrag.js"><!--
+
+//--></script>
+<script type="text/javascript" src="/admin/scripts/jquery.cargosmart.layerdialog.js"><!--
+
+//--></script>
+    </head>
+    <body><form id="form" name="form" method="post" action="/party/cargotracking/ct_result_bl.jsf" enctype="multipart/form-data" onsubmit="javascript:decorateAnonymousForm();showTimeGlass(true);">
+<input type="hidden" id="ANONYMOUS_TOKEN" name="ANONYMOUS_TOKEN" value="ENOPAdwEwaPARWlKLrcGMCCOOCL" />
+<input type="hidden" id="ENTRY" name="ENTRY" value="MCC" />
+<input type="hidden" id="ENTRY_TYPE" name="ENTRY_TYPE" value="OOCL" />
+<input type="hidden" id="PREFER_LANGUAGE" name="PREFER_LANGUAGE" value="en-US" />
+<input type="hidden" id="ANONYMOUS_BEHAVIOR" name="ANONYMOUS_BEHAVIOR" value="INPAGE_FUNCTION" /><input type="hidden" id="form:forward_uri" name="form:forward_uri" value="" />
+<script language="javascript"><!--
+<!--
+var ANONYMOUS_TOKEN = "ENOPAdwEwaPARWlKLrcGMCCOOCL" ;
+var ENTRY = "MCC" ;
+var ENTRY_TYPE = "OOCL" ;
+var PREFER_LANGUAGE = "en-US" ;
+var currentLocale = "en-US";
+var ANONYMOUS_BEHAVIOR = "INPAGE_FUNCTION";
+
+
+function maximizeWindow(){
+  self.moveTo(0,0);
+  self.resizeTo(screen.availWidth,screen.availHeight);
+}
+function decorateAnonymousForm(){
+  var act = document.forms[0].action ;
+  if(0>act.indexOf("?")){
+    act = act + "?" ;
+  }
+  if(act.indexOf("ANONYMOUS_TOKEN")<0){
+	document.forms[0].action = act + "&ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&ENTRY=MCC&ENTRY_TYPE=OOCL&PREFER_LANGUAGE=en-US" ;
+  }
+}
+
+window.onbeforeunload = function() {
+  if(document==null||document.body== null||window==null||window.event==null||window.event.clientX==null||document.body.clientWidth==null){
+    return ;
+  }
+  if(window.event.clientY==null||window.event.altKey==null){
+    return ;
+  }
+  if((document != null && document.body != null && window.event.clientX>document.body.clientWidth) && (window.event.clientY<0||window.event.altKey)){
+  var is_cs1_accessed = "COOKIE_IS_CS1_ACCESSED";
+  if( get_cookie(is_cs1_accessed) && get_cookie(is_cs1_accessed) == "accessed"){
+    cs1_signoff();
+  }
+  }
+}
+
+
+//-->
+//--></script>
+
+			  <div id="content" style="visibility: visible">
+<iframe id="mask" style="visibility: hidden;" frameborder="no" src="/app/cs.htm"></iframe>
+  <div style="z-index: 99; display: none; position: absolute; width: 450px; left: 406.5px; top: 77px;" id="pop_layer">
+    <iframe style="border: 0px none ; z-index: -1; width: 100%; position: absolute; opacity: 0;" id="pop_ifr_regional_data"></iframe>
+    <table width="100%" cellspacing="0" cellpadding="0" border="0">
+      <tbody>
+        <tr>
+          <td class="shadow"><img id="form:null91900_img" src="/app/skin/mcc_oocl/images/spacer.gif" height="8" width="8" border="0" />
+          </td>
+          <td height="8" class="shadow"><img id="form:null91901_img" src="/app/skin/mcc_oocl/images/spacer.gif" height="8" width="8" border="0" /></td>
+          <td width="8" class="shadow"><img id="form:null91902_img" src="/app/skin/mcc_oocl/images/spacer.gif" height="8" width="8" border="0" /></td>
+        </tr>
+        <tr>
+          <td width="8" class="shadow"><img id="form:null91903_img" src="/app/skin/mcc_oocl/images/spacer.gif" /></td>
+          <td bgcolor="#ffffff">
+            <table width="100%" cellspacing="0" cellpadding="0" border="0" id="tbl_recipient" class="groupTable">
+              <tbody>
+                <tr>
+                  <td class="groupTitle">
+                    <table width="100%" cellspacing="0" cellpadding="0" border="0">
+                      <tbody>
+                        <tr>
+                          <td class="groupTitle">Regional Information</td>
+                          <td align="right"><a onclick="javascript:closeRegionalLayer();" href="javascript:void(0);"><img id="form:null91904_img" src="/app/skin/mcc_oocl/images/btn_close.gif" align="absmiddle" border="0" title="Close" /></a>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div id="divMainData" style="overflow-y: scroll; height: 250px; width: 470px;">
+
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+          <td width="8" class="shadow"><img id="form:null91905_img" src="/app/skin/mcc_oocl/images/spacer.gif" /></td>
+        </tr>
+        <tr>
+          <td height="8" class="shadow"><img id="form:null91906_img" src="/app/skin/mcc_oocl/images/spacer.gif" height="8" width="8" />
+          </td>
+          <td class="shadow"><img id="form:null91907_img" src="/app/skin/mcc_oocl/images/spacer.gif" height="8" width="8" /></td>
+          <td class="shadow"><img id="form:null91908_img" src="/app/skin/mcc_oocl/images/spacer.gif" height="8" width="8" /></td>
+        </tr>
+      </tbody>
+    </table>
+    <input type="hidden" id="RD_COMPANY_ID" value="ORIEHK41514112426815" />
+    <input type="hidden" id="RD_VIEW_TYPE" value="BL" />
+    <input type="hidden" id="RD_SHIPMENT_ID" value="2109051600" />
+  </div>
+  <script><!--
+
+    //<![CDATA[
+    function showLayer(display_type) {
+      Obj_layer = document.getElementById("pop_layer");
+      C_width = document.compatMode == "CSS1Compat" ? (document.documentElement.clientWidth - document.documentElement.scrollLeft) : (document.body.clientWidth - document.body.scrollLeft);
+      C_height = document.compatMode == "CSS1Compat" ? (document.documentElement.clientHeight) : (document.body.clientHeight);
+      C_top = document.compatMode == "CSS1Compat" ? (document.documentElement.scrollTop) : (document.body.scrollTop);
+      C_left = document.compatMode == "CSS1Compat" ? (document.documentElement.scrollLeft) : (document.body.scrollLeft);
+      Obj_layer.style.display = "";
+      L_width = Obj_layer.offsetWidth;
+      L_height = Obj_layer.offsetHeight;
+      Obj_layer.style.left = C_left + (C_width - L_width) / 2 + "px";
+      Obj_layer.style.top = C_top + (C_height - L_height) / 2 + "px";
+    }
+
+    function closeRegionalLayer() {
+      Obj_layer = document.getElementById("pop_layer");
+      Obj_layer.style.display = "none";
+    }
+
+    function showRegionalLink(){
+      if(document.getElementById("linkShowRegionalData")){
+        document.getElementById("linkShowRegionalData").style.display = "";
+      }
+    }
+
+    var url = "/party/regionaldata/rd_show_regionaldata_cs2.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP"
+        +"&COMPANY_ID=" + document.getElementById("RD_COMPANY_ID").value
+        +"&VIEW_TYPE=" + document.getElementById("RD_VIEW_TYPE").value
+        +"&SHIPMENT_ID=" + document.getElementById("RD_SHIPMENT_ID").value;
+    if(document.getElementById("RD_VIEW_TYPE").value=="BL"
+        || document.getElementById("RD_VIEW_TYPE").value =="BKG"){
+      document.getElementById("pop_ifr_regional_data").src = url;
+    }
+    //]]>
+
+//--></script>
+          <table id="contentTable" class="class_fwk_table1">
+	          <tr>
+	            <td class="class_fwk_table_td1">
+<table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#FFFFFF">
+    <tr>
+      <td valign="middle" class="header">
+      <table width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="#FFFFFF">
+        <tr>
+          <td width="150" rowspan="2"><img id="form:null91909_img" src="/app/skin/mcc_oocl/images/logo_oocl.gif" /></td>
+          <td align="right" valign="top">
+          <table border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td align="right" valign="bottom" class="headerFooter">&#160;</td>
+            </tr>
+            <tr>
+              <td align="right" valign="bottom" class="headerFooter" id="headerTopRightItems"></td>
+            </tr>
+          </table><img id="form:null91910_img" src="/app/skin/mcc_oocl/images/spacer.gif" height="1" width="1" /></td>
+        </tr>
+        <tr>
+          <td align="right" valign="bottom">
+          <table border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td align="right" valign="bottom" class="headerFooter"></td>
+            </tr>
+          </table>
+          </td>
+        </tr>
+
+      </table>
+      </td>
+    </tr>
+    				<tr>
+					<td class="footer">&#160;</td>
+				</tr>
+</table>
+	            </td>
+	          </tr>
+	          <tr>
+	            <td valign="top">
+                  <table width="100%" height="100%" border="0" cellpadding="0" cellspacing="0">
+                     <tr>
+                        <td width="15" id="dummyTD1">&#160;</td>
+                        <td valign="top">
+				  					<span id="mldd_errors" style="color: red"></span>
+      <a id="vesselDetailPopupLayer" style="display:none"></a>
+      <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td class="pageTitle">Cargo Tracking</td>
+        </tr>
+      </table>
+
+    <table width="100%" border="0" cellpadding="0" cellspacing="0" class="sectionTable">
+        <tr>
+          <th valign="bottom" class="sectionTable">Search Result&#160;-&#160;Bill of Lading Number&#160;
+        2109051600
+            &#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;
+            <a id="linkShowRegionalData" onclick="showLayer('');" style="display:none" href="javascript:void(0)">Show Regional Information</a>
+          </th>
+        </tr>
+        <tr>
+          <td valign="top" class="sectionTable">
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" class="groupTable">
+          <tr>
+            <td class="groupTitle">Summary</td>
+            <td class="groupTitle" align="right">
+               &#160;&#160;
+            </td>
+          </tr>
+        <tr>
+        <td colspan="2" class="leftRightPadding">
+      <table width="100%" border="0" cellpadding="0" cellspacing="0">
+         <tr valign="top">
+           <td width="50%"><table border="0" cellspacing="2" cellpadding="0">
+             <tr>
+               <td nowrap="nowrap" class="labelText">B/L Vessel Voyage:</td>
+               <td class="leftRightPadding">
+                        EVER LEADER&#160;042E
+               </td>
+             </tr>
+             <tr>
+               <td nowrap="nowrap" class="labelText">Bill of Lading Number:</td>
+               <td class="leftRightPadding">
+                2109051600
+                      (B/L Ready)
+               </td>
+             </tr>
+             <tr>
+               <td nowrap="nowrap" class="labelText">Booking Number:</td>
+               <td class="leftRightPadding">
+                  2109051600
+				  (Confirmed)
+               </td>
+             </tr>
+             <tr>
+               <td nowrap="nowrap" class="labelText">Total Containers:</td>
+               <td class="leftRightPadding">
+                4 x 40' Hi-Cube Container&#160;
+               </td>
+             </tr>
+             <tr>
+               <td nowrap="nowrap" class="labelText">Total Quantity:</td>
+               <td class="leftRightPadding"><span id="form:summaryQuantity0">2788 Carton</span>&#160;
+               </td>
+             </tr>
+           </table>                      </td>
+           <td width="50%"><table border="0" cellspacing="2" cellpadding="0">
+               <tr>
+                 <td nowrap="nowrap" class="labelText">Customs Reference Number:</td>
+                 <td class="leftRightPadding">
+                  V1624999580&#160;
+                 </td>
+               </tr>
+               <tr>
+               </tr>
+               <tr>
+               </tr>
+
+               <tr>
+                 <td nowrap="nowrap" class="labelText">Inbound Customs Clearance Status:
+                      <script><!--
+drawTipsIcon('icon_note.gif', 'tip1', 'OOCL may send this status at the container or the B/L level.  If the status does not appear here, please check at the container level');
+//--></script>
+                 </td>
+                     <td class="leftRightPadding">
+   Cleared
+     &#160;(03 Nov 2019, 16:50 GMT)
+                     </td>
+               </tr>
+               <tr>
+                     <td nowrap="nowrap" class="labelText">Payment Status (collect charges):
+                        <script><!--
+drawTipsIcon('icon_note.gif', 'tip1', 'OOCL may send this status at the container or the B/L level.  If the status does not appear here, please check at the container level');
+//--></script>
+                     </td>
+                 <td class="leftRightPadding">
+   Cleared
+                 </td>
+               </tr>
+               <tr>
+                 <td nowrap="nowrap" class="labelText">Cargo Release Status:</td>
+                 <td class="leftRightPadding">
+   Released
+                 </td>
+               </tr>
+               <tr>
+                 <td nowrap="nowrap" class="labelText">Original B/L Received by Carrier:</td>
+                 <td class="leftRightPadding">
+   N.A. (Under Sea WayBill)
+                 </td>
+               </tr>
+             </table></td>
+         </tr>
+      </table>
+        </td>
+        </tr>
+        <tr>
+           <td colspan="2" class="topBottomPadding">
+             <div id="summaryDiv">
+     <table cellpadding="3" cellspacing="0" border="0" width="100%">
+       <tr>
+         <td><table id="summaryTable" width="100%" border="0" cellpadding="0" cellspacing="0" class="dataTable">
+           <tr>
+             <th rowspan="2">Container Number </th>
+             	<th rowspan="2">Container Size Type</th>
+             <th rowspan="2">Quantity</th>
+             <th rowspan="2">Gross Weight</th>
+               <th rowspan="2">Verified Gross Mass</th>
+             <th colspan="3">Latest Event </th>
+             <th rowspan="2" nowrap="nowrap">Final Destination </th>
+           </tr>
+           <tr>
+             <th>Event</th>
+             <th>Location</th>
+             <th>Time</th>
+           </tr>
+	           <tr class="">
+	             <td width="8%"><a href="#" onclick="clear_form();document.forms['form'].elements['form:_link_hidden_'].value='form:link0';document.forms['form'].elements['currentContainerNumber'].value='OOLU843521';document.forms['form'].elements['searchCriteriaBookingNumber'].value='';document.forms['form'].elements['searchCriteriaContainerNumbers'].value='';document.forms['form'].elements['searchCriteriaBillOfLadingNumber'].value='2109051600';document.forms['form'].elements['searchCriteriaSearchTypeCode'].value='BL';if(document.forms['form'].onsubmit){var result=document.forms['form'].onsubmit();  if( (typeof result == 'undefined') || result ) {document.forms['form'].submit();}}else{document.forms['form'].submit();}return false;" id="form:link0">OOLU843521-8</a>
+	             </td>
+             		<td><span id="form:cntSizeType0"></span></td>
+	             <td><span id="form:quantity0">431 Carton</span></td>
+	             <td><span id="form:gross0">19500.000 KGS</span>
+	             </td>
+	               <td>23290.000 KGS (Submitted)</td>
+							<td>Container Returned to Carrier
+							</td>
+							<td><span id="form:eventLocation0">ConGlobal Industries Inc., Atlanta, Fulton, Georgia, United States</span></td>
+							<td><span id="form:eventDate0">07 Nov 2019, 10:19 EST</span></td>
+						<td nowrap="nowrap">
+						<table width="100%" border="0" cellspacing="0" cellpadding="0">
+							<tr>
+						      <td nowrap="nowrap"><span id="form:finalDestinationCopy0">Atlanta, Fulton, Georgia, United States</span>
+							  </td>
+							</tr>
+								<tr>
+								  <td nowrap="nowrap"><span id="form:arrivalDate0">03 Nov 2019, 19:26 EST</span>
+									    (Actual)
+							    </td>
+							  </tr>
+						</table>
+						</td>
+					</tr>
+	           <tr class="alt">
+	             <td width="8%"><a href="#" onclick="clear_form();document.forms['form'].elements['form:_link_hidden_'].value='form:link1';document.forms['form'].elements['currentContainerNumber'].value='OOLU910898';document.forms['form'].elements['searchCriteriaBookingNumber'].value='';document.forms['form'].elements['searchCriteriaContainerNumbers'].value='';document.forms['form'].elements['searchCriteriaBillOfLadingNumber'].value='2109051600';document.forms['form'].elements['searchCriteriaSearchTypeCode'].value='BL';if(document.forms['form'].onsubmit){var result=document.forms['form'].onsubmit();  if( (typeof result == 'undefined') || result ) {document.forms['form'].submit();}}else{document.forms['form'].submit();}return false;" id="form:link1">OOLU910898-7</a>
+	             </td>
+             		<td><span id="form:cntSizeType1"></span></td>
+	             <td><span id="form:quantity1">653 Carton</span></td>
+	             <td><span id="form:gross1">17520.000 KGS</span>
+	             </td>
+	               <td>21320.000 KGS (Submitted)</td>
+							<td>Container Returned to Carrier
+							</td>
+							<td><span id="form:eventLocation1">ConGlobal Industries Inc., Atlanta, Fulton, Georgia, United States</span></td>
+							<td><span id="form:eventDate1">07 Nov 2019, 08:08 EST</span></td>
+						<td nowrap="nowrap">
+						<table width="100%" border="0" cellspacing="0" cellpadding="0">
+							<tr>
+						      <td nowrap="nowrap"><span id="form:finalDestinationCopy1">Atlanta, Fulton, Georgia, United States</span>
+							  </td>
+							</tr>
+								<tr>
+								  <td nowrap="nowrap"><span id="form:arrivalDate1">03 Nov 2019, 16:28 EST</span>
+									    (Actual)
+							    </td>
+							  </tr>
+						</table>
+						</td>
+					</tr>
+	           <tr class="">
+	             <td width="8%"><a href="#" onclick="clear_form();document.forms['form'].elements['form:_link_hidden_'].value='form:link2';document.forms['form'].elements['currentContainerNumber'].value='OOCU706920';document.forms['form'].elements['searchCriteriaBookingNumber'].value='';document.forms['form'].elements['searchCriteriaContainerNumbers'].value='';document.forms['form'].elements['searchCriteriaBillOfLadingNumber'].value='2109051600';document.forms['form'].elements['searchCriteriaSearchTypeCode'].value='BL';if(document.forms['form'].onsubmit){var result=document.forms['form'].onsubmit();  if( (typeof result == 'undefined') || result ) {document.forms['form'].submit();}}else{document.forms['form'].submit();}return false;" id="form:link2">OOCU706920-5</a>
+	             </td>
+             		<td><span id="form:cntSizeType2"></span></td>
+	             <td><span id="form:quantity2">1330 Carton</span></td>
+	             <td><span id="form:gross2">11375.000 KGS</span>
+	             </td>
+	               <td>15135.000 KGS (Submitted)</td>
+							<td>Container Returned to Carrier
+							</td>
+							<td><span id="form:eventLocation2">ConGlobal Industries Inc., Atlanta, Fulton, Georgia, United States</span></td>
+							<td><span id="form:eventDate2">07 Nov 2019, 12:33 EST</span></td>
+						<td nowrap="nowrap">
+						<table width="100%" border="0" cellspacing="0" cellpadding="0">
+							<tr>
+						      <td nowrap="nowrap"><span id="form:finalDestinationCopy2">Atlanta, Fulton, Georgia, United States</span>
+							  </td>
+							</tr>
+								<tr>
+								  <td nowrap="nowrap"><span id="form:arrivalDate2">03 Nov 2019, 14:28 EST</span>
+									    (Actual)
+							    </td>
+							  </tr>
+						</table>
+						</td>
+					</tr>
+	           <tr class="alt">
+	             <td width="8%"><a href="#" onclick="clear_form();document.forms['form'].elements['form:_link_hidden_'].value='form:link3';document.forms['form'].elements['currentContainerNumber'].value='TCLU676266';document.forms['form'].elements['searchCriteriaBookingNumber'].value='';document.forms['form'].elements['searchCriteriaContainerNumbers'].value='';document.forms['form'].elements['searchCriteriaBillOfLadingNumber'].value='2109051600';document.forms['form'].elements['searchCriteriaSearchTypeCode'].value='BL';if(document.forms['form'].onsubmit){var result=document.forms['form'].onsubmit();  if( (typeof result == 'undefined') || result ) {document.forms['form'].submit();}}else{document.forms['form'].submit();}return false;" id="form:link3">TCLU676266-0</a>
+	             </td>
+             		<td><span id="form:cntSizeType3"></span></td>
+	             <td><span id="form:quantity3">374 Carton</span></td>
+	             <td><span id="form:gross3">17401.000 KGS</span>
+	             </td>
+	               <td>21291.000 KGS (Submitted)</td>
+							<td>Container Returned to Carrier
+							</td>
+							<td><span id="form:eventLocation3">ConGlobal Industries Inc., Atlanta, Fulton, Georgia, United States</span></td>
+							<td><span id="form:eventDate3">07 Nov 2019, 12:50 EST</span></td>
+						<td nowrap="nowrap">
+						<table width="100%" border="0" cellspacing="0" cellpadding="0">
+							<tr>
+						      <td nowrap="nowrap"><span id="form:finalDestinationCopy3">Atlanta, Fulton, Georgia, United States</span>
+							  </td>
+							</tr>
+								<tr>
+								  <td nowrap="nowrap"><span id="form:arrivalDate3">03 Nov 2019, 18:03 EST</span>
+									    (Actual)
+							    </td>
+							  </tr>
+						</table>
+						</td>
+					</tr>
+         </table></td>
+       </tr>
+     </table>
+           </div>
+         </td>
+          </tr>
+      </table><img id="form:null91911_img" src="/app/skin/mcc_oocl/images/spacer.gif" height="10" width="1" />
+      <table width="100%" border="0" cellpadding="0" cellspacing="0" class="groupTable">
+         <tr>
+        <td class="groupTitle fullByDraftCntNumber" width="20%">Detail of OOCL Container&#160;OOLU843521-8
+        </td>
+        <td class="groupTitle isShowByDraftCntNumber">
+            <a onclick="openCntrSpsfUrl('http://www.oocl.com/eng/ourservices/eservices/containerspecenquiry/Pages/ContainerSpecificationEnquiry.aspx?cntr=','OOLU843521')" href="javascript:void(0);">Detailed Container Specification Enquiry</a>
+        </td>
+        <td class="groupTitle isShowByDraftCntNumber" width="20%" align="right">
+        &#160;
+        </td>
+       </tr>
+
+          <tr>
+              <td colspan="3" class="leftRightPadding">
+        <table width="100%" border="0" cellpadding="0" cellspacing="0">
+            <tr valign="top">
+              <td><table border="0" cellspacing="2" cellpadding="0">
+                  <tr>
+                    <td nowrap="nowrap" class="labelText">Inbound Customs Clearance Status:
+                      <script><!--
+drawTipsIcon('icon_note.gif', 'tip1','OOCL may send this status at the container or the B/L level.  If the status does not appear here, please check at the container level');
+//--></script>
+                    </td>
+                    <td width="100%" class="leftRightPadding">
+      Released
+      (<span id="form:inboundCustomsReleasedEventDate">03 Nov 2019, 11:50 EST</span>)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td nowrap="nowrap" class="labelText">Payment Status (collect charges):
+                      <script><!--
+drawTipsIcon('icon_note.gif', 'tip1', 'OOCL may send this status at the container or the B/L level.  If the status does not appear here, please check at the container level');
+//--></script>
+                    </td>
+                    <td class="leftRightPadding">
+                    Cleared (<span id="form:freightChargeSettledEvent">22 Oct 2019, 19:40 EDT</span>)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td nowrap="nowrap" class="labelText">Linked Reference Number:
+                      <script><!--
+drawTipsIcon('icon_note.gif', 'tip1', 'These reference numbers are linked to the shipment by the customer and are not provided by OOCL.');
+//--></script>
+                    </td>
+                  <td width="100%" class="leftRightPadding">
+                  </td>
+                  </tr>
+              </table></td>
+            </tr>
+        </table>
+              </td>
+          </tr>
+          <tr>
+              <td colspan="3" align="right" class="leftRightPadding">
+              </td><input type="hidden" id="form:rtContainerNumberValueID" name="form:rtContainerNumberValueID" value="" />
+          </tr>
+
+          <tr>
+              <td colspan="3" class="leftRightPadding">
+<script language="JavaScript">
+    var msg = new Array();
+    msg["ct.tips.internal_voyage_reference"] = "OOCL Internal Voyage Reference".decodeUnicode();
+    msg["ct.tips.discharge_voyage"] = "Discharge Voyage".decodeUnicode();
+    msg["ct.tips.loading_voyage"] = "Loading Voyage".decodeUnicode();
+</script>
+
+	  <div id="Tab1">
+		  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+			  <tr>
+				  <td class="topBottomPadding">
+					  <table width="100%" border="0" cellpadding="0" cellspacing="0">
+						  <tr>
+							  <td>
+								  <table border="0" cellpadding="0" cellspacing="0">
+									  <tr>
+										  <td>
+											  <table border="0" cellspacing="0" cellpadding="0">
+												  <tr>
+													  <td nowrap="nowrap" class="subTopTab">Routing </td>
+												  </tr>
+											  </table>
+										  </td>
+										  <td class="subBetweenTab">&#160;</td>
+										  <td>
+											  <table border="0" cellspacing="0" cellpadding="0">
+												  <tr>
+													  <td nowrap="nowrap" class="subHiddenTab"><a href="javascript:showContainerTab('Tab2',3);" class="subTabLink">Equipment Activities</a>
+													  </td>
+												  </tr>
+											  </table>
+										  </td>
+											  <td class="subBetweenTab">&#160;</td>
+											  <td>
+												  <table border="0" cellspacing="0" cellpadding="0">
+													  <tr>
+														  <td nowrap="nowrap" class="subHiddenTab"><a href="javascript:showContainerTab('Tab3',3);" class="subTabLink">Detention &amp; Demurrage </a></td>
+													  </tr>
+												  </table>
+											  </td>
+									  </tr>
+								  </table>
+							  </td>
+							  <td class="subTabBottomBorder">&#160;</td>
+						  </tr>
+					  </table>
+					  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+						  <tr>
+							  <td class="subTabOtherBorder" valign="top">
+								  <table id="eventListTable" width="100%" border="0" cellpadding="0" cellspacing="0" class="dataTable">
+									  <tr>
+										  <th>Origin</th>
+											  <th>Empty Pickup Location </th>
+											  <th>Full Return Location </th>
+										  <th>Port of Load </th>
+										  <th>Vessel Voyage </th>
+										  <th>Port of Discharge </th>
+										  <th>Final Destination Hub </th>
+										  <th>Destination</th>
+										  <th>Empty Return Location </th>
+										  <th>Haulage</th>
+									  </tr>
+											  <tr class="">
+												  <td><span id="form:PORLocation0">Ningbo, Ningbo, Zhejiang, China</span>
+												  </td>
+													  <td><span id="form:emptyPickupLocation0">Ningbo Port Group Beilun Third Container Terminal Co., Ltd</span>
+																	  &#160;
+																	  <a href="javascript:void(0);" onclick="showMapLayer('1','map_iframe_1','NIN10','Ningbo Port Group Beilun Third Container Terminal Co., Ltd')"><img id="form:null91912_img" src="/app/skin/mcc_oocl/images/icon_google_map.gif" alt="Maps Service" border="0" title="Maps Service" />
+																	  </a>
+													  </td>
+													  <td><span id="form:fullReturnLocation0">Ningbo Meishan-Island International Container Terminal Co. Ltd</span>
+																	  &#160;<span id="form:fullReturnDate0">03 Oct 2019, 20:00 CCT</span>
+																	  (Cargo Cutoff Date At First Full Hub)
+																	  &#160;
+																	  <a href="javascript:void(0);" onclick="showMapLayer('1','map_iframe_1','NIN12','Ningbo Meishan-Island International Container Terminal Co. Ltd')"><img id="form:null91913_img" src="/app/skin/mcc_oocl/images/icon_google_map.gif" alt="Maps Service" border="0" title="Maps Service" />
+																	  </a>
+													  </td>
+												  <td><span id="form:POLLocation0">Ningbo, Ningbo, Zhejiang, China</span>
+														  <br /><span id="form:actualDepartureDate0">06 Oct 2019, 10:01 CCT</span>
+																  (Actual)
+															  &#160;<a href="javascript:void(0);" onclick="showMapLayer('1','map_iframe_1','NIN12','Ningbo Meishan-Island International Container Terminal Co. Ltd')"><img id="form:null91914_img" src="/app/skin/mcc_oocl/images/icon_google_map.gif" alt="Maps Service" border="0" title="Maps Service" />
+														  </a>
+												  </td>
+												  <td>
+														  ECC2
+																  EVER LEADER&#160;
+																  <br />
+																  0921E
+												  </td>
+												  <td><span id="form:PortOfDischarge0">Savannah, Chatham, Georgia, United States</span>
+														  <br /><span id="form:actualArrivalDate0">01 Nov 2019, 06:30 EDT</span>
+																  (Actual)
+															  &#160;<a href="javascript:void(0);" onclick="showMapLayer('1','map_iframe_1','SAV03','Garden City Terminal')"><img id="form:null91915_img" src="/app/skin/mcc_oocl/images/icon_google_map.gif" alt="Maps Service" border="0" title="Maps Service" />
+														  </a>
+												  </td>
+												  <td>
+															  Norfolk Southern Corp - Austell
+															  <br /><span id="form:actualArrivalFinalHubDate0">03 Nov 2019, 19:26 EST</span>
+																  (Actual)
+																  &#160;<a href="javascript:void(0);" onclick="showMapLayer('1','map_iframe_1','ATL26','Norfolk Southern Corp - Austell')"><img id="form:null91916_img" src="/app/skin/mcc_oocl/images/icon_google_map.gif" alt="Maps Service" border="0" title="Maps Service" />
+															  </a>
+												  </td>
+												  <td><span id="form:finalDestination0">Atlanta, Fulton, Georgia, United States</span>
+												  </td>
+												  <td><span id="form:emptyReturnLocation0">ConGlobal Industries Inc.</span>
+																  (Subject to Confirmation)
+																  &#160;
+																  <a href="javascript:void(0);" onclick="showMapLayer('1','map_iframe_1','ATL07','ConGlobal Industries Inc.')"><img id="form:null91917_img" src="/app/skin/mcc_oocl/images/icon_google_map.gif" alt="Maps Service" border="0" title="Maps Service" />
+																  </a>
+												  </td>
+												  <td><span id="form:hualage0">CY/CY</span>
+												  </td>
+											  </tr>
+								  </table>
+							  </td>
+						  </tr>
+					  </table>
+				  </td>
+			  </tr>
+		  </table>
+	  </div>
+	  <div id="Tab2">
+		  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+			  <tr>
+				  <td class="topBottomPadding">
+					  <table width="100%" border="0" cellpadding="0" cellspacing="0">
+						  <tr>
+							  <td>
+								  <table border="0" cellpadding="0" cellspacing="0">
+									  <tr>
+										  <td>
+											  <table border="0" cellspacing="0" cellpadding="0">
+												  <tr>
+													  <td nowrap="nowrap" class="subHiddenTab"><a href="javascript:showContainerTab('Tab1',3);" class="subTabLink">Routing </a></td>
+												  </tr>
+											  </table>
+										  </td>
+										  <td class="subBetweenTab">&#160;</td>
+										  <td>
+											  <table border="0" cellspacing="0" cellpadding="0">
+												  <tr>
+													  <td nowrap="nowrap" class="subTopTab">Equipment Activities</td>
+												  </tr>
+											  </table>
+										  </td>
+											  <td class="subBetweenTab">&#160;</td>
+											  <td>
+												  <table border="0" cellspacing="0" cellpadding="0">
+													  <tr>
+														  <td nowrap="nowrap" class="subHiddenTab"><a href="javascript:showContainerTab('Tab3',3);" class="subTabLink">Detention &amp; Demurrage </a></td>
+													  </tr>
+												  </table>
+											  </td>
+									  </tr>
+								  </table>
+							  </td>
+							  <td class="subTabBottomBorder">&#160;</td>
+						  </tr>
+					  </table>
+					  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+						  <tr>
+							  <td class="subTabOtherBorder" valign="top">
+								  <table id="eventListTable" width="100%" border="0" cellpadding="0" cellspacing="0" class="dataTable">
+									  <tr>
+										  <th>Event</th>
+										  <th>Facility</th>
+										  <th>Location</th>
+										  <th>Mode</th>
+										  <th>Time</th>
+										  <th>Remarks</th>
+									  </tr>
+										  <tr class="">
+											  <td>Container Returned to Carrier
+												  <br />
+													  <a href="javascript:void(0)" onclick="javascript: ui_popupPage('../cargotracking/ct_history_list.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&amp;cargoTrackingID=1847833769&amp;ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US','M','ctinfo','');">
+													  </a>
+											  </td>
+											  <td>Destination</td>
+											  <td><span id="form:eventLocationDetail0">ConGlobal Industries Inc., Atlanta, Fulton, Georgia, United States</span>
+											  </td>
+											  <td>Truck</td>
+											  <td><span id="form:eventDateDetail0">07 Nov 2019, 10:19 EST</span></td>
+											  <td>
+														  Empty Container
+											  </td>
+										  </tr>
+										  <tr class="alt">
+											  <td>Picked Up for Delivery
+												  <br />
+													  <a href="javascript:void(0)" onclick="javascript: ui_popupPage('../cargotracking/ct_history_list.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&amp;cargoTrackingID=1845731093&amp;ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US','M','ctinfo','');">
+													  </a>
+											  </td>
+											  <td>Destination</td>
+											  <td><span id="form:eventLocationDetail1">Norfolk Southern Corp - Austell, Austell, Cobb, Georgia, United States</span>
+											  </td>
+											  <td>Truck</td>
+											  <td><span id="form:eventDateDetail1">05 Nov 2019, 08:17 EST</span></td>
+											  <td>
+
+											  </td>
+										  </tr>
+										  <tr class="">
+											  <td>Construction Placement
+												  <br />
+													  <a href="javascript:void(0)" onclick="javascript: ui_popupPage('../cargotracking/ct_history_list.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&amp;cargoTrackingID=&amp;ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US','M','ctinfo','');">
+													  </a>
+											  </td>
+											  <td></td>
+											  <td><span id="form:eventLocationDetail2">AUSINTER, AUSINTER, Georgia, United States</span>
+											  </td>
+											  <td>Railway</td>
+											  <td><span id="form:eventDateDetail2">03 Nov 2019, 19:30 EST</span></td>
+											  <td>
+
+											  </td>
+										  </tr>
+										  <tr class="alt">
+											  <td>Arrived
+												  <br />
+													  <a href="javascript:void(0)" onclick="javascript: ui_popupPage('../cargotracking/ct_history_list.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&amp;cargoTrackingID=1844009846&amp;ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US','M','ctinfo','');">
+													  </a>
+											  </td>
+											  <td>Intermodal Hub</td>
+											  <td><span id="form:eventLocationDetail3">Norfolk Southern Corp - Austell, Austell, Cobb, Georgia, United States</span>
+											  </td>
+											  <td>Rail</td>
+											  <td><span id="form:eventDateDetail3">03 Nov 2019, 19:26 EST</span></td>
+											  <td>
+
+											  </td>
+										  </tr>
+										  <tr class="">
+											  <td>Container Deramped
+												  <br />
+													  <a href="javascript:void(0)" onclick="javascript: ui_popupPage('../cargotracking/ct_history_list.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&amp;cargoTrackingID=1844009837&amp;ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US','M','ctinfo','');">
+													  </a>
+											  </td>
+											  <td></td>
+											  <td><span id="form:eventLocationDetail4">Norfolk Southern Corp - Austell, Austell, Cobb, Georgia, United States</span>
+											  </td>
+											  <td>Rail</td>
+											  <td><span id="form:eventDateDetail4">03 Nov 2019, 19:26 EST</span></td>
+											  <td>
+
+											  </td>
+										  </tr>
+										  <tr class="alt">
+											  <td>Departed
+												  <br />
+													  <a href="javascript:void(0)" onclick="javascript: ui_popupPage('../cargotracking/ct_history_list.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&amp;cargoTrackingID=1843346112&amp;ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US','M','ctinfo','');">
+													  </a>
+											  </td>
+											  <td>Intermodal Hub</td>
+											  <td><span id="form:eventLocationDetail5">Savannah, Savannah, Chatham, Georgia, United States</span>
+											  </td>
+											  <td>Rail</td>
+											  <td><span id="form:eventDateDetail5">02 Nov 2019, 03:15 EDT</span></td>
+											  <td>
+
+											  </td>
+										  </tr>
+										  <tr class="">
+											  <td>Loaded
+												  <br />
+													  <a href="javascript:void(0)" onclick="javascript: ui_popupPage('../cargotracking/ct_history_list.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&amp;cargoTrackingID=1843346032&amp;ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US','M','ctinfo','');">
+													  </a>
+											  </td>
+											  <td></td>
+											  <td><span id="form:eventLocationDetail6">Garden City Terminal, Savannah, Chatham, Georgia, United States</span>
+											  </td>
+											  <td>Rail</td>
+											  <td><span id="form:eventDateDetail6">02 Nov 2019, 03:15 EDT</span></td>
+											  <td>
+
+											  </td>
+										  </tr>
+										  <tr class="alt">
+											  <td>Highway Arrival
+												  <br />
+													  <a href="javascript:void(0)" onclick="javascript: ui_popupPage('../cargotracking/ct_history_list.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&amp;cargoTrackingID=&amp;ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US','M','ctinfo','');">
+													  </a>
+											  </td>
+											  <td></td>
+											  <td><span id="form:eventLocationDetail7">SAVANNAH, SAVANNAH, Georgia, United States</span>
+											  </td>
+											  <td>Railway</td>
+											  <td><span id="form:eventDateDetail7">02 Nov 2019, 03:15 EDT</span></td>
+											  <td>
+
+											  </td>
+										  </tr>
+										  <tr class="">
+											  <td>Discharged
+												  <br />
+													  <a href="javascript:void(0)" onclick="javascript: ui_popupPage('../cargotracking/ct_history_list.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&amp;cargoTrackingID=1843046398&amp;ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US','M','ctinfo','');">
+													  </a>
+											  </td>
+											  <td>Port of Discharge</td>
+											  <td><span id="form:eventLocationDetail8">Savannah, Savannah, Chatham, Georgia, United States</span>
+											  </td>
+											  <td>Vessel</td>
+											  <td><span id="form:eventDateDetail8">01 Nov 2019, 19:29 EDT</span></td>
+											  <td>
+
+											  </td>
+										  </tr>
+										  <tr class="alt">
+											  <td>Vessel Arrived
+												  <br />
+													  <a href="javascript:void(0)" onclick="javascript: ui_popupPage('../cargotracking/ct_history_list.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&amp;cargoTrackingID=1842675058&amp;ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US','M','ctinfo','');">
+													  </a>
+											  </td>
+											  <td>Port of Discharge</td>
+											  <td><span id="form:eventLocationDetail9">Savannah, Savannah, Chatham, Georgia, United States</span>
+											  </td>
+											  <td></td>
+											  <td><span id="form:eventDateDetail9">01 Nov 2019, 06:30 EDT</span></td>
+											  <td>
+
+											  </td>
+										  </tr>
+										  <tr class="">
+											  <td>Carrier Released
+												  <br />
+													  <a href="javascript:void(0)" onclick="javascript: ui_popupPage('../cargotracking/ct_history_list.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&amp;cargoTrackingID=1833893665&amp;ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US','M','ctinfo','');">
+													  </a>
+											  </td>
+											  <td></td>
+											  <td><span id="form:eventLocationDetail10">Atlanta, Atlanta, Fulton, Georgia, United States</span>
+											  </td>
+											  <td></td>
+											  <td><span id="form:eventDateDetail10">22 Oct 2019, 19:40 EDT</span></td>
+											  <td>
+
+											  </td>
+										  </tr>
+										  <tr class="alt">
+											  <td>Vessel Departed
+												  <br />
+													  <a href="javascript:void(0)" onclick="javascript: ui_popupPage('../cargotracking/ct_history_list.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&amp;cargoTrackingID=1819410463&amp;ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US','M','ctinfo','');">
+													  </a>
+											  </td>
+											  <td>Port of Load</td>
+											  <td><span id="form:eventLocationDetail11">Ningbo, Ningbo, Ningbo, Zhejiang, China</span>
+											  </td>
+											  <td></td>
+											  <td><span id="form:eventDateDetail11">06 Oct 2019, 10:01 CCT</span></td>
+											  <td>
+
+											  </td>
+										  </tr>
+										  <tr class="">
+											  <td>Loaded
+												  <br />
+													  <a href="javascript:void(0)" onclick="javascript: ui_popupPage('../cargotracking/ct_history_list.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&amp;cargoTrackingID=1819410380&amp;ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US','M','ctinfo','');">
+													  </a>
+											  </td>
+											  <td>Port of Load</td>
+											  <td><span id="form:eventLocationDetail12">Ningbo, Ningbo, Ningbo, Zhejiang, China</span>
+											  </td>
+											  <td>Vessel</td>
+											  <td><span id="form:eventDateDetail12">06 Oct 2019, 00:43 CCT</span></td>
+											  <td>
+
+											  </td>
+										  </tr>
+										  <tr class="alt">
+											  <td>Container Received by Carrier
+												  <br />
+													  <a href="javascript:void(0)" onclick="javascript: ui_popupPage('../cargotracking/ct_history_list.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&amp;cargoTrackingID=1815452940&amp;ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US','M','ctinfo','');">
+													  </a>
+											  </td>
+											  <td>Origin</td>
+											  <td><span id="form:eventLocationDetail13">Ningbo Meishan-Island International Container Terminal Co. Ltd, Ningbo, Ningbo, Zhejiang, China</span>
+											  </td>
+											  <td>Truck</td>
+											  <td><span id="form:eventDateDetail13">30 Sep 2019, 03:56 CCT</span></td>
+											  <td>
+														  Full Container
+											  </td>
+										  </tr>
+										  <tr class="">
+											  <td>Arrived
+												  <br />
+													  <a href="javascript:void(0)" onclick="javascript: ui_popupPage('../cargotracking/ct_history_list.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&amp;cargoTrackingID=1815452933&amp;ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US','M','ctinfo','');">
+													  </a>
+											  </td>
+											  <td>Port of Load</td>
+											  <td><span id="form:eventLocationDetail14">Ningbo, Ningbo, Ningbo, Zhejiang, China</span>
+											  </td>
+											  <td>Truck</td>
+											  <td><span id="form:eventDateDetail14">30 Sep 2019, 03:56 CCT</span></td>
+											  <td>
+
+											  </td>
+										  </tr>
+										  <tr class="alt">
+											  <td>Container Picked Up
+												  <br />
+													  <a href="javascript:void(0)" onclick="javascript: ui_popupPage('../cargotracking/ct_history_list.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&amp;cargoTrackingID=1813783797&amp;ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US','M','ctinfo','');">
+													  </a>
+											  </td>
+											  <td>Facility</td>
+											  <td><span id="form:eventLocationDetail15">Ningbo Port Group Beilun Third Container Terminal Co., Ltd, Ningbo, Ningbo, Zhejiang, China</span>
+											  </td>
+											  <td>Truck</td>
+											  <td><span id="form:eventDateDetail15">29 Sep 2019, 02:54 CCT</span></td>
+											  <td>
+														  Empty Container
+											  </td>
+										  </tr>
+								  </table>
+							  </td>
+						  </tr>
+					  </table>
+				  </td>
+			  </tr>
+		  </table>
+	  </div>
+	  <div id="Tab3">
+			  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+				  <tr>
+					  <td class="topBottomPadding">
+						  <table width="100%" border="0" cellpadding="0" cellspacing="0">
+							  <tr>
+								  <td>
+									  <table border="0" cellpadding="0" cellspacing="0">
+										  <tr>
+											  <td>
+												  <table border="0" cellspacing="0" cellpadding="0">
+													  <tr>
+														  <td nowrap="nowrap" class="subHiddenTab"><a href="javascript:showContainerTab('Tab1',3);" class="subTabLink">Routing </a>
+														  </td>
+													  </tr>
+												  </table>
+											  </td>
+											  <td class="subBetweenTab">&#160;</td>
+											  <td>
+												  <table border="0" cellspacing="0" cellpadding="0">
+													  <tr>
+														  <td nowrap="nowrap" class="subHiddenTab"><a href="javascript:showContainerTab('Tab2',3);" class="subTabLink">Equipment Activities</a>
+														  </td>
+													  </tr>
+												  </table>
+											  </td>
+											  <td class="subBetweenTab">&#160;</td>
+											  <td>
+												  <table border="0" cellspacing="0" cellpadding="0">
+													  <tr>
+														  <td nowrap="nowrap" class="subTopTab">Detention &amp; Demurrage </td>
+													  </tr>
+												  </table>
+											  </td>
+										  </tr>
+									  </table>
+								  </td>
+								  <td class="subTabBottomBorder">&#160;</td>
+							  </tr>
+						  </table>
+						  <table width="100%" border="0" cellspacing="0" cellpadding="0">
+							  <tr>
+								  <td class="subTabOtherBorder">
+									  <table width="100%" border="0" cellpadding="0" cellspacing="0">
+										  <tr valign="top">
+											  <td width="50%">
+												  <table border="0" cellpadding="2" cellspacing="0">
+													  <tr>
+														  <td valign="top" class="indicateLabel">At Origin </td>
+														  <td valign="top" class="leftRightPadding">&#160;</td>
+														  <td valign="top">&#160;</td>
+													  </tr>
+															  <tr>
+																  <td valign="top" class="labelText">Earliest Empty Pickup Date:
+																  </td>
+																  <td valign="top" class="leftRightPadding">&#160;</td>
+																  <td valign="top"><span id="form:outboundEarliestEmptyPickupDate">21 Sep 2019, 00:00 CCT</span>
+																					  (Actual)
+																  </td>
+															  </tr>
+												  </table>
+											  </td>
+											  <td width="50%">
+												  <table border="0" cellpadding="2" cellspacing="0">
+													  <tr>
+														  <td valign="top" class="indicateLabel">At Destination </td>
+														  <td valign="top" class="leftRightPadding">&#160;</td>
+														  <td valign="top">&#160;</td>
+													  </tr>
+																  <tr>
+																	  <td valign="top" class="labelText">Inbound Demurrage Free Time:
+																	  </td>
+																	  <td valign="top" class="leftRightPadding">
+																		  &#160;</td>
+																	  <td valign="top"><span id="form:ibDemFreeTime">2</span>&#160;<span id="form:ibDemFreeTimeType">Working Days</span>
+																	  </td>
+																  </tr>
+															  <tr>
+																  <td valign="top" class="labelText">Demurrage Last Free Date:
+																  </td>
+																  <td valign="top" class="leftRightPadding">&#160;</td>
+																  <td valign="top"><span id="form:demurrageLastFreeDate">06 Nov 2019, 23:59  Local </span>
+																					  (Actual)
+																  </td>
+															  </tr>
+																  <tr>
+																	  <td valign="top" class="labelText">Inbound Detention Free Time:
+																	  </td>
+																	  <td valign="top" class="leftRightPadding">
+																		  &#160;</td>
+																	  <td valign="top"><span id="form:ibDetFreeTime">5</span>&#160;<span id="form:ibDetFreeTimeType">Working Days</span>
+																	  </td>
+																  </tr>
+															  <tr>
+																  <td valign="top" class="labelText">Detention Last Free Date:
+																  </td>
+																  <td valign="top" class="leftRightPadding">&#160;</td>
+																  <td valign="top"><span id="form:detentionLastFreeDate">10 Nov 2019, 23:59  Local </span>
+																					  (Actual)
+																  </td>
+															  </tr>
+												  </table>
+											  </td>
+										  </tr>
+									  </table>
+								  </td>
+							  </tr>
+						  </table>
+					  </td>
+				  </tr>
+			  </table>
+	  </div>
+
+  <div id="pop_layer_1" style=" display:none;position:absolute; width:588px;Z-INDEX: 9999; ">
+   <iframe id="pop_ifr_1" style="BORDER-RIGHT: 0px; BORDER-TOP: 0px; Z-INDEX: -1; BORDER-LEFT: 0px; WIDTH: 100%; BORDER-BOTTOM: 0px; POSITION: absolute; opacity: 0; filter: alpha(opacity=0);"></iframe>
+   <table border="0" cellspacing="0" cellpadding="0" width="100%">
+    <tr>
+      <td class="shadow"><img id="form:null91918_img" src="/app/skin/mcc_oocl/images/spacer.gif" height="8" width="8" border="0" /></td>
+      <td class="shadow" height="8"><img id="form:null91919_img" src="/app/skin/mcc_oocl/images/spacer.gif" height="8" width="8" border="0" /></td>
+      <td width="8" class="shadow"><img id="form:null91920_img" src="/app/skin/mcc_oocl/images/spacer.gif" height="8" width="8" border="0" /></td>
+    </tr>
+    <tr>
+      <td width="8" class="shadow"><img id="form:null91921_img" src="/app/skin/mcc_oocl/images/spacer.gif" border="0" /></td>
+      <td bgcolor="#FFFFFF">
+	  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="groupTable">
+          <tr>
+            <td class="groupTitle"><table width="100%" border="0" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>Maps Service</td>
+                  <td align="right"><a href="javascript:void(0);" onclick="javascript:closeLayer('1');"><img id="form:null91922_img" src="/app/skin/mcc_oocl/images/btn_close.gif" align="absmiddle" border="0" title="close" /></a></td>
+                </tr>
+              </table></td>
+          </tr>
+          <tr>
+            <td colspan="2">
+               <iframe id="map_iframe_1" name="map_iframe_1" frameborder="0px" style="overflow: hidden; height: 565px; width: 661px; border: 0px; padding: 0px;"></iframe>
+              <table border="0" align="right" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td class="buttonRow">
+                    <input name="ipt_cancel" id="ipt_cancel" type="button" class="button" value="Close" onclick="closeLayer('1');" />
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table></td>
+      <td width="8" class="shadow"><img id="form:null91923_img" src="/app/skin/mcc_oocl/images/spacer.gif" border="0" /></td>
+    </tr>
+    <tr>
+      <td height="8" class="shadow"><img id="form:null91924_img" src="/app/skin/mcc_oocl/images/spacer.gif" height="8" width="8" border="0" /></td>
+      <td class="shadow"><img id="form:null91925_img" src="/app/skin/mcc_oocl/images/spacer.gif" height="8" width="8" border="0" /></td>
+      <td class="shadow"><img id="form:null91926_img" src="/app/skin/mcc_oocl/images/spacer.gif" height="8" width="8" border="0" /></td>
+    </tr>
+   </table>
+  </div>
+<script type="text/javascript" src="/admin/scripts/engine.js"><!--
+
+//--></script>
+     <script type="text/javascript" src="/party/dwr/interface/CargoTrackingView.js?USER_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&amp;ENTRY=MCC&amp;ENTRY_TYPE=OOCL&amp;PREFER_LANGUAGE=en-US&amp;OPERATOR_USER_ID="><!--
+
+//--></script>
+
+<script><!--
+
+<!--
+function jumpToMapService(facilityCode,facilityName){
+    var mapServiceURL = "http://mapsservice.oocl.com/Geofence.aspx?get_code="+facilityCode;
+    if(facilityName =='') {
+        mapServiceURL = mapServiceURL+"&get_name="+facilityCode;
+      }else{
+      mapServiceURL = mapServiceURL+"&get_name="+facilityName;
+      }
+
+    return mapServiceURL+"&res=640x480";
+}
+
+function showMapLayer(number,frame_id,facilityCode,facilityName){
+    var Id_layer = "pop_layer_" + number;
+	showPoplayer(Id_layer);
+
+	var map_frame = document.getElementById(frame_id);
+	var map_URL = jumpToMapService(facilityCode,facilityName);
+	map_frame.src = map_URL;
+	if(false){
+	  sendMapServiceTransactionLogForCargoTracking();
+	}
+}
+
+function closeLayer(number){
+	var Id_layer = "pop_layer_" + number;
+	closePoplayer(Id_layer);
+}
+
+function sendMapServiceTransactionLogForCargoTracking(){
+  var token = getUserTokenValue();
+  CargoTrackingView.sendTransactionLogForCargoTrackingMapService(token);
+}
+   //-->
+
+//--></script>
+
+<script language="javascript"><!--
+
+<!--
+
+function showContainerTab(topId, numOfTab){
+	var curLayer
+	for(i=1;i<numOfTab+1;i++){
+		curLayer = document.getElementById("Tab"+i);
+		curLayer.style.display = "none";
+	}
+	curLayer = document.getElementById(topId);
+	curLayer.style.display = "";
+	return;
+}
+
+var defaultTagSeq = "1";
+if(defaultTagSeq==''){
+	defaultTagSeq='1';
+}
+showContainerTab('Tab'+defaultTagSeq, 3);
+
+//-->
+
+//--></script>
+              </td>
+          </tr>
+      </table>
+         </td>
+        </tr>
+        <div id="popLayerCloseImagePath" style="display:none"><img id="form:null91927_img" src="/app/skin/mcc_oocl/images/btn_close.gif" /></div>
+      </table>
+
+      <script><!--
+
+      var closeImagePath = $("#popLayerCloseImagePath > img").attr("src");
+
+        function openCntrSpsfUrl(url,cntrNumber){
+          var url = url + cntrNumber;
+          openMenuUrl(url,"oocl_cntr_spsf");
+    }
+
+    function showRailTracingSearch(cntr_no){
+      var url;
+      if(true){
+        url = "/party/railtracing/rt_search_containers.jsf?ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&ENTRY=MCC&ENTRY_TYPE=OOCL&PREFER_LANGUAGE=en-US";
+      }else{
+        url = "/party/railtracing/rt_search_containers.jsf?USER_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&ENTRY=MCC&ENTRY_TYPE=OOCL&PREFER_LANGUAGE=en-US&OPERATOR_USER_ID=&domainName=PARTY_DOMAIN&rtContainerNumbers=" + cntr_no;
+      }
+      window.location = url ;
+    }
+
+      function setRailTracingValue(cntr_no){
+        var rtContainer = ui_getObjById('rtContainerNumberValueID');
+        rtContainer.value = cntr_no;
+      }
+
+        function openRailTracingUrl(cntr_no,carrier_id){
+              var domain_name="CS1_DOMAIN";
+              var action="ctRT";
+              if('OOCL' == 'OOCL'){
+               domain_name = "OOCL_CS1_DOMAIN";
+              }
+
+          var url = "/party/cs2_public.jsp?ACTION=" + action
+                     + "&domainName=" + domain_name
+                     + "&selected.cntr_no=" + cntr_no
+                     + "&selected.carrier_id=" + carrier_id
+           if(false){
+                url = url+"&userType=SERVICE_PROVIDER"
+             }
+             url = url+"&USER_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&ENTRY=MCC&ENTRY_TYPE=OOCL&PREFER_LANGUAGE=en-US&OPERATOR_USER_ID=";
+          openMenuUrl(url,"rail_move");
+      }
+
+          function openVesselInfoUrl(carrier_id,vsl_code,vsl_name){
+            var layer_options = {
+                pageTitle:"Vessel Information for " + vsl_code + '-' + vsl_name,
+                contentUrl:"/party/vesseltracking/vt_view_vessel_detail.jsf?USER_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&ENTRY=MCC&ENTRY_TYPE=OOCL&PREFER_LANGUAGE=en-US&OPERATOR_USER_ID=&ANONYMOUS_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&vesselId="+vsl_code + "&carrierId="+carrier_id,
+                dialogMode:"modeless",
+                size:"s",
+                pos:"top-right" ,
+                openIn:"share",
+                closeBtn:true,
+                closeBtnImg:"../skin/./images/btn_close.gif"
+              };
+              $("#vesselDetailPopupLayer").csui_ld_setOptions(layer_options);
+              $("#vesselDetailPopupLayer").click();
+      }
+
+     function submitServiceRequest(shipmentType, shipmentNumber){
+      var url = "/party/servicerequest/sr_create.jsf?referenceType="+shipmentType+"&referenceNum="
+        +shipmentNumber+"&domainName=OOCL_DOMAIN&&USER_TOKEN=ENOPAdwEwaPARWlKLrcGMCCOOCL&ENTRY=MCC&ENTRY_TYPE=OOCL&PREFER_LANGUAGE=en-US&OPERATOR_USER_ID=";
+    window.location = url ;
+    }
+
+     $(document).ready(function(){
+    var TO_BE_CONFIRMED = "To be confirmed ";
+    var currentURL = document.URL;
+    var frontURL = document.referrer;
+    var domainNames = "www.oocl.com;";
+    var currentURLs = currentURL.split("/");
+    if(frontURL != ""){
+      var frontURLs = frontURL.split("/");
+      if(currentURLs[2] == frontURLs[2]){
+      } else if(domainNames != ""){
+        if(domainNames.indexOf(frontURLs[2] + ";") == '-1'){
+          top.location = "http://www.cargosmart.com";
+        }
+      }
+    }
+
+    var cntNumOrDraftNum = 'OOLU843521';
+
+    if (typeof String.prototype.startsWith != 'function') {
+      String.prototype.startsWith = function (prefix){
+      return this.slice(0, prefix.length) === prefix;
+      };
+    }
+
+    if(cntNumOrDraftNum.startsWith(TO_BE_CONFIRMED)){
+    	$(".isShowByDraftCntNumber").attr("style", "display: none;");
+    	$(".fullByDraftCntNumber").attr("width","100%");
+    }
+
+    $("#vesselDetailPopupLayer").csui_layerDialog("input", {pageTitle:"", contentUrl:"", dialogMode:"modeless", size:"s", pos:"top-right",closeBtn:true, closeBtnImg:closeImagePath});
+    if('false' == 'true'){
+      $("body").css("padding","0");
+      //$("#contentTable").removeAttr("class");
+      $("#contentTable").attr("cellspacing","0");
+      $("#contentTable").attr("cellpadding","0");
+      $("td.primaryArea").css("padding-bottom","0");
+      $("td.primaryArea").css("padding-left","0");
+      $("td.primaryArea").css("padding-right","0");
+      $("#dummyTD1").remove();
+      $("#dummyTD2").remove();
+      //$(".primaryArea").removeClass("primaryArea");
+      $("body").attr("style","margin:0; padding:0;");
+    }
+   })
+
+  //-->
+
+//--></script>
+                        </td>
+                        <td width="15" id="dummyTD2">&#160;</td>
+                     </tr>
+                  </table>
+	            </td>
+	          </tr>
+	          <tr>
+	            <td height="43" class="footer">
+<table width="100%" cellspacing="0" cellpadding="0" border="0">
+  <tbody>
+    <tr>
+      <td nowrap="nowrap" width="10px" height="2px" align="left" rowspan="2"><img id="form:null91928_img" src="/app/skin/mcc_oocl/images/logo_power_by_cs.gif" />
+      </td>
+      <td rowspan="2" width="34px">
+&#160; &#160;&#160; &#160;
+      </td>
+      <td align="left" class="copyright">
+             |
+                        <a href="javascript:openContentPageInNewWindow (&quot;TOU&quot;, currentLocale);" class="footerLink">Terms of Use</a>
+                      |
+                        <a href="javascript:openContentPageInNewWindow (&quot;PRIVACY_SECURITY&quot;, currentLocale);" class="footerLink">Privacy and Security Statement</a>
+                      |
+                        <a href="javascript:openContentPageInNewWindow (&quot;ONLINE_SECURITY&quot;, currentLocale);" class="footerLink">Online Security</a>
+                      |
+                        <a href="javascript:openContentPageInNewWindow (&quot;COPY_RIGHT_POLICY&quot;, currentLocale);" class="footerLink">Customer Communications Policy</a>
+        |
+      </td>
+      <td>&#160;</td>
+    </tr>
+    <tr align="left">
+      <td nowrap="nowrap" class="copyright" id="footerCopyRight"><a class="footerLink" onclick="popupCopyRight();" href="javascript:void(0)">Copyright &#169; 1998 - <script language="javascript"><!--
+document.write((new Date()).getFullYear())
+//--></script>.</a> Orient Overseas Container Line Limited. All rights reserved.</td>
+      <td valign="bottom" align="right" height="2px"><img id="form:null91929_img" src="/app/skin/mcc_oocl/images/logo_ooil.gif" />
+      </td>
+    </tr>
+  </tbody>
+</table>
+	            </td>
+	          </tr>
+	        </table>
+        </div>
+			  <div id="dialog" style="display: none">
+				  <div id="progressContainer">
+				    <p><span id="progress_bar_message">Processing...  Please wait.</span></p>
+					  <div id="progressBarBg">
+						  <div id="progressBar">
+							  <div id="progressBarMask">
+								  <div id="progressBarMask_left"></div>
+								  <div id="progressBarMask_right"></div>
+							  </div>
+						  </div>
+					  </div>
+				  </div>
+			  </div><input type="hidden" id="form:crossDomainSaveStateMapString" name="form:crossDomainSaveStateMapString" value="" /><input type="hidden" name="form_SUBMIT" value="1" /><input type="hidden" name="currentContainerNumber" /><input type="hidden" name="searchCriteriaBookingNumber" /><input type="hidden" name="searchCriteriaSearchTypeCode" /><input type="hidden" name="searchCriteriaBillOfLadingNumber" /><input type="hidden" name="searchCriteriaContainerNumbers" /><input type="hidden" name="form:_link_hidden_" /><script type="text/javascript"><!--
+function clear_form() {
+  var f = document.forms['form'];
+  f.elements['currentContainerNumber'].value='';
+  f.elements['searchCriteriaBookingNumber'].value='';
+  f.elements['searchCriteriaSearchTypeCode'].value='';
+  f.elements['searchCriteriaBillOfLadingNumber'].value='';
+  f.elements['searchCriteriaContainerNumbers'].value='';
+  f.elements['form:_link_hidden_'].value='';
+  f.target='';
+}
+clear_form();
+//--></script><input type="hidden" name="jsf_tree_64" id="jsf_tree_64" value="H4sIAAAAAAAAAK1XzXIbRRAeXHEgYBPbSYq/osxfVSpArSwrsuzyCSQby6VEwlJSRfkgRrsjaez9y+ysbHHgxp0H4AmoPAFPwI0rL8GVM71ea7Xb2/o5cFlp++v5evqb3umZ1/+w1UCx7zw1MLjPzaEwnHGfmyKAV9+WJtfSc42OEqKtVWjqUIln3OUDob6YGque43uucPXxD+/9/dvpv3+tsDvn7F7XHErbUmBnp+cNCFGIQxRuQxRSIQrLhjhssPtdc/JWtXkQaLbVuOAjXrC5OyiAv3QH4LY2datbr9jPbOWcvdmNImsY8uA8NabZuxCmPrz2Q3U71f9DjcM/Xj/+c/OXX39fYezaZ4ytBNE0mK/ZV67QxgW/UsaV6BmaD2zZMy6CvnEKcwpMJX39behatujwgWZ3utLa8+PBYfRcBbIfE7Ivo0SujXiiSc7GUDu2cQKPuuuH+kRaVrQS7/Q9dcWV1Q0hSEJRIFI2w0B7jhHwkQg018J4UW/D/3b0X7NtM1TR0raFGklTtJQ3kpZQUfLcHddrE+7ouaHZZuLOlTnsjH2BHNZ7nncJC/c8dHpCIXCrJ2272W9wa5bHhum5mktXqBgOprk9WSBPM9SgT0dca6AJQsfhavx9yF0t9XgnHeYjzVZhJfZzS7GaxPqUjvWi3uKKO0ILpdld4CjuVNLMn02s+6T1gLIWd0hrcYmCgEVyuGs1pHsJKdnwg/NcM2Gp5E8iWiiM3Xs1Q5y7A+UFAba+K0YQvOHFHw9G375Ba1BSGHnUly63a1B78BsNrXp+LuQaV0qOwC1FkFuWtD67pJYlUstSkbTuktbSzevXt3oW5+iJsURPDMR6YmtWT4xO9cQIqWdunik9i8voWSY1KpMalUuk9SlpLWf03J2jJ8YSPTEQ64mtWT0xOtUTI6SeuXmm9NxdRs8KqVGF1KhSJq17pLWS0bM0R0+MJXpiINYTW7N6YnSqJ0ZIPXPzTOlZwnq+QeR9cBB126U6wLGnHK4n4/ZR5G3p9jxoydWbrhicCVvwQFhHk3SQ+wd9JeRgqKtDrgaiLbS2b53Tjuuava/gwJBpXS+5HYpsA40ybzXPZm2iD4Xj63FLmpehP8vnQT+07TMBRxZ3lsv9qQu1IcMMGjNnwOEwFK2ez1V0KqLGb7Q8pZv9mgzMG1EwvhVzfJPf0SceH2Y8jqN6OQl7lOcmLiZasvl6vDWEYDw/0YeZCq8JWDw7l2xS5zROceDNGHNgnOLAGxDmwDjFgT86zIFxiuPpAg6MUxzlBRwYpzj2FnBgnOKoLODAOMWBtxPMgXGK42ABB8YfUTWW+1JwkeXOYRQLLsUcS+70QbHgYsyx5HouxYLLMceS6zQUCy7IHAt2IFlwSeZYsMO2F+qbvnLElS1hvzqabuVEW1mXvZpwjuGu2ZEOBjczIL5jRVO2hAPXMNjSGjzQkeOsEHpeCD0/hIaMQZFZIaDnfWxGB4ea50DXS66Uz7gfX92hYX++oGFHrRquxXCVBbXYJ7MuXS+luDrzPO37/wFF20h46BAAAA==" /><input type="hidden" name="jsf_state_64" id="jsf_state_64" value="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" /><input type="hidden" name="jsf_viewid" id="jsf_viewid" value="/cargotracking/ct_result_bl.jsp" /></form>
+<script type="text/javascript" src="/admin/scripts/user_session_initialize.js"><!--
+
+//--></script>
+<script language="javascript"><!--
+
+try {
+	initializedAnonymousHyperLinks("ENOPAdwEwaPARWlKLrcGMCCOOCL","en-US","MCC","OOCL") ;
+	decorateAnonymousForm();
+} catch(err) {}
+
+//--></script>
+	<!-- MLDD Resource Missing key error message -->
+	<script language="JavaScript"><!--
+
+	<!--
+		var obj_mldd_msg = '<b>1. Key ebc.template.format.here in Resource Bundle pub-template_en_US is missing!!!</b><br/><b>2. Key ebc.template.format.here in Resource Bundle cs2-oocl_en_US is missing!!!</b><br/><b>3. Key ebc.template.format.here in Resource Bundle pub-partymenu_en_US is missing!!!</b><br/><b>4. Key ebc.template.format.here in Resource Bundle pub-template_zh_TW is missing!!!</b><br/><b>5. Key ebc.template.format.here in Resource Bundle cs2-oocl_zh_TW is missing!!!</b><br/><b>6. Key ebc.template.format.here in Resource Bundle pub-partymenu_zh_TW is missing!!!</b><br/><b>7. Key ebc.template.format.here in Resource Bundle pub-admin_en_US is missing!!!</b><br/><b>8. Key ebc.template.format.here in Resource Bundle pub-template_zh_CN is missing!!!</b><br/><b>9. Key ebc.template.format.here in Resource Bundle cs2-oocl_zh_CN is missing!!!</b><br/><b>10. Key ebc.template.format.here in Resource Bundle pub-partymenu_zh_CN is missing!!!</b><br/><b>11. Key ebc.template.format.here in Resource Bundle pub-admin_zh_TW is missing!!!</b><br/><b>12. Key ct.label.cntr_specification in Resource Bundle pub-shipment_zh_TW is missing!!!</b><br/><b>13. Key ex.invalid.browser_mail_address in Resource Bundle pub-admin_en_US is missing!!!</b><br/><b>14. Key ebc.template.format.here in Resource Bundle pub-admin_zh_CN is missing!!!</b><br/><b>15. Key ebc.template.format.here in Resource Bundle cs2-shipmentdetail_en_US is missing!!!</b><br/><b>16. Key ebc.template.format.here in Resource Bundle ccsc-oocl_en_US is missing!!!</b><br/><b>17. Key ebc.template.format.here in Resource Bundle pub-modulefunctionauthorization_en_US is missing!!!</b><br/>';
+		var obj_mldd_msg_span = document.getElementById('mldd_errors');
+		if (obj_mldd_msg!='' && obj_mldd_msg_span!=null){
+			//obj_mldd_msg_span.innerHTML = obj_mldd_msg;
+		}
+	//-->
+
+//--></script>
+	<script type="text/javascript" src="/party/scripts/cs_browser_monitor.js"><!--
+
+//--></script>
+	<!-- MLDD Resource Missing key error message -->
+		<script src="https://ca.cargosmart.ai/js/analytics.client.core.js"><!--
+
+//--></script>
+		<script src="https://ca.cargosmart.ai/js/analytics.client.util.js"><!--
+
+//--></script>
+		<script><!--
+
+			$(document).ready(function(){
+				if($("td[name='pm_SECURE_SHIPPING_GROUP']")){
+					if($("td[name='pm_SECURE_SHIPPING_GROUP']")[0]){
+						var blockChainHTML = $("td[name='pm_SECURE_SHIPPING_GROUP']").html();
+						var newBlockChainHTML = '<img width="14" height="14" src="/admin/skin/mcc_oocl/images/icon_blockchain.svg" />' + blockChainHTML;
+						document.getElementsByName('pm_SECURE_SHIPPING_GROUP')[0].innerHTML = newBlockChainHTML;
+					}
+					if($('#pm_SECURE_DOCUMENT_HELP')){
+						if($('#pm_SECURE_DOCUMENT_HELP')[0]){
+							var blockChainHelpHTML = $('#pm_SECURE_DOCUMENT_HELP').html();
+							var newBlockChainHelpHTML = blockChainHelpHTML + ' <img width="14" height="14" src="/admin/skin/mcc_oocl/images/icon_info.gif" />';
+							document.getElementById('pm_SECURE_DOCUMENT_HELP').innerHTML = newBlockChainHelpHTML;
+						}
+					}
+				}
+			});
+		</script>
+    <!-- MYFACES JAVASCRIPT -->
+
+</body>
+</html>
