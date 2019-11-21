@@ -10,6 +10,7 @@ def verify(results):
     )
 
     assert results[1] == ContainerStatusItem(
+        container_key='OOLU910898',
         description='Container Returned to Carrier',
         location=LocationItem(name='ConGlobal Industries Inc., Atlanta, Fulton, Georgia, United States'),
         transport='Truck',

@@ -518,6 +518,7 @@ class ContainerStatusRule(BaseRoutingRule):
         container_status_list = self._extract_container_status_list(selectors_map)
         for container_status in container_status_list:
             yield ContainerStatusItem(
+                container_key=container_no,
                 description=container_status['description'],
                 location=LocationItem(name=container_status['location']),
                 transport=container_status['transport'],
