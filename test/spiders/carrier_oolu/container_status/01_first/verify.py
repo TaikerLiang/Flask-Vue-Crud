@@ -11,8 +11,17 @@ def verify(results):
 
     assert results[1] == ContainerStatusItem(
         container_key='OOLU910898',
-        description='Container Returned to Carrier',
+        description='Container Returned to Carrier (Destination)',
         location=LocationItem(name='ConGlobal Industries Inc., Atlanta, Fulton, Georgia, United States'),
         transport='Truck',
         local_date_time='07 Nov 2019, 08:08 EST',
     )
+
+    assert results[4] == ContainerStatusItem(
+        container_key='OOLU910898',
+        description='Container Deramped',
+        location=LocationItem(name='Norfolk Southern Corp - Austell, Austell, Cobb, Georgia, United States'),
+        transport='Rail',
+        local_date_time='03 Nov 2019, 16:28 EST',
+    )
+

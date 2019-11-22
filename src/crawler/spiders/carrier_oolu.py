@@ -517,9 +517,17 @@ class ContainerStatusRule(BaseRoutingRule):
 
         container_status_list = self._extract_container_status_list(selectors_map)
         for container_status in container_status_list:
+            event = container_status['event']
+            facility = container_status['facility']
+
+            if facility:
+                description = f'{event} ({facility})'
+            else:
+                description = event
+
             yield ContainerStatusItem(
                 container_key=container_no,
-                description=container_status['description'],
+                description=description,
                 location=LocationItem(name=container_status['location']),
                 transport=container_status['transport'],
                 local_date_time=container_status['local_date_time'],
@@ -558,7 +566,8 @@ class ContainerStatusRule(BaseRoutingRule):
         container_status_list = []
         for left in table_locator.iter_left_headers():
             container_status_list.append({
-                'description': table_extractor.extract_cell(top='Event', left=left, extractor=first_text_extractor),
+                'event': table_extractor.extract_cell(top='Event', left=left, extractor=first_text_extractor),
+                'facility': table_extractor.extract_cell(top='Facility', left=left, extractor=first_text_extractor),
                 'location': table_extractor.extract_cell(top='Location', left=left, extractor=span_extractor),
                 'transport': table_extractor.extract_cell(top='Mode', left=left, extractor=first_text_extractor),
                 'local_date_time': table_extractor.extract_cell(top='Time', left=left, extractor=span_extractor),
