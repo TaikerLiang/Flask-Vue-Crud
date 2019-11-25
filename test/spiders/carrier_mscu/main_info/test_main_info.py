@@ -29,6 +29,7 @@ def sample_loader(sample_loader):
     ('01_without_ts_port', 'MEDUN4194175'),
     ('02_not_arrival_yet', 'MEDUXA281435'),
     ('03_multi_containers', 'MEDUMY898253'),
+    ('04_without_place_of_deliv', 'MEDUH3870076'),
 ])
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     http_text = sample_loader.read_file(sub, 'sample.html')

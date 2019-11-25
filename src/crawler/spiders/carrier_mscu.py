@@ -69,7 +69,7 @@ class CarrierMscuSpider(BaseCarrierSpider):
                     est_or_actual=container_status['est_or_actual'],
                 )
 
-            place_of_deliv = extractor.extract_place_of_deliv(container_selector_map)
+            place_of_deliv = extractor.extract_place_of_deliv(container_selector_map) or None
             place_of_deliv_set.add(place_of_deliv)
 
         if len(place_of_deliv_set) != 1:
