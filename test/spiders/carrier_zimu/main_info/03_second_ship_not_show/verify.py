@@ -18,7 +18,7 @@ def verify(results):
             voyage=None,
             pol=LocationItem(name="NINGBO (ZJ), CHINA. PEOPLE'S REPUBLIC"),
             pod=LocationItem(name='DURRES, ALBANIA'),
-            final_dest=LocationItem(un_lo_code=None),
+            final_dest=LocationItem(un_lo_code=None, name=None),
             etd='17-Oct-2019',
             eta='22-Nov-2019',
             deliv_eta=None,

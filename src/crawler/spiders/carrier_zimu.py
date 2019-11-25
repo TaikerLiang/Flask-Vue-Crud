@@ -100,13 +100,24 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         to_pod_vessel = self._find_to_pod_vessel(vessel_list, schedule_list)
 
+        final_dest = main_info['final_dest']
+        if not final_dest:
+            final_dest_un_lo_code = None
+            final_dest_name = None
+        elif len(final_dest) == 5:
+            final_dest_un_lo_code = final_dest
+            final_dest_name = None
+        else:
+            final_dest_un_lo_code = None
+            final_dest_name = final_dest
+
         yield MblItem(
             mbl_no=main_info['mbl_no'],
             vessel=to_pod_vessel.vessel,
             voyage=to_pod_vessel.voyage,
             pol=LocationItem(name=main_info['pol']),
             pod=LocationItem(name=main_info['pod']),
-            final_dest=LocationItem(un_lo_code=main_info['final_dest_un_lo_code'] or None),
+            final_dest=LocationItem(un_lo_code=final_dest_un_lo_code, name=final_dest_name),
             etd=main_info['etd'] or None,
             eta=main_info['eta'] or None,
             deliv_eta=main_info['deliv_eta'] or None,
@@ -156,11 +167,11 @@ class MainInfoRoutingRule(BaseRoutingRule):
         routing_schedule = dict(routing_schedule_list)
 
         if 'Final Destination:' in routing_schedule:
-            final_dest_un_lo_code = routing_schedule['Final Destination:'].strip()
+            final_dest = routing_schedule['Final Destination:'].strip()
             deliv_eta = response.css('dt#etaDate::text').get() or ''
             eta = pod_info['Arrival Date']
         else:
-            final_dest_un_lo_code = ''
+            final_dest = ''
             deliv_eta = ''
             eta = response.css('dt#etaDate::text').get() or ''
 
@@ -168,7 +179,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             'mbl_no': mbl_no.strip(),
             'pol': routing_schedule['Port of Loading (POL)'].strip(),
             'pod': routing_schedule['Port of Discharge (POD)'].strip(),
-            'final_dest_un_lo_code': final_dest_un_lo_code.strip(),
+            'final_dest': final_dest,
             'deliv_eta': deliv_eta.strip(),
             'etd': routing_schedule['Sailing Date'].strip(),
             'eta': eta.strip(),
