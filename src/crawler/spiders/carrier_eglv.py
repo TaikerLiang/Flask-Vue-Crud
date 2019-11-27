@@ -181,12 +181,13 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 podctry=mbl_no_info['podctry'],
             )
 
-        first_container_no = self._get_first_container_no(container_list=container_list)
-        yield FilingStatusRoutingRule.build_routing_request(
-            mbl_no=mbl_no,
-            pod=mbl_no_info['pod_code'],
-            first_container_no=first_container_no,
-        )
+        if self._check_filing_status(response=response):
+            first_container_no = self._get_first_container_no(container_list=container_list)
+            yield FilingStatusRoutingRule.build_routing_request(
+                mbl_no=mbl_no,
+                pod=mbl_no_info['pod_code'],
+                first_container_no=first_container_no,
+            )
 
         yield ReleaseStatusRoutingRule.build_routing_request(mbl_no=mbl_no)
 
@@ -265,7 +266,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         for left in table_locator.iter_left_headers():
             if table.extract_cell('Location', left) == pod:
                 vessel_voyage = table.extract_cell('Estimated Arrival Vessel/Voyage', left)
-                vessel, voyage = self._split_vessel_voyage(vessel_voyage=vessel_voyage)
+                vessel, voyage = self._get_vessel_voyage(vessel_voyage=vessel_voyage)
                 return {
                     'eta': table.extract_cell('Estimated Arrival Date', left),
                     'vessel': vessel,
@@ -279,8 +280,16 @@ class MainInfoRoutingRule(BaseRoutingRule):
         }
 
     @staticmethod
-    def _split_vessel_voyage(vessel_voyage: str):
-        vessel, voyage = vessel_voyage.rsplit(sep=' ', maxsplit=1)
+    def _get_vessel_voyage(vessel_voyage: str):
+        if vessel_voyage == 'To be Advised':
+            return '', ''
+
+        if '-' in vessel_voyage:
+            sep = '-'
+        else:
+            sep = ' '
+
+        vessel, voyage = vessel_voyage.rsplit(sep=sep, maxsplit=1)
         return vessel, voyage
 
     @staticmethod
@@ -308,6 +317,13 @@ class MainInfoRoutingRule(BaseRoutingRule):
             })
 
         return return_list
+
+    @staticmethod
+    def _check_filing_status(response: scrapy.Selector):
+        tables = response.css('table')
+
+        rule = CssQueryTextStartswithMatchRule(css_query='td a::text', startswith='Customs Information')
+        return bool(find_selector_from(selectors=tables, rule=rule))
 
     @staticmethod
     def _get_first_container_no(container_list: List):

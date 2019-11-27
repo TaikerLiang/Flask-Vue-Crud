@@ -9,8 +9,8 @@ class Verifier:
     def verify(self, results):
         assert results[0] == MblItem(
             mbl_no='003902245109',
-            vessel='EVER LIVEN',
-            voyage='0915-038E',
+            vessel='EVER LIVEN 0915',
+            voyage='038E',
             por=LocationItem(name='KAOHSIUNG (TW)'),
             pol=LocationItem(name='KAOHSIUNG (TW)'),
             pod=LocationItem(name='BOSTON, MA (US)'),
