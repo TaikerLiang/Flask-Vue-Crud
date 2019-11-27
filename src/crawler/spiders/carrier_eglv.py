@@ -284,12 +284,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         if vessel_voyage == 'To be Advised':
             return '', ''
 
-        if '-' in vessel_voyage:
-            sep = '-'
-        else:
-            sep = ' '
-
-        vessel, voyage = vessel_voyage.rsplit(sep=sep, maxsplit=1)
+        vessel, voyage = vessel_voyage.rsplit(sep=' ', maxsplit=1)
         return vessel, voyage
 
     @staticmethod

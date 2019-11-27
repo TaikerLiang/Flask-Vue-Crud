@@ -8,8 +8,8 @@ class Verifier:
     def verify(self, results):
         assert results[0] == MblItem(
             mbl_no='100980089898',
-            vessel='EVER LYRIC 1010',
-            voyage='032E',
+            vessel='EVER LYRIC',
+            voyage='1010-032E',
             por=LocationItem(name='LUDHIANA (IN)'),
             pol=LocationItem(name='MUNDRA (IN)'),
             pod=LocationItem(name='LOS ANGELES, CA (US)'),
