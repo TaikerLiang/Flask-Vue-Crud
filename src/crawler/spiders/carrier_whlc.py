@@ -24,6 +24,7 @@ class CarrierWhlcSpider(BaseCarrierSpider):
         super(CarrierWhlcSpider, self).__init__(*args, **kwargs)
 
         rules = [
+            CookiesRoutingRule(),
             ListRoutingRule(),
             DetailRoutingRule(),
             HistoryRoutingRule(),
@@ -32,7 +33,7 @@ class CarrierWhlcSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start_requests(self):
-        routing_request = ListRoutingRule.build_routing_request(mbl_no=self.mbl_no, cookies={}, view_state='')
+        routing_request = CookiesRoutingRule.build_routing_request(mbl_no=self.mbl_no, cookies={}, view_state='')
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):
