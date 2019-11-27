@@ -1,0 +1,207 @@
+{
+  "tpdoc_num": "712027741",
+  "isContainerSearch": false,
+  "origin": {
+    "terminal": "Kaohsiung Hanjin Terminal Pier76-78",
+    "geo_site": "0FVSY5DIJPH8F",
+    "city": "Kaohsiung",
+    "state": "",
+    "country": "Taiwan",
+    "country_code": "TW",
+    "geoid_city": "2L2KVZCA70IV3",
+    "site_type": "TERMINAL"
+  },
+  "destination": {
+    "terminal": "Inland Rail Terminal",
+    "geo_site": "2ZB3CVXEU1G8V",
+    "city": "Johannesburg",
+    "state": "Gauteng",
+    "country": "South Africa",
+    "country_code": "ZA",
+    "geoid_city": "3IGU998UTZS73",
+    "site_type": "RAIL TERMINAL"
+  },
+  "containers": [
+    {
+      "container_num": "MRKU8035331",
+      "container_size": "20",
+      "container_type": "Dry",
+      "iso_code": "22G1",
+      "operator": "SAFM",
+      "locations": [
+        {
+          "terminal": "Kaohsiung Hanjin Terminal Pier76-78",
+          "geo_site": "0FVSY5DIJPH8F",
+          "city": "Kaohsiung",
+          "state": "",
+          "country": "Taiwan",
+          "country_code": "TW",
+          "geoid_city": "2L2KVZCA70IV3",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "GATE-OUT-EMPTY",
+              "stempty": true,
+              "actfor": "EXP",
+              "vessel_name": "MCC CEBU",
+              "voyage_num": "941W",
+              "vessel_num": "H5B",
+              "expected_time": "2019-10-11T09:00:00.000",
+              "actual_time": "2019-10-04T14:57:00.000",
+              "rkem_move": "GATE-OUT",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "GATE-IN",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "MCC CEBU",
+              "voyage_num": "941W",
+              "vessel_num": "H5B",
+              "expected_time": "2019-10-11T09:00:00.000",
+              "actual_time": "2019-10-05T14:56:00.000",
+              "rkem_move": "GATE-IN",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "LOAD",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "MCC CEBU",
+              "voyage_num": "941W",
+              "vessel_num": "H5B",
+              "expected_time": "2019-10-11T09:00:00.000",
+              "actual_time": "2019-10-11T03:00:00.000",
+              "rkem_move": "LOAD",
+              "is_cancelled": false,
+              "is_current": false
+            }
+          ]
+        },
+        {
+          "terminal": "Pelabuhan Tanjung Pelepas Terminal",
+          "geo_site": "00YSAZHW6VRIK",
+          "city": "Tanjung Pelepas",
+          "state": "Johor",
+          "country": "Malaysia",
+          "country_code": "MY",
+          "geoid_city": "2DTLIHUG9YN7S",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "DISCHARG",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "MCC CEBU",
+              "voyage_num": "941W",
+              "vessel_num": "H5B",
+              "expected_time": "2019-10-19T08:00:00.000",
+              "actual_time": "2019-10-19T12:38:00.000",
+              "rkem_move": "DISCHARG",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "LOAD",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "SANTA INES",
+              "voyage_num": "941S",
+              "vessel_num": "I3N",
+              "expected_time": "2019-10-27T05:00:00.000",
+              "actual_time": "2019-10-26T23:09:00.000",
+              "rkem_move": "LOAD",
+              "is_cancelled": false,
+              "is_current": false
+            }
+          ]
+        },
+        {
+          "terminal": "Durban, Container Terminal",
+          "geo_site": "030YAERFYOL1B",
+          "city": "Durban",
+          "state": "KwaZulu-Natal",
+          "country": "South Africa",
+          "country_code": "ZA",
+          "geoid_city": "21N0QN82ONYIN",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "DISCHARG",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "SANTA INES",
+              "voyage_num": "941S",
+              "vessel_num": "I3N",
+              "expected_time": "2019-11-17T10:00:00.000",
+              "actual_time": "2019-11-18T17:01:00.000",
+              "rkem_move": "DISCHARG",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "ON-RAIL",
+              "stempty": false,
+              "actfor": "IMP",
+              "vessel_name": "SANTA INES",
+              "voyage_num": "941S",
+              "vessel_num": "I3N",
+              "expected_time": "2019-11-17T16:00:00.000",
+              "actual_time": "2019-11-23T16:49:00.000",
+              "rkem_move": "ON-RAIL",
+              "is_cancelled": false,
+              "is_current": true
+            }
+          ]
+        },
+        {
+          "terminal": "Inland Rail Terminal",
+          "geo_site": "2ZB3CVXEU1G8V",
+          "city": "Johannesburg",
+          "state": "Gauteng",
+          "country": "South Africa",
+          "country_code": "ZA",
+          "geoid_city": "3IGU998UTZS73",
+          "site_type": "RAIL TERMINAL",
+          "events": [
+            {
+              "activity": "OFF-RAIL",
+              "stempty": false,
+              "actfor": "IMP",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-11-21T16:00:00.000",
+              "is_current": false
+            },
+            {
+              "activity": "GATE-OUT",
+              "stempty": false,
+              "actfor": "DEL",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-11-21T16:00:00.000",
+              "is_current": false
+            }
+          ]
+        }
+      ],
+      "eta_final_delivery": "2019-11-21T16:00:00.000",
+      "latest": {
+        "actual_time": "2019-11-23T16:49:00.000",
+        "activity": "ON-RAIL",
+        "stempty": false,
+        "actfor": "IMP",
+        "geo_site": "030YAERFYOL1B",
+        "city": "Durban",
+        "state": "KwaZulu-Natal",
+        "country": "South Africa",
+        "country_code": "ZA"
+      },
+      "status": "IN-PROGRESS"
+    }
+  ]
+}

@@ -1,0 +1,551 @@
+{
+  "tpdoc_num": "712044685",
+  "isContainerSearch": false,
+  "origin": {
+    "terminal": "Kaohsiung Hanjin Terminal Pier76-78",
+    "geo_site": "0FVSY5DIJPH8F",
+    "city": "Kaohsiung",
+    "state": "",
+    "country": "Taiwan",
+    "country_code": "TW",
+    "geoid_city": "2L2KVZCA70IV3",
+    "site_type": "TERMINAL"
+  },
+  "destination": {
+    "terminal": "AICT",
+    "geo_site": "1LKQC7EW0APSU",
+    "city": "Alexandria",
+    "state": "",
+    "country": "Egypt",
+    "country_code": "EG",
+    "geoid_city": "3LHF7RTKVRTRY",
+    "site_type": "TERMINAL"
+  },
+  "containers": [
+    {
+      "container_num": "FCIU4198511",
+      "container_size": "20",
+      "container_type": "Dry",
+      "iso_code": "22G1",
+      "operator": "SAFM",
+      "locations": [
+        {
+          "terminal": "Kaohsiung Hanjin Terminal Pier76-78",
+          "geo_site": "0FVSY5DIJPH8F",
+          "city": "Kaohsiung",
+          "state": "",
+          "country": "Taiwan",
+          "country_code": "TW",
+          "geoid_city": "2L2KVZCA70IV3",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "GATE-OUT-EMPTY",
+              "stempty": true,
+              "actfor": "EXP",
+              "vessel_name": "MAERSK ARAS",
+              "voyage_num": "945W",
+              "vessel_num": "F1Y",
+              "expected_time": "2019-11-16T08:30:00.000",
+              "actual_time": "2019-11-08T15:26:00.000",
+              "rkem_move": "GATE-OUT",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "GATE-IN",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "MAERSK ARAS",
+              "voyage_num": "945W",
+              "vessel_num": "F1Y",
+              "expected_time": "2019-11-16T08:30:00.000",
+              "actual_time": "2019-11-11T09:41:00.000",
+              "rkem_move": "GATE-IN",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "LOAD",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "MAERSK ARAS",
+              "voyage_num": "945W",
+              "vessel_num": "F1Y",
+              "expected_time": "2019-11-16T08:30:00.000",
+              "actual_time": "2019-11-16T07:42:00.000",
+              "rkem_move": "LOAD",
+              "is_cancelled": false,
+              "is_current": false
+            }
+          ]
+        },
+        {
+          "terminal": "PSA Singapore Terminal",
+          "geo_site": "1USOJ5O7R938O",
+          "city": "Singapore",
+          "state": "",
+          "country": "Singapore",
+          "country_code": "SG",
+          "geoid_city": "0XOP5ISJZK0HR",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "DISCHARG",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "MAERSK ARAS",
+              "voyage_num": "945W",
+              "vessel_num": "F1Y",
+              "expected_time": "2019-11-21T16:00:00.000",
+              "actual_time": "2019-11-21T17:57:00.000",
+              "rkem_move": "DISCHARG",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "LOAD",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "MSC GENOVA",
+              "voyage_num": "945W",
+              "vessel_num": "19U",
+              "expected_time": "2019-11-26T18:30:00.000",
+              "actual_time": "2019-11-26T09:23:00.000",
+              "rkem_move": "LOAD",
+              "is_cancelled": false,
+              "is_current": true
+            }
+          ]
+        },
+        {
+          "terminal": "East Port Said Terminal",
+          "geo_site": "0FYKXUTLQUD49",
+          "city": "Port Said East",
+          "state": "",
+          "country": "Egypt",
+          "country_code": "EG",
+          "geoid_city": "3I6W2NB2MQV7I",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "DISCHARG",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "MSC GENOVA",
+              "voyage_num": "945W",
+              "vessel_num": "19U",
+              "expected_time": "2019-12-09T18:00:00.000",
+              "is_current": false
+            },
+            {
+              "activity": "LOAD",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "WADI ALRAYAN",
+              "voyage_num": "949W",
+              "vessel_num": "B22",
+              "expected_time": "2019-12-16T10:00:00.000",
+              "is_current": false
+            }
+          ]
+        },
+        {
+          "terminal": "AICT",
+          "geo_site": "1LKQC7EW0APSU",
+          "city": "Alexandria",
+          "state": "",
+          "country": "Egypt",
+          "country_code": "EG",
+          "geoid_city": "3LHF7RTKVRTRY",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "DISCHARG",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "WADI ALRAYAN",
+              "voyage_num": "949W",
+              "vessel_num": "B22",
+              "expected_time": "2019-12-18T14:01:00.000",
+              "is_current": false
+            },
+            {
+              "activity": "GATE-OUT",
+              "stempty": false,
+              "actfor": "DEL",
+              "vessel_name": "WADI ALRAYAN",
+              "voyage_num": "949W",
+              "vessel_num": "B22",
+              "expected_time": "2019-12-18T14:01:00.000",
+              "is_current": false
+            }
+          ]
+        }
+      ],
+      "eta_final_delivery": "2019-12-18T14:01:00.000",
+      "latest": {
+        "actual_time": "2019-11-26T09:23:00.000",
+        "activity": "LOAD",
+        "stempty": false,
+        "actfor": "",
+        "geo_site": "1USOJ5O7R938O",
+        "city": "Singapore",
+        "state": "",
+        "country": "Singapore",
+        "country_code": "SG"
+      },
+      "status": "IN-PROGRESS"
+    },
+    {
+      "container_num": "MRSU0260637",
+      "container_size": "20",
+      "container_type": "Dry",
+      "iso_code": "22G1",
+      "operator": "SAFM",
+      "locations": [
+        {
+          "terminal": "Kaohsiung Hanjin Terminal Pier76-78",
+          "geo_site": "0FVSY5DIJPH8F",
+          "city": "Kaohsiung",
+          "state": "",
+          "country": "Taiwan",
+          "country_code": "TW",
+          "geoid_city": "2L2KVZCA70IV3",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "GATE-OUT-EMPTY",
+              "stempty": true,
+              "actfor": "EXP",
+              "vessel_name": "MAERSK ARAS",
+              "voyage_num": "945W",
+              "vessel_num": "F1Y",
+              "expected_time": "2019-11-16T08:30:00.000",
+              "actual_time": "2019-11-08T16:54:00.000",
+              "rkem_move": "GATE-OUT",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "GATE-IN",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "MAERSK ARAS",
+              "voyage_num": "945W",
+              "vessel_num": "F1Y",
+              "expected_time": "2019-11-16T08:30:00.000",
+              "actual_time": "2019-11-11T12:45:00.000",
+              "rkem_move": "GATE-IN",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "LOAD",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "MAERSK ARAS",
+              "voyage_num": "945W",
+              "vessel_num": "F1Y",
+              "expected_time": "2019-11-16T08:30:00.000",
+              "actual_time": "2019-11-16T07:43:00.000",
+              "rkem_move": "LOAD",
+              "is_cancelled": false,
+              "is_current": false
+            }
+          ]
+        },
+        {
+          "terminal": "PSA Singapore Terminal",
+          "geo_site": "1USOJ5O7R938O",
+          "city": "Singapore",
+          "state": "",
+          "country": "Singapore",
+          "country_code": "SG",
+          "geoid_city": "0XOP5ISJZK0HR",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "DISCHARG",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "MAERSK ARAS",
+              "voyage_num": "945W",
+              "vessel_num": "F1Y",
+              "expected_time": "2019-11-21T16:00:00.000",
+              "actual_time": "2019-11-21T17:55:00.000",
+              "rkem_move": "DISCHARG",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "LOAD",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "MSC GENOVA",
+              "voyage_num": "945W",
+              "vessel_num": "19U",
+              "expected_time": "2019-11-26T18:30:00.000",
+              "actual_time": "2019-11-26T09:18:00.000",
+              "rkem_move": "LOAD",
+              "is_cancelled": false,
+              "is_current": true
+            }
+          ]
+        },
+        {
+          "terminal": "East Port Said Terminal",
+          "geo_site": "0FYKXUTLQUD49",
+          "city": "Port Said East",
+          "state": "",
+          "country": "Egypt",
+          "country_code": "EG",
+          "geoid_city": "3I6W2NB2MQV7I",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "DISCHARG",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "MSC GENOVA",
+              "voyage_num": "945W",
+              "vessel_num": "19U",
+              "expected_time": "2019-12-09T18:00:00.000",
+              "is_current": false
+            },
+            {
+              "activity": "LOAD",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "WADI ALRAYAN",
+              "voyage_num": "949W",
+              "vessel_num": "B22",
+              "expected_time": "2019-12-16T10:00:00.000",
+              "is_current": false
+            }
+          ]
+        },
+        {
+          "terminal": "AICT",
+          "geo_site": "1LKQC7EW0APSU",
+          "city": "Alexandria",
+          "state": "",
+          "country": "Egypt",
+          "country_code": "EG",
+          "geoid_city": "3LHF7RTKVRTRY",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "DISCHARG",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "WADI ALRAYAN",
+              "voyage_num": "949W",
+              "vessel_num": "B22",
+              "expected_time": "2019-12-18T14:01:00.000",
+              "is_current": false
+            },
+            {
+              "activity": "GATE-OUT",
+              "stempty": false,
+              "actfor": "DEL",
+              "vessel_name": "WADI ALRAYAN",
+              "voyage_num": "949W",
+              "vessel_num": "B22",
+              "expected_time": "2019-12-18T14:01:00.000",
+              "is_current": false
+            }
+          ]
+        }
+      ],
+      "eta_final_delivery": "2019-12-18T14:01:00.000",
+      "latest": {
+        "actual_time": "2019-11-26T09:18:00.000",
+        "activity": "LOAD",
+        "stempty": false,
+        "actfor": "",
+        "geo_site": "1USOJ5O7R938O",
+        "city": "Singapore",
+        "state": "",
+        "country": "Singapore",
+        "country_code": "SG"
+      },
+      "status": "IN-PROGRESS"
+    },
+    {
+      "container_num": "PONU0191052",
+      "container_size": "20",
+      "container_type": "Dry",
+      "iso_code": "22G1",
+      "operator": "SAFM",
+      "locations": [
+        {
+          "terminal": "Kaohsiung Hanjin Terminal Pier76-78",
+          "geo_site": "0FVSY5DIJPH8F",
+          "city": "Kaohsiung",
+          "state": "",
+          "country": "Taiwan",
+          "country_code": "TW",
+          "geoid_city": "2L2KVZCA70IV3",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "GATE-OUT-EMPTY",
+              "stempty": true,
+              "actfor": "EXP",
+              "vessel_name": "MAERSK ARAS",
+              "voyage_num": "945W",
+              "vessel_num": "F1Y",
+              "expected_time": "2019-11-16T08:30:00.000",
+              "actual_time": "2019-11-08T16:54:00.000",
+              "rkem_move": "GATE-OUT",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "GATE-IN",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "MAERSK ARAS",
+              "voyage_num": "945W",
+              "vessel_num": "F1Y",
+              "expected_time": "2019-11-16T08:30:00.000",
+              "actual_time": "2019-11-11T10:11:00.000",
+              "rkem_move": "GATE-IN",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "LOAD",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "MAERSK ARAS",
+              "voyage_num": "945W",
+              "vessel_num": "F1Y",
+              "expected_time": "2019-11-16T08:30:00.000",
+              "actual_time": "2019-11-16T07:42:00.000",
+              "rkem_move": "LOAD",
+              "is_cancelled": false,
+              "is_current": false
+            }
+          ]
+        },
+        {
+          "terminal": "PSA Singapore Terminal",
+          "geo_site": "1USOJ5O7R938O",
+          "city": "Singapore",
+          "state": "",
+          "country": "Singapore",
+          "country_code": "SG",
+          "geoid_city": "0XOP5ISJZK0HR",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "DISCHARG",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "MAERSK ARAS",
+              "voyage_num": "945W",
+              "vessel_num": "F1Y",
+              "expected_time": "2019-11-21T16:00:00.000",
+              "actual_time": "2019-11-21T17:57:00.000",
+              "rkem_move": "DISCHARG",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "LOAD",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "MSC GENOVA",
+              "voyage_num": "945W",
+              "vessel_num": "19U",
+              "expected_time": "2019-11-26T18:30:00.000",
+              "actual_time": "2019-11-26T09:21:00.000",
+              "rkem_move": "LOAD",
+              "is_cancelled": false,
+              "is_current": true
+            }
+          ]
+        },
+        {
+          "terminal": "East Port Said Terminal",
+          "geo_site": "0FYKXUTLQUD49",
+          "city": "Port Said East",
+          "state": "",
+          "country": "Egypt",
+          "country_code": "EG",
+          "geoid_city": "3I6W2NB2MQV7I",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "DISCHARG",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "MSC GENOVA",
+              "voyage_num": "945W",
+              "vessel_num": "19U",
+              "expected_time": "2019-12-09T18:00:00.000",
+              "is_current": false
+            },
+            {
+              "activity": "LOAD",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "WADI ALRAYAN",
+              "voyage_num": "949W",
+              "vessel_num": "B22",
+              "expected_time": "2019-12-16T10:00:00.000",
+              "is_current": false
+            }
+          ]
+        },
+        {
+          "terminal": "AICT",
+          "geo_site": "1LKQC7EW0APSU",
+          "city": "Alexandria",
+          "state": "",
+          "country": "Egypt",
+          "country_code": "EG",
+          "geoid_city": "3LHF7RTKVRTRY",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "DISCHARG",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "WADI ALRAYAN",
+              "voyage_num": "949W",
+              "vessel_num": "B22",
+              "expected_time": "2019-12-18T14:01:00.000",
+              "is_current": false
+            },
+            {
+              "activity": "GATE-OUT",
+              "stempty": false,
+              "actfor": "DEL",
+              "vessel_name": "WADI ALRAYAN",
+              "voyage_num": "949W",
+              "vessel_num": "B22",
+              "expected_time": "2019-12-18T14:01:00.000",
+              "is_current": false
+            }
+          ]
+        }
+      ],
+      "eta_final_delivery": "2019-12-18T14:01:00.000",
+      "latest": {
+        "actual_time": "2019-11-26T09:21:00.000",
+        "activity": "LOAD",
+        "stempty": false,
+        "actfor": "",
+        "geo_site": "1USOJ5O7R938O",
+        "city": "Singapore",
+        "state": "",
+        "country": "Singapore",
+        "country_code": "SG"
+      },
+      "status": "IN-PROGRESS"
+    }
+  ]
+}
