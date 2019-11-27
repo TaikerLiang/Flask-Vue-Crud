@@ -10,9 +10,11 @@ from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingR
 from crawler.core_carrier.items import (
     BaseCarrierItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
+from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 WHLC_BASE_URL = 'https://www.wanhai.com/views'
+COOKIES_RETRY_LIMIT = 3
 
 
 class CarrierWhlcSpider(BaseCarrierSpider):
@@ -47,14 +49,11 @@ class CarrierWhlcSpider(BaseCarrierSpider):
 
 # -------------------------------------------------------------------------------
 
-class ListRoutingRule(BaseRoutingRule):
-    name = 'LIST'
-
-    JDT_DETAIL = 'j_idt36:0:j_idt40'
-    JDT_HISTORY = 'j_idt36:0:j_idt83'
+class CookiesRoutingRule(BaseRoutingRule):
+    name = 'COOKIES'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, cookies, view_state) -> RoutingRequest:
+    def build_routing_request(cls, mbl_no, cookies, view_state) -> RoutingRequest:
         form_data = {
             'cargoTrackListBean': 'cargoTrackListBean',
             'cargoType': '2',
@@ -81,8 +80,47 @@ class ListRoutingRule(BaseRoutingRule):
                 cookies[key_value_list[0]] = key_value_list[1]
 
             yield ListRoutingRule.build_routing_request(mbl_no, cookies, view_state)
-        else:
-            self.check_response(response)
+
+    @staticmethod
+    def _extract_view_state(response: scrapy.Selector) -> str:
+        return response.css('input[name="javax.faces.ViewState"]::attr(value)').get()
+
+
+# -------------------------------------------------------------------------------
+
+class ListRoutingRule(BaseRoutingRule):
+    name = 'LIST'
+
+    JDT_DETAIL = 'j_idt36:0:j_idt40'
+    JDT_HISTORY = 'j_idt36:0:j_idt83'
+
+    def __init__(self):
+        self._retry_count = 0
+
+    @classmethod
+    def build_routing_request(cls, mbl_no: str, cookies, view_state) -> RoutingRequest:
+        form_data = {
+            'cargoTrackListBean': 'cargoTrackListBean',
+            'cargoType': '2',
+            'q_ref_no1': mbl_no,
+            'j_idt6': 'Query',
+            'javax.faces.ViewState': view_state,
+        }
+        request = scrapy.FormRequest(
+            url=f'{WHLC_BASE_URL}/quick/cargo_tracking.xhtml',
+            method='POST',
+            cookies=cookies,
+            formdata=form_data,
+            meta={'mbl_no': mbl_no, 'cookies': cookies},
+        )
+        return RoutingRequest(request=request, rule_name=cls.name)
+
+    def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+        cookies = response.meta['cookies']
+        view_state = self._extract_view_state(response=response)
+        if self._check_cookies(cookies=cookies):
+            self._check_response(response)
 
             container_list = self._extract_container_info(response=response)
             for container in container_list:
@@ -98,9 +136,21 @@ class ListRoutingRule(BaseRoutingRule):
 
                 yield HistoryRoutingRule.build_routing_request(
                     mbl_no, container_no, view_state, self.JDT_HISTORY, cookies)
+        elif self._retry_count < COOKIES_RETRY_LIMIT:
+            self._retry_count += 1
+            yield CookiesRoutingRule.build_routing_request(mbl_no, cookies, view_state)
+        else:
+            raise RuntimeError()
 
     @staticmethod
-    def check_response(response):
+    def _check_cookies(cookies):
+        if cookies == {}:
+            return False
+        else:
+            return True
+
+    @staticmethod
+    def _check_response(response):
         if response.css('form[action="/views/AlertMsgPage.xhtml"]'):
             raise CarrierInvalidMblNoError()
 
@@ -389,7 +439,6 @@ class HistoryRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_status(response) -> List:
-        container_key = response.meta['container_key']
         table_selector = response.css('table.tbl-list')
 
         if not table_selector:
@@ -409,7 +458,6 @@ class HistoryRoutingRule(BaseRoutingRule):
             location_name = location_name.replace('\\t', '')
 
             return_list.append({
-                'container_key': container_key,
                 'local_date_time': local_date_time.strip(),
                 'description': description.strip(),
                 'location_name': location_name.strip(),
@@ -473,13 +521,6 @@ class ContainerStatusTableLocator(BaseTableLocator):
             yield index
 
 
-class BaseMatchRule:
-
-    @abc.abstractmethod
-    def check(self, selector: scrapy.Selector) -> bool:
-        pass
-
-
 class NameOnTableMatchRule(BaseMatchRule):
     TABLE_NAME_QUERY = 'tr td a::text'
 
@@ -493,10 +534,3 @@ class NameOnTableMatchRule(BaseMatchRule):
             return False
 
         return table_name.strip() == self.name
-
-
-def find_selector_from(selectors: List[scrapy.Selector], rule: BaseMatchRule):
-    for selector in selectors:
-        if rule.check(selector=selector):
-            return selector
-    return None
