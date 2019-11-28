@@ -1,4 +1,8 @@
 FROM node:lts-alpine 
+
+ARG ENV
+ENV ENV=${ENV}
+
 # install simple http server for serving static content 
 RUN npm install -g http-server 
 # make the 'app' folder the current working directory 
@@ -11,5 +15,6 @@ RUN npm install
 COPY . . 
 # build app for production with minification 
 RUN npm run build 
-EXPOSE 8080 
-CMD [ "npm", "run", "serve"]
+EXPOSE 8080
+CMD echo VUE_APP_ENV=${ENV} > .env && npm run serve
+#CMD [ "npm", "run", "serve"]

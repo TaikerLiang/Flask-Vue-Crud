@@ -50,8 +50,8 @@ jobs:
       - checkout
       - restore_cache:
           key: deps1-{{ .Branch }}-{{ checksum "server/requirements.txt" }}
-      #- restore_cache:
-      #    key: deps1-{{ .Branch }}-{{ checksum "client/package.json" }}
+      - restore_cache:
+          key: deps1-{{ .Branch }}-{{ checksum "client/package.json" }}
       - run:
           name: Show current branch
           command: echo ${CIRCLE_BRANCH}
@@ -80,6 +80,7 @@ jobs:
       - run: cat .env
       - run: docker-compose build
       - run: docker-compose push
+
 
 workflows:
   version: 2

@@ -1,9 +1,16 @@
 from config import config
 from flask import Flask
-from flask_cors import CORS
+import os
 
 app = Flask(__name__)
-# enable CORS
-CORS(app, resources={r"/*": {"origins": "*"}})
+
+try:
+    app.config.from_object(config[os.getenv("ENV")])
+    _evn = os.getenv("ENV")
+except:
+    app.config.from_object(config["default"])
+    _evn = "dev"
+
+app.logger.error(os.getenv("ENV"))
 
 from src import books
