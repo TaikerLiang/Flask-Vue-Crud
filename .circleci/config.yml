@@ -66,7 +66,7 @@ jobs:
       - run:
           name: "Log in to AWS ECR"
           command: eval $(aws ecr get-login --no-include-email)
-      - run: 
+      - run:
           name: set environment
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
@@ -76,16 +76,12 @@ jobs:
             elif [ "${CIRCLE_BRANCH}" == "stg" ]; then
               echo BRANCH=${CIRCLE_BRANCH} >> .env
             fi
-      - run: echo DOCKER_REGISTRY=${ECR_URL}/flask-vue-crud >> .env
-      #- run: cat .env
+      - run: echo DOCKER_REGISTRY=${ECR_URL}/xinyisheng-ec >> .env
+      - run: cat .env
       - run: docker-compose build
       - run: docker-compose push
-      - run:
-          name: AWS codedeploy
-          command: |
-            if [ "${CIRCLE_BRANCH}" == "qa" ]; then
-                aws deploy create-deployment --application-name flask-vue-crud --deployment-group-name flask-vue-crud-qa --auto-rollback-configuration enabled=true,events="DEPLOYMENT_FAILURE" --file-exists-behavior OVERWRITE --github-location repository="TaikerLiang/flask-vue-crud",commitId="$CIRCLE_SHA1"
-            fi
+
+
 workflows:
   version: 2
   build_and_test:
