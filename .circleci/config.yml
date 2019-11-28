@@ -5,7 +5,7 @@ jobs:
     docker:
       - image: circleci/python:3.7.2
         environment:
-          PIPENV_VENV_IN_PROJECT: true'
+          PIPENV_VENV_IN_PROJECT: true
       - image: circleci/postgres:11.5-alpine
         environment:
           POSTGRES_USER: taiker
@@ -98,7 +98,11 @@ jobs:
           name: AWS codedeploy
           command: |
             if [ "${CIRCLE_BRANCH}" == "qa" ]; then
-                aws deploy create-deployment --application-name flask-vue-crud --deployment-group-name flask-vue-crud-qa --auto-rollback-configuration enabled=true,events="DEPLOYMENT_FAILURE" --file-exists-behavior OVERWRITE --github-location repository="TaikerLiang/flask-vue-crud",commitId="$CIRCLE_SHA1"
+                aws deploy create-deployment --application-name flask-vue-crud --deployment-group-name qa --auto-rollback-configuration enabled=true,events="DEPLOYMENT_FAILURE" --file-exists-behavior OVERWRITE --github-location repository="TaikerLiang/flask-vue-crud",commitId="$CIRCLE_SHA1"
+            elif [ "${CIRCLE_BRANCH}" == "master" ]; then
+                aws deploy create-deployment --application-name flask-vue-crud --deployment-group-name prd --auto-rollback-configuration enabled=true,events="DEPLOYMENT_FAILURE" --file-exists-behavior OVERWRITE --github-location repository="TaikerLiang/flask-vue-crud",commitId="$CIRCLE_SHA1"
+            elif [ "${CIRCLE_BRANCH}" == "stg" ]; then
+                aws deploy create-deployment --application-name flask-vue-crud --deployment-group-name stg --auto-rollback-configuration enabled=true,events="DEPLOYMENT_FAILURE" --file-exists-behavior OVERWRITE --github-location repository="TaikerLiang/flask-vue-crud",commitId="$CIRCLE_SHA1"
             fi
 workflows:
   version: 2
