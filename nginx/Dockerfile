@@ -1,4 +1,4 @@
-FROM staticfloat/nginx-certbot
+FROM taikerliang/docker-nginx-certbot
 
 ARG ENV
 

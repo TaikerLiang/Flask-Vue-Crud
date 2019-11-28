@@ -1,9 +1,5 @@
 #!/bin/bash
-
-cd /home/ubuntu/flask-vue-crud
-docker-compose down
-sudo cp -r .env ../
-cd ~
+docker stop $(docker ps -a -q)
+docker rm $(docker ps -a -q)
+docker rmi $(docker images -q)
 sudo rm -fr /home/ubuntu/flask-vue-crud
-#docker rm $(docker ps -a -q)
-#docker rmi $(docker images -q)

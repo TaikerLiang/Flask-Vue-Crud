@@ -21,7 +21,7 @@ services:
       - '3000:3000'
       - '5000:5000'
 
-  api:
+  server:
     image: ${DOCKER_REGISTRY}/server:${BRANCH}
     environment:
       - PGUSER=taiker

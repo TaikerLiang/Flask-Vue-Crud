@@ -1,5 +1,13 @@
 version: '3'
 services:
+  postgres:
+    image: postgres:11.5-alpine
+    restart: always
+    ports:
+        - '5432:5432'
+    environment:
+        POSTGRES_USER: taiker
+        POSTGRES_DB: flask_vue
   nginx:
     image: ${DOCKER_REGISTRY}/nginx:${BRANCH}
     restart: always
@@ -18,7 +26,7 @@ services:
       options:
         max-size: "1k"
         max-file: "3"
-  api:
+  server:
     image: ${DOCKER_REGISTRY}/server:${BRANCH}
     build:
       dockerfile: Dockerfile
