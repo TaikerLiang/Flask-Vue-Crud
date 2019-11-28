@@ -12,7 +12,7 @@ jobs:
           POSTGRES_DB: flask_vue
     steps:
       - checkout
-      - run: sudo apt-get install python3-pip
+      - run: pip -V
       - run: sudo pip3 install --upgrade pip
       - run:
           command: |
