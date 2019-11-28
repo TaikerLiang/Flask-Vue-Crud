@@ -12,7 +12,7 @@ Check out the [post](https://testdriven.io/developing-a-single-page-app-with-fla
 
     ```sh
     $ cd server
-    $ python3.7 -m venv env
+    $ python3.7 -m venv .venv
     $ source env/bin/activate
     (env)$ pip install -r requirements.txt
     (env)$ python app.py
@@ -35,3 +35,5 @@ Check out the [post](https://testdriven.io/developing-a-single-page-app-with-fla
 ```
 $ docker-compose up --build
 ```
+
+After starting, navigate to http://localhost:3000. Enjoy it.
