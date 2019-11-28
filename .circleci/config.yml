@@ -3,7 +3,7 @@ jobs:
   build-server:
     working_directory: ~/app
     docker:
-      - image: circleci/python:3.6.4
+      - image: circleci/python:3.7.2
         environment:
           PIPENV_VENV_IN_PROJECT: true
     steps:
@@ -64,6 +64,15 @@ jobs:
       - run: docker-compose version
       - run: aws --version
       - run:
+          name: "AWS config Setting - Region"
+          command: aws configure set region ${AWS_DEFAULT_REGION}
+      - run:
+          name: "AWS config Setting - ACCESS_KEY"
+          command: aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
+      - run:
+          name: "AWS config Setting - SECRET_KEY"
+          command: aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
+      - run:
           name: "Log in to AWS ECR"
           command: eval $(aws ecr get-login --no-include-email)
       - run: 
@@ -95,4 +104,10 @@ workflows:
       - build-puhs-images:
           requires:
             - build-server
-            - build-client  
+            - build-client
+          filters:
+            branches:
+              only:
+                - master
+                - qa
+                - stg
