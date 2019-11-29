@@ -14,7 +14,7 @@ class Verifier:
             pol=LocationItem(name='SHANGHAI (CN)'),
             pod=LocationItem(name='LONG BEACH, CA (US)'),
             place_of_deliv=LocationItem(name='LOS ANGELES, CA (US)'),
-            est_onboard_date='OCT-04-2019',
+            etd='OCT-04-2019',
             final_dest=LocationItem(name=None),
             eta=None,
             cargo_cutoff_date=None,

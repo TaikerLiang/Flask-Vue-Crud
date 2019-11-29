@@ -16,7 +16,7 @@ class Verifier:
             pod=LocationItem(name='BOSTON, MA (US)'),
             place_of_deliv=LocationItem(name='BOSTON, MA (US)'),
             final_dest=LocationItem(name=None),
-            est_onboard_date='AUG-18-2019',
+            etd='AUG-18-2019',
             eta='SEP-25-2019',
             cargo_cutoff_date=None,
         )

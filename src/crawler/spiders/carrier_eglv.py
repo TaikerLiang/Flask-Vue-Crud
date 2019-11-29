@@ -160,7 +160,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             pod=LocationItem(name=basic_info['pod_name']),
             final_dest=LocationItem(name=basic_info['dest_name']),
             place_of_deliv=LocationItem(name=basic_info['place_of_deliv_name']),
-            est_onboard_date=basic_info['eae'],
+            etd=basic_info['etd'],
             eta=vessel_info['eta'],
             cargo_cutoff_date=basic_info['cargo_cutoff_date'],
         )
@@ -243,7 +243,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             'pod_name': left_table.extract_cell(None, 'Port of Discharge') or None,
             'dest_name': left_table.extract_cell(None, 'OCP Final Destination') or None,
             'place_of_deliv_name': left_table.extract_cell(None, 'Place of Delivery') or None,
-            'eae': right_table.extract_cell(None, 'Estimated On Board Date') or None,
+            'etd': right_table.extract_cell(None, 'Estimated On Board Date') or None,
             'cargo_cutoff_date': right_table.extract_cell(None, 'Cut Off Date') or None,
         }
 

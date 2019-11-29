@@ -14,7 +14,7 @@ class Verifier:
             pol=LocationItem(name='MUNDRA (IN)'),
             pod=LocationItem(name='LOS ANGELES, CA (US)'),
             place_of_deliv=LocationItem(name='LONG BEACH, CA (US)'),
-            est_onboard_date='NOV-27-2019',
+            etd='NOV-27-2019',
             final_dest=LocationItem(name=None),
             eta='JAN-01-2020',
             cargo_cutoff_date='NOV-22-2019 17:30',

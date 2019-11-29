@@ -14,7 +14,7 @@ class Verifier:
             pol=LocationItem(name='KAOHSIUNG (TW)'),
             pod=LocationItem(name='BALTIMORE, MD (US)'),
             place_of_deliv=LocationItem(name='BALTIMORE, MD (US)'),
-            est_onboard_date='JUL-17-2019',
+            etd='JUL-17-2019',
             final_dest=LocationItem(name=None),
             eta=None,
             cargo_cutoff_date=None,
