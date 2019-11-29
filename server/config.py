@@ -32,7 +32,12 @@ class TestingConfig(Config):
     DEBUG = True
     DOMAIN = "http://127.0.0.1:5000"
     BRANCH = "qa"
-    SQLALCHEMY_DATABASE_URI = "postgresql://taiker:@{$RDS_HOST}/flask-vue"
+    if os.getenv("PGUSER") == None or os.getenv("PGHOST") == None or os.getenv("PGDATABASE") == None:
+        # for ci
+        SQLALCHEMY_DATABASE_URI = "postgresql://taiker:@localhost/flask_vue"
+    else:
+        # for local
+        SQLALCHEMY_DATABASE_URI = "postgresql://{}:@{}/{}".format(os.getenv("PGUSER"), os.getenv("PGHOST"), os.getenv("PGDATABASE"))
 
 class StagingConfig(Config):
     DEBUG = False
