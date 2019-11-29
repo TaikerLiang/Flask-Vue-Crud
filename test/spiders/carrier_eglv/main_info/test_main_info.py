@@ -51,6 +51,7 @@ def test_main_info_handler(sub, mbl_no, sample_loader):
 
 @pytest.mark.parametrize('sub,mbl_no,expect_exception', [
     ('e01_invalid_mbl_no', '003901796617', CarrierInvalidMblNoError),
+    ('e03_invalid_mbl_no_format', '0039030726400', CarrierInvalidMblNoError),
 ])
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     main_html_file = str(sample_loader.build_file_path(sub, 'sample.html'))

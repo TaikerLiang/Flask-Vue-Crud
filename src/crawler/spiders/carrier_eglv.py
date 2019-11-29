@@ -193,6 +193,10 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _check_mbl_no(response):
+        script_text = response.css('script::text').get()
+        if 'B/L No. is not valid, please check again, thank you.' in script_text:
+            raise CarrierInvalidMblNoError()
+
         message_under_search_table = response.css('table table tr td.f12wrdb1::text').get()
         if isinstance(message_under_search_table, str):
             message_under_search_table = message_under_search_table.strip()
