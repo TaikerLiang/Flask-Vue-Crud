@@ -154,6 +154,13 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _format_location(loc_info: Dict):
+        # terminal
+        if loc_info['terminal']:
+            terminal_str = f'{loc_info["terminal"]} -- '
+        else:
+            terminal_str = ''
+
+        # state & country
         state_country_list = []
 
         if loc_info['state']:
@@ -162,7 +169,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         state_country_list.append(loc_info['country_code'])
         state_country_str = ', '.join(state_country_list)
 
-        return f'{loc_info["terminal"]} -- {loc_info["city"]} ({state_country_str})'
+        return f'{terminal_str}{loc_info["city"]} ({state_country_str})'
 
     @staticmethod
     def _format_vessel_name(vessel_name, vessel_num):
