@@ -117,10 +117,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
         destination = response_dict['destination']
 
         return {
-            'pol': self._format_location(
-                city=origin['city'], state=origin['state'], country_code=origin['country_code']),
-            'final_dest': self._format_location(
-                city=destination['city'], state=destination['state'], country_code=destination['country_code']),
+            'pol': self._format_location(loc_info=origin),
+            'final_dest': self._format_location(loc_info=destination),
         }
 
     def _extract_containers(self, response_dict):
@@ -131,8 +129,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             container_statuses = []
 
             for location in container['locations']:
-                location_name = self._format_location(
-                    city=location['city'], state=location['state'], country_code=location['country_code'])
+                location_name = self._format_location(loc_info=location)
 
                 for event in location['events']:
                     timestamp, est_or_actual = self._get_time_and_status(event)
@@ -156,8 +153,16 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return container_info_list
 
     @staticmethod
-    def _format_location(city, state, country_code):
-        return f'{city} ({state}) ({country_code})'
+    def _format_location(loc_info: Dict):
+        state_country_list = []
+
+        if loc_info['state']:
+            state_country_list.append(loc_info['state'])
+
+        state_country_list.append(loc_info['country_code'])
+        state_country_str = ', '.join(state_country_list)
+
+        return f'{loc_info["terminal"]} -- {loc_info["city"]} ({state_country_str})'
 
     @staticmethod
     def _format_vessel_name(vessel_name, vessel_num):

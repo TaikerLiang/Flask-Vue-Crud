@@ -4,8 +4,8 @@ from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusIt
 def verify(results):
     assert results[0] == MblItem(
         mbl_no='712044685',
-        pol=LocationItem(name='Kaohsiung () (TW)'),
-        final_dest=LocationItem(name='Alexandria () (EG)'),
+        pol=LocationItem(name='Kaohsiung Hanjin Terminal Pier76-78 -- Kaohsiung (TW)'),
+        final_dest=LocationItem(name='AICT -- Alexandria (EG)'),
     )
 
     assert results[1] == ContainerItem(
@@ -18,7 +18,7 @@ def verify(results):
         container_key='FCIU4198511',
         description='GATE-OUT-EMPTY',
         local_date_time='2019-11-08T15:26:00.000',
-        location=LocationItem(name='Kaohsiung () (TW)'),
+        location=LocationItem(name='Kaohsiung Hanjin Terminal Pier76-78 -- Kaohsiung (TW)'),
         vessel='MAERSK ARAS F1Y',
         voyage='945W',
         est_or_actual='A',
@@ -28,7 +28,7 @@ def verify(results):
         container_key='FCIU4198511',
         description='GATE-OUT',
         local_date_time='2019-12-18T14:01:00.000',
-        location=LocationItem(name='Alexandria () (EG)'),
+        location=LocationItem(name='AICT -- Alexandria (EG)'),
         vessel='WADI ALRAYAN B22',
         voyage='949W',
         est_or_actual='E',
@@ -44,7 +44,7 @@ def verify(results):
         container_key='MRSU0260637',
         description='GATE-OUT-EMPTY',
         local_date_time='2019-11-08T16:54:00.000',
-        location=LocationItem(name='Kaohsiung () (TW)'),
+        location=LocationItem(name='Kaohsiung Hanjin Terminal Pier76-78 -- Kaohsiung (TW)'),
         vessel='MAERSK ARAS F1Y',
         voyage='945W',
         est_or_actual='A',
@@ -54,7 +54,7 @@ def verify(results):
         container_key='MRSU0260637',
         description='GATE-OUT',
         local_date_time='2019-12-18T14:01:00.000',
-        location=LocationItem(name='Alexandria () (EG)'),
+        location=LocationItem(name='AICT -- Alexandria (EG)'),
         vessel='WADI ALRAYAN B22',
         voyage='949W',
         est_or_actual='E',

@@ -4,8 +4,8 @@ from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusIt
 def verify(results):
     assert results[0] == MblItem(
         mbl_no='586118841',
-        pol=LocationItem(name='Yantian (Guangdong) (CN)'),
-        final_dest=LocationItem(name='Los Angeles (California) (US)'),
+        pol=LocationItem(name='YanTian Intl. Container Terminal -- Yantian (Guangdong, CN)'),
+        final_dest=LocationItem(name='LSA APM Terminal Pier 400( W185 ) -- Los Angeles (California, US)'),
     )
 
     assert results[1] == ContainerItem(
@@ -18,7 +18,7 @@ def verify(results):
         container_key='TCKU6590749',
         description='GATE-OUT-EMPTY',
         local_date_time='2019-10-16T19:12:00.000',
-        location=LocationItem(name='Yantian (Guangdong) (CN)'),
+        location=LocationItem(name='YanTian Intl. Container Terminal -- Yantian (Guangdong, CN)'),
         vessel='MAERSK EMDEN 81A',
         voyage='942N',
         est_or_actual='A',
@@ -28,7 +28,7 @@ def verify(results):
         container_key='TCKU6590749',
         description='GATE-OUT',
         local_date_time='2019-11-13T10:45:00.000',
-        location=LocationItem(name='Los Angeles (California) (US)'),
+        location=LocationItem(name='LSA APM Terminal Pier 400( W185 ) -- Los Angeles (California, US)'),
         vessel='MAERSK EMDEN 81A',
         voyage='942N',
         est_or_actual='A',

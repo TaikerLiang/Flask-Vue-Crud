@@ -4,8 +4,8 @@ from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusIt
 def verify(results):
     assert results[0] == MblItem(
         mbl_no='712027741',
-        pol=LocationItem(name='Kaohsiung () (TW)'),
-        final_dest=LocationItem(name='Johannesburg (Gauteng) (ZA)'),
+        pol=LocationItem(name='Kaohsiung Hanjin Terminal Pier76-78 -- Kaohsiung (TW)'),
+        final_dest=LocationItem(name='Inland Rail Terminal -- Johannesburg (Gauteng, ZA)'),
     )
 
     assert results[1] == ContainerItem(
@@ -18,7 +18,7 @@ def verify(results):
         container_key='MRKU8035331',
         description='GATE-OUT-EMPTY',
         local_date_time='2019-10-04T14:57:00.000',
-        location=LocationItem(name='Kaohsiung () (TW)'),
+        location=LocationItem(name='Kaohsiung Hanjin Terminal Pier76-78 -- Kaohsiung (TW)'),
         vessel='MCC CEBU H5B',
         voyage='941W',
         est_or_actual='A',
@@ -28,7 +28,7 @@ def verify(results):
         container_key='MRKU8035331',
         description='GATE-OUT',
         local_date_time='2019-11-21T16:00:00.000',
-        location=LocationItem(name='Johannesburg (Gauteng) (ZA)'),
+        location=LocationItem(name='Inland Rail Terminal -- Johannesburg (Gauteng, ZA)'),
         vessel=None,
         voyage=None,
         est_or_actual='E',

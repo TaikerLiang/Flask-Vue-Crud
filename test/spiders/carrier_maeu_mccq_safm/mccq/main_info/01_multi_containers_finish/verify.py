@@ -4,8 +4,8 @@ from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusIt
 def verify(results):
     assert results[0] == MblItem(
         mbl_no='589898475',
-        pol=LocationItem(name='Ningbo (Zhejiang) (CN)'),
-        final_dest=LocationItem(name='Haiphong (Hai Phong) (VN)'),
+        pol=LocationItem(name='Beilun container terminal, Phase 2 -- Ningbo (Zhejiang, CN)'),
+        final_dest=LocationItem(name='VIP Greenport Joint Stock Company -- Haiphong (Hai Phong, VN)'),
     )
 
     assert results[1] == ContainerItem(
@@ -18,7 +18,7 @@ def verify(results):
         container_key='PONU1767353',
         description='GATE-OUT-EMPTY',
         local_date_time='2019-10-06T14:09:00.000',
-        location=LocationItem(name='Ningbo (Zhejiang) (CN)'),
+        location=LocationItem(name='NIngbo Beilun Donghwa Cont. Transp. -- Ningbo (Zhejiang, CN)'),
         vessel='MAERSK ATLANTIC 3MY',
         voyage='941E',
         est_or_actual='A',
@@ -28,7 +28,7 @@ def verify(results):
         container_key='PONU1767353',
         description='GATE-OUT',
         local_date_time='2019-11-08T00:56:00.000',
-        location=LocationItem(name='Haiphong (Hai Phong) (VN)'),
+        location=LocationItem(name='VIP Greenport Joint Stock Company -- Haiphong (Hai Phong, VN)'),
         vessel='OREA M38',
         voyage='943N',
         est_or_actual='A',
@@ -44,7 +44,7 @@ def verify(results):
         container_key='PONU1947308',
         description='GATE-OUT-EMPTY',
         local_date_time='2019-10-05T20:39:00.000',
-        location=LocationItem(name='Ningbo (Zhejiang) (CN)'),
+        location=LocationItem(name='NIngbo Beilun Donghwa Cont. Transp. -- Ningbo (Zhejiang, CN)'),
         vessel='MAERSK ATLANTIC 3MY',
         voyage='941E',
         est_or_actual='A',
@@ -54,7 +54,7 @@ def verify(results):
         container_key='PONU1947308',
         description='GATE-OUT',
         local_date_time='2019-11-08T04:19:00.000',
-        location=LocationItem(name='Haiphong (Hai Phong) (VN)'),
+        location=LocationItem(name='VIP Greenport Joint Stock Company -- Haiphong (Hai Phong, VN)'),
         vessel='OREA M38',
         voyage='943N',
         est_or_actual='A',
