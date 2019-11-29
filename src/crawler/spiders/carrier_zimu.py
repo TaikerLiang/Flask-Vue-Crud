@@ -115,6 +115,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             mbl_no=main_info['mbl_no'],
             vessel=to_pod_vessel.vessel,
             voyage=to_pod_vessel.voyage,
+            por=LocationItem(name=main_info['por']),
             pol=LocationItem(name=main_info['pol']),
             pod=LocationItem(name=main_info['pod']),
             final_dest=LocationItem(un_lo_code=final_dest_un_lo_code, name=final_dest_name),
@@ -177,6 +178,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         return {
             'mbl_no': mbl_no.strip(),
+            'por': routing_schedule.get('Place of Receipt (POR)') or None,
             'pol': routing_schedule['Port of Loading (POL)'].strip(),
             'pod': routing_schedule['Port of Discharge (POD)'].strip(),
             'final_dest': final_dest,
@@ -255,6 +257,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
                     eta=schedule['Arrival Date'],
                     etd='',
                 ))
+
+            elif 'POL' in schedule:
+                pass
 
             else:
                 raise CarrierResponseFormatError(reason=f'Unknown port type of schedule: `{schedule}`')

@@ -13,16 +13,17 @@ def verify(results):
     )
 
     assert results[1] == MblItem(
-            mbl_no='ZIMULAX0139127',
-            vessel='ANNA MAERSK',
-            voyage='5',
-            pol=LocationItem(name='SEATTLE (WA), U.S.A.'),
-            pod=LocationItem(name='KAOHSIUNG, TAIWAN'),
-            final_dest=LocationItem(un_lo_code=None, name=None),
-            etd='12-Oct-2019',
-            eta='03-Nov-2019',
-            deliv_eta=None,
-        )
+        mbl_no='ZIMULAX0139127',
+        vessel='ANNA MAERSK',
+        voyage='5',
+        por=LocationItem(name=None),
+        pol=LocationItem(name='SEATTLE (WA), U.S.A.'),
+        pod=LocationItem(name='KAOHSIUNG, TAIWAN'),
+        final_dest=LocationItem(un_lo_code=None, name=None),
+        etd='12-Oct-2019',
+        eta='03-Nov-2019',
+        deliv_eta=None,
+    )
 
     assert results[2] == ContainerItem(
         container_key='SZLU9062541',

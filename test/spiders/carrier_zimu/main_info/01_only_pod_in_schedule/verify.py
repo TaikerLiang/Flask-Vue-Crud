@@ -12,16 +12,17 @@ def verify(results):
         eta='13-Nov-2019',
     )
     assert results[1] == MblItem(
-            mbl_no='ZIMUSNH1160339',
-            vessel='CAPE TAINARO',
-            voyage='3',
-            pol=LocationItem(name="SHANGHAI (SH), CHINA. PEOPLE'S REPUBLIC"),
-            pod=LocationItem(name='SAVANNAH (GA), U.S.A.'),
-            final_dest=LocationItem(un_lo_code='USNVL', name=None),
-            etd='17-Oct-2019',
-            eta='13-Nov-2019',
-            deliv_eta='19-Nov-2019',
-        )
+        mbl_no='ZIMUSNH1160339',
+        vessel='CAPE TAINARO',
+        voyage='3',
+        por=LocationItem(name=None),
+        pol=LocationItem(name="SHANGHAI (SH), CHINA. PEOPLE'S REPUBLIC"),
+        pod=LocationItem(name='SAVANNAH (GA), U.S.A.'),
+        final_dest=LocationItem(un_lo_code='USNVL', name=None),
+        etd='17-Oct-2019',
+        eta='13-Nov-2019',
+        deliv_eta='19-Nov-2019',
+    )
 
     assert results[2] == ContainerItem(
         container_key='GAOU6099859',
