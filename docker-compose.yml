@@ -36,6 +36,11 @@ services:
       context: ./server
       args:
         ENV: ${BRANCH}
+    environment:
+      - PGUSER=taiker
+      - PGDATABASE=flask_vue
+      - PGHOST=postgres
+      - PGPORT=5432
     logging:
       driver: "json-file"
       options:
