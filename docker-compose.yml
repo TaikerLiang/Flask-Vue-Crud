@@ -26,6 +26,9 @@ services:
       options:
         max-size: "1k"
         max-file: "3"
+    depends_on:
+      - server
+      - client
   server:
     image: ${DOCKER_REGISTRY}/server:${BRANCH}
     build:
@@ -38,6 +41,8 @@ services:
       options:
         max-size: "1k"
         max-file: "3"
+    depends_on:
+      - postgres
   client:
     image: ${DOCKER_REGISTRY}/client:${BRANCH}
     build:
