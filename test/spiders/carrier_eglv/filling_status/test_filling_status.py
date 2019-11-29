@@ -19,6 +19,7 @@ def sample_loader(sample_loader):
 @pytest.mark.parametrize('sub,mbl_no,', [
     ('01_only_us', '003902245109'),
     ('02_ca_and_us', '143986250473'),
+    ('03_without_us', '149905244604'),
 ])
 def test_filing_status_handler(sub, mbl_no, sample_loader):
     html_file = str(sample_loader.build_file_path(sub, 'sample.html'))

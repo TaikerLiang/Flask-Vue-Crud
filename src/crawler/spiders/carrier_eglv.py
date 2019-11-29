@@ -468,6 +468,11 @@ class FilingStatusRoutingRule(BaseRoutingRule):
                     'filing_date': table.extract_cell('Date', left),
                 }
 
+        return {
+            'filing_status': None,
+            'filing_date': None,
+        }
+
 
 # -------------------------------------------------------------------------------
 
