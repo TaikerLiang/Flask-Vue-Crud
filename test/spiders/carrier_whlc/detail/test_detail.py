@@ -25,7 +25,7 @@ def test_detail_routing_rule(sub, mbl_no, sample_loader, container_no):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
     routing_request = DetailRoutingRule.build_routing_request(
-        mbl_no=mbl_no, container_no=container_no, view_state='', jdt='j_idt36:0:j_idt40', cookies={})
+        mbl_no=mbl_no, container_no=container_no, view_state='')
     url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(

@@ -5,12 +5,14 @@ from typing import List, Dict
 import scrapy
 from scrapy import Selector
 
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
 from crawler.core_carrier.items import (
-    BaseCarrierItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
+    BaseCarrierItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData)
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
+from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 WHLC_BASE_URL = 'https://www.wanhai.com/views'
@@ -33,7 +35,7 @@ class CarrierWhlcSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start_requests(self):
-        routing_request = CookiesRoutingRule.build_routing_request(mbl_no=self.mbl_no, cookies={}, view_state='')
+        routing_request = CookiesRoutingRule.build_routing_request(mbl_no=self.mbl_no, view_state='')
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):
@@ -50,11 +52,21 @@ class CarrierWhlcSpider(BaseCarrierSpider):
 
 # -------------------------------------------------------------------------------
 
+class CarrierCookiesMaxRetryError(BaseCarrierError):
+    status = CARRIER_RESULT_STATUS_FATAL
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail='<cookies-max-retry-error>')
+
+
 class CookiesRoutingRule(BaseRoutingRule):
     name = 'COOKIES'
 
+    def __init__(self):
+        self._retry_count = 0
+
     @classmethod
-    def build_routing_request(cls, mbl_no, cookies, view_state) -> RoutingRequest:
+    def build_routing_request(cls, mbl_no, view_state) -> RoutingRequest:
         form_data = {
             'cargoTrackListBean': 'cargoTrackListBean',
             'cargoType': '2',
@@ -65,38 +77,46 @@ class CookiesRoutingRule(BaseRoutingRule):
         request = scrapy.FormRequest(
             url=f'{WHLC_BASE_URL}/quick/cargo_tracking.xhtml',
             method='POST',
-            cookies=cookies,
             formdata=form_data,
-            meta={'mbl_no': mbl_no, 'cookies': cookies},
+            meta={'mbl_no': mbl_no},
         )
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
-        cookies = response.meta['cookies']
         view_state = self._extract_view_state(response=response)
-        if cookies == {}:
-            for cookie in response.headers.getlist('Set-Cookie'):
-                key_value_list = cookie.decode("utf-8").split(';')[0].split('=')
-                cookies[key_value_list[0]] = key_value_list[1]
 
+        cookies = {}
+        for cookie in response.headers.getlist('Set-Cookie'):
+            key_value_list = cookie.decode("utf-8").split(';')[0].split('=')
+            cookies[key_value_list[0]] = key_value_list[1]
+
+        if self._check_cookies(cookies=cookies):
             yield ListRoutingRule.build_routing_request(mbl_no, cookies, view_state)
+
+        elif self._retry_count < COOKIES_RETRY_LIMIT:
+            self._retry_count += 1
+            yield CookiesRoutingRule.build_routing_request(mbl_no, view_state)
+
+        else:
+            raise CarrierCookiesMaxRetryError()
 
     @staticmethod
     def _extract_view_state(response: scrapy.Selector) -> str:
         return response.css('input[name="javax.faces.ViewState"]::attr(value)').get()
+
+    @staticmethod
+    def _check_cookies(cookies):
+        if cookies == {}:
+            return False
+        else:
+            return True
 
 
 # -------------------------------------------------------------------------------
 
 class ListRoutingRule(BaseRoutingRule):
     name = 'LIST'
-
-    JDT_DETAIL = 'j_idt36:0:j_idt40'
-    JDT_HISTORY = 'j_idt36:0:j_idt83'
-
-    def __init__(self):
-        self._retry_count = 0
 
     @classmethod
     def build_routing_request(cls, mbl_no: str, cookies, view_state) -> RoutingRequest:
@@ -112,36 +132,27 @@ class ListRoutingRule(BaseRoutingRule):
             method='POST',
             cookies=cookies,
             formdata=form_data,
-            meta={'mbl_no': mbl_no, 'cookies': cookies},
+            meta={'mbl_no': mbl_no},
         )
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
-        cookies = response.meta['cookies']
+        self._check_response(response)
+
         view_state = self._extract_view_state(response=response)
-        if self._check_cookies(cookies=cookies):
-            self._check_response(response)
+        container_list = self._extract_container_info(response=response)
+        for container in container_list:
+            container_no = container['container_no']
 
-            container_list = self._extract_container_info(response=response)
-            for container in container_list:
-                container_no = container['container_no']
+            yield ContainerItem(
+                container_key=container_no,
+                container_no=container_no,
+            )
 
-                yield ContainerItem(
-                    container_key=container_no,
-                    container_no=container_no,
-                )
+            yield DetailRoutingRule.build_routing_request(mbl_no, container_no, view_state)
 
-                yield DetailRoutingRule.build_routing_request(
-                    mbl_no, container_no, view_state, self.JDT_DETAIL, cookies)
-
-                yield HistoryRoutingRule.build_routing_request(
-                    mbl_no, container_no, view_state, self.JDT_HISTORY, cookies)
-        elif self._retry_count < COOKIES_RETRY_LIMIT:
-            self._retry_count += 1
-            yield CookiesRoutingRule.build_routing_request(mbl_no, cookies, view_state)
-        else:
-            raise RuntimeError()
+            yield HistoryRoutingRule.build_routing_request(mbl_no, container_no, view_state)
 
     @staticmethod
     def _check_cookies(cookies):
@@ -232,23 +243,18 @@ class DetailRoutingRule(BaseRoutingRule):
     name = 'DETAIL'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, container_no, view_state, jdt, cookies) -> RoutingRequest:
+    def build_routing_request(cls, mbl_no: str, container_no, view_state) -> RoutingRequest:
         form_data = {
             'cargoTrackListBean': 'cargoTrackListBean',
             'javax.faces.ViewState': view_state,
-            jdt: jdt,
+            'j_idt36:0:j_idt40': 'j_idt36:0:j_idt40',
             'q_bl_no': mbl_no,
             'q_ctnr_no': container_no,
         }
         request = scrapy.FormRequest(
             url=f'{WHLC_BASE_URL}/cargoTrack/CargoTrackList.xhtml',
             method='POST',
-            cookies=cookies,
             formdata=form_data,
-            meta={
-                'mbl_no': mbl_no,
-                'cookies': cookies,
-            },
         )
         return RoutingRequest(request=request, rule_name=cls.name)
 
@@ -405,23 +411,20 @@ class HistoryRoutingRule(BaseRoutingRule):
     name = 'HISTORY'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, container_no, view_state, jdt, cookies) -> RoutingRequest:
+    def build_routing_request(cls, mbl_no: str, container_no, view_state) -> RoutingRequest:
         form_data = {
             'cargoTrackListBean': 'cargoTrackListBean',
             'javax.faces.ViewState': view_state,
-            jdt: jdt,
+            'j_idt36:0:j_idt83': 'j_idt36:0:j_idt83',
             'q_bl_no': mbl_no,
             'q_ctnr_no': container_no,
         }
         request = scrapy.FormRequest(
             url=f'{WHLC_BASE_URL}/cargoTrack/CargoTrackList.xhtml',
             method='POST',
-            cookies=cookies,
             formdata=form_data,
             meta={
-                'mbl_no': mbl_no,
                 'container_key': container_no,
-                'cookies': cookies,
             },
         )
         return RoutingRequest(request=request, rule_name=cls.name)
@@ -451,17 +454,15 @@ class HistoryRoutingRule(BaseRoutingRule):
 
         return_list = []
         for left in table_locator.iter_left_headers():
-            # text is too complicated to use re, maybe there's better solution
-            description = table.extract_cell(top='Status Name', left=left).replace('\\n', '')
-            description = ' '.join(description.split())
-            local_date_time = table.extract_cell(top='Ctnr Date', left=left).replace('\\n', '')
-            location_name = table.extract_cell(top='Ctnr Depot Name', left=left).replace('\\n', '')
-            location_name = location_name.replace('\\t', '')
+
+            description = table.extract_cell(top='Status Name', left=left, extractor=DescriptionTdExtractor())
+            local_date_time = table.extract_cell(top='Ctnr Date', left=left, extractor=LocalDateTimeTdExtractor())
+            location_name = table.extract_cell(top='Ctnr Depot Name', left=left, extractor=LocationNameTdExtractor())
 
             return_list.append({
-                'local_date_time': local_date_time.strip(),
-                'description': description.strip(),
-                'location_name': location_name.strip(),
+                'local_date_time': local_date_time,
+                'description': description,
+                'location_name': location_name,
             })
 
         return return_list
@@ -520,6 +521,32 @@ class ContainerStatusTableLocator(BaseTableLocator):
     def iter_left_headers(self):
         for index in range(self._data_len):
             yield index
+
+
+class DescriptionTdExtractor(BaseTableCellExtractor):
+
+    def extract(self, cell: Selector) -> str:
+        td_text = cell.css('::text').get()
+        td_text = td_text.replace('\\n', '')
+        td_text = ' '.join(td_text.split())
+        return td_text.strip()
+
+
+class LocalDateTimeTdExtractor(BaseTableCellExtractor):
+
+    def extract(self, cell: Selector) -> str:
+        td_text = cell.css('::text').get()
+        td_text = td_text.replace('\\n', '')
+        return td_text.strip()
+
+
+class LocationNameTdExtractor(BaseTableCellExtractor):
+
+    def extract(self, cell: Selector) -> str:
+        td_text = cell.css('::text').get()
+        td_text = td_text.replace('\\n', '')
+        td_text = td_text.replace('\\t', '')
+        return td_text.strip()
 
 
 class NameOnTableMatchRule(BaseMatchRule):
