@@ -1,4 +1,3 @@
-import abc
 import re
 from typing import List, Dict
 
@@ -6,7 +5,8 @@ import scrapy
 from scrapy import Selector
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL
-from crawler.core_carrier.base_spiders import BaseCarrierSpider
+from crawler.core_carrier.base_spiders import (
+    BaseCarrierSpider, CARRIER_CUSTOM_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData)
@@ -21,6 +21,11 @@ COOKIES_RETRY_LIMIT = 3
 
 class CarrierWhlcSpider(BaseCarrierSpider):
     name = 'carrier_whlc'
+
+    custom_settings = {
+        **CARRIER_CUSTOM_SETTINGS,
+        **DISABLE_DUPLICATE_REQUEST_FILTER,
+    }
 
     def __init__(self, *args, **kwargs):
         super(CarrierWhlcSpider, self).__init__(*args, **kwargs)
@@ -91,7 +96,7 @@ class CookiesRoutingRule(BaseRoutingRule):
             key_value_list = cookie.decode("utf-8").split(';')[0].split('=')
             cookies[key_value_list[0]] = key_value_list[1]
 
-        if self._check_cookies(cookies=cookies):
+        if cookies:
             yield ListRoutingRule.build_routing_request(mbl_no, cookies, view_state)
 
         elif self._retry_count < COOKIES_RETRY_LIMIT:
@@ -104,13 +109,6 @@ class CookiesRoutingRule(BaseRoutingRule):
     @staticmethod
     def _extract_view_state(response: scrapy.Selector) -> str:
         return response.css('input[name="javax.faces.ViewState"]::attr(value)').get()
-
-    @staticmethod
-    def _check_cookies(cookies):
-        if cookies == {}:
-            return False
-        else:
-            return True
 
 
 # -------------------------------------------------------------------------------
@@ -153,13 +151,6 @@ class ListRoutingRule(BaseRoutingRule):
             yield DetailRoutingRule.build_routing_request(mbl_no, container_no, view_state)
 
             yield HistoryRoutingRule.build_routing_request(mbl_no, container_no, view_state)
-
-    @staticmethod
-    def _check_cookies(cookies):
-        if cookies == {}:
-            return False
-        else:
-            return True
 
     @staticmethod
     def _check_response(response):
