@@ -15,7 +15,7 @@ from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
-WHLC_BASE_URL = 'https://www.wanhai.com/views'
+WHLC_BASE_URL = 'https://www.wanhai.com'
 COOKIES_RETRY_LIMIT = 3
 
 
@@ -40,7 +40,7 @@ class CarrierWhlcSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start_requests(self):
-        routing_request = CookiesRoutingRule.build_routing_request(mbl_no=self.mbl_no, view_state='')
+        routing_request = CookiesRoutingRule.build_routing_request(mbl_no=self.mbl_no)
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):
@@ -71,40 +71,37 @@ class CookiesRoutingRule(BaseRoutingRule):
         self._retry_count = 0
 
     @classmethod
-    def build_routing_request(cls, mbl_no, view_state) -> RoutingRequest:
-        form_data = {
-            'cargoTrackListBean': 'cargoTrackListBean',
-            'cargoType': '2',
-            'q_ref_no1': mbl_no,
-            'j_idt6': 'Query',
-            'javax.faces.ViewState': view_state,
-        }
+    def build_routing_request(cls, mbl_no) -> RoutingRequest:
         request = scrapy.FormRequest(
-            url=f'{WHLC_BASE_URL}/quick/cargo_tracking.xhtml',
-            method='POST',
-            formdata=form_data,
+            url=f'{WHLC_BASE_URL}/views/Main.xhtml',
             meta={'mbl_no': mbl_no},
         )
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
-        view_state = self._extract_view_state(response=response)
 
-        cookies = {}
-        for cookie in response.headers.getlist('Set-Cookie'):
-            key_value_list = cookie.decode("utf-8").split(';')[0].split('=')
-            cookies[key_value_list[0]] = key_value_list[1]
-
-        if cookies:
-            yield ListRoutingRule.build_routing_request(mbl_no, cookies, view_state)
+        if self._check_cookies(response=response):
+            view_state = self._extract_view_state(response=response)
+            yield ListRoutingRule.build_routing_request(mbl_no, view_state)
 
         elif self._retry_count < COOKIES_RETRY_LIMIT:
             self._retry_count += 1
-            yield CookiesRoutingRule.build_routing_request(mbl_no, view_state)
+            yield CookiesRoutingRule.build_routing_request(mbl_no)
 
         else:
             raise CarrierCookiesMaxRetryError()
+
+    @staticmethod
+    def _check_cookies(response):
+        cookies = {}
+
+        for cookie in response.headers.getlist('Set-Cookie'):
+            item = cookie.decode('utf-8').split(';')[0]
+            key, value = item.split('=')
+            cookies[key] = value
+
+        return bool(cookies)
 
     @staticmethod
     def _extract_view_state(response: scrapy.Selector) -> str:
@@ -117,7 +114,7 @@ class ListRoutingRule(BaseRoutingRule):
     name = 'LIST'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, cookies, view_state) -> RoutingRequest:
+    def build_routing_request(cls, mbl_no: str, view_state) -> RoutingRequest:
         form_data = {
             'cargoTrackListBean': 'cargoTrackListBean',
             'cargoType': '2',
@@ -126,9 +123,8 @@ class ListRoutingRule(BaseRoutingRule):
             'javax.faces.ViewState': view_state,
         }
         request = scrapy.FormRequest(
-            url=f'{WHLC_BASE_URL}/quick/cargo_tracking.xhtml',
+            url=f'{WHLC_BASE_URL}/views/quick/cargo_tracking.xhtml',
             method='POST',
-            cookies=cookies,
             formdata=form_data,
             meta={'mbl_no': mbl_no},
         )
@@ -136,9 +132,11 @@ class ListRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
+
         self._check_response(response)
 
         view_state = self._extract_view_state(response=response)
+
         container_list = self._extract_container_info(response=response)
         for container in container_list:
             container_no = container['container_no']
@@ -243,7 +241,7 @@ class DetailRoutingRule(BaseRoutingRule):
             'q_ctnr_no': container_no,
         }
         request = scrapy.FormRequest(
-            url=f'{WHLC_BASE_URL}/cargoTrack/CargoTrackList.xhtml',
+            url=f'{WHLC_BASE_URL}/views/cargoTrack/CargoTrackList.xhtml',
             method='POST',
             formdata=form_data,
         )
@@ -251,6 +249,7 @@ class DetailRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         date_information = self._extract_date_information(response=response)
+
         yield VesselItem(
             pol=LocationItem(un_lo_code=date_information['pol_un_lo_code']),
             vessel=date_information['pol_vessel'],
