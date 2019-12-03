@@ -13,6 +13,11 @@ if __name__ == '__main__':
 
     mbl_nos = [
         'NGBCB19030160',
+        'NGBCB19030998',
+        'NGBCB19031315',
+        'NGBCB19030020',
+        'NGBCB19029942',
+        'NGBCB19029593',
     ]
 
     for mbl_no in mbl_nos:
