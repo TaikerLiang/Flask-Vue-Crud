@@ -1,11 +1,15 @@
+import re
+from typing import Dict
+
 import scrapy
 from scrapy import Selector
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem)
+    BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
+from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 
 class CarrierRclSpider(BaseCarrierSpider):
@@ -15,15 +19,15 @@ class CarrierRclSpider(BaseCarrierSpider):
         super(CarrierRclSpider, self).__init__(*args, **kwargs)
 
         rules = [
-            MainRoutingRule(),
-            CargoTrackingRoutingRule(),
+            BasicRoutingRule(),
+            MainInfoRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
 
     def start_requests(self):
 
-        routing_request = MainRoutingRule.build_routing_request(mbl_no=self.mbl_no)
+        routing_request = BasicRoutingRule.build_routing_request(mbl_no=self.mbl_no)
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):
@@ -40,8 +44,8 @@ class CarrierRclSpider(BaseCarrierSpider):
 
 # -------------------------------------------------------------------------------
 
-class MainRoutingRule(BaseRoutingRule):
-    name = 'MAIN'
+class BasicRoutingRule(BaseRoutingRule):
+    name = 'BASIC'
 
     @classmethod
     def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
@@ -54,28 +58,35 @@ class MainRoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
 
-        hidden_div_list = response.css('div[class=aspNetHidden]')
+        form_data = self._extract_form_data(response=response, mbl_no=mbl_no)
+
+        yield MainInfoRoutingRule.build_routing_request(form_data=form_data)
+
+    @staticmethod
+    def _extract_form_data(response: scrapy.Selector, mbl_no: str) -> Dict:
         form_data = {}
+        hidden_div_list = response.css('div[class=aspNetHidden]')
         for div in hidden_div_list:
-            for input in div.css('input'):
-                name = input.css('::attr(name)').get()
-                value = input.css('::attr(value)').get()
+            for css_input in div.css('input'):
+                name = css_input.css('::attr(name)').get()
+                value = css_input.css('::attr(value)').get()
                 form_data[name] = value
         captcha_value = response.css('input[name="ctl00$ContentPlaceHolder1$captchavalue"]::attr(value)').get()
         form_data['ctl00$ContentPlaceHolder1$cCaptcha'] = captcha_value
         form_data['ctl00$ContentPlaceHolder1$captchavalue'] = captcha_value
-        yield CargoTrackingRoutingRule.build_routing_request(mbl_no=mbl_no, form_data=form_data)
+        form_data['ctl00$ContentPlaceHolder1$ctracking'] = mbl_no
+
+        return form_data
 
 
 # -------------------------------------------------------------------------------
 
 
-class CargoTrackingRoutingRule(BaseRoutingRule):
-    name = 'CARGO_TRACKING'
+class MainInfoRoutingRule(BaseRoutingRule):
+    name = 'MAIN_INFO'
 
     @classmethod
-    def build_routing_request(cls, mbl_no, form_data) -> RoutingRequest:
-        form_data['ctl00$ContentPlaceHolder1$ctracking'] = mbl_no
+    def build_routing_request(cls, form_data) -> RoutingRequest:
         request = scrapy.FormRequest(
             url=f'https://www.rclgroup.com/923Cargo_Tracking231',
             formdata=form_data,
@@ -83,4 +94,197 @@ class CargoTrackingRoutingRule(BaseRoutingRule):
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def handle(self, response):
-        yield MblItem()
+        self._check_mbl_no(response=response)
+
+        main_info = self._extract_main_info(response=response)
+        yield MblItem(
+            mbl_no=main_info['mbl_no'],
+            pol=LocationItem(name=main_info['pol_name']),
+            pod=LocationItem(name=main_info['pod_name']),
+            etd=main_info['etd'],
+            eta=main_info['eta'],
+        )
+
+        container_info_dict = self._extract_container_info_dict(response=response)
+        for container_no, container_status_list in container_info_dict.items():
+            yield ContainerItem(
+                container_key=container_no,
+                container_no=container_no,
+            )
+
+            for container_status in container_status_list:
+                yield ContainerStatusItem(
+                    container_key=container_no,
+                    local_date_time=container_status['local_date_time'],
+                    description=container_status['description'],
+                    location=LocationItem(name=container_status['location_name']),
+                )
+
+    @staticmethod
+    def _check_mbl_no(response: scrapy.Selector):
+        no_result_div = response.css('div#ContentPlaceHolder1_noresults')
+
+        if no_result_div:
+            raise CarrierInvalidMblNoError()
+
+    @staticmethod
+    def _extract_main_info(response: scrapy.Selector) -> Dict:
+        table = response.css('table.bltable')[0]
+        table_locator = MainInfoTableLocator()
+        table_locator.parse(table=table)
+        table_extractor = TableExtractor(table_locator=table_locator)
+
+        location_index = 0
+        date_index = 4
+        mbl_no = table_locator.get_mbl_no()
+        return {
+            'mbl_no': mbl_no,
+            'pol_name': table_extractor.extract_cell(top=location_index, left='POL'),
+            'pod_name': table_extractor.extract_cell(top=location_index, left='POD'),
+            'etd': table_extractor.extract_cell(top=date_index, left='POL'),
+            'eta': table_extractor.extract_cell(top=date_index, left='POD'),
+        }
+
+    @staticmethod
+    def _extract_container_info_dict(response: scrapy.Selector) -> Dict:
+        tables = response.css('table.regtable')
+
+        return_dict = {}
+        for table in tables:
+            table_locator = ContainerStatusTableLocator()
+            table_locator.parse(table=table)
+            table_extractor = TableExtractor(table_locator=table_locator)
+            container_no = table_locator.get_container_no()
+            return_dict.setdefault(container_no, [])
+
+            for left in table_locator.iter_left_headers():
+                return_dict[container_no].append({
+                    'local_date_time': table_extractor.extract_cell(top='Movement Date', left=left),
+                    'description': table_extractor.extract_cell(top='Movement Detail', left=left),
+                    'location_name': table_extractor.extract_cell(top='Movement Place', left=left),
+                })
+
+        return return_dict
+
+
+class MainInfoTableLocator(BaseTableLocator):
+    """
+        +-------------------------------------+
+        | Name                                | <tr>
+        +-------+-------+-----+-----+----+----+
+        | Title | Data  | ... |     |    |    | <tr>
+        +-------+-------+-----+-----+----+----+
+        | Title | Data  | ... |     |    |    | <tr>
+        +-------+-------+-----+-----+----+----+
+    """
+    TR_DATA_INDEX_BEGIN = 1
+    TR_DATA_INDEX_END = 3
+    TD_INDEX_BEGIN = 1
+
+    def __init__(self):
+        self._td_map = {}   # top_index: {left_header: td, ...}
+        self._left_header_set = set()
+        self._mbl_no_text = None
+
+    def parse(self, table: Selector):
+        self._mbl_no_text = table.css('tr th::text').get()
+        if not self._mbl_no_text:
+            raise CarrierResponseFormatError(reason='mbl_no not found')
+
+        top_index_set = set()
+        data_tr = table.css('tr')[self.TR_DATA_INDEX_BEGIN:self.TR_DATA_INDEX_END]
+        for tr in data_tr:
+            left_header = tr.css('td.bltablehead::text').get().strip()
+            self._left_header_set.add(left_header)
+
+            for top_index, td in enumerate(tr.css('td')[self.TD_INDEX_BEGIN:]):
+                top_index_set.add(top_index)
+                td_dict = self._td_map.setdefault(top_index, {})
+                td_dict[left_header] = td
+
+    def get_cell(self, top, left) -> Selector:
+        try:
+            return self._td_map[top][left]
+        except KeyError as err:
+            raise HeaderMismatchError(repr(err))
+
+    def has_header(self, top=None, left=None) -> bool:
+        return (top is None) and (left in self._left_header_set)
+
+    def get_mbl_no(self) -> str:
+        pattern = re.compile(r'^Bill of Lading No[.] : (?P<mbl_no>\w+)')
+        m = pattern.match(self._mbl_no_text)
+        if not m:
+            raise CarrierResponseFormatError(reason='mbl_no not found')
+
+        mbl_no = m.group('mbl_no')
+        return mbl_no
+
+
+class ContainerStatusTableLocator(BaseTableLocator):
+    """
+        +-----------------------+
+        | Name                  |
+        +-------+-------+-------+
+        | Title | Title | Title |
+        +-------+-------+-------+
+        | Data  |       |       |
+        +-------+-------+-------+
+        | ...   |       |       |
+        +-------+-------+-------+
+        | Data  |       |       |
+        +-------+-------+-------+
+    """
+    TR_TITLE_INDEX = 1
+    TR_DATA_BEGIN_INDEX = 2
+
+    def __init__(self):
+        self._td_map = {}   # title: data
+        self._data_len = 0
+        self._container_no_text = None
+
+    def parse(self, table: Selector):
+        self._container_no_text = table.css('tr th::text').get()
+        if not self._container_no_text:
+            raise CarrierResponseFormatError(reason='container_no not found')
+
+        title_td_list = table.css('tr')[self.TR_TITLE_INDEX].css('td.bltablehead')
+        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN_INDEX:]
+
+        for title_index, title_td in enumerate(title_td_list):
+            data_index = title_index
+
+            title = title_td.css('::text').get()
+            self._td_map[title] = []
+
+            for data_tr in data_tr_list:
+                data_td = data_tr.css('td')[data_index]
+
+                self._td_map[title].append(data_td)
+
+        self._data_len = len(data_tr_list)
+
+    def get_cell(self, top, left) -> Selector:
+        try:
+            return self._td_map[top][left]
+        except KeyError as err:
+            raise HeaderMismatchError(repr(err))
+
+    def has_header(self, top=None, left=None) -> bool:
+        if top not in self._td_map:
+            raise HeaderMismatchError(repr(KeyError))
+
+        return left is None
+
+    def iter_left_headers(self):
+        for index in range(self._data_len):
+            yield index
+
+    def get_container_no(self):
+        pattern = re.compile(r'^Container No[.] : (?P<container_no>\w+)')
+        m = pattern.match(self._container_no_text)
+        if not m:
+            raise CarrierResponseFormatError(reason='container_no not found')
+
+        container_no = m.group('container_no')
+        return container_no
