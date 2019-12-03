@@ -57,10 +57,12 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
     def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
         timestamp = build_timestamp()
         url = f'{URL}/{BASE}/bill/{mbl_no}?timestamp={timestamp}'
-        request = scrapy.Request(url=url)
+        request = scrapy.Request(url=url, meta={'mbl_no': mbl_no})
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+
         response_dict = json.loads(response.text)
         message = response_dict['message']
         content = response_dict['data']['content']
@@ -75,7 +77,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
                 booking_no = booking_list[0]['trackingGroupReferenceCode']
                 yield BookingMainInfoRoutingRule.build_routing_request(mbl_no=booking_no)
             else:
-                raise CarrierInvalidMblNoError()
+                yield BookingMainInfoRoutingRule.build_routing_request(mbl_no=mbl_no)
 
     def _handle_bill_main_info(self, content):
         tracking_info = self._extract_bill_tracking(content=content)
@@ -237,6 +239,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
     def handle(self, response):
         response_dict = json.loads(response.text)
         content = response_dict['data']['content']
+        self._check_mbl_no(response=response_dict)
 
         tracking_info = self._extract_booking_tracking(content=content)
         ship_list = self._extract_actual_shipment(content=content)
@@ -304,6 +307,12 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
             )
 
         yield BookingContainerRoutingRule.build_routing_request(mbl_no=mbl_no)
+
+    @staticmethod
+    def _check_mbl_no(response: Dict):
+        message = response['message']
+        if message:
+            raise CarrierInvalidMblNoError()
 
     @staticmethod
     def _extract_booking_tracking(content: Dict) -> Dict:
