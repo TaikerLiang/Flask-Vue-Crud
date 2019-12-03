@@ -16,3 +16,7 @@ hooks:
     - location: scripts/restart.sh
       runas: ubuntu
       timeout: 600
+  ValidateService:
+    - location: scripts/initial.sh
+      runas: ubuntu
+      timeout: 600
