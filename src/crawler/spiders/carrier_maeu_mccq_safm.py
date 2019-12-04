@@ -78,7 +78,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         yield MblItem(
             mbl_no=mbl_no,
-            pol=LocationItem(name=routing_info['pol']),
+            por=LocationItem(name=routing_info['por']),
             final_dest=LocationItem(name=routing_info['final_dest']),
         )
 
@@ -117,7 +117,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         destination = response_dict['destination']
 
         return {
-            'pol': self._format_location(loc_info=origin),
+            'por': self._format_location(loc_info=origin),
             'final_dest': self._format_location(loc_info=destination),
         }
 

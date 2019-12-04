@@ -4,7 +4,7 @@ from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusIt
 def verify(results):
     assert results[0] == MblItem(
         mbl_no='589898475',
-        pol=LocationItem(name='Beilun container terminal, Phase 2 -- Ningbo (Zhejiang, CN)'),
+        por=LocationItem(name='Beilun container terminal, Phase 2 -- Ningbo (Zhejiang, CN)'),
         final_dest=LocationItem(name='VIP Greenport Joint Stock Company -- Haiphong (Hai Phong, VN)'),
     )
 

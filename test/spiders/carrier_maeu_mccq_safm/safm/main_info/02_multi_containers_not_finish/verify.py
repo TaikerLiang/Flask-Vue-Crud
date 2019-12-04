@@ -4,14 +4,14 @@ from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusIt
 def verify(results):
     assert results[0] == MblItem(
         mbl_no='712044685',
-        pol=LocationItem(name='Kaohsiung Hanjin Terminal Pier76-78 -- Kaohsiung (TW)'),
+        por=LocationItem(name='Kaohsiung Hanjin Terminal Pier76-78 -- Kaohsiung (TW)'),
         final_dest=LocationItem(name='AICT -- Alexandria (EG)'),
     )
 
     assert results[1] == ContainerItem(
         container_key='FCIU4198511',
         container_no='FCIU4198511',
-        final_dest_eta='2019-12-18T14:01:00.000'
+        final_dest_eta='2019-12-18T14:01:00.000',
     )
 
     assert results[2] == ContainerStatusItem(
@@ -37,7 +37,7 @@ def verify(results):
     assert results[11] == ContainerItem(
         container_key='MRSU0260637',
         container_no='MRSU0260637',
-        final_dest_eta='2019-12-18T14:01:00.000'
+        final_dest_eta='2019-12-18T14:01:00.000',
     )
 
     assert results[12] == ContainerStatusItem(
