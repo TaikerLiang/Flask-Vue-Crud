@@ -9,7 +9,7 @@ if (process.env.VUE_APP_ENV === "dev") {
   };
 } else {
   config = {
-    $api_url: "https://api.taiker.net",
+    $api_url: "https://api.taiker.cc",
     timeoutDuration: 1000,
   };
 }
