@@ -226,11 +226,12 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         for left in schedule_table_locator.iter_left_headers():
             date_str = schedule_table_extractor.extract_cell('Date', left)
-            est_or_actual = 'E'
+
             if date_str == 'Pending':
-                date_str = None
+                continue
             elif '*' in date_str:
                 date_str = date_str.strip('* ')
+                est_or_actual = 'E'
             else:
                 est_or_actual = 'A'
 

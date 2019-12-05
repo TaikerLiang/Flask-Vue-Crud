@@ -12,6 +12,7 @@ class Verifier:
             transport='/',
             est_or_actual='A',
         )
+
         assert results[1] == ContainerStatusItem(
             container_key='PCIU0142052',
             description='Truck Gate In to O/B Terminal',
@@ -20,6 +21,7 @@ class Verifier:
             transport='/',
             est_or_actual='A',
         )
+
         assert results[2] == ContainerStatusItem(
             container_key='PCIU0142052',
             description='Vessel Loading',
@@ -28,6 +30,7 @@ class Verifier:
             transport='KOTA CEMPAKA / KCPK0043W',
             est_or_actual='A',
         )
+
         assert results[3] == ContainerStatusItem(
             container_key='PCIU0142052',
             description='Vessel Discharge',
@@ -36,19 +39,8 @@ class Verifier:
             transport='KOTA CEMPAKA / KCPK0043W',
             est_or_actual='E',
         )
-        assert results[4] == ContainerStatusItem(
-            container_key='PCIU0142052',
-            description='Truck Gate Out from I/B Terminal',
-            local_date_time=None,
-            location=LocationItem(name='JEDDAH'),
-            transport='/',
-            est_or_actual='E',
-        )
-        assert results[5] == ContainerStatusItem(
-            container_key='PCIU0142052',
-            description='I/B Empty Container Returned',
-            local_date_time=None,
-            location=LocationItem(name='JEDDAH'),
-            transport='/',
-            est_or_actual='E',
-        )
+
+        # event ignored (pending) --- Truck Gate Out from I/B Terminal
+        # event ignored (pending) --- I/B Empty Container Returned
+
+        assert len(results) == 4

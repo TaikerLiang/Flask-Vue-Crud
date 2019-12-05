@@ -17,8 +17,8 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize('sub,mbl_no,container_id', [
-    ('01_NKAI90055900', 'NKAI90055900', 'PCIU9477648'),
-    ('02_NGRI90598700', 'NGRI90598700', 'PCIU0142052'),
+    ('01_normal', 'NKAI90055900', 'PCIU9477648'),
+    ('02_ignore_pending_events', 'NGRI90598700', 'PCIU0142052'),
 ])
 def test_container_handler(sub, mbl_no, container_id, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
