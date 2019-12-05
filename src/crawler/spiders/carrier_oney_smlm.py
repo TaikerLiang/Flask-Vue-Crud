@@ -261,7 +261,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     @staticmethod
     def _extract_container_status_list(response_dict):
         if 'list' not in response_dict:
-            raise CarrierResponseFormatError(reason=f'Container Status format error: `{response_dict}`')
+            return []
 
         container_status_data_list = response_dict['list']
         container_status_info_list = []
