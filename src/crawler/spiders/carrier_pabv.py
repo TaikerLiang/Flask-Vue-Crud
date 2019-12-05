@@ -16,6 +16,7 @@ from selenium.common.exceptions import TimeoutException
 from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
+from crawler.utils.decorators import merge_yields
 
 PABV_BASE_URL = 'https://www.pilship.com'
 
@@ -40,6 +41,7 @@ class CarrierPabvSpider(BaseCarrierSpider):
         routing_request = TrackRoutingRule.build_routing_request(mbl_no=self.mbl_no, cookies=cookies)
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
+    @merge_yields
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 

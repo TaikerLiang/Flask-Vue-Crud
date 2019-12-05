@@ -11,6 +11,7 @@ from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierI
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
+from crawler.utils.decorators import merge_yields
 
 
 class CarrierOoluSpider(BaseCarrierSpider):
@@ -30,6 +31,7 @@ class CarrierOoluSpider(BaseCarrierSpider):
         routing_request = CargoTrackingRule.build_routing_request(mbl_no=self.mbl_no)
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
+    @merge_yields
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
