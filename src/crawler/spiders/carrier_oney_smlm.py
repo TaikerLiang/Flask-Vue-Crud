@@ -266,13 +266,18 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         container_status_data_list = response_dict['list']
         container_status_info_list = []
         for container_status_data in container_status_data_list:
+            local_time = container_status_data['eventDt'].strip()
+            if not local_time:
+                # time is empty --> ignore this event
+                continue
+
             status_with_br = container_status_data['statusNm'].strip()
             status = status_with_br.replace('<br>', ' ')
 
             container_status_info_list.append({
                 'status': status,
                 'location': container_status_data['placeNm'].strip(),
-                'local_time': container_status_data['eventDt'].strip(),
+                'local_time': local_time,
                 'est_or_actual': container_status_data['actTpCd'].strip(),
             })
 
