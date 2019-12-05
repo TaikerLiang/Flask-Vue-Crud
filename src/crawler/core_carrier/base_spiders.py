@@ -27,6 +27,7 @@ class BaseCarrierSpider(scrapy.Spider):
 
         self.request_args = kwargs
         self.mbl_no = kwargs['mbl_no']
+        self.container_no = kwargs.get('container_no')
 
         self._error = False
 
