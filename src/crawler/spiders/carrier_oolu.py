@@ -164,6 +164,8 @@ class CargoTrackingRule(BaseRoutingRule):
         # Search Result - Bill of Lading Number  2109051600
         pattern = re.compile(r'^Search\s+Result\s+-\s+Bill\s+of\s+Lading\s+Number\s+(?P<mbl_no>\d+)\s+$')
         match = pattern.match(mbl_no_text)
+        if not match:
+            raise CarrierResponseFormatError(reason=f'Unknown mbl_no_text: `{mbl_no_text}`')
         return match.group('mbl_no')
 
     def _extract_custom_release_info(self, selector_map: Dict[str, scrapy.Selector]):
@@ -192,9 +194,11 @@ class CargoTrackingRule(BaseRoutingRule):
     @staticmethod
     def _parse_custom_release_info(custom_release_info):
         # Cleared (03 Nov 2019, 16:50 GMT)
-        pattern = re.compile(r'^(?P<status>[^(]+)[(](?P<date>[^)]+)[)]$')
+        pattern = re.compile(r'^(?P<status>\w+)\s*([(](?P<date>[^)]+)[)])*$')
         match = pattern.match(custom_release_info)
-        return match.group('status'), match.group('date')
+        if not match:
+            raise CarrierResponseFormatError(reason=f'Unknown custom_release_info: `{custom_release_info}`')
+        return match.group('status'), match.group('date') or ''
 
     @staticmethod
     def _extract_routing_info(selectors_map: Dict[str, scrapy.Selector]):
@@ -504,17 +508,17 @@ class ContainerStatusRule(BaseRoutingRule):
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def handle(self, response):
+        container_no = response.meta['container_no']
+
         locator = _PageLocator()
         selectors_map = locator.locate_selectors(response=response)
-
-        container_no = response.meta['container_no']
         detention_info = self._extract_detention_info(selectors_map)
 
         yield ContainerItem(
             container_key=container_no,
             container_no=container_no,
-            last_free_day=detention_info['last_free_day'],
-            det_free_time_exp_date=detention_info['det_free_time_exp_date'],
+            last_free_day=detention_info['last_free_day'] or None,
+            det_free_time_exp_date=detention_info['det_free_time_exp_date'] or None,
         )
 
         container_status_list = self._extract_container_status_list(selectors_map)
@@ -673,13 +677,14 @@ class DetentionDateTdExtractor(BaseTableCellExtractor):
 
     def extract(self, cell: Selector):
         text_list = cell.css('::text').getall()
+        text_list_len = len(text_list)
 
-        if len(text_list) != 2:
+        if text_list_len != 2 or text_list_len != 1:
             CarrierResponseFormatError(reason=f'Unknown last free day td format: `{text_list}`')
 
         return {
             'time_str': text_list[0].strip(),
-            'status': text_list[1].strip(),
+            'status': text_list[1].strip() if text_list_len == 2 else '',
         }
 
 
@@ -789,7 +794,9 @@ def _get_est_and_actual(status, time_str):
     if status == '(Actual)':
         estimate, actual = None, time_str
     elif status == '(Estimated)':
-        estimate, actual = time_str, None
+        estimate, actual = time_str, ''
+    elif status == '':
+        estimate, actual = None, ''
     else:
         raise CarrierResponseFormatError(reason=f'Unknown status format: `{status}`')
 
