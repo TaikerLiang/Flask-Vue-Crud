@@ -116,11 +116,11 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     def _extract_routing_info(self, response_dict):
         origin = response_dict['origin']
-        destination = response_dict['destination']
+        destination = response_dict.get('destination')
 
         return {
             'por': self._format_location(loc_info=origin),
-            'final_dest': self._format_location(loc_info=destination),
+            'final_dest': self._format_location(loc_info=destination) if destination else None,
         }
 
     def _extract_containers(self, response_dict):
@@ -130,7 +130,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
         for container in containers:
             container_statuses = []
 
-            for location in container['locations']:
+            locations = container.get('locations', [])
+            for location in locations:
                 location_name = self._format_location(loc_info=location)
 
                 for event in location['events']:
