@@ -21,6 +21,7 @@ def sample_loader(sample_loader):
     ('01_single_container', '2625845270'),
     ('02_multi_containers', '2109051600'),
     ('03_without_custom_release_date', '2628633440'),
+    ('04_tranship_exist', '2630699272'),
 ])
 def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
     html_file = sample_loader.read_file(sub, 'sample.html')

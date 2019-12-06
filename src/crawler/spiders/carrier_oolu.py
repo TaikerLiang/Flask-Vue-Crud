@@ -211,28 +211,40 @@ class CargoTrackingRule(BaseRoutingRule):
 
         # vessel_voyage
         vessel_voyage_extractor = VesselVoyageTdExtractor()
-        vessel_voyage = table_extractor.extract_cell(top='Vessel Voyage', left=None, extractor=vessel_voyage_extractor)
+        vessel_voyage = table_extractor.extract_cell(
+            top='Vessel Voyage', left=table_locator.LAST_LEFT_HEADER, extractor=vessel_voyage_extractor)
+
+        # por
+        por = table_extractor.extract_cell(
+            top='Origin', left=table_locator.FIRST_LEFT_HEADER, extractor=span_extractor)
 
         # pol / pod
         pol_pod_extractor = PolPodTdExtractor()
 
-        pol_info = table_extractor.extract_cell(top='Port of Load', left=None, extractor=pol_pod_extractor)
+        pol_info = table_extractor.extract_cell(
+            top='Port of Load', left=table_locator.FIRST_LEFT_HEADER, extractor=pol_pod_extractor)
         etd, atd = _get_est_and_actual(status=pol_info['status'], time_str=pol_info['time_str'])
 
-        pod_info = table_extractor.extract_cell(top='Port of Discharge', left=None, extractor=pol_pod_extractor)
+        pod_info = table_extractor.extract_cell(
+            top='Port of Discharge', left=table_locator.LAST_LEFT_HEADER, extractor=pol_pod_extractor)
         eta, ata = _get_est_and_actual(status=pod_info['status'], time_str=pod_info['time_str'])
 
         # place_of_deliv
         deliv_extractor = DelivTdExtractor()
-        deliv_info = table_extractor.extract_cell(top='Final Destination Hub', left=None, extractor=deliv_extractor)
+        deliv_info = table_extractor.extract_cell(
+            top='Final Destination Hub', left=table_locator.LAST_LEFT_HEADER, extractor=deliv_extractor)
         deliv_eta, deliv_ata = _get_est_and_actual(status=deliv_info['status'], time_str=deliv_info['time_str'])
 
+        # final_dest
+        final_dest = table_extractor.extract_cell(
+            top='Destination', left=table_locator.LAST_LEFT_HEADER, extractor=span_extractor)
+
         return {
-            'por': table_extractor.extract_cell(top='Origin', left=None, extractor=span_extractor),
+            'por': por,
             'pol': pol_info['port'],
             'pod': pod_info['port'],
             'place_of_deliv': deliv_info['port'],
-            'final_dest': table_extractor.extract_cell(top='Destination', left=None, extractor=span_extractor),
+            'final_dest': final_dest,
             'etd': etd,
             'atd': atd,
             'eta': eta,
@@ -295,35 +307,44 @@ class SummaryRightTableLocator(BaseTableLocator):
 
 class RoutingTableLocator(BaseTableLocator):
     """
-        +-----------------------------------+ <tbody>
-        | Title 1 | Title 2 | ... |   <th>  | <tr>
-        +---------+---------+-----+---------+
-        | Data    |         |     |   <td>  | <tr>
-        +---------+---------+-----+---------+ </tbody>
+        +-------------------------------------+ <tbody>
+        | Title 1  | Title 2  | ... |   <th>  | <tr>
+        +----------+----------+-----+---------+
+        | Data 1-1 | Data 2-1 |     |   <td>  | <tr>
+        +----------+----------+-----+---------+
+        | Data 1-2 | Data 2-2 |     |   <td>  | <tr>
+        +----------+----------+-----+---------+
+        | ...      | ...      |     |   <td>  | <tr>
+        +----------+----------+-----+---------+ </tbody>
     """
 
     TR_TITLE_INDEX = 0
-    TR_DATA_INDEX = 1
+    TR_DATA_START_INDEX = 1
+
+    FIRST_LEFT_HEADER = 0
+    LAST_LEFT_HEADER = -1
 
     def __init__(self):
-        self._td_map = {}
+        self._td_map = {}  # title: [td, ...]
 
     def parse(self, table: scrapy.Selector):
+        title_tr = table.css('tr')[self.TR_TITLE_INDEX]
+        data_trs = table.css('tr')[self.TR_DATA_START_INDEX:]
 
-        title_list = table.css('tr')[self.TR_TITLE_INDEX].css('th::text').getall()
-        data_td_list = table.css('tr')[self.TR_DATA_INDEX].css('td')
-
-        title_list = [title.strip() for title in title_list if isinstance(title, str)]
+        raw_title_list = title_tr.css('th::text').getall()
+        title_list = [title.strip() for title in raw_title_list if isinstance(title, str)]
 
         for title_index, title in enumerate(title_list):
             data_index = title_index
 
-            data_td = data_td_list[data_index]
-            self._td_map[title] = data_td
+            self._td_map[title] = []
+            for data_tr in data_trs:
+                data_td = data_tr.css('td')[data_index]
+                self._td_map[title].append(data_td)
 
     def get_cell(self, top, left) -> scrapy.Selector:
         try:
-            return self._td_map[top]
+            return self._td_map[top][left]
         except KeyError as err:
             raise HeaderMismatchError(repr(err))
 
