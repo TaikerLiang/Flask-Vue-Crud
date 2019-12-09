@@ -405,7 +405,7 @@ class HistoryRoutingRule(BaseRoutingRule):
         form_data = {
             'cargoTrackListBean': 'cargoTrackListBean',
             'javax.faces.ViewState': view_state,
-            'j_idt36:0:j_idt83': 'j_idt36:0:j_idt83',
+            'j_idt36:0:j_idt85': 'j_idt36:0:j_idt85',
             'q_bl_no': mbl_no,
             'q_ctnr_no': container_no,
         }
