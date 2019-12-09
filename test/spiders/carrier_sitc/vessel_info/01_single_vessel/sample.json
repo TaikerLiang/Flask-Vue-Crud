@@ -1,0 +1,40 @@
+{
+  "list": [
+    {
+      "IDValue": null,
+      "ata": "<font color=\"red\">2018-12-04 05:30<\/font>",
+      "atb": "<font color=\"red\">2018-12-04 15:48<\/font>",
+      "atd": "<font color=\"red\">2018-11-23 21:48<\/font>",
+      "bkRoutingId": "",
+      "blNoBkRouting4TrackId": "",
+      "bookingHeadId": "",
+      "createdByUser": "",
+      "createdDtmLoc": "",
+      "createdOffice": "",
+      "createdTimeZone": "",
+      "dirty": false,
+      "eta": "2018-12-03",
+      "etd": "2018-11-22",
+      "linType": "1",
+      "logged": false,
+      "portFrom": "NINGBO",
+      "portTo": "BANGKOK",
+      "principalGroupCode": "",
+      "recordVersion": "",
+      "rowStatus": 2,
+      "updatedByUser": "",
+      "updatedDtmLoc": "",
+      "updatedOffice": "",
+      "updatedTimeZone": "",
+      "vesselName": "SITC HEBEI",
+      "voyage": "1820S"
+    }
+  ],
+  "total": 1,
+  "pageCount": 1,
+  "currentPage": 1,
+  "storeMetaData": {
+    "createdDtmLoc": "date",
+    "updatedDtmLoc": "date"
+  }
+}

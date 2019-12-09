@@ -1,0 +1,38 @@
+{
+  "list": [
+    {
+      "IDValue": null,
+      "bkContainerId": "",
+      "blNoBkContainer4TrackId": "",
+      "bookingHeadId": "",
+      "cntrSize": "50.0",
+      "containerNo": "TEXU1585331",
+      "containerType": "40OT",
+      "createdByUser": "",
+      "createdDtmLoc": "",
+      "createdOffice": "",
+      "createdTimeZone": "",
+      "dirty": false,
+      "logged": false,
+      "moveCode": "MT (EMPTY CONTAINER)",
+      "principalGroupCode": "",
+      "quantity": "34.0",
+      "recordVersion": "",
+      "rowStatus": 2,
+      "sealNo": "NB063715",
+      "updatedByUser": "",
+      "updatedDtmLoc": "",
+      "updatedOffice": "",
+      "updatedTimeZone": "",
+      "voyage": "STJK1816S",
+      "weight": "25670.0"
+    }
+  ],
+  "total": 1,
+  "pageCount": 1,
+  "currentPage": 1,
+  "storeMetaData": {
+    "createdDtmLoc": "date",
+    "updatedDtmLoc": "date"
+  }
+}
