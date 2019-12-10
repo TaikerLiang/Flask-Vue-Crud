@@ -25,7 +25,7 @@ def sample_loader(sample_loader):
 def test_list_routing_rule(sub, mbl_no, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    routing_request = ListRoutingRule.build_routing_request(mbl_no=mbl_no, view_state='', cookies={'123': '123'})
+    routing_request = ListRoutingRule.build_routing_request(mbl_no=mbl_no, view_state='')
     url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(
@@ -55,7 +55,7 @@ def test_list_routing_rule(sub, mbl_no, sample_loader):
 def test_list_error(sub, mbl_no, expect_exception, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    routing_request = ListRoutingRule.build_routing_request(mbl_no=mbl_no, view_state='', cookies={'123': '123'})
+    routing_request = ListRoutingRule.build_routing_request(mbl_no=mbl_no, view_state='')
     url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(
