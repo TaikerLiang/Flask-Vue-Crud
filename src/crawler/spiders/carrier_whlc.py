@@ -410,7 +410,7 @@ class HistoryRoutingRule(BaseRoutingRule):
             'q_ctnr_no': container_no,
         }
         request = scrapy.FormRequest(
-            url=f'{WHLC_BASE_URL}/cargoTrack/CargoTrackList.xhtml',
+            url=f'{WHLC_BASE_URL}/views/cargoTrack/CargoTrackList.xhtml',
             method='POST',
             formdata=form_data,
             meta={
