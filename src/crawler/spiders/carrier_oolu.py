@@ -156,11 +156,11 @@ class CargoTrackingRule(BaseRoutingRule):
 
     def _extract_mbl_no(self, response):
         mbl_no_text = response.css('th.sectionTable::text').get()
-        mbl_no = self._mbl_no_text_parse(mbl_no_text)
+        mbl_no = self._parse_mbl_no_text(mbl_no_text)
         return mbl_no
 
     @staticmethod
-    def _mbl_no_text_parse(mbl_no_text):
+    def _parse_mbl_no_text(mbl_no_text):
         # Search Result - Bill of Lading Number  2109051600
         pattern = re.compile(r'^Search\s+Result\s+-\s+Bill\s+of\s+Lading\s+Number\s+(?P<mbl_no>\d+)\s+$')
         match = pattern.match(mbl_no_text)
@@ -193,12 +193,15 @@ class CargoTrackingRule(BaseRoutingRule):
 
     @staticmethod
     def _parse_custom_release_info(custom_release_info):
-        # Cleared (03 Nov 2019, 16:50 GMT)
-        pattern = re.compile(r'^(?P<status>\w+)\s*([(](?P<date>[^)]+)[)])*$')
+        """
+        Sample 1: `Cleared (03 Nov 2019, 16:50 GMT)`
+        Sample 2: `Not Applicable`
+        """
+        pattern = re.compile(r'^(?P<status>[^(]+)(\s+[(](?P<date>[^)]+)[)])?$')
         match = pattern.match(custom_release_info)
         if not match:
             raise CarrierResponseFormatError(reason=f'Unknown custom_release_info: `{custom_release_info}`')
-        return match.group('status'), match.group('date') or ''
+        return match.group('status').strip(), match.group('date') or ''
 
     @staticmethod
     def _extract_routing_info(selectors_map: Dict[str, scrapy.Selector]):
