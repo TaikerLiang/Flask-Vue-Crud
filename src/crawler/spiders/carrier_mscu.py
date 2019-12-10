@@ -69,10 +69,14 @@ class CarrierMscuSpider(BaseCarrierSpider):
                     est_or_actual=container_status['est_or_actual'],
                 )
 
-            place_of_deliv = extractor.extract_place_of_deliv(container_selector_map) or None
+            place_of_deliv = extractor.extract_place_of_deliv(container_selector_map)
             place_of_deliv_set.add(place_of_deliv)
 
-        if len(place_of_deliv_set) != 1:
+        if not place_of_deliv_set:
+            place_of_deliv = None
+        elif len(place_of_deliv_set) == 1:
+            place_of_deliv = list(place_of_deliv_set)[0] or None
+        else:
             raise CarrierResponseFormatError(reason=f'Different place_of_deliv: `{place_of_deliv_set}`')
 
         mbl_no = extractor.extract_mbl_no(response=response)
@@ -85,7 +89,7 @@ class CarrierMscuSpider(BaseCarrierSpider):
             pod=LocationItem(name=main_info['pod']),
             etd=main_info['etd'],
             vessel=main_info['vessel'],
-            place_of_deliv=LocationItem(name=list(place_of_deliv_set)[0]),
+            place_of_deliv=LocationItem(name=place_of_deliv),
             latest_update=latest_update,
         )
 
@@ -99,7 +103,7 @@ class CarrierMscuSpider(BaseCarrierSpider):
 class Extractor:
 
     def __init__(self):
-        self._mbl_no_pattern = re.compile(r'^Bill of lading: (?P<mbl_no>\S+) [(]\d+ containers?[)]$')
+        self._mbl_no_pattern = re.compile(r'^Bill of lading: (?P<mbl_no>\S+) ([(]\d+ containers?[)])?$')
         self._container_no_pattern = re.compile(r'^Container: (?P<container_no>\S+)$')
         self._latest_update_pattern = re.compile(r'^Tracking results provided by MSC on (?P<latest_update>.+)$')
 
@@ -110,7 +114,8 @@ class Extractor:
     def _parse_mbl_no(self, mbl_no_text: str):
         """
         Sample Text:
-            Bill of lading: MEDUN4194175 (1 container)
+            `Bill of lading: MEDUN4194175 (1 container)`
+            `Bill of lading: MEDUH3870035 `
         """
         m = self._mbl_no_pattern.match(mbl_no_text)
         if not m:
