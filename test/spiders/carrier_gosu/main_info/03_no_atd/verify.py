@@ -11,7 +11,7 @@ def verify(results):
         pod=LocationItem(name="Ho Chi Minh City, Vietnam"),
         final_dest=LocationItem(name=None),
         etd='27-Sep-2019',
-        atd=None,
+        eta=None,
         vessel='Cimbria',
         voyage='228',
     )

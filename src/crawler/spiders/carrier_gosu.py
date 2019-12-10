@@ -69,7 +69,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             pod=LocationItem(name=top_main_info['pod_name']),
             final_dest=LocationItem(name=top_main_info['final_dest_name']),
             etd=bottom_main_info['etd'],
-            atd=bottom_main_info['atd'],
+            eta=bottom_main_info['eta'],
             vessel=bottom_main_info['vessel'],
             voyage=bottom_main_info['voyage'],
         )
@@ -139,10 +139,10 @@ class MainInfoRoutingRule(BaseRoutingRule):
         td_extractor = FirstTextTdExtractor()
 
         etd_text = table_extractor.extract_cell(top='Local Departure', left=0, extractor=td_extractor)
-        atd_text = table_extractor.extract_cell(top='Local Arrival', left=0, extractor=td_extractor)
+        eta_text = table_extractor.extract_cell(top='Local Arrival', left=0, extractor=td_extractor)
 
         etd = self._get_local_date_time(local_date_time_text=etd_text)
-        atd = self._get_local_date_time(local_date_time_text=atd_text)
+        eta = self._get_local_date_time(local_date_time_text=eta_text)
 
         vessel_voyage = table_extractor.extract_cell(top='Vessel & Voyage', left=0, extractor=td_extractor)
 
@@ -157,7 +157,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         return {
             'etd': etd,
-            'atd': atd,
+            'eta': eta,
             'vessel': vessel,
             'voyage': voyage,
         }

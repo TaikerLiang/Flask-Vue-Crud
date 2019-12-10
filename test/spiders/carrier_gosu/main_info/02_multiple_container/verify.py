@@ -11,7 +11,7 @@ def verify(results):
         pod=LocationItem(name="Laem Chabang, Thailand"),
         final_dest=LocationItem(name=None),
         etd='19-Oct-2019',
-        atd='27-Oct-2019',
+        eta='27-Oct-2019',
         vessel='Cape Flint',
         voyage='30',
     )
