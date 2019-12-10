@@ -119,6 +119,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
     @staticmethod
     def _extract_basic_info(response: scrapy.Selector):
         table_selector = response.css('table#ContentPlaceHolder1_rptBLNo_gvBasicInformation_0')
+        if not table_selector:
+            CarrierResponseFormatError('Can not found basic info table !!!')
 
         table_locator = TopHeaderIsTdTableLocator()
         table_locator.parse(table=table_selector)
