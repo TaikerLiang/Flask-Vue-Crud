@@ -1,0 +1,33 @@
+{
+  "list": [
+    {
+      "IDValue": null,
+      "blNo": "SITDNBBK351734",
+      "blNoBookingHead4TrackId": "",
+      "createdByUser": "",
+      "createdDtmLoc": "",
+      "createdOffice": "",
+      "createdTimeZone": "",
+      "del": "BANGKOK",
+      "dirty": false,
+      "logged": false,
+      "pol": "NINGBO",
+      "principalGroupCode": "",
+      "recordVersion": "",
+      "rowStatus": 2,
+      "status": "8",
+      "trackBookingHeadId": "",
+      "updatedByUser": "",
+      "updatedDtmLoc": "",
+      "updatedOffice": "",
+      "updatedTimeZone": ""
+    }
+  ],
+  "total": 1,
+  "pageCount": 1,
+  "currentPage": 1,
+  "storeMetaData": {
+    "createdDtmLoc": "date",
+    "updatedDtmLoc": "date"
+  }
+}
