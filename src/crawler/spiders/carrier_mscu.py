@@ -109,6 +109,10 @@ class Extractor:
 
     def extract_mbl_no(self, response: scrapy.Selector):
         mbl_no_text = response.css('a#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_hlkBOLToggle::text').get()
+
+        if not mbl_no_text:
+            return None
+
         return self._parse_mbl_no(mbl_no_text)
 
     def _parse_mbl_no(self, mbl_no_text: str):
@@ -125,9 +129,20 @@ class Extractor:
 
     @staticmethod
     def extract_main_info(response: scrapy.Selector):
-        table_selector = response.css('div#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_pnlBOLContent > table.resultTable')
+        main_outer = response.css('div#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_pnlBOLContent')
+        error_message = 'Can not find main information frame by css `div#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00' \
+                        '_pnlBOLContent`'
+        if not main_outer:
+            raise CarrierResponseFormatError(reason=error_message)
+
+        table_selector = main_outer.xpath('./table[@class="resultTable singleRowTable"]')
         if not table_selector:
-            raise CarrierResponseFormatError(reason='Can not find main information table!!!')
+            return {
+                'pol': None,
+                'pod': None,
+                'etd': None,
+                'vessel': None,
+            }
 
         table_locator = MainInfoTableLocator()
         table_locator.parse(table=table_selector)
