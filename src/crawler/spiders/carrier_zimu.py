@@ -246,7 +246,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 result.append(ScheduleInfo(
                     port_type='Transshipment',
                     port_name=schedule['Transshipment'],
-                    eta=schedule['Arrival Date'],
+                    eta=schedule.get('Arrival Date', ''),
                     etd=schedule['Sailing Date'],
                 ))
 
