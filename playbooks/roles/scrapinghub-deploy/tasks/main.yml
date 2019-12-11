@@ -6,4 +6,5 @@
       chdir: '{{ local_proj_dir }}/src/'
     argv:
       - shub
-      - deploy
+      - image
+      - upload

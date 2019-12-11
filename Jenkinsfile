@@ -93,6 +93,7 @@ def runTest() {
 def runDeploy() {
     echo "runDeploy base on branch=${BRANCH_NAME}"
     withCredentials([string(credentialsId: SHUB_APIKEY_CREDENTIAL_ID, variable: 'SHUB_APIKEY')]) {
+        sh 'docker login images.scrapinghub.com --username=${SHUB_APIKEY} --password=" "'
         execAnsiblePlaybook("-i servers/${BRANCH_NAME} -v deploy.yml")
     }
 }
