@@ -1,3 +1,5 @@
+_save_pages/
+
 # shub deploy
 /src/build/
 /src/project.egg-info/

@@ -5,8 +5,8 @@ from scrapy import Request, Selector
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
-from crawler.core_carrier.items import BaseCarrierItem, MblItem, LocationItem, ContainerStatusItem, ContainerItem, \
-    VesselItem
+from crawler.core_carrier.items import (
+    BaseCarrierItem, MblItem, LocationItem, ContainerStatusItem, ContainerItem, VesselItem)
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor, BaseTableCellExtractor
 from crawler.extractors.table_extractors import TopHeaderTableLocator, TableExtractor
@@ -33,6 +33,9 @@ class CarrierZimuSpider(BaseCarrierSpider):
     @merge_yields
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
+
+        save_name = routing_rule.get_save_name(response=response)
+        self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
@@ -65,6 +68,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
         url = f'https://www.zim.com/tools/track-a-shipment?consnumber={mbl_no}'
         request = Request(url=url)
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
 
     def handle(self, response):
         self._check_mbl_no(response=response)

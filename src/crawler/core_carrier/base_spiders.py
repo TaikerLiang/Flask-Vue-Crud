@@ -1,8 +1,10 @@
+from pathlib import Path
+
 import scrapy
 
 from .middlewares import CarrierSpiderMiddleware
 from .pipelines import CarrierItemPipeline
-
+from ..general.savers import BaseSaver, FileSaver, NullSaver
 
 CARRIER_CUSTOM_SETTINGS = {
     'SPIDER_MIDDLEWARES': {
@@ -26,10 +28,22 @@ class BaseCarrierSpider(scrapy.Spider):
         super().__init__(name=name, **kwargs)
 
         self.request_args = kwargs
+
         self.mbl_no = kwargs['mbl_no']
         self.container_no = kwargs.get('container_no')
 
+        to_save = ('save' in kwargs)
+        self._saver = self._prepare_saver(to_save=to_save)
+
         self._error = False
+
+    def _prepare_saver(self, to_save: bool) -> BaseSaver:
+        if not to_save:
+            return NullSaver()
+
+        save_folder = Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] {self.mbl_no}'
+
+        return FileSaver(folder_path=save_folder, logger=self.logger)
 
     def has_error(self):
         return self._error

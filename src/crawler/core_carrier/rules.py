@@ -18,6 +18,9 @@ class BaseRoutingRule:
     def build_routing_request(*args, **kwargs) -> RoutingRequest:
         raise NotImplementedError()
 
+    def get_save_name(self, response) -> str:
+        return self.name
+
     @abc.abstractmethod
     def handle(self, response):
         pass
