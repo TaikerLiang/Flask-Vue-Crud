@@ -4,7 +4,7 @@ import groovy.transform.Field
 
 @Field def SHUB_APIKEY_CREDENTIAL_ID = 'scrapinghub-hardcore-apikey'
 
-@Field def SLACK_CHANNEL = '#jenkins-feed-edi'
+@Field def SLACK_CHANNEL = '#edi-jenkins'
 
 @Field def STATUS_SUCCESS = 'Success'
 @Field def STATUS_FAILURE = 'Failure'
