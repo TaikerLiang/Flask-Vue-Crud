@@ -1,0 +1,77 @@
+from pathlib import Path
+
+import pytest
+from scrapy import Request
+from scrapy.http import TextResponse
+
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
+from crawler.core_carrier.rules import RuleManager
+from crawler.spiders.carrier_whlc import DetailRoutingRule, CarrierWhlcSpider, ListRoutingRule
+from test.spiders.carrier_whlc import container_list
+from test.spiders.utils import extract_url_from
+
+
+@pytest.fixture
+def sample_loader(sample_loader):
+    sample_path = Path(__file__).parent
+    sample_loader.setup(sample_package=container_list, sample_path=sample_path)
+    return sample_loader
+
+
+@pytest.mark.parametrize('sub,mbl_no', [
+    ('01_single_container', '0249538702'),
+    ('02_multiple_container', '0349531933'),
+])
+def test_list_routing_rule(sub, mbl_no, sample_loader):
+    html_text = sample_loader.read_file(sub, 'sample.html')
+
+    routing_request = ListRoutingRule.build_routing_request(mbl_no=mbl_no, view_state='')
+    url = extract_url_from(routing_request=routing_request)
+
+    response = TextResponse(
+        url=url,
+        body=html_text,
+        encoding='utf-8',
+        request=Request(
+            url=url,
+            meta={
+                RuleManager.META_CARRIER_CORE_RULE_NAME: ListRoutingRule.name,
+                'mbl_no': mbl_no,
+                'cookies': {'123': '123'}
+            }
+        )
+    )
+
+    spider = CarrierWhlcSpider(mbl_no=mbl_no)
+    results = list(spider.parse(response=response))
+
+    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module.verify(results=results)
+
+
+@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
+    ('e01_invalid_mbl_no', '0249538703', CarrierInvalidMblNoError),
+])
+def test_list_error(sub, mbl_no, expect_exception, sample_loader):
+    html_text = sample_loader.read_file(sub, 'sample.html')
+
+    routing_request = ListRoutingRule.build_routing_request(mbl_no=mbl_no, view_state='')
+    url = extract_url_from(routing_request=routing_request)
+
+    response = TextResponse(
+        url=url,
+        body=html_text,
+        encoding='utf-8',
+        request=Request(
+            url=url,
+            meta={
+                RuleManager.META_CARRIER_CORE_RULE_NAME: ListRoutingRule.name,
+                'mbl_no': mbl_no,
+                'cookies': {'123': '123'},
+            }
+        )
+    )
+
+    spider = CarrierWhlcSpider(mbl_no=mbl_no)
+    with pytest.raises(expect_exception):
+        list(spider.parse(response=response))
