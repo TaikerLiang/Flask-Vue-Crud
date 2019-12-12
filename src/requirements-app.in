@@ -1,4 +1,5 @@
 Faker
 Scrapy
 click
+requests
 selenium

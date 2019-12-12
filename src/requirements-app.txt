@@ -6,14 +6,16 @@
 #
 attrs==19.3.0             # via automat, service-identity, twisted
 automat==0.8.0            # via twisted
+certifi==2019.11.28       # via requests
 cffi==1.13.2              # via cryptography
+chardet==3.0.4            # via requests
 click==7.0
 constantly==15.1.0        # via twisted
 cryptography==2.8         # via pyopenssl, scrapy, service-identity
 cssselect==1.1.0          # via parsel, scrapy
 faker==3.0.0
 hyperlink==19.0.0         # via twisted
-idna==2.8                 # via hyperlink
+idna==2.8                 # via hyperlink, requests
 incremental==17.5.0       # via twisted
 lxml==4.4.2               # via parsel, scrapy
 parsel==1.5.2             # via scrapy
@@ -26,13 +28,14 @@ pyhamcrest==1.9.0         # via twisted
 pyopenssl==19.1.0         # via scrapy
 python-dateutil==2.8.1    # via faker
 queuelib==1.5.0           # via scrapy
+requests==2.22.0
 scrapy==1.8.0
 selenium==3.141.0
 service-identity==18.1.0  # via scrapy
 six==1.13.0               # via automat, cryptography, faker, parsel, protego, pyhamcrest, pyopenssl, python-dateutil, scrapy, w3lib
 text-unidecode==1.3       # via faker
 twisted==19.10.0          # via scrapy
-urllib3==1.25.7           # via selenium
+urllib3==1.25.7           # via requests, selenium
 w3lib==1.21.0             # via parsel, scrapy
 zope.interface==4.7.1     # via scrapy, twisted
 

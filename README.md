@@ -63,7 +63,6 @@ pip install -U pip-tools
 Compile
 
 ```bash
-pip-compile -U --output-file src/requirements-scrapy_cloud.txt src/requirements-scrapy_cloud.in
 pip-compile -U --output-file src/requirements-app.txt src/requirements-app.in
 pip-compile -U --output-file requirements-dev.txt requirements-dev.in
 ```

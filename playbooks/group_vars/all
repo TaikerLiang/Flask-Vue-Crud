@@ -1,2 +1,1 @@
-scrapinghub_stack: 'scrapy:1.7-py3'
 local_proj_dir: '{{ playbook_dir }}/..'
