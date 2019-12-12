@@ -37,4 +37,3 @@ $ docker-compose up --build
 ```
 
 After starting, navigate to http://localhost:3000. Enjoy it.
-
