@@ -5,11 +5,11 @@ console.log(process.env);
 if (process.env.VUE_APP_ENV === "dev") {
   config = {
     $api_url: "http://localhost:5000",
-    timeoutDuration: 30000,
+    timeoutDuration: 3000,
   };
 } else {
   config = {
-    $api_url: "https://api.taiker.net",
+    $api_url: "https://api.taiker.cc",
     timeoutDuration: 1000,
   };
 }
