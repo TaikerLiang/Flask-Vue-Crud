@@ -1,5 +1,3 @@
-import abc
-import dataclasses
 from typing import Dict
 
 import scrapy
@@ -8,173 +6,128 @@ from scrapy import Selector
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
 from crawler.core_carrier.items import BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
+from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor, HeaderMismatchError
 
 
-@dataclasses.dataclass
-class UrlSpec:
-    container_no: str = None
-
-
-class UrlBuilder:
-
-    def __init__(self, url_format: str):
-        self._format = url_format
-
-    def build_url_from_spec(self, spec: UrlSpec) -> str:
-        return self._format.format(url_spec=spec)
-
-
-class SharedUrlFactory:
-
-    def __init__(self, home_url: str, mbl_no):
-        self.mbl_no = mbl_no
-        self.base = f'{home_url}/ebusiness/tracking'
-
-    def get_bill_url_builder(self):
-        url_format = f'{self.base}/search?SearchBy=BL&Reference={self.mbl_no}&search=Search'
-        return UrlBuilder(url_format=url_format)
-
-    def get_container_url_builder(self):
-        url_format = f'{self.base}/detail/{{url_spec.container_no}}?SearchCriteria=BL&SearchByReference={self.mbl_no}'
-        return UrlBuilder(url_format=url_format)
-
-
-# -----------------------------------------------------------------------------------------------------------
-
-
 class SharedSpider(BaseCarrierSpider):
-    home_url = ''
+    name = None
+    base_url = None
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(SharedSpider, self).__init__(*args, **kwargs)
 
-        url_factory = SharedUrlFactory(home_url=self.home_url, mbl_no=self.mbl_no)
+        rules = [
+            FirstTierRoutingRule(base_url=self.base_url),
+            ContainerStatusRoutingRule(),
+        ]
 
-        self.routing_manager = RoutingManager()
-        self.routing_manager.add_routing_rules(
-            RoutingRule(
-                name=HANDLE_FIRST_TIER,
-                handler=FirstTierHandler(),
-                url_builder=url_factory.get_bill_url_builder(),
-            ),
-            RoutingRule(
-                name=HANDLE_CONTAINER,
-                handler=ContainerHandler(),
-                url_builder=url_factory.get_container_url_builder(),
-            ),
-        )
+        self._rule_manager = RuleManager(rules=rules)
 
     def start_requests(self):
-        require_req = RequireRequest(rule_name=HANDLE_FIRST_TIER, url_spec=UrlSpec())
-        yield self.routing_manager.build_request_by(rule_name=require_req.rule_name, url_spec=require_req.url_spec)
+        routing_request = FirstTierRoutingRule.build_routing_request(mbl_no=self.mbl_no, base_url=self.base_url)
+        request = self._rule_manager.build_request_by(routing_request=routing_request)
+        yield request
 
     def parse(self, response):
-        handler = self.routing_manager.get_handler_by_response(response=response)
-        for result in handler.handle(response=response):
+        routing_rule = self._rule_manager.get_rule_by_response(response=response)
+
+        for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RequireRequest):
-                yield self.routing_manager.build_request_by(rule_name=result.rule_name, url_spec=result.url_spec)
+            elif isinstance(result, RoutingRequest):
+                yield self._rule_manager.build_request_by(routing_request=result)
             else:
                 raise RuntimeError()
 
 
 class CarrierApluSpider(SharedSpider):
     name = 'carrier_aplu'
-    home_url = 'http://www.apl.com'
+    base_url = 'http://www.apl.com'
 
 
 class CarrierCmduSpider(SharedSpider):
     name = 'carrier_cmdu'
-    home_url = 'http://www.cma-cgm.com'
+    base_url = 'http://www.cma-cgm.com'
 
 
 class CarrierAnlcSpider(SharedSpider):
     name = 'carrier_anlc'
-    home_url = 'https://www.anl.com.au'
+    base_url = 'https://www.anl.com.au'
 
 
-# -----------------------------------------------------------------------------------------------------------
+STATUS_ONE_CONTAINER = 'STATUS_ONE_CONTAINER'
+STATUS_MULTI_CONTAINER = 'STATUS_MULTI_CONTAINER'
+STATUS_MBL_NOT_EXIST = 'STATUS_MBL_NOT_EXIST'
 
 
-class BaseHandler:
+class FirstTierRoutingRule(BaseRoutingRule):
+    name = 'FIRST_TIER'
 
-    @abc.abstractmethod
+    def __init__(self, base_url):
+        self.base_url = base_url
+
+    @classmethod
+    def build_routing_request(cls, mbl_no, base_url) -> RoutingRequest:
+        url = f'{base_url}/ebusiness/tracking/search?SearchBy=BL&Reference={mbl_no}&search=Search'
+        request = scrapy.Request(url=url, meta={'mbl_no': mbl_no})
+
+        return RoutingRequest(request=request, rule_name=cls.name)
+
     def handle(self, response):
-        pass
+        mbl_no = response.meta['mbl_no']
 
-
-@dataclasses.dataclass
-class RoutingRule:
-    name: str
-    handler: BaseHandler
-    url_builder: UrlBuilder
-
-
-class RoutingManager:
-    META_ROUTING_RULE = 'ROUTING_RULE'
-
-    def __init__(self):
-        self._rule_map = {}
-
-    def add_routing_rules(self, *rules: RoutingRule):
-        for r in rules:
-            self._rule_map[r.name] = r
-
-    def get_handler_by_response(self, response) -> BaseHandler:
-        rule_name = response.meta[self.META_ROUTING_RULE]
-        return self._rule_map[rule_name].handler
-
-    def build_request_by(self, rule_name: str, url_spec: UrlSpec) -> scrapy.Request:
-        rule = self._rule_map[rule_name]
-        assert isinstance(rule, RoutingRule)
-
-        url = rule.url_builder.build_url_from_spec(spec=url_spec)
-
-        request = scrapy.Request(url=url)
-        request.meta[self.META_ROUTING_RULE] = rule_name
-        return request
-
-
-# -----------------------------------------------------------------------------------------------------------
-
-
-HANDLE_FIRST_TIER = 'HANDLE_FIRST_TIER'
-HANDLE_CONTAINER = 'HANDLE_CONTAINER'
-
-
-@dataclasses.dataclass
-class RequireRequest:
-    rule_name: str
-    url_spec: UrlSpec
-
-
-class FirstTierHandler(BaseHandler):
-    def handle(self, response):
-        mbl_status = _MblStatusExtractor.extract(response=response)
+        mbl_status = self._extract_mbl_status(response=response)
 
         if mbl_status == STATUS_ONE_CONTAINER:
-            container_handler = ContainerHandler()
-            for item in container_handler.handle(response=response):
+            routing_rule = ContainerStatusRoutingRule()
+            for item in routing_rule.handle(response=response):
                 yield item
 
         elif mbl_status == STATUS_MULTI_CONTAINER:
-            container_list = _ContainerListExtractor.extract(response=response)
+            container_list = self._extract_container_list(response=response)
 
-            for container in container_list:
-                url_spec = UrlSpec(container_no=container)
-                yield RequireRequest(rule_name=HANDLE_CONTAINER, url_spec=url_spec)
+            for container_no in container_list:
+                yield ContainerStatusRoutingRule.build_routing_request(
+                    mbl_no=mbl_no, container_no=container_no, base_url=self.base_url)
 
         else:  # STATUS_MBL_NOT_EXIST
             raise CarrierInvalidMblNoError()
 
+    def _handle_container_status(self, response):
+        pass
 
-class ContainerHandler(BaseHandler):
+    @staticmethod
+    def _extract_mbl_status(response: Selector):
+        result_message = response.css('div#wrapper h2::text').get()
+
+        if result_message is None:
+            return STATUS_ONE_CONTAINER
+        elif result_message.strip() == 'Results':
+            return STATUS_MULTI_CONTAINER
+        else:
+            return STATUS_MBL_NOT_EXIST
+
+    @staticmethod
+    def _extract_container_list(response: Selector):
+        container_list = response.css('td[data-ctnr=id] a::text').getall()
+        return container_list
+
+
+class ContainerStatusRoutingRule(BaseRoutingRule):
+    name = 'CONTAINER_STATUS'
+
+    @classmethod
+    def build_routing_request(cls, mbl_no, container_no, base_url) -> RoutingRequest:
+        url = f'{base_url}/ebusiness/tracking/detail/{container_no}?SearchCriteria=BL&SearchByReference={mbl_no}'
+        request = scrapy.Request(url=url)
+
+        return RoutingRequest(request=request, rule_name=cls.name)
+
     def handle(self, response):
-        container_info = _Extractor.extract_page_title(response=response)
-        main_info = _Extractor.extract_tracking_no_map(response=response)
+        container_info = self._extract_page_title(response=response)
+        main_info = self._extract_tracking_no_map(response=response)
 
         yield MblItem(
             por=LocationItem(name=main_info['por']),
@@ -192,7 +145,8 @@ class ContainerHandler(BaseHandler):
             container_no=container_no,
         )
 
-        for container_status in _ContainerStatusTableExtractor.extract(response=response):
+        container_status_list = self._extract_container_status(response=response)
+        for container_status in container_status_list:
             yield ContainerStatusItem(
                 container_key=container_no,
                 local_date_time=container_status['local_date_time'],
@@ -201,13 +155,8 @@ class ContainerHandler(BaseHandler):
                 est_or_actual=container_status['est_or_actual'],
             )
 
-
-# -----------------------------------------------------------------------------------------------------------
-
-
-class _Extractor:
     @staticmethod
-    def extract_page_title(response: Selector):
+    def _extract_page_title(response: Selector):
         page_title_selector = response.css('div.o-pagetitle')
 
         return {
@@ -216,7 +165,7 @@ class _Extractor:
         }
 
     @staticmethod
-    def extract_tracking_no_map(response: Selector):
+    def _extract_tracking_no_map(response: Selector):
         map_selector = response.css('div.o-trackingnomap')
 
         pod_time = map_selector.css('dl.o-trackingnomap--info dd::text').get()
@@ -245,45 +194,8 @@ class _Extractor:
             'pod_ata': pod_ata,
         }
 
-
-# -----------------------------------------------------------------------------------------------------------
-
-
-STATUS_ONE_CONTAINER = 'STATUS_ONE_CONTAINER'
-STATUS_MULTI_CONTAINER = 'STATUS_MULTI_CONTAINER'
-STATUS_MBL_NOT_EXIST = 'STATUS_MBL_NOT_EXIST'
-
-
-class _MblStatusExtractor:
-
     @staticmethod
-    def extract(response: Selector):
-        result_message = response.css('div#wrapper h2::text').get()
-
-        if result_message is None:
-            return STATUS_ONE_CONTAINER
-        elif result_message.strip() == 'Results':
-            return STATUS_MULTI_CONTAINER
-        else:
-            return STATUS_MBL_NOT_EXIST
-
-
-# -----------------------------------------------------------------------------------------------------------
-
-
-class _ContainerListExtractor:
-    @staticmethod
-    def extract(response: Selector):
-        container_list = response.css('td[data-ctnr=id] a::text').getall()
-        return container_list
-
-
-# -----------------------------------------------------------------------------------------------------------
-
-
-class _ContainerStatusTableExtractor:
-    @staticmethod
-    def extract(response) -> Dict:
+    def _extract_container_status(response) -> Dict:
         table_selector = response.css('div.o-datatable table')
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table_selector)
@@ -297,6 +209,9 @@ class _ContainerStatusTableExtractor:
                 'location': table.extract_cell('Location', index),
                 'est_or_actual': 'A' if is_actual else 'E',
             }
+
+
+# -----------------------------------------------------------------------------------------------------------
 
 
 class ContainerStatusTableLocator(BaseTableLocator):
