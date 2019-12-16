@@ -30,7 +30,9 @@ class CarrierSitcSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start_requests(self):
-        routing_request = BasicInfoRoutingRule.build_routing_request(mbl_no=self.mbl_no, container_no=self.container_no)
+        routing_request = BasicInfoRoutingRule.build_routing_request(
+            mbl_no=self.mbl_no, container_no_list=self.container_no_list,
+        )
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):
@@ -55,7 +57,9 @@ class BasicInfoRoutingRule(BaseRoutingRule):
     name = 'BASIC_INFO'
 
     @classmethod
-    def build_routing_request(cls, mbl_no, container_no) -> RoutingRequest:
+    def build_routing_request(cls, mbl_no, container_no_list) -> RoutingRequest:
+        container_no, other_container_no_list = container_no_list[0], container_no_list[1:]
+
         form_data = {
             'blNo': mbl_no,
             'containerNo': container_no,
@@ -64,7 +68,7 @@ class BasicInfoRoutingRule(BaseRoutingRule):
         request = scrapy.FormRequest(
             url=f'{SITC_BASE_URL}?method=billNoIndexBasicNew',
             formdata=form_data,
-            meta={'mbl_no': mbl_no, 'container_no': container_no},
+            meta={'mbl_no': mbl_no, 'container_no': container_no, 'container_no_list': other_container_no_list},
         )
         return RoutingRequest(request=request, rule_name=cls.name)
 
@@ -74,26 +78,30 @@ class BasicInfoRoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
         container_no = response.meta['container_no']
+        container_no_list = response.meta['container_no_list']
 
         response_dict = json.loads(response.text)
-        self._check_mbl_no(response=response_dict)
+        if self._check_valid_mbl(response=response_dict):
+            basic_info = self._extract_basic_info(response=response_dict)
 
-        basic_info = self._extract_basic_info(response=response_dict)
+            yield MblItem(
+                mbl_no=basic_info['mbl_no'],
+                pol=LocationItem(name=basic_info['pol_name']),
+                final_dest=LocationItem(name=basic_info['final_dest_name']),
+            )
 
-        yield MblItem(
-            mbl_no=basic_info['mbl_no'],
-            pol=LocationItem(name=basic_info['pol_name']),
-            final_dest=LocationItem(name=basic_info['final_dest_name']),
-        )
+            yield VesselInfoRoutingRule.build_routing_request(mbl_no=mbl_no, container_no=container_no)
 
-        yield VesselInfoRoutingRule.build_routing_request(mbl_no=mbl_no, container_no=container_no)
+        elif container_no_list:
+            yield BasicInfoRoutingRule.build_routing_request(mbl_no=mbl_no, container_no_list=container_no_list)
+
+        else:
+            raise CarrierInvalidMblNoError()
 
     @staticmethod
-    def _check_mbl_no(response: Dict):
+    def _check_valid_mbl(response: Dict):
         data_list = response['list']
-
-        if not data_list:
-            raise CarrierInvalidMblNoError()
+        return bool(data_list)
 
     @staticmethod
     def _extract_basic_info(response: Dict) -> Dict:

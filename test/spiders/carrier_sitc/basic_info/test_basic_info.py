@@ -8,7 +8,6 @@ from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_sitc import BasicInfoRoutingRule, CarrierSitcSpider
 from test.spiders.carrier_sitc import basic_info
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -18,14 +17,16 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,container_no', [
-    ('01_basic', 'SITDNBBK351734', 'TEXU1590997'),
+@pytest.mark.parametrize('sub,mbl_no,container_no_list', [
+    ('01_basic', 'SITDNBBK351734', ['TEXU1590997']),
 ])
-def test_main_info_routing_rule(sub, mbl_no, container_no, sample_loader):
+def test_main_info_routing_rule(sub, mbl_no, container_no_list, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
-    routing_request = BasicInfoRoutingRule.build_routing_request(mbl_no=mbl_no, container_no=container_no)
-    url = extract_url_from(routing_request=routing_request)
+    url = 'http://www.sitcline.com/track/biz/trackCargoTrack.do?method=billNoIndexBasicNew'
+
+    container_no = container_no_list[0]
+    other_container_no_list = container_no_list[1:]
 
     response = TextResponse(
         url=url,
@@ -37,6 +38,7 @@ def test_main_info_routing_rule(sub, mbl_no, container_no, sample_loader):
                 RuleManager.META_CARRIER_CORE_RULE_NAME: BasicInfoRoutingRule.name,
                 'mbl_no': mbl_no,
                 'container_no': container_no,
+                'container_no_list': other_container_no_list,
             }
         )
     )
@@ -48,14 +50,16 @@ def test_main_info_routing_rule(sub, mbl_no, container_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,container_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'SITDNBBK351734', 'TEXU1590990', CarrierInvalidMblNoError),
+@pytest.mark.parametrize('sub,mbl_no,container_no_list,expect_exception', [
+    ('e01_invalid_mbl_no', 'SITDNBBK351734', ['TEXU1590990'], CarrierInvalidMblNoError),
 ])
-def test_main_info_handler_mbl_no_error(sub, mbl_no, container_no, expect_exception, sample_loader):
+def test_main_info_handler_mbl_no_error(sub, mbl_no, container_no_list, expect_exception, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
-    routing_request = BasicInfoRoutingRule.build_routing_request(mbl_no=mbl_no, container_no=container_no)
-    url = extract_url_from(routing_request=routing_request)
+    url = 'http://www.sitcline.com/track/biz/trackCargoTrack.do?method=billNoIndexBasicNew'
+
+    container_no = container_no_list[0]
+    other_container_no_list = container_no_list[1:]
 
     response = TextResponse(
         url=url,
@@ -67,6 +71,7 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, container_no, expect_except
                 RuleManager.META_CARRIER_CORE_RULE_NAME: BasicInfoRoutingRule.name,
                 'mbl_no': mbl_no,
                 'container_no': container_no,
+                'container_no_list': other_container_no_list,
             }
         )
     )
