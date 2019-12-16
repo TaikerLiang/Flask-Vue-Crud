@@ -45,6 +45,9 @@ class CarrierPabvSpider(BaseCarrierSpider):
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
+        save_name = routing_rule.get_save_name(response=response)
+        self._saver.save(to=save_name, text=response.text)
+
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
@@ -68,6 +71,9 @@ class TrackRoutingRule(BaseRoutingRule):
             meta={'cookies': cookies},
         )
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
 
     def handle(self, response):
         cookies = response.meta['cookies']
@@ -194,6 +200,10 @@ class ContainerRoutingRule(BaseRoutingRule):
             meta={'container_id': container_id},
         )
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        container_id = response.meta['container_id']
+        return f'{self.name}_{container_id}.html'
 
     def handle(self, response):
         container_id = response.meta['container_id']

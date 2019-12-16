@@ -34,6 +34,9 @@ class CarrierMatsSpider(BaseCarrierSpider):
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
+        save_name = routing_rule.get_save_name(response=response)
+        self._saver.save(to=save_name, text=response.text)
+
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
@@ -51,6 +54,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
         url = f'{URL}/vcsc/tracking/bill/{mbl_no}'
         request = scrapy.Request(url=url)
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.json'
 
     def handle(self, response):
         container_list = json.loads(response.text)
@@ -126,6 +132,10 @@ class TimeRoutingRule(BaseRoutingRule):
         formdata = {'date': container_status['timestamp']}
         request = scrapy.FormRequest(url=url, formdata=formdata, meta={'status': container_status})
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        container_no = response.meta['status']['container_key']
+        return f'{self.name}_{container_no}.json'
 
     def handle(self, response):
         status = response.meta['status']

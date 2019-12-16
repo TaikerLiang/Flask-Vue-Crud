@@ -33,6 +33,9 @@ class SharedSpider(BaseCarrierSpider):
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
+        save_name = routing_rule.get_save_name(response=response)
+        self._saver.save(to=save_name, text=response.text)
+
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
@@ -69,6 +72,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
             url=url_format.format(mbl_no=mbl_no),
         )
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.json'
 
     def handle(self, response):
         response_dict = json.loads(response.text)

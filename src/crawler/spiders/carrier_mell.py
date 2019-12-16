@@ -36,6 +36,9 @@ class CarrierMellSpider(BaseCarrierSpider):
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
+        save_name = routing_rule.get_save_name(response=response)
+        self._saver.save(to=save_name, text=response.text)
+
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
@@ -56,6 +59,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
         url = f'{URL}/Track/BL?blNo={mbl_no}'
         request = scrapy.Request(url=url)
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.json'
 
     def handle(self, response):
         response_dict = json.loads(response.text)

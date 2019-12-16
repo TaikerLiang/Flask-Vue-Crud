@@ -41,6 +41,9 @@ class CarrierCosuSpider(BaseCarrierSpider):
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
+        save_name = routing_rule.get_save_name(response=response)
+        self._saver.save(to=save_name, text=response.text)
+
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
@@ -59,6 +62,9 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
         url = f'{URL}/{BASE}/bill/{mbl_no}?timestamp={timestamp}'
         request = scrapy.Request(url=url, meta={'mbl_no': mbl_no})
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.json'
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
@@ -236,6 +242,9 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
         request = scrapy.Request(url=url)
         return RoutingRequest(request=request, rule_name=cls.name)
 
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.json'
+
     def handle(self, response):
         response_dict = json.loads(response.text)
         content = response_dict['data']['content']
@@ -404,6 +413,9 @@ class BillContainerRoutingRule(BaseRoutingRule):
         request = scrapy.Request(url=url, meta={'mbl_no': mbl_no})
         return RoutingRequest(request=request, rule_name=cls.name)
 
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.json'
+
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
 
@@ -447,6 +459,9 @@ class BookingContainerRoutingRule(BaseRoutingRule):
         request = scrapy.Request(url=url, meta={'mbl_no': mbl_no})
         return RoutingRequest(request=request, rule_name=cls.name)
 
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.json'
+
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
 
@@ -489,6 +504,10 @@ class BillContainerStatusRoutingRule(BaseRoutingRule):
         url = f'{URL}/{BASE}/container/status/{container_no}?billNumber={mbl_no}&timestamp={timestamp}'
         request = scrapy.Request(url=url, meta={'container_key': container_key})
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        container_key = response.meta['container_key']
+        return f'{self.name}_{container_key}.json'
 
     def handle(self, response):
         container_key = response.meta['container_key']
@@ -535,6 +554,10 @@ class BookingContainerStatusRoutingRule(BaseRoutingRule):
         url = f'{URL}/{BASE}/container/status/{container_no}?bookingNumber={mbl_no}&timestamp={timestamp}'
         request = scrapy.Request(url=url, meta={'container_key': container_key})
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        container_key = response.meta['container_key']
+        return f'{self.name}_{container_key}.json'
 
     def handle(self, response):
         container_key = response.meta['container_key']

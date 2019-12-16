@@ -37,6 +37,9 @@ class CarrierRclSpider(BaseCarrierSpider):
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
+        save_name = routing_rule.get_save_name(response=response)
+        self._saver.save(to=save_name, text=response.text)
+
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
@@ -58,6 +61,9 @@ class BasicRoutingRule(BaseRoutingRule):
             meta={'mbl_no': mbl_no},
         )
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
@@ -100,6 +106,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
             formdata=form_data,
         )
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
 
     def handle(self, response):
         self._check_mbl_no(response=response)

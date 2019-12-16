@@ -52,6 +52,10 @@ class CarrierEglvSpider(BaseCarrierSpider):
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
+        if routing_rule.name != 'CAPTCHA':
+            save_name = routing_rule.get_save_name(response=response)
+            self._saver.save(to=save_name, text=response.text)
+
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
@@ -74,6 +78,9 @@ class CaptchaRoutingRule(BaseRoutingRule):
     def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
         request = scrapy.Request(url=EGLV_CAPTCHA_URL, meta={'mbl_no': mbl_no})
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        return ''  # ignore captcha
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
@@ -115,6 +122,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
         }
         request = scrapy.FormRequest(url=EGLV_INFO_URL, formdata=formdata, meta={'mbl_no': mbl_no})
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
@@ -439,6 +449,9 @@ class FilingStatusRoutingRule(BaseRoutingRule):
         request = scrapy.FormRequest(url=EGLV_INFO_URL, formdata=formdata)
         return RoutingRequest(request=request, rule_name=cls.name)
 
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
+
     def handle(self, response):
         status = self._extract_filing_status(response=response)
 
@@ -489,6 +502,9 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
         }
         request = scrapy.FormRequest(url=EGLV_INFO_URL, formdata=formdata)
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
 
     def handle(self, response):
         release_status = self._extract_release_status(response=response)
@@ -725,6 +741,10 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         }
         request = scrapy.FormRequest(url=EGLV_INFO_URL, formdata=formdata, meta={'container_no': container_no})
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        container_no = response.meta['container_no']
+        return f'{self.name}_{container_no}.html'
 
     def handle(self, response):
         container_no = response.meta['container_no']

@@ -38,6 +38,9 @@ class SharedSpider(BaseCarrierSpider):
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
+        save_name = routing_rule.get_save_name(response=response)
+        self._saver.save(to=save_name, text=response.text)
+
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
@@ -79,6 +82,9 @@ class FirstTierRoutingRule(BaseRoutingRule):
         request = scrapy.Request(url=url)
 
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.json'
 
     def handle(self, response):
         response_dict = json.loads(response.text)
@@ -187,6 +193,9 @@ class VesselRoutingRule(BaseRoutingRule):
 
         return RoutingRequest(request=request, rule_name=cls.name)
 
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.json'
+
     def handle(self, response):
         response_dict = json.loads(response.text)
 
@@ -242,6 +251,10 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         )
 
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        container_key = response.meta['container_key']
+        return f'{self.name}_{container_key}.json'
 
     def handle(self, response):
         container_key = response.meta['container_key']
@@ -302,6 +315,10 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
             meta={'container_key': container_no},
         )
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        container_key = response.meta['container_key']
+        return f'{self.name}_{container_key}.json'
 
     def handle(self, response):
         container_key = response.meta['container_key']
@@ -364,6 +381,10 @@ class RailInfoRoutingRule(BaseRoutingRule):
         )
 
         return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        container_key = response.meta['container_key']
+        return f'{self.name}_{container_key}.json'
 
     def handle(self, response):
         container_key = response.meta['container_key']
