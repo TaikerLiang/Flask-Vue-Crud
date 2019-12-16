@@ -5,8 +5,10 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.spiders.carrier_aplu_cmdu_anlc import RoutingManager, CarrierCmduSpider, SharedUrlFactory, UrlSpec
+from crawler.core_carrier.rules import RuleManager
+from crawler.spiders.carrier_aplu_cmdu_anlc import FirstTierRoutingRule, CarrierCmduSpider
 from test.spiders.carrier_aplu_cmdu_anlc.cmdu import main_info
+from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -23,12 +25,11 @@ def sample_loader(sample_loader):
     ('04_por', 'GGZ1004320'),
     ('05_dest', 'NBSF301068'),
 ])
-def test_parse(sample_loader, sub, mbl_no):
+def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
     html_text = sample_loader.read_file(sub, 'main_info.html')
 
-    url_factory = SharedUrlFactory(home_url=CarrierCmduSpider.home_url, mbl_no=mbl_no)
-    url_builder = url_factory.get_bill_url_builder()
-    url = url_builder.build_url_from_spec(spec=UrlSpec())
+    routing_request = FirstTierRoutingRule.build_routing_request(mbl_no=mbl_no, base_url=CarrierCmduSpider.base_url)
+    url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(
         url=url,
@@ -36,7 +37,10 @@ def test_parse(sample_loader, sub, mbl_no):
         body=html_text,
         request=Request(
             url=url,
-            meta={RoutingManager.META_ROUTING_RULE: 'HANDLE_FIRST_TIER'}
+            meta={
+                RuleManager.META_CARRIER_CORE_RULE_NAME: FirstTierRoutingRule.name,
+                'mbl_no': mbl_no,
+            }
         )
     )
 
@@ -50,12 +54,11 @@ def test_parse(sample_loader, sub, mbl_no):
 @pytest.mark.parametrize('sub,mbl_no,expect_exception', [
     ('e01_invalid_mbl_no', 'NBSF300898', CarrierInvalidMblNoError),
 ])
-def test_parse_error(sample_loader, sub, mbl_no, expect_exception):
+def test_first_tier_routing_rule_error(sample_loader, sub, mbl_no, expect_exception):
     html_text = sample_loader.read_file(sub, 'main_info.html')
 
-    url_factory = SharedUrlFactory(home_url=CarrierCmduSpider.home_url, mbl_no=mbl_no)
-    url_builder = url_factory.get_bill_url_builder()
-    url = url_builder.build_url_from_spec(spec=UrlSpec())
+    routing_request = FirstTierRoutingRule.build_routing_request(mbl_no=mbl_no, base_url=CarrierCmduSpider.base_url)
+    url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(
         url=url,
@@ -63,7 +66,10 @@ def test_parse_error(sample_loader, sub, mbl_no, expect_exception):
         body=html_text,
         request=Request(
             url=url,
-            meta={RoutingManager.META_ROUTING_RULE: 'HANDLE_FIRST_TIER'}
+            meta={
+                RuleManager.META_CARRIER_CORE_RULE_NAME: FirstTierRoutingRule.name,
+                'mbl_no': mbl_no,
+            }
         )
     )
 

@@ -1,19 +1,16 @@
-from crawler.spiders.carrier_aplu_cmdu_anlc import SharedUrlFactory, UrlSpec, CarrierCmduSpider
+from crawler.spiders.carrier_aplu_cmdu_anlc import ContainerStatusRoutingRule, CarrierCmduSpider
+from test.spiders.utils import extract_url_from
 
 
 def verify(results):
+    routing_request = ContainerStatusRoutingRule.build_routing_request(
+        mbl_no='NBSF301194', container_no='ECMU9893257', base_url=CarrierCmduSpider.base_url)
+    url = extract_url_from(routing_request=routing_request)
 
-    url_factory = SharedUrlFactory(home_url=CarrierCmduSpider.home_url, mbl_no='NBSF301194')
-    url_builder = url_factory.get_container_url_builder()
+    assert results[0].url == url
 
-    assert results[0].url == url_builder.build_url_from_spec(
-        UrlSpec(
-                container_no='ECMU9893257',
-        ),
-    )
+    routing_request = ContainerStatusRoutingRule.build_routing_request(
+        mbl_no='NBSF301194', container_no='ECMU9836072', base_url=CarrierCmduSpider.base_url)
+    url = extract_url_from(routing_request=routing_request)
 
-    assert results[1].url == url_builder.build_url_from_spec(
-        UrlSpec(
-                container_no='ECMU9836072',
-        ),
-    )
+    assert results[1].url == url
