@@ -16,7 +16,6 @@ from crawler.core_carrier.exceptions import (
 from crawler.core_carrier.items import ContainerItem, ContainerStatusItem, LocationItem, MblItem
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
-from crawler.utils.decorators import merge_yields
 
 URL = 'https://www.msc.com'
 
@@ -28,7 +27,6 @@ class CarrierMscuSpider(BaseCarrierSpider):
         request = Request(url=f'{URL}/favicon.ico', callback=self.parse)
         yield request
 
-    @merge_yields
     def parse(self, response):
         driver = MscuCarrierChromeDriver()
 

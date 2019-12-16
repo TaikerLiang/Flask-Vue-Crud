@@ -10,7 +10,6 @@ from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
 from crawler.extractors.table_extractors import TableExtractor, HeaderMismatchError, BaseTableLocator
-from crawler.utils.decorators import merge_yields
 
 SITC_BASE_URL = 'http://www.sitcline.com/track/biz/trackCargoTrack.do'
 
@@ -34,7 +33,6 @@ class CarrierSitcSpider(BaseCarrierSpider):
         routing_request = BasicInfoRoutingRule.build_routing_request(mbl_no=self.mbl_no, container_no=self.container_no)
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
-    @merge_yields
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 

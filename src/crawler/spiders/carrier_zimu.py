@@ -10,7 +10,6 @@ from crawler.core_carrier.items import (
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor, BaseTableCellExtractor
 from crawler.extractors.table_extractors import TopHeaderTableLocator, TableExtractor
-from crawler.utils.decorators import merge_yields
 
 
 class CarrierZimuSpider(BaseCarrierSpider):
@@ -30,7 +29,6 @@ class CarrierZimuSpider(BaseCarrierSpider):
         request = self._rule_manager.build_request_by(routing_request=routing_request)
         yield request
 
-    @merge_yields
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 

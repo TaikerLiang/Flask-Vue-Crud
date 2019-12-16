@@ -9,7 +9,6 @@ from crawler.core_carrier.items import BaseCarrierItem, ContainerStatusItem, Loc
 from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
-from crawler.utils.decorators import merge_yields
 
 BASE_URL = 'https://www.yangming.com/e-service/Track_Trace'
 
@@ -31,7 +30,6 @@ class CarrierYmluSpider(BaseCarrierSpider):
         routing_request = MainInfoRoutingRule.build_routing_request(mbl_no=self.mbl_no)
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
-    @merge_yields
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 

@@ -17,6 +17,7 @@ class ExportFinalData(BaseCarrierItem):
 class ExportErrorData(BaseCarrierItem):
     status = scrapy.Field()
     detail = scrapy.Field()
+    traceback_info = scrapy.Field()
 
 
 class LocationItem(BaseCarrierItem):

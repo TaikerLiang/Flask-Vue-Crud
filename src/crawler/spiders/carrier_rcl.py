@@ -10,7 +10,6 @@ from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
-from crawler.utils.decorators import merge_yields
 
 RCL_BASE_URL = 'https://www.rclgroup.com'
 
@@ -33,7 +32,6 @@ class CarrierRclSpider(BaseCarrierSpider):
         routing_request = BasicRoutingRule.build_routing_request(mbl_no=self.mbl_no)
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
-    @merge_yields
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 

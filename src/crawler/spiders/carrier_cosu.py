@@ -9,7 +9,6 @@ from crawler.core_carrier.items import (
     LocationItem, MblItem, VesselItem, ContainerStatusItem, ContainerItem, BaseCarrierItem)
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest, RuleManager
-from crawler.utils.decorators import merge_yields
 
 
 URL = 'http://elines.coscoshipping.com'
@@ -37,7 +36,6 @@ class CarrierCosuSpider(BaseCarrierSpider):
         routing_request = BillMainInfoRoutingRule.build_routing_request(mbl_no=self.mbl_no)
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
-    @merge_yields
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 

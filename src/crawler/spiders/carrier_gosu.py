@@ -10,7 +10,6 @@ from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingR
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from, CssQueryTextStartswithMatchRule
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
-from crawler.utils.decorators import merge_yields
 
 URL = 'https://www.shipcont.com/CCM.aspx'
 
@@ -33,7 +32,6 @@ class CarrierGosuSpider(BaseCarrierSpider):
         request = self._rule_manager.build_request_by(routing_request=routing_request)
         yield request
 
-    @merge_yields
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 

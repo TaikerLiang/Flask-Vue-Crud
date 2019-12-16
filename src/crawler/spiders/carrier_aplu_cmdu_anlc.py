@@ -10,7 +10,6 @@ from crawler.core_carrier.items import BaseCarrierItem, MblItem, LocationItem, C
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor, HeaderMismatchError
-from crawler.utils.decorators import merge_yields
 
 
 @dataclasses.dataclass
@@ -71,7 +70,6 @@ class SharedSpider(BaseCarrierSpider):
         require_req = RequireRequest(rule_name=HANDLE_FIRST_TIER, url_spec=UrlSpec())
         yield self.routing_manager.build_request_by(rule_name=require_req.rule_name, url_spec=require_req.url_spec)
 
-    @merge_yields
     def parse(self, response):
         handler = self.routing_manager.get_handler_by_response(response=response)
         for result in handler.handle(response=response):

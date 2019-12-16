@@ -9,7 +9,6 @@ from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierI
 from crawler.core_carrier.items import (BaseCarrierItem, VesselItem, ContainerStatusItem, LocationItem, ContainerItem,
                                         MblItem)
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
-from crawler.utils.decorators import merge_yields
 
 
 class SharedSpider(BaseCarrierSpider):
@@ -34,7 +33,6 @@ class SharedSpider(BaseCarrierSpider):
         request = self._rule_manager.build_request_by(routing_request=routing_request)
         yield request
 
-    @merge_yields
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 

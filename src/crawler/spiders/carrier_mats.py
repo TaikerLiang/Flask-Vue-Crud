@@ -8,7 +8,6 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.items import BaseCarrierItem, MblItem, ContainerItem, ContainerStatusItem, LocationItem
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
-from crawler.utils.decorators import merge_yields
 
 URL = 'https://www.matson.com'
 
@@ -30,7 +29,6 @@ class CarrierMatsSpider(BaseCarrierSpider):
         routing_request = MainInfoRoutingRule.build_routing_request(mbl_no=self.mbl_no)
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
-    @merge_yields
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 

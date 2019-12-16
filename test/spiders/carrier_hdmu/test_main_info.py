@@ -76,4 +76,4 @@ def test_parse_main_info_error(sample_loader, sub, mbl_no, expect_exception):
 
     spider = CarrierHdmuSpider(name=None, mbl_no=mbl_no)
     with pytest.raises(expect_exception):
-        spider.parse_main_info(response)
+        list(spider.parse_main_info(response))

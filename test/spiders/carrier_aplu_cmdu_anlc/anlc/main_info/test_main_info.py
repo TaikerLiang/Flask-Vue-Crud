@@ -69,4 +69,4 @@ def test_parse_error(sample_loader, sub, mbl_no, expect_exception):
     spider = CarrierAnlcSpider(name=None, mbl_no=mbl_no)
 
     with pytest.raises(expect_exception):
-        spider.parse(response)
+        list(spider.parse(response))

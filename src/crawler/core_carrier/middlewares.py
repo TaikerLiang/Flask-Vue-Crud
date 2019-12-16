@@ -1,3 +1,6 @@
+import sys
+import traceback
+
 import scrapy
 from scrapy.exceptions import CloseSpider
 
@@ -15,12 +18,30 @@ class CarrierSpiderMiddleware:
     def process_spider_output(self, response, result, spider):
         error = spider.has_error()
 
-        if not error:
+        if error:
+            return
+
+        try:
             for i in result:
                 if isinstance(i, scrapy.Request):
                     spider.logger.warning(f'[{self.__class__.__name__}] ----- send request: {i.url}')
 
                 yield i
+
+        except Exception:
+            spider.mark_error()
+
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+
+            spider.logger.warning(
+                f'[{self.__class__.__name__}] ----- process_spider_output -> exception ({exc_type.__name__})'
+            )
+
+            error_data = build_error_data_from_exc(exc_type, exc_value, exc_traceback)
+
+            yield error_data
+
+            raise CloseSpider(error_data['status'])
 
         # [StackOverflow] How to get the number of requests in queue in scrapy?
         # https://stackoverflow.com/questions/28169756/how-to-get-the-number-of-requests-in-queue-in-scrapy
@@ -29,28 +50,24 @@ class CarrierSpiderMiddleware:
 
         spider.logger.info(
             f'[{self.__class__.__name__}] ----- process_spider_output'
-            f' (error={error}, in_scheduler={in_scheduler_count}, in_progress={in_progress_count})'
+            f' (in_scheduler={in_scheduler_count}, in_progress={in_progress_count})'
         )
 
-        if (not error) and (in_scheduler_count == 0) and (in_progress_count <= 1):
+        if (in_scheduler_count == 0) and (in_progress_count <= 1):
             spider.logger.warning(f'[{self.__class__.__name__}] ----- process_spider_output (FINAL)')
             yield ExportFinalData()
 
-    def process_spider_exception(self, response, exception, spider):
-        spider.logger.warning(
-            f'[{self.__class__.__name__}] ----- process_spider_exception ({exception.__class__.__name__})'
-        )
 
-        spider.mark_error()
+def build_error_data_from_exc(exc_type, exc_value, exc_traceback) -> ExportErrorData:
+    if isinstance(exc_value, BaseCarrierError):
+        error_data = exc_value.build_error_data()
+    else:
+        status = CARRIER_RESULT_STATUS_FATAL
+        detail = f'{exc_type.__name__} -- {exc_value}'
+        error_data = ExportErrorData(status=status, detail=detail)
 
-        if isinstance(exception, BaseCarrierError):
-            status = exception.status
-            error_data = exception.build_error_data()
-        else:
-            status = CARRIER_RESULT_STATUS_FATAL
-            detail = f'{exception!r}'
-            error_data = ExportErrorData(status=status, detail=detail)
+    # add traceback info
+    tb_info_list = traceback.format_tb(exc_traceback)
+    error_data['traceback_info'] = ''.join(tb_info_list)
 
-        yield error_data
-
-        raise CloseSpider(status)
+    return error_data
