@@ -36,6 +36,7 @@ def test_detail_routing_rule(sub, mbl_no, sample_loader, container_no):
             url=url,
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: DetailRoutingRule.name,
+                'container_no': container_no,
             }
         )
     )
