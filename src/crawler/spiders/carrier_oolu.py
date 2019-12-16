@@ -582,11 +582,17 @@ class ContainerStatusRule(BaseRoutingRule):
         table_extractor = TableExtractor(table_locator=table_locator)
         td_extractor = DetentionDateTdExtractor()
 
-        lfd_info = table_extractor.extract_cell(top=None, left='Demurrage Last Free Date:', extractor=td_extractor)
-        _, lfd = _get_est_and_actual(status=lfd_info['status'], time_str=lfd_info['time_str'])
+        if table_locator.has_header(left='Demurrage Last Free Date:'):
+            lfd_info = table_extractor.extract_cell(top=None, left='Demurrage Last Free Date:', extractor=td_extractor)
+            _, lfd = _get_est_and_actual(status=lfd_info['status'], time_str=lfd_info['time_str'])
+        else:
+            lfd = ''
 
-        det_lfd_info = table_extractor.extract_cell(top=None, left='Detention Last Free Date:', extractor=td_extractor)
-        _, det_lfd = _get_est_and_actual(status=det_lfd_info['status'], time_str=det_lfd_info['time_str'])
+        if table_locator.has_header(left='Detention Last Free Date:'):
+            det_lfd_info = table_extractor.extract_cell(top=None, left='Detention Last Free Date:', extractor=td_extractor)
+            _, det_lfd = _get_est_and_actual(status=det_lfd_info['status'], time_str=det_lfd_info['time_str'])
+        else:
+            det_lfd = ''
 
         return {
             'last_free_day': lfd,
@@ -609,7 +615,8 @@ class ContainerStatusRule(BaseRoutingRule):
                 'event': table_extractor.extract_cell(top='Event', left=left, extractor=first_text_extractor),
                 'facility': table_extractor.extract_cell(top='Facility', left=left, extractor=first_text_extractor),
                 'location': table_extractor.extract_cell(top='Location', left=left, extractor=span_extractor),
-                'transport': table_extractor.extract_cell(top='Mode', left=left, extractor=first_text_extractor),
+                'transport': table_extractor.extract_cell(
+                    top='Mode', left=left, extractor=first_text_extractor) or None,
                 'local_date_time': table_extractor.extract_cell(top='Time', left=left, extractor=span_extractor),
             })
         return container_status_list
