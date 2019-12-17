@@ -50,7 +50,8 @@ class TopHeaderTableLocator(BaseTableLocator):
         top_header_list = []
 
         for th in table.css('thead th'):
-            top_header = th.css('::text').get().strip()
+            raw_top_header = th.css('::text').get()
+            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ''
             top_header_list.append(top_header)
             self._td_map[top_header] = []
 
