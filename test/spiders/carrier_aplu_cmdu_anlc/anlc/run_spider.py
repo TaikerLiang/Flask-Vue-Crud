@@ -14,9 +14,9 @@ if __name__ == '__main__':
 
     mbl_nos = [
         'AWT0143454',
-        'AWT0143370',
-        'AWT0143320',
-        'AWT0143329',
+        # 'AWT0143370',
+        # 'AWT0143320',
+        # 'AWT0143329',
     ]
 
     for mbl_no in mbl_nos:
