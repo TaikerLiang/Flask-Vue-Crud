@@ -274,7 +274,8 @@ class CargoTrackingRule(BaseRoutingRule):
         for left in container_table_locator.iter_left_headers():
             container_no_text = table_extractor.extract_cell('Container Number', left)
             # container_no_text: OOLU843521-8
-            container_no_list.append(container_no_text.split('-')[0])
+            container_no, check_no = container_no_text.split('-')
+            container_no_list.append(container_no + check_no)
         return container_no_list
 
 
