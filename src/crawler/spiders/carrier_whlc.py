@@ -265,16 +265,18 @@ class DetailRoutingRule(BaseRoutingRule):
         date_information = self._extract_date_information(response=response)
 
         yield VesselItem(
-            pol=LocationItem(un_lo_code=date_information['pol_un_lo_code']),
+            vessel_key=f"{date_information['pol_vessel']} / {date_information['pol_voyage']}",
             vessel=date_information['pol_vessel'],
             voyage=date_information['pol_voyage'],
+            pol=LocationItem(un_lo_code=date_information['pol_un_lo_code']),
             etd=date_information['pol_etd'],
         )
 
         yield VesselItem(
-            pod=LocationItem(un_lo_code=date_information['pod_un_lo_code']),
+            vessel_key=f"{date_information['pod_vessel']} / {date_information['pod_voyage']}",
             vessel=date_information['pod_vessel'],
             voyage=date_information['pod_voyage'],
+            pod=LocationItem(un_lo_code=date_information['pod_un_lo_code']),
             eta=date_information['pod_eta'],
         )
 
