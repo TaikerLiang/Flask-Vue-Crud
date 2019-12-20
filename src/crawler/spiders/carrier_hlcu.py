@@ -221,7 +221,11 @@ class ContainerRoutingRule(BaseRoutingRule):
         container_statuses = []
         for left in table_locator.iter_left_header():
             date = table.extract_cell(top='Date', left=left, extractor=span_extractor)
+
             time = table.extract_cell(top='Time', left=left, extractor=span_extractor)
+            if not time:
+                time = '00:00'
+
             class_name = table_locator.get_row_class(left=left)
 
             container_statuses.append({
