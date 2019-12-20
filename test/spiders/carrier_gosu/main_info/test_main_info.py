@@ -22,6 +22,7 @@ def sample_loader(sample_loader):
     ('01_single_container', 'GOSUNGB9490855'),
     ('02_multiple_container', 'GOSUNGB9490903'),
     ('03_no_atd', 'GOSUNGB9490840'),
+    ('04_booking', 'GOSUTPE007306942'),
 ])
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'main_info.html')

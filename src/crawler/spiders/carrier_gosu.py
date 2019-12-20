@@ -67,7 +67,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         bottom_main_info = self._extract_bottom_main_info(response=response)
 
         yield MblItem(
-            mbl_no=mbl_no,
+            mbl_no=mbl_no or None,
             por=LocationItem(name=top_main_info['por_name']),
             pol=LocationItem(name=top_main_info['pol_name']),
             pod=LocationItem(name=top_main_info['pod_name']),
@@ -97,16 +97,19 @@ class MainInfoRoutingRule(BaseRoutingRule):
             raise CarrierInvalidMblNoError()
 
     @staticmethod
-    def _extract_mbl_no(response) -> str:
+    def _extract_mbl_no(response):
         pattern = re.compile(r'^B/L Number (?P<mbl_no>\w+)$')
 
         rule = CssQueryTextStartswithMatchRule(css_query='strong::text', startswith='B/L Number')
         selector = find_selector_from(selectors=response.css('td.BlackText'), rule=rule)
-        mbl_no_text = selector.css('strong::text').get()
 
+        if not selector:
+            return ''
+
+        mbl_no_text = selector.css('strong::text').get()
         m = pattern.match(mbl_no_text)
         if not m:
-            raise CarrierResponseFormatError('mbl_no not found')
+            raise CarrierResponseFormatError('mbl_no not match')
 
         mbl_no = m.group('mbl_no')
         return mbl_no
