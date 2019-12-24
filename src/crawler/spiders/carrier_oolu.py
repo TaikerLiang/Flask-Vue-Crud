@@ -144,11 +144,12 @@ class CargoTrackingRule(BaseRoutingRule):
         jsf_tree_64 = response.css('input[id=jsf_tree_64]::attr(value)').get()
         jsf_state_64 = response.css('input[id=jsf_state_64]::attr(value)').get()
 
-        container_no_list = self._extract_container_no_list(selector_map=selector_map)
-        for container_no in container_no_list:
+        container_list = self._extract_container_list(selector_map=selector_map)
+        for container in container_list:
             yield ContainerStatusRule.build_routing_request(
                 mbl_no=mbl_no,
-                container_no=container_no,
+                container_id=container['container_id'],
+                container_no=container['container_no'],
                 jsf_tree_64=jsf_tree_64,
                 jsf_state_64=jsf_state_64,
             )
@@ -263,7 +264,7 @@ class CargoTrackingRule(BaseRoutingRule):
         }
 
     @staticmethod
-    def _extract_container_no_list(selector_map: Dict[str, scrapy.Selector]):
+    def _extract_container_list(selector_map: Dict[str, scrapy.Selector]):
         table = selector_map['summary:container_table']
 
         container_table_locator = ContainerTableLocator()
@@ -274,8 +275,11 @@ class CargoTrackingRule(BaseRoutingRule):
         for left in container_table_locator.iter_left_headers():
             container_no_text = table_extractor.extract_cell('Container Number', left)
             # container_no_text: OOLU843521-8
-            container_no, check_no = container_no_text.split('-')
-            container_no_list.append(container_no + check_no)
+            container_id, check_no = container_no_text.split('-')
+            container_no_list.append({
+                'container_id': container_id,
+                'container_no': f'{container_id}{check_no}',
+            })
         return container_no_list
 
 
@@ -512,10 +516,11 @@ class ContainerStatusRule(BaseRoutingRule):
     name = 'CONTAINER_STATUS'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, container_no: str, jsf_tree_64, jsf_state_64) -> RoutingRequest:
+    def build_routing_request(
+            cls, mbl_no: str, container_id: str, container_no: str, jsf_tree_64, jsf_state_64) -> RoutingRequest:
         form_data = {
             'form_SUBMIT': '1',
-            'currentContainerNumber': container_no,
+            'currentContainerNumber': container_id,
             'searchCriteriaBillOfLadingNumber': mbl_no,
             'form:_link_hidden_': 'form:link0',
             'jsf_tree_64': jsf_tree_64,

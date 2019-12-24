@@ -17,7 +17,7 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,', [
+@pytest.mark.parametrize('sub,mbl_no', [
     ('01_single_container', '2625845270'),
     ('02_multi_containers', '2109051600'),
     ('03_without_custom_release_date', '2628633440'),
