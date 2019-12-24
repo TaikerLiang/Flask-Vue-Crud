@@ -155,9 +155,11 @@ class ListRoutingRule(BaseRoutingRule):
                 container_no=container_no,
             )
 
-            yield DetailRoutingRule.build_routing_request(mbl_no, container_no, view_state)
+            detail_j_idt = container['detail_j_idt']
+            yield DetailRoutingRule.build_routing_request(mbl_no, container_no, detail_j_idt, view_state)
 
-            yield HistoryRoutingRule.build_routing_request(mbl_no, container_no, view_state)
+            history_j_idt = container['history_j_idt']
+            yield HistoryRoutingRule.build_routing_request(mbl_no, container_no, history_j_idt, view_state)
 
     @staticmethod
     def _check_response(response):
@@ -168,10 +170,7 @@ class ListRoutingRule(BaseRoutingRule):
     def _extract_view_state(response: scrapy.Selector) -> str:
         return response.css('input[name="javax.faces.ViewState"]::attr(value)').get()
 
-    @staticmethod
-    def _extract_container_info(response: scrapy.Selector) -> List:
-        pattern = re.compile(r'^(?P<container_no>\w+)')
-
+    def _extract_container_info(self, response: scrapy.Selector) -> List:
         table_selector = response.css('table.tbl-list')[0]
         table_locator = ContainerListTableLocator()
         table_locator.parse(table=table_selector)
@@ -180,16 +179,76 @@ class ListRoutingRule(BaseRoutingRule):
         return_list = []
         for left in table_locator.iter_left_headers():
             container_no_text = table.extract_cell('Ctnr No.', left)
-            m = pattern.match(container_no_text)
-            if not m:
-                raise CarrierResponseFormatError(reason='container_no not match')
-            container_no = m.group('container_no')
+            container_no = self._get_container_no_from(text=container_no_text)
+
+            detail_j_idt_text = table.extract_cell('More detail', left, JidtTdExtractor())
+            detail_j_idt = self._get_detail_j_idt_from(text=detail_j_idt_text)
+
+            history_j_idt_text = table.extract_cell('More History', left, JidtTdExtractor())
+            history_j_idt = self._get_history_j_idt_from(text=history_j_idt_text)
 
             return_list.append({
                 'container_no': container_no,
+                'detail_j_idt': detail_j_idt,
+                'history_j_idt': history_j_idt,
             })
 
         return return_list
+
+    @staticmethod
+    def _get_container_no_from(text):
+        pattern = re.compile(r'^(?P<container_no>\w+)')
+
+        if not text:
+            raise CarrierResponseFormatError('container_no not found')
+
+        m = pattern.match(text)
+        if not m:
+            raise CarrierResponseFormatError('container_no not match')
+
+        container_no = m.group('container_no')
+
+        return container_no
+
+    @staticmethod
+    def _get_detail_j_idt_from(text) -> str:
+        pattern = re.compile(r'^[^{]+{\'(?P<j_idt>\S+)\':\'(?P=j_idt)')
+
+        if not text:
+            raise CarrierResponseFormatError('detail_j_idt not found')
+
+        m = pattern.match(text)
+        if not m:
+            raise CarrierResponseFormatError('detail_j_idt not match')
+
+        detail_j_idt = m.group('j_idt')
+
+        return detail_j_idt
+
+    @staticmethod
+    def _get_history_j_idt_from(text) -> str:
+        pattern = re.compile(r'^[^{]+{\'(?P<j_idt>\S+)\':\'(?P=j_idt)')
+
+        if not text:
+            raise CarrierResponseFormatError('History_j_idt not found')
+
+        m = pattern.match(text)
+        if not m:
+            raise CarrierResponseFormatError('History_j_idt not match')
+
+        history_j_idt = m.group('j_idt')
+
+        return history_j_idt
+
+
+class JidtTdExtractor(BaseTableCellExtractor):
+
+    def extract(self, cell: Selector):
+        j_idt_text = cell.css('u a::attr(onclick)').get()
+        return j_idt_text
+
+
+# -----------------------------------------------------------------------------
 
 
 class ContainerListTableLocator(BaseTableLocator):
@@ -241,11 +300,11 @@ class DetailRoutingRule(BaseRoutingRule):
     name = 'DETAIL'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, container_no, view_state) -> RoutingRequest:
+    def build_routing_request(cls, mbl_no: str, container_no, j_idt, view_state) -> RoutingRequest:
         form_data = {
             'cargoTrackListBean': 'cargoTrackListBean',
             'javax.faces.ViewState': view_state,
-            'j_idt36:0:j_idt40': 'j_idt36:0:j_idt40',
+            j_idt: j_idt,
             'q_bl_no': mbl_no,
             'q_ctnr_no': container_no,
         }
@@ -417,11 +476,11 @@ class HistoryRoutingRule(BaseRoutingRule):
     name = 'HISTORY'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, container_no, view_state) -> RoutingRequest:
+    def build_routing_request(cls, mbl_no: str, container_no, j_idt, view_state) -> RoutingRequest:
         form_data = {
             'cargoTrackListBean': 'cargoTrackListBean',
             'javax.faces.ViewState': view_state,
-            'j_idt36:0:j_idt85': 'j_idt36:0:j_idt85',
+            j_idt: j_idt,
             'q_bl_no': mbl_no,
             'q_ctnr_no': container_no,
         }
