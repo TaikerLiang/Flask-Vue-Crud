@@ -378,8 +378,8 @@ class DetailRoutingRule(BaseRoutingRule):
             'pol_voyage': pol_voyage,
             'pod_vessel': pod_vessel,
             'pod_voyage': pod_voyage,
-            'pol_etd': date_table.extract_cell(top=date_index, left='Arrival Date'),
-            'pod_eta': date_table.extract_cell(top=date_index, left='Departure Date'),
+            'pod_eta': date_table.extract_cell(top=date_index, left='Arrival Date'),
+            'pol_etd': date_table.extract_cell(top=date_index, left='Departure Date'),
         }
 
 

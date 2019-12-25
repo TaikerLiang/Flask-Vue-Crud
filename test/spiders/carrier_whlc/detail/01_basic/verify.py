@@ -7,7 +7,7 @@ def verify(results):
         vessel='COSCO ITALY',
         voyage='033E',
         pol=LocationItem(un_lo_code='CNTAO'),
-        etd='2019/11/12',
+        etd='2019/10/24',
     )
 
     assert results[1] == VesselItem(
@@ -15,5 +15,5 @@ def verify(results):
         vessel='COSCO ITALY',
         voyage='033E',
         pod=LocationItem(un_lo_code='USLAX'),
-        eta='2019/10/24',
+        eta='2019/11/12',
     )
