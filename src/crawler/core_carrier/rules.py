@@ -1,6 +1,6 @@
 import abc
 import dataclasses
-from typing import List
+from typing import List, Union
 
 import scrapy
 
@@ -43,3 +43,18 @@ class RuleManager:
         request = routing_request.request
         request.meta[self.META_CARRIER_CORE_RULE_NAME] = routing_request.rule_name
         return request
+
+
+class RoutingRequestQueue:
+
+    def __init__(self):
+        self._queue = []
+
+    def add_request(self, routing_request: RoutingRequest):
+        self._queue.append(routing_request)
+
+    def get_next_request(self) -> Union[RoutingRequest, None]:
+        if self._queue:
+            return self._queue.pop(0)
+        else:
+            return None

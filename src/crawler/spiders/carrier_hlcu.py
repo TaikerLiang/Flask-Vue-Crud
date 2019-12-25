@@ -5,7 +5,7 @@ import scrapy
 from scrapy import Selector
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule, RoutingRequestQueue
 from crawler.core_carrier.items import (
     BaseCarrierItem, LocationItem, ContainerItem, ContainerStatusItem)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
@@ -35,6 +35,7 @@ class CarrierHlcuSpider(BaseCarrierSpider):
         ]
 
         self._rule_manager = RuleManager(rules=rules)
+        self._request_queue = RoutingRequestQueue()
 
     def start_requests(self):
         cookies_getter = CookiesGetter()
@@ -53,9 +54,16 @@ class CarrierHlcuSpider(BaseCarrierSpider):
             if isinstance(result, BaseCarrierItem):
                 yield result
             elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+                self._request_queue.add_request(result)
             else:
                 raise RuntimeError()
+
+        routing_request = self._request_queue.get_next_request()
+        if routing_request:
+            yield self._rule_manager.build_request_by(routing_request=routing_request)
+
+
+# -------------------------------------------------------------------------------
 
 
 class TracingRoutingRule(BaseRoutingRule):
