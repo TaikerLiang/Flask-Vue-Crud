@@ -21,6 +21,7 @@ def sample_loader(sample_loader):
 @pytest.mark.parametrize('sub,mbl_no', [
     ('01_single_container', '0249538702'),
     ('02_multiple_container', '0349531933'),
+    ('03_no_more_detail', '0249558425'),
 ])
 def test_list_routing_rule(sub, mbl_no, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')

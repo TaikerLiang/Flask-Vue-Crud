@@ -119,6 +119,10 @@ class CookiesRoutingRule(BaseRoutingRule):
 class ListRoutingRule(BaseRoutingRule):
     name = 'LIST'
 
+    def __init__(self):
+        self._container_patt = re.compile(r'^(?P<container_no>\w+)')
+        self._j_idt_patt = re.compile(r'^[^{]+{\'(?P<j_idt>\S+)\':\'(?P=j_idt)')
+
     @classmethod
     def build_routing_request(cls, mbl_no: str, view_state) -> RoutingRequest:
         form_data = {
@@ -156,10 +160,12 @@ class ListRoutingRule(BaseRoutingRule):
             )
 
             detail_j_idt = container['detail_j_idt']
-            yield DetailRoutingRule.build_routing_request(mbl_no, container_no, detail_j_idt, view_state)
+            if detail_j_idt:
+                yield DetailRoutingRule.build_routing_request(mbl_no, container_no, detail_j_idt, view_state)
 
             history_j_idt = container['history_j_idt']
-            yield HistoryRoutingRule.build_routing_request(mbl_no, container_no, history_j_idt, view_state)
+            if history_j_idt:
+                yield HistoryRoutingRule.build_routing_request(mbl_no, container_no, history_j_idt, view_state)
 
     @staticmethod
     def _check_response(response):
@@ -179,13 +185,13 @@ class ListRoutingRule(BaseRoutingRule):
         return_list = []
         for left in table_locator.iter_left_headers():
             container_no_text = table.extract_cell('Ctnr No.', left)
-            container_no = self._get_container_no_from(text=container_no_text)
+            container_no = self._parse_container_no_from(text=container_no_text)
 
             detail_j_idt_text = table.extract_cell('More detail', left, JidtTdExtractor())
-            detail_j_idt = self._get_detail_j_idt_from(text=detail_j_idt_text)
+            detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text)
 
             history_j_idt_text = table.extract_cell('More History', left, JidtTdExtractor())
-            history_j_idt = self._get_history_j_idt_from(text=history_j_idt_text)
+            history_j_idt = self._parse_history_j_idt_from(text=history_j_idt_text)
 
             return_list.append({
                 'container_no': container_no,
@@ -195,50 +201,35 @@ class ListRoutingRule(BaseRoutingRule):
 
         return return_list
 
-    @staticmethod
-    def _get_container_no_from(text):
-        pattern = re.compile(r'^(?P<container_no>\w+)')
-
+    def _parse_container_no_from(self, text):
         if not text:
             raise CarrierResponseFormatError('container_no not found')
 
-        m = pattern.match(text)
+        m = self._container_patt.match(text)
         if not m:
             raise CarrierResponseFormatError('container_no not match')
 
-        container_no = m.group('container_no')
+        return m.group('container_no')
 
-        return container_no
-
-    @staticmethod
-    def _get_detail_j_idt_from(text) -> str:
-        pattern = re.compile(r'^[^{]+{\'(?P<j_idt>\S+)\':\'(?P=j_idt)')
-
+    def _parse_detail_j_idt_from(self, text: str) -> str:
         if not text:
-            raise CarrierResponseFormatError('detail_j_idt not found')
+            return ''
 
-        m = pattern.match(text)
+        m = self._j_idt_patt.match(text)
         if not m:
             raise CarrierResponseFormatError('detail_j_idt not match')
 
-        detail_j_idt = m.group('j_idt')
+        return m.group('j_idt')
 
-        return detail_j_idt
-
-    @staticmethod
-    def _get_history_j_idt_from(text) -> str:
-        pattern = re.compile(r'^[^{]+{\'(?P<j_idt>\S+)\':\'(?P=j_idt)')
-
+    def _parse_history_j_idt_from(self, text: str) -> str:
         if not text:
-            raise CarrierResponseFormatError('History_j_idt not found')
+            return ''
 
-        m = pattern.match(text)
+        m = self._j_idt_patt.match(text)
         if not m:
             raise CarrierResponseFormatError('History_j_idt not match')
 
-        history_j_idt = m.group('j_idt')
-
-        return history_j_idt
+        return m.group('j_idt')
 
 
 class JidtTdExtractor(BaseTableCellExtractor):
