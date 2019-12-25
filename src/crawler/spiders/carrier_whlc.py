@@ -121,7 +121,7 @@ class ListRoutingRule(BaseRoutingRule):
 
     def __init__(self):
         self._container_patt = re.compile(r'^(?P<container_no>\w+)')
-        self._j_idt_patt = re.compile(r'^[^{]+{\'(?P<j_idt>\S+)\':\'(?P=j_idt)')
+        self._j_idt_patt = re.compile(r"'(?P<j_idt>j_idt[^,]+)':'(?P=j_idt)'")
 
     @classmethod
     def build_routing_request(cls, mbl_no: str, view_state) -> RoutingRequest:
@@ -215,7 +215,7 @@ class ListRoutingRule(BaseRoutingRule):
         if not text:
             return ''
 
-        m = self._j_idt_patt.match(text)
+        m = self._j_idt_patt.search(text)
         if not m:
             raise CarrierResponseFormatError('detail_j_idt not match')
 
@@ -225,7 +225,7 @@ class ListRoutingRule(BaseRoutingRule):
         if not text:
             return ''
 
-        m = self._j_idt_patt.match(text)
+        m = self._j_idt_patt.search(text)
         if not m:
             raise CarrierResponseFormatError('History_j_idt not match')
 
