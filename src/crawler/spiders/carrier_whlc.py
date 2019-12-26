@@ -7,7 +7,7 @@ from scrapy import Selector
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import (
     BaseCarrierSpider, CARRIER_CUSTOM_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule, RoutingRequestQueue
 from crawler.core_carrier.items import (
     BaseCarrierItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError
@@ -38,6 +38,7 @@ class CarrierWhlcSpider(BaseCarrierSpider):
         ]
 
         self._rule_manager = RuleManager(rules=rules)
+        self._request_queue = RoutingRequestQueue()
 
     def start_requests(self):
         routing_request = CookiesRoutingRule.build_routing_request(mbl_no=self.mbl_no)
@@ -53,10 +54,13 @@ class CarrierWhlcSpider(BaseCarrierSpider):
             if isinstance(result, BaseCarrierItem):
                 yield result
             elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+                self._request_queue.add_request(result)
             else:
                 raise RuntimeError()
 
+        if not self._request_queue.is_empty():
+            routing_request = self._request_queue.get_next_request()
+            yield self._rule_manager.build_request_by(routing_request=routing_request)
 
 # -------------------------------------------------------------------------------
 
