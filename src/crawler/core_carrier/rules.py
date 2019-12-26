@@ -50,11 +50,11 @@ class RoutingRequestQueue:
     def __init__(self):
         self._queue = []
 
+    def is_empty(self):
+        return not self._queue
+
     def add_request(self, routing_request: RoutingRequest):
         self._queue.append(routing_request)
 
     def get_next_request(self) -> Union[RoutingRequest, None]:
-        if self._queue:
-            return self._queue.pop(0)
-        else:
-            return None
+        return self._queue.pop(0)

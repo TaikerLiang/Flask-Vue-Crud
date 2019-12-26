@@ -58,8 +58,8 @@ class CarrierHlcuSpider(BaseCarrierSpider):
             else:
                 raise RuntimeError()
 
-        routing_request = self._request_queue.get_next_request()
-        if routing_request:
+        if not self._request_queue.is_empty():
+            routing_request = self._request_queue.get_next_request()
             yield self._rule_manager.build_request_by(routing_request=routing_request)
 
 
