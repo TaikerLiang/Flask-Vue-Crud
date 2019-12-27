@@ -9,23 +9,26 @@ from crawler.core_carrier.items import MblItem, LocationItem, VesselItem, Contai
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import (
     TableExtractor, TopHeaderTableLocator, TopLeftHeaderTableLocator, LeftHeaderTableLocator)
-
+from w3lib.http import basic_auth_header
+import random
 
 class UrlFactory:
-    BASE_URL = 'https://www.hmm21.com/ebiz/track_trace'
-
+    # BASE_URL = 'https://www.hmm21.com/ebiz/track_trace'
+    BASE_URL = 'https://www.hmm21.com'
     def build_homepage_url(self):
-        return f'{self.BASE_URL}/main_new.jsp?null'
+        return f'{self.BASE_URL}'
 
     def build_mbl_url(self):
-        return f'{self.BASE_URL}/trackCTP_nTmp.jsp'
+        return f'{self.BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp'
 
     def build_container_url(self, mbl_no):
-        return f'{self.BASE_URL}/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={mbl_no}'
+        return f'{self.BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={mbl_no}'
 
     def build_availability_url(self):
-        return f'{self.BASE_URL}/WUTInfo.jsp'
+        return f'{self.BASE_URL}/ebiz/track_trace/WUTInfo.jsp'
 
+    def build_proxy_url(self):
+        return f'proxy.apify.com:8000'
 
 class FormDataFactory:
     @staticmethod
@@ -78,12 +81,31 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         self.formdata_factory = FormDataFactory()
 
     def start_requests(self):
+        self.change_proxy()
         url = self.url_factory.build_homepage_url()
-
         yield scrapy.Request(
             url=url,
             headers=self.headers,
             callback=self.parse_home_page,
+            meta={'proxy': self.url_factory.build_proxy_url()},
+            errback=self.retry,
+        )
+
+    def retry(self, response):
+        self.change_proxy()
+        yield scrapy.Request(
+            url=self.url_factory.build_homepage_url(),
+            headers=self.headers,
+            callback=self.parse_home_page,
+            meta={'proxy': self.url_factory.build_proxy_url()},
+            dont_filter=True,
+            errback=self.retry,
+        )
+
+    def change_proxy(self):
+        self.headers['Proxy-Authorization'] = basic_auth_header(
+            f'groups-RESIDENTIAL,session-rand{random.random()}',
+            'XZTBLpciyyTCFb3378xWJbuYY',
         )
 
     def parse(self, response):
@@ -96,12 +118,25 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         formdata = self.formdata_factory.build_main_info_formdata(mbl_no=self.mbl_no)
         url = self.url_factory.build_mbl_url()
 
-        yield scrapy.FormRequest(
-            url=url,
-            headers=self.headers,
-            formdata=formdata,
-            callback=self.parse_main_info,
-        )
+
+        cookies = {}
+        for cookie_byte in response.headers.getlist('Set-Cookie'):
+            kv = cookie_byte.decode('utf-8').split(';')[0].split('=')
+            cookies[kv[0]] = kv[1]
+
+        if not cookies:
+            for request in self.retry(response):
+                yield request
+        else:
+            yield scrapy.FormRequest(
+                url=url,
+                headers=self.headers,
+                formdata=formdata,
+                callback=self.parse_main_info,
+                meta={'proxy': self.url_factory.build_proxy_url()},
+                dont_filter=True,
+                errback=self.retry,
+            )
 
     def parse_main_info(self, response):
         err_message = _Extractor.extract_error_message(response=response)
@@ -180,7 +215,10 @@ class CarrierHdmuSpider(BaseCarrierSpider):
                     callback=self.parse_container,
                     meta={
                         'container_content': container_content,
+                        'proxy': self.url_factory.build_proxy_url(),
                     },
+                    dont_filter=True,
+                    errback=self.retry,
                 )
 
     def parse_container(self, response):
