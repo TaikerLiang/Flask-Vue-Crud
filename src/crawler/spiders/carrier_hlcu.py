@@ -117,7 +117,7 @@ class TracingRoutingRule(BaseRoutingRule):
             return
 
         error_message.strip()
-        if error_message.startwith('DOCUMENT does not exist.'):
+        if error_message.startswith('DOCUMENT does not exist.'):
             raise CarrierInvalidMblNoError()
 
     @staticmethod

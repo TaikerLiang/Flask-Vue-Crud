@@ -21,4 +21,3 @@ class Verifier:
 
         assert isinstance(results[3], Request)
         assert results[3].meta['container_key'] == 'UACU5837527'
-
