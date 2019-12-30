@@ -1,3 +1,5 @@
+import scrapy
+
 from crawler.core_carrier.items import ContainerItem
 
 
@@ -7,7 +9,9 @@ def verify(results):
         container_no='DFSU7597714',
     )
 
-    assert results[3] == ContainerItem(
+    assert results[1] == ContainerItem(
         container_key='WHSU5323281',
         container_no='WHSU5323281',
     )
+
+    assert isinstance(results[2], scrapy.Request)
