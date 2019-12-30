@@ -6,15 +6,18 @@ from scrapy import Selector
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
 from crawler.core_carrier.items import MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem
+from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import (
     TableExtractor, TopHeaderTableLocator, TopLeftHeaderTableLocator, LeftHeaderTableLocator)
 from w3lib.http import basic_auth_header
 import random
 
+
 class UrlFactory:
     # BASE_URL = 'https://www.hmm21.com/ebiz/track_trace'
     BASE_URL = 'https://www.hmm21.com'
+
     def build_homepage_url(self):
         return f'{self.BASE_URL}'
 
@@ -29,6 +32,7 @@ class UrlFactory:
 
     def build_proxy_url(self):
         return f'proxy.apify.com:8000'
+
 
 class FormDataFactory:
     @staticmethod
@@ -117,7 +121,6 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         """
         formdata = self.formdata_factory.build_main_info_formdata(mbl_no=self.mbl_no)
         url = self.url_factory.build_mbl_url()
-
 
         cookies = {}
         for cookie_byte in response.headers.getlist('Set-Cookie'):
@@ -282,6 +285,62 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         ready_for_pick_up = _AvailabilityExtractor.extract_availability(response)
         container_item['ready_for_pick_up'] = ready_for_pick_up
         yield container_item
+
+
+class ProxyRoutingRule(BaseRoutingRule):
+    name = 'PROXY'
+
+    @staticmethod
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
+
+    def get_save_name(self, response) -> str:
+        return self.name
+
+    def handle(self, response):
+        pass
+
+
+class MainRougintRule(BaseRoutingRule):
+    name = 'MAIN'
+
+    @staticmethod
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
+
+    def get_save_name(self, response) -> str:
+        return self.name
+
+    def handle(self, response):
+        pass
+
+
+class ConatinerRougintRule(BaseRoutingRule):
+    name = 'CONTAINER'
+
+    @staticmethod
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
+
+    def get_save_name(self, response) -> str:
+        return self.name
+
+    def handle(self, response):
+        pass
+
+
+class AvailabilityRoutingRule(BaseRoutingRule):
+    name = 'AVAILABILITY'
+
+    @staticmethod
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
+
+    def get_save_name(self, response) -> str:
+        return self.name
+
+    def handle(self, response):
+        pass
 
 
 class RedBlueTdExtractor(BaseTableCellExtractor):
