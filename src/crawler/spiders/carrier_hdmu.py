@@ -1,12 +1,15 @@
 import dataclasses
+from typing import Callable
 
 import scrapy
 from scrapy import Selector
 
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
-from crawler.core_carrier.items import MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem
-from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, BaseCarrierError
+from crawler.core_carrier.items import MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, \
+    ExportErrorData, BaseCarrierItem
+from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import (
     TableExtractor, TopHeaderTableLocator, TopLeftHeaderTableLocator, LeftHeaderTableLocator)
@@ -75,45 +78,35 @@ class FormDataFactory:
 
 class CarrierHdmuSpider(BaseCarrierSpider):
     name = 'carrier_hdmu'
-    headers = {
-        'Upgrade-Insecure-Requests': '1',
-    }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.url_factory = UrlFactory()
-        self.formdata_factory = FormDataFactory()
+        rules = [
+            CookiesRoutingRule(),
+            MainRoutingRule(),
+            ContainerRoutingRule(),
+        ]
+
+        self._rule_manager = RuleManager(rules=rules)
 
     def start_requests(self):
-        self.change_proxy()
-        url = self.url_factory.build_homepage_url()
-        yield scrapy.Request(
-            url=url,
-            headers=self.headers,
-            callback=self.parse_home_page,
-            meta={'proxy': self.url_factory.build_proxy_url()},
-            errback=self.retry,
-        )
-
-    def retry(self, response):
-        self.change_proxy()
-        yield scrapy.Request(
-            url=self.url_factory.build_homepage_url(),
-            headers=self.headers,
-            callback=self.parse_home_page,
-            meta={'proxy': self.url_factory.build_proxy_url()},
-            dont_filter=True,
-            errback=self.retry,
-        )
-
-    def change_proxy(self):
-        self.headers['Proxy-Authorization'] = basic_auth_header(
-            f'groups-RESIDENTIAL,session-rand{random.random()}',
-            'XZTBLpciyyTCFb3378xWJbuYY',
-        )
+        routing_request = CookiesRoutingRule.build_routing_request(
+            mbl_no=self.mbl_no, proxy_auth=get_new_proxy_auth(), callback=self.parse)
+        yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):
-        raise RuntimeError()
+        routing_rule = self._rule_manager.get_rule_by_response(response=response)
+
+        save_name = routing_rule.get_save_name(response=response)
+        self._saver.save(to=save_name, text=response.text)
+
+        for result in routing_rule.handle(response=response):
+            if isinstance(result, BaseCarrierItem):
+                yield result
+            elif isinstance(result, RoutingRequest):
+                yield self._rule_manager.build_request_by(routing_request=result)
+            else:
+                raise RuntimeError()
 
     def parse_home_page(self, response):
         """
@@ -287,35 +280,222 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         yield container_item
 
 
-class ProxyRoutingRule(BaseRoutingRule):
-    name = 'PROXY'
+# -------------------------------------------------------------------------------
+
+
+def get_new_proxy_auth():
+    return basic_auth_header(
+        f'groups-RESIDENTIAL,session-rand{random.random()}',
+        'XZTBLpciyyTCFb3378xWJbuYY',
+    )
+
+
+class CarrierProxyMaxRetryError(BaseCarrierError):
+    status = CARRIER_RESULT_STATUS_FATAL
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail='<proxy-max-retry-error>')
+
+
+class CookiesRoutingRule(BaseRoutingRule):
+    name = 'COOKIES'
+    MAX_RETRY = 10
+
+    def __init__(self):
+        self._retry_count = 0
 
     @staticmethod
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
+    def build_request(proxy_auth, callback: Callable, dont_filter: bool = False) -> scrapy.Request:
+        return scrapy.Request(
+            url='https://www.hmm21.com',
+            headers={
+                'Upgrade-Insecure-Requests': '1',
+                'Proxy-Authorization': proxy_auth,
+            },
+            meta={'proxy': 'proxy.apify.com:8000', 'proxy_auth': proxy_auth, 'callback': callback},
+            dont_filter=dont_filter,
+            callback=callback,
+            errback=CookiesRoutingRule.retry,
+        )
+
+    @staticmethod
+    def build_routing_request(mbl_no, proxy_auth, callback: Callable, dont_filter: bool = False) -> RoutingRequest:
+        request = CookiesRoutingRule.build_request(proxy_auth=proxy_auth, callback=callback, dont_filter=dont_filter)
+        request.meta['mbl_no'] = mbl_no
+        request.meta['retry_count'] = 0
+        return RoutingRequest(request=request, rule_name=CookiesRoutingRule.name)
+
+    @classmethod
+    def retry(cls, response):
+        retry_count = response.meta['retry_count']
+        callback = response.meta['callback']
+
+        if retry_count < cls.MAX_RETRY:
+            request = cls.build_request(proxy_auth=get_new_proxy_auth(), callback=callback, dont_filter=True)
+            request.meta['retry_count'] = retry_count + 1
+            yield request
+        else:
+            raise CarrierProxyMaxRetryError()
 
     def get_save_name(self, response) -> str:
-        return self.name
+        retry_count = response.meta['retry_count']
+        return f'{self.name}_{retry_count}.html'
 
     def handle(self, response):
-        pass
+        mbl_no = response.meta['mbl_no']
+        callback = response.meta['callback']
+        proxy_auth = response.meta['proxy_auth']
+
+        cookies = self.handle_cookies(response=response)
+
+        if not cookies:
+            for request in self.retry(response=response):
+                yield RoutingRequest(request=request, rule_name=CookiesRoutingRule.name)
+        else:
+            yield MainRoutingRule.build_routing_request(mbl_no=mbl_no, proxy_auth=proxy_auth, callback=callback)
+
+    @staticmethod
+    def handle_cookies(response):
+        cookies = {}
+        for cookie_byte in response.headers.getlist('Set-Cookie'):
+            kv = cookie_byte.decode('utf-8').split(';')[0].split('=')
+            cookies[kv[0]] = kv[1]
+
+        return cookies
 
 
-class MainRougintRule(BaseRoutingRule):
+class MainRoutingRule(BaseRoutingRule):
     name = 'MAIN'
 
     @staticmethod
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
+    def build_routing_request(mbl_no, proxy_auth, callback: Callable) -> RoutingRequest:
+        formdata = {
+            'number': mbl_no,
+            'type': '1',
+            'selectedContainerIndex': '',
+            'blFields': '3',
+            'cnFields': '3',
+            'is_quick': 'Y',
+            'numbers': [
+                mbl_no,
+                '', '', '', '', '',
+                '', '', '', '', '',
+                '', '', '', '', '',
+                '', '', '', '', '',
+                '', '', '',
+            ],
+        }
+
+        request = scrapy.FormRequest(
+            url='https://www.hmm21.com/ebiz/track_trace/trackCTP_nTmp.jsp',
+            headers={
+                'Upgrade-Insecure-Requests': '1',
+                'Proxy-Authorization': proxy_auth,
+            },
+            formdata=formdata,
+            meta={'proxy': 'proxy.apify.com:8000', 'mbl_no': mbl_no},
+            dont_filter=True,
+            callback=callback,
+            errback=CookiesRoutingRule.retry,
+        )
+
+        return RoutingRequest(request=request, rule_name=MainRoutingRule.name)
 
     def get_save_name(self, response) -> str:
-        return self.name
+        return f'{self.name}.html'
 
     def handle(self, response):
-        pass
+        mbl_no = response.meta['mbl_no']
+
+        self._check_mbl_no(response=response)
+
+        tracking_results = _Extractor.extract_tracking_results(response=response)
+        customs_status = _Extractor.extract_customs_status(response=response)
+        cargo_delivery_info = _Extractor.extract_cargo_delivery_info(response=response)
+        latest_update = _Extractor.extract_lastest_update(response=response)
+
+        yield MblItem(
+            mbl_no=mbl_no,
+            por=LocationItem(name=tracking_results['location.por']),
+            pod=LocationItem(name=tracking_results['location.pod']),
+            pol=LocationItem(name=tracking_results['location.pol']),
+            final_dest=LocationItem(name=tracking_results['Location.dest']),
+            por_atd=tracking_results['departure.por_actual'],
+            ata=tracking_results['arrival.pod_actual'],
+            eta=tracking_results['arrival.pod_estimate'],
+            atd=tracking_results['departure.pol_actual'],
+            etd=tracking_results['departure.pol_estimate'],
+            us_ams_status=customs_status['us_ams'],
+            ca_aci_status=customs_status['canada_aci'],
+            eu_ens_status=customs_status['eu_ens'],
+            cn_cams_status=customs_status['china_cams'],
+            ja_afr_status=customs_status['japan_afr'],
+            freight_status=cargo_delivery_info['freight_status'],
+            us_customs_status=cargo_delivery_info['us_customs_status'],
+            deliv_order=cargo_delivery_info['delivery_order_status'],
+            latest_update=latest_update,
+            deliv_ata=cargo_delivery_info['delivery_order_time'],
+            pol_ata=tracking_results['arrival.pol_actual'],
+            firms_code=cargo_delivery_info['firm_code'],
+            freight_date=cargo_delivery_info['freight_time'],
+            us_customs_date=cargo_delivery_info['us_customs_time'],
+            bl_type=cargo_delivery_info['bl_type'],
+            way_bill_status=cargo_delivery_info['way_bill_status'],
+            way_bill_date=cargo_delivery_info['way_bill_time'],
+        )
+
+        vessel = _Extractor.extract_vessel(response=response)
+        yield VesselItem(
+            vessel_key=vessel['vessel'],
+            vessel=vessel['vessel'],
+            voyage=vessel['voyage'],
+            pol=LocationItem(name=vessel['pol']),
+            pod=LocationItem(name=vessel['pod']),
+            ata=vessel['ata'],
+            eta=vessel['eta'],
+            atd=vessel['atd'],
+            etd=vessel['etd'],
+        )
+
+        # parse other containers if there are many containers
+        container_contents = _Extractor.extract_container_contents(response=response)
+        h_num = -1
+        for container_content in container_contents:
+            if container_content.is_current:
+                response.meta['container_content'] = container_content
+
+                container_routing_rule = ContainerRoutingRule()
+                for item in container_routing_rule.handle(response=response):
+                    yield item
+
+            else:
+                h_num -= 1
+                container_url = self.url_factory.build_container_url(mbl_no=self.mbl_no)
+                formdata = self.formdata_factory.build_container_formdata(
+                    mbl_no=self.mbl_no, container_index=container_content.index, h_num=h_num,
+                )
+
+                yield scrapy.FormRequest(
+                    url=container_url,
+                    headers=self.headers,
+                    formdata=formdata,
+                    callback=self.parse_container,
+                    meta={
+                        'container_content': container_content,
+                        'proxy': self.url_factory.build_proxy_url(),
+                    },
+                    dont_filter=True,
+                    errback=self.retry,
+                )
+
+    @staticmethod
+    def _check_mbl_no(response):
+        err_message = response.css('div#trackingForm p.text_type03::text').get()
+        if err_message == 'B/L number is invalid.  Please try it again with correct number.':
+            raise CarrierInvalidMblNoError()
 
 
-class ConatinerRougintRule(BaseRoutingRule):
+class ContainerRoutingRule(BaseRoutingRule):
     name = 'CONTAINER'
 
     @staticmethod
@@ -326,7 +506,60 @@ class ConatinerRougintRule(BaseRoutingRule):
         return self.name
 
     def handle(self, response):
-        pass
+        container_content = response.meta['container_content']
+
+        container_extractor = _ContainerExtractor()
+
+        tracking_results = _Extractor.extract_tracking_results(response=response)
+        container_info = container_extractor.extract_container_info(response=response,
+                                                                    container_content=container_content)
+        empty_return_location = _Extractor.extract_empty_return_location(response=response)
+        container_status = list(_ContainerStatusExtractor.extract_container_status(response=response))
+
+        container_no = container_info['container_no']
+
+        container_item = ContainerItem(
+            container_key=container_no,
+            container_no=container_no,
+            last_free_day=container_info['lfd'],
+            mt_location=LocationItem(name=empty_return_location['empty_return_location']),
+            det_free_time_exp_date=empty_return_location['fdd'],
+            por_etd=tracking_results['departure.por_estimate'],
+            pol_eta=tracking_results['arrival.pol_estimate'],
+            final_dest_eta=tracking_results['arrival.dest_estimate'],
+            ready_for_pick_up=None,  # it may be assign in availability
+        )
+
+        # catch availability
+        ava_exist = _Extractor.extract_availability_exist(response=response)
+        if ava_exist:
+            ava_formdata = self.formdata_factory.build_availability_formdata(
+                mbl_no=self.mbl_no, container_no=container_content.container_no,
+            )
+            ava_url = self.url_factory.build_availability_url()
+
+            yield scrapy.FormRequest(
+                url=ava_url,
+                headers=self.headers,
+                formdata=ava_formdata,
+                callback=self.parse_availability,
+                meta={
+                    'container_item': container_item,
+                },
+            )
+        else:
+            yield container_item
+
+        for container in container_status:
+            container_no = container_info['container_no']
+
+            yield ContainerStatusItem(
+                container_key=container_no,
+                description=container['status'],
+                local_date_time=container['date'],
+                location=LocationItem(name=container['location']),
+                transport=container['mode']
+            )
 
 
 class AvailabilityRoutingRule(BaseRoutingRule):
