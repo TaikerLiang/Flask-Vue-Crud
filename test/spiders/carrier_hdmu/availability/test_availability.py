@@ -4,10 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_hdmu import AvailabilityRoutingRule, CookiesRoutingRule, CarrierHdmuSpider
+from crawler.spiders.carrier_hdmu import AvailabilityRoutingRule
 from test.spiders.carrier_hdmu import availability
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -23,26 +21,22 @@ def sample_loader(sample_loader):
 def test_availability_routing_rule(sub, mbl_no, sample_loader, container_no):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    routing_request = AvailabilityRoutingRule.build_routing_request(
-        mbl_no=mbl_no, container_no=container_no, callback=CookiesRoutingRule.retry)
-    url = extract_url_from(routing_request=routing_request)
+    request_config = AvailabilityRoutingRule.build_request_config(mbl_no=mbl_no, container_no=container_no)
 
     response = TextResponse(
-        url=url,
+        url=request_config.url,
         body=html_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=request_config.url,
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: AvailabilityRoutingRule.name,
-                'mbl_no': mbl_no,
                 'container_no': container_no,
             }
         )
     )
 
-    spider = CarrierHdmuSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    rule = AvailabilityRoutingRule()
+    results = list(rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)

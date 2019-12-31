@@ -1,4 +1,5 @@
-from crawler.core_carrier.items import MblItem, VesselItem, LocationItem, ContainerStatusItem
+from crawler.core_carrier.items import MblItem, VesselItem, ContainerItem, LocationItem, ContainerStatusItem
+from crawler.spiders.carrier_hdmu import AvailabilityRoutingRule
 
 
 def verify(results):
@@ -45,7 +46,24 @@ def verify(results):
         etd=None,
     )
 
-    assert results[3] == ContainerStatusItem(
+    assert results[2] == ContainerItem(
+        container_key='HMMU6015688',
+        container_no='HMMU6015688',
+        last_free_day='Gated-out',
+        mt_location=LocationItem(name='M&N EQUIPMENT SERVICES ( EMPTIES ONLY) (MINNEAPOLIS, MN)'),
+        det_free_time_exp_date='09-May-2019',
+        por_etd=None,
+        pol_eta=None,
+        final_dest_eta=None,
+        ready_for_pick_up=None,
+    )
+
+    assert results[3] == AvailabilityRoutingRule.build_request_config(
+        mbl_no='TAWB0789799',
+        container_no='HMMU6015688',
+    )
+
+    assert results[4] == ContainerStatusItem(
         container_key='HMMU6015688',
         description='Empty returned',
         local_date_time='03-May-2019 1:23 PM',
@@ -53,7 +71,7 @@ def verify(results):
         transport=None,
     )
 
-    assert results[19] == ContainerStatusItem(
+    assert results[20] == ContainerStatusItem(
         container_key='HMMU6015688',
         description='Discharged',
         local_date_time='17-Apr-2019 2:40 PM',
@@ -61,7 +79,7 @@ def verify(results):
         transport='HYUNDAI CONFIDENCE V 577E',
     )
 
-    assert results[23] == ContainerStatusItem(
+    assert results[24] == ContainerStatusItem(
         container_key='HMMU6015688',
         description='Inland transportation started',
         local_date_time='29-Mar-2019 2:11 PM',

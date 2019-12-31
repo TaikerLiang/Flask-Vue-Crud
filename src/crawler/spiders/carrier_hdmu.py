@@ -1,14 +1,16 @@
 import dataclasses
-from typing import Callable
+from logging import Logger
+from typing import Dict
 
 import scrapy
 from scrapy import Selector
+from twisted.python.failure import Failure
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, BaseCarrierError
-from crawler.core_carrier.items import MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, \
-    ExportErrorData, BaseCarrierItem
+from crawler.core_carrier.items import (
+    MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData, BaseCarrierItem)
 from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import (
@@ -20,9 +22,22 @@ import random
 BASE_URL = 'https://www.hmm21.com'
 
 
+@dataclasses.dataclass
+class FormRequestConfig:
+    rule_name: str
+    url: str
+    form_data: Dict = dataclasses.field(default_factory=dict)
+    meta: Dict = dataclasses.field(default_factory=dict)
+
+
+@dataclasses.dataclass
+class ForceRestart:
+    pass
+
+
 class CarrierHdmuSpider(BaseCarrierSpider):
     name = 'carrier_hdmu'
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         rules = [
@@ -33,11 +48,13 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         ]
 
         self._rule_manager = RuleManager(rules=rules)
+        self._proxy_manager = ProxyManager(logger=self.logger)
 
     def start_requests(self):
-        routing_request = CookiesRoutingRule.build_routing_request(
-            mbl_no=self.mbl_no, proxy_auth=get_new_proxy_auth(), callback=self.parse)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        yield self._build_start_request()
+
+    def retry(self, failure: Failure):
+        yield self._build_start_request()
 
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
@@ -48,19 +65,92 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+            elif isinstance(result, FormRequestConfig):
+                yield self._build_form_request_by(request_config=result)
+            elif isinstance(result, ForceRestart):
+                yield self._build_start_request()
             else:
                 raise RuntimeError()
+
+    def _build_start_request(self):
+        request_config = CookiesRoutingRule.build_request_config()
+
+        headers = {
+            'Upgrade-Insecure-Requests': '1',
+            **self._proxy_manager.get_proxy_auth(renew=True),
+        }
+
+        meta = {
+            'proxy': self._proxy_manager.PROXY_URL,
+            'mbl_no': self.mbl_no,
+            RuleManager.META_CARRIER_CORE_RULE_NAME: request_config.rule_name,
+            **request_config.meta,
+        }
+
+        return scrapy.Request(
+            url=request_config.url,
+            headers=headers,
+            meta=meta,
+            dont_filter=True,
+            callback=self.parse,
+            errback=self.retry,
+        )
+
+    def _build_form_request_by(self, request_config: FormRequestConfig):
+        headers = {
+            'Upgrade-Insecure-Requests': '1',
+            **self._proxy_manager.get_proxy_auth(renew=False),
+        }
+
+        meta = {
+            'proxy': self._proxy_manager.PROXY_URL,
+            'mbl_no': self.mbl_no,
+            RuleManager.META_CARRIER_CORE_RULE_NAME: request_config.rule_name,
+            **request_config.meta,
+        }
+
+        return scrapy.FormRequest(
+            url=request_config.url,
+            headers=headers,
+            formdata=request_config.form_data,
+            meta=meta,
+            dont_filter=True,
+            callback=self.parse,
+            errback=self.retry,
+        )
+
 
 # -------------------------------------------------------------------------------
 
 
-def get_new_proxy_auth():
-    return basic_auth_header(
-        f'groups-RESIDENTIAL,session-rand{random.random()}',
-        'XZTBLpciyyTCFb3378xWJbuYY',
-    )
+class ProxyManager:
+    PROXY_URL = 'proxy.apify.com:8000'
+    PROXY_PASSWORD = 'XZTBLpciyyTCFb3378xWJbuYY'
+    MAX_RENEW = 10
+
+    def __init__(self, logger: Logger):
+        self._logger = logger
+
+        self._proxy_auth = b''
+        self._renew_count = 0
+
+    def get_proxy_auth(self, renew: bool = False) -> Dict:
+        if renew:
+            self._proxy_auth = self._do_renew()
+
+        return {
+            'Proxy-Authorization': self._proxy_auth,
+        }
+
+    def _do_renew(self):
+        if self._renew_count > self.MAX_RENEW:
+            raise CarrierProxyMaxRetryError()
+
+        self._renew_count += 1
+        self._logger.warning(f'----- renew proxy ({self._renew_count})')
+
+        renew_username = f'groups-RESIDENTIAL,session-rand{random.random()}'
+        return basic_auth_header(renew_username, self.PROXY_PASSWORD)
 
 
 class CarrierProxyMaxRetryError(BaseCarrierError):
@@ -72,63 +162,30 @@ class CarrierProxyMaxRetryError(BaseCarrierError):
 
 class CookiesRoutingRule(BaseRoutingRule):
     name = 'COOKIES'
-    MAX_RETRY = 10
-
-    def __init__(self):
-        self._retry_count = 0
-
-    @staticmethod
-    def build_request(proxy_auth, callback: Callable, dont_filter: bool = False) -> scrapy.Request:
-        return scrapy.Request(
-            url='https://www.hmm21.com',
-            headers={
-                'Upgrade-Insecure-Requests': '1',
-                'Proxy-Authorization': proxy_auth,
-            },
-            meta={'proxy': 'proxy.apify.com:8000', 'proxy_auth': proxy_auth, 'callback': callback},
-            dont_filter=dont_filter,
-            callback=callback,
-            errback=CookiesRoutingRule.retry,
-        )
-
-    @staticmethod
-    def build_routing_request(mbl_no, proxy_auth, callback: Callable, dont_filter: bool = False) -> RoutingRequest:
-        request = CookiesRoutingRule.build_request(proxy_auth=proxy_auth, callback=callback, dont_filter=dont_filter)
-        request.meta['mbl_no'] = mbl_no
-        request.meta['retry_count'] = 0
-        return RoutingRequest(request=request, rule_name=CookiesRoutingRule.name)
 
     @classmethod
-    def retry(cls, response):
-        retry_count = response.meta['retry_count']
-        callback = response.meta['callback']
+    def build_request_config(cls):
+        return FormRequestConfig(
+            rule_name=cls.name,
+            url=BASE_URL,
+        )
 
-        if retry_count < cls.MAX_RETRY:
-            request = cls.build_request(proxy_auth=get_new_proxy_auth(), callback=callback, dont_filter=True)
-            request.meta['retry_count'] = retry_count + 1
-            yield request
-        else:
-            raise CarrierProxyMaxRetryError()
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
 
     def get_save_name(self, response) -> str:
-        retry_count = response.meta['retry_count']
-        return f'{self.name}_{retry_count}.html'
+        return f'{self.name}.html'
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
-        callback = response.meta['callback']
-        proxy_auth = response.meta['proxy_auth']
 
-        cookies = self.handle_cookies(response=response)
-
-        if not cookies:
-            for request in self.retry(response=response):
-                yield RoutingRequest(request=request, rule_name=CookiesRoutingRule.name)
+        if self._check_cookies(response=response):
+            yield MainRoutingRule.build_request_config(mbl_no=mbl_no)
         else:
-            yield MainRoutingRule.build_routing_request(mbl_no=mbl_no, proxy_auth=proxy_auth, callback=callback)
+            yield ForceRestart()
 
     @staticmethod
-    def handle_cookies(response):
+    def _check_cookies(response):
         cookies = {}
         for cookie_byte in response.headers.getlist('Set-Cookie'):
             kv = cookie_byte.decode('utf-8').split(';')[0].split('=')
@@ -137,12 +194,15 @@ class CookiesRoutingRule(BaseRoutingRule):
         return cookies
 
 
+# -------------------------------------------------------------------------------
+
+
 class MainRoutingRule(BaseRoutingRule):
     name = 'MAIN'
 
-    @staticmethod
-    def build_routing_request(mbl_no, proxy_auth, callback: Callable) -> RoutingRequest:
-        formdata = {
+    @classmethod
+    def build_request_config(cls, mbl_no):
+        form_data = {
             'number': mbl_no,
             'type': '1',
             'selectedContainerIndex': '',
@@ -150,36 +210,27 @@ class MainRoutingRule(BaseRoutingRule):
             'cnFields': '3',
             'is_quick': 'Y',
             'numbers': [
-                mbl_no,
-                '', '', '', '', '',
-                '', '', '', '', '',
-                '', '', '', '', '',
-                '', '', '', '', '',
-                '', '', '',
+                mbl_no, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
             ],
         }
 
-        request = scrapy.FormRequest(
-            url='https://www.hmm21.com/ebiz/track_trace/trackCTP_nTmp.jsp',
-            headers={
-                'Upgrade-Insecure-Requests': '1',
-                'Proxy-Authorization': proxy_auth,
-            },
-            formdata=formdata,
-            meta={'proxy': 'proxy.apify.com:8000', 'mbl_no': mbl_no, 'callback': callback},
-            dont_filter=True,
-            callback=callback,
-            errback=CookiesRoutingRule.retry,
+        return FormRequestConfig(
+            rule_name=cls.name,
+            url=f'{BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp',
+            form_data=form_data,
+            meta={
+                'mbl_no': mbl_no,
+            }
         )
 
-        return RoutingRequest(request=request, rule_name=MainRoutingRule.name)
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
-        callback = response.meta['callback']
 
         self._check_mbl_no(response=response)
 
@@ -237,16 +288,15 @@ class MainRoutingRule(BaseRoutingRule):
         for container_content in container_contents:
             if container_content.is_current:
                 response.meta['container_index'] = container_content.index
-                response.meta['mbl_no'] = mbl_no
 
                 container_routing_rule = ContainerRoutingRule()
-                for item in container_routing_rule.handle(response=response):
-                    yield item
+                for result in container_routing_rule.handle(response=response):
+                    yield result
 
             else:
                 h_num -= 1
-                ContainerRoutingRule.build_routing_request(
-                    mbl_no=mbl_no, container_index=container_content.index, h_num=h_num, callback=callback)
+                yield ContainerRoutingRule.build_request_config(
+                    mbl_no=mbl_no, container_index=container_content.index, h_num=h_num)
 
     @staticmethod
     def _check_mbl_no(response):
@@ -374,6 +424,9 @@ class MainRoutingRule(BaseRoutingRule):
         return container_table
 
 
+# -------------------------------------------------------------------------------
+
+
 @dataclasses.dataclass
 class ContainerContent:
     container_no: str
@@ -385,34 +438,35 @@ class ContainerRoutingRule(BaseRoutingRule):
     name = 'CONTAINER'
 
     @classmethod
-    def build_routing_request(cls, mbl_no, container_index, h_num, callback) -> RoutingRequest:
-        url = f'{BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={mbl_no}'
+    def build_request_config(cls, mbl_no, container_index, h_num):
         form_data = {
             'selectedContainerIndex': f'{container_index}',
             'hNum': f'{h_num}',
             'tempBLOrBKG': mbl_no,
             'numbers': [
-                mbl_no,
-                '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+                mbl_no, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
             ],
         }
-        request = scrapy.FormRequest(
-            url=url,
-            formdata=form_data,
-            meta={'container_index': container_index, 'mbl_no': mbl_no, 'callback': callback},
-            callback=callback,
-            errback=CookiesRoutingRule.retry,
+
+        return FormRequestConfig(
+            rule_name=cls.name,
+            url=f'{BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={mbl_no}',
+            form_data=form_data,
+            meta={
+                'container_index': container_index,
+            }
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
+
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
 
     def get_save_name(self, response) -> str:
         container_index = response.meta['container_index']
-        return f'{self.name}_{container_index}'
+        return f'{self.name}_{container_index}.html'
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
         container_index = response.meta['container_index']
-        callback=response.meta['callback']
 
         tracking_results = self._extract_tracking_results(response=response)
         container_info = self._extract_container_info(response=response, container_index=container_index)
@@ -436,7 +490,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         # catch availability
         ava_exist = self._extract_availability_exist(response=response)
         if ava_exist:
-            AvailabilityRoutingRule.build_routing_request(mbl_no=mbl_no, container_no=container_no, callback=callback)
+            yield AvailabilityRoutingRule.build_request_config(mbl_no=mbl_no, container_no=container_no)
 
         for container in container_status:
             container_no = container_info['container_no']
@@ -539,28 +593,34 @@ class ContainerRoutingRule(BaseRoutingRule):
         return container_table
 
 
+# -------------------------------------------------------------------------------
+
+
 class AvailabilityRoutingRule(BaseRoutingRule):
     name = 'AVAILABILITY'
 
     @classmethod
-    def build_routing_request(cls, mbl_no, container_no, callback) -> RoutingRequest:
-        url = f'{BASE_URL}/ebiz/track_trace/WUTInfo.jsp'
+    def build_request_config(cls, mbl_no, container_no):
         form_data = {
             'bno': mbl_no,
             'cntrNo': f'{container_no}',
         }
-        request = scrapy.FormRequest(
-            url=url,
-            formdata=form_data,
-            meta={'container_no': container_no},
-            callback=callback,
-            errback=CookiesRoutingRule.retry,
+
+        return FormRequestConfig(
+            rule_name=cls.name,
+            url=f'{BASE_URL}/ebiz/track_trace/WUTInfo.jsp',
+            form_data=form_data,
+            meta={
+                'container_no': container_no,
+            }
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
+
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
 
     def get_save_name(self, response) -> str:
         container_no = response.meta['container_no']
-        return f'{self.name}_{container_no}'
+        return f'{self.name}_{container_no}.html'
 
     def handle(self, response):
         container_no = response.meta['container_no']
