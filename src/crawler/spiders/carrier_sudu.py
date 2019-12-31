@@ -261,7 +261,7 @@ class SearchRoutingRule(BaseRoutingRule):
                 container_key=container_no,
                 description=container_status['description'],
                 local_date_time=container_status['timestamp'],
-                location=scrapy.Field(name=container_status['location'] or None),
+                location=LocationItem(name=container_status['location'] or None),
                 vessel=container_status['vessel'] or None,
                 voyage=container_status['voyage'] or None,
             )
@@ -452,8 +452,8 @@ class VoyageRoutingRule(BaseRoutingRule):
             vessel_key=voyage_routing['vessel'],
             vessel=voyage_routing['vessel'],
             voyage=voyage_routing['voyage'],
-            pol=voyage_routing['pol'],
-            pod=voyage_routing['pod'],
+            pol=LocationItem(name=voyage_routing['pol']),
+            pod=LocationItem(name=voyage_routing['pod']),
             etd=voyage_routing['etd'],
             eta=voyage_routing['eta'],
         )
