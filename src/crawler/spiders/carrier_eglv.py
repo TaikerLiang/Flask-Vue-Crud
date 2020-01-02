@@ -309,7 +309,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         )
         table_selector = find_selector_from(selectors=tables, rule=rule)
         if table_selector is None:
-            raise CarrierResponseFormatError(reason='Can not found Container Information table!!!')
+            return []
 
         table_locator = NameOnTopHeaderTableLocator()
         table_locator.parse(table=table_selector)
