@@ -1,6 +1,6 @@
 import dataclasses
 from logging import Logger
-from typing import Dict
+from typing import Dict, List
 
 import scrapy
 from scrapy import Selector
@@ -48,32 +48,48 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         ]
 
         self._rule_manager = RuleManager(rules=rules)
+        self._restart_manager = RestartManager()
         self._proxy_manager = ProxyManager(logger=self.logger)
 
     def start_requests(self):
-        yield self._build_start_request()
+        yield self._prepare_restart()
 
     def retry(self, failure: Failure):
-        yield self._build_start_request()
+        yield self._prepare_restart()
 
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
+        # save file
         save_name = routing_rule.get_save_name(response=response)
         self._saver.save(to=save_name, text=response.text)
 
+        # handle
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
-                yield result
+                self._restart_manager.add_item(item=result)
             elif isinstance(result, FormRequestConfig):
-                yield self._build_form_request_by(request_config=result)
+                form_request = self._build_form_request_by(request_config=result)
+                self._restart_manager.add_request(request=form_request)
             elif isinstance(result, ForceRestart):
-                yield self._build_start_request()
+                restart_request = self._prepare_restart()
+                self._restart_manager.add_request(request=restart_request)
             else:
                 raise RuntimeError()
 
+        # yield request / item
+        if self._restart_manager.has_request():
+            yield self._restart_manager.next_request()
+        else:
+            for item in self._restart_manager.iter_items():
+                yield item
+
+    def _prepare_restart(self) -> scrapy.Request:
+        self._restart_manager.reset()
+        return self._build_start_request()
+
     def _build_start_request(self):
-        request_config = CookiesRoutingRule.build_request_config()
+        request_config = CookiesRoutingRule.build_request_config(mbl_no=self.mbl_no)
 
         headers = {
             'Upgrade-Insecure-Requests': '1',
@@ -82,7 +98,6 @@ class CarrierHdmuSpider(BaseCarrierSpider):
 
         meta = {
             'proxy': self._proxy_manager.PROXY_URL,
-            'mbl_no': self.mbl_no,
             RuleManager.META_CARRIER_CORE_RULE_NAME: request_config.rule_name,
             **request_config.meta,
         }
@@ -104,7 +119,6 @@ class CarrierHdmuSpider(BaseCarrierSpider):
 
         meta = {
             'proxy': self._proxy_manager.PROXY_URL,
-            'mbl_no': self.mbl_no,
             RuleManager.META_CARRIER_CORE_RULE_NAME: request_config.rule_name,
             **request_config.meta,
         }
@@ -118,6 +132,36 @@ class CarrierHdmuSpider(BaseCarrierSpider):
             callback=self.parse,
             errback=self.retry,
         )
+
+
+# -------------------------------------------------------------------------------
+
+
+class RestartManager:
+
+    def __init__(self):
+        self._items = []
+        self._request_queue = []
+
+    def reset(self):
+        self._items = []
+        self._request_queue = []
+
+    def add_item(self, item: BaseCarrierItem):
+        self._items.append(item)
+
+    def add_request(self, request: scrapy.Request):
+        self._request_queue.append(request)
+
+    def has_request(self) -> bool:
+        return bool(self._request_queue)
+
+    def next_request(self) -> scrapy.Request:
+        return self._request_queue.pop(0)
+
+    def iter_items(self) -> List[BaseCarrierItem]:
+        for item in self._items:
+            yield item
 
 
 # -------------------------------------------------------------------------------
@@ -160,14 +204,20 @@ class CarrierProxyMaxRetryError(BaseCarrierError):
         return ExportErrorData(status=self.status, detail='<proxy-max-retry-error>')
 
 
+# -------------------------------------------------------------------------------
+
+
 class CookiesRoutingRule(BaseRoutingRule):
     name = 'COOKIES'
 
     @classmethod
-    def build_request_config(cls):
+    def build_request_config(cls, mbl_no):
         return FormRequestConfig(
             rule_name=cls.name,
             url=BASE_URL,
+            meta={
+                'mbl_no': mbl_no,
+            },
         )
 
     def build_routing_request(*args, **kwargs) -> RoutingRequest:
@@ -453,6 +503,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             url=f'{BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={mbl_no}',
             form_data=form_data,
             meta={
+                'mbl_no': mbl_no,
                 'container_index': container_index,
             }
         )
