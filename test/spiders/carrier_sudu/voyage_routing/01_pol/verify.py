@@ -1,4 +1,4 @@
-from crawler.core_carrier.items import VesselItem
+from crawler.core_carrier.items import VesselItem, LocationItem
 
 
 def verify(results):
@@ -6,8 +6,8 @@ def verify(results):
             vessel_key='MSC BARBARA',
             vessel='MSC BARBARA',
             voyage='939',
-            pol='Shanghai CNSHA',
-            pod=None,
+            pol=LocationItem(name='Shanghai CNSHA'),
+            pod=LocationItem(name=None),
             etd='Thu 26-Sep-2019',
             eta=None,
         )
