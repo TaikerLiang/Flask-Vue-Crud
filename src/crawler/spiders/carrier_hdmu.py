@@ -1,155 +1,296 @@
 import dataclasses
+from logging import Logger
+from typing import Dict, List
 
 import scrapy
 from scrapy import Selector
+from twisted.python.failure import Failure
 
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
-from crawler.core_carrier.items import MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, BaseCarrierError
+from crawler.core_carrier.items import (
+    MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData, BaseCarrierItem)
+from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import (
     TableExtractor, TopHeaderTableLocator, TopLeftHeaderTableLocator, LeftHeaderTableLocator)
 from w3lib.http import basic_auth_header
 import random
 
-class UrlFactory:
-    # BASE_URL = 'https://www.hmm21.com/ebiz/track_trace'
-    BASE_URL = 'https://www.hmm21.com'
-    def build_homepage_url(self):
-        return f'{self.BASE_URL}'
 
-    def build_mbl_url(self):
-        return f'{self.BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp'
+BASE_URL = 'https://www.hmm21.com'
 
-    def build_container_url(self, mbl_no):
-        return f'{self.BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={mbl_no}'
 
-    def build_availability_url(self):
-        return f'{self.BASE_URL}/ebiz/track_trace/WUTInfo.jsp'
+@dataclasses.dataclass
+class FormRequestConfig:
+    rule_name: str
+    url: str
+    form_data: Dict = dataclasses.field(default_factory=dict)
+    meta: Dict = dataclasses.field(default_factory=dict)
 
-    def build_proxy_url(self):
-        return f'proxy.apify.com:8000'
 
-class FormDataFactory:
-    @staticmethod
-    def _build_numbers_list(mbl_no):
-        return [
-            mbl_no,
-            '', '', '', '', '',
-            '', '', '', '', '',
-            '', '', '', '', '',
-            '', '', '', '', '',
-            '', '', '',
+@dataclasses.dataclass
+class ForceRestart:
+    pass
+
+
+class CarrierHdmuSpider(BaseCarrierSpider):
+    name = 'carrier_hdmu'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        rules = [
+            CookiesRoutingRule(),
+            MainRoutingRule(),
+            ContainerRoutingRule(),
+            AvailabilityRoutingRule(),
         ]
 
-    def build_main_info_formdata(self, mbl_no):
+        self._rule_manager = RuleManager(rules=rules)
+        self._restart_manager = RestartManager()
+        self._proxy_manager = ProxyManager(logger=self.logger)
+
+    def start_requests(self):
+        yield self._prepare_restart()
+
+    def retry(self, failure: Failure):
+        yield self._prepare_restart()
+
+    def parse(self, response):
+        routing_rule = self._rule_manager.get_rule_by_response(response=response)
+
+        # save file
+        save_name = routing_rule.get_save_name(response=response)
+        self._saver.save(to=save_name, text=response.text)
+
+        # handle
+        for result in routing_rule.handle(response=response):
+            if isinstance(result, BaseCarrierItem):
+                self._restart_manager.add_item(item=result)
+            elif isinstance(result, FormRequestConfig):
+                form_request = self._build_form_request_by(request_config=result)
+                self._restart_manager.add_request(request=form_request)
+            elif isinstance(result, ForceRestart):
+                restart_request = self._prepare_restart()
+                self._restart_manager.add_request(request=restart_request)
+            else:
+                raise RuntimeError()
+
+        # yield request / item
+        if self._restart_manager.has_request():
+            yield self._restart_manager.next_request()
+        else:
+            for item in self._restart_manager.iter_items():
+                yield item
+
+    def _prepare_restart(self) -> scrapy.Request:
+        self._restart_manager.reset()
+        return self._build_start_request()
+
+    def _build_start_request(self):
+        request_config = CookiesRoutingRule.build_request_config(mbl_no=self.mbl_no)
+
+        headers = {
+            'Upgrade-Insecure-Requests': '1',
+            **self._proxy_manager.get_proxy_auth(renew=True),
+        }
+
+        meta = {
+            'proxy': self._proxy_manager.PROXY_URL,
+            RuleManager.META_CARRIER_CORE_RULE_NAME: request_config.rule_name,
+            **request_config.meta,
+        }
+
+        return scrapy.Request(
+            url=request_config.url,
+            headers=headers,
+            meta=meta,
+            dont_filter=True,
+            callback=self.parse,
+            errback=self.retry,
+        )
+
+    def _build_form_request_by(self, request_config: FormRequestConfig):
+        headers = {
+            'Upgrade-Insecure-Requests': '1',
+            **self._proxy_manager.get_proxy_auth(renew=False),
+        }
+
+        meta = {
+            'proxy': self._proxy_manager.PROXY_URL,
+            RuleManager.META_CARRIER_CORE_RULE_NAME: request_config.rule_name,
+            **request_config.meta,
+        }
+
+        return scrapy.FormRequest(
+            url=request_config.url,
+            headers=headers,
+            formdata=request_config.form_data,
+            meta=meta,
+            dont_filter=True,
+            callback=self.parse,
+            errback=self.retry,
+        )
+
+
+# -------------------------------------------------------------------------------
+
+
+class RestartManager:
+
+    def __init__(self):
+        self._items = []
+        self._request_queue = []
+
+    def reset(self):
+        self._items = []
+        self._request_queue = []
+
+    def add_item(self, item: BaseCarrierItem):
+        self._items.append(item)
+
+    def add_request(self, request: scrapy.Request):
+        self._request_queue.append(request)
+
+    def has_request(self) -> bool:
+        return bool(self._request_queue)
+
+    def next_request(self) -> scrapy.Request:
+        return self._request_queue.pop(0)
+
+    def iter_items(self) -> List[BaseCarrierItem]:
+        for item in self._items:
+            yield item
+
+
+# -------------------------------------------------------------------------------
+
+
+class ProxyManager:
+    PROXY_URL = 'proxy.apify.com:8000'
+    PROXY_PASSWORD = 'XZTBLpciyyTCFb3378xWJbuYY'
+    MAX_RENEW = 10
+
+    def __init__(self, logger: Logger):
+        self._logger = logger
+
+        self._proxy_auth = b''
+        self._renew_count = 0
+
+    def get_proxy_auth(self, renew: bool = False) -> Dict:
+        if renew:
+            self._proxy_auth = self._do_renew()
+
         return {
+            'Proxy-Authorization': self._proxy_auth,
+        }
+
+    def _do_renew(self):
+        if self._renew_count > self.MAX_RENEW:
+            raise CarrierProxyMaxRetryError()
+
+        self._renew_count += 1
+        self._logger.warning(f'----- renew proxy ({self._renew_count})')
+
+        renew_username = f'groups-RESIDENTIAL,session-rand{random.random()}'
+        return basic_auth_header(renew_username, self.PROXY_PASSWORD)
+
+
+class CarrierProxyMaxRetryError(BaseCarrierError):
+    status = CARRIER_RESULT_STATUS_FATAL
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail='<proxy-max-retry-error>')
+
+
+# -------------------------------------------------------------------------------
+
+
+class CookiesRoutingRule(BaseRoutingRule):
+    name = 'COOKIES'
+
+    @classmethod
+    def build_request_config(cls, mbl_no):
+        return FormRequestConfig(
+            rule_name=cls.name,
+            url=BASE_URL,
+            meta={
+                'mbl_no': mbl_no,
+            },
+        )
+
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
+
+    def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+
+        if self._check_cookies(response=response):
+            yield MainRoutingRule.build_request_config(mbl_no=mbl_no)
+        else:
+            yield ForceRestart()
+
+    @staticmethod
+    def _check_cookies(response):
+        cookies = {}
+        for cookie_byte in response.headers.getlist('Set-Cookie'):
+            kv = cookie_byte.decode('utf-8').split(';')[0].split('=')
+            cookies[kv[0]] = kv[1]
+
+        return cookies
+
+
+# -------------------------------------------------------------------------------
+
+
+class MainRoutingRule(BaseRoutingRule):
+    name = 'MAIN'
+
+    @classmethod
+    def build_request_config(cls, mbl_no):
+        form_data = {
             'number': mbl_no,
             'type': '1',
             'selectedContainerIndex': '',
             'blFields': '3',
             'cnFields': '3',
             'is_quick': 'Y',
-            'numbers': self._build_numbers_list(mbl_no),
+            'numbers': [
+                mbl_no, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+            ],
         }
 
-    def build_container_formdata(self, mbl_no, container_index, h_num):
-        return {
-            'selectedContainerIndex': f'{container_index}',
-            'hNum': f'{h_num}',
-            'tempBLOrBKG': mbl_no,
-            'numbers': self._build_numbers_list(mbl_no),
-        }
-
-    @staticmethod
-    def build_availability_formdata(mbl_no, container_no):
-        return {
-            'bno': mbl_no,
-            'cntrNo': f'{container_no}',
-        }
-
-
-class CarrierHdmuSpider(BaseCarrierSpider):
-    name = 'carrier_hdmu'
-    headers = {
-        'Upgrade-Insecure-Requests': '1',
-    }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.url_factory = UrlFactory()
-        self.formdata_factory = FormDataFactory()
-
-    def start_requests(self):
-        self.change_proxy()
-        url = self.url_factory.build_homepage_url()
-        yield scrapy.Request(
-            url=url,
-            headers=self.headers,
-            callback=self.parse_home_page,
-            meta={'proxy': self.url_factory.build_proxy_url()},
-            errback=self.retry,
+        return FormRequestConfig(
+            rule_name=cls.name,
+            url=f'{BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp',
+            form_data=form_data,
+            meta={
+                'mbl_no': mbl_no,
+            }
         )
 
-    def retry(self, response):
-        self.change_proxy()
-        yield scrapy.Request(
-            url=self.url_factory.build_homepage_url(),
-            headers=self.headers,
-            callback=self.parse_home_page,
-            meta={'proxy': self.url_factory.build_proxy_url()},
-            dont_filter=True,
-            errback=self.retry,
-        )
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
 
-    def change_proxy(self):
-        self.headers['Proxy-Authorization'] = basic_auth_header(
-            f'groups-RESIDENTIAL,session-rand{random.random()}',
-            'XZTBLpciyyTCFb3378xWJbuYY',
-        )
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
 
-    def parse(self, response):
-        raise RuntimeError()
+    def handle(self, response):
+        mbl_no = response.meta['mbl_no']
 
-    def parse_home_page(self, response):
-        """
-        for cookies purpose
-        """
-        formdata = self.formdata_factory.build_main_info_formdata(mbl_no=self.mbl_no)
-        url = self.url_factory.build_mbl_url()
+        self._check_mbl_no(response=response)
 
-
-        cookies = {}
-        for cookie_byte in response.headers.getlist('Set-Cookie'):
-            kv = cookie_byte.decode('utf-8').split(';')[0].split('=')
-            cookies[kv[0]] = kv[1]
-
-        if not cookies:
-            for request in self.retry(response):
-                yield request
-        else:
-            yield scrapy.FormRequest(
-                url=url,
-                headers=self.headers,
-                formdata=formdata,
-                callback=self.parse_main_info,
-                meta={'proxy': self.url_factory.build_proxy_url()},
-                dont_filter=True,
-                errback=self.retry,
-            )
-
-    def parse_main_info(self, response):
-        err_message = _Extractor.extract_error_message(response=response)
-        if err_message == 'B/L number is invalid.  Please try it again with correct number.':
-            raise CarrierInvalidMblNoError()
-        
-        tracking_results = _Extractor.extract_tracking_results(response=response)
-        customs_status = _Extractor.extract_customs_status(response=response)
-        cargo_delivery_info = _Extractor.extract_cargo_delivery_info(response=response)
-        latest_update = _Extractor.extract_lastest_update(response=response)
+        tracking_results = self._extract_tracking_results(response=response)
+        customs_status = self._extract_customs_status(response=response)
+        cargo_delivery_info = self._extract_cargo_delivery_info(response=response)
+        latest_update = self._extract_lastest_update(response=response)
 
         yield MblItem(
-            mbl_no=self.mbl_no,
+            mbl_no=mbl_no,
             por=LocationItem(name=tracking_results['location.por']),
             pod=LocationItem(name=tracking_results['location.pod']),
             pol=LocationItem(name=tracking_results['location.pol']),
@@ -178,7 +319,7 @@ class CarrierHdmuSpider(BaseCarrierSpider):
             way_bill_date=cargo_delivery_info['way_bill_time'],
         )
 
-        vessel = _Extractor.extract_vessel(response=response)
+        vessel = self._extract_vessel(response=response)
         yield VesselItem(
             vessel_key=vessel['vessel'],
             vessel=vessel['vessel'],
@@ -192,119 +333,29 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         )
 
         # parse other containers if there are many containers
-        container_extractor = _ContainerExtractor()
-        container_contents = container_extractor.extract_container_contents(response=response)
+        container_contents = self._extract_container_contents(response=response)
         h_num = -1
         for container_content in container_contents:
             if container_content.is_current:
-                response.meta['container_content'] = container_content
-                for item in self.parse_container(response=response):
-                    yield item
+                response.meta['container_index'] = container_content.index
+
+                container_routing_rule = ContainerRoutingRule()
+                for result in container_routing_rule.handle(response=response):
+                    yield result
 
             else:
                 h_num -= 1
-                container_url = self.url_factory.build_container_url(mbl_no=self.mbl_no)
-                formdata = self.formdata_factory.build_container_formdata(
-                    mbl_no=self.mbl_no, container_index=container_content.index, h_num=h_num,
-                )
+                yield ContainerRoutingRule.build_request_config(
+                    mbl_no=mbl_no, container_index=container_content.index, h_num=h_num)
 
-                yield scrapy.FormRequest(
-                    url=container_url,
-                    headers=self.headers,
-                    formdata=formdata,
-                    callback=self.parse_container,
-                    meta={
-                        'container_content': container_content,
-                        'proxy': self.url_factory.build_proxy_url(),
-                    },
-                    dont_filter=True,
-                    errback=self.retry,
-                )
-
-    def parse_container(self, response):
-        container_content = response.meta['container_content']
-
-        container_extractor = _ContainerExtractor()
-
-        tracking_results = _Extractor.extract_tracking_results(response=response)
-        container_info = container_extractor.extract_container_info(response=response, container_content=container_content)
-        empty_return_location = _Extractor.extract_empty_return_location(response=response)
-        container_status = list(_ContainerStatusExtractor.extract_container_status(response=response))
-
-        container_no = container_info['container_no']
-
-        container_item = ContainerItem(
-                container_key=container_no,
-                container_no=container_no,
-                last_free_day=container_info['lfd'],
-                mt_location=LocationItem(name=empty_return_location['empty_return_location']),
-                det_free_time_exp_date=empty_return_location['fdd'],
-                por_etd=tracking_results['departure.por_estimate'],
-                pol_eta=tracking_results['arrival.pol_estimate'],
-                final_dest_eta=tracking_results['arrival.dest_estimate'],
-                ready_for_pick_up=None,  # it may be assign in availability
-        )
-
-        # catch availability
-        ava_exist = _Extractor.extract_availability_exist(response=response)
-        if ava_exist:
-            ava_formdata = self.formdata_factory.build_availability_formdata(
-                mbl_no=self.mbl_no, container_no=container_content.container_no,
-            )
-            ava_url = self.url_factory.build_availability_url()
-
-            yield scrapy.FormRequest(
-                url=ava_url,
-                headers=self.headers,
-                formdata=ava_formdata,
-                callback=self.parse_availability,
-                meta={
-                    'container_item': container_item,
-                },
-            )
-        else:
-            yield container_item
-
-        for container in container_status:
-            container_no = container_info['container_no']
-
-            yield ContainerStatusItem(
-                container_key=container_no,
-                description=container['status'],
-                local_date_time=container['date'],
-                location=LocationItem(name=container['location']),
-                transport=container['mode']
-            )
-
-    def parse_availability(self, response):
-        container_item = response.meta['container_item']
-
-        ready_for_pick_up = _AvailabilityExtractor.extract_availability(response)
-        container_item['ready_for_pick_up'] = ready_for_pick_up
-        yield container_item
-
-
-class RedBlueTdExtractor(BaseTableCellExtractor):
-
-    def extract(self, cell: Selector):
-        red_text_list = [c.strip() for c in cell.css('span.font_red::text').getall()]
-        blue_text_list = [c.strip() for c in cell.css('span.font_blue::text').getall()]
-        return {
-            'red': ' '.join(red_text_list) or None,
-            'blue': ' '.join(blue_text_list) or None,
-        }
-
-
-class IgnoreDashTdExtractor(BaseTableCellExtractor):
-    def extract(self, cell: Selector):
-        td_text = cell.css('::text').get()
-        text = td_text.strip() if td_text else ''
-        return text if text != '-' else None
-
-
-class _Extractor:
     @staticmethod
-    def extract_tracking_results(response):
+    def _check_mbl_no(response):
+        err_message = response.css('div#trackingForm p.text_type03::text').get()
+        if err_message == 'B/L number is invalid.  Please try it again with correct number.':
+            raise CarrierInvalidMblNoError()
+
+    @staticmethod
+    def _extract_tracking_results(response):
         table_selector = response.css('#trackingForm div.base_table01')[0]
         table_locator = TopLeftHeaderTableLocator()
         table_locator.parse(table=table_selector)
@@ -329,45 +380,7 @@ class _Extractor:
         }
 
     @staticmethod
-    def extract_vessel(response):
-        table_selector = response.css('#trackingForm div.base_table01')[3]
-        table_locator=TopHeaderTableLocator()
-        table_locator.parse(table=table_selector)
-        table = TableExtractor(table_locator=table_locator)
-        red_blue_td_extractor = RedBlueTdExtractor()
-
-        vessel_voyage_str = table.extract_cell('Vessel / Voyage', 0).split()
-        vessel = ' '.join(vessel_voyage_str[:-1])
-        voyage = vessel_voyage_str[-1]
-
-        return {
-            'vessel': vessel,
-            'voyage': voyage,
-            'pol': table.extract_cell('Loading Port', 0),
-            'pod': table.extract_cell('Discharging Port', 0),
-            'ata': table.extract_cell('Arrival', 0, red_blue_td_extractor)['blue'],
-            'eta': table.extract_cell('Arrival', 0, red_blue_td_extractor)['red'],
-            'atd': table.extract_cell('Departure', 0, red_blue_td_extractor)['blue'],
-            'etd': table.extract_cell('Departure', 0, red_blue_td_extractor)['red'],
-        }
-
-    @staticmethod
-    def extract_customs_status(response):
-        table_selector = response.css('#trackingForm div.base_table01')[4]
-        table_locator = TopLeftHeaderTableLocator()
-        table_locator.parse(table=table_selector)
-        table = TableExtractor(table_locator=table_locator)
-
-        return{
-            'us_ams': table.extract_cell('US / AMS', 'Status') or None,
-            'canada_aci': table.extract_cell('Canada / ACI', 'Status') or None,
-            'eu_ens': table.extract_cell('EU / ENS', 'Status') or None,
-            'china_cams': table.extract_cell('China / CAMS', 'Status') or None,
-            'japan_afr': table.extract_cell('Japan / AFR', 'Status') or None,
-        }
-
-    @staticmethod
-    def extract_cargo_delivery_info(response):
+    def _extract_cargo_delivery_info(response):
         table_selector = response.css('#trackingForm div.left_table01')[1]
         table_locator = LeftHeaderTableLocator()
         table_locator.parse(table=table_selector)
@@ -398,49 +411,50 @@ class _Extractor:
         }
 
     @staticmethod
-    def extract_empty_return_location(response):
-        table_selector = response.css('#trackingForm div.left_table01')[2]
-        table_locator = LeftHeaderTableLocator()
+    def _extract_customs_status(response):
+        table_selector = response.css('#trackingForm div.base_table01')[4]
+        table_locator = TopLeftHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
-        fdd = table.extract_cell(0, 'Detention Freetime Expiry Date', extractor=IgnoreDashTdExtractor())
 
         return {
-            'empty_return_location': table.extract_cell(0, 'Empty Container Return Location'),
-            'fdd': fdd,
+            'us_ams': table.extract_cell('US / AMS', 'Status') or None,
+            'canada_aci': table.extract_cell('Canada / ACI', 'Status') or None,
+            'eu_ens': table.extract_cell('EU / ENS', 'Status') or None,
+            'china_cams': table.extract_cell('China / CAMS', 'Status') or None,
+            'japan_afr': table.extract_cell('Japan / AFR', 'Status') or None,
         }
 
     @staticmethod
-    def extract_lastest_update(response):
+    def _extract_lastest_update(response):
         latest_update = ' '.join(response.css('p.text_type02::text')[-1].get().split()[-6:])
         return latest_update
-    
-    @staticmethod
-    def extract_error_message(response):
-        err_message = response.css('div#trackingForm p.text_type03::text').get()
-        return err_message
 
     @staticmethod
-    def extract_availability_exist(response):
-        ava_exist = response.xpath('//a[text()="Container Availability"]').get()
-        return bool(ava_exist)
+    def _extract_vessel(response):
+        table_selector = response.css('#trackingForm div.base_table01')[3]
+        table_locator = TopHeaderTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
+        red_blue_td_extractor = RedBlueTdExtractor()
 
+        vessel_voyage_str = table.extract_cell('Vessel / Voyage', 0).split()
+        vessel = ' '.join(vessel_voyage_str[:-1])
+        voyage = vessel_voyage_str[-1]
 
-@dataclasses.dataclass
-class ContainerContent:
-    container_no: str
-    index: int
-    is_current: bool
+        return {
+            'vessel': vessel,
+            'voyage': voyage,
+            'pol': table.extract_cell('Loading Port', 0),
+            'pod': table.extract_cell('Discharging Port', 0),
+            'ata': table.extract_cell('Arrival', 0, red_blue_td_extractor)['blue'],
+            'eta': table.extract_cell('Arrival', 0, red_blue_td_extractor)['red'],
+            'atd': table.extract_cell('Departure', 0, red_blue_td_extractor)['blue'],
+            'etd': table.extract_cell('Departure', 0, red_blue_td_extractor)['red'],
+        }
 
-
-class _ContainerExtractor:
-    @staticmethod
-    def _get_conatiner_table(response):
-        container_table = response.css('#trackingForm div.base_table01')[1]
-        return container_table
-
-    def extract_container_contents(self, response):
-        table_selector = self._get_conatiner_table(response=response)
+    def _extract_container_contents(self, response):
+        table_selector = self._get_container_table(response=response)
         container_selectors = table_selector.css('tbody tr')
 
         container_contents = []
@@ -454,12 +468,123 @@ class _ContainerExtractor:
             ))
         return container_contents
 
-    def extract_container_info(self, response, container_content: ContainerContent):
-        table_selector = self._get_conatiner_table(response=response)
+    @staticmethod
+    def _get_container_table(response):
+        container_table = response.css('#trackingForm div.base_table01')[1]
+        return container_table
+
+
+# -------------------------------------------------------------------------------
+
+
+@dataclasses.dataclass
+class ContainerContent:
+    container_no: str
+    index: int
+    is_current: bool
+
+
+class ContainerRoutingRule(BaseRoutingRule):
+    name = 'CONTAINER'
+
+    @classmethod
+    def build_request_config(cls, mbl_no, container_index, h_num):
+        form_data = {
+            'selectedContainerIndex': f'{container_index}',
+            'hNum': f'{h_num}',
+            'tempBLOrBKG': mbl_no,
+            'numbers': [
+                mbl_no, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+            ],
+        }
+
+        return FormRequestConfig(
+            rule_name=cls.name,
+            url=f'{BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={mbl_no}',
+            form_data=form_data,
+            meta={
+                'mbl_no': mbl_no,
+                'container_index': container_index,
+            }
+        )
+
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
+
+    def get_save_name(self, response) -> str:
+        container_index = response.meta['container_index']
+        return f'{self.name}_{container_index}.html'
+
+    def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+        container_index = response.meta['container_index']
+
+        tracking_results = self._extract_tracking_results(response=response)
+        container_info = self._extract_container_info(response=response, container_index=container_index)
+        empty_return_location = self._extract_empty_return_location(response=response)
+        container_status = self._extract_container_status_list(response=response)
+
+        container_no = container_info['container_no']
+
+        yield ContainerItem(
+            container_key=container_no,
+            container_no=container_no,
+            last_free_day=container_info['lfd'],
+            mt_location=LocationItem(name=empty_return_location['empty_return_location']),
+            det_free_time_exp_date=empty_return_location['fdd'],
+            por_etd=tracking_results['departure.por_estimate'],
+            pol_eta=tracking_results['arrival.pol_estimate'],
+            final_dest_eta=tracking_results['arrival.dest_estimate'],
+            ready_for_pick_up=None,  # it may be assign in availability
+        )
+
+        # catch availability
+        ava_exist = self._extract_availability_exist(response=response)
+        if ava_exist:
+            yield AvailabilityRoutingRule.build_request_config(mbl_no=mbl_no, container_no=container_no)
+
+        for container in container_status:
+            container_no = container_info['container_no']
+
+            yield ContainerStatusItem(
+                container_key=container_no,
+                description=container['status'],
+                local_date_time=container['date'],
+                location=LocationItem(name=container['location']),
+                transport=container['mode']
+            )
+
+    @staticmethod
+    def _extract_tracking_results(response):
+        table_selector = response.css('#trackingForm div.base_table01')[0]
+        table_locator = TopLeftHeaderTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
+        red_blue_td_extractor = RedBlueTdExtractor()
+
+        return {
+            'location.por': table.extract_cell('Origin', 'Location'),
+            'location.pol': table.extract_cell('Loading Port', 'Location'),
+            'location.pod': table.extract_cell('Discharging Port', 'Location'),
+            'Location.dest': table.extract_cell('Destination', 'Location'),
+            'arrival.pol_estimate': table.extract_cell('Loading Port', 'Arrival', red_blue_td_extractor)['red'],
+            'arrival.pol_actual': table.extract_cell('Loading Port', 'Arrival', red_blue_td_extractor)['blue'],
+            'arrival.pod_estimate': table.extract_cell('Discharging Port', 'Arrival', red_blue_td_extractor)['red'],
+            'arrival.pod_actual': table.extract_cell('Discharging Port', 'Arrival', red_blue_td_extractor)['blue'],
+            'arrival.dest_estimate': table.extract_cell('Destination', 'Arrival', red_blue_td_extractor)['red'],
+            'arrival.dest_actual': table.extract_cell('Destination', 'Arrival', red_blue_td_extractor)['blue'],
+            'departure.por_estimate': table.extract_cell('Origin', 'Departure', red_blue_td_extractor)['red'],
+            'departure.por_actual': table.extract_cell('Origin', 'Departure', red_blue_td_extractor)['blue'],
+            'departure.pol_estimate': table.extract_cell('Loading Port', 'Departure', red_blue_td_extractor)['red'],
+            'departure.pol_actual': table.extract_cell('Loading Port', 'Departure', red_blue_td_extractor)['blue'],
+        }
+
+    def _extract_container_info(self, response, container_index):
+        table_selector = self._get_container_table(response=response)
         table_locator = TopHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
-        index = container_content.index
+        index = container_index
 
         if table.has_header(top='Last Free Day (Basic)'):
             lfd = table.extract_cell('Last Free Day (Basic)', index)
@@ -472,34 +597,115 @@ class _ContainerExtractor:
             'lfd': lfd,
         }
 
-
-class _ContainerStatusExtractor:
     @staticmethod
-    def extract_container_status(response):
+    def _extract_container_status_list(response) -> list:
         table_selector = response.css('#trackingForm div.base_table01')[5]
         table_locator = TopHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
 
+        container_status_list = []
         for index, tr in enumerate(table_selector.css('tbody tr')):
             date = table.extract_cell('Date', index)
             time = table.extract_cell('Time', index)
             location = table.extract_cell('Location', index, extractor=IgnoreDashTdExtractor())
             mode = table.extract_cell('Mode', index, extractor=IgnoreDashTdExtractor())
 
-            yield {
+            container_status_list.append({
                 'date': f'{date} {time}',
                 'location': location,
                 'status': table.extract_cell('Status Description', index),
                 'mode': mode,
-            }
+            })
 
+        return container_status_list
 
-class _AvailabilityExtractor:
     @staticmethod
-    def extract_availability(response):
+    def _extract_availability_exist(response):
+        ava_exist = response.xpath('//a[text()="Container Availability"]').get()
+        return bool(ava_exist)
+
+    @staticmethod
+    def _extract_empty_return_location(response):
+        table_selector = response.css('#trackingForm div.left_table01')[2]
+        table_locator = LeftHeaderTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
+        fdd = table.extract_cell(0, 'Detention Freetime Expiry Date', extractor=IgnoreDashTdExtractor())
+
+        return {
+            'empty_return_location': table.extract_cell(0, 'Empty Container Return Location'),
+            'fdd': fdd,
+        }
+
+    @staticmethod
+    def _get_container_table(response):
+        container_table = response.css('#trackingForm div.base_table01')[1]
+        return container_table
+
+
+# -------------------------------------------------------------------------------
+
+
+class AvailabilityRoutingRule(BaseRoutingRule):
+    name = 'AVAILABILITY'
+
+    @classmethod
+    def build_request_config(cls, mbl_no, container_no):
+        form_data = {
+            'bno': mbl_no,
+            'cntrNo': f'{container_no}',
+        }
+
+        return FormRequestConfig(
+            rule_name=cls.name,
+            url=f'{BASE_URL}/ebiz/track_trace/WUTInfo.jsp',
+            form_data=form_data,
+            meta={
+                'container_no': container_no,
+            }
+        )
+
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
+
+    def get_save_name(self, response) -> str:
+        container_no = response.meta['container_no']
+        return f'{self.name}_{container_no}.html'
+
+    def handle(self, response):
+        container_no = response.meta['container_no']
+
+        ready_for_pick_up = self._extract_availability(response)
+
+        yield ContainerItem(
+            container_key=container_no,
+            ready_for_pick_up=ready_for_pick_up,
+        )
+
+    @staticmethod
+    def _extract_availability(response):
         table_selector = response.css('table.ty03')
         table_locator = TopHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
         return table.extract_cell('STATUS', 0)
+
+
+class RedBlueTdExtractor(BaseTableCellExtractor):
+
+    def extract(self, cell: Selector):
+        red_text_list = [c.strip() for c in cell.css('span.font_red::text').getall()]
+        blue_text_list = [c.strip() for c in cell.css('span.font_blue::text').getall()]
+        return {
+            'red': ' '.join(red_text_list) or None,
+            'blue': ' '.join(blue_text_list) or None,
+        }
+
+
+class IgnoreDashTdExtractor(BaseTableCellExtractor):
+    def extract(self, cell: Selector):
+        td_text = cell.css('::text').get()
+        text = td_text.strip() if td_text else ''
+        return text if text != '-' else None
+
