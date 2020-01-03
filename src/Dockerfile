@@ -3,7 +3,9 @@ FROM scrapinghub/scrapinghub-stack-scrapy:1.7-py3
 RUN set -ex \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
-        unzip
+        unzip \
+        xvfb
+
 
 RUN printf "deb http://archive.debian.org/debian/ jessie main\ndeb-src http://archive.debian.org/debian/ jessie main\ndeb http://security.debian.org jessie/updates main\ndeb-src http://security.debian.org jessie/updates main" > /etc/apt/sources.list
 
@@ -34,7 +36,7 @@ RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key
 # Latest released version will be used by default
 #============================================
 ARG CHROME_DRIVER_VERSION
-RUN CHROME_STRING=$(google-chrome --version) \ 
+RUN CHROME_STRING=$(google-chrome --version) \
   && CHROME_VERSION_STRING=$(echo "${CHROME_STRING}" | grep -oP "\d+\.\d+\.\d+\.\d+") \
   && CHROME_MAYOR_VERSION=$(echo "${CHROME_VERSION_STRING%%.*}") \
   && wget --no-verbose -O /tmp/LATEST_RELEASE "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_MAYOR_VERSION}" \
@@ -52,6 +54,31 @@ RUN CHROME_STRING=$(google-chrome --version) \
   && mv /opt/selenium/chromedriver /opt/selenium/chromedriver-$CD_VERSION \
   && chmod 755 /opt/selenium/chromedriver-$CD_VERSION \
   && sudo ln -fs /opt/selenium/chromedriver-$CD_VERSION /usr/local/bin/chromedriver
+
+#============================================
+# PhontomJS
+#============================================
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        bzip2 \
+        libfontconfig \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl \
+    && mkdir /tmp/phantomjs \
+    && curl -L https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 \
+           | tar -xj --strip-components=1 -C /tmp/phantomjs \
+    && cd /tmp/phantomjs \
+    && mv bin/phantomjs /usr/local/bin \
+    && apt-get purge --auto-remove -y \
+        curl \
+    && apt-get clean \
+    && rm -rf /tmp/* /var/lib/apt/lists/*
+
 
 ENV TERM xterm
 ENV SCRAPY_SETTINGS_MODULE crawler.settings

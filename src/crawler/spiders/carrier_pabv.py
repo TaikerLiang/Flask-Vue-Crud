@@ -16,6 +16,8 @@ from selenium.common.exceptions import TimeoutException
 from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
+from w3lib.http import basic_auth_header
+import random
 
 PABV_BASE_URL = 'https://www.pilship.com'
 
@@ -34,10 +36,15 @@ class CarrierPabvSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start_requests(self):
-        cookies_getter = CookiesGetter()
+        ramdon_session = f'session-{random.random()}'
+        cookies_getter = CookiesGetter(ramdon_session)
         cookies = cookies_getter.get_cookies()
 
-        routing_request = TrackRoutingRule.build_routing_request(mbl_no=self.mbl_no, cookies=cookies)
+        routing_request = TrackRoutingRule.build_routing_request(
+            mbl_no=self.mbl_no,
+            cookies=cookies,
+            session=ramdon_session,
+        )
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):
@@ -57,16 +64,22 @@ class CarrierPabvSpider(BaseCarrierSpider):
 
 # -------------------------------------------------------------------------------
 
+def get_proxy_headers(session='pabv'):
+    return {'Proxy-Authorization': basic_auth_header(
+        f'groups-RESIDENTIAL,{session}',
+        'XZTBLpciyyTCFb3378xWJbuYY',
+    )}
 
 class TrackRoutingRule(BaseRoutingRule):
     name = 'TRACK'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, cookies: dict) -> RoutingRequest:
+    def build_routing_request(cls, mbl_no: str, cookies: dict, session: str) -> RoutingRequest:
         request = scrapy.Request(
             url=f'{PABV_BASE_URL}/shared/ajax/?fn=get_tracktrace_bl&ref_num={mbl_no}',
+            headers=get_proxy_headers(session),
             cookies=cookies,
-            meta={'cookies': cookies},
+            meta={'cookies': cookies, 'proxy': 'proxy.apify.com:8000', 'session': session},
         )
         return RoutingRequest(request=request, rule_name=cls.name)
 
@@ -75,6 +88,7 @@ class TrackRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         cookies = response.meta['cookies']
+        session = response.meta['session']
 
         try:
             response_dict = json.loads(response.text)
@@ -114,7 +128,7 @@ class TrackRoutingRule(BaseRoutingRule):
         container_ids = self._extract_containers(content=content)
         for container_id in container_ids:
             yield ContainerItem(container_key=container_id, container_no=container_id)
-            yield ContainerRoutingRule.build_routing_request(mbl_no=mbl_no, cookies=cookies, container_id=container_id)
+            yield ContainerRoutingRule.build_routing_request(mbl_no=mbl_no, cookies=cookies, container_id=container_id, session=session)
 
     @staticmethod
     def _extract_schedule_info(content):
@@ -188,14 +202,15 @@ class ContainerRoutingRule(BaseRoutingRule):
     name = 'CONTAINER'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, cookies: dict, container_id: str) -> RoutingRequest:
+    def build_routing_request(cls, mbl_no: str, cookies: dict, container_id: str, session: str) -> RoutingRequest:
         request = scrapy.Request(
             url=(
                 f'{PABV_BASE_URL}/shared/ajax/?fn=get_track_container_status&search_type=bl'
                 f'&search_type_no={mbl_no}&ref_num={container_id}'
             ),
+            headers=get_proxy_headers(session),
             cookies=cookies,
-            meta={'container_id': container_id},
+            meta={'container_id': container_id, 'proxy': 'proxy.apify.com:8000'},
         )
         return RoutingRequest(request=request, rule_name=cls.name)
 
@@ -258,15 +273,13 @@ class ContainerRoutingRule(BaseRoutingRule):
 
 class CookiesGetter:
 
-    def __init__(self):
-        options = webdriver.ChromeOptions()
-        options.add_argument('--disable-extensions')
-        options.add_argument('--headless')
-        options.add_argument('--disable-gpu')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--no-sandbox')
-
-        self._browser = webdriver.Chrome(chrome_options=options)
+    def __init__(self, session):
+        service_args = [
+            '--proxy=http://proxy.apify.com:8000',
+            '--proxy-type=http',
+            f'--proxy-auth=groups-RESIDENTIAL,{session}:XZTBLpciyyTCFb3378xWJbuYY',
+        ]
+        self._browser = webdriver.PhantomJS(service_args=service_args)
 
     def get_cookies(self):
 

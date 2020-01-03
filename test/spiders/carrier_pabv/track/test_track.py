@@ -36,6 +36,7 @@ def test_track_handler(sub, mbl_no, sample_loader):
                 RuleManager.META_CARRIER_CORE_RULE_NAME: TrackRoutingRule.name,
                 'mbl_no': mbl_no,
                 'cookies': '',
+                'session': '',
             }
         )
     )
@@ -67,6 +68,7 @@ def test_track_handler_no_mbl_error(sub, mbl_no, sample_file, expect_exception, 
                 RuleManager.META_CARRIER_CORE_RULE_NAME: TrackRoutingRule.name,
                 'mbl_no': mbl_no,
                 'cookies': '',
+                'session': '',
             }
         )
     )
