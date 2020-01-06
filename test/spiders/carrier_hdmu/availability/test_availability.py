@@ -21,14 +21,14 @@ def sample_loader(sample_loader):
 def test_availability_routing_rule(sub, mbl_no, sample_loader, container_no):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    request_config = AvailabilityRoutingRule.build_request_config(mbl_no=mbl_no, container_no=container_no)
+    option = AvailabilityRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
 
     response = TextResponse(
-        url=request_config.url,
+        url=option.url,
         body=html_text,
         encoding='utf-8',
         request=Request(
-            url=request_config.url,
+            url=option.url,
             meta={
                 'container_no': container_no,
             }

@@ -36,6 +36,13 @@ class CarrierResponseFormatError(BaseCarrierError):
         return ExportErrorData(status=self.status, detail=f'<format-error> {self.reason}')
 
 
+class CarrierProxyMaxRetryError(BaseCarrierError):
+    status = CARRIER_RESULT_STATUS_FATAL
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail='<proxy-max-retry-error>')
+
+
 class LoadWebsiteTimeOutError(BaseCarrierError):
     status = CARRIER_RESULT_STATUS_FATAL
 

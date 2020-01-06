@@ -1,33 +1,22 @@
 import dataclasses
-from logging import Logger
-from typing import Dict, List
+from typing import List
 
 import scrapy
 from scrapy import Selector
 from twisted.python.failure import Failure
 
-from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, BaseCarrierError
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
 from crawler.core_carrier.items import (
-    MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData, BaseCarrierItem)
+    MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, BaseCarrierItem)
+from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import (
     TableExtractor, TopHeaderTableLocator, TopLeftHeaderTableLocator, LeftHeaderTableLocator)
-from w3lib.http import basic_auth_header
-import random
 
 
 BASE_URL = 'https://www.hmm21.com'
-
-
-@dataclasses.dataclass
-class FormRequestConfig:
-    rule_name: str
-    url: str
-    form_data: Dict = dataclasses.field(default_factory=dict)
-    meta: Dict = dataclasses.field(default_factory=dict)
 
 
 @dataclasses.dataclass
@@ -49,7 +38,7 @@ class CarrierHdmuSpider(BaseCarrierSpider):
 
         self._rule_manager = RuleManager(rules=rules)
         self._restart_manager = RestartManager()
-        self._proxy_manager = ProxyManager(logger=self.logger)
+        self._proxy_manager = ProxyManager(session='hdmu', logger=self.logger)
 
     def start_requests(self):
         yield self._prepare_restart()
@@ -68,9 +57,10 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 self._restart_manager.add_item(item=result)
-            elif isinstance(result, FormRequestConfig):
-                form_request = self._build_form_request_by(request_config=result)
-                self._restart_manager.add_request(request=form_request)
+            elif isinstance(result, RequestOption):
+                rule_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=result)
+                rule_request = self._build_request_by(option=rule_proxy_option)
+                self._restart_manager.add_request(request=rule_request)
             elif isinstance(result, ForceRestart):
                 restart_request = self._prepare_restart()
                 self._restart_manager.add_request(request=restart_request)
@@ -86,52 +76,41 @@ class CarrierHdmuSpider(BaseCarrierSpider):
 
     def _prepare_restart(self) -> scrapy.Request:
         self._restart_manager.reset()
-        return self._build_start_request()
+        self._proxy_manager.renew_proxy()
 
-    def _build_start_request(self):
-        request_config = CookiesRoutingRule.build_request_config(mbl_no=self.mbl_no)
+        option = CookiesRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        restart_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
+        return self._build_request_by(option=restart_proxy_option)
 
-        headers = {
-            'Upgrade-Insecure-Requests': '1',
-            **self._proxy_manager.get_proxy_auth(renew=True),
-        }
-
+    def _build_request_by(self, option: RequestOption):
         meta = {
-            'proxy': self._proxy_manager.PROXY_URL,
-            RuleManager.META_CARRIER_CORE_RULE_NAME: request_config.rule_name,
-            **request_config.meta,
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
         }
 
-        return scrapy.Request(
-            url=request_config.url,
-            headers=headers,
-            meta=meta,
-            dont_filter=True,
-            callback=self.parse,
-            errback=self.retry,
-        )
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                headers=option.headers,
+                meta=meta,
+                dont_filter=True,
+                callback=self.parse,
+                errback=self.retry,
+            )
 
-    def _build_form_request_by(self, request_config: FormRequestConfig):
-        headers = {
-            'Upgrade-Insecure-Requests': '1',
-            **self._proxy_manager.get_proxy_auth(renew=False),
-        }
+        elif option.method == RequestOption.METHOD_POST_FORM:
+            return scrapy.FormRequest(
+                url=option.url,
+                headers=option.headers,
+                formdata=option.form_data,
+                meta=meta,
+                dont_filter=True,
+                callback=self.parse,
+                errback=self.retry,
+            )
 
-        meta = {
-            'proxy': self._proxy_manager.PROXY_URL,
-            RuleManager.META_CARRIER_CORE_RULE_NAME: request_config.rule_name,
-            **request_config.meta,
-        }
-
-        return scrapy.FormRequest(
-            url=request_config.url,
-            headers=headers,
-            formdata=request_config.form_data,
-            meta=meta,
-            dont_filter=True,
-            callback=self.parse,
-            errback=self.retry,
-        )
+        else:
+            raise ValueError(f'Invalid option.method [{option.method}]')
 
 
 # -------------------------------------------------------------------------------
@@ -167,54 +146,18 @@ class RestartManager:
 # -------------------------------------------------------------------------------
 
 
-class ProxyManager:
-    PROXY_URL = 'proxy.apify.com:8000'
-    PROXY_PASSWORD = 'XZTBLpciyyTCFb3378xWJbuYY'
-    MAX_RENEW = 10
-
-    def __init__(self, logger: Logger):
-        self._logger = logger
-
-        self._proxy_auth = b''
-        self._renew_count = 0
-
-    def get_proxy_auth(self, renew: bool = False) -> Dict:
-        if renew:
-            self._proxy_auth = self._do_renew()
-
-        return {
-            'Proxy-Authorization': self._proxy_auth,
-        }
-
-    def _do_renew(self):
-        if self._renew_count > self.MAX_RENEW:
-            raise CarrierProxyMaxRetryError()
-
-        self._renew_count += 1
-        self._logger.warning(f'----- renew proxy ({self._renew_count})')
-
-        renew_username = f'groups-RESIDENTIAL,session-rand{random.random()}'
-        return basic_auth_header(renew_username, self.PROXY_PASSWORD)
-
-
-class CarrierProxyMaxRetryError(BaseCarrierError):
-    status = CARRIER_RESULT_STATUS_FATAL
-
-    def build_error_data(self):
-        return ExportErrorData(status=self.status, detail='<proxy-max-retry-error>')
-
-
-# -------------------------------------------------------------------------------
-
-
 class CookiesRoutingRule(BaseRoutingRule):
     name = 'COOKIES'
 
     @classmethod
-    def build_request_config(cls, mbl_no):
-        return FormRequestConfig(
+    def build_request_option(cls, mbl_no):
+        return RequestOption(
             rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
             url=BASE_URL,
+            headers={
+                'Upgrade-Insecure-Requests': '1',
+            },
             meta={
                 'mbl_no': mbl_no,
             },
@@ -230,7 +173,7 @@ class CookiesRoutingRule(BaseRoutingRule):
         mbl_no = response.meta['mbl_no']
 
         if self._check_cookies(response=response):
-            yield MainRoutingRule.build_request_config(mbl_no=mbl_no)
+            yield MainRoutingRule.build_request_option(mbl_no=mbl_no)
         else:
             yield ForceRestart()
 
@@ -251,7 +194,7 @@ class MainRoutingRule(BaseRoutingRule):
     name = 'MAIN'
 
     @classmethod
-    def build_request_config(cls, mbl_no):
+    def build_request_option(cls, mbl_no):
         form_data = {
             'number': mbl_no,
             'type': '1',
@@ -264,13 +207,17 @@ class MainRoutingRule(BaseRoutingRule):
             ],
         }
 
-        return FormRequestConfig(
+        return RequestOption(
             rule_name=cls.name,
+            method=RequestOption.METHOD_POST_FORM,
             url=f'{BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp',
+            headers={
+                'Upgrade-Insecure-Requests': '1',
+            },
             form_data=form_data,
             meta={
                 'mbl_no': mbl_no,
-            }
+            },
         )
 
     def build_routing_request(*args, **kwargs) -> RoutingRequest:
@@ -345,7 +292,7 @@ class MainRoutingRule(BaseRoutingRule):
 
             else:
                 h_num -= 1
-                yield ContainerRoutingRule.build_request_config(
+                yield ContainerRoutingRule.build_request_option(
                     mbl_no=mbl_no, container_index=container_content.index, h_num=h_num)
 
     @staticmethod
@@ -488,7 +435,7 @@ class ContainerRoutingRule(BaseRoutingRule):
     name = 'CONTAINER'
 
     @classmethod
-    def build_request_config(cls, mbl_no, container_index, h_num):
+    def build_request_option(cls, mbl_no, container_index, h_num):
         form_data = {
             'selectedContainerIndex': f'{container_index}',
             'hNum': f'{h_num}',
@@ -498,14 +445,18 @@ class ContainerRoutingRule(BaseRoutingRule):
             ],
         }
 
-        return FormRequestConfig(
+        return RequestOption(
             rule_name=cls.name,
+            method=RequestOption.METHOD_POST_FORM,
             url=f'{BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={mbl_no}',
+            headers={
+                'Upgrade-Insecure-Requests': '1',
+            },
             form_data=form_data,
             meta={
                 'mbl_no': mbl_no,
                 'container_index': container_index,
-            }
+            },
         )
 
     def build_routing_request(*args, **kwargs) -> RoutingRequest:
@@ -541,7 +492,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         # catch availability
         ava_exist = self._extract_availability_exist(response=response)
         if ava_exist:
-            yield AvailabilityRoutingRule.build_request_config(mbl_no=mbl_no, container_no=container_no)
+            yield AvailabilityRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
 
         for container in container_status:
             container_no = container_info['container_no']
@@ -651,19 +602,23 @@ class AvailabilityRoutingRule(BaseRoutingRule):
     name = 'AVAILABILITY'
 
     @classmethod
-    def build_request_config(cls, mbl_no, container_no):
+    def build_request_option(cls, mbl_no, container_no):
         form_data = {
             'bno': mbl_no,
             'cntrNo': f'{container_no}',
         }
 
-        return FormRequestConfig(
+        return RequestOption(
             rule_name=cls.name,
+            method=RequestOption.METHOD_POST_FORM,
             url=f'{BASE_URL}/ebiz/track_trace/WUTInfo.jsp',
+            headers={
+                'Upgrade-Insecure-Requests': '1',
+            },
             form_data=form_data,
             meta={
                 'container_no': container_no,
-            }
+            },
         )
 
     def build_routing_request(*args, **kwargs) -> RoutingRequest:

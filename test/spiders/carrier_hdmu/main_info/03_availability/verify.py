@@ -58,7 +58,7 @@ def verify(results):
         ready_for_pick_up=None,
     )
 
-    assert results[3] == AvailabilityRoutingRule.build_request_config(
+    assert results[3] == AvailabilityRoutingRule.build_request_option(
         mbl_no='TAWB0789799',
         container_no='HMMU6015688',
     )
