@@ -21,14 +21,14 @@ def sample_loader(sample_loader):
 def test_container_routing_rule(sub, mbl_no, sample_loader, container_no, container_index):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    request_config = ContainerRoutingRule.build_request_config(mbl_no=mbl_no, container_index=container_index, h_num=0)
+    option = ContainerRoutingRule.build_request_option(mbl_no=mbl_no, container_index=container_index, h_num=0)
 
     response = TextResponse(
-        url=request_config.url,
+        url=option.url,
         body=html_text,
         encoding='utf-8',
         request=Request(
-            url=request_config.url,
+            url=option.url,
             meta={
                 'mbl_no': mbl_no,
                 'container_index': container_index,

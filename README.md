@@ -2,7 +2,18 @@
 
 ## Environment for Develop
 
-Install requirements
+### System Requirements
+
+Install Chrome Browser
+
+Install PhantomJS (Mac)
+
+```bash
+brew tap homebrew/cask
+brew cask install phantomjs
+```
+
+### Install Python Packages
 
 ```bash
 pip install -U pip setuptools

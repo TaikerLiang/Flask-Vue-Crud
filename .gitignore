@@ -20,6 +20,9 @@ _save_pages/
 # local development
 src/scrapinghub.yml
 
+# PhantomJS
+ghostdriver.log
+
 # coverage
 .coverage
 

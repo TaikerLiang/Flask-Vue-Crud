@@ -5,6 +5,7 @@ import scrapy
 from scrapy import Selector
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
+from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem)
@@ -32,12 +33,17 @@ class CarrierPabvSpider(BaseCarrierSpider):
         ]
 
         self._rule_manager = RuleManager(rules=rules)
+        self._proxy_manager = ProxyManager(session='pabv', logger=self.logger)
 
     def start_requests(self):
-        cookies_getter = CookiesGetter()
+        self._proxy_manager.renew_proxy()
+
+        cookies_getter = CookiesGetter(phantom_js_service_args=self._proxy_manager.get_phantom_js_service_args())
         cookies = cookies_getter.get_cookies()
 
-        routing_request = TrackRoutingRule.build_routing_request(mbl_no=self.mbl_no, cookies=cookies)
+        option = TrackRoutingRule.build_request_option(mbl_no=self.mbl_no, cookies=cookies)
+        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
+        routing_request = self._build_routing_request_by(option=proxy_option)
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):
@@ -49,10 +55,28 @@ class CarrierPabvSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+            elif isinstance(result, RequestOption):
+                proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=result)
+                routing_request = self._build_routing_request_by(option=proxy_option)
+                yield self._rule_manager.build_request_by(routing_request=routing_request)
             else:
                 raise RuntimeError()
+
+    def _build_routing_request_by(self, option: RequestOption) -> RoutingRequest:
+        assert option.method == RequestOption.METHOD_GET
+
+        request = scrapy.Request(
+            url=option.url,
+            headers=option.headers,
+            cookies=option.cookies,
+            meta=option.meta,
+            callback=self.parse,
+        )
+
+        return RoutingRequest(
+            request=request,
+            rule_name=option.rule_name,
+        )
 
 
 # -------------------------------------------------------------------------------
@@ -62,13 +86,19 @@ class TrackRoutingRule(BaseRoutingRule):
     name = 'TRACK'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, cookies: dict) -> RoutingRequest:
-        request = scrapy.Request(
+    def build_request_option(cls, mbl_no, cookies: dict) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
             url=f'{PABV_BASE_URL}/shared/ajax/?fn=get_tracktrace_bl&ref_num={mbl_no}',
             cookies=cookies,
-            meta={'cookies': cookies},
+            meta={
+                'cookies': cookies,
+            },
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
+
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
@@ -114,7 +144,7 @@ class TrackRoutingRule(BaseRoutingRule):
         container_ids = self._extract_containers(content=content)
         for container_id in container_ids:
             yield ContainerItem(container_key=container_id, container_no=container_id)
-            yield ContainerRoutingRule.build_routing_request(mbl_no=mbl_no, cookies=cookies, container_id=container_id)
+            yield ContainerRoutingRule.build_request_option(mbl_no=mbl_no, cookies=cookies, container_id=container_id)
 
     @staticmethod
     def _extract_schedule_info(content):
@@ -188,16 +218,22 @@ class ContainerRoutingRule(BaseRoutingRule):
     name = 'CONTAINER'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, cookies: dict, container_id: str) -> RoutingRequest:
-        request = scrapy.Request(
+    def build_request_option(cls, mbl_no: str, cookies: dict, container_id: str) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
             url=(
                 f'{PABV_BASE_URL}/shared/ajax/?fn=get_track_container_status&search_type=bl'
                 f'&search_type_no={mbl_no}&ref_num={container_id}'
             ),
             cookies=cookies,
-            meta={'container_id': container_id},
+            meta={
+                'container_id': container_id,
+            },
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
+
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
 
     def get_save_name(self, response) -> str:
         container_id = response.meta['container_id']
@@ -258,21 +294,14 @@ class ContainerRoutingRule(BaseRoutingRule):
 
 class CookiesGetter:
 
-    def __init__(self):
-        options = webdriver.ChromeOptions()
-        options.add_argument('--disable-extensions')
-        options.add_argument('--headless')
-        options.add_argument('--disable-gpu')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--no-sandbox')
-
-        self._browser = webdriver.Chrome(chrome_options=options)
+    def __init__(self, phantom_js_service_args):
+        self._browser = webdriver.PhantomJS(service_args=phantom_js_service_args)
 
     def get_cookies(self):
-
         self._browser.get(f'{PABV_BASE_URL}/en-our-track-and-trace-pil-pacific-international-lines/120.html')
+
         try:
-            WebDriverWait(self._browser, 10).until(self._is_cookies_ready)
+            WebDriverWait(self._browser, 20).until(self._is_cookies_ready)
         except TimeoutException:
             raise LoadWebsiteTimeOutError()
 

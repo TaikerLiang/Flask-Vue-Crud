@@ -5,7 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_pabv import CarrierPabvSpider, TrackRoutingRule
+from crawler.spiders.carrier_pabv import TrackRoutingRule
 from test.spiders.carrier_pabv import track
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
 
@@ -24,24 +24,24 @@ def sample_loader(sample_loader):
 def test_track_handler(sub, mbl_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
-    url = f'https://www.pilship.com/shared/ajax/?fn=get_tracktrace_bl&ref_num={mbl_no}'
+    option = TrackRoutingRule.build_request_option(mbl_no=mbl_no, cookies={})
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=json_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: TrackRoutingRule.name,
                 'mbl_no': mbl_no,
-                'cookies': '',
+                'cookies': {},
             }
         )
     )
 
-    spider = CarrierPabvSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    rule = TrackRoutingRule()
+    results = list(rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verifier = verify_module.Verifier()
@@ -55,14 +55,14 @@ def test_track_handler(sub, mbl_no, sample_loader):
 def test_track_handler_no_mbl_error(sub, mbl_no, sample_file, expect_exception, sample_loader):
     json_text = sample_loader.read_file(sub, sample_file)
 
-    url = f'https://www.pilship.com/shared/ajax/?fn=get_tracktrace_bl&ref_num={mbl_no}'
+    option = TrackRoutingRule.build_request_option(mbl_no=mbl_no, cookies={})
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=json_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: TrackRoutingRule.name,
                 'mbl_no': mbl_no,
@@ -71,6 +71,6 @@ def test_track_handler_no_mbl_error(sub, mbl_no, sample_file, expect_exception, 
         )
     )
 
-    spider = CarrierPabvSpider(mbl_no=mbl_no)
+    rule = TrackRoutingRule()
     with pytest.raises(expect_exception):
-        list(spider.parse(response=response))
+        list(rule.handle(response=response))
