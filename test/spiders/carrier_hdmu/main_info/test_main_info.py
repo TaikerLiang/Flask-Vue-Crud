@@ -25,6 +25,7 @@ def sample_loader(sample_loader):
     ('05_2_without_lfd', 'QSWB8011630'),
     ('06_1_original_bl', 'KETC0876470'),
     ('06_2_original_bl', 'QSLB8267628'),
+    ('07_without_cargo_delivery_information', 'TYWB0924004')
 ])
 def test_main_routing_rule(sample_loader, sub, mbl_no):
     html_text = sample_loader.read_file(sub, 'sample.html')

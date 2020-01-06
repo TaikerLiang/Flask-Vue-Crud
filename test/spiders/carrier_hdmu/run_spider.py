@@ -14,7 +14,8 @@ if __name__ == '__main__':
 
     mbl_nos = [
         # 'GJWB1899760',
-        'QSWB8011462',
+        # 'QSWB8011462',
+        'TYWB0924004',
     ]
 
     for mbl_no in mbl_nos:

@@ -11,6 +11,7 @@ from crawler.core_carrier.items import (
     MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, BaseCarrierItem)
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest, RuleManager
+from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import (
     TableExtractor, TopHeaderTableLocator, TopLeftHeaderTableLocator, LeftHeaderTableLocator)
@@ -328,6 +329,24 @@ class MainRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_cargo_delivery_info(response):
+        table_exist_match_rule = CssQueryTextStartswithMatchRule(
+            css_query='::text', startswith='Cargo Delivery Information')
+        table_exist = find_selector_from(selectors=response.css('h4'), rule=table_exist_match_rule)
+
+        if not table_exist:
+            return {
+                'bl_type': None,
+                'way_bill_status': None,
+                'way_bill_time': None,
+                'freight_status': None,
+                'freight_time': None,
+                'us_customs_status': None,
+                'us_customs_time': None,
+                'firm_code': None,
+                'delivery_order_status': None,
+                'delivery_order_time': None,
+            }
+
         table_selector = response.css('#trackingForm div.left_table01')[1]
         table_locator = LeftHeaderTableLocator()
         table_locator.parse(table=table_selector)
@@ -578,7 +597,17 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_empty_return_location(response):
-        table_selector = response.css('#trackingForm div.left_table01')[2]
+        table_exist_match_rule = CssQueryTextStartswithMatchRule(
+            css_query='::text', startswith='Empty Container Return Location')
+        table_exist = find_selector_from(selectors=response.css('h4'), rule=table_exist_match_rule)
+
+        if not table_exist:
+            return {
+                'empty_return_location': None,
+                'fdd': None,
+            }
+
+        table_selector = response.css('#trackingForm div.left_table01')[-1]
         table_locator = LeftHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
