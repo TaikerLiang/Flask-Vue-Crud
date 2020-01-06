@@ -20,6 +20,7 @@ class RequestOption:
     method: str
     url: str
     headers: Dict = dataclasses.field(default_factory=dict)
+    cookies: Dict = dataclasses.field(default_factory=dict)
     form_data: Dict = dataclasses.field(default_factory=dict)
     meta: Dict = dataclasses.field(default_factory=dict)
 
@@ -31,6 +32,9 @@ class RequestOption:
             headers={
                 **self.headers,
                 **(headers or {}),
+            },
+            cookies={
+                **self.cookies,
             },
             form_data={
                 **self.form_data,
@@ -76,3 +80,10 @@ class ProxyManager:
                 'proxy': self.PROXY_URL,
             },
         )
+
+    def get_phantom_js_service_args(self):
+        return [
+            f'--proxy=http://{self.PROXY_URL}',
+            '--proxy-type=http',
+            f'--proxy-auth={self._proxy_username}:{self.PROXY_PASSWORD}',
+        ]

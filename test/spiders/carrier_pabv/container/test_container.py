@@ -5,7 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_pabv import CarrierPabvSpider, ContainerRoutingRule
+from crawler.spiders.carrier_pabv import ContainerRoutingRule
 from test.spiders.carrier_pabv import container
 
 
@@ -43,8 +43,8 @@ def test_container_handler(sub, mbl_no, container_id, sample_loader):
         )
     )
 
-    spider = CarrierPabvSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    rule = ContainerRoutingRule()
+    results = list(rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verifier = verify_module.Verifier()
