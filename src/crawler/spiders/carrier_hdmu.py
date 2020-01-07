@@ -6,10 +6,11 @@ from scrapy import Selector
 from twisted.python.failure import Failure
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
+from crawler.core_carrier.exceptions import (
+    CarrierInvalidMblNoError, CarrierResponseFormatError, build_proxy_max_retry_error_data)
 from crawler.core_carrier.items import (
     MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, BaseCarrierItem)
-from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
+from crawler.core_carrier.request_helpers import ProxyManager, RequestOption, ProxyMaxRetryError
 from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest, RuleManager
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
@@ -45,7 +46,10 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         yield self._prepare_restart()
 
     def retry(self, failure: Failure):
-        yield self._prepare_restart()
+        try:
+            yield self._prepare_restart()
+        except ProxyMaxRetryError:
+            yield build_proxy_max_retry_error_data()
 
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
@@ -63,8 +67,12 @@ class CarrierHdmuSpider(BaseCarrierSpider):
                 rule_request = self._build_request_by(option=rule_proxy_option)
                 self._restart_manager.add_request(request=rule_request)
             elif isinstance(result, ForceRestart):
-                restart_request = self._prepare_restart()
-                self._restart_manager.add_request(request=restart_request)
+                try:
+                    restart_request = self._prepare_restart()
+                    self._restart_manager.add_request(request=restart_request)
+                except ProxyMaxRetryError:
+                    error_item = build_proxy_max_retry_error_data()
+                    self._restart_manager.add_item(item=error_item)
             else:
                 raise RuntimeError()
 

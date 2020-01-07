@@ -8,8 +8,6 @@ from typing import Dict
 
 from w3lib.http import basic_auth_header
 
-from crawler.core_carrier.exceptions import CarrierProxyMaxRetryError
-
 
 @dataclasses.dataclass
 class RequestOption:
@@ -63,7 +61,7 @@ class ProxyManager:
 
     def renew_proxy(self):
         if self._renew_count > self.MAX_RENEW:
-            raise CarrierProxyMaxRetryError()
+            raise ProxyMaxRetryError()
 
         self._renew_count += 1
         self._logger.warning(f'----- renew proxy ({self._renew_count})')
@@ -87,3 +85,7 @@ class ProxyManager:
             '--proxy-type=http',
             f'--proxy-auth={self._proxy_username}:{self.PROXY_PASSWORD}',
         ]
+
+
+class ProxyMaxRetryError(Exception):
+    pass
