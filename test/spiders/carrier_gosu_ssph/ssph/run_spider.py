@@ -3,7 +3,7 @@ import os
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils import project
 
-from crawler.spiders.carrier_gosu import CarrierGosuSpider
+from crawler.spiders.carrier_gosu_ssph import CarrierSsphSpider
 
 if __name__ == '__main__':
     os.environ[project.ENVVAR] = 'crawler.settings'
@@ -12,19 +12,18 @@ if __name__ == '__main__':
     process = CrawlerProcess(settings)
 
     mbl_nos = [
-        'GOSUNGB9490903',
-        'GOSUNGB9490855',
-        'GOSUNGB9490849',
-        'GOSUNGB9490840',
-        'GOSUNGB9490813',
-        'GOSUNGB9490815',
-        'GOSUNGB9490840',
+        'SSPHJOR8017471',
+        'SSPHLAX0140904',
+        'SSPHLAX0140932',
+        'SSPHLAX0137883',
+        'SSPHLAX0137876',
+        'SSPHLAX0137876',
     ]
 
     for mbl_no in mbl_nos:
         kwargs = {
             'mbl_no': mbl_no,
         }
-        process.crawl(CarrierGosuSpider, **kwargs)
+        process.crawl(CarrierSsphSpider, **kwargs)
 
     process.start()

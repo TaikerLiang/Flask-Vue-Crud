@@ -6,8 +6,8 @@ from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_gosu import CarrierGosuSpider, MainInfoRoutingRule
-from test.spiders.carrier_gosu import main_info
+from crawler.spiders.carrier_gosu_ssph import CarrierGosuSpider, MainInfoRoutingRule
+from test.spiders.carrier_gosu_ssph.gosu import main_info
 from test.spiders.utils import extract_url_from
 
 
