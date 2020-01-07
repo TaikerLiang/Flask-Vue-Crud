@@ -6,7 +6,7 @@ import scrapy
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import (
-    BaseCarrierSpider, CARRIER_CUSTOM_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
+    BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError)
 from crawler.core_carrier.items import (
@@ -26,7 +26,7 @@ class CarrierEglvSpider(BaseCarrierSpider):
     name = 'carrier_eglv'
 
     custom_settings = {
-        **CARRIER_CUSTOM_SETTINGS,
+        **CARRIER_DEFAULT_SETTINGS,
         **DISABLE_DUPLICATE_REQUEST_FILTER,
     }
 

@@ -6,12 +6,22 @@ from .middlewares import CarrierSpiderMiddleware
 from .pipelines import CarrierItemPipeline
 from ..general.savers import BaseSaver, FileSaver, NullSaver
 
-CARRIER_CUSTOM_SETTINGS = {
+
+CARRIER_DEFAULT_SPIDER_MIDDLEWARES = {
+    CarrierSpiderMiddleware.get_setting_name(): 900,
+}
+
+
+CARRIER_DEFAULT_ITEM_PIPELINES = {
+    CarrierItemPipeline.get_setting_name(): 900,
+}
+
+CARRIER_DEFAULT_SETTINGS = {
     'SPIDER_MIDDLEWARES': {
-        CarrierSpiderMiddleware.get_setting_name(): 900,
+        **CARRIER_DEFAULT_SPIDER_MIDDLEWARES,
     },
     'ITEM_PIPELINES': {
-        CarrierItemPipeline.get_setting_name(): 900,
+        **CARRIER_DEFAULT_ITEM_PIPELINES,
     },
 }
 
@@ -22,7 +32,7 @@ DISABLE_DUPLICATE_REQUEST_FILTER = {
 
 class BaseCarrierSpider(scrapy.Spider):
 
-    custom_settings = CARRIER_CUSTOM_SETTINGS
+    custom_settings = CARRIER_DEFAULT_SETTINGS
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name=name, **kwargs)

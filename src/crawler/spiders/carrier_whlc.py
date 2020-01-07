@@ -6,7 +6,7 @@ from scrapy import Selector
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import (
-    BaseCarrierSpider, CARRIER_CUSTOM_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
+    BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule, RoutingRequestQueue
 from crawler.core_carrier.items import (
     BaseCarrierItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData)
@@ -23,7 +23,7 @@ class CarrierWhlcSpider(BaseCarrierSpider):
     name = 'carrier_whlc'
 
     custom_settings = {
-        **CARRIER_CUSTOM_SETTINGS,
+        **CARRIER_DEFAULT_SETTINGS,
         **DISABLE_DUPLICATE_REQUEST_FILTER,
     }
 

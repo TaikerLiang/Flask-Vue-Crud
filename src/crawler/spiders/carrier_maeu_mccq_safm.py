@@ -4,7 +4,9 @@ import scrapy
 
 import json
 
-from crawler.core_carrier.base_spiders import BaseCarrierSpider
+from crawler.core_carrier.base_spiders import (
+    BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS, CARRIER_DEFAULT_SPIDER_MIDDLEWARES)
+from crawler.core_carrier.middlewares import Carrier404IsInvalidMblNoSpiderMiddleware
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem)
@@ -14,6 +16,14 @@ from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierRes
 class SharedSpider(BaseCarrierSpider):
     name = ''
     base_url_format = ''
+
+    custom_settings = {
+        **CARRIER_DEFAULT_SETTINGS,
+        'SPIDER_MIDDLEWARES': {
+            **CARRIER_DEFAULT_SPIDER_MIDDLEWARES,
+            Carrier404IsInvalidMblNoSpiderMiddleware.get_setting_name(): 300,
+        },
+    }
 
     def __init__(self, *args, **kwargs):
         super(SharedSpider, self).__init__(*args, **kwargs)
