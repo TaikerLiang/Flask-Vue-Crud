@@ -5,8 +5,8 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_gosu import CarrierGosuSpider, ContainerStatusRoutingRule
-from test.spiders.carrier_gosu import container_status
+from crawler.spiders.carrier_gosu_ssph import CarrierSsphSpider, ContainerStatusRoutingRule
+from test.spiders.carrier_gosu_ssph.ssph import container_status
 from test.spiders.utils import extract_url_from
 
 
@@ -18,10 +18,10 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize('sub,mbl_no,eta,container_no', [
-    ('01_basic', 'GOSUNGB9490855', '06-Oct-2019', 'ZCSU2764374'),
+    ('01_basic', 'SSPHJOR8017471', '06-Oct-2019', 'ZCSU8832075'),
 ])
 def test_main_info_routing_rule(sub, mbl_no, eta, container_no, sample_loader):
-    json_text = sample_loader.read_file(sub, 'container_status.html')
+    json_text = sample_loader.read_file(sub, 'sample.html')
 
     routing_request = ContainerStatusRoutingRule.build_routing_request(
         mbl_no=mbl_no, eta=eta, container_no=container_no)
@@ -40,7 +40,7 @@ def test_main_info_routing_rule(sub, mbl_no, eta, container_no, sample_loader):
         )
     )
 
-    spider = CarrierGosuSpider(mbl_no=mbl_no)
+    spider = CarrierSsphSpider(mbl_no=mbl_no)
     results = list(spider.parse(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
