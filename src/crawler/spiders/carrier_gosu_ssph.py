@@ -14,11 +14,11 @@ from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatch
 URL = 'https://www.shipcont.com/CCM.aspx'
 
 
-class CarrierGosuSpider(BaseCarrierSpider):
-    name = 'carrier_gosu'
+class SharedSpider(BaseCarrierSpider):
+    name = None
 
     def __init__(self, *args, **kwargs):
-        super(CarrierGosuSpider, self).__init__(*args, **kwargs)
+        super(SharedSpider, self).__init__(*args, **kwargs)
 
         rules = [
             MainInfoRoutingRule(),
@@ -45,6 +45,14 @@ class CarrierGosuSpider(BaseCarrierSpider):
                 yield self._rule_manager.build_request_by(routing_request=result)
             else:
                 raise RuntimeError()
+
+
+class CarrierSsphSpider(SharedSpider):
+    name = 'carrier_ssph'
+
+
+class CarrierGosuSpider(SharedSpider):
+    name = 'carrier_gosu'
 
 
 class MainInfoRoutingRule(BaseRoutingRule):
@@ -156,11 +164,12 @@ class MainInfoRoutingRule(BaseRoutingRule):
         vessel_voyage_pattern = re.compile(r'^(?P<vessel>.+)/(?P<voyage>.+)$')
         vessel_voyage_match = vessel_voyage_pattern.match(vessel_voyage)
 
-        if not vessel_voyage_match:
-            raise CarrierResponseFormatError(reason='vessel/voyage format error')
-
-        vessel = vessel_voyage_match.group('vessel')
-        voyage = vessel_voyage_match.group('voyage')
+        if vessel_voyage_match:
+            vessel = vessel_voyage_match.group('vessel')
+            voyage = vessel_voyage_match.group('voyage')
+        else:
+            vessel = None
+            voyage = None
 
         return {
             'etd': etd,
