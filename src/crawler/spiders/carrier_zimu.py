@@ -149,8 +149,10 @@ class MainInfoRoutingRule(BaseRoutingRule):
         no_result_information = response.css('section#noResult p')
         if no_result_information:
             raise CarrierInvalidMblNoError()
-        else:
-            return 0
+
+        wrong_format_message = response.css('span.field-validation-error')
+        if wrong_format_message:
+            raise CarrierInvalidMblNoError()
 
     @staticmethod
     def _extract_main_info(response: Selector):

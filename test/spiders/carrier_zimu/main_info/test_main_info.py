@@ -54,6 +54,7 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
 
 @pytest.mark.parametrize('sub,mbl_no,expect_exception', [
     ('e01_invalid_mbl_no', 'ZIMUSNH110567', CarrierInvalidMblNoError),
+    ('e02_invalid_mbl_no_format', 'ZIMUORF0946735/1', CarrierInvalidMblNoError),
 ])
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
