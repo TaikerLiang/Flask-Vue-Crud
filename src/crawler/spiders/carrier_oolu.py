@@ -11,7 +11,14 @@ from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierI
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
+from w3lib.http import basic_auth_header
 
+
+def get_proxy_auth(session='oolu'):
+    return basic_auth_header(
+        f'groups-RESIDENTIAL,session-{session}',
+        'XZTBLpciyyTCFb3378xWJbuYY',
+    )
 
 class CarrierOoluSpider(BaseCarrierSpider):
     name = 'carrier_oolu'
@@ -104,8 +111,9 @@ class CargoTrackingRule(BaseRoutingRule):
                 'http://moc.oocl.com/party/cargotracking/ct_search_from_other_domain.jsf?'
                 'ANONYMOUS_TOKEN=kFiFirZYfIHjjEVjGlDTMCCOOCL&ENTRY_TYPE=OOCL'
             ),
+            headers={'Proxy-Authorization': get_proxy_auth()},
             formdata=form_data,
-            meta={'mbl_no': mbl_no},
+            meta={'mbl_no': mbl_no, 'proxy': 'http://proxy.apify.com:8000'},
         )
         return RoutingRequest(request=request, rule_name=cls.name)
 
@@ -536,8 +544,8 @@ class ContainerStatusRule(BaseRoutingRule):
             ),
             method='POST',
             body=body,
-            headers={'Content-Type': f'multipart/form-data; boundary={boundary}'},
-            meta={'mbl_no': mbl_no, 'container_no': container_no},
+            headers={'Content-Type': f'multipart/form-data; boundary={boundary}', 'Proxy-Authorization': get_proxy_auth()},
+            meta={'mbl_no': mbl_no, 'container_no': container_no, 'proxy': 'http://proxy.apify.com:8000'},
         )
         return RoutingRequest(request=request, rule_name=cls.name)
 
