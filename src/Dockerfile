@@ -1,4 +1,4 @@
-FROM scrapinghub/scrapinghub-stack-scrapy:1.7-py3
+FROM scrapinghub/scrapinghub-stack-scrapy:1.8-py3
 
 RUN set -ex \
     && apt-get update \
@@ -80,6 +80,7 @@ RUN apt-get update \
     && rm -rf /tmp/* /var/lib/apt/lists/*
 
 
+ENV OPENSSL_CONF=/etc/ssl/
 ENV TERM xterm
 ENV SCRAPY_SETTINGS_MODULE crawler.settings
 RUN mkdir -p /app
