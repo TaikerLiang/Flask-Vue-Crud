@@ -13,6 +13,7 @@ from w3lib.http import basic_auth_header
 class RequestOption:
     METHOD_GET = 'GET'
     METHOD_POST_FORM = 'POST_FORM'
+    METHOD_POST_BODY = 'METHOD_POST_BODY'
 
     rule_name: str
     method: str
@@ -20,6 +21,7 @@ class RequestOption:
     headers: Dict = dataclasses.field(default_factory=dict)
     cookies: Dict = dataclasses.field(default_factory=dict)
     form_data: Dict = dataclasses.field(default_factory=dict)
+    body: str = ''
     meta: Dict = dataclasses.field(default_factory=dict)
 
     def copy_and_extend_by(self, headers=None, meta=None) -> RequestOption:
@@ -37,6 +39,7 @@ class RequestOption:
             form_data={
                 **self.form_data,
             },
+            body=self.body,
             meta={
                 **self.meta,
                 **(meta or {}),
@@ -48,7 +51,7 @@ class RequestOption:
 
 
 class ProxyManager:
-    PROXY_URL = 'proxy.apify.com:8000'
+    PROXY_URL = 'http://proxy.apify.com:8000'
     PROXY_PASSWORD = 'XZTBLpciyyTCFb3378xWJbuYY'
     MAX_RENEW = 10
 
@@ -81,7 +84,7 @@ class ProxyManager:
 
     def get_phantom_js_service_args(self):
         return [
-            f'--proxy=http://{self.PROXY_URL}',
+            f'--proxy={self.PROXY_URL}',
             '--proxy-type=http',
             f'--proxy-auth={self._proxy_username}:{self.PROXY_PASSWORD}',
         ]

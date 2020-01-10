@@ -4,6 +4,7 @@ import scrapy
 from scrapy import Selector
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
+from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem)
@@ -11,14 +12,7 @@ from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierI
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
-from w3lib.http import basic_auth_header
 
-
-def get_proxy_auth(session='oolu'):
-    return basic_auth_header(
-        f'groups-RESIDENTIAL,session-{session}',
-        'XZTBLpciyyTCFb3378xWJbuYY',
-    )
 
 class CarrierOoluSpider(BaseCarrierSpider):
     name = 'carrier_oolu'
@@ -32,10 +26,14 @@ class CarrierOoluSpider(BaseCarrierSpider):
         ]
 
         self._rule_manager = RuleManager(rules=rules)
+        self._proxy_manager = ProxyManager(session='oolu', logger=self.logger)
 
     def start_requests(self):
-        routing_request = CargoTrackingRule.build_routing_request(mbl_no=self.mbl_no)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        self._proxy_manager.renew_proxy()
+
+        option = CargoTrackingRule.build_request_option(mbl_no=self.mbl_no)
+        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
+        yield self._build_request_by(option=proxy_option)
 
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
@@ -46,10 +44,41 @@ class CarrierOoluSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+            elif isinstance(result, RequestOption):
+                proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=result)
+                yield self._build_request_by(option=proxy_option)
             else:
                 raise RuntimeError()
+
+    def _build_request_by(self, option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
+        }
+
+        if option.method == RequestOption.METHOD_POST_FORM:
+            return scrapy.FormRequest(
+                url=option.url,
+                headers=option.headers,
+                formdata=option.form_data,
+                meta=meta,
+                dont_filter=True,
+                callback=self.parse,
+            )
+
+        elif option.method == RequestOption.METHOD_POST_BODY:
+            return scrapy.Request(
+                method='POST',
+                url=option.url,
+                headers=option.headers,
+                body=option.body,
+                meta=meta,
+                dont_filter=True,
+                callback=self.parse,
+            )
+
+        else:
+            raise ValueError(f'Invalid option.method [{option.method}]')
 
 
 # -------------------------------------------------------------------------------
@@ -94,7 +123,7 @@ class CargoTrackingRule(BaseRoutingRule):
     name = 'CARGO_TRACKING'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
+    def build_request_option(cls, mbl_no: str) -> RequestOption:
         form_data = {
             'hiddenForm:searchType': 'BL',
             'hiddenForm:billOfLadingNumber': mbl_no,
@@ -106,16 +135,21 @@ class CargoTrackingRule(BaseRoutingRule):
             'jsf_viewid': '/cargotracking/ct_search_from_other_domain.jsp'
 
         }
-        request = scrapy.FormRequest(
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_FORM,
             url=(
                 'http://moc.oocl.com/party/cargotracking/ct_search_from_other_domain.jsf?'
                 'ANONYMOUS_TOKEN=kFiFirZYfIHjjEVjGlDTMCCOOCL&ENTRY_TYPE=OOCL'
             ),
-            headers={'Proxy-Authorization': get_proxy_auth()},
-            formdata=form_data,
-            meta={'mbl_no': mbl_no, 'proxy': 'http://proxy.apify.com:8000'},
+            form_data=form_data,
+            meta={
+                'mbl_no': mbl_no,
+            },
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
+
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
@@ -154,7 +188,7 @@ class CargoTrackingRule(BaseRoutingRule):
 
         container_list = self._extract_container_list(selector_map=selector_map)
         for container in container_list:
-            yield ContainerStatusRule.build_routing_request(
+            yield ContainerStatusRule.build_request_option(
                 mbl_no=mbl_no,
                 container_id=container['container_id'],
                 container_no=container['container_no'],
@@ -524,8 +558,10 @@ class ContainerStatusRule(BaseRoutingRule):
     name = 'CONTAINER_STATUS'
 
     @classmethod
-    def build_routing_request(
-            cls, mbl_no: str, container_id: str, container_no: str, jsf_tree_64, jsf_state_64) -> RoutingRequest:
+    def build_request_option(
+            cls, mbl_no: str, container_id: str, container_no: str, jsf_tree_64, jsf_state_64,
+    ) -> RequestOption:
+
         form_data = {
             'form_SUBMIT': '1',
             'currentContainerNumber': container_id,
@@ -535,19 +571,27 @@ class ContainerStatusRule(BaseRoutingRule):
             'jsf_state_64': jsf_state_64,
             'jsf_viewid': '/cargotracking/ct_result_bl.jsp',
         }
+
         # generate multipart/form-data with boundary
         boundary = '----WebKitFormBoundary7MA4YWxkTrZu0gW'
         body = get_multipart_body(form_data=form_data, boundary=boundary)
-        request = scrapy.Request(
-            url=(
-                'http://moc.oocl.com/party/cargotracking/ct_result_bl.jsf?ANONYMOUS_TOKEN=abc'
-            ),
-            method='POST',
+
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_BODY,
+            url='http://moc.oocl.com/party/cargotracking/ct_result_bl.jsf?ANONYMOUS_TOKEN=kFiFirZYfIHjjEVjGlDTMCCOOCL',
+            headers={
+                'Content-Type': f'multipart/form-data; boundary={boundary}',
+            },
             body=body,
-            headers={'Content-Type': f'multipart/form-data; boundary={boundary}', 'Proxy-Authorization': get_proxy_auth()},
-            meta={'mbl_no': mbl_no, 'container_no': container_no, 'proxy': 'http://proxy.apify.com:8000'},
+            meta={
+                'mbl_no': mbl_no,
+                'container_no': container_no,
+            },
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
+
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
 
     def get_save_name(self, response) -> str:
         container_no = response.meta['container_no']
