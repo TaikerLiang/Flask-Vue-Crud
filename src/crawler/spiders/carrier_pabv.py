@@ -293,6 +293,8 @@ class ContainerRoutingRule(BaseRoutingRule):
 # -------------------------------------------------------------------------------
 
 class CookiesGetter:
+    
+    TIMEOUT = 40
 
     def __init__(self, phantom_js_service_args):
         self._browser = webdriver.PhantomJS(service_args=phantom_js_service_args)
@@ -301,7 +303,7 @@ class CookiesGetter:
         self._browser.get(f'{PABV_BASE_URL}/en-our-track-and-trace-pil-pacific-international-lines/120.html')
 
         try:
-            WebDriverWait(self._browser, 20).until(self._is_cookies_ready)
+            WebDriverWait(self._browser, self.TIMEOUT).until(self._is_cookies_ready)
         except TimeoutException:
             raise LoadWebsiteTimeOutError()
 
