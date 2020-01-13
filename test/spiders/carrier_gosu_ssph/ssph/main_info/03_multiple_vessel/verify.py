@@ -5,7 +5,7 @@ from crawler.core_carrier.items import MblItem, ContainerItem, LocationItem, Ves
 
 def verify(results):
     assert results[0] == MblItem(
-        mbl_no='SSPHLAX0137876',
+        mbl_no='SSPHLAX0137883',
         por=LocationItem(name='Cincinnati , U.S.A.'),
         pol=LocationItem(name='Savannah , U.S.A.'),
         pod=LocationItem(name="Port Klang, Malaysia"),
@@ -29,27 +29,48 @@ def verify(results):
     )
 
     assert results[3] == ContainerItem(
-        container_key='ZCSU7133387',
-        container_no='ZCSU7133387',
+        container_key='CRSU9052059',
+        container_no='CRSU9052059',
     )
 
     assert isinstance(results[4], scrapy.Request)
 
     assert results[5] == ContainerItem(
-        container_key='ZCSU8756838',
-        container_no='ZCSU8756838',
+        container_key='ZCSU6507651',
+        container_no='ZCSU6507651',
     )
 
     assert isinstance(results[6], scrapy.Request)
 
     assert results[7] == ContainerItem(
-        container_key='ZCSU8564120',
-        container_no='ZCSU8564120',
+        container_key='TGBU7177776',
+        container_no='TGBU7177776',
     )
 
     assert isinstance(results[8], scrapy.Request)
 
     assert results[9] == ContainerItem(
-        container_key='FSCU8165710',
-        container_no='FSCU8165710',
+        container_key='TLLU4309870',
+        container_no='TLLU4309870',
+    )
+
+    assert isinstance(results[10], scrapy.Request)
+
+    assert results[11] == ContainerItem(
+        container_key='TLLU4586128',
+        container_no='TLLU4586128',
+    )
+
+    assert isinstance(results[12], scrapy.Request)
+
+    assert results[13] == ContainerItem(
+        container_key='ZCSU8528036',
+        container_no='ZCSU8528036',
+    )
+
+    assert isinstance(results[14], scrapy.Request)
+
+    assert results[15] == ContainerItem(
+        container_key='ZCSU8528268',
+        container_no='ZCSU8528268',
     )

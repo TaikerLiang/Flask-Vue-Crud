@@ -1,6 +1,6 @@
 import scrapy
 
-from crawler.core_carrier.items import MblItem, ContainerItem, LocationItem
+from crawler.core_carrier.items import MblItem, ContainerItem, LocationItem, VesselItem
 
 
 def verify(results):
@@ -10,15 +10,19 @@ def verify(results):
         pol=LocationItem(name="Tanjung Pelepas, Malaysia"),
         pod=LocationItem(name="Savannah , U.S.A."),
         final_dest=LocationItem(name='Atlanta , U.S.A.'),
-        etd='23-Nov-2019',
-        eta='26-Dec-2019',
-        vessel='Maersk Semakau',
-        voyage='8',
     )
 
-    assert results[1] == ContainerItem(
+    assert results[1] == VesselItem(
+        vessel_key='Maersk Semakau',
+        vessel='Maersk Semakau',
+        voyage='8',
+        etd='23-Nov-2019',
+        eta='26-Dec-2019',
+    )
+
+    assert results[2] == ContainerItem(
         container_key='ZCSU8832075',
         container_no='ZCSU8832075',
     )
 
-    assert isinstance(results[2], scrapy.Request)
+    assert isinstance(results[3], scrapy.Request)

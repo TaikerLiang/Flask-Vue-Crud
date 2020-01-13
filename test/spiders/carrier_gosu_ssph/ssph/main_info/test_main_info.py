@@ -21,6 +21,7 @@ def sample_loader(sample_loader):
 @pytest.mark.parametrize('sub,mbl_no,', [
     ('01_single_container', 'SSPHJOR8017471'),
     ('02_multiple_container', 'SSPHLAX0137876'),
+    ('03_multiple_vessel', 'SSPHLAX0137883'),
 ])
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.html')
