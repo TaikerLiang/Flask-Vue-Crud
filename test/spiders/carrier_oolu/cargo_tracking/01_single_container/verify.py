@@ -1,6 +1,6 @@
-from scrapy import Request
-
 from crawler.core_carrier.items import MblItem, LocationItem
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.spiders.carrier_oolu import ContainerStatusRule
 
 
 def verify(results):
@@ -23,10 +23,10 @@ def verify(results):
         customs_release_date='07 Oct 2019, 07:15 GMT',
     )
 
-    assert isinstance(results[1], Request)
-    assert b'name="currentContainerNumber"\r\n\r\nOOCU808187\r\n' in results[1].body
+    assert isinstance(results[1], RequestOption)
+    assert results[1].rule_name == ContainerStatusRule.name
+    assert 'name="currentContainerNumber"\r\n\r\nOOCU808187\r\n' in results[1].body
     assert results[1].meta == {
-        'CARRIER_CORE_RULE_NAME': 'CONTAINER_STATUS',
         'mbl_no': '2625845270',
         'container_no': 'OOCU8081870',
     }
