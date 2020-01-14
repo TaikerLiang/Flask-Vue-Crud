@@ -4,9 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_whlc import CarrierWhlcSpider, HistoryRoutingRule
+from crawler.spiders.carrier_whlc import HistoryRoutingRule
 from test.spiders.carrier_whlc import history
 from test.spiders.utils import extract_url_from
 
@@ -35,14 +33,13 @@ def test_history_routing_rule(sub, mbl_no, sample_loader, container_no):
         request=Request(
             url=url,
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: HistoryRoutingRule.name,
                 'container_key': container_no
             }
         )
     )
 
-    spider = CarrierWhlcSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    routing_rule = HistoryRoutingRule()
+    results = list(routing_rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)

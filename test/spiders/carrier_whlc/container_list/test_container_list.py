@@ -6,7 +6,7 @@ from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_whlc import DetailRoutingRule, CarrierWhlcSpider, ListRoutingRule
+from crawler.spiders.carrier_whlc import CarrierWhlcSpider, ListRoutingRule
 from test.spiders.carrier_whlc import container_list
 from test.spiders.utils import extract_url_from
 
@@ -43,8 +43,8 @@ def test_list_routing_rule(sub, mbl_no, sample_loader):
         )
     )
 
-    spider = CarrierWhlcSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    routing_rule = ListRoutingRule()
+    results = list(routing_rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
@@ -66,13 +66,13 @@ def test_list_error(sub, mbl_no, expect_exception, sample_loader):
         request=Request(
             url=url,
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: ListRoutingRule.name,
                 'mbl_no': mbl_no,
                 'cookies': {'123': '123'},
             }
         )
     )
 
-    spider = CarrierWhlcSpider(mbl_no=mbl_no)
+    routing_rule = ListRoutingRule()
+
     with pytest.raises(expect_exception):
-        list(spider.parse(response=response))
+        list(routing_rule.handle(response=response))
