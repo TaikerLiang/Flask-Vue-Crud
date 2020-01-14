@@ -1,6 +1,5 @@
-import scrapy
-
 from crawler.core_carrier.items import MblItem, VesselItem, LocationItem, ContainerItem
+from crawler.core_carrier.rules import RoutingRequest
 
 
 def verify(results):
@@ -68,5 +67,4 @@ def verify(results):
         'depot_last_free_day': None,
     })
 
-    # verify requests
-    assert isinstance(results[4], scrapy.Request)
+    assert isinstance(results[4], RoutingRequest)
