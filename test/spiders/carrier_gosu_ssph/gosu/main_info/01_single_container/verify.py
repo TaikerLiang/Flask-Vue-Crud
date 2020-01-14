@@ -1,6 +1,5 @@
-import scrapy
-
 from crawler.core_carrier.items import MblItem, ContainerItem, LocationItem, VesselItem
+from crawler.core_carrier.rules import RoutingRequest
 
 
 def verify(results):
@@ -27,4 +26,4 @@ def verify(results):
         container_no='ZCSU2764374',
     )
 
-    assert isinstance(results[3], scrapy.Request)
+    assert isinstance(results[3], RoutingRequest)
