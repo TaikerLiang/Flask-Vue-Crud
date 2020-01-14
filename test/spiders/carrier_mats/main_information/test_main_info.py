@@ -5,8 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_mats import MainInfoRoutingRule, CarrierMatsSpider
+from crawler.spiders.carrier_mats import MainInfoRoutingRule
 from test.spiders.carrier_mats import main_information
 
 
@@ -33,14 +32,13 @@ def test_main_info_handler(sub, mbl_no, sample_loader):
         request=Request(
             url=url,
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: MainInfoRoutingRule.name,
                 'mbl_no': mbl_no,
             }
         )
     )
 
-    spider = CarrierMatsSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    routing_rule = MainInfoRoutingRule()
+    results = list(routing_rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
@@ -61,13 +59,12 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_lo
         request=Request(
             url=url,
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: MainInfoRoutingRule.name,
                 'mbl_no': mbl_no,
             }
         )
     )
 
-    spider = CarrierMatsSpider(mbl_no=mbl_no)
-    with pytest.raises(expect_exception):
-        list(spider.parse(response=response))
+    routing_rule = MainInfoRoutingRule()
 
+    with pytest.raises(expect_exception):
+        list(routing_rule.handle(response=response))
