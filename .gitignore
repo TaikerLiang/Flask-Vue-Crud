@@ -17,9 +17,6 @@ _save_pages/
 # pycharm
 .idea/
 
-# local development
-src/scrapinghub.yml
-
 # PhantomJS
 ghostdriver.log
 

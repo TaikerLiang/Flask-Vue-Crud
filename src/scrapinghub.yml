@@ -1,0 +1,11 @@
+projects:
+  default:
+    id: 413409
+  try-2:
+    id: 414060
+  stage:
+    id: 407696
+  production:
+    id: 407697
+
+image: true
