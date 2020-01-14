@@ -1,8 +1,7 @@
 from typing import List
 
-from scrapy import Request
-
 from crawler.core_carrier.items import ContainerStatusItem, MblItem, LocationItem, ContainerItem
+from crawler.core_carrier.rules import RoutingRequest
 
 
 def verify(results: List):
@@ -36,16 +35,14 @@ def verify(results: List):
         voyage='939E',
     )
 
-    assert isinstance(results[12], Request)
-    assert results[12].meta == {
-        'CARRIER_CORE_RULE_NAME': 'VOYAGE',
+    assert isinstance(results[12], RoutingRequest)
+    assert results[12].request.meta == {
         'voyage_location': 'Shanghai CNSHA',
         'voyage_direction': 'Departure',
     }
 
-    assert isinstance(results[13], Request)
-    assert results[13].meta == {
-        'CARRIER_CORE_RULE_NAME': 'VOYAGE',
+    assert isinstance(results[13], RoutingRequest)
+    assert results[13].request.meta == {
         'voyage_location': 'Houston USHOU',
         'voyage_direction': 'Arrival',
     }

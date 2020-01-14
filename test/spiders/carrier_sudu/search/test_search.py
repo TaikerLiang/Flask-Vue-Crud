@@ -5,8 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_sudu import SearchRoutingRule, BasicRequestSpec, CarrierSuduSpider
+from crawler.spiders.carrier_sudu import SearchRoutingRule, BasicRequestSpec
 from test.spiders.carrier_sudu import search
 from test.spiders.utils import extract_url_from
 
@@ -37,7 +36,6 @@ def test_main_info_routing_rule(sub, mbl_no, expect_view, sample_loader, is_firs
         request=Request(
             url=url,
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: SearchRoutingRule.name,
                 'mbl_no': mbl_no,
                 'expect_view': expect_view,
                 'is_first_process': is_first,
@@ -45,11 +43,8 @@ def test_main_info_routing_rule(sub, mbl_no, expect_view, sample_loader, is_firs
         )
     )
 
-    spider = CarrierSuduSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
-    while not spider._request_queue.is_empty():
-        routing_request = spider._request_queue.get_next_request()
-        results.append(spider._rule_manager.build_request_by(routing_request=routing_request))
+    routing_rule = SearchRoutingRule()
+    results = list(routing_rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
@@ -73,7 +68,6 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_view, is_first, expe
         request=Request(
             url=url,
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: SearchRoutingRule.name,
                 'mbl_no': mbl_no,
                 'expect_view': expect_view,
                 'is_first_process': is_first
@@ -81,6 +75,7 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_view, is_first, expe
         )
     )
 
-    spider = CarrierSuduSpider(mbl_no=mbl_no)
+    routing_rule = SearchRoutingRule()
+
     with pytest.raises(expect_exception):
-        list(spider.parse(response=response))
+        list(routing_rule.handle(response=response))
