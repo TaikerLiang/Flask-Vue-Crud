@@ -38,14 +38,13 @@ def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
         request=Request(
             url=url,
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: FirstTierRoutingRule.name,
                 'mbl_no': mbl_no,
             }
         )
     )
 
-    spider = CarrierCmduSpider(name=None, mbl_no=mbl_no)
-    results = list(spider.parse(response))
+    routing_rule = FirstTierRoutingRule(base_url='http://www.cma-cgm.com')
+    results = list(routing_rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
@@ -73,7 +72,7 @@ def test_first_tier_routing_rule_error(sample_loader, sub, mbl_no, expect_except
         )
     )
 
-    spider = CarrierCmduSpider(name=None, mbl_no=mbl_no)
+    routing_rule = FirstTierRoutingRule(base_url='http://www.cma-cgm.com')
 
     with pytest.raises(expect_exception):
-        list(spider.parse(response))
+        list(routing_rule.handle(response=response))
