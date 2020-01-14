@@ -5,7 +5,6 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_hlcu import CarrierHlcuSpider, TracingRoutingRule
 from test.spiders.carrier_hlcu import tracing
 
@@ -33,18 +32,14 @@ def test_tracing_rule_handler(sub, mbl_no, sample_loader):
         request=Request(
             url=url,
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: TracingRoutingRule.name,
                 'mbl_no': mbl_no,
                 'cookies': '',
             }
         )
     )
 
-    spider = CarrierHlcuSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
-    while not spider._request_queue.is_empty():
-        routing_request = spider._request_queue.get_next_request()
-        results.append(spider._rule_manager.build_request_by(routing_request=routing_request))
+    rule = TracingRoutingRule()
+    results = list(rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verifier = verify_module.Verifier()
@@ -66,13 +61,12 @@ def test_tracing_rule_handler_mbl_no_error(sub, mbl_no, expect_exception, sample
         request=Request(
             url=url,
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: TracingRoutingRule.name,
                 'mbl_no': mbl_no,
                 'cookies': '',
             }
         )
     )
 
-    spider = CarrierHlcuSpider(mbl_no=mbl_no)
+    rule = TracingRoutingRule()
     with pytest.raises(expect_exception):
-        results = list(spider.parse(response=response))
+        results = list(rule.handle(response=response))
