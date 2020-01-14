@@ -4,10 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_cosu import BillMainInfoRoutingRule
-from src.crawler.spiders import carrier_cosu
 
 from test.spiders.carrier_cosu import bill_main_info
 
@@ -26,7 +23,7 @@ def sample_loader(sample_loader):
     ('04_n_vessel_m_container', '8021483250'),
     ('05_container_no_is_wrong', '6205749080'),
 ])
-def test_parse_main_info(sample_loader, sub, mbl_no, monkeypatch):
+def test_parse_main_info(sample_loader, sub, mbl_no):
     json_text = sample_loader.read_file(sub, 'main_information.json')
 
     url = f'http://elines.coscoshipping.com/ebtracking/public/bill/{mbl_no}?timestamp=0000000000'
@@ -35,15 +32,17 @@ def test_parse_main_info(sample_loader, sub, mbl_no, monkeypatch):
         url=url,
         encoding='utf-8',
         body=json_text,
-        request=Request(url=url, meta={
-            'mbl_no': mbl_no,
-            RuleManager.META_CARRIER_CORE_RULE_NAME: BillMainInfoRoutingRule.name,
-        })
+        request=Request(
+            url=url,
+            meta={
+                'mbl_no': mbl_no,
+            }
+        )
     )
 
     # action
-    spider = carrier_cosu.CarrierCosuSpider(name=None, mbl_no=mbl_no)
-    results = list(spider.parse(resp))
+    rule = BillMainInfoRoutingRule()
+    results = list(rule.handle(response=resp))
 
     # assert
     verify_module = sample_loader.load_sample_module(sub, 'verify')
@@ -54,7 +53,7 @@ def test_parse_main_info(sample_loader, sub, mbl_no, monkeypatch):
     ('s01_only_booking', '6216853000'),
     ('s02_invalid_mbl_no_check_booking', '6213846642'),
 ])
-def test_parse_main_info_special(sample_loader, sub, mbl_no, monkeypatch):
+def test_parse_main_info_special(sample_loader, sub, mbl_no):
     json_text = sample_loader.read_file(sub, 'main_information.json')
 
     url = f'http://elines.coscoshipping.com/ebtracking/public/bill/{mbl_no}?timestamp=0000000000'
@@ -65,13 +64,12 @@ def test_parse_main_info_special(sample_loader, sub, mbl_no, monkeypatch):
         body=json_text,
         request=Request(url=url, meta={
             'mbl_no': mbl_no,
-            RuleManager.META_CARRIER_CORE_RULE_NAME: BillMainInfoRoutingRule.name,
         })
     )
 
     # action
-    spider = carrier_cosu.CarrierCosuSpider(name=None, mbl_no=mbl_no)
-    results = list(spider.parse(resp))
+    rule = BillMainInfoRoutingRule()
+    results = list(rule.handle(response=resp))
 
     # assert
     verify_module = sample_loader.load_sample_module(sub, 'verify')

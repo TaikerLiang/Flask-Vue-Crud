@@ -1,10 +1,7 @@
 from typing import List
 
-import scrapy
-
 from crawler.core_carrier.items import MblItem, LocationItem, ContainerItem
 from crawler.core_carrier.rules import RoutingRequest
-from test.spiders.utils import extract_url_from
 
 
 def verify(results: List):
@@ -31,9 +28,11 @@ def verify(results: List):
         last_free_day=None,
     )
 
-    assert isinstance(results[2], scrapy.Request)
-    assert results[2].url == 'https://www.yangming.com/e-service/Track_Trace/' \
-                             'ctconnect.aspx?rdolType=BL&ctnrno=OCGU8024931&blno=W125326102&movertype=11&lifecycle=1'
+    assert isinstance(results[2], RoutingRequest)
+    assert results[2].request.url == (
+        'https://www.yangming.com/e-service/Track_Trace/'
+        'ctconnect.aspx?rdolType=BL&ctnrno=OCGU8024931&blno=W125326102&movertype=11&lifecycle=1'
+    )
 
     assert results[3] == ContainerItem(
         container_key='TEMU7059599',
@@ -41,7 +40,9 @@ def verify(results: List):
         last_free_day=None,
     )
 
-    assert isinstance(results[4], scrapy.Request)
-    assert results[4].url == 'https://www.yangming.com/e-service/Track_Trace/' \
-                             'ctconnect.aspx?rdolType=BL&ctnrno=TEMU7059599&blno=W125326102&movertype=11&lifecycle=1'
+    assert isinstance(results[4], RoutingRequest)
+    assert results[4].request.url == (
+        'https://www.yangming.com/e-service/Track_Trace/'
+        'ctconnect.aspx?rdolType=BL&ctnrno=TEMU7059599&blno=W125326102&movertype=11&lifecycle=1'
+    )
 

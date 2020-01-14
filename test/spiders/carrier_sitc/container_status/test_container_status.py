@@ -41,8 +41,8 @@ def test_container_status_routing_rule(sub, mbl_no, container_no, sample_loader)
         )
     )
 
-    spider = CarrierSitcSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    routing_rule = ContainerStatusRoutingRule()
+    results = list(routing_rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)

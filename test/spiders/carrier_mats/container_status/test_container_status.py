@@ -5,7 +5,7 @@ from scrapy import FormRequest
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_mats import CarrierMatsSpider, TimeRoutingRule
+from crawler.spiders.carrier_mats import TimeRoutingRule
 from test.spiders.carrier_mats import container_status
 
 
@@ -38,14 +38,13 @@ def test_container_status_handler(sub, mbl_no, meta_status, sample_loader):
             url=url,
             formdata={'date': meta_status['timestamp']},
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: TimeRoutingRule.name,
                 'status': meta_status,
             }
         )
     )
 
-    spider = CarrierMatsSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    routing_rule = TimeRoutingRule()
+    results = list(routing_rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)

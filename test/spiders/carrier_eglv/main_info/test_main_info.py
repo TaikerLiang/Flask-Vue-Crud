@@ -6,7 +6,7 @@ from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_eglv import CarrierEglvSpider, MainInfoRoutingRule, CarrierCaptchaMaxRetryError
+from crawler.spiders.carrier_eglv import MainInfoRoutingRule, CarrierCaptchaMaxRetryError
 from test.spiders.carrier_eglv import main_info
 
 
@@ -25,9 +25,7 @@ def sample_loader(sample_loader):
     ('05_without_container_info_table', '003903689108'),
 ])
 def test_main_info_handler(sub, mbl_no, sample_loader):
-    main_html_file = str(sample_loader.build_file_path(sub, 'sample.html'))
-    with open(main_html_file, 'r', encoding='utf-8') as fp:
-        httptext = fp.read()
+    httptext = sample_loader.read_file(sub, 'sample.html')
 
     response = TextResponse(
         url='https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do',
@@ -36,14 +34,13 @@ def test_main_info_handler(sub, mbl_no, sample_loader):
         request=Request(
             url='https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do',
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: MainInfoRoutingRule.name,
                 'mbl_no': mbl_no,
             }
         )
     )
 
-    spider = CarrierEglvSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    rule = MainInfoRoutingRule()
+    results = list(rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verifier = verify_module.Verifier()
@@ -55,9 +52,7 @@ def test_main_info_handler(sub, mbl_no, sample_loader):
     ('e03_invalid_mbl_no_format', '0039030726400', CarrierInvalidMblNoError),
 ])
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
-    main_html_file = str(sample_loader.build_file_path(sub, 'sample.html'))
-    with open(main_html_file, 'r', encoding='utf-8') as fp:
-        httptext = fp.read()
+    httptext = sample_loader.read_file(sub, 'sample.html')
 
     response = TextResponse(
         url='https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do',
@@ -72,36 +67,32 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_lo
         )
     )
 
-    spider = CarrierEglvSpider(mbl_no=mbl_no)
+    rule = MainInfoRoutingRule()
     with pytest.raises(expect_exception):
-        list(spider.parse(response=response))
+        list(rule.handle(response=response))
 
 
 @pytest.mark.parametrize('sub,mbl_no,expect_exception', [
     ('e02_invalid_captcha_max_retry', '', CarrierCaptchaMaxRetryError),
 ])
 def test_main_info_handler_max_retry_error(sub, mbl_no, expect_exception, sample_loader):
-    html_file = str(sample_loader.build_file_path(sub, 'sample.html'))
-    with open(html_file, 'r', encoding='utf-8') as fp:
-        html_text = fp.read()
+    httptext = sample_loader.read_file(sub, 'sample.html')
 
     response = TextResponse(
         url='https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do',
-        body=html_text,
+        body=httptext,
         encoding='utf-8',
         request=Request(
             url='https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do',
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: MainInfoRoutingRule.name,
                 'mbl_no': mbl_no,
             }
         )
     )
 
-    spider = CarrierEglvSpider(mbl_no=mbl_no)
+    rule = MainInfoRoutingRule()
 
     for i in range(3):
-        list(spider.parse(response=response))
+        list(rule.handle(response=response))
     with pytest.raises(expect_exception):  # The forth retry
-        list(spider.parse(response=response))
-
+        list(rule.handle(response=response))

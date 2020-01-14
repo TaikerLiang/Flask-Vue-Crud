@@ -1,10 +1,7 @@
 from typing import List
 
-import scrapy
-
 from crawler.core_carrier.items import MblItem, LocationItem, ContainerItem
 from crawler.core_carrier.rules import RoutingRequest
-from test.spiders.utils import extract_url_from
 
 
 def verify(results: List):
@@ -31,7 +28,8 @@ def verify(results: List):
         last_free_day='2019/09/23',
     )
 
-    assert isinstance(results[2], scrapy.Request)
-    assert results[2].url == 'https://www.yangming.com/e-service/Track_Trace/ctconnect.aspx?' \
-                             'rdolType=BL&ctnrno=YMLU9512450&blno=W202119210&movertype=11&lifecycle=1'
-
+    assert isinstance(results[2], RoutingRequest)
+    assert results[2].request.url == (
+        'https://www.yangming.com/e-service/Track_Trace/ctconnect.aspx?'
+        'rdolType=BL&ctnrno=YMLU9512450&blno=W202119210&movertype=11&lifecycle=1'
+    )

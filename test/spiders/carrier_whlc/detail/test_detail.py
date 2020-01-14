@@ -4,9 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_whlc import DetailRoutingRule, CarrierWhlcSpider
+from crawler.spiders.carrier_whlc import DetailRoutingRule
 from test.spiders.carrier_whlc import detail
 from test.spiders.utils import extract_url_from
 
@@ -41,8 +40,8 @@ def test_detail_routing_rule(sub, mbl_no, sample_loader, container_no):
         )
     )
 
-    spider = CarrierWhlcSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    routing_rule = DetailRoutingRule()
+    results = list(routing_rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)

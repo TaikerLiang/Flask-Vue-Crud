@@ -1,6 +1,5 @@
-from scrapy import FormRequest
-
 from crawler.core_carrier.items import MblItem, LocationItem, ContainerItem
+from crawler.core_carrier.rules import RoutingRequest
 from test.spiders.utils import convert_formdata_to_bytes
 
 
@@ -26,13 +25,12 @@ class Verifier:
             container_no='HMCU9173542',
         )
 
-        assert isinstance(results[2], FormRequest)
-        assert results[2].url == 'https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do'
-        assert results[2].meta == {
-            'CARRIER_CORE_RULE_NAME': 'CONTAINER_STATUS',
+        assert isinstance(results[2], RoutingRequest)
+        assert results[2].request.url == 'https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do'
+        assert results[2].request.meta == {
             'container_no': 'HMCU9173542',
         }
-        assert results[2].body == convert_formdata_to_bytes(
+        assert results[2].request.body == convert_formdata_to_bytes(
             formdata={
                 'bl_no': '003902245109',
                 'cntr_no': 'HMCU9173542',
@@ -49,12 +47,11 @@ class Verifier:
             container_no='EITU1111240',
         )
 
-        assert isinstance(results[4], FormRequest)
-        assert results[4].meta == {
-            'CARRIER_CORE_RULE_NAME': 'CONTAINER_STATUS',
+        assert isinstance(results[4], RoutingRequest)
+        assert results[4].request.meta == {
             'container_no': 'EITU1111240',
         }
-        assert results[4].body == convert_formdata_to_bytes(
+        assert results[4].request.body == convert_formdata_to_bytes(
             formdata={
                 'bl_no': '003902245109',
                 'cntr_no': 'EITU1111240',
@@ -66,10 +63,7 @@ class Verifier:
             }
         )
 
-        assert results[7].meta == {
-            'CARRIER_CORE_RULE_NAME': 'FILING_STATUS',
-        }
-        assert results[7].body == convert_formdata_to_bytes(
+        assert results[7].request.body == convert_formdata_to_bytes(
             formdata={
                 'TYPE': 'GetDispInfo',
                 'Item': 'AMSACK',
@@ -79,10 +73,7 @@ class Verifier:
             }
         )
 
-        assert results[8].meta == {
-            'CARRIER_CORE_RULE_NAME': 'RELEASE_STATUS',
-        }
-        assert results[8].body == convert_formdata_to_bytes(
+        assert results[8].request.body == convert_formdata_to_bytes(
             formdata={
                 'TYPE': 'GetDispInfo',
                 'Item': 'RlsStatus',

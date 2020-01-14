@@ -35,7 +35,6 @@ def test_main_info_routing_rule(sub, mbl_no, container_no_list, sample_loader):
         request=Request(
             url=url,
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: BasicInfoRoutingRule.name,
                 'mbl_no': mbl_no,
                 'container_no': container_no,
                 'container_no_list': other_container_no_list,
@@ -43,8 +42,8 @@ def test_main_info_routing_rule(sub, mbl_no, container_no_list, sample_loader):
         )
     )
 
-    spider = CarrierSitcSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    routing_rule = BasicInfoRoutingRule()
+    results = list(routing_rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
@@ -68,7 +67,6 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, container_no_list, expect_e
         request=Request(
             url=url,
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: BasicInfoRoutingRule.name,
                 'mbl_no': mbl_no,
                 'container_no': container_no,
                 'container_no_list': other_container_no_list,
@@ -76,6 +74,7 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, container_no_list, expect_e
         )
     )
 
-    spider = CarrierSitcSpider(mbl_no=mbl_no)
+    routing_rule = BasicInfoRoutingRule()
+
     with pytest.raises(expect_exception):
-        list(spider.parse(response=response))
+        list(routing_rule.handle(response=response))

@@ -1,6 +1,5 @@
-import scrapy
-
 from crawler.core_carrier.items import ContainerItem
+from crawler.core_carrier.rules import RoutingRequest
 
 
 def verify(results):
@@ -9,6 +8,6 @@ def verify(results):
         container_no='WHSU5121845',
     )
 
-    assert isinstance(results[1], scrapy.Request)
+    assert isinstance(results[1], RoutingRequest)
 
     assert len(results) == 2

@@ -44,8 +44,8 @@ def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
         )
     )
 
-    spider = CarrierApluSpider(name=None, mbl_no=mbl_no)
-    results = list(spider.parse(response))
+    routing_rule = FirstTierRoutingRule(base_url='http://www.apl.com')
+    results = list(routing_rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
@@ -73,7 +73,6 @@ def test_first_tier_routing_rule_error(sample_loader, sub, mbl_no, expect_except
         ),
     )
 
-    spider = CarrierApluSpider(name=None, mbl_no=mbl_no)
-
+    routing_rule = FirstTierRoutingRule(base_url='http://www.apl.com')
     with pytest.raises(expect_exception):
-        list(spider.parse(response))
+        list(routing_rule.handle(response=response))

@@ -1,6 +1,5 @@
-from scrapy import FormRequest
-
 from crawler.core_carrier.items import MblItem, LocationItem, ContainerItem
+from crawler.core_carrier.rules import RoutingRequest
 
 
 class Verifier:
@@ -25,14 +24,12 @@ class Verifier:
             container_no='EISU3983490',
         )
 
-        assert isinstance(results[2], FormRequest)
-        assert results[2].url == 'https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do'
-        assert results[2].meta == {
-            'CARRIER_CORE_RULE_NAME': 'CONTAINER_STATUS',
+        assert isinstance(results[2], RoutingRequest)
+        assert results[2].request.url == 'https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do'
+        assert results[2].request.meta == {
             'container_no': 'EISU3983490',
         }
 
-        assert results[3].meta != {
-            'CARRIER_CORE_RULE_NAME': 'FILING_STATUS',
+        assert results[3].request.meta != {
             'container_no': 'EISU3983490',
         }

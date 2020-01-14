@@ -5,7 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_eglv import CarrierEglvSpider, FilingStatusRoutingRule
+from crawler.spiders.carrier_eglv import FilingStatusRoutingRule
 from test.spiders.carrier_eglv import filling_status
 
 
@@ -22,13 +22,11 @@ def sample_loader(sample_loader):
     ('03_without_us', '149905244604'),
 ])
 def test_filing_status_handler(sub, mbl_no, sample_loader):
-    html_file = str(sample_loader.build_file_path(sub, 'sample.html'))
-    with open(html_file, 'r', encoding='utf-8') as fp:
-        html_text = fp.read()
+    httptext = sample_loader.read_file(sub, 'sample.html')
 
     response = TextResponse(
         url='https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do',
-        body=html_text,
+        body=httptext,
         encoding='utf-8',
         request=Request(
             url='https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do',
@@ -38,8 +36,8 @@ def test_filing_status_handler(sub, mbl_no, sample_loader):
         )
     )
 
-    spider = CarrierEglvSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    rule = FilingStatusRoutingRule()
+    results = list(rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verifier = verify_module.Verifier()

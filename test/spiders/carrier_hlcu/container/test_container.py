@@ -4,7 +4,6 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_hlcu import CarrierHlcuSpider, ContainerRoutingRule
 from test.spiders.carrier_hlcu import container
 
@@ -33,15 +32,14 @@ def test_container_handler(sub, mbl_no, container_no, sample_loader):
         request=Request(
             url=url,
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: ContainerRoutingRule.name,
                 'mbl_no': mbl_no,
                 'container_key': container_no,
             }
         )
     )
 
-    spider = CarrierHlcuSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    rule = ContainerRoutingRule()
+    results = list(rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verifier = verify_module.Verifier()

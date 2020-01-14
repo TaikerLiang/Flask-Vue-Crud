@@ -5,9 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_cosu import BookingMainInfoRoutingRule
-from src.crawler.spiders import carrier_cosu
 
 from test.spiders.carrier_cosu import booking_main_info
 
@@ -31,15 +29,17 @@ def test_parse_booking_main_info(sample_loader, sub, mbl_no):
         url=url,
         encoding='utf-8',
         body=json_text,
-        request=Request(url=url, meta={
-            'mbl_no': mbl_no,
-            RuleManager.META_CARRIER_CORE_RULE_NAME: BookingMainInfoRoutingRule.name,
-        })
+        request=Request(
+            url=url,
+            meta={
+                'mbl_no': mbl_no,
+            },
+        )
     )
 
     # action
-    spider = carrier_cosu.CarrierCosuSpider(name=None, mbl_no=mbl_no)
-    results = list(spider.parse(resp))
+    rule = BookingMainInfoRoutingRule()
+    results = list(rule.handle(response=resp))
 
     # assert
     verify_module = sample_loader.load_sample_module(sub, 'verify')
@@ -60,13 +60,12 @@ def test_parse_main_info_error(sample_loader, sub, mbl_no, expect_exception):
         body=json_text,
         request=Request(url=url, meta={
             'mbl_no': mbl_no,
-            RuleManager.META_CARRIER_CORE_RULE_NAME: BookingMainInfoRoutingRule.name,
         })
     )
 
     # action
-    spider = carrier_cosu.CarrierCosuSpider(name=None, mbl_no=mbl_no)
+    rule = BookingMainInfoRoutingRule()
 
     with pytest.raises(expect_exception):
-        list(spider.parse(resp))
+        list(rule.handle(response=resp))
 

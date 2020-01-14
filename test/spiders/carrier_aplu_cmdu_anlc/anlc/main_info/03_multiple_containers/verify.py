@@ -3,26 +3,21 @@ from test.spiders.utils import extract_url_from
 
 
 def verify(results):
-    routing_request = ContainerStatusRoutingRule.build_routing_request(
-        mbl_no='AWT0143454', container_no='TEXU1028151', base_url=CarrierAnlcSpider.base_url)
-    url = extract_url_from(routing_request=routing_request)
+    expect_url_fmt = \
+        'https://www.anl.com.au/ebusiness/tracking/detail/{container_no}?SearchCriteria=BL&SearchByReference={mbl_no}'
 
-    assert results[0].url == url
+    expect_url = expect_url_fmt.format(container_no='TEXU1028151', mbl_no='AWT0143454')
 
-    routing_request = ContainerStatusRoutingRule.build_routing_request(
-        mbl_no='AWT0143454', container_no='AMCU2500184', base_url=CarrierAnlcSpider.base_url)
-    url = extract_url_from(routing_request=routing_request)
+    assert results[0].request.url == expect_url
 
-    assert results[1].url == url
+    expect_url = expect_url_fmt.format(container_no='AMCU2500184', mbl_no='AWT0143454')
 
-    routing_request = ContainerStatusRoutingRule.build_routing_request(
-        mbl_no='AWT0143454', container_no='TLLU1233702', base_url=CarrierAnlcSpider.base_url)
-    url = extract_url_from(routing_request=routing_request)
+    assert results[1].request.url == expect_url
 
-    assert results[2].url == url
+    expect_url = expect_url_fmt.format(container_no='TLLU1233702', mbl_no='AWT0143454')
 
-    routing_request = ContainerStatusRoutingRule.build_routing_request(
-        mbl_no='AWT0143454', container_no='TCLU7717882', base_url=CarrierAnlcSpider.base_url)
-    url = extract_url_from(routing_request=routing_request)
+    assert results[2].request.url == expect_url
 
-    assert results[3].url == url
+    expect_url = expect_url_fmt.format(container_no='TCLU7717882', mbl_no='AWT0143454')
+
+    assert results[3].request.url == expect_url

@@ -4,8 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_gosu_ssph import CarrierGosuSpider, ContainerStatusRoutingRule
+from crawler.spiders.carrier_gosu_ssph import ContainerStatusRoutingRule
 from test.spiders.carrier_gosu_ssph.gosu import container_status
 from test.spiders.utils import extract_url_from
 
@@ -35,13 +34,12 @@ def test_main_info_routing_rule(sub, mbl_no, eta, container_no, sample_loader):
             url=url,
             meta={
                 'container_key': container_no,
-                RuleManager.META_CARRIER_CORE_RULE_NAME: ContainerStatusRoutingRule.name,
             }
         )
     )
 
-    spider = CarrierGosuSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    routing_rule = ContainerStatusRoutingRule()
+    results = list(routing_rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)

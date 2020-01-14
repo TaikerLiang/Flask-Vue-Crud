@@ -41,8 +41,8 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
         )
     )
 
-    spider = CarrierSsphSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    routing_rule = MainInfoRoutingRule()
+    results = list(routing_rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
@@ -69,6 +69,7 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_lo
         )
     )
 
-    spider = CarrierSsphSpider(mbl_no=mbl_no)
+    routing_rule = MainInfoRoutingRule()
+
     with pytest.raises(expect_exception):
-        list(spider.parse(response=response))
+        list(routing_rule.handle(response=response))

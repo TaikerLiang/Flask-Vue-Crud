@@ -4,9 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_cosu import BillContainerRoutingRule
-from src.crawler.spiders import carrier_cosu
 from test.spiders.carrier_cosu import bill_container
 
 
@@ -34,13 +32,12 @@ def test_container(sample_loader, sub, mbl_no):
         body=json_text,
         request=Request(url=container_url, meta={
             'mbl_no': mbl_no,
-            RuleManager.META_CARRIER_CORE_RULE_NAME: BillContainerRoutingRule.name,
         })
     )
 
     # action
-    spider = carrier_cosu.CarrierCosuSpider(name=None, mbl_no=mbl_no)
-    results = list(spider.parse(resp))
+    rule = BillContainerRoutingRule()
+    results = list(rule.handle(response=resp))
 
     # assert
     verify_module = sample_loader.load_sample_module(sub, 'verify')

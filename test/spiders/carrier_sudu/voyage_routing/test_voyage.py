@@ -48,8 +48,8 @@ def test_voyage_routing_rule(sub, mbl_no, voyage_location, voyage_direction, sam
         )
     )
 
-    spider = CarrierSuduSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    routing_rule = VoyageRoutingRule()
+    results = list(routing_rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)

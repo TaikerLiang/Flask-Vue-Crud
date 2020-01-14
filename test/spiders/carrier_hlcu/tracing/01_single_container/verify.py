@@ -1,6 +1,6 @@
-from scrapy import Request
 
 from crawler.core_carrier.items import ContainerItem
+from crawler.core_carrier.rules import RoutingRequest
 
 
 class Verifier:
@@ -11,5 +11,8 @@ class Verifier:
             container_key='HLBU2060615',
         )
 
-        assert isinstance(results[1], Request)
-        assert results[1].meta['container_key'] == 'HLBU2060615'
+        assert isinstance(results[1], RoutingRequest)
+        assert results[1].request.url == (
+            'https://www.hapag-lloyd.com/en/online-business/tracing/tracing-by-booking.html?_a=tracing_by_booking'
+        )
+        assert results[1].request.meta['container_key'] == 'HLBU2060615'

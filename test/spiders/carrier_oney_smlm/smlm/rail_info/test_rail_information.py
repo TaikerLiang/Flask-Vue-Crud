@@ -4,7 +4,6 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_oney_smlm import CarrierSmlmSpider, RailInfoRoutingRule
 from test.spiders.carrier_oney_smlm.smlm import rail_info
 from test.spiders.utils import extract_url_from
@@ -34,14 +33,13 @@ def test_rail_information_routing_rule(sub, mbl_no, cntr_no, cop_no, sample_load
         request=Request(
             url=url,
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: RailInfoRoutingRule.name,
                 'container_key': cntr_no
             }
         )
     )
 
-    spider = CarrierSmlmSpider(mbl_no=mbl_no)
-    results = list(spider.parse(response=response))
+    rule = RailInfoRoutingRule()
+    results = list(rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
