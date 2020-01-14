@@ -18,6 +18,8 @@ def verify(results):
         voyage='10',
         etd='27-Dec-2019',
         eta='31-Dec-2019',
+        pol=LocationItem(name='Kaohsiung, Taiwan (POL)'),
+        pod=LocationItem(name='Manila North Port, Philippines (POD)'),
     )
 
     assert results[2] == ContainerItem(

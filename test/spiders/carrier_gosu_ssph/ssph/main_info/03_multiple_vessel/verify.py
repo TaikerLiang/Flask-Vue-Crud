@@ -18,6 +18,8 @@ def verify(results):
         voyage='3',
         etd='04-Aug-2019',
         eta='18-Sep-2019',
+        pol=LocationItem(name='Savannah (GA), U.S.A. (POL)'),
+        pod=LocationItem(name='Singapore, Singapore (Transshipment)'),
     )
 
     assert results[2] == VesselItem(
@@ -26,6 +28,8 @@ def verify(results):
         voyage='3',
         etd='25-Sep-2019',
         eta='26-Sep-2019',
+        pol=LocationItem(name='Singapore, Singapore (Transshipment)'),
+        pod=LocationItem(name='Port Klang, Malaysia (POD)'),
     )
 
     assert results[3] == ContainerItem(

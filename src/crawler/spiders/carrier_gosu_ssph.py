@@ -91,6 +91,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 voyage=vessel_info['voyage'],
                 eta=vessel_info['eta'],
                 etd=vessel_info['etd'],
+                pol=LocationItem(name=vessel_info['pol_name']),
+                pod=LocationItem(name=vessel_info['pod_name']),
             )
 
         container_info_list = self._extract_container_info(response=response)
@@ -168,14 +170,16 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 etd_text = table_extractor.extract_cell(top='Local Departure', left=left)
                 eta_text = table_extractor.extract_cell(top='Local Arrival', left=left)
 
-                etd = self._get_local_date_time(local_date_time_text=etd_text)
-                eta = self._get_local_date_time(local_date_time_text=eta_text)
+                etd, pol = self._get_local_date_time_and_location(local_date_time_text=etd_text)
+                eta, pod = self._get_local_date_time_and_location(local_date_time_text=eta_text)
 
                 return_list.append({
                     'etd': etd,
                     'eta': eta,
                     'vessel': vessel,
                     'voyage': voyage,
+                    'pol_name': pol,
+                    'pod_name': pod,
                 })
 
         return return_list
@@ -204,15 +208,18 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return return_list
 
     @staticmethod
-    def _get_local_date_time(local_date_time_text: str):
-        pattern = re.compile(r'^(?P<local_date_time>\d{2}-\w{3}-\d{4}), .+$')
+    def _get_local_date_time_and_location(local_date_time_text: str):
+        pattern = re.compile(r'^(?P<local_date_time>\d{2}-\w{3}-\d{4}), (?P<location>.+)$')
+
         m = pattern.match(local_date_time_text)
         if m:
             local_date_time = m.group('local_date_time')
+            location = m.group('location')
         else:
             local_date_time = None
+            location = local_date_time_text
 
-        return local_date_time
+        return local_date_time, location
 
 
 class ContainerStatusRoutingRule(BaseRoutingRule):

@@ -18,6 +18,8 @@ def verify(results):
         voyage='228',
         etd='27-Sep-2019',
         eta=None,
+        pol=LocationItem(name="Ningbo (ZJ), China. People's Republic (POL)"),
+        pod=LocationItem(name="Ho Chi Minh City, Vietnam (POD)"),
     )
 
     assert results[2] == ContainerItem(
