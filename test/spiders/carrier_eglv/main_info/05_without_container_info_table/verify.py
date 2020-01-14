@@ -1,6 +1,4 @@
-from scrapy import FormRequest
-
-from crawler.core_carrier.items import MblItem, LocationItem, ContainerItem
+from crawler.core_carrier.items import MblItem, LocationItem
 
 
 class Verifier:
