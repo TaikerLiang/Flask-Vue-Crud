@@ -443,8 +443,9 @@ class LoadedFullWithETAStatusParser(BaseStatusParser):
     def process(self, match_dict: Dict) -> List[StatusInfo]:
         return [
             StatusInfo(
-                description=match_dict['load_event'],
-                local_date_time=match_dict['local_date_time1'],
+                description=match_dict['eta_event'],
+                location=match_dict['location'],
+                local_date_time=match_dict['local_date_time3'],
                 vessel=match_dict['vessel'],
             ),
             StatusInfo(
@@ -453,9 +454,8 @@ class LoadedFullWithETAStatusParser(BaseStatusParser):
                 vessel=match_dict['vessel'],
             ),
             StatusInfo(
-                description=match_dict['eta_event'],
-                location=match_dict['location'],
-                local_date_time=match_dict['local_date_time3'],
+                description=match_dict['load_event'],
+                local_date_time=match_dict['local_date_time1'],
                 vessel=match_dict['vessel'],
             ),
         ]
@@ -479,13 +479,13 @@ class LoadedFullStatusParser(BaseStatusParser):
     def process(self, match_dict: Dict) -> List[StatusInfo]:
         return [
             StatusInfo(
-                description=match_dict['load_event'],
-                local_date_time=match_dict['local_date_time1'],
+                description=match_dict['sail_event'],
+                local_date_time=match_dict['local_date_time2'],
                 vessel=match_dict['vessel'],
             ),
             StatusInfo(
-                description=match_dict['sail_event'],
-                local_date_time=match_dict['local_date_time2'],
+                description=match_dict['load_event'],
+                local_date_time=match_dict['local_date_time1'],
                 vessel=match_dict['vessel'],
             ),
         ]
