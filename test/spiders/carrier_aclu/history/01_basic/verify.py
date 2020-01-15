@@ -17,9 +17,9 @@ def verify(results):
 
     assert results[2] == ContainerStatusItem(
         container_key='CRSU9164589',
-        description='Loaded full on vessel ATLANTIC SAIL /8262',
-        location=LocationItem(name=None),
-        local_date_time='01/22/18 05:47',
+        description='The ETA at the port of Discharge will be',
+        location=LocationItem(name='Halifax-Ceres Terminal,Nova Scotia,Canada'),
+        local_date_time='01/31/18 08:00',
         vessel='ATLANTIC SAIL /8262',
     )
 
@@ -33,9 +33,9 @@ def verify(results):
 
     assert results[4] == ContainerStatusItem(
         container_key='CRSU9164589',
-        description='The ETA at the port of Discharge will be',
-        location=LocationItem(name='Halifax-Ceres Terminal,Nova Scotia,Canada'),
-        local_date_time='01/31/18 08:00',
+        description='Loaded full on vessel ATLANTIC SAIL /8262',
+        location=LocationItem(name=None),
+        local_date_time='01/22/18 05:47',
         vessel='ATLANTIC SAIL /8262',
     )
 
