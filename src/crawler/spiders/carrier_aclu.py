@@ -11,7 +11,7 @@ from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingR
 from crawler.core_carrier.items import BaseCarrierItem, ContainerItem, ContainerStatusItem, LocationItem
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 
-ACLU_BASE_URL = 'http://www.aclcargo.com'
+BASE_URL = 'http://www.aclcargo.com'
 
 
 class CarrierAcluSpider(BaseCarrierSpider):
@@ -21,15 +21,15 @@ class CarrierAcluSpider(BaseCarrierSpider):
         super(CarrierAcluSpider, self).__init__(*args, **kwargs)
 
         rules = [
-            SearchRoutingRule(),
-            HistoryRoutingRule(),
+            TrackRoutingRule(),
+            DetailTrackingRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
 
     def start_requests(self):
 
-        routing_request = SearchRoutingRule.build_routing_request(mbl_no=self.mbl_no)
+        routing_request = TrackRoutingRule.build_routing_request(mbl_no=self.mbl_no)
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):
@@ -49,13 +49,13 @@ class CarrierAcluSpider(BaseCarrierSpider):
 
 # -------------------------------------------------------------------------------
 
-class SearchRoutingRule(BaseRoutingRule):
-    name = 'SEARCH'
+class TrackRoutingRule(BaseRoutingRule):
+    name = 'TRACK'
 
     @classmethod
     def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
         request = scrapy.Request(
-            url=f'{ACLU_BASE_URL}/trackCargo.php?search_for={mbl_no}',
+            url=f'{BASE_URL}/trackCargo.php?search_for={mbl_no}',
         )
         return RoutingRequest(request=request, rule_name=cls.name)
 
@@ -67,7 +67,7 @@ class SearchRoutingRule(BaseRoutingRule):
 
         container_infos = self._extract_container_infos(response=response)
         for container_info in container_infos:
-            yield HistoryRoutingRule.build_routing_request(
+            yield DetailTrackingRoutingRule.build_routing_request(
                 route=container_info['route'], container_no=container_info['container_no'])
 
     @staticmethod
@@ -130,17 +130,17 @@ class StatusInfo:
     vessel: str = ''
 
 
-class HistoryRoutingRule(BaseRoutingRule):
-    name = 'HISTORY'
+class DetailTrackingRoutingRule(BaseRoutingRule):
+    name = 'DETAIL_TRACKING'
 
     def __init__(self):
         self.parsers = [
             LoadedFullWithETAStatusParser(
                 patt=re.compile(
                     r'^(?P<load_event>Loaded full on vessel (?P<vessel>.+)) for (?P<location>.+) On '
-                    r'(?P<local_date_time1>\w{2}/\w{2}/\w{2} \w{2}:\w{2}) (?P<sail_event>which sailed on) '
+                    r'(?P<local_date_time1>\w{2}/\w{2}/\w{2} \w{2}:\w{2}) which (?P<sail_event>sailed on) '
                     r'(?P<local_date_time2>\w{2}/\w{2}/\w{2} \w{2}:\w{2})\. '
-                    r'(?P<eta_event>The ETA at the port of Discharge will be) '
+                    r'(?P<eta_event>The ETA at the port of Discharge) will be '
                     r'(?P<local_date_time3>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
                 ),
             ),
@@ -156,7 +156,7 @@ class HistoryRoutingRule(BaseRoutingRule):
             LoadedFullStatusParser(
                 patt=re.compile(
                     r'^(?P<load_event>Loaded full on vessel (?P<vessel>.+)) for (?P<location>.+) On '
-                    r'(?P<local_date_time1>\w{2}/\w{2}/\w{2} \w{2}:\w{2}) (?P<sail_event>which sailed on) '
+                    r'(?P<local_date_time1>\w{2}/\w{2}/\w{2} \w{2}:\w{2}) which (?P<sail_event>sailed on) '
                     r'(?P<local_date_time2>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
                 ),
             ),
@@ -169,79 +169,79 @@ class HistoryRoutingRule(BaseRoutingRule):
             ),
             VesselLocationTimeStatusParser(
                 patt=re.compile(
-                    r'^(?P<description>Discharged from vessel (?P<vessel>.+) at (?P<location>.+)) On '
+                    r'^(?P<description>Discharged from vessel (?P<vessel>.+)) at (?P<location>.+) On '
                     r'(?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
                 ),
             ),
             VesselLocationTimeStatusParser(
                 patt=re.compile(
-                    r'^(?P<description>Received for vessel (?P<vessel>.+) at (?P<location>.+)) On '
+                    r'^(?P<description>Received for vessel (?P<vessel>.+)) at (?P<location>.+) On '
                     r'(?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
                 ),
             ),
             VesselLocationTimeStatusParser(
                 patt=re.compile(
-                    r'^(?P<description>Received from vessel (?P<vessel>.+) at (?P<location>.+)) On '
+                    r'^(?P<description>Received from vessel (?P<vessel>.+)) at (?P<location>.+) On '
                     r'(?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
                 ),
             ),
             VesselLocationTimeStatusParser(
                 patt=re.compile(
-                    r'^(?P<description>Departed for (?P<location>.+) for vessel (?P<vessel>.+)) On '
+                    r'^(?P<description>Departed for) (?P<location>.+) for vessel (?P<vessel>.+) On '
                     r'(?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
                 ),
             ),
             VesselLocationTimeStatusParser(
                 patt=re.compile(
-                    r'^(?P<description>Departed from (?P<location>.+) from vessel (?P<vessel>.+)) On '
+                    r'^(?P<description>Departed from) (?P<location>.+) from vessel (?P<vessel>.+) On '
                     r'(?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
                 ),
             ),
             LocationTimeStatusParser(
                 patt=re.compile(
-                    r'^(?P<description>Departed empty for (?P<location>.+)) On '
+                    r'^(?P<description>Departed empty for) (?P<location>.+) On '
                     r'(?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
                 ),
             ),
             LocationTimeStatusParser(
                 patt=re.compile(
-                    r'^(?P<description>Discharged empty at (?P<location>.+)) On '
+                    r'^(?P<description>Discharged empty at) (?P<location>.+) On '
                     r'(?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
                 ),
             ),
             LocationTimeStatusParser(
                 patt=re.compile(
-                    r'^(?P<description>Received empty at (?P<location>.+)) On '
+                    r'^(?P<description>Received empty at) (?P<location>.+) On '
                     r'(?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
                 ),
             ),
             LocationTimeStatusParser(
                 patt=re.compile(
-                    r'^(?P<description>Departed for (?P<location>.+)) On '
+                    r'^(?P<description>Departed for) (?P<location>.+) On '
                     r'(?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
                 ),
             ),
             LocationTimeStatusParser(
                 patt=re.compile(
-                    r'^(?P<description>Departed from (?P<location>.+)) On '
+                    r'^(?P<description>Departed from) (?P<location>.+) On '
                     r'(?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
                 ),
             ),
             LocationTimeStatusParser(
                 patt=re.compile(
-                    r'^(?P<description>Received at (?P<location>.+)) On '
+                    r'^(?P<description>Received at) (?P<location>.+) On '
                     r'(?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
                 ),
             ),
             LocationTimeStatusParser(
                 patt=re.compile(
-                    r'^(?P<description>Scaled in at (?P<location>.+)) On '
+                    r'^(?P<description>Scaled in at) (?P<location>.+) On '
                     r'(?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
                 ),
             ),
             LocationTimeStatusParser(
                 patt=re.compile(
-                    r'^(?P<description>Scaled out at ,(?P<location>.+)) On '
+                    r'^(?P<description>Scaled out at) ,(?P<location>.+) On '
                     r'(?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
                 ),
             ),
@@ -262,7 +262,7 @@ class HistoryRoutingRule(BaseRoutingRule):
     @classmethod
     def build_routing_request(cls, route: str, container_no: str) -> RoutingRequest:
         request = scrapy.Request(
-            url=f'{ACLU_BASE_URL}{route}',
+            url=f'{BASE_URL}{route}',
         )
         request.meta['container_no'] = container_no
         return RoutingRequest(request=request, rule_name=cls.name)

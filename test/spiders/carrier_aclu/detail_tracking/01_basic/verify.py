@@ -9,7 +9,7 @@ def verify(results):
 
     assert results[1] == ContainerStatusItem(
         container_key='CRSU9164589',
-        description='Discharged from vessel ATLANTIC SAIL /8262 at Halifax-Ceres Terminal,Nova Scotia,Canada',
+        description='Discharged from vessel ATLANTIC SAIL /8262',
         location=LocationItem(name='Halifax-Ceres Terminal,Nova Scotia,Canada'),
         local_date_time='01/31/18 08:30',
         vessel='ATLANTIC SAIL /8262',
@@ -17,7 +17,7 @@ def verify(results):
 
     assert results[2] == ContainerStatusItem(
         container_key='CRSU9164589',
-        description='The ETA at the port of Discharge will be',
+        description='The ETA at the port of Discharge',
         location=LocationItem(name='Halifax-Ceres Terminal,Nova Scotia,Canada'),
         local_date_time='01/31/18 08:00',
         vessel='ATLANTIC SAIL /8262',
@@ -25,7 +25,7 @@ def verify(results):
 
     assert results[3] == ContainerStatusItem(
         container_key='CRSU9164589',
-        description='which sailed on',
+        description='sailed on',
         location=LocationItem(name=None),
         local_date_time='01/22/18 12:36',
         vessel='ATLANTIC SAIL /8262',
@@ -41,7 +41,7 @@ def verify(results):
 
     assert results[6] == ContainerStatusItem(
         container_key='CRSU9164589',
-        description='Departed for Liverpool Seaforth,United Kingdom L21.1 for vessel ATLANTIC SAIL /8262',
+        description='Departed for',
         location=LocationItem(name='Liverpool Seaforth,United Kingdom L21.1'),
         local_date_time='01/17/18 19:27',
         vessel='ATLANTIC SAIL /8262',
@@ -49,7 +49,7 @@ def verify(results):
 
     assert results[7] == ContainerStatusItem(
         container_key='CRSU9164589',
-        description='Received at Dublin-Port,Ireland',
+        description='Received at',
         location=LocationItem(name='Dublin-Port,Ireland'),
         local_date_time='01/15/18 15:12',
         vessel=None,
