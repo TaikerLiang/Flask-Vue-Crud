@@ -1,0 +1,12 @@
+{
+  "data": {
+    "pageSize": 20,
+    "totalRecord": 0,
+    "currentPage": 1,
+    "totalPage": 1,
+    "recordIndex": 0,
+    "recordStart": 1,
+    "recordEnd": 20
+  },
+  "success": true
+}
