@@ -1,0 +1,194 @@
+{
+  "data": {
+    "pageSize": 20,
+    "totalRecord": 40,
+    "currentPage": 1,
+    "totalPage": 2,
+    "records": [
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU4000103",
+        "movementCode": "进口重箱出场",
+        "eventDate": "2019-10-24 13:20",
+        "eventPort": "台中",
+        "vesselCode": "NEW MINGZHOU 60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU4005701",
+        "movementCode": "进口重箱出场",
+        "eventDate": "2019-10-28 16:14",
+        "eventPort": "台中",
+        "vesselCode": "NEW MINGZHOU 60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU4006673",
+        "movementCode": "进口重箱出场",
+        "eventDate": "2019-10-25 12:23",
+        "eventPort": "台中",
+        "vesselCode": "NEW MINGZHOU 60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU5000849",
+        "movementCode": "进口重箱出场",
+        "eventDate": "2019-10-24 08:24",
+        "eventPort": "台中",
+        "vesselCode": "NEW MINGZHOU 60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU5001193",
+        "movementCode": "进口重箱出场",
+        "eventDate": "2019-10-25 18:28",
+        "eventPort": "台中",
+        "vesselCode": "NEW MINGZHOU 60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU5003540",
+        "movementCode": "进口重箱出场",
+        "eventDate": "2019-10-26 10:04",
+        "eventPort": "台中",
+        "vesselCode": "NEW MINGZHOU 60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU5004799",
+        "movementCode": "进口重箱出场",
+        "eventDate": "2019-10-28 13:43",
+        "eventPort": "台中",
+        "vesselCode": "NEW MINGZHOU 60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU5000303",
+        "movementCode": "出口装船",
+        "eventDate": "2019-10-18 13:07",
+        "eventPort": "宁波港",
+        "vesselCode": "新明州60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU4006673",
+        "movementCode": "出口装船",
+        "eventDate": "2019-10-18 13:07",
+        "eventPort": "宁波港",
+        "vesselCode": "新明州60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU4005701",
+        "movementCode": "出口装船",
+        "eventDate": "2019-10-18 13:07",
+        "eventPort": "宁波港",
+        "vesselCode": "新明州60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU4000103",
+        "movementCode": "出口装船",
+        "eventDate": "2019-10-18 13:07",
+        "eventPort": "宁波港",
+        "vesselCode": "新明州60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU5004799",
+        "movementCode": "出口装船",
+        "eventDate": "2019-10-18 13:07",
+        "eventPort": "宁波港",
+        "vesselCode": "新明州60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU5003540",
+        "movementCode": "出口装船",
+        "eventDate": "2019-10-18 13:07",
+        "eventPort": "宁波港",
+        "vesselCode": "新明州60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU5001193",
+        "movementCode": "出口装船",
+        "eventDate": "2019-10-18 13:07",
+        "eventPort": "宁波港",
+        "vesselCode": "新明州60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU5000849",
+        "movementCode": "出口装船",
+        "eventDate": "2019-10-18 13:07",
+        "eventPort": "宁波港",
+        "vesselCode": "新明州60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU5001193",
+        "movementCode": "空箱入场",
+        "eventDate": "2019-10-28 11:09",
+        "eventPort": "台中",
+        "vesselCode": "NEW MINGZHOU 60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU5003540",
+        "movementCode": "空箱入场",
+        "eventDate": "2019-10-28 16:21",
+        "eventPort": "台中",
+        "vesselCode": "NEW MINGZHOU 60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU5004799",
+        "movementCode": "空箱入场",
+        "eventDate": "2019-10-28 18:47",
+        "eventPort": "台中",
+        "vesselCode": "NEW MINGZHOU 60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU5000303",
+        "movementCode": "进口重箱出场",
+        "eventDate": "2019-10-29 09:56",
+        "eventPort": "台中",
+        "vesselCode": "NEW MINGZHOU 60",
+        "voyageNo": "9067S"
+      },
+      {
+        "blNo": "NOSNB9TZ35829",
+        "containerNo": "NBYU4005701",
+        "movementCode": "空箱入场",
+        "eventDate": "2019-10-29 13:10",
+        "eventPort": "台中",
+        "vesselCode": "NEW MINGZHOU 60",
+        "voyageNo": "9067S"
+      }
+    ],
+    "recordIndex": 0,
+    "recordStart": 1,
+    "recordEnd": 20
+  },
+  "success": true
+}

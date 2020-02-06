@@ -1,0 +1,59 @@
+{
+  "data": {
+    "pageSize": 20,
+    "totalRecord": 5,
+    "currentPage": 1,
+    "totalPage": 1,
+    "records": [
+      {
+        "blNo": "NOSNB9GX16042",
+        "containerNo": "SEGU3474023",
+        "movementCode": "客户提空箱",
+        "eventDate": "2019-12-17 23:01",
+        "eventPort": "宁波港",
+        "vesselCode": "NEW MINGZHOU 60",
+        "voyageNo": "9085S"
+      },
+      {
+        "blNo": "NOSNB9GX16042",
+        "containerNo": "SEGU3474023",
+        "movementCode": "进口重箱入场",
+        "eventDate": "2019-12-24 09:40",
+        "eventPort": "高雄",
+        "vesselCode": "新明州60",
+        "voyageNo": "9085S"
+      },
+      {
+        "blNo": "NOSNB9GX16042",
+        "containerNo": "SEGU3474023",
+        "movementCode": "出口装船",
+        "eventDate": "2019-12-20 23:18",
+        "eventPort": "宁波港",
+        "vesselCode": "新明州60",
+        "voyageNo": "9085S"
+      },
+      {
+        "blNo": "NOSNB9GX16042",
+        "containerNo": "SEGU3474023",
+        "movementCode": "空箱入场",
+        "eventDate": "2019-12-31 14:59",
+        "eventPort": "高雄",
+        "vesselCode": "NEW MINGZHOU 60",
+        "voyageNo": "9085S"
+      },
+      {
+        "blNo": "NOSNB9GX16042",
+        "containerNo": "SEGU3474023",
+        "movementCode": "进口重箱出场",
+        "eventDate": "2019-12-31 10:58",
+        "eventPort": "高雄",
+        "vesselCode": "NEW MINGZHOU 60",
+        "voyageNo": "9085S"
+      }
+    ],
+    "recordIndex": 0,
+    "recordStart": 1,
+    "recordEnd": 20
+  },
+  "success": true
+}
