@@ -12,12 +12,12 @@ if __name__ == '__main__':
     process = CrawlerProcess(settings=settings)
 
     mbl_nos = [
-        'NOSNB9GX16042',
-        'NOSNB9YK51244',
-        'NOSNB9GX15877',
+        # 'NOSNB9GX16042',
+        # 'NOSNB9YK51244',
+        # 'NOSNB9GX15877',
         'NOSNB9TZ35829',
-        'NOSNB9GX15802',
-        'NOSNB9GX15773',
+        # 'NOSNB9GX15802',
+        # 'NOSNB9GX15773',
     ]
 
     for mbl_no in mbl_nos:

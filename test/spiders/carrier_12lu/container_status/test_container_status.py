@@ -17,14 +17,15 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,', [
-    ('01_single_container', 'NOSNB9GX16042'),
-    ('02_multiple_containers', 'NOSNB9TZ35829'),
+@pytest.mark.parametrize('sub,mbl_no,page_no', [
+    ('01_single_container', 'NOSNB9GX16042', 1),
+    ('02_1_multiple_containers', 'NOSNB9TZ35829', 1),
+    ('02_2_multiple_containers', 'NOSNB9TZ35829', 2),
 ])
-def test_container_status_routing_rule(sub, mbl_no, sample_loader):
+def test_container_status_routing_rule(sub, mbl_no, page_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
-    routing_request = ContainerStatusRoutingRule.build_routing_request(mbl_no=mbl_no)
+    routing_request = ContainerStatusRoutingRule.build_routing_request(mbl_no=mbl_no, page_no=page_no)
     url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(
@@ -33,6 +34,10 @@ def test_container_status_routing_rule(sub, mbl_no, sample_loader):
         encoding='utf-8',
         request=Request(
             url=url,
+            meta={
+                'mbl_no': mbl_no,
+                'page_no': page_no,
+            }
         )
     )
 
@@ -43,13 +48,13 @@ def test_container_status_routing_rule(sub, mbl_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'NOSNB9GX1604', CarrierInvalidMblNoError),
+@pytest.mark.parametrize('sub,mbl_no,page_no,expect_exception', [
+    ('e01_invalid_mbl_no', 'NOSNB9GX1604', 1, CarrierInvalidMblNoError),
 ])
-def test_container_status_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
+def test_container_status_handler_mbl_no_error(sub, mbl_no, page_no, expect_exception, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
-    routing_request = ContainerStatusRoutingRule.build_routing_request(mbl_no=mbl_no)
+    routing_request = ContainerStatusRoutingRule.build_routing_request(mbl_no=mbl_no, page_no=page_no)
     url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(
@@ -58,6 +63,10 @@ def test_container_status_handler_mbl_no_error(sub, mbl_no, expect_exception, sa
         encoding='utf-8',
         request=Request(
             url=url,
+            meta={
+                'mbl_no': mbl_no,
+                'page_no': page_no,
+            }
         )
     )
 
