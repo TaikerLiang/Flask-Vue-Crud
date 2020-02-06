@@ -211,7 +211,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
 
-        for index, selector in enumerate(response.css('table tbody tr')):
+        for index in table_locator.iter_left_headers():
             is_actual = bool(table.extract_cell('Status', index, extractor=ActualIconTdExtractor()))
             yield {
                 'local_date_time': table.extract_cell('Date', index),
@@ -227,26 +227,30 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 class ContainerStatusTableLocator(BaseTableLocator):
 
     def __init__(self):
-        self._td_map = {}  # top_header: {left_index: td, ...}
+        self._td_map = {}
+        self._data_len = 0
 
     def parse(self, table: Selector):
-        top_header_map = {}  # top_index: top_header
+        title_th_list = table.css('thead th')
+        data_tr_list = table.css('tbody tr[class]')
 
-        for index, th in enumerate(table.css('thead th')):
-            top_header_selector = th.css('::text').get()
-            top_header = top_header_selector.strip()
+        for title_index, title_th in enumerate(title_th_list):
+            data_index = title_index
 
-            if index == 1:
-                assert top_header == ''
-                top_header = 'Status'
+            title = title_th.css('::text').get().strip()
 
-            top_header_map[index] = top_header
-            self._td_map[top_header] = {}
+            if title_index == 1:
+                assert title == ''
+                title = 'Status'
 
-        for left_index, tr in enumerate(table.css('tbody tr')):
-            for top_index, td in enumerate(tr.css('td')):
-                top = top_header_map[top_index]
-                self._td_map[top][left_index] = td
+            self._td_map[title] = []
+
+            for data_tr in data_tr_list:
+                data_td = data_tr.css('td')[data_index]
+
+                self._td_map[title].append(data_td)
+
+        self._data_len = len(data_tr_list)
 
     def get_cell(self, top, left) -> Selector:
         try:
@@ -256,6 +260,10 @@ class ContainerStatusTableLocator(BaseTableLocator):
 
     def has_header(self, top=None, left=None) -> bool:
         return (top in self._td_map) and (left is None)
+
+    def iter_left_headers(self):
+        for index in range(self._data_len):
+            yield index
 
 
 class ActualIconTdExtractor(BaseTableCellExtractor):
