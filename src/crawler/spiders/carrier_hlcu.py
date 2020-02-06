@@ -20,7 +20,7 @@ from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatch
     TopHeaderTableLocator
 
 
-BASE_URL = 'https://www.hapag-lloyd.com/en/online-business'
+BASE_URL = 'https://www.hapag-lloyd.com/en'
 
 
 class CarrierHlcuSpider(BaseCarrierSpider):
@@ -30,6 +30,7 @@ class CarrierHlcuSpider(BaseCarrierSpider):
         super(CarrierHlcuSpider, self).__init__(*args, **kwargs)
 
         rules = [
+            SeleniumCookieRoutingRule(),
             TracingRoutingRule(),
             ContainerRoutingRule(),
         ]
@@ -38,10 +39,7 @@ class CarrierHlcuSpider(BaseCarrierSpider):
         self._request_queue = RoutingRequestQueue()
 
     def start_requests(self):
-        cookies_getter = CookiesGetter()
-        cookies = cookies_getter.get_cookies()
-
-        routing_request = TracingRoutingRule.build_routing_request(mbl_no=self.mbl_no, cookies=cookies)
+        routing_request = SeleniumCookieRoutingRule.build_routing_request(mbl_no=self.mbl_no)
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):
@@ -66,6 +64,33 @@ class CarrierHlcuSpider(BaseCarrierSpider):
 # -------------------------------------------------------------------------------
 
 
+class SeleniumCookieRoutingRule(BaseRoutingRule):
+    name = 'SELENIUM_COOKIE'
+
+    @classmethod
+    def build_routing_request(cls, mbl_no) -> RoutingRequest:
+        request = scrapy.Request(
+            url=f'{BASE_URL}/home.html',
+            meta={'mbl_no': mbl_no},
+        )
+
+        return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response):
+        return f'{self.name}.html'
+
+    def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+
+        cookies_getter = CookiesGetter()
+        cookies = cookies_getter.get_cookies()
+
+        yield TracingRoutingRule.build_routing_request(mbl_no=mbl_no, cookies=cookies)
+
+
+# -------------------------------------------------------------------------------
+
+
 class TracingRoutingRule(BaseRoutingRule):
     name = 'TRACING'
 
@@ -75,7 +100,7 @@ class TracingRoutingRule(BaseRoutingRule):
     @classmethod
     def build_routing_request(cls, mbl_no: str, cookies: Dict) -> RoutingRequest:
         request = scrapy.Request(
-            url=f'{BASE_URL}/tracing/tracing-by-booking.html?blno={mbl_no}',
+            url=f'{BASE_URL}/online-business/tracing/tracing-by-booking.html?blno={mbl_no}',
             cookies=cookies,
             meta={'mbl_no': mbl_no, 'cookies': cookies},
         )
@@ -190,7 +215,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             'tracing_by_booking_f_SUBMIT': '1',
         }
         request = scrapy.FormRequest(
-            url=f'{BASE_URL}/tracing/tracing-by-booking.html?_a=tracing_by_booking',
+            url=f'{BASE_URL}/online-business/tracing/tracing-by-booking.html?_a=tracing_by_booking',
             formdata=form_data,
             cookies=cookies,
             meta={'container_key': container_key}
@@ -323,7 +348,7 @@ class CookiesGetter:
         self._browser = webdriver.Chrome(chrome_options=options)
 
     def get_cookies(self):
-        self._browser.get(f'{BASE_URL}/tracing/tracing-by-booking.html')
+        self._browser.get(f'{BASE_URL}/online-business/tracing/tracing-by-booking.html')
 
         try:
             WebDriverWait(self._browser, 10).until(self._is_cookies_ready)
