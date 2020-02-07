@@ -104,12 +104,18 @@ class SeleniumCookieRoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
 
-        self._proxy_manager.renew_proxy()
+        while True:
+            self._proxy_manager.renew_proxy()
 
-        cookies_getter = CookiesGetter(phantom_js_service_args=self._proxy_manager.get_phantom_js_service_args())
-        cookies = cookies_getter.get_cookies()
+            cookies_getter = CookiesGetter(phantom_js_service_args=self._proxy_manager.get_phantom_js_service_args())
 
-        yield TrackRoutingRule.build_request_option(mbl_no=mbl_no, cookies=cookies)
+            try:
+                cookies = cookies_getter.get_cookies()
+            except LoadWebsiteTimeOutError:
+                continue
+
+            yield TrackRoutingRule.build_request_option(mbl_no=mbl_no, cookies=cookies)
+            break
 
 
 # -------------------------------------------------------------------------------

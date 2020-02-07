@@ -50,27 +50,50 @@ class RequestOption:
 # -------------------------------------------------------------------------------
 
 
+PROXY_GROUP_SHADER = 'SHADER'
+PROXY_GROUP_RESIDENTIAL = 'RESIDENTIAL'
+
+
+@dataclasses.dataclass
+class ProxyOption:
+    group: str
+    session: str
+
+
 class ProxyManager:
     PROXY_URL = 'http://proxy.apify.com:8000'
     PROXY_PASSWORD = 'XZTBLpciyyTCFb3378xWJbuYY'
-    MAX_RENEW = 10
 
     def __init__(self, session: str, logger: Logger):
-        self._session = session
         self._logger = logger
 
+        self._proxy_options = [
+            ProxyOption(group=PROXY_GROUP_SHADER, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_SHADER, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_SHADER, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_SHADER, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_SHADER, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
+        ]
+
         self._proxy_username = ''
-        self._renew_count = 0
+
+    @staticmethod
+    def _generate_random_string():
+        return ''.join(random.choices(string.ascii_uppercase + string.digits, k=20))
 
     def renew_proxy(self):
-        if self._renew_count > self.MAX_RENEW:
+        if not self._proxy_options:
             raise ProxyMaxRetryError()
 
-        self._renew_count += 1
-        self._logger.warning(f'----- renew proxy ({self._renew_count})')
+        option = self._proxy_options.pop(0)
+        self._logger.warning(f'----- renew proxy ({len(self._proxy_options)}) {option}')
 
-        rand_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=20))
-        self._proxy_username = f'groups-RESIDENTIAL,session-{self._session}{rand_str}'
+        self._proxy_username = f'groups-{option.group},session-{option.session}'
 
     def apply_proxy_to_request_option(self, option: RequestOption) -> RequestOption:
         return option.copy_and_extend_by(
