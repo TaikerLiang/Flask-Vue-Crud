@@ -68,7 +68,7 @@ def build_error_data_from_exc(exc_type, exc_value, exc_traceback) -> ExportError
 
     # add traceback info
     tb_info_list = traceback.format_tb(exc_traceback)
-    error_data['traceback_info'] = ''.join(tb_info_list)
+    error_data['traceback_info'] = tb_info_list
 
     return error_data
 
