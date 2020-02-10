@@ -3,6 +3,7 @@ from typing import Dict
 
 import scrapy
 from scrapy import Selector
+from urllib3.exceptions import ReadTimeoutError
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
@@ -111,7 +112,7 @@ class SeleniumCookieRoutingRule(BaseRoutingRule):
 
             try:
                 cookies = cookies_getter.get_cookies()
-            except LoadWebsiteTimeOutError:
+            except (LoadWebsiteTimeOutError, ReadTimeoutError):
                 continue
 
             yield TrackRoutingRule.build_request_option(mbl_no=mbl_no, cookies=cookies)
