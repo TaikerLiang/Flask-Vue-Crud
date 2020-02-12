@@ -6,7 +6,7 @@ from typing import Dict
 from scrapy.exceptions import DropItem
 
 from . import items as carrier_items
-from .base import CARRIER_RESULT_STATUS_OK, CARRIER_RESULT_STATUS_FATAL
+from .base import CARRIER_RESULT_STATUS_DATA, CARRIER_RESULT_STATUS_DEBUG, CARRIER_RESULT_STATUS_FATAL
 
 
 class CarrierItemPipeline:
@@ -37,6 +37,8 @@ class CarrierItemPipeline:
                 return self._collector.build_final_data()
             elif isinstance(item, carrier_items.ExportErrorData):
                 return self._collector.build_error_data(item)
+            elif isinstance(item, carrier_items.DebugItem):
+                return self._collector.build_debug_data(item)
             else:
                 raise DropItem(f'unknown item: {item}')
 
@@ -101,7 +103,7 @@ class CarrierResultCollector:
 
     def build_final_data(self) -> Dict:
         return {
-            'status': CARRIER_RESULT_STATUS_OK,
+            'status': CARRIER_RESULT_STATUS_DATA,
             'request_args': self._request_args,
             'basic': self._basic,
             'vessels': list(self._vessels.values()),
@@ -114,6 +116,14 @@ class CarrierResultCollector:
         return {
             'status': CARRIER_RESULT_STATUS_FATAL,  # default status
             'request_args': self._request_args,
+            **clean_dict,
+        }
+
+    def build_debug_data(self, item: carrier_items.DebugItem) -> Dict:
+        clean_dict = self._clean_item(item)
+
+        return {
+            'status': CARRIER_RESULT_STATUS_DEBUG,
             **clean_dict,
         }
 

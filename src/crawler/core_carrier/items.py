@@ -20,6 +20,10 @@ class ExportErrorData(BaseCarrierItem):
     traceback_info = scrapy.Field()
 
 
+class DebugItem(BaseCarrierItem):
+    info = scrapy.Field()
+
+
 class LocationItem(BaseCarrierItem):
     name = scrapy.Field()
     un_lo_code = scrapy.Field()
