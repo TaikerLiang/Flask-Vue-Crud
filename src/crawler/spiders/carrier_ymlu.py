@@ -5,7 +5,8 @@ import scrapy
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
-from crawler.core_carrier.items import BaseCarrierItem, ContainerStatusItem, LocationItem, MblItem, ContainerItem
+from crawler.core_carrier.items import (
+    BaseCarrierItem, ContainerStatusItem, LocationItem, MblItem, ContainerItem, DebugItem)
 from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
@@ -31,6 +32,8 @@ class CarrierYmluSpider(BaseCarrierSpider):
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):
+        yield DebugItem(info={'meta': dict(response.meta)})
+
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
         save_name = routing_rule.get_save_name(response=response)

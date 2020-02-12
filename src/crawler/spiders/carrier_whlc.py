@@ -9,7 +9,7 @@ from crawler.core_carrier.base_spiders import (
     BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule, RoutingRequestQueue
 from crawler.core_carrier.items import (
-    BaseCarrierItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData)
+    BaseCarrierItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData, DebugItem)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
@@ -45,6 +45,8 @@ class CarrierWhlcSpider(BaseCarrierSpider):
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):
+        yield DebugItem(info={'meta': dict(response.meta)})
+
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
         save_name = routing_rule.get_save_name(response=response)

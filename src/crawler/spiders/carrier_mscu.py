@@ -13,7 +13,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
     LoadWebsiteTimeOutError, CarrierResponseFormatError, CarrierInvalidMblNoError)
-from crawler.core_carrier.items import ContainerItem, ContainerStatusItem, LocationItem, MblItem
+from crawler.core_carrier.items import ContainerItem, ContainerStatusItem, LocationItem, MblItem, DebugItem
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
@@ -27,6 +27,8 @@ class CarrierMscuSpider(BaseCarrierSpider):
         yield Request(url=f'{URL}/favicon.ico', callback=self.parse)
 
     def parse(self, response):
+        yield DebugItem(info={'meta': dict(response.meta)})
+
         driver = MscuCarrierChromeDriver()
 
         for item in self.start_crawl(driver):

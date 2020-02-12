@@ -9,7 +9,7 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
     CarrierInvalidMblNoError, CarrierResponseFormatError, build_proxy_max_retry_error_data)
 from crawler.core_carrier.items import (
-    MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, BaseCarrierItem)
+    MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, BaseCarrierItem, DebugItem)
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption, ProxyMaxRetryError
 from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest, RuleManager
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
@@ -52,6 +52,8 @@ class CarrierHdmuSpider(BaseCarrierSpider):
             yield build_proxy_max_retry_error_data()
 
     def parse(self, response):
+        yield DebugItem(info={'meta': dict(response.meta)})
+
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
         # save file

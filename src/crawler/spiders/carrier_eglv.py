@@ -10,7 +10,7 @@ from crawler.core_carrier.base_spiders import (
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError)
 from crawler.core_carrier.items import (
-    ContainerStatusItem, LocationItem, ContainerItem, MblItem, BaseCarrierItem, ExportErrorData)
+    ContainerStatusItem, LocationItem, ContainerItem, MblItem, BaseCarrierItem, ExportErrorData, DebugItem)
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
 from crawler.extractors.selector_finder import (
     find_selector_from, CssQueryExistMatchRule, CssQueryTextStartswithMatchRule)
@@ -48,6 +48,8 @@ class CarrierEglvSpider(BaseCarrierSpider):
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):
+        yield DebugItem(info={'meta': dict(response.meta)})
+
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
         if routing_rule.name != 'CAPTCHA':

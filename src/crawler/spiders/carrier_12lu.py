@@ -6,7 +6,8 @@ import scrapy
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.core_carrier.items import BaseCarrierItem, MblItem, ContainerItem, ContainerStatusItem, LocationItem
+from crawler.core_carrier.items import (
+    BaseCarrierItem, MblItem, ContainerItem, ContainerStatusItem, LocationItem, DebugItem)
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
 
 URL = 'http://www.nbosco.com/sebusiness/ecm/ContainerMovement/selectCmContainerCurrent'
@@ -29,6 +30,8 @@ class Carrier12luSpider(BaseCarrierSpider):
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):
+        yield DebugItem(info={'meta': dict(response.meta)})
+
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
         save_name = routing_rule.get_save_name(response=response)
