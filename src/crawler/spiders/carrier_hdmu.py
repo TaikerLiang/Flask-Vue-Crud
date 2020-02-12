@@ -6,8 +6,7 @@ from scrapy import Selector
 from twisted.python.failure import Failure
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import (
-    CarrierInvalidMblNoError, CarrierResponseFormatError, build_proxy_max_retry_error_data)
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
 from crawler.core_carrier.items import (
     MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, BaseCarrierItem, DebugItem)
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption, ProxyMaxRetryError
@@ -48,8 +47,8 @@ class CarrierHdmuSpider(BaseCarrierSpider):
     def retry(self, failure: Failure):
         try:
             yield self._prepare_restart()
-        except ProxyMaxRetryError:
-            yield build_proxy_max_retry_error_data()
+        except ProxyMaxRetryError as err:
+            yield err.build_error_data()
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -72,8 +71,8 @@ class CarrierHdmuSpider(BaseCarrierSpider):
                 try:
                     restart_request = self._prepare_restart()
                     self._restart_manager.add_request(request=restart_request)
-                except ProxyMaxRetryError:
-                    error_item = build_proxy_max_retry_error_data()
+                except ProxyMaxRetryError as err:
+                    error_item = err.build_error_data()
                     self._restart_manager.add_item(item=error_item)
             else:
                 raise RuntimeError()

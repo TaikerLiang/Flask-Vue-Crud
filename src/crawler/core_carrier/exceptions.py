@@ -4,13 +4,6 @@ from .base import CARRIER_RESULT_STATUS_FATAL, CARRIER_RESULT_STATUS_ERROR
 from .items import ExportErrorData
 
 
-def build_proxy_max_retry_error_data() -> ExportErrorData:
-    return ExportErrorData(status=CARRIER_RESULT_STATUS_FATAL, detail='<proxy-max-retry-error>')
-
-
-# -------------------------------------------------------------------------------
-
-
 class BaseCarrierError(Exception):
     status = CARRIER_RESULT_STATUS_FATAL
 
@@ -48,3 +41,10 @@ class LoadWebsiteTimeOutError(BaseCarrierError):
 
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail='<load-website-timeout-error>')
+
+
+class ProxyMaxRetryError(BaseCarrierError):
+    status = CARRIER_RESULT_STATUS_FATAL
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail='<proxy-max-retry-error>')

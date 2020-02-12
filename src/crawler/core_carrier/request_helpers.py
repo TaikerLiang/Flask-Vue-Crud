@@ -8,9 +8,7 @@ from typing import Dict
 
 from w3lib.http import basic_auth_header
 
-from .base import CARRIER_RESULT_STATUS_FATAL
-from .exceptions import BaseCarrierError
-from .items import ExportErrorData
+from .exceptions import ProxyMaxRetryError
 
 
 @dataclasses.dataclass
@@ -115,10 +113,3 @@ class ProxyManager:
             '--proxy-type=http',
             f'--proxy-auth={self._proxy_username}:{self.PROXY_PASSWORD}',
         ]
-
-
-class ProxyMaxRetryError(BaseCarrierError):
-    status = CARRIER_RESULT_STATUS_FATAL
-
-    def build_error_data(self):
-        return ExportErrorData(status=self.status, detail='<proxy-max-retry>')
