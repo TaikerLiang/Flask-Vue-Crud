@@ -24,8 +24,7 @@ class CarrierMscuSpider(BaseCarrierSpider):
     name = 'carrier_mscu'
 
     def start_requests(self):
-        request = Request(url=f'{URL}/favicon.ico', callback=self.parse)
-        yield request
+        yield Request(url=f'{URL}/favicon.ico', callback=self.parse)
 
     def parse(self, response):
         driver = MscuCarrierChromeDriver()

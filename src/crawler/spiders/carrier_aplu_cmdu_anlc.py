@@ -27,8 +27,7 @@ class SharedSpider(BaseCarrierSpider):
 
     def start_requests(self):
         routing_request = FirstTierRoutingRule.build_routing_request(mbl_no=self.mbl_no, base_url=self.base_url)
-        request = self._rule_manager.build_request_by(routing_request=routing_request)
-        yield request
+        yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
