@@ -6,7 +6,8 @@ import json
 
 from crawler.core_carrier.base_spiders import (
     BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS, CARRIER_DEFAULT_SPIDER_MIDDLEWARES)
-from crawler.core_carrier.middlewares import Carrier404IsInvalidMblNoSpiderMiddleware
+from crawler.core_carrier.middlewares import (
+    Carrier400IsInvalidMblNoSpiderMiddleware, Carrier404IsInvalidMblNoSpiderMiddleware)
 from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem)
@@ -21,7 +22,8 @@ class SharedSpider(BaseCarrierSpider):
         **CARRIER_DEFAULT_SETTINGS,
         'SPIDER_MIDDLEWARES': {
             **CARRIER_DEFAULT_SPIDER_MIDDLEWARES,
-            Carrier404IsInvalidMblNoSpiderMiddleware.get_setting_name(): 300,
+            Carrier400IsInvalidMblNoSpiderMiddleware.get_setting_name(): 300,
+            Carrier404IsInvalidMblNoSpiderMiddleware.get_setting_name(): 304,
         },
     }
 
