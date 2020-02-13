@@ -18,6 +18,7 @@ from selenium.common.exceptions import TimeoutException
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor, \
     TopHeaderTableLocator
+from crawler.utils.local_files.local_file_helpers import build_local_file_uri, LOCAL_PING_HTML
 
 
 BASE_URL = 'https://www.hapag-lloyd.com/en'
@@ -71,15 +72,15 @@ class SeleniumCookieRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_routing_request(cls, mbl_no) -> RoutingRequest:
+        url = build_local_file_uri(local_file=LOCAL_PING_HTML)
         request = scrapy.Request(
-            url=f'{BASE_URL}/home.html',
+            url=url,
             meta={'mbl_no': mbl_no},
         )
-
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response):
-        return f'{self.name}.html'
+        return ''  # ignore
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
