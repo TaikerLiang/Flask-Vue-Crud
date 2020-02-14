@@ -16,9 +16,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
 
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor, \
-    TopHeaderTableLocator
-from crawler.utils.local_files.local_file_helpers import build_local_file_uri, LOCAL_PING_HTML
+from crawler.extractors.table_extractors import (
+    BaseTableLocator, HeaderMismatchError, TableExtractor, TopHeaderTableLocator)
 
 
 BASE_URL = 'https://www.hapag-lloyd.com/en'
@@ -31,7 +30,6 @@ class CarrierHlcuSpider(BaseCarrierSpider):
         super(CarrierHlcuSpider, self).__init__(*args, **kwargs)
 
         rules = [
-            SeleniumCookieRoutingRule(),
             TracingRoutingRule(),
             ContainerRoutingRule(),
         ]
@@ -39,9 +37,11 @@ class CarrierHlcuSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
         self._request_queue = RoutingRequestQueue()
 
-    def start_requests(self):
-        routing_request = SeleniumCookieRoutingRule.build_routing_request(mbl_no=self.mbl_no)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+    def start(self):
+        cookies_getter = CookiesGetter()
+        cookies = cookies_getter.get_cookies()
+
+        yield TracingRoutingRule.build_routing_request(mbl_no=self.mbl_no, cookies=cookies)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -62,33 +62,6 @@ class CarrierHlcuSpider(BaseCarrierSpider):
         if not self._request_queue.is_empty():
             routing_request = self._request_queue.get_next_request()
             yield self._rule_manager.build_request_by(routing_request=routing_request)
-
-
-# -------------------------------------------------------------------------------
-
-
-class SeleniumCookieRoutingRule(BaseRoutingRule):
-    name = 'SELENIUM_COOKIE'
-
-    @classmethod
-    def build_routing_request(cls, mbl_no) -> RoutingRequest:
-        url = build_local_file_uri(local_file=LOCAL_PING_HTML)
-        request = scrapy.Request(
-            url=url,
-            meta={'mbl_no': mbl_no},
-        )
-        return RoutingRequest(request=request, rule_name=cls.name)
-
-    def get_save_name(self, response):
-        return ''  # ignore
-
-    def handle(self, response):
-        mbl_no = response.meta['mbl_no']
-
-        cookies_getter = CookiesGetter()
-        cookies = cookies_getter.get_cookies()
-
-        yield TracingRoutingRule.build_routing_request(mbl_no=mbl_no, cookies=cookies)
 
 
 # -------------------------------------------------------------------------------

@@ -29,7 +29,7 @@ class CarrierSitcSpider(BaseCarrierSpider):
 
         self._rule_manager = RuleManager(rules=rules)
 
-    def start_requests(self):
+    def start(self):
         routing_request = BasicInfoRoutingRule.build_routing_request(
             mbl_no=self.mbl_no, container_no_list=self.container_no_list,
         )

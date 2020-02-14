@@ -41,7 +41,7 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         self._restart_manager = RestartManager()
         self._proxy_manager = ProxyManager(session='hdmu', logger=self.logger)
 
-    def start_requests(self):
+    def start(self):
         yield self._prepare_restart()
 
     def retry(self, failure: Failure):

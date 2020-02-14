@@ -16,7 +16,6 @@ from crawler.core_carrier.exceptions import (
 from crawler.core_carrier.items import ContainerItem, ContainerStatusItem, LocationItem, MblItem, DebugItem
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
-from crawler.utils.local_files.local_file_helpers import build_local_file_uri, LOCAL_PING_HTML
 
 URL = 'https://www.msc.com'
 
@@ -24,12 +23,8 @@ URL = 'https://www.msc.com'
 class CarrierMscuSpider(BaseCarrierSpider):
     name = 'carrier_mscu'
 
-    def start_requests(self):
-        url = build_local_file_uri(local_file=LOCAL_PING_HTML)
-        yield Request(url=url, callback=self.parse)
-
-    def parse(self, response):
-        yield DebugItem(info={'meta': dict(response.meta)})
+    def start(self):
+        yield DebugItem(info='start')
 
         driver = MscuCarrierChromeDriver()
 

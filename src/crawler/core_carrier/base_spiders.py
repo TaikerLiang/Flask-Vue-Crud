@@ -1,3 +1,4 @@
+import abc
 from pathlib import Path
 
 import scrapy
@@ -5,6 +6,7 @@ import scrapy
 from .middlewares import CarrierSpiderMiddleware
 from .pipelines import CarrierItemPipeline
 from ..general.savers import BaseSaver, FileSaver, NullSaver
+from ..utils.local_files.local_file_helpers import build_local_file_uri, LOCAL_PING_HTML
 
 
 CARRIER_DEFAULT_SPIDER_MIDDLEWARES = {
@@ -46,6 +48,18 @@ class BaseCarrierSpider(scrapy.Spider):
         self._saver = self._prepare_saver(to_save=to_save)
 
         self._error = False
+
+    def start_requests(self):
+        url = build_local_file_uri(local_file=LOCAL_PING_HTML)
+        yield scrapy.Request(url=url, callback=self._parse_start)
+
+    def _parse_start(self, response):
+        for r in self.start():
+            yield r
+
+    @abc.abstractmethod
+    def start(self):
+        pass
 
     def _prepare_saver(self, to_save: bool) -> BaseSaver:
         if not to_save:

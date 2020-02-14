@@ -27,7 +27,7 @@ class CarrierYmluSpider(BaseCarrierSpider):
 
         self._rule_manager = RuleManager(rules=rules)
 
-    def start_requests(self):
+    def start(self):
         routing_request = MainInfoRoutingRule.build_routing_request(mbl_no=self.mbl_no)
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 

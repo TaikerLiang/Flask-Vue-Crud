@@ -8,7 +8,7 @@ from crawler.core_carrier.base_spiders import (
     BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS, CARRIER_DEFAULT_SPIDER_MIDDLEWARES)
 from crawler.core_carrier.middlewares import (
     Carrier400IsInvalidMblNoSpiderMiddleware, Carrier404IsInvalidMblNoSpiderMiddleware)
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule, LocalRoutingRule
+from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem)
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
@@ -30,19 +30,14 @@ class SharedSpider(BaseCarrierSpider):
     def __init__(self, *args, **kwargs):
         super(SharedSpider, self).__init__(*args, **kwargs)
 
-        next_routing_request = MainInfoRoutingRule.build_routing_request(
-            mbl_no=self.mbl_no, url_format=self.base_url_format,
-        )
-
         rules = [
-            LocalRoutingRule(next_routing_request=next_routing_request),
             MainInfoRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
 
-    def start_requests(self):
-        routing_request = LocalRoutingRule.build_routing_request()
+    def start(self):
+        routing_request = MainInfoRoutingRule.build_routing_request(mbl_no=self.mbl_no, url_format=self.base_url_format)
         yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):

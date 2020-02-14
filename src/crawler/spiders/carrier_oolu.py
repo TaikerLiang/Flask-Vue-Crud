@@ -28,7 +28,7 @@ class CarrierOoluSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
         self._proxy_manager = ProxyManager(session='oolu', logger=self.logger)
 
-    def start_requests(self):
+    def start(self):
         self._proxy_manager.renew_proxy()
 
         option = CargoTrackingRule.build_request_option(mbl_no=self.mbl_no)

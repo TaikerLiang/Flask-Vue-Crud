@@ -18,7 +18,7 @@ from selenium.common.exceptions import TimeoutException
 from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
-from crawler.utils.local_files.local_file_helpers import build_local_file_uri, LOCAL_PING_HTML
+
 
 PABV_BASE_URL = 'https://www.pilship.com'
 
@@ -32,17 +32,29 @@ class CarrierPabvSpider(BaseCarrierSpider):
         self._proxy_manager = ProxyManager(session='pabv', logger=self.logger)
 
         rules = [
-            SeleniumCookieRoutingRule(proxy_manager=self._proxy_manager),
             TrackRoutingRule(),
             ContainerRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
 
-    def start_requests(self):
-        option = SeleniumCookieRoutingRule.build_routing_option(mbl_no=self.mbl_no)
-        routing_request = self._build_routing_request_by(option=option)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+    def start(self):
+        while True:
+            self._proxy_manager.renew_proxy()
+
+            cookies_getter = CookiesGetter(phantom_js_service_args=self._proxy_manager.get_phantom_js_service_args())
+
+            try:
+                cookies = cookies_getter.get_cookies()
+            except (LoadWebsiteTimeOutError, ReadTimeoutError):
+                continue
+
+            option = TrackRoutingRule.build_request_option(mbl_no=self.mbl_no, cookies=cookies)
+            proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
+            routing_request = self._build_routing_request_by(option=proxy_option)
+            yield self._rule_manager.build_request_by(routing_request=routing_request)
+
+            break
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -77,50 +89,6 @@ class CarrierPabvSpider(BaseCarrierSpider):
             request=request,
             rule_name=option.rule_name,
         )
-
-
-# ------------------------------------------------------------------------------
-
-
-class SeleniumCookieRoutingRule(BaseRoutingRule):
-    name = 'SELENIUM_COOKIE'
-
-    def __init__(self, proxy_manager: ProxyManager):
-        self._proxy_manager = proxy_manager
-
-    @classmethod
-    def build_routing_option(cls, mbl_no) -> RequestOption:
-        url = build_local_file_uri(local_file=LOCAL_PING_HTML)
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=url,
-            meta={
-                'mbl_no': mbl_no,
-            },
-        )
-
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
-
-    def get_save_name(self, response) -> str:
-        return ''  # ignore
-
-    def handle(self, response):
-        mbl_no = response.meta['mbl_no']
-
-        while True:
-            self._proxy_manager.renew_proxy()
-
-            cookies_getter = CookiesGetter(phantom_js_service_args=self._proxy_manager.get_phantom_js_service_args())
-
-            try:
-                cookies = cookies_getter.get_cookies()
-            except (LoadWebsiteTimeOutError, ReadTimeoutError):
-                continue
-
-            yield TrackRoutingRule.build_request_option(mbl_no=mbl_no, cookies=cookies)
-            break
 
 
 # -------------------------------------------------------------------------------
