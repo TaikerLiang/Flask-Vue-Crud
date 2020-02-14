@@ -4,6 +4,8 @@ from typing import List, Union
 
 import scrapy
 
+from crawler.utils.local_files.local_file_helpers import build_local_file_uri, LOCAL_PING_HTML
+
 
 @dataclasses.dataclass
 class RoutingRequest:
@@ -24,6 +26,28 @@ class BaseRoutingRule:
     @abc.abstractmethod
     def handle(self, response):
         pass
+
+
+class LocalRoutingRule(BaseRoutingRule):
+    name = 'LOCAL'
+
+    def __init__(self, next_routing_request: RoutingRequest):
+        self._next_routing_request = next_routing_request
+
+    @classmethod
+    def build_routing_request(cls) -> RoutingRequest:
+        url = build_local_file_uri(local_file=LOCAL_PING_HTML)
+        request = scrapy.Request(url=url)
+        return RoutingRequest(request=request, rule_name=cls.name)
+
+    def get_save_name(self, response) -> str:
+        return ''  # ignore
+
+    def handle(self, response):
+        yield self._next_routing_request
+
+
+# -------------------------------------------------------------------------------
 
 
 class RuleManager:
