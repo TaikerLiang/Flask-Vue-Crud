@@ -41,7 +41,8 @@ class CarrierHlcuSpider(BaseCarrierSpider):
         cookies_getter = CookiesGetter()
         cookies = cookies_getter.get_cookies()
 
-        yield TracingRoutingRule.build_routing_request(mbl_no=self.mbl_no, cookies=cookies)
+        routing_request = TracingRoutingRule.build_routing_request(mbl_no=self.mbl_no, cookies=cookies)
+        yield self._rule_manager.build_request_by(routing_request=routing_request)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
