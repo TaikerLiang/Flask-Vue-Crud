@@ -60,7 +60,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
     def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
         timestamp = build_timestamp()
         url = f'{URL}/{BASE}/bill/{mbl_no}?timestamp={timestamp}'
-        request = scrapy.Request(url=url, meta={'mbl_no': mbl_no})
+        request = scrapy.Request(url=url, meta={'mbl_no': mbl_no}, headers={'Accept': '*/*'})
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
@@ -239,7 +239,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
     def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
         timestamp = build_timestamp()
         url = f'{URL}/{BASE}/booking/{mbl_no}?timestamp={timestamp}'
-        request = scrapy.Request(url=url)
+        request = scrapy.Request(url=url, headers={'Accept': '*/*'})
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
@@ -410,7 +410,7 @@ class BillContainerRoutingRule(BaseRoutingRule):
     def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
         timestamp = build_timestamp()
         url = f'{URL}/{BASE}/bill/containers/{mbl_no}?timestamp={timestamp}'
-        request = scrapy.Request(url=url, meta={'mbl_no': mbl_no})
+        request = scrapy.Request(url=url, meta={'mbl_no': mbl_no}, headers={'Accept': '*/*'})
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
@@ -456,7 +456,7 @@ class BookingContainerRoutingRule(BaseRoutingRule):
     def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
         timestamp = build_timestamp()
         url = f'{URL}/{BASE}/booking/containers/{mbl_no}?timestamp={timestamp}'
-        request = scrapy.Request(url=url, meta={'mbl_no': mbl_no})
+        request = scrapy.Request(url=url, meta={'mbl_no': mbl_no}, headers={'Accept': '*/*'})
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
@@ -502,7 +502,7 @@ class BillContainerStatusRoutingRule(BaseRoutingRule):
     def build_routing_request(cls, mbl_no: str, container_no: str, container_key: str) -> RoutingRequest:
         timestamp = build_timestamp()
         url = f'{URL}/{BASE}/container/status/{container_no}?billNumber={mbl_no}&timestamp={timestamp}'
-        request = scrapy.Request(url=url, meta={'container_key': container_key})
+        request = scrapy.Request(url=url, meta={'container_key': container_key}, headers={'Accept': '*/*'})
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
@@ -552,7 +552,7 @@ class BookingContainerStatusRoutingRule(BaseRoutingRule):
     def build_routing_request(cls, mbl_no: str, container_no: str, container_key: str) -> RoutingRequest:
         timestamp = build_timestamp()
         url = f'{URL}/{BASE}/container/status/{container_no}?bookingNumber={mbl_no}&timestamp={timestamp}'
-        request = scrapy.Request(url=url, meta={'container_key': container_key})
+        request = scrapy.Request(url=url, meta={'container_key': container_key}, headers={'Accept': '*/*'})
         return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
