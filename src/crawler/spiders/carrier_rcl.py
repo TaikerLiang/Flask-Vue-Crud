@@ -101,7 +101,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
     @classmethod
     def build_routing_request(cls, form_data) -> RoutingRequest:
         request = scrapy.FormRequest(
-            url=f'{RCL_BASE_URL}/923Cargo_Tracking231',
+            url=f'{RCL_BASE_URL}/417Cargo_Tracking178',
             formdata=form_data,
         )
         return RoutingRequest(request=request, rule_name=cls.name)
