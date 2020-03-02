@@ -67,9 +67,27 @@ class BasicRoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
 
+        main_info_endpoint = self._extract_main_info_endpoint(response=response)
         form_data = self._extract_form_data(response=response, mbl_no=mbl_no)
 
-        yield MainInfoRoutingRule.build_routing_request(form_data=form_data)
+        yield MainInfoRoutingRule.build_routing_request(form_data=form_data, endpoint=main_info_endpoint)
+
+    @staticmethod
+    def _extract_main_info_endpoint(response: scrapy.Selector) -> str:
+        pattern = re.compile(r'"(?P<endpoint>[^"]*Cargo_Tracking[^"]*)"')
+
+        onclick_text = response.css('input[name="ctl00$ContentPlaceHolder1$ctrackbtn"]::attr(onclick)').get()
+
+        if not onclick_text:
+            raise CarrierResponseFormatError(reason='no onclick text')
+
+        m = pattern.search(onclick_text)
+
+        if not m:
+            raise CarrierResponseFormatError(reason='pattern not search')
+
+        endpoint = m.group('endpoint')
+        return endpoint
 
     @staticmethod
     def _extract_form_data(response: scrapy.Selector, mbl_no: str) -> Dict:
@@ -99,9 +117,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
     name = 'MAIN_INFO'
 
     @classmethod
-    def build_routing_request(cls, form_data) -> RoutingRequest:
+    def build_routing_request(cls, form_data, endpoint) -> RoutingRequest:
         request = scrapy.FormRequest(
-            url=f'{RCL_BASE_URL}/417Cargo_Tracking178',
+            url=f'{RCL_BASE_URL}/{endpoint}',
             formdata=form_data,
         )
         return RoutingRequest(request=request, rule_name=cls.name)

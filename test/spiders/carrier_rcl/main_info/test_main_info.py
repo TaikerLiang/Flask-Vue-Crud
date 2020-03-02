@@ -25,7 +25,7 @@ def sample_loader(sample_loader):
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    routing_request = MainInfoRoutingRule.build_routing_request(form_data={})
+    routing_request = MainInfoRoutingRule.build_routing_request(form_data={}, endpoint='417Cargo_Tracking178')
     url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(
@@ -50,7 +50,7 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    routing_request = MainInfoRoutingRule.build_routing_request(form_data={})
+    routing_request = MainInfoRoutingRule.build_routing_request(form_data={}, endpoint='417Cargo_Tracking178')
     url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(
