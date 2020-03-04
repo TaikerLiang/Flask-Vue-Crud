@@ -1,9 +1,11 @@
 from pathlib import Path
 
 import pytest
+from scrapy import Request
+from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.spiders.carrier_mscu import CarrierMscuSpider
+from crawler.spiders.carrier_mscu import CarrierMscuSpider, MainRoutingRule
 from test.spiders.carrier_mscu import main_info
 
 
@@ -27,19 +29,26 @@ def sample_loader(sample_loader):
 
 @pytest.mark.parametrize('sub,mbl_no,', [
     ('01_without_ts_port', 'MEDUN4194175'),
-    ('02_not_arrival_yet', 'MEDUXA281435'),
+    ('02_not_arrival_yet', '177NDGNENX03449A'),
     ('03_multi_containers', 'MEDUMY898253'),
-    ('04_without_place_of_deliv', 'MEDUH3870076'),
-    ('05_without_containers', 'MEDUH3870035'),
-    ('06_without_main_info', '177NDGNEN26532A'),
+    # ('04_without_containers', 'MEDUH3870035'),
 ])
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     http_text = sample_loader.read_file(sub, 'sample.html')
 
-    driver = TestDriver(body_text=http_text)
+    url = 'https://www.msc.com/track-a-shipment?agencyPath=twn'
+    response = TextResponse(
+        url=url,
+        body=http_text,
+        encoding='utf-8',
+        request=Request(
+            url=url,
+        )
+    )
 
-    spider = CarrierMscuSpider(mbl_no=mbl_no)
-    results = list(spider.start_crawl(driver=driver))
+    rule = MainRoutingRule()
+
+    results = list(rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
@@ -51,8 +60,17 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     http_text = sample_loader.read_file(sub, 'sample.html')
 
-    driver = TestDriver(body_text=http_text)
+    url = 'https://www.msc.com/track-a-shipment?agencyPath=twn'
+    response = TextResponse(
+        url=url,
+        body=http_text,
+        encoding='utf-8',
+        request=Request(
+            url=url,
+        )
+    )
 
-    spider = CarrierMscuSpider(mbl_no=mbl_no)
+    rule = MainRoutingRule()
+
     with pytest.raises(expect_exception):
-        list(spider.start_crawl(driver=driver))
+        results = list(rule.handle(response=response))

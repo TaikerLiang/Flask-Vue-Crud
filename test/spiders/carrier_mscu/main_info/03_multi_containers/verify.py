@@ -44,6 +44,6 @@ def verify(results):
         etd='17/09/2019',
         vessel='GUDRUN MAERSK',
         place_of_deliv=LocationItem(name='LOS ANGELES, US'),
-        latest_update='05.11.2019 at 11:33 W. Europe Standard Time',
+        latest_update='04.03.2020 at 04:05 W. Europe Standard Time',
     )
 

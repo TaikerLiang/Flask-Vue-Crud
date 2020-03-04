@@ -34,6 +34,6 @@ def verify(results):
         etd='18/09/2019',
         vessel='MSC BERYL',
         place_of_deliv=LocationItem(name='LONG BEACH, US'),
-        latest_update='05.11.2019 at 10:50 W. Europe Standard Time',
+        latest_update='04.03.2020 at 03:33 W. Europe Standard Time',
     )
 

@@ -3,37 +3,37 @@ from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusIt
 
 def verify(results):
     assert results[0] == ContainerItem(
-        container_key='MSCU4333731',
-        container_no='MSCU4333731',
+        container_key='FSCU4872850',
+        container_no='FSCU4872850',
     )
 
     assert results[1] == ContainerStatusItem(
-        container_key='MSCU4333731',
+        container_key='FSCU4872850',
         description='Estimated Time of Arrival',
-        local_date_time='12/12/2019',
-        location=LocationItem(name='MIAMI, FL, US'),
-        vessel='MAERSK KALAMATA',
+        local_date_time='24/03/2020',
+        location=LocationItem(name='GIOIA TAURO, IT'),
+        vessel='MSC JADE',
         voyage=None,
         est_or_actual='E',
     )
 
-    assert results[6] == ContainerStatusItem(
-        container_key='MSCU4333731',
+    assert results[4] == ContainerStatusItem(
+        container_key='FSCU4872850',
         description='Empty to Shipper',
-        local_date_time='23/10/2019',
-        location=LocationItem(name='XIAMEN, 35, CN'),
+        local_date_time='19/02/2020',
+        location=LocationItem(name='NINGBO, 33, CN'),
         vessel=None,
         voyage=None,
         est_or_actual='A',
     )
 
-    assert results[7] == MblItem(
-        mbl_no='MEDUXA281435',
-        pol=LocationItem(name='XIAMEN, CN'),
-        pod=LocationItem(name='MIAMI, US'),
-        etd='27/10/2019',
-        vessel='GUSTAV MAERSK',
-        place_of_deliv=LocationItem(name='MIAMI, US'),
-        latest_update='05.11.2019 at 11:32 W. Europe Standard Time',
+    assert results[10] == MblItem(
+        mbl_no='MEDUNG283959',
+        pol=LocationItem(name='NINGBO, CN'),
+        pod=LocationItem(name='SUAPE, BR'),
+        etd='26/02/2020',
+        vessel='MSC JADE',
+        place_of_deliv=LocationItem(name='SUAPE, BR'),
+        latest_update='04.03.2020 at 04:18 W. Europe Standard Time',
     )
 

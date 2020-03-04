@@ -2,7 +2,6 @@ import re
 from typing import List, Dict
 
 import scrapy
-from scrapy import Request
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.common.by import By
@@ -13,7 +12,10 @@ from selenium.webdriver.support.wait import WebDriverWait
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
     LoadWebsiteTimeOutError, CarrierResponseFormatError, CarrierInvalidMblNoError)
-from crawler.core_carrier.items import ContainerItem, ContainerStatusItem, LocationItem, MblItem, DebugItem
+from crawler.core_carrier.items import ContainerItem, ContainerStatusItem, LocationItem, MblItem, DebugItem, \
+    BaseCarrierItem
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest, RuleManager
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
@@ -23,22 +25,122 @@ URL = 'https://www.msc.com'
 class CarrierMscuSpider(BaseCarrierSpider):
     name = 'carrier_mscu'
 
+    def __init__(self, *args, **kwargs):
+        super(CarrierMscuSpider, self).__init__(*args, **kwargs)
+
+        rules = [
+            HomePageRoutingRule(),
+            MainRoutingRule(),
+        ]
+
+        self._rule_manager = RuleManager(rules=rules)
+
     def start(self):
-        yield DebugItem(info='start')
+        option = HomePageRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        yield self._build_request_by(option=option)
 
-        driver = MscuCarrierChromeDriver()
+    def parse(self, response):
+        yield DebugItem(info={'meta': dict(response.meta)})
 
-        for item in self.start_crawl(driver):
-            yield item
+        routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
-        driver.close()
+        save_name = routing_rule.get_save_name(response=response)
+        self._saver.save(to=save_name, text=response.text)
 
-    def start_crawl(self, driver):
-        driver.search_mbl_no(mbl_no=self.mbl_no)
+        for result in routing_rule.handle(response=response):
+            if isinstance(result, BaseCarrierItem):
+                yield result
+            elif isinstance(result, RequestOption):
+                yield self._build_request_by(option=result)
+            else:
+                raise RuntimeError()
 
-        response_text = driver.get_body_text()
-        response = scrapy.Selector(text=response_text)
+    @staticmethod
+    def _build_request_by(option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
+        }
 
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
+
+        elif option.method == RequestOption.METHOD_POST_FORM:
+            return scrapy.FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+                meta=meta,
+            )
+
+
+# -------------------------------------------------------------------------------
+
+
+class HomePageRoutingRule(BaseRoutingRule):
+    name = 'HOME_PAGE'
+
+    @classmethod
+    def build_request_option(cls, mbl_no) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url='https://www.msc.com/track-a-shipment?agencyPath=twn',
+            meta={
+                'mbl_no': mbl_no,
+            },
+        )
+
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
+
+    def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+
+        view_state = response.css('input#__VIEWSTATE::attr(value)').get()
+        validation = response.css('input#__EVENTVALIDATION::attr(value)').get()
+
+        yield MainRoutingRule.build_request_option(
+            mbl_no=mbl_no, view_state=view_state, validation=validation)
+
+
+# -------------------------------------------------------------------------------
+
+
+class MainRoutingRule(BaseRoutingRule):
+    name = 'MAIN'
+
+    @classmethod
+    def build_request_option(cls, mbl_no, view_state, validation) -> RequestOption:
+        form_data = {
+            '__EVENTTARGET': 'ctl00$ctl00$plcMain$plcMain$TrackSearch$hlkSearch',
+            '__EVENTVALIDATION': validation,
+            '__VIEWSTATE': view_state,
+            'ctl00$ctl00$plcMain$plcMain$TrackSearch$txtBolSearch$TextField': mbl_no,
+        }
+
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_FORM,
+            form_data=form_data,
+            url='https://www.msc.com/track-a-shipment?agencyPath=twn',
+            meta={
+                'mbl_no': mbl_no,
+            },
+        )
+
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
+
+    def handle(self, response):
         self._check_mbl_no(response=response)
 
         extractor = Extractor()
@@ -96,6 +198,9 @@ class CarrierMscuSpider(BaseCarrierSpider):
             raise CarrierInvalidMblNoError()
 
 
+# -------------------------------------------------------------------------------
+
+
 class Extractor:
 
     def __init__(self):
@@ -143,7 +248,7 @@ class Extractor:
         table_locator = MainInfoTableLocator()
         table_locator.parse(table=table_selector)
         table_extractor = TableExtractor(table_locator=table_locator)
-        td_extractor = FirstTextTdExtractor(css_query='span::text')
+        td_extractor = FirstTextTdExtractor()
 
         return {
             'pol': table_extractor.extract_cell(top='Port of load', left=None, extractor=td_extractor),
@@ -204,7 +309,7 @@ class Extractor:
         table_locator = ContainerInfoTableLocator()
         table_locator.parse(table=table_selector)
         table_extractor = TableExtractor(table_locator=table_locator)
-        td_extractor = FirstTextTdExtractor(css_query='span::text')
+        td_extractor = FirstTextTdExtractor()
 
         return table_extractor.extract_cell(top='Shipped to', left=None, extractor=td_extractor)
 
@@ -215,7 +320,7 @@ class Extractor:
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table_selector)
         table_extractor = TableExtractor(table_locator=table_locator)
-        td_extractor = FirstTextTdExtractor(css_query='span::text')
+        td_extractor = FirstTextTdExtractor()
 
         container_status_list = []
         for left in table_locator.iter_left_header():
