@@ -147,7 +147,6 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             pod=LocationItem(name=main_info['pod']),
             final_dest=LocationItem(name=main_info['dest']),
             eta=main_info['pod_eta'],
-            ata=main_info['pod_ata'],
         )
 
         container_no = container_info['container_no']
@@ -184,16 +183,12 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         status = map_selector.css('dl.o-trackingnomap--info dt::text').get()
         if status is None:
             pod_eta = None
-            pod_ata = None
         elif status.strip() == 'ETA at POD':
             pod_eta = pod_time.strip()
-            pod_ata = None
         elif status.strip() == 'Arrived at POD':
             pod_eta = None
-            pod_ata = pod_time.strip()
         elif status.strip() == 'Remaining':
             pod_eta = None
-            pod_ata = None
         else:
             raise CarrierResponseFormatError(reason=f'Unknown status {status!r}')
 
@@ -203,7 +198,6 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             'pod': map_selector.css('li#pod span.o-trackingnomap--place::text').get(),
             'dest': map_selector.css('li#postpod span.o-trackingnomap--place::text').get(),
             'pod_eta': pod_eta,
-            'pod_ata': pod_ata,
         }
 
     @staticmethod

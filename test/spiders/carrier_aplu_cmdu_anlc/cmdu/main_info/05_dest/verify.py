@@ -9,7 +9,6 @@ def verify(results):
         pod=LocationItem(name='SAVANNAH, GA (US)'),
         final_dest=LocationItem(name='ATLANTA, GA (US)'),
         eta='Thu 05 Sep 2019 06:00',
-        ata=None,
     )
 
     assert results[1] == ContainerItem(
