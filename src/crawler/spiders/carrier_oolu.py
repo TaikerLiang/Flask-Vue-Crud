@@ -245,7 +245,11 @@ class CargoTrackingRule(BaseRoutingRule):
         """
         Sample 1: `Cleared (03 Nov 2019, 16:50 GMT)`
         Sample 2: `Not Applicable`
+        Sample 3: ``
         """
+        if not custom_release_info:
+            return '', ''
+
         pattern = re.compile(r'^(?P<status>[^(]+)(\s+[(](?P<date>[^)]+)[)])?$')
         match = pattern.match(custom_release_info)
         if not match:
