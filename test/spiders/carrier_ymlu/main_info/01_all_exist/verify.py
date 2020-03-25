@@ -6,31 +6,31 @@ from crawler.core_carrier.rules import RoutingRequest
 
 def verify(results: List):
     assert results[0] == MblItem(
-        mbl_no='W209131160',
-        por=LocationItem(name='KAOHSIUNG, Taiwan'),
+        mbl_no='W216104890',
+        por=LocationItem(name='TAICHUNG, Taiwan'),
         pol=LocationItem(name='KAOHSIUNG, Taiwan'),
         pod=LocationItem(name='LOS ANGELES, CA, USA'),
-        place_of_deliv=LocationItem(name='DALLAS, TX, USA'),
+        place_of_deliv=LocationItem(name='LOS ANGELES, CA, USA'),
         etd=None,
-        atd='2019/08/06 13:00',
+        atd='2020/03/10 07:58',
         eta=None,
-        ata='2019/08/20 13:57',
+        ata='2020/03/24 03:42',
         firms_code='Y773',
         carrier_status='Steamship Release',
-        carrier_release_date='2019/08/26 16:09',
+        carrier_release_date='2020/03/17 16:17',
         customs_release_status='Customs Release',
-        customs_release_date='2019/08/26 23:45',
+        customs_release_date='2020/03/23 14:25',
     )
 
     assert results[1] == ContainerItem(
-        container_key='YMLU3555177',
-        container_no='YMLU3555177',
-        last_free_day='2019/08/29',
+        container_key='BMOU6194498',
+        container_no='BMOU6194498',
+        last_free_day=None,
     )
 
     assert isinstance(results[2], RoutingRequest)
     assert results[2].request.url == (
         'https://www.yangming.com/e-service/Track_Trace/ctconnect.aspx?'
-        'rdolType=BL&ctnrno=YMLU3555177&blno=W209131160&movertype=31&lifecycle=2'
+        'rdolType=BL&ctnrno=BMOU6194498&blno=W216104890&movertype=11&lifecycle=1'
     )
 

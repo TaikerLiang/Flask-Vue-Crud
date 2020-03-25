@@ -19,13 +19,11 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize('sub,mbl_no,', [
-    ('01_all_exist', 'W209131160'),
-    ('02_no_last_free_day_table', 'W202119769'),
-    ('03_no_firms_code', 'W202119210'),
-    ('04_no_carrier_and_customs_status', 'E491301617'),
-    ('05_no_release', 'I209365239'),
-    ('06_multi_containers', 'W241061370'),
-    ('07_different_title_on_routing_schedule', 'W125326102'),
+    ('01_all_exist', 'W216104890'),
+    ('02_no_xta', 'W209047989'),
+    ('03_no_release', 'I209365239'),
+    ('04_multi_containers', 'W241061370'),
+    ('05_with_firm_code', 'W226020752'),
 ])
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')

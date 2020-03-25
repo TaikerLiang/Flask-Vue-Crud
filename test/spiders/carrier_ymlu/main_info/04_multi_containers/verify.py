@@ -15,7 +15,7 @@ def verify(results: List):
         atd='2019/09/03 00:17',
         eta=None,
         ata='2019/09/26 13:48',
-        firms_code='Y258',
+        firms_code=None,
         carrier_status='Steamship Release',
         carrier_release_date='2019/09/19 15:00',
         customs_release_status='Customs Release',
@@ -31,18 +31,18 @@ def verify(results: List):
     assert isinstance(results[2], RoutingRequest)
     assert results[2].request.url == (
         'https://www.yangming.com/e-service/Track_Trace/'
-        'ctconnect.aspx?rdolType=BL&ctnrno=SEGU5613160&blno=W241061370&movertype=11&lifecycle=1'
+        'ctconnect.aspx?rdolType=BL&ctnrno=SEGU5613160&blno=W241061370&movertype=11&lifecycle=2'
     )
 
     assert results[7] == ContainerItem(
-        container_key='FBLU0256079',
-        container_no='FBLU0256079',
+        container_key='YMLU8333608',
+        container_no='YMLU8333608',
         last_free_day=None,
     )
 
     assert isinstance(results[8], RoutingRequest)
     assert results[8].request.url == (
         'https://www.yangming.com/e-service/Track_Trace/'
-        'ctconnect.aspx?rdolType=BL&ctnrno=FBLU0256079&blno=W241061370&movertype=11&lifecycle=1'
+        'ctconnect.aspx?rdolType=BL&ctnrno=YMLU8333608&blno=W241061370&movertype=11&lifecycle=2'
     )
 

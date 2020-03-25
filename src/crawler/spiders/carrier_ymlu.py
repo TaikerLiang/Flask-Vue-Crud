@@ -1,5 +1,5 @@
 import re
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 
 import scrapy
 
@@ -145,30 +145,23 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_routing_schedule(response: scrapy.Selector, pol: str, pod: str):
-        table_selector = response.css('table#ContentPlaceHolder1_rptBLNo_gvRoutingSchedule_0')
-
-        table_locator = TopHeaderStartswithTableLocator()
-        table_locator.parse(table=table_selector)
-        table = TableExtractor(table_locator=table_locator)
-
-        span_text_td_extractor = TdExtractorFactory.build_span_text_td_extractor()
+        div = response.css('div.cargo-trackbox3')
+        parser = ScheduleParser(div)
+        schedules = parser.parse()
 
         etd, atd, eta, ata = None, None, None, None
-        for left in table_locator.iter_left_headers():
-            place = table.extract_cell(top='Routing', left=left, extractor=span_text_td_extractor)
-            time_status = table.extract_cell(top='ETD/ETA', left=left, extractor=span_text_td_extractor)
-
+        for place, time_status in schedules:
             if time_status == 'To Be Advised …':
-                actual_time, estimated_time = None, None
+                actual_time, estimate_time = None, None
             else:
-                actual_time, estimated_time = MainInfoRoutingRule._parse_time_status(time_status)
+                actual_time, estimate_time = MainInfoRoutingRule._parse_time_status(time_status)
 
             if pol.startswith(place):
                 atd = actual_time
-                etd = estimated_time
+                etd = estimate_time
             elif pod.startswith(place):
                 ata = actual_time
-                eta = estimated_time
+                eta = estimate_time
 
         return {
             'etd': etd,
@@ -220,9 +213,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
     @staticmethod
     def _extract_release_status(response):
         """
-        case 1: 'Customs Status : (No entry filed)' appear in page
+        case 1: 'Customs Status : (No entry filed)' or '(not yet Customs Release)' appear in page
             carrier_status_with_date = None
-            custom_status = '(No entry filed)'
+            custom_status = '(No entry filed)' or '(not yet Customs Release)'
         case 2: Both customs status and carrier status are not in page
             carrier_status_with_date = 'Label'
             custom_status = 'Label'
@@ -235,10 +228,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             carrier_status, carrier_date = MainInfoRoutingRule._parse_carrier_status(carrier_status_with_date)
 
         customs_status = response.css('span#ContentPlaceHolder1_rptBLNo_lblCustomsStatus_0::text').get()
-        if customs_status in ['(No entry filed)', 'Label']:
-            customs_status = None
-            customs_date = None
-        else:
+        if customs_status == 'Customs Release':
             customs_table_selector = response.css('table#ContentPlaceHolder1_rptBLNo_gvCustomsStatus_0')
 
             table_locator = TopHeaderIsTdTableLocator()
@@ -253,6 +243,12 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 if event_code == '1C':
                     customs_date = table.extract_cell(top='Date/Time', left=left, extractor=span_text_td_extractor)
                     break
+
+        elif customs_status in [None, 'Label']:
+            customs_status = None
+            customs_date = None
+        else:  # means customs_status in ['(No entry filed)', '(not yet Customs Release)']
+            customs_date = None
 
         return {
             'carrier_status': carrier_status,
@@ -328,6 +324,28 @@ class MainInfoRoutingRule(BaseRoutingRule):
             last_free_day_dict[container_no] = last_free_date
 
         return last_free_day_dict
+
+
+class ScheduleParser:
+    LI_ROUTING_INDEX = 0
+    LI_DATETIME_INDEX = 1
+
+    def __init__(self, selector):
+        self.selector = selector
+
+    def parse(self) -> List[Tuple]:
+        schdeules = []
+
+        uls = self.selector.css('ul')
+        for ul in uls:
+            lis = ul.css('li')
+            routing = lis[self.LI_ROUTING_INDEX].css('span::text').get()
+            datetime = lis[self.LI_DATETIME_INDEX].css('span::text').get()
+            routing_tuple = (routing.strip(), datetime.strip())
+
+            schdeules.append(routing_tuple)
+
+        return schdeules
 
 
 class TopHeaderStartswithTableLocator(BaseTableLocator):

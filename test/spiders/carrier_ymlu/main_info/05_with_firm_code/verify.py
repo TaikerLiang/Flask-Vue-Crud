@@ -6,43 +6,43 @@ from crawler.core_carrier.rules import RoutingRequest
 
 def verify(results: List):
     assert results[0] == MblItem(
-        mbl_no='W125326102',
-        por=LocationItem(name='SHREVEPORT, LA, USA'),
-        pol=LocationItem(name='LONG BEACH, CA, USA'),
-        pod=LocationItem(name='QINGDAO, SD, China'),
-        place_of_deliv=LocationItem(name='QINGDAO, SD, China'),
-        etd='2019/10/27 03:00',
-        atd=None,
-        eta=None,
+        mbl_no='W226020752',
+        por=LocationItem(name='YANTIAN, GD, China'),
+        pol=LocationItem(name='YANTIAN, GD, China'),
+        pod=LocationItem(name='LOS ANGELES, CA, USA'),
+        place_of_deliv=LocationItem(name='LOS ANGELES, CA, USA'),
+        etd=None,
+        atd='2020/03/19 16:25',
+        eta='2020/04/05 14:30',
         ata=None,
-        firms_code=None,
+        firms_code='Y258',
         carrier_status=None,
         carrier_release_date=None,
-        customs_release_status=None,
+        customs_release_status='(not yet Customs Release)',
         customs_release_date=None,
     )
 
     assert results[1] == ContainerItem(
-        container_key='OCGU8024931',
-        container_no='OCGU8024931',
+        container_key='YMLU8604968',
+        container_no='YMLU8604968',
         last_free_day=None,
     )
 
     assert isinstance(results[2], RoutingRequest)
     assert results[2].request.url == (
         'https://www.yangming.com/e-service/Track_Trace/'
-        'ctconnect.aspx?rdolType=BL&ctnrno=OCGU8024931&blno=W125326102&movertype=11&lifecycle=1'
+        'ctconnect.aspx?rdolType=BL&ctnrno=YMLU8604968&blno=W226020752&movertype=11&lifecycle=1'
     )
 
     assert results[3] == ContainerItem(
-        container_key='TEMU7059599',
-        container_no='TEMU7059599',
+        container_key='BEAU4528734',
+        container_no='BEAU4528734',
         last_free_day=None,
     )
 
     assert isinstance(results[4], RoutingRequest)
     assert results[4].request.url == (
         'https://www.yangming.com/e-service/Track_Trace/'
-        'ctconnect.aspx?rdolType=BL&ctnrno=TEMU7059599&blno=W125326102&movertype=11&lifecycle=1'
+        'ctconnect.aspx?rdolType=BL&ctnrno=BEAU4528734&blno=W226020752&movertype=11&lifecycle=1'
     )
 
