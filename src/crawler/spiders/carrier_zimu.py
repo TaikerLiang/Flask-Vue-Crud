@@ -254,7 +254,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
                     port_type='Transshipment',
                     port_name=schedule['Transshipment'],
                     eta=schedule.get('Arrival Date', ''),
-                    etd=schedule['Sailing Date'],
+                    etd=schedule.get('Sailing Date', ''),
                 ))
 
             elif 'POD' in schedule:

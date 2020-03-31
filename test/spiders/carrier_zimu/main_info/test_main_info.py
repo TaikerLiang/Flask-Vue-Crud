@@ -25,6 +25,7 @@ def sample_loader(sample_loader):
     ('05_final_dest_not_un_lo_code', 'ZIMUSNH1105927'),
     ('06_pol_in_routing_schedule', 'ZIMULAX0140902'),
     ('07_routing_schedule_without_arrival_date', 'ZIMUORF0941773'),
+    ('08_routing_schedule_without_sailing_date', 'ZIMUNGB9491892'),
 ])
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
