@@ -682,7 +682,7 @@ class AvailabilityRoutingRule(BaseRoutingRule):
         table_locator = TopHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
-        return table.extract_cell('STATUS', 0)
+        return table.extract_cell('STATUS', 0) or None
 
 
 class RedBlueTdExtractor(BaseTableCellExtractor):
