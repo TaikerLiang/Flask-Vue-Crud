@@ -5,7 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
-from crawler.spiders.carrier_hdmu import MainRoutingRule
+from crawler.spiders.carrier_hdmu import MainRoutingRule, ItemRecorder
 from test.spiders.carrier_hdmu import main_info
 
 
@@ -30,7 +30,7 @@ def sample_loader(sample_loader):
 def test_main_routing_rule(sample_loader, sub, mbl_no):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    option = MainRoutingRule.build_request_option(mbl_no=mbl_no)
+    option = MainRoutingRule.build_request_option(mbl_no=mbl_no, cookiejar_id=0)
 
     response = TextResponse(
         url=option.url,
@@ -40,12 +40,15 @@ def test_main_routing_rule(sample_loader, sub, mbl_no):
             url=option.url,
             meta={
                 'mbl_no': mbl_no,
+                'cookiejar': 0,
             }
         )
     )
 
-    rule = MainRoutingRule()
-    results = list(rule.handle(response=response))
+    item_recorder = ItemRecorder()
+    rule = MainRoutingRule(item_recorder)
+    request_options = list(rule.handle(response=response))
+    results = item_recorder.items + request_options
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
@@ -58,7 +61,7 @@ def test_main_routing_rule(sample_loader, sub, mbl_no):
 def test_main_routing_rule_error(sample_loader, sub, mbl_no, expect_exception):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    option = MainRoutingRule.build_request_option(mbl_no=mbl_no)
+    option = MainRoutingRule.build_request_option(mbl_no=mbl_no, cookiejar_id=0)
 
     response = TextResponse(
         url=option.url,
@@ -68,10 +71,12 @@ def test_main_routing_rule_error(sample_loader, sub, mbl_no, expect_exception):
             url=option.url,
             meta={
                 'mbl_no': mbl_no,
+                'cookiejar': 0,
             }
         )
     )
 
-    rule = MainRoutingRule()
+    item_recorder = ItemRecorder()
+    rule = MainRoutingRule(item_recorder)
     with pytest.raises(expect_exception):
         list(rule.handle(response))

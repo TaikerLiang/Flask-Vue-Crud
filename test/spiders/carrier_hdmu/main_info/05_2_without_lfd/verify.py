@@ -57,7 +57,6 @@ def verify(results):
         ready_for_pick_up=None
     )
 
-
     assert results[3] == ContainerStatusItem(
         container_key='TEMU7285430',
         description='Vessel Departed',
