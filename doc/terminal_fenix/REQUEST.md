@@ -45,10 +45,11 @@ response = requests.post(
 
 ## scrapy
 ```
-scrapy.FormRequest(
+scrapy.Request(
+    method='POST',
     url=URL,
     headers=HEADERS,
-    formdata=json.dumps(FORM_DATA),
+    body=json.dumps(FORM_DATA),
 )
 ```
 
@@ -133,7 +134,8 @@ response = requests.post(
 
 ## scrapy
 ```
-scrapy.FormRequest(
+scrapy.Request(
+    method='POST',
     url=URL,
     headers=HEADERS,
     body=json.dumps(FORM_DATA),
@@ -185,7 +187,8 @@ response = requests.post(
 
 ## scrapy
 ```
-scrapy.FormRequest(
+scrapy.Request(
+    method='POST',
     url=URL,
     headers=HEADERS,
     body=json.dumps(FORM_DATA),
