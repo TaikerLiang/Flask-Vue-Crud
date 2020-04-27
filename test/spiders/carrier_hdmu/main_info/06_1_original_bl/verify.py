@@ -1,5 +1,5 @@
 from crawler.core_carrier.items import MblItem, VesselItem, LocationItem, ContainerItem, ContainerStatusItem
-from crawler.spiders.carrier_hdmu import AvailabilityRoutingRule
+from crawler.core_carrier.request_helpers import RequestOption
 
 
 def verify(results):
@@ -58,12 +58,7 @@ def verify(results):
         ready_for_pick_up=None,
     )
 
-    assert results[3] == AvailabilityRoutingRule.build_request_option(
-        mbl_no='KETC0876470',
-        container_no='CAIU7479659',
-    )
-
-    assert results[4] == ContainerStatusItem(
+    assert results[3] == ContainerStatusItem(
         container_key='CAIU7479659',
         description='Vessel Departed',
         local_date_time='06-Aug-2019 3:36 AM',
@@ -71,7 +66,7 @@ def verify(results):
         transport='WIDE INDIA V 010N',
     )
 
-    assert results[5] == ContainerStatusItem(
+    assert results[4] == ContainerStatusItem(
         container_key='CAIU7479659',
         description='Shipped on',
         local_date_time='05-Aug-2019 11:34 PM',
@@ -79,7 +74,7 @@ def verify(results):
         transport='WIDE INDIA V 010N',
     )
 
-    assert results[6] == ContainerStatusItem(
+    assert results[5] == ContainerStatusItem(
         container_key='CAIU7479659',
         description='Gate In loading port',
         local_date_time='02-Aug-2019 8:30 PM',
@@ -87,7 +82,7 @@ def verify(results):
         transport='Truck',
     )
 
-    assert results[7] == ContainerStatusItem(
+    assert results[6] == ContainerStatusItem(
         container_key='CAIU7479659',
         description='Inland transportation started',
         local_date_time='02-Aug-2019 1:58 PM',
@@ -95,7 +90,7 @@ def verify(results):
         transport='Truck',
     )
 
-    assert results[8] == ContainerStatusItem(
+    assert results[7] == ContainerStatusItem(
         container_key='CAIU7479659',
         description='Gate in',
         local_date_time='31-Jul-2019 5:00 PM',
@@ -103,10 +98,17 @@ def verify(results):
         transport='Truck',
     )
 
-    assert results[9] == ContainerStatusItem(
+    assert results[8] == ContainerStatusItem(
         container_key='CAIU7479659',
         description='Released to the shipper for stuffing',
         local_date_time='31-Jul-2019 4:55 PM',
         location=LocationItem(name='KEELUNG, TAIWAN'),
         transport='Truck',
     )
+
+    assert isinstance(results[9], RequestOption)
+    assert results[9].url == 'https://www.hmm21.com/ebiz/track_trace/WUTInfo.jsp'
+    assert results[9].meta == {
+        'container_no': 'CAIU7479659',
+        'cookiejar': 0
+    }

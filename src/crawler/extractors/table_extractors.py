@@ -1,5 +1,6 @@
 import abc
 
+import scrapy
 from scrapy import Selector
 
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
@@ -65,6 +66,9 @@ class TopHeaderTableLocator(BaseTableLocator):
 
     def get_cell(self, top, left) -> Selector:
         try:
+            if not self._td_map[top]:
+                return scrapy.Selector(text='<td></td>')
+
             return self._td_map[top][left]
         except (KeyError, IndexError) as err:
             raise HeaderMismatchError(repr(err))

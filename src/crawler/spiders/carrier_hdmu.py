@@ -1,8 +1,7 @@
 import dataclasses
 from typing import List
 
-import scrapy
-from scrapy import Selector
+from scrapy import Selector, Request, FormRequest
 from twisted.python.failure import Failure
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
@@ -25,20 +24,71 @@ class ForceRestart:
     pass
 
 
+class RequestQueue:
+
+    def __init__(self):
+        self._queue = []
+
+    def clear(self):
+        self._queue.clear()
+
+    def add(self, request: Request):
+        self._queue.append(request)
+
+    def is_empty(self):
+        return not bool(self._queue)
+
+    def next(self):
+        return self._queue.pop(0)
+
+
+# item_name
+MBL = 'MBL'
+VESSEL = 'VESSEL'
+CONTAINER = 'CONTAINER'
+CONTAINER_STATUS = 'CONTAINER_STATUS'
+AVAILABILITY = 'AVAILABILITY'
+
+
+class ItemRecorder:
+    def __init__(self):
+        self._record = set()  # (key1, key2, ...)
+        self._items = []
+
+    def record_item(self, key, item: BaseCarrierItem = None, items: List[BaseCarrierItem] = None):
+        self._record.add(key)
+
+        if item:
+            self._items.append(item)
+
+        if items:
+            self._items.extend(items)
+
+    def is_item_recorded(self, key):
+        return key in self._record
+
+    @property
+    def items(self):
+        return self._items
+
+
 class CarrierHdmuSpider(BaseCarrierSpider):
     name = 'carrier_hdmu'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._cookiejar_id = -1
+        self._item_recorder = ItemRecorder()
+
         rules = [
             CookiesRoutingRule(),
-            MainRoutingRule(),
-            ContainerRoutingRule(),
-            AvailabilityRoutingRule(),
+            MainRoutingRule(self._item_recorder),
+            ContainerRoutingRule(self._item_recorder),
+            AvailabilityRoutingRule(self._item_recorder),
         ]
 
+        self._request_queue = RequestQueue()
         self._rule_manager = RuleManager(rules=rules)
-        self._restart_manager = RestartManager()
         self._proxy_manager = ProxyManager(session='hdmu', logger=self.logger)
 
     def start(self):
@@ -48,6 +98,8 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         try:
             yield self._prepare_restart()
         except ProxyMaxRetryError as err:
+            for item in self._item_recorder.items:
+                yield item
             yield err.build_error_data()
 
     def parse(self, response):
@@ -61,34 +113,34 @@ class CarrierHdmuSpider(BaseCarrierSpider):
 
         # handle
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem):
-                self._restart_manager.add_item(item=result)
-            elif isinstance(result, RequestOption):
+            if isinstance(result, RequestOption):
                 rule_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=result)
                 rule_request = self._build_request_by(option=rule_proxy_option)
-                self._restart_manager.add_request(request=rule_request)
+                self._request_queue.add(request=rule_request)
+
             elif isinstance(result, ForceRestart):
                 try:
                     restart_request = self._prepare_restart()
-                    self._restart_manager.add_request(request=restart_request)
+                    self._request_queue.add(request=restart_request)
                 except ProxyMaxRetryError as err:
                     error_item = err.build_error_data()
-                    self._restart_manager.add_item(item=error_item)
+                    self._item_recorder.record_item(key=('ERROR', None), item=error_item)
             else:
                 raise RuntimeError()
 
         # yield request / item
-        if self._restart_manager.has_request():
-            yield self._restart_manager.next_request()
+        if not self._request_queue.is_empty():
+            yield self._request_queue.next()
         else:
-            for item in self._restart_manager.iter_items():
+            for item in self._item_recorder.items:
                 yield item
 
-    def _prepare_restart(self) -> scrapy.Request:
-        self._restart_manager.reset()
+    def _prepare_restart(self) -> Request:
+        self._request_queue.clear()
         self._proxy_manager.renew_proxy()
+        self._cookiejar_id += 1
 
-        option = CookiesRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        option = CookiesRoutingRule.build_request_option(mbl_no=self.mbl_no, cookiejar_id=self._cookiejar_id)
         restart_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         return self._build_request_by(option=restart_proxy_option)
 
@@ -99,7 +151,7 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         }
 
         if option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(
+            return Request(
                 url=option.url,
                 headers=option.headers,
                 meta=meta,
@@ -109,7 +161,7 @@ class CarrierHdmuSpider(BaseCarrierSpider):
             )
 
         elif option.method == RequestOption.METHOD_POST_FORM:
-            return scrapy.FormRequest(
+            return FormRequest(
                 url=option.url,
                 headers=option.headers,
                 formdata=option.form_data,
@@ -126,50 +178,22 @@ class CarrierHdmuSpider(BaseCarrierSpider):
 # -------------------------------------------------------------------------------
 
 
-class RestartManager:
-
-    def __init__(self):
-        self._items = []
-        self._request_queue = []
-
-    def reset(self):
-        self._items = []
-        self._request_queue = []
-
-    def add_item(self, item: BaseCarrierItem):
-        self._items.append(item)
-
-    def add_request(self, request: scrapy.Request):
-        self._request_queue.append(request)
-
-    def has_request(self) -> bool:
-        return bool(self._request_queue)
-
-    def next_request(self) -> scrapy.Request:
-        return self._request_queue.pop(0)
-
-    def iter_items(self) -> List[BaseCarrierItem]:
-        for item in self._items:
-            yield item
-
-
-# -------------------------------------------------------------------------------
-
-
 class CookiesRoutingRule(BaseRoutingRule):
     name = 'COOKIES'
 
     @classmethod
-    def build_request_option(cls, mbl_no):
+    def build_request_option(cls, mbl_no, cookiejar_id: int):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=BASE_URL,
             headers={
                 'Upgrade-Insecure-Requests': '1',
+                'Host': 'www.hmm21.com',
             },
             meta={
                 'mbl_no': mbl_no,
+                'cookiejar': cookiejar_id,
             },
         )
 
@@ -181,9 +205,10 @@ class CookiesRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
+        cookiejar_id = response.meta['cookiejar']
 
         if self._check_cookies(response=response):
-            yield MainRoutingRule.build_request_option(mbl_no=mbl_no)
+            yield MainRoutingRule.build_request_option(mbl_no=mbl_no, cookiejar_id=cookiejar_id)
         else:
             yield ForceRestart()
 
@@ -203,8 +228,11 @@ class CookiesRoutingRule(BaseRoutingRule):
 class MainRoutingRule(BaseRoutingRule):
     name = 'MAIN'
 
+    def __init__(self, item_recorder: ItemRecorder):
+        self._item_recorder = item_recorder
+
     @classmethod
-    def build_request_option(cls, mbl_no):
+    def build_request_option(cls, mbl_no, cookiejar_id: int):
         form_data = {
             'number': mbl_no,
             'type': '1',
@@ -223,10 +251,13 @@ class MainRoutingRule(BaseRoutingRule):
             url=f'{BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp',
             headers={
                 'Upgrade-Insecure-Requests': '1',
+                'Host': 'www.hmm21.com',
+                'Referer': BASE_URL,
             },
             form_data=form_data,
             meta={
                 'mbl_no': mbl_no,
+                'cookiejar': cookiejar_id,
             },
         )
 
@@ -238,72 +269,84 @@ class MainRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
+        cookiejar_id = response.meta['cookiejar']
 
         self._check_mbl_no(response=response)
 
-        tracking_results = self._extract_tracking_results(response=response)
-        customs_status = self._extract_customs_status(response=response)
-        cargo_delivery_info = self._extract_cargo_delivery_info(response=response)
-        latest_update = self._extract_lastest_update(response=response)
+        if not self._item_recorder.is_item_recorded(key=(MBL, mbl_no)):
+            tracking_results = self._extract_tracking_results(response=response)
+            customs_status = self._extract_customs_status(response=response)
+            cargo_delivery_info = self._extract_cargo_delivery_info(response=response)
+            latest_update = self._extract_lastest_update(response=response)
 
-        yield MblItem(
-            mbl_no=mbl_no,
-            por=LocationItem(name=tracking_results['location.por']),
-            pod=LocationItem(name=tracking_results['location.pod']),
-            pol=LocationItem(name=tracking_results['location.pol']),
-            final_dest=LocationItem(name=tracking_results['Location.dest']),
-            por_atd=tracking_results['departure.por_actual'],
-            ata=tracking_results['arrival.pod_actual'],
-            eta=tracking_results['arrival.pod_estimate'],
-            atd=tracking_results['departure.pol_actual'],
-            etd=tracking_results['departure.pol_estimate'],
-            us_ams_status=customs_status['us_ams'],
-            ca_aci_status=customs_status['canada_aci'],
-            eu_ens_status=customs_status['eu_ens'],
-            cn_cams_status=customs_status['china_cams'],
-            ja_afr_status=customs_status['japan_afr'],
-            freight_status=cargo_delivery_info['freight_status'],
-            us_customs_status=cargo_delivery_info['us_customs_status'],
-            deliv_order=cargo_delivery_info['delivery_order_status'],
-            latest_update=latest_update,
-            deliv_ata=cargo_delivery_info['delivery_order_time'],
-            pol_ata=tracking_results['arrival.pol_actual'],
-            firms_code=cargo_delivery_info['firm_code'],
-            freight_date=cargo_delivery_info['freight_time'],
-            us_customs_date=cargo_delivery_info['us_customs_time'],
-            bl_type=cargo_delivery_info['bl_type'],
-            way_bill_status=cargo_delivery_info['way_bill_status'],
-            way_bill_date=cargo_delivery_info['way_bill_time'],
-        )
+            mbl_item = MblItem(
+                mbl_no=mbl_no,
+                por=LocationItem(name=tracking_results['location.por']),
+                pod=LocationItem(name=tracking_results['location.pod']),
+                pol=LocationItem(name=tracking_results['location.pol']),
+                final_dest=LocationItem(name=tracking_results['Location.dest']),
+                por_atd=tracking_results['departure.por_actual'],
+                ata=tracking_results['arrival.pod_actual'],
+                eta=tracking_results['arrival.pod_estimate'],
+                atd=tracking_results['departure.pol_actual'],
+                etd=tracking_results['departure.pol_estimate'],
+                us_ams_status=customs_status['us_ams'],
+                ca_aci_status=customs_status['canada_aci'],
+                eu_ens_status=customs_status['eu_ens'],
+                cn_cams_status=customs_status['china_cams'],
+                ja_afr_status=customs_status['japan_afr'],
+                freight_status=cargo_delivery_info['freight_status'],
+                us_customs_status=cargo_delivery_info['us_customs_status'],
+                deliv_order=cargo_delivery_info['delivery_order_status'],
+                latest_update=latest_update,
+                deliv_ata=cargo_delivery_info['delivery_order_time'],
+                pol_ata=tracking_results['arrival.pol_actual'],
+                firms_code=cargo_delivery_info['firm_code'],
+                freight_date=cargo_delivery_info['freight_time'],
+                us_customs_date=cargo_delivery_info['us_customs_time'],
+                bl_type=cargo_delivery_info['bl_type'],
+                way_bill_status=cargo_delivery_info['way_bill_status'],
+                way_bill_date=cargo_delivery_info['way_bill_time'],
+            )
+            self._item_recorder.record_item(key=(MBL, mbl_no), item=mbl_item)
 
-        vessel = self._extract_vessel(response=response)
-        yield VesselItem(
-            vessel_key=vessel['vessel'],
-            vessel=vessel['vessel'],
-            voyage=vessel['voyage'],
-            pol=LocationItem(name=vessel['pol']),
-            pod=LocationItem(name=vessel['pod']),
-            ata=vessel['ata'],
-            eta=vessel['eta'],
-            atd=vessel['atd'],
-            etd=vessel['etd'],
-        )
+        if not self._item_recorder.is_item_recorded(key=(VESSEL, mbl_no)):
+            vessel = self._extract_vessel(response=response)
+
+            vessel_item = VesselItem(
+                vessel_key=vessel['vessel'],
+                vessel=vessel['vessel'],
+                voyage=vessel['voyage'],
+                pol=LocationItem(name=vessel['pol']),
+                pod=LocationItem(name=vessel['pod']),
+                ata=vessel['ata'],
+                eta=vessel['eta'],
+                atd=vessel['atd'],
+                etd=vessel['etd'],
+            )
+            self._item_recorder.record_item(key=(VESSEL, mbl_no), item=vessel_item)
 
         # parse other containers if there are many containers
         container_contents = self._extract_container_contents(response=response)
         h_num = -1
         for container_content in container_contents:
-            if container_content.is_current:
+            if all([
+                    self._item_recorder.is_item_recorded(key=(CONTAINER, container_content.container_no)),
+                    self._item_recorder.is_item_recorded(key=(AVAILABILITY, container_content.container_no)),
+            ]):
+                continue
+
+            elif container_content.is_current:
                 response.meta['container_index'] = container_content.index
 
-                container_routing_rule = ContainerRoutingRule()
+                container_routing_rule = ContainerRoutingRule(self._item_recorder)
                 for result in container_routing_rule.handle(response=response):
                     yield result
 
             else:
                 h_num -= 1
                 yield ContainerRoutingRule.build_request_option(
-                    mbl_no=mbl_no, container_index=container_content.index, h_num=h_num)
+                    mbl_no=mbl_no, container_index=container_content.index, h_num=h_num, cookiejar_id=cookiejar_id)
 
     @staticmethod
     def _check_mbl_no(response):
@@ -462,8 +505,11 @@ class ContainerContent:
 class ContainerRoutingRule(BaseRoutingRule):
     name = 'CONTAINER'
 
+    def __init__(self, item_recorder: ItemRecorder):
+        self._item_recorder = item_recorder
+
     @classmethod
-    def build_request_option(cls, mbl_no, container_index, h_num):
+    def build_request_option(cls, mbl_no, container_index, h_num, cookiejar_id: int):
         form_data = {
             'selectedContainerIndex': f'{container_index}',
             'hNum': f'{h_num}',
@@ -479,11 +525,14 @@ class ContainerRoutingRule(BaseRoutingRule):
             url=f'{BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={mbl_no}',
             headers={
                 'Upgrade-Insecure-Requests': '1',
+                'Host': 'www.hmm21.com',
+                'Referer': BASE_URL,
             },
             form_data=form_data,
             meta={
                 'mbl_no': mbl_no,
                 'container_index': container_index,
+                'cookiejar': cookiejar_id,
             },
         )
 
@@ -497,41 +546,58 @@ class ContainerRoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
         container_index = response.meta['container_index']
+        cookiejar_id = response.meta['cookiejar']
 
-        tracking_results = self._extract_tracking_results(response=response)
         container_info = self._extract_container_info(response=response, container_index=container_index)
-        empty_return_location = self._extract_empty_return_location(response=response)
-        container_status = self._extract_container_status_list(response=response)
-
         container_no = container_info['container_no']
 
-        yield ContainerItem(
-            container_key=container_no,
-            container_no=container_no,
-            last_free_day=container_info['lfd'],
-            mt_location=LocationItem(name=empty_return_location['empty_return_location']),
-            det_free_time_exp_date=empty_return_location['fdd'],
-            por_etd=tracking_results['departure.por_estimate'],
-            pol_eta=tracking_results['arrival.pol_estimate'],
-            final_dest_eta=tracking_results['arrival.dest_estimate'],
-            ready_for_pick_up=None,  # it may be assign in availability
-        )
+        if not self._item_recorder.is_item_recorded(key=(CONTAINER, container_no)):
+            tracking_results = self._extract_tracking_results(response=response)
+            empty_return_location = self._extract_empty_return_location(response=response)
+
+            container_item = ContainerItem(
+                container_key=container_no,
+                container_no=container_no,
+                last_free_day=container_info['lfd'],
+                mt_location=LocationItem(name=empty_return_location['empty_return_location']),
+                det_free_time_exp_date=empty_return_location['fdd'],
+                por_etd=tracking_results['departure.por_estimate'],
+                pol_eta=tracking_results['arrival.pol_estimate'],
+                final_dest_eta=tracking_results['arrival.dest_estimate'],
+                ready_for_pick_up=None,
+            )
+            self._item_recorder.record_item(key=(CONTAINER, container_no), item=container_item)
+
+        if not self._item_recorder.is_item_recorded(key=(CONTAINER_STATUS, container_no)):
+            container_status = self._extract_container_status_list(response=response)
+
+            container_status_items = []
+            for container in container_status:
+                container_no = container_info['container_no']
+
+                container_status_items.append(
+                    ContainerStatusItem(
+                        container_key=container_no,
+                        description=container['status'],
+                        local_date_time=container['date'],
+                        location=LocationItem(name=container['location']),
+                        transport=container['mode'],
+                    )
+                )
+
+            self._item_recorder.record_item(key=(CONTAINER_STATUS, container_no), items=container_status_items)
 
         # catch availability
-        ava_exist = self._extract_availability_exist(response=response)
-        if ava_exist:
-            yield AvailabilityRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
-
-        for container in container_status:
-            container_no = container_info['container_no']
-
-            yield ContainerStatusItem(
-                container_key=container_no,
-                description=container['status'],
-                local_date_time=container['date'],
-                location=LocationItem(name=container['location']),
-                transport=container['mode']
-            )
+        if not self._item_recorder.is_item_recorded(key=(AVAILABILITY, container_no)):
+            ava_exist = self._extract_availability_exist(response=response)
+            if ava_exist:
+                yield AvailabilityRoutingRule.build_request_option(
+                    mbl_no=mbl_no,
+                    container_no=container_no,
+                    cookiejar_id=cookiejar_id,
+                )
+            else:
+                self._item_recorder.record_item(key=(AVAILABILITY, container_no))
 
     @staticmethod
     def _extract_tracking_results(response):
@@ -639,8 +705,11 @@ class ContainerRoutingRule(BaseRoutingRule):
 class AvailabilityRoutingRule(BaseRoutingRule):
     name = 'AVAILABILITY'
 
+    def __init__(self, item_recorder: ItemRecorder):
+        self._item_recorder = item_recorder
+
     @classmethod
-    def build_request_option(cls, mbl_no, container_no):
+    def build_request_option(cls, mbl_no, container_no, cookiejar_id):
         form_data = {
             'bno': mbl_no,
             'cntrNo': f'{container_no}',
@@ -656,6 +725,7 @@ class AvailabilityRoutingRule(BaseRoutingRule):
             form_data=form_data,
             meta={
                 'container_no': container_no,
+                'cookiejar': cookiejar_id,
             },
         )
 
@@ -671,10 +741,11 @@ class AvailabilityRoutingRule(BaseRoutingRule):
 
         ready_for_pick_up = self._extract_availability(response)
 
-        yield ContainerItem(
+        ava_item = ContainerItem(
             container_key=container_no,
             ready_for_pick_up=ready_for_pick_up,
         )
+        self._item_recorder.record_item(key=(AVAILABILITY, container_no), item=ava_item)
 
     @staticmethod
     def _extract_availability(response):
@@ -682,7 +753,7 @@ class AvailabilityRoutingRule(BaseRoutingRule):
         table_locator = TopHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
-        return table.extract_cell('STATUS', 0)
+        return table.extract_cell('STATUS', 0) or None
 
 
 class RedBlueTdExtractor(BaseTableCellExtractor):

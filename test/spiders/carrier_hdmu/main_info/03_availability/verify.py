@@ -1,5 +1,5 @@
 from crawler.core_carrier.items import MblItem, VesselItem, ContainerItem, LocationItem, ContainerStatusItem
-from crawler.spiders.carrier_hdmu import AvailabilityRoutingRule
+from crawler.core_carrier.request_helpers import RequestOption
 
 
 def verify(results):
@@ -58,12 +58,7 @@ def verify(results):
         ready_for_pick_up=None,
     )
 
-    assert results[3] == AvailabilityRoutingRule.build_request_option(
-        mbl_no='TAWB0789799',
-        container_no='HMMU6015688',
-    )
-
-    assert results[4] == ContainerStatusItem(
+    assert results[3] == ContainerStatusItem(
         container_key='HMMU6015688',
         description='Empty returned',
         local_date_time='03-May-2019 1:23 PM',
@@ -71,7 +66,7 @@ def verify(results):
         transport=None,
     )
 
-    assert results[20] == ContainerStatusItem(
+    assert results[19] == ContainerStatusItem(
         container_key='HMMU6015688',
         description='Discharged',
         local_date_time='17-Apr-2019 2:40 PM',
@@ -79,10 +74,17 @@ def verify(results):
         transport='HYUNDAI CONFIDENCE V 577E',
     )
 
-    assert results[24] == ContainerStatusItem(
+    assert results[23] == ContainerStatusItem(
         container_key='HMMU6015688',
         description='Inland transportation started',
         local_date_time='29-Mar-2019 2:11 PM',
         location=LocationItem(name='TAICHUNG, TAIWAN'),
         transport='Truck',
     )
+
+    assert isinstance(results[26], RequestOption)
+    assert results[26].url == 'https://www.hmm21.com/ebiz/track_trace/WUTInfo.jsp'
+    assert results[26].meta == {
+        'container_no': 'HMMU6015688',
+        'cookiejar': 0,
+    }

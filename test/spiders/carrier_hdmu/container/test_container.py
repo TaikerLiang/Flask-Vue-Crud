@@ -4,7 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.spiders.carrier_hdmu import ContainerRoutingRule
+from crawler.spiders.carrier_hdmu import ContainerRoutingRule, ItemRecorder
 from test.spiders.carrier_hdmu import container
 
 
@@ -22,7 +22,12 @@ def sample_loader(sample_loader):
 def test_container_routing_rule(sub, mbl_no, sample_loader, container_no, container_index):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    option = ContainerRoutingRule.build_request_option(mbl_no=mbl_no, container_index=container_index, h_num=0)
+    option = ContainerRoutingRule.build_request_option(
+        mbl_no=mbl_no,
+        container_index=container_index,
+        h_num=0,
+        cookiejar_id=0,
+    )
 
     response = TextResponse(
         url=option.url,
@@ -33,12 +38,15 @@ def test_container_routing_rule(sub, mbl_no, sample_loader, container_no, contai
             meta={
                 'mbl_no': mbl_no,
                 'container_index': container_index,
+                'cookiejar': 0,
             }
         )
     )
 
-    rule = ContainerRoutingRule()
-    results = list(rule.handle(response=response))
+    item_recorder = ItemRecorder()
+    rule = ContainerRoutingRule(item_recorder)
+    request_options = list(rule.handle(response=response))
+    results = request_options + item_recorder.items
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
