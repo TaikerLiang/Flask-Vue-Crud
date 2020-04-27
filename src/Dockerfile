@@ -1,4 +1,4 @@
-FROM scrapinghub/scrapinghub-stack-scrapy:1.8-py3
+FROM scrapinghub/scrapinghub-stack-scrapy:2.0
 
 RUN set -ex \
     && apt-get update \
