@@ -13,6 +13,20 @@ brew tap homebrew/cask
 brew cask install phantomjs
 ```
 
+### Prepare Python Env
+
+Python version: `3.8.2`
+
+```bash
+pyenv install [PYTHON_VERSION]
+pyenv virtualenv [PYTHON_VERSION] [PYTHON-VENV-NAME]
+```
+
+```bash
+cd [PROJECT-ROOT]
+pyenv local [PYTHON-VENV-NAME]
+```
+
 ### Install Python Packages
 
 ```bash
@@ -54,12 +68,12 @@ image: true
 ### Deploy Image 
 
 ```bash
-shub image upload
+shub image upload [PROJECT-ID]
 
 # ----- equivalent to -----
-# shub image build
-# shub image push
-# shub image deploy
+# shub image build [PROJECT-ID]
+# shub image push [PROJECT-ID]
+# shub image deploy [PROJECT-ID]
 ```
 
 
