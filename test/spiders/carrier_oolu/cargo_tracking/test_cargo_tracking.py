@@ -17,19 +17,19 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no', [
-    ('01_single_container', '2625845270'),
-    ('02_multi_containers', '2109051600'),
-    ('03_without_custom_release_date', '2628633440'),
-    ('04_tranship_exist', '2630699272'),
-    ('05_custom_release_title_exist_but_value_empty', '2635541720'),
+@pytest.mark.parametrize('sub,mbl_no,anonymous_token', [
+    ('01_single_container', '2625845270', 'hoDzqHemrIvlddTUvyusMCCOOCL'),
+    ('02_multi_containers', '2109051600', 'ENOPAdwEwaPARWlKLrcGMCCOOCL'),
+    ('03_without_custom_release_date', '2628633440', 'VUiQgxMLesjtTyGLzEieMCCOOCL'),
+    ('04_tranship_exist', '2630699272', 'FqSuFyjIywfRykXlKlhdMCCOOCL'),
+    ('05_custom_release_title_exist_but_value_empty', '2635541720', 'GAJPRerHITnefhkFgdryMCCOOCL'),
 ])
-def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
+def test_cargo_tracking_handler(sub, mbl_no, anonymous_token, sample_loader):
     html_file = sample_loader.read_file(sub, 'sample.html')
 
     url = (
-        'http://moc.oocl.com/party/cargotracking/ct_search_from_other_domain.jsf?'
-        'ANONYMOUS_TOKEN=kFiFirZYfIHjjEVjGlDTMCCOOCL&ENTRY_TYPE=OOCL'
+        f'http://moc.oocl.com/party/cargotracking/ct_search_from_other_domain.jsf?'
+        f'ANONYMOUS_TOKEN={anonymous_token}&ENTRY_TYPE=OOCL'
     )
     response = TextResponse(
         url=url,
@@ -40,6 +40,7 @@ def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: CargoTrackingRule.name,
                 'mbl_no': mbl_no,
+                'anonymous_token': anonymous_token,
             }
         )
     )
@@ -51,15 +52,15 @@ def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'OOLU0000000000', CarrierInvalidMblNoError),
+@pytest.mark.parametrize('sub,mbl_no,anonymous_token,expect_exception', [
+    ('e01_invalid_mbl_no', 'OOLU0000000000', 'vCTcIRGZjIcxoTOsrgrvMCCOOCL', CarrierInvalidMblNoError),
 ])
-def test_cargo_tracking_handler_no_mbl_error(sub, mbl_no, expect_exception, sample_loader):
+def test_cargo_tracking_handler_no_mbl_error(sub, mbl_no, anonymous_token, expect_exception, sample_loader):
     html_file = sample_loader.read_file(sub, 'sample.html')
 
     url = (
-        'http://moc.oocl.com/party/cargotracking/ct_search_from_other_domain.jsf?'
-        'ANONYMOUS_TOKEN=kFiFirZYfIHjjEVjGlDTMCCOOCL&ENTRY_TYPE=OOCL'
+        f'http://moc.oocl.com/party/cargotracking/ct_search_from_other_domain.jsf?'
+        f'ANONYMOUS_TOKEN={anonymous_token}&ENTRY_TYPE=OOCL'
     )
     response = TextResponse(
         url=url,
@@ -70,6 +71,7 @@ def test_cargo_tracking_handler_no_mbl_error(sub, mbl_no, expect_exception, samp
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: CargoTrackingRule.name,
                 'mbl_no': mbl_no,
+                'anonymous_token': anonymous_token,
             }
         )
     )

@@ -21,6 +21,7 @@ class CarrierOoluSpider(BaseCarrierSpider):
         super(CarrierOoluSpider, self).__init__(*args, **kwargs)
 
         rules = [
+            TokenRoutingRule(),
             CargoTrackingRule(),
             ContainerStatusRule(),
         ]
@@ -31,7 +32,7 @@ class CarrierOoluSpider(BaseCarrierSpider):
     def start(self):
         self._proxy_manager.renew_proxy()
 
-        option = CargoTrackingRule.build_request_option(mbl_no=self.mbl_no)
+        option = TokenRoutingRule.build_request_option(mbl_no=self.mbl_no)
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         yield self._build_request_by(option=proxy_option)
 
@@ -58,7 +59,16 @@ class CarrierOoluSpider(BaseCarrierSpider):
             **option.meta,
         }
 
-        if option.method == RequestOption.METHOD_POST_FORM:
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                headers=option.headers,
+                meta=meta,
+                dont_filter=True,
+                callback=self.parse,
+            )
+
+        elif option.method == RequestOption.METHOD_POST_FORM:
             return scrapy.FormRequest(
                 url=option.url,
                 headers=option.headers,
@@ -85,68 +95,72 @@ class CarrierOoluSpider(BaseCarrierSpider):
 
 # -------------------------------------------------------------------------------
 
-JSF_TREE_64 = (
-    'H4sIAAAAAAAAAK1Sy24TMRQ1UStE1Yd4iWWRQEJiMfMB2TEQmmraSiFFQllEN/bNjNsZ2732QLphx54P4AuqfkG/gB1bfoIta+6Q0Eb'
-    'TQXTBxtb1Odfn+Fyf/xCrnsRrS1kEDmSOUXk6BYmeS1doCUFbEw0J8U2gSoaKcA8MZEhPrw4TWzpr0ITeu0ffv+z+/NYRKyNxZyxzXS'
-    'jic7E7SlkinkvEC4l4SSK+qUQ3FVtj+adKCvA+iHvpEbyHuACTxczXJmPa+hWtr07ER9EZidvjWjlwy/3RUs/B5Ahl6M5cRQur/yON7'
-    'sX5s693P30+6wgxc0KIW762Iap6XeV6c167IJ7XXmbRXOvSdpSHsoh2eOkbV4UdrVQd5ppHIJkPTx26xQ31usY5THRRHExTUBzBflVO'
-    'kBqMLV85ZykchmmSA/kGvDGx9vivvdKaANogtcOEU+RpS2yFNy7hFuPr2vfIlnuWH9DENpFvU6gSVufnN1GPBc8O1Utbsjd340h5TCU'
-    'YlWpzzL8hs0ObAPFGIOsEXqTLQtutlKRBeXiNkuwPBw3Sg2ukwase+33yD789SyXPPv/9CeqCex639xz232r8MLA2OPcLUlBlC+IDAA'
-    'A='
-)
-JSF_STATE_64 = (
-    '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'
-)
+
+class TokenRoutingRule(BaseRoutingRule):
+    name = 'TOKEN'
+
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
+
+    @classmethod
+    def build_request_option(cls, mbl_no):
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=(
+                f'http://moc.oocl.com/party/cargotracking/ct_search_from_other_domain.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&'
+                f'domainName=PARTY_DOMAIN&ENTRY_TYPE=OOCL&ENTRY=MCC&ctSearchType=BL&ctShipmentNumber={mbl_no}'
+            ),
+            meta={'mbl_no': mbl_no}
+        )
+
+    def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+
+        user_token = response.css('input#USER_TOKEN::attr(value)').get()
+        jsf_tree_64 = response.css('input#jsf_tree_64::attr(value)').get()
+        jsf_state_64 = response.css('input#jsf_state_64::attr(value)').get()
+
+        yield CargoTrackingRule.build_request_option(
+            mbl_no=mbl_no,
+            anonymous_token=user_token,  # user_token == anonymous_token
+            jsf_tree_64=jsf_tree_64,
+            jsf_state_64=jsf_state_64,
+        )
+
+
+# -------------------------------------------------------------------------------
 
 
 class CargoTrackingRule(BaseRoutingRule):
     name = 'CARGO_TRACKING'
 
     @classmethod
-    def build_request_option(cls, mbl_no: str) -> RequestOption:
+    def build_request_option(cls, mbl_no: str, anonymous_token, jsf_tree_64, jsf_state_64) -> RequestOption:
         form_data = {
             'hiddenForm:searchType': 'BL',
             'hiddenForm:billOfLadingNumber': mbl_no,
             'hiddenForm:containerNumber': '',
             'hiddenForm_SUBMIT': '1',
             'hiddenForm:_link_hidden_': 'hiddenForm:goToCargoTrackingBL',
-            'jsf_tree_64': JSF_TREE_64,
-            'jsf_state_64': JSF_STATE_64,
+            'jsf_tree_64': jsf_tree_64,
+            'jsf_state_64': jsf_state_64,
             'jsf_viewid': '/cargotracking/ct_search_from_other_domain.jsp'
-
         }
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_FORM,
             url=(
-                'http://moc.oocl.com/party/cargotracking/ct_search_from_other_domain.jsf?'
-                'ANONYMOUS_TOKEN=kFiFirZYfIHjjEVjGlDTMCCOOCL&ENTRY_TYPE=OOCL'
+                f'http://moc.oocl.com/party/cargotracking/ct_search_from_other_domain.jsf?'
+                f'ANONYMOUS_TOKEN={anonymous_token}&ENTRY=MCC&ENTRY_TYPE=OOCL&PREFER_LANGUAGE=en-US'
             ),
             form_data=form_data,
             meta={
                 'mbl_no': mbl_no,
+                'anonymous_token': anonymous_token,
             },
         )
 
@@ -157,6 +171,8 @@ class CargoTrackingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def handle(self, response):
+        anonymous_token = response.meta['anonymous_token']
+
         self.check_response(response)
 
         locator = _PageLocator()
@@ -194,6 +210,7 @@ class CargoTrackingRule(BaseRoutingRule):
                 mbl_no=mbl_no,
                 container_id=container['container_id'],
                 container_no=container['container_no'],
+                anonymous_token=anonymous_token,
                 jsf_tree_64=jsf_tree_64,
                 jsf_state_64=jsf_state_64,
             )
@@ -565,7 +582,7 @@ class ContainerStatusRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(
-            cls, mbl_no: str, container_id: str, container_no: str, jsf_tree_64, jsf_state_64,
+            cls, mbl_no: str, container_id: str, container_no: str, anonymous_token, jsf_tree_64, jsf_state_64,
     ) -> RequestOption:
 
         form_data = {
@@ -585,7 +602,7 @@ class ContainerStatusRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url='http://moc.oocl.com/party/cargotracking/ct_result_bl.jsf?ANONYMOUS_TOKEN=kFiFirZYfIHjjEVjGlDTMCCOOCL',
+            url=f'http://moc.oocl.com/party/cargotracking/ct_result_bl.jsf?ANONYMOUS_TOKEN={anonymous_token}',
             headers={
                 'Content-Type': f'multipart/form-data; boundary={boundary}',
             },
