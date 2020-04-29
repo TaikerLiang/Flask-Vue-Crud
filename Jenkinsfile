@@ -2,6 +2,8 @@
 import groovy.transform.Field
 
 
+@Field def PYTHON_DOCKER_IMAGE = 'python:3.8.2'
+
 @Field def SHUB_APIKEY_CREDENTIAL_ID = 'scrapinghub-hardcore-apikey'
 
 @Field def SLACK_CHANNEL = '#edi-jenkins'
@@ -23,7 +25,7 @@ pipeline {
         stage('Test') {
             agent {
                 docker {
-                    image 'python:3.7'
+                    image "${PYTHON_DOCKER_IMAGE}"
                 }
             }
             when {
