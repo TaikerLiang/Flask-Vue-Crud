@@ -1,7 +1,7 @@
 from typing import List
 
 from crawler.core_carrier.items import MblItem, LocationItem, ContainerItem
-from crawler.core_carrier.rules import RoutingRequest
+from crawler.core_carrier.request_helpers import RequestOption
 
 
 def verify(results: List):
@@ -28,8 +28,8 @@ def verify(results: List):
         last_free_day=None,
     )
 
-    assert isinstance(results[2], RoutingRequest)
-    assert results[2].request.url == (
+    assert isinstance(results[2], RequestOption)
+    assert results[2].url == (
         'https://www.yangming.com/e-service/Track_Trace/'
         'ctconnect.aspx?rdolType=BL&ctnrno=TGHU5309509&blno=I209365239&movertype=11&lifecycle=2'
     )

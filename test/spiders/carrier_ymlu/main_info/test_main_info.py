@@ -8,7 +8,6 @@ from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_ymlu import MainInfoRoutingRule
 from test.spiders.carrier_ymlu import main_info
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -24,19 +23,20 @@ def sample_loader(sample_loader):
     ('03_no_release', 'I209365239'),
     ('04_multi_containers', 'W241061370'),
     ('05_with_firm_code', 'W226020752'),
+    ('06_ip_blocked', 'E209048375'),
 ])
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
-    routing_request = MainInfoRoutingRule.build_routing_request(mbl_no=mbl_no)
-    url = extract_url_from(routing_request=routing_request)
+    request_option = MainInfoRoutingRule.build_request_option(mbl_no=mbl_no)
 
     response = TextResponse(
-        url=url,
+        url=request_option.url,
         body=httptext,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=request_option.url,
+            meta={'mbl_no': mbl_no}
         )
     )
 
@@ -53,17 +53,17 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
-    routing_request = MainInfoRoutingRule.build_routing_request(mbl_no=mbl_no)
-    url = extract_url_from(routing_request=routing_request)
+    request_option = MainInfoRoutingRule.build_request_option(mbl_no=mbl_no)
 
     response = TextResponse(
-        url=url,
+        url=request_option.url,
         body=httptext,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=request_option.url,
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: MainInfoRoutingRule.name,
+                'mbl_no': mbl_no,
             }
         )
     )

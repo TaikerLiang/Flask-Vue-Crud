@@ -1,17 +1,25 @@
+import dataclasses
 import re
 from typing import Union, Tuple, List
 
-import scrapy
+from scrapy import Request, Selector
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
 from crawler.core_carrier.items import (
     BaseCarrierItem, ContainerStatusItem, LocationItem, MblItem, ContainerItem, DebugItem)
+from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 BASE_URL = 'https://www.yangming.com/e-service/Track_Trace'
+
+
+@dataclasses.dataclass
+class Resent:
+    option: RequestOption
+    reason: str = ''
 
 
 class CarrierYmluSpider(BaseCarrierSpider):
@@ -26,10 +34,14 @@ class CarrierYmluSpider(BaseCarrierSpider):
         ]
 
         self._rule_manager = RuleManager(rules=rules)
+        self._proxy_manager = ProxyManager(session='ymlu', logger=self.logger)
 
     def start(self):
-        routing_request = MainInfoRoutingRule.build_routing_request(mbl_no=self.mbl_no)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        self._proxy_manager.renew_proxy()
+
+        option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
+        yield self._build_request_by(option=proxy_option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -42,69 +54,107 @@ class CarrierYmluSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+
+            elif isinstance(result, RequestOption):
+                proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
+                yield self._build_request_by(option=proxy_option)
+
+            elif isinstance(result, Resent):
+                self.logger.warning(f'----- {result.reason}, try new proxy and resent request `{result.option.rule_name}`')
+                self._proxy_manager.renew_proxy()
+
+                option = result.option
+                proxy_option = self._proxy_manager.apply_proxy_to_request_option(option)
+                yield self._build_request_by(proxy_option)
+
             else:
                 raise RuntimeError()
+
+    @staticmethod
+    def _build_request_by(option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
+        }
+
+        return Request(
+            url=option.url,
+            headers=option.headers,
+            meta=meta,
+            dont_filter=True,
+        )
 
 
 class MainInfoRoutingRule(BaseRoutingRule):
     name = 'MAIN_INFO'
 
     @classmethod
+    def build_request_option(cls, mbl_no: str) -> RequestOption:
+        return RequestOption(
+            method=RequestOption.METHOD_GET,
+            rule_name=cls.name,
+            url=f'{BASE_URL}/blconnect.aspx?BLADG={mbl_no},&rdolType=BL&type=cargo',
+            meta={'mbl_no': mbl_no}
+        )
+
+    @classmethod
     def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
-        url = f'{BASE_URL}/blconnect.aspx?BLADG={mbl_no},&rdolType=BL&type=cargo'
-        request = scrapy.Request(url=url)
-        return RoutingRequest(rule_name=cls.name, request=request)
+        pass
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
 
     def handle(self, response):
-        self._check_main_info(response=response)
+        mbl_no = response.meta['mbl_no']
 
-        mbl_no = self._extract_mbl_no(response=response)
-        basic_info = self._extract_basic_info(response=response)
-        pol = basic_info['pol']
-        pod = basic_info['pod']
+        if check_ip_error(response=response):
+            option = self.build_request_option(mbl_no=mbl_no)
+            yield Resent(option=option)
 
-        routing_schedule = self._extract_routing_schedule(response=response, pol=pol, pod=pod)
-        firms_code = self._extract_firms_code(response=response)
-        release_status = self._extract_release_status(response=response)
+        else:
+            self._check_main_info(response=response)
 
-        yield MblItem(
-            mbl_no=mbl_no,
-            por=LocationItem(name=basic_info['por']),
-            pol=LocationItem(name=pol),
-            pod=LocationItem(name=pod),
-            place_of_deliv=LocationItem(name=basic_info['place_of_deliv']),
-            etd=routing_schedule['etd'],
-            atd=routing_schedule['atd'],
-            eta=routing_schedule['eta'],
-            ata=routing_schedule['ata'],
-            firms_code=firms_code,
-            carrier_status=release_status['carrier_status'],
-            carrier_release_date=release_status['carrier_release_date'],
-            customs_release_status=release_status['customs_release_status'],
-            customs_release_date=release_status['customs_release_date'],
-        )
+            mbl_no = self._extract_mbl_no(response=response)
+            basic_info = self._extract_basic_info(response=response)
+            pol = basic_info['pol']
+            pod = basic_info['pod']
 
-        last_free_day_dict = self._extract_last_free_day(response=response)
-        container_info_list = self._extract_container_info(response=response)
+            routing_schedule = self._extract_routing_schedule(response=response, pol=pol, pod=pod)
+            firms_code = self._extract_firms_code(response=response)
+            release_status = self._extract_release_status(response=response)
 
-        for container_info in container_info_list:
-            container_no = container_info['container_no']
-            last_free_day = last_free_day_dict.get(container_no)
-
-            yield ContainerItem(
-                container_key=container_no,
-                container_no=container_no,
-                last_free_day=last_free_day,
+            yield MblItem(
+                mbl_no=mbl_no,
+                por=LocationItem(name=basic_info['por']),
+                pol=LocationItem(name=pol),
+                pod=LocationItem(name=pod),
+                place_of_deliv=LocationItem(name=basic_info['place_of_deliv']),
+                etd=routing_schedule['etd'],
+                atd=routing_schedule['atd'],
+                eta=routing_schedule['eta'],
+                ata=routing_schedule['ata'],
+                firms_code=firms_code,
+                carrier_status=release_status['carrier_status'],
+                carrier_release_date=release_status['carrier_release_date'],
+                customs_release_status=release_status['customs_release_status'],
+                customs_release_date=release_status['customs_release_date'],
             )
 
-            follow_url = container_info['follow_url']
-            yield ContainerStatusRoutingRule.build_routing_request(
-                response=response, follow_url=follow_url, container_no=container_no)
+            last_free_day_dict = self._extract_last_free_day(response=response)
+            container_info_list = self._extract_container_info(response=response)
+
+            for container_info in container_info_list:
+                container_no = container_info['container_no']
+                last_free_day = last_free_day_dict.get(container_no)
+
+                yield ContainerItem(
+                    container_key=container_no,
+                    container_no=container_no,
+                    last_free_day=last_free_day,
+                )
+
+                follow_url = container_info['follow_url']
+                yield ContainerStatusRoutingRule.build_request_option(follow_url=follow_url, container_no=container_no)
 
     @staticmethod
     def _check_main_info(response):
@@ -119,12 +169,12 @@ class MainInfoRoutingRule(BaseRoutingRule):
         raise CarrierInvalidMblNoError()
 
     @staticmethod
-    def _extract_mbl_no(response: scrapy.Selector):
+    def _extract_mbl_no(response: Selector):
         mbl_no = response.css('span#ContentPlaceHolder1_rptBLNo_lblBLNo_0::text').get()
         return mbl_no.strip()
 
     @staticmethod
-    def _extract_basic_info(response: scrapy.Selector):
+    def _extract_basic_info(response: Selector):
         table_selector = response.css('table#ContentPlaceHolder1_rptBLNo_gvBasicInformation_0')
         if not table_selector:
             CarrierResponseFormatError('Can not found basic info table !!!')
@@ -144,7 +194,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         }
 
     @staticmethod
-    def _extract_routing_schedule(response: scrapy.Selector, pol: str, pod: str):
+    def _extract_routing_schedule(response: Selector, pol: str, pod: str):
         div = response.css('div.cargo-trackbox3')
         parser = ScheduleParser(div)
         schedules = parser.parse()
@@ -273,7 +323,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return status, release_date
 
     @staticmethod
-    def _extract_firms_code(response: scrapy.Selector):
+    def _extract_firms_code(response: Selector):
         # [0]WEST BASIN CONTAINER TERMINAL [1](Firms code:Y773)
         discharged_port_terminal_text = \
             response.css('span#ContentPlaceHolder1_rptBLNo_lblDischarged_0 ::text').getall()
@@ -368,7 +418,7 @@ class TopHeaderStartswithTableLocator(BaseTableLocator):
         self._td_map = {}  # top_header: [td, ...]
         self._data_len = 0
 
-    def parse(self, table: scrapy.Selector):
+    def parse(self, table: Selector):
         title_td_list = table.css('thead td')
         data_tr_list = table.css('tbody tr')
 
@@ -385,7 +435,7 @@ class TopHeaderStartswithTableLocator(BaseTableLocator):
 
         self._data_len = len(data_tr_list)
 
-    def get_cell(self, top, left: Union[int, None]) -> scrapy.Selector:
+    def get_cell(self, top, left: Union[int, None]) -> Selector:
         top_header = self._get_top_header(top=top)
         left_header = 0 if left is None else left
 
@@ -440,7 +490,7 @@ class TopHeaderThInTbodyTableLocator(BaseTableLocator):
         self._td_map = {}  # top_header: [td, ...]
         self._data_len = 0
 
-    def parse(self, table: scrapy.Selector):
+    def parse(self, table: Selector):
         title_td_list = table.css('th')
         data_tr_list = table.css('tr')[self.TR_DATA_BEGIN:]
 
@@ -457,7 +507,7 @@ class TopHeaderThInTbodyTableLocator(BaseTableLocator):
 
         self._data_len = len(data_tr_list)
 
-    def get_cell(self, top, left: Union[int, None]) -> scrapy.Selector:
+    def get_cell(self, top, left: Union[int, None]) -> Selector:
         try:
             left = 0 if left is None else left
             return self._td_map[top][left]
@@ -479,6 +529,18 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     name = 'CONTAINER_STATUS'
 
     @classmethod
+    def build_request_option(cls, follow_url: str, container_no: str) -> RequestOption:
+        return RequestOption(
+            method=RequestOption.METHOD_GET,
+            rule_name=cls.name,
+            url=f'{BASE_URL}/{follow_url}',
+            meta={
+                'follow_url': follow_url,
+                'container_no': container_no
+            },
+        )
+
+    @classmethod
     def build_routing_request(cls, response, follow_url: str, container_no: str) -> RoutingRequest:
         request = response.follow(follow_url)
         request.meta['container_no'] = container_no
@@ -489,17 +551,23 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         return f'{self.name}_{container_no}.html'
 
     def handle(self, response):
+        follow_url = response.meta['follow_url']
         container_no = response.meta['container_no']
 
-        container_status_list = self._extract_container_status(response=response)
-        for container_status in container_status_list:
-            yield ContainerStatusItem(
-                container_key=container_no,
-                description=container_status['description'],
-                local_date_time=container_status['timestamp'],
-                location=LocationItem(name=container_status['location_name']),
-                transport=container_status['transport'] or None,
-            )
+        if check_ip_error(response=response):
+            option = self.build_request_option(follow_url=follow_url, container_no=container_no)
+            yield Resent(option=option, reason='IP blocked')
+
+        else:
+            container_status_list = self._extract_container_status(response=response)
+            for container_status in container_status_list:
+                yield ContainerStatusItem(
+                    container_key=container_no,
+                    description=container_status['description'],
+                    local_date_time=container_status['timestamp'],
+                    location=LocationItem(name=container_status['location_name']),
+                    transport=container_status['transport'] or None,
+                )
 
     @staticmethod
     def _extract_container_status(response):
@@ -551,7 +619,7 @@ class TopHeaderIsTdTableLocator(BaseTableLocator):
         self._td_map = {}  # top_header: [td, ...]
         self._data_len = 0
 
-    def parse(self, table: scrapy.Selector):
+    def parse(self, table: Selector):
         title_td_list = table.css('thead td')
         data_tr_list = table.css('tbody tr')
 
@@ -568,7 +636,7 @@ class TopHeaderIsTdTableLocator(BaseTableLocator):
 
         self._data_len = len(data_tr_list)
 
-    def get_cell(self, top, left: Union[int, None]) -> scrapy.Selector:
+    def get_cell(self, top, left: Union[int, None]) -> Selector:
         left = 0 if left is None else left
 
         try:
@@ -605,7 +673,16 @@ class SpanAllTextTdExtractor(BaseTableCellExtractor):
     def __init__(self, css_query: str = 'span::text'):
         self.css_query = css_query
 
-    def extract(self, cell: scrapy.Selector):
+    def extract(self, cell: Selector):
         all_text = cell.css(self.css_query).getall()
         text = ' '.join(all_text)
         return text
+
+
+def check_ip_error(response):
+    ip_error_selector = response.css('div#divBlock')
+
+    if ip_error_selector:
+        return True
+
+    return False
