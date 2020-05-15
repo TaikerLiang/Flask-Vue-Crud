@@ -8,7 +8,7 @@ from crawler.core_terminal.base_spiders import BaseTerminalSpider
 from crawler.core_terminal.exceptions import TerminalResponseFormatError
 from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
@@ -99,11 +99,7 @@ class TokenRoutingRule(BaseRoutingRule):
             url=url,
             meta={'container_no': container_no},
         )
-
-    @classmethod
-    def build_routing_request(cls, container_no) -> RoutingRequest:
-        pass
-
+    
     def handle(self, response):
         container_no = response.meta['container_no']
 
@@ -142,10 +138,6 @@ class LoginRoutingRule(BaseRoutingRule):
             form_data=form_data,
             meta={'container_no': container_no},
         )
-
-    @classmethod
-    def build_routing_request(cls, token, container_no) -> RoutingRequest:
-        pass
 
     def handle(self, response):
         container_no = response.meta['container_no']
@@ -205,10 +197,6 @@ class SetTerminalRoutingRule(BaseRoutingRule):
             },
         )
 
-    @classmethod
-    def build_routing_request(cls, set_terminal_token, container_availability_token, container_no) -> RoutingRequest:
-        pass
-
     def handle(self, response):
         container_no = response.meta['container_no']
         token = response.meta['container_availability_token']
@@ -240,10 +228,6 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
             form_data=form_data,
             meta={'container_no': container_no,},
         )
-
-    @classmethod
-    def build_routing_request(cls, token, container_no) -> RoutingRequest:
-        pass
 
     def handle(self, response):
         container_info = self._extract_container_info(response=response)
