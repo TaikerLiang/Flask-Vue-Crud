@@ -18,6 +18,8 @@ class BaseVesselSpider(scrapy.Spider):
     def __init__(self, name=None, **kwargs):
         super().__init__(name=name, **kwargs)
 
+        self.scac = kwargs['scac']
+        self.vessel_name = kwargs['vessel_name']
         self.request_args = kwargs
 
         self._error = False
