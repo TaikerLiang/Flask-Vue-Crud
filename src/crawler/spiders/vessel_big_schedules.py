@@ -8,8 +8,7 @@ from crawler.core_vessel.items import DebugItem
 from crawler.core_vessel.rules import BaseRoutingRule, RoutingRequest, RuleManager
 from crawler.core_vessel.base_spiders import BaseVesselSpider
 from crawler.core_vessel.items import VesselPortItem, BaseVesselItem
-from crawler.utils.bigschedules_utils import get_user_detect_cookie
-
+from crawler.utils.selenium import BaseChromeDriver
 
 BASE_URL = 'https://www.bigschedules.com'
 
@@ -162,7 +161,8 @@ class VesselGidRoutingRule(BaseRoutingRule):
         vessel_gid_list = json.loads(response.text)
         vessel_gid = self._extract_vessel_gid(vessel_gid_list=vessel_gid_list, vessel_name=vessel_name)
 
-        cookie = get_user_detect_cookie()
+        big_schedule_chrome_driver = BigSchedulesChromeDriver()
+        cookie = big_schedule_chrome_driver.get_user_detect_cookie()
 
         yield VesselScheduleRoutingRule.build_routing_request(
             cookie=cookie,
@@ -238,3 +238,27 @@ class VesselScheduleRoutingRule(BaseRoutingRule):
 
 def get_local_date_time() -> str:
     return datetime.datetime.now().strftime('%Y%m%d%H')
+
+
+class BigSchedulesChromeDriver(BaseChromeDriver):
+
+    def get_user_detect_cookie(self):
+        self._browser.get(BASE_URL)
+
+        allow_cookies_usage_button_xpath = "//button[@class='csck-btn csck-btn-solid']"
+        self._click_button(xpath=allow_cookies_usage_button_xpath, wait_time=5)
+
+        close_ad_button_xpath = "//span[@id='main_feature_beta_span_close']"
+        self._click_button(xpath=close_ad_button_xpath, wait_time=10)
+
+        search_button_xpath = "//a[@id='main_a_search']"
+        self._click_button(xpath=search_button_xpath, wait_time=10)
+
+        user_detect_cookie = {}
+
+        for cookie in self._browser.get_cookies():
+            if cookie['name'] == 'USER_BEHAVIOR_DETECT':
+                user_detect_cookie[cookie['name']] = cookie['value']
+                break
+
+        return user_detect_cookie
