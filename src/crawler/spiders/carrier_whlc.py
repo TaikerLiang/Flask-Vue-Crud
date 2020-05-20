@@ -66,6 +66,7 @@ class CarrierWhlcSpider(BaseCarrierSpider):
 
 # -------------------------------------------------------------------------------
 
+
 class CarrierCookiesMaxRetryError(BaseCarrierError):
     status = CARRIER_RESULT_STATUS_FATAL
 
@@ -135,7 +136,7 @@ class ListRoutingRule(BaseRoutingRule):
             'cargoTrackListBean': 'cargoTrackListBean',
             'cargoType': '2',
             'q_ref_no1': mbl_no,
-            'j_idt6': 'Query',
+            'quick_ctnr_query': 'Query',
             'javax.faces.ViewState': view_state,
         }
         request = scrapy.FormRequest(
