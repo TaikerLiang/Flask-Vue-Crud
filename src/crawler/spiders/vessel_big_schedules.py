@@ -188,7 +188,7 @@ class VesselScheduleRoutingRule(BaseRoutingRule):
     @classmethod
     def build_routing_request(cls, cookie, carrier_id, scac, vessel_gid, vessel_name) -> RoutingRequest:
         local_date_time = get_local_date_time()
-        url = f'https://www.bigschedules.com/api/vesselSchedule/list?_={local_date_time}&carrierId={carrier_id}&scac={scac}&vesselGid={vessel_gid}&vesselName={vessel_name}'
+        url = f'{BASE_URL}/api/vesselSchedule/list?_={local_date_time}&carrierId={carrier_id}&scac={scac}&vesselGid={vessel_gid}&vesselName={vessel_name}'
         request = scrapy.Request(
             url=url,
             cookies=cookie,
