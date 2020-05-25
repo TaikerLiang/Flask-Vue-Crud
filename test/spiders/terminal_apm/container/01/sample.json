@@ -1,0 +1,43 @@
+{
+  "ContainerAvailabilityResults": [
+    {
+      "Appointment": "No",
+      "AppointmentDate": "No",
+      "BillOfLading": [
+        "143076231631"
+      ],
+      "ContainerId": "EISU9133920",
+      "ContainerState": "INBOUND",
+      "Customs": "HOLD",
+      "Demurrage": "",
+      "DischargedDate": "",
+      "Freight": "HOLD",
+      "GateOutDate": "",
+      "GrossWeight": "51831.0",
+      "IsHazardous": true,
+      "HazardousClass": "2.1:UN-1057",
+      "IsoCode": "45G1",
+      "Holds": [
+        "TMF"
+      ],
+      "HoldsDescriptions": [
+        "TMF Hold - Call Dispatcher"
+      ],
+      "LineId": "EGL",
+      "LocalDateTime": "05/05/20",
+      "ReadyForDelivery": false,
+      "ReadyForDeliveryReason": "Container not in Yard",
+      "SizeTypeHeight": "40/GP/96",
+      "StoragePaidThroughDate": "",
+      "StrippingDate": "",
+      "VesselName": "EVER LEADER",
+      "YardLocation": "V-LDER095W-141582",
+      "IsBillOfLading": false,
+      "IsContainer": true
+    }
+  ],
+  "Filters": [
+    "143076231631"
+  ],
+  "ResultsCount": 1
+}

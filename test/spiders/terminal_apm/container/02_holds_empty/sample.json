@@ -1,0 +1,39 @@
+{
+  "ContainerAvailabilityResults": [
+    {
+      "Appointment": "Yes",
+      "AppointmentDate": "30/04/20 13:00",
+      "BillOfLading": [
+        "140027124903"
+      ],
+      "ContainerId": "EGHU9572519",
+      "ContainerState": "DEPARTED",
+      "Customs": "RELEASED",
+      "Demurrage": "",
+      "DischargedDate": "29/04/20 09:45",
+      "Freight": "RELEASED",
+      "GateOutDate": "30/04/20 14:53",
+      "GrossWeight": "24956.0",
+      "IsHazardous": false,
+      "HazardousClass": "",
+      "IsoCode": "45G1",
+      "Holds": [],
+      "HoldsDescriptions": [],
+      "LineId": "EGL",
+      "LocalDateTime": "06/05/20",
+      "ReadyForDelivery": false,
+      "ReadyForDeliveryReason": "Container not in Yard",
+      "SizeTypeHeight": "40/GP/96",
+      "StoragePaidThroughDate": "",
+      "StrippingDate": "",
+      "VesselName": "EVER LUCENT",
+      "YardLocation": "COMMUNITY - OUT",
+      "IsBillOfLading": false,
+      "IsContainer": true
+    }
+  ],
+  "Filters": [
+    "140027124903"
+  ],
+  "ResultsCount": 1
+}
