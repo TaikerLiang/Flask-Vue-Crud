@@ -142,8 +142,11 @@ class LoginRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_no = response.meta['container_no']
 
-        set_terminal_token = self._get_set_terminal_token(response=response)
-        container_availability_token = self._get_container_availability(response=response)
+        # get terminal token for SetTerminalRoutingRule request
+        set_terminal_token = self._get_terminal_token(response=response)
+
+        # get container availability token for SetTerminalRoutingRule request
+        container_availability_token = self._get_container_availability_token(response=response)
 
         current_terminal_id = self._get_current_terminal_id(response=response)
         if self.terminal_id == current_terminal_id:
@@ -160,12 +163,12 @@ class LoginRoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     @staticmethod
-    def _get_set_terminal_token(response: scrapy.Selector) -> str:
+    def _get_terminal_token(response: scrapy.Selector) -> str:
         token = response.css('form[id="TerminalForm"] input::attr(value)').get()
         return token
 
     @staticmethod
-    def _get_container_availability(response: scrapy.Selector) -> str:
+    def _get_container_availability_token(response: scrapy.Selector) -> str:
         token = response.css('form[id="formAvailabilityHeader"] input::attr(value)').get()
         return token
 
@@ -199,9 +202,10 @@ class SetTerminalRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_no = response.meta['container_no']
-        token = response.meta['container_availability_token']
+        container_availability_token = response.meta['container_availability_token']
 
-        yield ContainerAvailabilityRoutingRule.build_request_option(token=token, container_no=container_no)
+        yield ContainerAvailabilityRoutingRule.build_request_option(
+            token=container_availability_token, container_no=container_no)
 
     def get_save_name(self, response):
         return f'{self.name}.html'
@@ -213,12 +217,12 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
     @classmethod
     def build_request_option(cls, token, container_no) -> RequestOption:
         url = f'{BASE_URL}/tms2/Import/ContainerAvailability'
-        yesterday_date_text = cls._get_yesterday_date()
+        yesterday = cls._get_yesterday_date()
         form_data = {
             '__RequestVerificationToken': token,
-            'pickupDate': yesterday_date_text,
+            'pickupDate': yesterday,
             'refNums': container_no,
-            'refType': 'CN',  # TODO: remind Yoyo to modify document
+            'refType': 'CN',
         }
 
         return RequestOption(
@@ -230,8 +234,8 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
         )
 
     def handle(self, response):
-        container_info = self._extract_container_info(response=response)
-        extra_container_info = self._extract_extra_container_info(response=response)
+        container_info = self.__extract_container_info(response=response)
+        extra_container_info = self.__extract_extra_container_info(response=response)
 
         yield TerminalItem(
             container_no=container_info['container_no'],
@@ -261,7 +265,7 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
         return yesterday_date_text
 
     @staticmethod
-    def _extract_container_info(response: scrapy.Selector) -> Dict:
+    def __extract_container_info(response: scrapy.Selector) -> Dict:
         table_selector = response.css('table.table-borderless')
 
         if table_selector is None:
@@ -283,21 +287,21 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
             }
 
     @staticmethod
-    def _extract_extra_container_info(response: scrapy.Selector) -> Dict:
+    def __extract_extra_container_info(response: scrapy.Selector) -> Dict:
         table_selector = response.css('table.table-bordered')
 
         if table_selector is None:
             raise TerminalResponseFormatError(reason='Extra container info table not found')
 
-        left_table_locator = LeftBottomInfoLocator()
+        left_table_locator = LeftExtraContainerLocator()
         left_table_locator.parse(table=table_selector)
         left_table = TableExtractor(table_locator=left_table_locator)
 
-        middle_table_locator = MiddleBottomInfoLocator()
+        middle_table_locator = MiddleExtraContainerLocator()
         middle_table_locator.parse(table=table_selector)
         middle_table = TableExtractor(table_locator=middle_table_locator)
 
-        right_table_locator = RightBottomInfoLocator()
+        right_table_locator = RightExtraContainerLocator()
         right_table_locator.parse(table=table_selector)
         right_table = TableExtractor(table_locator=right_table_locator)
 
@@ -372,7 +376,7 @@ class TdSpanExtractor(BaseTableCellExtractor):
         return td_text.strip() if td_text else ''
 
 
-class LeftBottomInfoLocator(BaseTableLocator):
+class LeftExtraContainerLocator(BaseTableLocator):
 
     """
         +---------+--------+-----+-----+-----+-----+ <table>
@@ -415,7 +419,7 @@ class LeftBottomInfoLocator(BaseTableLocator):
         return (top is None) and (left in self._td_map)
 
 
-class MiddleBottomInfoLocator(BaseTableLocator):
+class MiddleExtraContainerLocator(BaseTableLocator):
 
     """
         +-----+-----+---------+--------+-----+-----+ <table>
@@ -459,7 +463,7 @@ class MiddleBottomInfoLocator(BaseTableLocator):
         return (top is None) and (left in self._td_map)
 
 
-class RightBottomInfoLocator(BaseTableLocator):
+class RightExtraContainerLocator(BaseTableLocator):
 
     """
         +-----+-----+-----+-----+---------+--------+ <table>
