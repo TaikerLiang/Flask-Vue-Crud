@@ -69,11 +69,16 @@ class LoginRoutingRule(BaseRoutingRule):
     @classmethod
     def build_routing_request(cls, scac, vessel_name) -> RoutingRequest:
         url = f'{BASE_URL}/api/admin/login'
-        login_data = b'{"emailAddress":"cherubwang110@gmail.com","password":"Crawler888","DISABLE_ART":"true"}'
+
+        login_data = {
+            "emailAddress": "cherubwang110@gmail.com",
+            "password": "Crawler888",
+            "DISABLE_ART": "true",
+        }
 
         request = scrapy.Request(
             url=url,
-            body=login_data,
+            body=json.loads(login_data),
             headers={
                 'Accept': 'application/json, text/plain, */*',
                 'Sec-Fetch-Dest': 'empty',
@@ -161,7 +166,9 @@ class VesselGidRoutingRule(BaseRoutingRule):
         vessel_gid_list = json.loads(response.text)
         vessel_gid = self._extract_vessel_gid(vessel_gid_list=vessel_gid_list, vessel_name=vessel_name)
 
-        big_schedule_chrome_driver = BigSchedulesChromeDriver()
+        extra_chrome_options = ["--window-size=1920,1080"]
+        # click search button to get user detect cookie
+        big_schedule_chrome_driver = BigSchedulesChromeDriver(extra_chrome_options=extra_chrome_options)
         cookie = big_schedule_chrome_driver.get_user_detect_cookie()
 
         yield VesselScheduleRoutingRule.build_routing_request(
@@ -245,12 +252,15 @@ class BigSchedulesChromeDriver(BaseChromeDriver):
     def get_user_detect_cookie(self):
         self._browser.get(BASE_URL)
 
+        # close allow cookies popup
         allow_cookies_usage_button_xpath = "//button[@class='csck-btn csck-btn-solid']"
         self._click_button(xpath=allow_cookies_usage_button_xpath, wait_time=5)
 
+        # close ad popup
         close_ad_button_xpath = "//span[@id='main_feature_beta_span_close']"
         self._click_button(xpath=close_ad_button_xpath, wait_time=10)
 
+        # click search button
         search_button_xpath = "//a[@id='main_a_search']"
         self._click_button(xpath=search_button_xpath, wait_time=10)
 

@@ -1,3 +1,5 @@
+from typing import List
+
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
@@ -9,13 +11,15 @@ from crawler.core_vessel.exceptions import LoadWebsiteTimeOutError
 
 class BaseChromeDriver:
 
-    def __init__(self):
+    def __init__(self, extra_chrome_options: List):
         options = webdriver.ChromeOptions()
         options.add_argument("--disable-extensions")
         options.add_argument("--headless")
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
-        options.add_argument("--window-size=1920,1080")
+
+        for option in extra_chrome_options:
+            options.add_argument(option)
 
         self._browser = webdriver.Chrome(chrome_options=options)
 
