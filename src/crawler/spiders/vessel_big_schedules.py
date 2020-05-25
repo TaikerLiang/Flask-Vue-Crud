@@ -78,7 +78,7 @@ class LoginRoutingRule(BaseRoutingRule):
 
         request = scrapy.Request(
             url=url,
-            body=json.loads(login_data),
+            body=json.dumps(login_data),
             headers={
                 'Accept': 'application/json, text/plain, */*',
                 'Sec-Fetch-Dest': 'empty',
@@ -166,9 +166,8 @@ class VesselGidRoutingRule(BaseRoutingRule):
         vessel_gid_list = json.loads(response.text)
         vessel_gid = self._extract_vessel_gid(vessel_gid_list=vessel_gid_list, vessel_name=vessel_name)
 
-        extra_chrome_options = ["--window-size=1920,1080"]
         # click search button to get user detect cookie
-        big_schedule_chrome_driver = BigSchedulesChromeDriver(extra_chrome_options=extra_chrome_options)
+        big_schedule_chrome_driver = BigSchedulesChromeDriver()
         cookie = big_schedule_chrome_driver.get_user_detect_cookie()
 
         yield VesselScheduleRoutingRule.build_routing_request(
@@ -249,6 +248,10 @@ def get_local_date_time() -> str:
 
 class BigSchedulesChromeDriver(BaseChromeDriver):
 
+    def __init__(self):
+        extra_chrome_options = ["--window-size=1920,1080"]
+        super().__init__(extra_chrome_options=extra_chrome_options)
+
     def get_user_detect_cookie(self):
         self._browser.get(BASE_URL)
 
@@ -262,7 +265,7 @@ class BigSchedulesChromeDriver(BaseChromeDriver):
 
         # click search button
         search_button_xpath = "//a[@id='main_a_search']"
-        self._click_button(xpath=search_button_xpath, wait_time=10)
+        self._click_button(xpath=search_button_xpath, wait_time=15)
 
         user_detect_cookie = {}
 
