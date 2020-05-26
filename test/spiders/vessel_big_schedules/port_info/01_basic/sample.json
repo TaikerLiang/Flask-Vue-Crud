@@ -1,0 +1,793 @@
+{
+  "criteria": {
+    "startDate": "2020-03-02T00:00:00.000Z",
+    "endDate": "2020-05-25T23:59:59.999Z",
+    "carrierId": "2",
+    "vesselGid": "V000001036"
+  },
+  "ports": [
+    {
+      "departure": {
+        "voyages": [
+          {
+            "voyageID": 5774843,
+            "voyageStopID": 24473051,
+            "externalVoyageNumber": "0TUAGW1MA",
+            "serviceCode": "SEA2",
+            "serviceName": "South East Asia Pendlum (SEAP)",
+            "direction": "West",
+            "estimated": "15 Mar 2020, 17:00 Sun",
+            "actual": "15 Mar 2020, 17:38 Sun"
+          },
+          {
+            "voyageID": 5909896,
+            "voyageStopID": 25245455,
+            "externalVoyageNumber": "0TUAFE1MA",
+            "serviceCode": "SEA2",
+            "serviceName": "South East Asia Pendlum (SEAP)",
+            "direction": "East",
+            "estimated": "15 Mar 2020, 17:00 Sun",
+            "actual": "15 Mar 2020, 17:38 Sun"
+          },
+          {
+            "voyageID": 5551291,
+            "voyageStopID": 23408324,
+            "externalVoyageNumber": "0TUAGW1MA",
+            "serviceCode": "SEA2",
+            "serviceName": "South East Asia Pendlum (SEAP)",
+            "direction": "West",
+            "estimated": "17 Mar 2020, 04:00 Tue"
+          }
+        ],
+        "externalVoyageNumber": "0TUAFE1MA / 0TUAGW1MA / 0TUAGW1MA",
+        "estimated": "15 Mar 2020, 17:00 Sun",
+        "gmtEstimated": "2020-03-16T00:00:00.000Z",
+        "actual": "15 Mar 2020, 17:38 Sun",
+        "actualUTC": "2020-03-16T00:38:15Z",
+        "gmtActual": "2020-03-16T00:38:15.000Z",
+        "oldGmtEstimated": "2020-03-17T11:00:00.000Z",
+        "serviceCode": "SEA2",
+        "serviceCodes": [
+          "SEA2"
+        ],
+        "voyageStopIDs": [
+          24473051,
+          25245455,
+          23408324
+        ]
+      },
+      "arrival": {
+        "voyages": [
+          {
+            "voyageID": 5774843,
+            "voyageStopID": 24473051,
+            "externalVoyageNumber": "0TUAGW1MA",
+            "serviceCode": "SEA2",
+            "serviceName": "South East Asia Pendlum (SEAP)",
+            "direction": "West",
+            "estimated": "12 Mar 2020, 08:00 Thu",
+            "actual": "12 Mar 2020, 05:06 Thu"
+          },
+          {
+            "voyageID": 5909896,
+            "voyageStopID": 25245455,
+            "externalVoyageNumber": "0TUAFE1MA",
+            "serviceCode": "SEA2",
+            "serviceName": "South East Asia Pendlum (SEAP)",
+            "direction": "East",
+            "estimated": "12 Mar 2020, 08:00 Thu",
+            "actual": "12 Mar 2020, 05:06 Thu"
+          },
+          {
+            "voyageID": 5551291,
+            "voyageStopID": 23408324,
+            "externalVoyageNumber": "0TUAGW1MA",
+            "serviceCode": "SEA2",
+            "serviceName": "South East Asia Pendlum (SEAP)",
+            "direction": "West",
+            "estimated": "12 Mar 2020, 08:00 Thu"
+          }
+        ],
+        "externalVoyageNumber": "0TUAFE1MA / 0TUAGW1MA / 0TUAGW1MA",
+        "estimated": "12 Mar 2020, 08:00 Thu",
+        "actual": "12 Mar 2020, 05:06 Thu",
+        "actualUTC": "2020-03-12T12:06:30Z",
+        "oldGmtEstimated": "2020-03-12T15:00:00.000Z",
+        "serviceCode": "SEA2",
+        "serviceCodes": [
+          "SEA2"
+        ]
+      },
+      "isActive": "1",
+      "id": 426,
+      "name": "Los Angeles",
+      "unlocode": "USLAX"
+    },
+    {
+      "departure": {
+        "voyages": [
+          {
+            "voyageID": 5774843,
+            "voyageStopID": 24473052,
+            "externalVoyageNumber": "0TUAGW1MA",
+            "serviceCode": "SEA2",
+            "serviceName": "South East Asia Pendlum (SEAP)",
+            "direction": "West",
+            "estimated": "20 Mar 2020, 17:00 Fri",
+            "actual": "20 Mar 2020, 05:09 Fri"
+          },
+          {
+            "voyageID": 5551291,
+            "voyageStopID": 23408327,
+            "externalVoyageNumber": "0TUAGW1MA",
+            "serviceCode": "SEA2",
+            "serviceName": "South East Asia Pendlum (SEAP)",
+            "direction": "West",
+            "estimated": "20 Mar 2020, 17:00 Fri"
+          }
+        ],
+        "externalVoyageNumber": "0TUAGW1MA / 0TUAGW1MA",
+        "estimated": "20 Mar 2020, 17:00 Fri",
+        "gmtEstimated": "2020-03-21T00:00:00.000Z",
+        "actual": "20 Mar 2020, 05:09 Fri",
+        "actualUTC": "2020-03-20T12:09:44Z",
+        "gmtActual": "2020-03-20T12:09:44.000Z",
+        "oldGmtEstimated": "2020-03-21T00:00:00.000Z",
+        "serviceCode": "SEA2",
+        "serviceCodes": [
+          "SEA2"
+        ],
+        "voyageStopIDs": [
+          24473052,
+          23408327
+        ]
+      },
+      "arrival": {
+        "voyages": [
+          {
+            "voyageID": 5774843,
+            "voyageStopID": 24473052,
+            "externalVoyageNumber": "0TUAGW1MA",
+            "serviceCode": "SEA2",
+            "serviceName": "South East Asia Pendlum (SEAP)",
+            "direction": "West",
+            "estimated": "18 Mar 2020, 18:00 Wed",
+            "actual": "18 Mar 2020, 18:19 Wed"
+          },
+          {
+            "voyageID": 5551291,
+            "voyageStopID": 23408327,
+            "externalVoyageNumber": "0TUAGW1MA",
+            "serviceCode": "SEA2",
+            "serviceName": "South East Asia Pendlum (SEAP)",
+            "direction": "West",
+            "estimated": "18 Mar 2020, 18:00 Wed"
+          }
+        ],
+        "externalVoyageNumber": "0TUAGW1MA / 0TUAGW1MA",
+        "estimated": "18 Mar 2020, 18:00 Wed",
+        "actual": "18 Mar 2020, 18:19 Wed",
+        "actualUTC": "2020-03-19T01:19:01Z",
+        "oldGmtEstimated": "2020-03-19T01:00:00.000Z",
+        "serviceCode": "SEA2",
+        "serviceCodes": [
+          "SEA2"
+        ]
+      },
+      "isActive": "1",
+      "id": 21,
+      "name": "Oakland",
+      "unlocode": "USOAK"
+    },
+    {
+      "departure": {
+        "voyages": [
+          {
+            "voyageID": 5774843,
+            "voyageStopID": 24473053,
+            "externalVoyageNumber": "0TUAGW1MA",
+            "serviceCode": "SEA2",
+            "serviceName": "South East Asia Pendlum (SEAP)",
+            "direction": "West",
+            "estimated": "08 Apr 2020, 03:00 Wed"
+          },
+          {
+            "voyageID": 5774842,
+            "voyageStopID": 24473038,
+            "externalVoyageNumber": "0TUCDS1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "South",
+            "estimated": "08 Apr 2020, 03:00 Wed"
+          },
+          {
+            "voyageID": 5551291,
+            "voyageStopID": 23408328,
+            "externalVoyageNumber": "0TUAGW1MA",
+            "serviceCode": "SEA2",
+            "serviceName": "South East Asia Pendlum (SEAP)",
+            "direction": "West",
+            "estimated": "08 Apr 2020, 03:00 Wed"
+          }
+        ],
+        "externalVoyageNumber": "0TUAGW1MA / 0TUAGW1MA / 0TUCDS1MA",
+        "estimated": "08 Apr 2020, 03:00 Wed",
+        "gmtEstimated": "2020-04-07T19:00:00.000Z",
+        "oldGmtEstimated": "2020-04-07T19:00:00.000Z",
+        "serviceCode": "SEA2",
+        "serviceCodes": [
+          "SEA2",
+          "AWE5"
+        ],
+        "voyageStopIDs": [
+          24473053,
+          24473038,
+          23408328
+        ]
+      },
+      "arrival": {
+        "voyages": [
+          {
+            "voyageID": 5774843,
+            "voyageStopID": 24473053,
+            "externalVoyageNumber": "0TUAGW1MA",
+            "serviceCode": "SEA2",
+            "serviceName": "South East Asia Pendlum (SEAP)",
+            "direction": "West",
+            "estimated": "07 Apr 2020, 08:00 Tue"
+          },
+          {
+            "voyageID": 5774842,
+            "voyageStopID": 24473038,
+            "externalVoyageNumber": "0TUCDS1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "South",
+            "estimated": "07 Apr 2020, 08:00 Tue"
+          },
+          {
+            "voyageID": 5551291,
+            "voyageStopID": 23408328,
+            "externalVoyageNumber": "0TUAGW1MA",
+            "serviceCode": "SEA2",
+            "serviceName": "South East Asia Pendlum (SEAP)",
+            "direction": "West",
+            "estimated": "07 Apr 2020, 08:00 Tue"
+          }
+        ],
+        "externalVoyageNumber": "0TUAGW1MA / 0TUAGW1MA / 0TUCDS1MA",
+        "estimated": "07 Apr 2020, 08:00 Tue",
+        "oldGmtEstimated": "2020-04-07T00:00:00.000Z",
+        "serviceCode": "SEA2",
+        "serviceCodes": [
+          "SEA2",
+          "AWE5"
+        ]
+      },
+      "isActive": "1",
+      "id": 189,
+      "name": "Hong Kong",
+      "unlocode": "HKHKG"
+    },
+    {
+      "departure": {
+        "voyages": [
+          {
+            "voyageID": 5774842,
+            "voyageStopID": 24473039,
+            "externalVoyageNumber": "0TUCDS1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "South",
+            "estimated": "12 Apr 2020, 12:00 Sun"
+          }
+        ],
+        "externalVoyageNumber": "0TUCDS1MA",
+        "estimated": "12 Apr 2020, 12:00 Sun",
+        "gmtEstimated": "2020-04-12T05:00:00.000Z",
+        "oldGmtEstimated": "2020-04-12T05:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ],
+        "voyageStopIDs": [
+          24473039
+        ]
+      },
+      "arrival": {
+        "voyages": [
+          {
+            "voyageID": 5774842,
+            "voyageStopID": 24473039,
+            "externalVoyageNumber": "0TUCDS1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "South",
+            "estimated": "11 Apr 2020, 12:00 Sat"
+          }
+        ],
+        "externalVoyageNumber": "0TUCDS1MA",
+        "estimated": "11 Apr 2020, 12:00 Sat",
+        "oldGmtEstimated": "2020-04-11T05:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ]
+      },
+      "isActive": "1",
+      "id": 6245,
+      "name": "Ba Ria",
+      "unlocode": "VN7BR"
+    },
+    {
+      "departure": {
+        "voyages": [
+          {
+            "voyageID": 5774842,
+            "voyageStopID": 24473040,
+            "externalVoyageNumber": "0TUCDS1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "South",
+            "estimated": "15 Apr 2020, 01:00 Wed"
+          }
+        ],
+        "externalVoyageNumber": "0TUCDS1MA",
+        "estimated": "15 Apr 2020, 01:00 Wed",
+        "gmtEstimated": "2020-04-14T17:00:00.000Z",
+        "oldGmtEstimated": "2020-04-14T17:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ],
+        "voyageStopIDs": [
+          24473040
+        ]
+      },
+      "arrival": {
+        "voyages": [
+          {
+            "voyageID": 5774842,
+            "voyageStopID": 24473040,
+            "externalVoyageNumber": "0TUCDS1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "South",
+            "estimated": "14 Apr 2020, 07:00 Tue"
+          }
+        ],
+        "externalVoyageNumber": "0TUCDS1MA",
+        "estimated": "14 Apr 2020, 07:00 Tue",
+        "oldGmtEstimated": "2020-04-13T23:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ]
+      },
+      "isActive": "1",
+      "id": 355,
+      "name": "Singapore",
+      "unlocode": "SGSIN"
+    },
+    {
+      "departure": {
+        "voyages": [
+          {
+            "voyageID": 5774842,
+            "voyageStopID": 24473042,
+            "externalVoyageNumber": "0TUCDS1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "South",
+            "estimated": "16 Apr 2020, 12:00 Thu"
+          }
+        ],
+        "externalVoyageNumber": "0TUCDS1MA",
+        "estimated": "16 Apr 2020, 12:00 Thu",
+        "gmtEstimated": "2020-04-16T04:00:00.000Z",
+        "oldGmtEstimated": "2020-04-16T04:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ],
+        "voyageStopIDs": [
+          24473042
+        ]
+      },
+      "arrival": {
+        "voyages": [
+          {
+            "voyageID": 5774842,
+            "voyageStopID": 24473042,
+            "externalVoyageNumber": "0TUCDS1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "South",
+            "estimated": "15 Apr 2020, 16:00 Wed"
+          }
+        ],
+        "externalVoyageNumber": "0TUCDS1MA",
+        "estimated": "15 Apr 2020, 16:00 Wed",
+        "oldGmtEstimated": "2020-04-15T08:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ]
+      },
+      "isActive": "1",
+      "id": 476,
+      "name": "Port Klang",
+      "unlocode": "MYPKG"
+    },
+    {
+      "departure": {
+        "voyages": [
+          {
+            "voyageID": 5774842,
+            "voyageStopID": 24473044,
+            "externalVoyageNumber": "0TUCDS1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "South",
+            "estimated": "20 Apr 2020, 08:00 Mon"
+          }
+        ],
+        "externalVoyageNumber": "0TUCDS1MA",
+        "estimated": "20 Apr 2020, 08:00 Mon",
+        "gmtEstimated": "2020-04-20T02:30:00.000Z",
+        "oldGmtEstimated": "2020-04-20T02:30:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ],
+        "voyageStopIDs": [
+          24473044
+        ]
+      },
+      "arrival": {
+        "voyages": [
+          {
+            "voyageID": 5774842,
+            "voyageStopID": 24473044,
+            "externalVoyageNumber": "0TUCDS1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "South",
+            "estimated": "19 Apr 2020, 14:00 Sun"
+          }
+        ],
+        "externalVoyageNumber": "0TUCDS1MA",
+        "estimated": "19 Apr 2020, 14:00 Sun",
+        "oldGmtEstimated": "2020-04-19T08:30:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ]
+      },
+      "isActive": "1",
+      "id": 368,
+      "name": "Colombo",
+      "unlocode": "LKCMB"
+    },
+    {
+      "departure": {
+        "voyages": [
+          {
+            "voyageID": 5774842,
+            "voyageStopID": 24473045,
+            "externalVoyageNumber": "0TUCDS1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "South",
+            "estimated": "28 Apr 2020, 17:00 Tue"
+          }
+        ],
+        "externalVoyageNumber": "0TUCDS1MA",
+        "estimated": "28 Apr 2020, 17:00 Tue",
+        "gmtEstimated": "2020-04-28T15:00:00.000Z",
+        "oldGmtEstimated": "2020-04-28T15:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ],
+        "voyageStopIDs": [
+          24473045
+        ]
+      },
+      "arrival": {
+        "voyages": [
+          {
+            "voyageID": 5774842,
+            "voyageStopID": 24473045,
+            "externalVoyageNumber": "0TUCDS1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "South",
+            "estimated": "27 Apr 2020, 23:00 Mon"
+          }
+        ],
+        "externalVoyageNumber": "0TUCDS1MA",
+        "estimated": "27 Apr 2020, 23:00 Mon",
+        "oldGmtEstimated": "2020-04-27T21:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ]
+      },
+      "isActive": "1",
+      "id": 160,
+      "name": "Suez",
+      "unlocode": "EGSUZ"
+    },
+    {
+      "departure": {
+        "voyages": [
+          {
+            "voyageID": 5774841,
+            "voyageStopID": 24473037,
+            "externalVoyageNumber": "0TUCEN1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "North",
+            "estimated": "10 May 2020, 01:00 Sun"
+          },
+          {
+            "voyageID": 5774842,
+            "voyageStopID": 24473046,
+            "externalVoyageNumber": "0TUCDS1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "South",
+            "estimated": "10 May 2020, 01:00 Sun"
+          }
+        ],
+        "externalVoyageNumber": "0TUCDS1MA / 0TUCEN1MA",
+        "estimated": "10 May 2020, 01:00 Sun",
+        "gmtEstimated": "2020-05-10T04:00:00.000Z",
+        "oldGmtEstimated": "2020-05-10T04:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ],
+        "voyageStopIDs": [
+          24473037,
+          24473046
+        ]
+      },
+      "arrival": {
+        "voyages": [
+          {
+            "voyageID": 5774841,
+            "voyageStopID": 24473037,
+            "externalVoyageNumber": "0TUCEN1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "North",
+            "estimated": "09 May 2020, 08:00 Sat"
+          },
+          {
+            "voyageID": 5774842,
+            "voyageStopID": 24473046,
+            "externalVoyageNumber": "0TUCDS1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "South",
+            "estimated": "09 May 2020, 08:00 Sat"
+          }
+        ],
+        "externalVoyageNumber": "0TUCDS1MA / 0TUCEN1MA",
+        "estimated": "09 May 2020, 08:00 Sat",
+        "oldGmtEstimated": "2020-05-09T11:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ]
+      },
+      "isActive": "1",
+      "id": 37,
+      "name": "Halifax",
+      "unlocode": "CAHAL"
+    },
+    {
+      "departure": {
+        "voyages": [
+          {
+            "voyageID": 5774841,
+            "voyageStopID": 24473041,
+            "externalVoyageNumber": "0TUCEN1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "North",
+            "estimated": "13 May 2020, 07:00 Wed"
+          }
+        ],
+        "externalVoyageNumber": "0TUCEN1MA",
+        "estimated": "13 May 2020, 07:00 Wed",
+        "gmtEstimated": "2020-05-13T11:00:00.000Z",
+        "oldGmtEstimated": "2020-05-13T11:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ],
+        "voyageStopIDs": [
+          24473041
+        ]
+      },
+      "arrival": {
+        "voyages": [
+          {
+            "voyageID": 5774841,
+            "voyageStopID": 24473041,
+            "externalVoyageNumber": "0TUCEN1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "North",
+            "estimated": "11 May 2020, 13:00 Mon"
+          }
+        ],
+        "externalVoyageNumber": "0TUCEN1MA",
+        "estimated": "11 May 2020, 13:00 Mon",
+        "oldGmtEstimated": "2020-05-11T17:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ]
+      },
+      "isActive": "1",
+      "id": 429,
+      "name": "New York",
+      "unlocode": "USNYC"
+    },
+    {
+      "departure": {
+        "voyages": [
+          {
+            "voyageID": 5774841,
+            "voyageStopID": 24473043,
+            "externalVoyageNumber": "0TUCEN1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "North",
+            "estimated": "15 May 2020, 12:00 Fri"
+          }
+        ],
+        "externalVoyageNumber": "0TUCEN1MA",
+        "estimated": "15 May 2020, 12:00 Fri",
+        "gmtEstimated": "2020-05-15T16:00:00.000Z",
+        "oldGmtEstimated": "2020-05-15T16:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ],
+        "voyageStopIDs": [
+          24473043
+        ]
+      },
+      "arrival": {
+        "voyages": [
+          {
+            "voyageID": 5774841,
+            "voyageStopID": 24473043,
+            "externalVoyageNumber": "0TUCEN1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "North",
+            "estimated": "14 May 2020, 08:00 Thu"
+          }
+        ],
+        "externalVoyageNumber": "0TUCEN1MA",
+        "estimated": "14 May 2020, 08:00 Thu",
+        "oldGmtEstimated": "2020-05-14T12:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ]
+      },
+      "isActive": "1",
+      "id": 431,
+      "name": "Norfolk",
+      "unlocode": "USORF"
+    },
+    {
+      "departure": {
+        "voyages": [
+          {
+            "voyageID": 5774841,
+            "voyageStopID": 24473047,
+            "externalVoyageNumber": "0TUCEN1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "North",
+            "estimated": "18 May 2020, 08:00 Mon"
+          }
+        ],
+        "externalVoyageNumber": "0TUCEN1MA",
+        "estimated": "18 May 2020, 08:00 Mon",
+        "gmtEstimated": "2020-05-18T12:00:00.000Z",
+        "oldGmtEstimated": "2020-05-18T12:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ],
+        "voyageStopIDs": [
+          24473047
+        ]
+      },
+      "arrival": {
+        "voyages": [
+          {
+            "voyageID": 5774841,
+            "voyageStopID": 24473047,
+            "externalVoyageNumber": "0TUCEN1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "North",
+            "estimated": "17 May 2020, 00:00 Sun"
+          }
+        ],
+        "externalVoyageNumber": "0TUCEN1MA",
+        "estimated": "17 May 2020, 00:00 Sun",
+        "oldGmtEstimated": "2020-05-17T04:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ]
+      },
+      "isActive": "1",
+      "id": 440,
+      "name": "Savannah",
+      "unlocode": "USSAV"
+    },
+    {
+      "departure": {
+        "voyages": [
+          {
+            "voyageID": 5774841,
+            "voyageStopID": 24473048,
+            "externalVoyageNumber": "0TUCEN1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "North",
+            "estimated": "20 May 2020, 03:00 Wed"
+          }
+        ],
+        "externalVoyageNumber": "0TUCEN1MA",
+        "estimated": "20 May 2020, 03:00 Wed",
+        "gmtEstimated": "2020-05-20T07:00:00.000Z",
+        "oldGmtEstimated": "2020-05-20T07:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ],
+        "voyageStopIDs": [
+          24473048
+        ]
+      },
+      "arrival": {
+        "voyages": [
+          {
+            "voyageID": 5774841,
+            "voyageStopID": 24473048,
+            "externalVoyageNumber": "0TUCEN1MA",
+            "serviceCode": "AWE5",
+            "serviceName": "Asia / U.S. East Coast Express Service 5",
+            "direction": "North",
+            "estimated": "19 May 2020, 07:00 Tue"
+          }
+        ],
+        "externalVoyageNumber": "0TUCEN1MA",
+        "estimated": "19 May 2020, 07:00 Tue",
+        "oldGmtEstimated": "2020-05-19T11:00:00.000Z",
+        "serviceCode": "AWE5",
+        "serviceCodes": [
+          "AWE5"
+        ]
+      },
+      "isActive": "1",
+      "id": 421,
+      "name": "Charleston",
+      "unlocode": "USCHS"
+    }
+  ],
+  "portIds": []
+}
