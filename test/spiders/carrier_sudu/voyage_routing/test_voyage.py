@@ -4,10 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_sudu import BasicRequestSpec, CarrierSuduSpider, VoyageRoutingRule
+from crawler.spiders.carrier_sudu import BasicRequestSpec, VoyageRoutingRule, VoyageSpec, MblState
 from test.spiders.carrier_sudu import voyage_routing
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -25,22 +23,21 @@ def test_voyage_routing_rule(sub, mbl_no, voyage_location, voyage_direction, sam
     text_text = sample_loader.read_file(sub, 'sample.html')
 
     basic_request_spec = BasicRequestSpec(mbl_no=mbl_no, view_state='', j_idt='')
-    routing_request = VoyageRoutingRule.build_routing_request(
-        basic_request_spec=basic_request_spec,
-        voyage_key='',
-        voyage_location=voyage_location,
-        voyage_direction=voyage_direction
+    voyage_spec = VoyageSpec(
+        direction=voyage_direction, container_key='', voyage_key='', location=voyage_location, container_no='')
+    option = VoyageRoutingRule.build_request_option(
+        basic_request_spec=basic_request_spec, voyage_spec=voyage_spec, mbl_state=MblState.SINGLE
     )
-    url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=text_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: VoyageRoutingRule.name,
+                'mbl_no': mbl_no,
+                'mbl_state': MblState.SINGLE,
                 'voyage_location': voyage_location,
                 'voyage_direction': voyage_direction,
                 'basic_request_spec': basic_request_spec,

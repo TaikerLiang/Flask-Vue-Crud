@@ -3,7 +3,7 @@ from crawler.core_carrier.items import VesselItem, LocationItem
 
 def verify(results):
     assert results[0] == VesselItem(
-            vessel_key='MSC BARBARA',
+            vessel_key='Shanghai CNSHA Departure',
             vessel='MSC BARBARA',
             voyage='939',
             pol=LocationItem(name='Shanghai CNSHA'),
