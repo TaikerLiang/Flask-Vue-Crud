@@ -3,7 +3,7 @@ import os
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils import project
 
-from crawler.spiders.carrier_sudu import CarrierSuduSpider
+from crawler.spiders.carrier_sudu_old import CarrierSuduSpider
 
 if __name__ == '__main__':
     os.environ[project.ENVVAR] = 'crawler.settings'
