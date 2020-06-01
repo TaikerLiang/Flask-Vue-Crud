@@ -1,0 +1,16 @@
+[
+   {
+      "direction":"Departure",
+      "container_key":"j_idt6:searchForm:j_idt26:j_idt29:1:contDetailsLink",
+      "voyage_key":"j_idt6:searchForm:j_idt39:j_idt113:5:voyageDetailsLink",
+      "location":"Shanghai CNSHA",
+      "container_no":"MSKU1906021"
+   },
+   {
+      "direction":"Arrival",
+      "container_key":"j_idt6:searchForm:j_idt26:j_idt29:1:contDetailsLink",
+      "voyage_key":"j_idt6:searchForm:j_idt39:j_idt113:2:voyageDetailsLink",
+      "location":"Houston USHOU",
+      "container_no":"MSKU1906021"
+   }
+]

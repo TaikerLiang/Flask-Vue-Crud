@@ -1,0 +1,16 @@
+[
+   {
+      "direction":"Departure",
+      "container_key":"",
+      "voyage_key":"j_idt6:searchForm:j_idt47:j_idt129:10:voyageDetailsLink",
+      "location":"Xingang CNXIG",
+      "container_no":"MRKU4788810"
+   },
+   {
+      "direction":"Arrival",
+      "container_key":"",
+      "voyage_key":"j_idt6:searchForm:j_idt47:j_idt129:1:voyageDetailsLink",
+      "location":"Los Angeles USLAX",
+      "container_no":"MRKU4788810"
+   }
+]
