@@ -197,7 +197,7 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
 
         div_selector = response.css('div.col-sm-4 div')
         for div in div_selector:
-            key, value = extract_container_info_div_text(div)
+            key, value = self.__extract_container_info_div_text(div)
             container_info[key] = value
 
         m = pattern.match(container_info['Vessel/Voyage'])
@@ -212,18 +212,17 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
             'weight': self.__reformat_weight(container_info['Weight']),
         }
 
-    @staticmethod
-    def __extract_extra_container_info(response: scrapy.Selector):
+    def __extract_extra_container_info(self, response: scrapy.Selector):
         extra_container_info = {}
 
         div_selector = response.css('div.col-sm-6 div')
         for div in div_selector:
-            key, value = extract_extra_container_info_div_text(div)
+            key, value = self.__extract_extra_container_info_div_text(div)
             extra_container_info[key] = value
 
         div_selector = response.css('div.col-sm-2 div')[:2]
         for div in div_selector:
-            key, value = extract_extra_container_info_div_text(div)
+            key, value = self.__extract_extra_container_info_div_text(div)
             extra_container_info[key] = value
 
         return {
@@ -238,30 +237,30 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
     def __reformat_weight(weight_text_list):
         return ' '.join(weight_text_list.split())
 
+    @staticmethod
+    def __extract_container_info_div_text(div: scrapy.Selector):
+        div_text_list = div.css('::text').getall()
 
-def extract_container_info_div_text(div: scrapy.Selector):
-    div_text_list = div.css('::text').getall()
+        if len(div_text_list) == 4:
+            key = div_text_list[0].strip()
+            key = key[:-1]      # delete colon
+            value = div_text_list[3].strip()
+            return key, value
 
-    if len(div_text_list) == 4:
+        elif len(div_text_list) in [2, 3]:
+            key = div_text_list[0].strip()
+            key = key[:-1]      # delete colon
+            value = div_text_list[1].strip()
+            return key, value
+
+        else:
+            raise TerminalResponseFormatError(reason='container_no_div format error')
+
+    @staticmethod
+    def __extract_extra_container_info_div_text(div: scrapy.Selector):
+        div_text_list = div.css('::text').getall()
+
         key = div_text_list[0].strip()
         key = key[:-1]      # delete colon
-        value = div_text_list[3].strip()
+        value = ''.join(div_text_list[1:]).strip()
         return key, value
-
-    elif len(div_text_list) in [2, 3]:
-        key = div_text_list[0].strip()
-        key = key[:-1]      # delete colon
-        value = div_text_list[1].strip()
-        return key, value
-
-    else:
-        raise TerminalResponseFormatError(reason='container_no_div format error')
-
-
-def extract_extra_container_info_div_text(div: scrapy.Selector):
-    div_text_list = div.css('::text').getall()
-
-    key = div_text_list[0].strip()
-    key = key[:-1]      # delete colon
-    value = ''.join(div_text_list[1:]).strip()
-    return key, value
