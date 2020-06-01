@@ -48,3 +48,14 @@ class ProxyMaxRetryError(BaseCarrierError):
 
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail='<proxy-max-retry-error>')
+
+
+class SuspiciousOperationError(BaseCarrierError):
+    status = CARRIER_RESULT_STATUS_ERROR
+
+    def __init__(self, msg: str):
+        self.msg = msg
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail=f'<suspicious-operation> {self.msg}')
+

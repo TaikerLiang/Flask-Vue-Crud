@@ -1,19 +1,95 @@
 import dataclasses
 import re
+from enum import Enum
+from queue import Queue
+from typing import Union, Tuple
 
-import scrapy
-from scrapy import Selector
+from scrapy import Selector, FormRequest, Request
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule, RoutingRequestQueue
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData, DebugItem)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError
-from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from, BaseMatchRule
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError, \
+    SuspiciousOperationError
+from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import (
     BaseTableLocator, HeaderMismatchError, TableExtractor, TopHeaderTableLocator, TopLeftHeaderTableLocator)
-from crawler.utils.decorators import merge_yields
+
+BASE_URL = 'https://www.hamburgsud-line.com/linerportal/pages/hsdg/tnt.xhtml'
+
+
+class MblState(Enum):
+    FIRST = 'FIRST'
+    SINGLE = 'SINGLE'
+    MULTIPLE = 'MULTIPLE'
+
+
+@dataclasses.dataclass
+class BasicRequestSpec:
+    mbl_no: str
+    view_state: str
+    j_idt: str
+
+
+@dataclasses.dataclass
+class VoyageSpec:
+    direction: str
+    container_key: str
+    voyage_key: str
+    location: str  # for debug purpose
+    container_no: str  # for debug purpose
+
+
+class RequestOptionFactory:
+
+    @staticmethod
+    def __build_form_data(basic_request_spec: BasicRequestSpec, container_link_element: str = ''):
+        j_idt2 = 'j_idt8' if basic_request_spec.j_idt == 'j_idt6' else 'j_idt9'
+        search_form = f'{basic_request_spec.j_idt}:searchForm'
+        form_data = {
+            search_form: search_form,
+            f'{search_form}:{j_idt2}:inputReferences': basic_request_spec.mbl_no,
+            f'{search_form}:{j_idt2}:search-submit': f'{search_form}:{j_idt2}:search-submit',
+            'javax.faces.ViewState': basic_request_spec.view_state,
+        }
+
+        if container_link_element:
+            form_data[container_link_element] = container_link_element
+
+        return form_data
+
+    @classmethod
+    def build_search_option(cls, rule_name: str, basic_request_spec: BasicRequestSpec):
+        form_data = cls.__build_form_data(basic_request_spec=basic_request_spec)
+
+        return RequestOption(
+            rule_name=rule_name,
+            method=RequestOption.METHOD_POST_FORM,
+            url=BASE_URL,
+            form_data=form_data,
+            meta={
+                'mbl_no': basic_request_spec.mbl_no,
+            },
+        )
+
+    @classmethod
+    def build_container_option(
+            cls, rule_name: str, basic_request_spec: BasicRequestSpec, container_link_element: str
+    ) -> RequestOption:
+        form_data = cls.__build_form_data(basic_request_spec=basic_request_spec, container_link_element=container_link_element)
+
+        return RequestOption(
+            rule_name=rule_name,
+            url=BASE_URL,
+            method=RequestOption.METHOD_POST_FORM,
+            form_data=form_data,
+            meta={
+                'mbl_no': basic_request_spec.mbl_no,
+            },
+        )
 
 
 class CarrierSuduSpider(BaseCarrierSpider):
@@ -21,19 +97,23 @@ class CarrierSuduSpider(BaseCarrierSpider):
 
     def __init__(self, *args, **kwargs):
         super(CarrierSuduSpider, self).__init__(*args, **kwargs)
+        self._voyage_queue = Queue()
+        self._voyage_queue_pusher = VoyageQueuePusher(queue=self._voyage_queue)
+        self._voyage_queue_popper = VoyageQueuePopper(queue=self._voyage_queue)
 
         rules = [
             PageInfoRoutingRule(),
-            SearchRoutingRule(),
+            MblSearchResultRoutingRule(voyage_queue_popper=self._voyage_queue_popper),
+            ContainerDetailRoutingRule(voyage_queue_pusher=self._voyage_queue_pusher),
             VoyageRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
-        self._request_queue = RoutingRequestQueue()
+        self._request_queue = RequestOptionQueue()
 
     def start(self):
-        routing_request = PageInfoRoutingRule.build_routing_request(mbl_no=self.mbl_no)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        option = PageInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -46,14 +126,70 @@ class CarrierSuduSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                self._request_queue.add_request(result)
+            elif isinstance(result, RequestOption):
+                self._request_queue.add_request_option(result)
             else:
                 raise RuntimeError()
 
         if not self._request_queue.is_empty():
-            routing_request = self._request_queue.get_next_request()
-            yield self._rule_manager.build_request_by(routing_request=routing_request)
+            option = self._request_queue.get_next_request_option()
+            yield self._build_request_by(option=option)
+
+    @staticmethod
+    def _build_request_by(option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
+        }
+
+        if option.method == RequestOption.METHOD_GET:
+            return Request(
+                url=option.url,
+                meta=meta,
+                dont_filter=True,
+            )
+        elif option.method == RequestOption.METHOD_POST_FORM:
+            return FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+                meta=meta,
+            )
+        else:
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
+
+
+class VoyageQueuePopper:
+    def __init__(self, queue: Queue):
+        self._queue = queue
+
+    def is_empty(self) -> bool:
+        return self._queue.empty()
+
+    def pop(self):
+        return self._queue.get()
+
+
+class VoyageQueuePusher:
+    def __init__(self, queue: Queue):
+        self._queue = queue
+
+    def push(self, voyage: VoyageSpec):
+        self._queue.put(voyage)
+
+
+class RequestOptionQueue:
+
+    def __init__(self):
+        self._queue = []
+
+    def is_empty(self):
+        return not self._queue
+
+    def add_request_option(self, option: RequestOption):
+        self._queue.append(option)
+
+    def get_next_request_option(self) -> Union[RequestOption, None]:
+        return self._queue.pop(0)
 
 
 # -------------------------------------------------------------------------------
@@ -63,203 +199,257 @@ class PageInfoRoutingRule(BaseRoutingRule):
     name = 'PAGE_INFO'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
-        request = scrapy.Request(
-            url=f'https://www.hamburgsud-line.com/linerportal/pages/hsdg/tnt.xhtml',
+    def build_request_option(cls, mbl_no: str) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=BASE_URL,
             meta={'mbl_no': mbl_no},
-            dont_filter=True,
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
+
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
 
-        view_state = response.css('input[name="javax.faces.ViewState"] ::attr(value)').get()
-        j_idt = response.css('form ::attr(id)').get().strip(':searchForm')
-        yield SearchRoutingRule.build_routing_request(
-            BasicRequestSpec(mbl_no=mbl_no, view_state=view_state, j_idt=j_idt),
-            is_first_process=True,
+        basic_request_spec = prepare_request_spec(mbl_no=mbl_no, response=response)
+
+        yield MblSearchResultRoutingRule.build_request_option(
+            basic_request_spec=basic_request_spec,
+            mbl_state=MblState.FIRST,
         )
 
 
 # -------------------------------------------------------------------------------
 
 
-CONTAINER_DETAIL = 'CONTAINER_DETAIL'
-CONTAINER_LIST = 'CONTAINER_LIST'
+class MblSearchResultRoutingRule(BaseRoutingRule):
+    name = 'MBL_SEARCH_RESULT'
 
-
-@dataclasses.dataclass
-class BasicRequestSpec:
-    mbl_no: str
-    view_state: str
-    j_idt: str
-
-
-class SearchRoutingRule(BaseRoutingRule):
-    name = 'Search'
-
-    def __init__(self):
+    def __init__(self, voyage_queue_popper: VoyageQueuePopper):
+        self._voyage_queue_popper = voyage_queue_popper
         self._save_count = 0
-        self._all_containers_set = set()
-        self._processed_containers_set = set()
-        self._container_form_info_map = {}  # container_no: form_info
+        self._containers_set = set()
+        self._container_link_element_map = {}
 
     @classmethod
-    def build_routing_request(
-            cls,
-            basic_request_spec: BasicRequestSpec,
-            container_form_key=None,
-            expect_view=None,
-            is_first_process=False,
-    ) -> RoutingRequest:
-
-        j_idt2 = 'j_idt8' if basic_request_spec.j_idt == 'j_idt6' else 'j_idt9'
-        search_form = f'{basic_request_spec.j_idt}:searchForm'
-        form_data = {
-            search_form: search_form,
-            f'{search_form}:{j_idt2}:inputReferences': basic_request_spec.mbl_no,
-            f'{search_form}:{j_idt2}:search-submit': f'{search_form}:{j_idt2}:search-submit',
-            'javax.faces.ViewState': basic_request_spec.view_state,
-        }
-        if container_form_key:
-            form_data[container_form_key] = container_form_key
-
-        request = scrapy.FormRequest(
-            url=f'https://www.hamburgsud-line.com/linerportal/pages/hsdg/tnt.xhtml',
-            formdata=form_data,
-            meta={
-                'mbl_no': basic_request_spec.mbl_no,
-                'expect_view': expect_view,
-                'is_first_process': is_first_process,
-            },
+    def build_request_option(cls, basic_request_spec: BasicRequestSpec, mbl_state: MblState) -> RequestOption:
+        search_option = RequestOptionFactory.build_search_option(
+            rule_name=cls.name, basic_request_spec=basic_request_spec
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
+        option = search_option.copy_and_extend_by(meta={'mbl_state': mbl_state})
+
+        return option
+
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
 
     def get_save_name(self, response):
         self._save_count += 1
         return f'{self.name}_{self._save_count}.html'
 
-    @merge_yields
     def handle(self, response):
+        """
+        if there are multiple containers in mbl search result, you will get a container list page,
+        then we need to save all container's number, mark mbl_state is MULTIPLE, and resend the request
+        to MBLSearchResultRoutingRule.
+        if there is a single container in mbl search result, you will get a container detail page,
+        then we mark mbl_state is SINGLE and handle this page(Send to ContainerDetailRoutingRule).
+        """
         mbl_no = response.meta['mbl_no']
-        expect_view = response.meta['expect_view']
-        is_first_process = response.meta['is_first_process']
+        mbl_state = response.meta['mbl_state']
 
-        if is_first_process:
-            self._check_mbl_no(response)
-
-        # self.unprocessed_voyage_manager.check_empty()
-
-        now_view = self._check_view(response=response, expect_view=expect_view)
-
-        # request needed info
-        view_state = response.css('input[name="javax.faces.ViewState"] ::attr(value)').get()
-        j_idt = response.css('form ::attr(id)').get().strip(':searchForm')
-        basic_request_spec = BasicRequestSpec(mbl_no=mbl_no, view_state=view_state, j_idt=j_idt)
-
-        if now_view == CONTAINER_LIST:
-            results = self._handle_list_page(
-                response=response, basic_request_spec=basic_request_spec, is_first_process=is_first_process)
-        elif now_view == CONTAINER_DETAIL:
-            results = self._handle_detail_page(
-                response=response, basic_request_spec=basic_request_spec, is_first_process=is_first_process)
-        else:
-            raise IncorrectValueError(value=now_view)
-
-        for result in results:
-            yield result
-
-    @staticmethod
-    def _check_mbl_no(response):
-        error_message = response.css('span.ui-messages-info-summary::text').get()
-        if error_message == 'No results found.':
+        if mbl_state == MblState.FIRST and self.__is_mbl_no_invalid(response):
             raise CarrierInvalidMblNoError()
 
-    def _check_view(self, response, expect_view) -> str:
-        if not expect_view:
-            return self._determine_now_view(response)
+        basic_request_spec = prepare_request_spec(mbl_no=mbl_no, response=response)
+
+        if mbl_state == MblState.FIRST:
+            if self.is_multi_containers(response=response):
+                # prepare container data
+                self._container_link_element_map = self.__extract_container_link_element_map(response=response)
+                for container_no, form_info in self._container_link_element_map.items():
+                    self._containers_set.add(container_no)
+
+                # Because there is a dynamic token generated by JS for each request,
+                # we don't iterate container id to send requests here.
+                yield MblSearchResultRoutingRule.build_request_option(
+                    basic_request_spec=basic_request_spec, mbl_state=MblState.MULTIPLE
+                )
+            else:
+                yield ContainerDetailRoutingRule.build_request_option(
+                    basic_request_spec=basic_request_spec, mbl_state=MblState.SINGLE
+                )
+        elif mbl_state == MblState.SINGLE:
+            # Now, we know MblState is SINGLE, next we need to process voyage information.
+            if self._voyage_queue_popper.is_empty():
+                return []
+
+            voyage_spec = self._voyage_queue_popper.pop()
+            yield VoyageRoutingRule.build_request_option(
+                basic_request_spec=basic_request_spec,
+                voyage_spec=voyage_spec,
+                mbl_state=mbl_state,
+            )
+        elif mbl_state == MblState.MULTIPLE:
+            # Now, we know MblState is MULTIPLE means we know container number list.
+            if self._voyage_queue_popper.is_empty():
+                # If there is no voyage need to be processed then we use container number to
+                # get container detail page and extract voyage information.
+                if not self._containers_set:
+                    return []
+                container_no = self._containers_set.pop()
+                container_link_element = self._container_link_element_map[container_no]
+                yield ContainerDetailRoutingRule.build_request_option(
+                    basic_request_spec=basic_request_spec,
+                    container_link_element=container_link_element,
+                    mbl_state=mbl_state,
+                )
+            else:
+                # if there are some voyages in queue we need to process first, when the queue is empty, we will try to
+                # handle next container detail page.
+                voyage_spec = self._voyage_queue_popper.pop()
+                yield ContainerDetailRoutingRule.build_request_option(
+                    basic_request_spec=basic_request_spec,
+                    mbl_state=mbl_state,
+                    container_link_element=voyage_spec.container_key,
+                    voyage_spec=voyage_spec,
+                )
         else:
-            self._match_expect_view(response, expect_view)
-            return expect_view
+            raise SuspiciousOperationError(msg=f'Unexpected mbl_state: `{mbl_state}`')
 
     @staticmethod
-    def _match_expect_view(response, expect_view):
+    def __is_mbl_no_invalid(response):
+        error_message = response.css('span.ui-messages-info-summary::text').get()
+        if error_message == 'No results found.':
+            return True
 
-        if expect_view == CONTAINER_DETAIL:
-            find_text = 'containerDetails_content'
-        elif expect_view == CONTAINER_LIST:
-            find_text = 'containerOverview_content'
-        else:
-            raise IncorrectValueError(value=expect_view)
-
-        rule = CssQueryTextInMatchRule(css_query='::attr(id)', text=find_text)
-        divs = response.css("div[class='ui-panel-content ui-widget-content']")
-
-        if not find_selector_from(selectors=divs, rule=rule):
-            raise CarrierResponseFormatError(reason=f'Page is not expected: `{expect_view}`')
+        return False
 
     @staticmethod
-    def _determine_now_view(response):
+    def is_multi_containers(response):
+        """
+        Are there multiple containers in this mbl?
+        """
         # detail_div contains detail_table which is in detail page
         detail_div = response.css('div.ui-grid-responsive')
 
         if detail_div:
-            return CONTAINER_DETAIL
-        return CONTAINER_LIST
+            return False
+        return True
 
-    def _handle_list_page(self, response, basic_request_spec: BasicRequestSpec, is_first_process: bool):
-        if is_first_process:
-            # prepare container data
-            self._container_form_info_map = self._extract_container_form_info_map(response=response)
-            for container_no, form_info in self._container_form_info_map.items():
-                self._all_containers_set.add(container_no)
+    @staticmethod
+    def __extract_container_link_element_map(response):
+        container_link_elements = response.css('a[class="ui-commandlink ui-widget"]::attr(id)').getall()
+        container_nos = response.css('a[class="ui-commandlink ui-widget"]::text').getall()
 
-        if self._check_all_processed():
-            return []
+        container_link_element_map = {container_nos[i]: container_link_elements[i] for i in range(len(container_nos))}
+        return container_link_element_map
 
-        container_form_info = self._get_next_container_form_info()
 
-        return [
-            SearchRoutingRule.build_routing_request(
-                basic_request_spec=basic_request_spec,
-                container_form_key=container_form_info,
-                expect_view=CONTAINER_DETAIL,
+# -------------------------------------------------------------------------------
+
+
+class ContainerDetailRoutingRule(BaseRoutingRule):
+    name = 'CONTAINER_DETAIL'
+
+    def __init__(self, voyage_queue_pusher: VoyageQueuePusher):
+        self._voyage_queue_pusher = voyage_queue_pusher
+
+    @classmethod
+    def build_request_option(
+            cls,
+            basic_request_spec: BasicRequestSpec,
+            mbl_state: MblState,
+            container_link_element: str = '',
+            voyage_spec: VoyageSpec = None,
+    ) -> RequestOption:
+        if mbl_state == MblState.MULTIPLE:
+            container_option = RequestOptionFactory.build_container_option(
+                rule_name=cls.name, basic_request_spec=basic_request_spec, container_link_element=container_link_element)
+        elif mbl_state == MblState.SINGLE:
+            container_option = RequestOptionFactory.build_search_option(
+                rule_name=cls.name, basic_request_spec=basic_request_spec
             )
-        ]
+        else:
+            raise SuspiciousOperationError(msg=f'Unexpected mbl_state: `{mbl_state}`')
 
-    def _handle_detail_page(self, response, basic_request_spec: BasicRequestSpec, is_first_process: bool):
+        option = container_option.copy_and_extend_by(meta={
+                'container_key': container_link_element,  # for voyage purpose
+                'voyage_spec': voyage_spec,
+                'mbl_state': mbl_state,
+        })
+
+        return option
+
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
+
+    def handle(self, response):
+        """
+        Voyage is empty, then
+        - Extract container information include MblItem(), ContainerItem(), ContainerStatusItem()
+        - Extract voyage information and put into queue
+
+        Voyage is not empty, then
+        - Click voyage link
+        """
+        mbl_no = response.meta['mbl_no']
+        mbl_state = response.meta['mbl_state']
+        voyage_spec = response.meta['voyage_spec']
+        container_key = response.meta.get('container_key', '')
+
+        basic_request_spec = prepare_request_spec(mbl_no=mbl_no, response=response)
+
+        if not voyage_spec:
+            for result in self.__handle_detail_page(response=response, container_key=container_key):
+                if isinstance(result, BaseCarrierItem):
+                    yield result
+                elif isinstance(result, VoyageSpec):
+                    self._voyage_queue_pusher.push(voyage=result)
+                else:
+                    raise RuntimeError()
+
+            yield MblSearchResultRoutingRule.build_request_option(
+                basic_request_spec=basic_request_spec, mbl_state=mbl_state
+            )
+        else:
+            yield VoyageRoutingRule.build_request_option(
+                basic_request_spec=basic_request_spec,
+                voyage_spec=voyage_spec,
+                mbl_state=mbl_state,
+            )
+
+    @classmethod
+    def __handle_detail_page(cls, response, container_key: str):
         # parse
-        main_info = self._extract_main_info(response=response)
-        container_statuses = self._extract_container_statuses(response=response)
+        main_info = cls.__extract_main_info(response=response)
+        container_statuses = cls.__extract_container_statuses(response=response)
         container_no = main_info['container_no']
         por = main_info['por']
         final_dest = main_info['final_dest']
 
-        if is_first_process:
-            self._all_containers_set.add(container_no)
-
-        if container_no in self._processed_containers_set:
-            return []
-
-        results = []
-
-        mbl_item = MblItem(
+        yield MblItem(
             por=LocationItem(name=por),
             final_dest=LocationItem(name=final_dest),
             carrier_release_date=main_info['carrier_release_date'] or None,
             customs_release_date=main_info['customs_release_date'] or None,
         )
-        results.append(mbl_item)
 
-        container_item = ContainerItem(
+        yield ContainerItem(
             container_key=container_no,
             container_no=container_no,
         )
-        results.append(container_item)
 
         for container_status in container_statuses:
-            container_status = ContainerStatusItem(
+            yield ContainerStatusItem(
                 container_key=container_no,
                 description=container_status['description'],
                 local_date_time=container_status['timestamp'],
@@ -267,76 +457,25 @@ class SearchRoutingRule(BaseRoutingRule):
                 vessel=container_status['vessel'] or None,
                 voyage=container_status['voyage'] or None,
             )
-            results.append(container_status)
 
-        self._processed_containers_set.add(container_no)
+        departure_voyage_spec, arrival_voyage_spec = cls.__get_container_voyage_link_element_specs(
+            por=por,
+            final_dest=final_dest,
+            container_statuses=container_statuses,
+            container_key=container_key,
+            container_no=container_no,
+        )
 
-        # voyage part
-        departure_voyages = []
-        arrival_voyages = []
-        for container_status in container_statuses:
-            vessel = container_status['vessel']
-            location = container_status['location']
+        if departure_voyage_spec:
+            # push voyage_spec into Queue
+            yield departure_voyage_spec
 
-            if vessel and location == por:
-                voyage_location = por
-                voyage_direction = 'Departure'
-
-                routing_request = VoyageRoutingRule.build_routing_request(
-                    basic_request_spec=basic_request_spec,
-                    voyage_key=container_status['voyage_css_id'],
-                    voyage_location=voyage_location,
-                    voyage_direction=voyage_direction,
-                )
-                departure_voyages.append(routing_request)
-
-            elif vessel and location == final_dest:
-                voyage_location = final_dest
-                voyage_direction = 'Arrival'
-
-                routing_request = VoyageRoutingRule.build_routing_request(
-                    basic_request_spec=basic_request_spec,
-                    voyage_key=container_status['voyage_css_id'],
-                    voyage_location=voyage_location,
-                    voyage_direction=voyage_direction,
-                )
-                arrival_voyages.append(routing_request)
-
-        if departure_voyages:
-            last_departure_voyage = departure_voyages[-1]
-            results.append(last_departure_voyage)
-
-        if arrival_voyages:
-            if len(arrival_voyages) == 1:
-                results.append(arrival_voyages[0])
-            elif len(arrival_voyages) >= 2:
-                raise CarrierResponseFormatError(reason='There are more than one `Departure from vessel`')
-
-        if not self._check_all_processed():
-            routing_request = SearchRoutingRule.build_routing_request(
-                basic_request_spec=basic_request_spec, expect_view=CONTAINER_LIST)
-            results.append(routing_request)
-
-        return results
-
-    def _check_all_processed(self):
-        return self._all_containers_set == self._processed_containers_set
-
-    def _get_next_container_form_info(self):
-        not_processed_set = self._all_containers_set - self._processed_containers_set
-        container_no = list(not_processed_set)[0]
-        return self._container_form_info_map[container_no]
+        if arrival_voyage_spec:
+            # push voyage_spec into Queue
+            yield arrival_voyage_spec
 
     @staticmethod
-    def _extract_container_form_info_map(response):
-        container_form_info = response.css('a[class="ui-commandlink ui-widget"]::attr(id)').getall()
-        container_nos = response.css('a[class="ui-commandlink ui-widget"]::text').getall()
-
-        container_form_info_map = {container_nos[i]: container_form_info[i] for i in range(len(container_nos))}
-        return container_form_info_map
-
-    @staticmethod
-    def _extract_main_info(response):
+    def __extract_main_info(response):
         titles = response.css('h3')
         rule = CssQueryTextStartswithMatchRule(css_query='::text', startswith='Details')
         details_title = find_selector_from(selectors=titles, rule=rule)
@@ -346,15 +485,13 @@ class SearchRoutingRule(BaseRoutingRule):
         div_locator.parse(table=detail_div)
         table = TableExtractor(table_locator=div_locator)
 
+        carrier_release_date = ''
         if table.has_header(top='Carrier release'):
             carrier_release_date = table.extract_cell(top='Carrier release', left=None)
-        else:
-            carrier_release_date = ''
 
+        customs_release_date = ''
         if table.has_header(top='Customs release'):
             customs_release_date = table.extract_cell(top='Customs release', left=None)
-        else:
-            customs_release_date = ''
 
         return {
             'container_no': table.extract_cell(top='Container', left=None),
@@ -365,7 +502,7 @@ class SearchRoutingRule(BaseRoutingRule):
         }
 
     @staticmethod
-    def _extract_container_statuses(response):
+    def __extract_container_statuses(response):
         titles = response.css('h3')
         rule = CssQueryTextStartswithMatchRule(css_query='::text', startswith='Main information')
         main_info_title = find_selector_from(selectors=titles, rule=rule)
@@ -394,47 +531,104 @@ class SearchRoutingRule(BaseRoutingRule):
 
         return container_statuses
 
+    @staticmethod
+    def __get_container_voyage_link_element_specs(
+            por, final_dest, container_statuses, container_key, container_no
+    ) -> Tuple:
+        # voyage part
+        departure_voyages = []
+        arrival_voyages = []
+        for container_status in container_statuses:
+            vessel = container_status['vessel']
+            location = container_status['location']
 
-class CssQueryTextInMatchRule(BaseMatchRule):
-    def __init__(self, css_query: str, text: str):
-        self._css_query = css_query
-        self._text = text
+            if vessel and location == por:
+                voyage_spec = VoyageSpec(
+                    direction='Departure',
+                    container_key=container_key,
+                    voyage_key=container_status['voyage_css_id'],
+                    location=por,
+                    container_no=container_no,
+                )
+                departure_voyages.append(voyage_spec)
 
-    def check(self, selector: scrapy.Selector) -> bool:
-        selected_text = selector.css(self._css_query).get()
-        return self._text in selected_text
+            elif vessel and location == final_dest:
+                voyage_spec = VoyageSpec(
+                    direction='Arrival',
+                    container_key=container_key,
+                    voyage_key=container_status['voyage_css_id'],
+                    location=final_dest,
+                    container_no=container_no,
+                )
+                arrival_voyages.append(voyage_spec)
+
+        first_departure_voyage = None
+        if departure_voyages:
+            first_departure_voyage = departure_voyages[0]
+
+        last_arrival_voyage = None
+        if arrival_voyages:
+            last_arrival_voyage = arrival_voyages[-1]
+
+        return first_departure_voyage, last_arrival_voyage
+
+
+class VesselVoyageTdExtractor(BaseTableCellExtractor):
+
+    def extract(self, cell: Selector):
+        a_list = cell.css('a')
+
+        if len(a_list) == 0:
+            return {
+                'vessel': '',
+                'voyage': '',
+                'voyage_css_id': '',
+            }
+
+        vessel_cell = a_list[0]
+        voyage_cell = a_list[1]
+
+        return {
+            'vessel': vessel_cell.css('::text').get().strip(),
+            'voyage': voyage_cell.css('::text').get().strip(),
+            'voyage_css_id': voyage_cell.css('::attr(id)').get(),
+        }
+
 
 # -------------------------------------------------------------------------------
-
-
-voyage_request_list = []
 
 
 class VoyageRoutingRule(BaseRoutingRule):
     name = 'VOYAGE'
 
     @classmethod
-    def build_routing_request(
-            cls, basic_request_spec: BasicRequestSpec, voyage_key, voyage_location, voyage_direction) -> RoutingRequest:
+    def build_request_option(
+            cls, basic_request_spec: BasicRequestSpec, voyage_spec: VoyageSpec, mbl_state: MblState
+    ) -> RequestOption:
         j_idt2 = 'j_idt8' if basic_request_spec.j_idt == 'j_idt6' else 'j_idt9'
         search_form = f'{basic_request_spec.j_idt}:searchForm'
         form_data = {
             search_form: search_form,
             f'{search_form}:{j_idt2}:inputReferences': basic_request_spec.mbl_no,
             'javax.faces.ViewState': basic_request_spec.view_state,
-            voyage_key: voyage_key,
+            voyage_spec.voyage_key: voyage_spec.voyage_key,
         }
 
-        request = scrapy.FormRequest(
-            url=f'https://www.hamburgsud-line.com/linerportal/pages/hsdg/tnt.xhtml',
-            formdata=form_data,
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_FORM,
+            url=BASE_URL,
+            form_data=form_data,
             meta={
-                'voyage_location': voyage_location,
-                'voyage_direction': voyage_direction,
-            }
+                'mbl_state': mbl_state,
+                'mbl_no': basic_request_spec.mbl_no,
+                'voyage_location': voyage_spec.location,
+                'voyage_direction': voyage_spec.direction,
+            },
         )
 
-        return RoutingRequest(request=request, rule_name=cls.name)
+    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+        pass
 
     def get_save_name(self, response) -> str:
         voyage_location = response.meta['voyage_location']
@@ -442,16 +636,17 @@ class VoyageRoutingRule(BaseRoutingRule):
 
         return f'{self.name}_{voyage_location}_{voyage_direction}.html'
 
-    @merge_yields
     def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+        mbl_state = response.meta['mbl_state']
         voyage_location = response.meta['voyage_location']
         voyage_direction = response.meta['voyage_direction']
 
-        voyage_routing = self._extract_voyage_routing(
+        voyage_routing = self.__extract_voyage_routing(
             response=response, location=voyage_location, direction=voyage_direction)
 
         yield VesselItem(
-            vessel_key=voyage_routing['vessel'],
+            vessel_key=f'{voyage_location} {voyage_direction}',
             vessel=voyage_routing['vessel'],
             voyage=voyage_routing['voyage'],
             pol=LocationItem(name=voyage_routing['pol']),
@@ -460,9 +655,15 @@ class VoyageRoutingRule(BaseRoutingRule):
             eta=voyage_routing['eta'],
         )
 
-    def _extract_voyage_routing(self, response, location, direction):
+        basic_request_spec = prepare_request_spec(mbl_no=mbl_no, response=response)
+
+        yield MblSearchResultRoutingRule.build_request_option(
+            basic_request_spec=basic_request_spec, mbl_state=mbl_state
+        )
+
+    def __extract_voyage_routing(self, response, location, direction):
         raw_vessel_voyage = response.css('h3::text').get()
-        vessel, voyage = self._parse_vessel_voyage(raw_vessel_voyage)
+        vessel, voyage = self.__parse_vessel_voyage(raw_vessel_voyage)
 
         table_selector = response.css('table[role="grid"]')
         if not table_selector:
@@ -494,7 +695,7 @@ class VoyageRoutingRule(BaseRoutingRule):
         }
 
     @staticmethod
-    def _parse_vessel_voyage(vessel_voyage):
+    def __parse_vessel_voyage(vessel_voyage):
         pattern = re.compile(r'^Voyage details -\s+(?P<vessel>[\w+ ]+\w+) -\s+(?P<voyage>\w+)\s+$')
         match = pattern.match(vessel_voyage)
         if not match:
@@ -528,7 +729,7 @@ class MainDivTableLocator(BaseTableLocator):
             cell_list = div_section.xpath('./div')
             for cell in cell_list:
                 title, data = cell.css('::text').getall()
-                td = scrapy.Selector(text=f'<td>{data.strip()}</td>')
+                td = Selector(text=f'<td>{data.strip()}</td>')
 
                 self._td_map[title.strip()] = td
 
@@ -543,23 +744,23 @@ class MainDivTableLocator(BaseTableLocator):
         return (top in self._td_map) and (left is None)
 
 
-class VesselVoyageTdExtractor(BaseTableCellExtractor):
+class MBLSearchDispatcher:
+    @staticmethod
+    def is_multi_containers(response):
+        """
+        Are there multiple containers in this mbl?
+        """
+        # detail_div contains detail_table which is in detail page
+        detail_div = response.css('div.ui-grid-responsive')
 
-    def extract(self, cell: Selector):
-        a_list = cell.css('a')
+        if detail_div:
+            return False
+        return True
 
-        if len(a_list) == 0:
-            return {
-                'vessel': '',
-                'voyage': '',
-                'voyage_css_id': '',
-            }
 
-        vessel_cell = a_list[0]
-        voyage_cell = a_list[1]
+def prepare_request_spec(mbl_no: str, response) -> BasicRequestSpec:
+    view_state = response.css('input[name="javax.faces.ViewState"] ::attr(value)').get()
+    j_idt = response.css('form ::attr(id)').get().strip(':searchForm')
 
-        return {
-            'vessel': vessel_cell.css('::text').get().strip(),
-            'voyage': voyage_cell.css('::text').get().strip(),
-            'voyage_css_id': voyage_cell.css('::attr(id)').get(),
-        }
+    return BasicRequestSpec(mbl_no=mbl_no, view_state=view_state, j_idt=j_idt)
+
