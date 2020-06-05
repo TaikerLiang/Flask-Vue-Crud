@@ -1,5 +1,9 @@
 # TOS
 
+Flow Chart
+
+![](./picture/flow_chart.png)
+
 # Login
 
 ## 目的
@@ -43,6 +47,33 @@ scrapy.FormRequest(
 )
 ```
 
+# Mbl Detail
+
+## 目的
+取得 mbl 資訊
+
+## 準備
+* mbl_no
+
+```
+method = 'GET'
+URL = 'https://voyagertrack.portsamerica.com/Report/ImportContainer/Inquiry?InquiryType=BillOfLading&BillOfLadingNumber={mbl_no}'
+```
+
+## postman
+![](./picture/mbl_detail.png)
+
+## requests
+
+```
+tos_session.get(url=URL)
+```
+
+## scrapy
+
+```
+scrapy.Request(url=URL)
+```
 
 # Container Detail
 
@@ -54,7 +85,7 @@ scrapy.FormRequest(
 
 ```
 method = 'GET'
-URL = 'https://voyagertrack.portsamerica.com/Report/ImportContainer/Inquiry?MainMenu=Report&InquiryType=ContainerNumber&ContainerNumber=YMLU5425249'
+URL = 'https://voyagertrack.portsamerica.com/Report/ImportContainer/Inquiry?InquiryType=ContainerNumber&ContainerNumber={container_no}'
 ```
 
 ## postman
