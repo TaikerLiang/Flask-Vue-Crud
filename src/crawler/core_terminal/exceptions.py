@@ -12,6 +12,13 @@ class BaseTerminalError(Exception):
         pass
 
 
+class TerminalInvalidMblNoError(BaseTerminalError):
+    status = TERMINAL_RESULT_STATUS_ERROR
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail='<invalid-mbl-no>')
+
+
 class TerminalInvalidContainerNoError(BaseTerminalError):
     status = TERMINAL_RESULT_STATUS_ERROR
 
