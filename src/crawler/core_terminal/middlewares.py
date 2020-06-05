@@ -5,7 +5,7 @@ import scrapy
 from scrapy.exceptions import CloseSpider
 
 from .base import TERMINAL_RESULT_STATUS_FATAL
-from .exceptions import BaseTerminalError, TerminalInvalidContainerNoError
+from .exceptions import BaseTerminalError, TerminalInvalidMblNoError
 from .items import ExportFinalData, ExportErrorData
 
 
@@ -71,4 +71,23 @@ def build_error_data_from_exc(exc_type, exc_value, exc_traceback) -> ExportError
     error_data['traceback_info'] = tb_info_list
 
     return error_data
+
+
+class Terminal404IsInvalidMblNoSpiderMiddleware:
+
+    @classmethod
+    def get_setting_name(cls):
+        return f'{__name__}.{cls.__name__}'
+
+    def process_spider_exception(self, response, exception, spider):
+        if response.status != 404:
+            return None  # do not handle this exception
+
+        err = TerminalInvalidMblNoError()
+
+        error_data = err.build_error_data()
+
+        yield error_data
+
+        raise CloseSpider(err.status)
 
