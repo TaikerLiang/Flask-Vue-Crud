@@ -9,7 +9,7 @@ from crawler.core_terminal.base_spiders import BaseTerminalSpider, TERMINAL_DEFA
 from crawler.core_terminal.exceptions import BaseTerminalError, TerminalResponseFormatError, \
     TerminalInvalidContainerNoError
 from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem, ExportErrorData
-from crawler.core_terminal.middlewares import Terminal404IsInvalidContainerNoSpiderMiddleware
+from crawler.core_terminal.middlewares import Terminal404IsInvalidMblNoSpiderMiddleware
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 
 BASE_URL = 'https://fenixmarine.voyagecontrol.com'
@@ -18,7 +18,7 @@ PASSWORD = 'hardc0re'
 
 TERMINAL_FENIX_SETTING = TERMINAL_DEFAULT_SETTINGS
 TERMINAL_FENIX_SETTING['SPIDER_MIDDLEWARES'].update(
-    {Terminal404IsInvalidContainerNoSpiderMiddleware.get_setting_name(): 800},
+    {Terminal404IsInvalidMblNoSpiderMiddleware.get_setting_name(): 800},
 )
 
 
