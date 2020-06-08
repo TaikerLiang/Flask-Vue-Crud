@@ -273,7 +273,7 @@ class AddContainerToTraceRoutingRule(BaseRoutingRule):
         if response.status == 502:
             raise TerminalInvalidContainerNoError()
         elif response.status != 200:
-            raise FenixResponseStatusCodeError(reason=f'Unexpected status code: `{response.status}`')
+            raise FenixResponseStatusCodeError(reason=f'AddContainerToTraceRoutingRule: Unexpected status code: `{response.status}`')
 
         yield ListTracedContainerRoutingRule.build_request_option(
             container_no=container_no, authorization_token=authorization_token
@@ -320,7 +320,7 @@ class DelContainerFromTraceRoutingRule(BaseRoutingRule):
         not_finished = response.meta['not_finished']
 
         if response.status != 200:
-            raise FenixResponseStatusCodeError(reason=f'Unexpected status code: `{response.status}`')
+            raise FenixResponseStatusCodeError(reason=f'DelContainerFromTraceRoutingRule: Unexpected status code: `{response.status}`')
 
         if not_finished:
             yield AddContainerToTraceRoutingRule.build_request_option(
@@ -363,6 +363,7 @@ class SearchMblRoutingRule(BaseRoutingRule):
         mbl_no = response.meta['mbl_no']
 
         if response.status == 404:
+            # we want to log this error msg, but we don't want close spider, so we don't raise an exception.
             yield WarningMessage(msg=f'[{self.name}] ----- handle -> mbl_no is invalid : `{mbl_no}`')
             return
 
@@ -413,6 +414,7 @@ class SearchMblRoutingRule(BaseRoutingRule):
 
         return {
             'freight_release': line_status if line_status else 'Released',
+            # hard code here, we don't find the other value.
             'customs_release': 'Released',
             'carrier': mbl_info_dict['Line Op'],
             'mbl_no': mbl_info_dict['BL Nbr'],
