@@ -14,6 +14,9 @@ from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor
 
 BASE_URL = 'https://voyagertrack.portsamerica.com'
 
+USERNAME = 'hc89scooter'
+PASSWORD = 'bd19841017'
+
 
 class TerminalTosSpider(BaseTerminalSpider):
     name = 'terminal_tos'
@@ -61,13 +64,11 @@ class TerminalTosSpider(BaseTerminalSpider):
                 formdata=option.form_data,
                 meta=meta,
             )
-
         elif option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
                 url=option.url,
                 meta=meta,
             )
-
         else:
             raise RuntimeError()
 
@@ -122,7 +123,7 @@ class MblDetailRoutingRule(BaseRoutingRule):
         )
 
     def handle(self, response):
-        if self.__is_mbl_no_invalid(response=response):
+        if self.__is_mbl_number_invalid(response=response):
             raise TerminalInvalidMblNoError()
 
         mbl_detail = self.__extract_mbl_detail(response=response)
@@ -134,7 +135,7 @@ class MblDetailRoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     @staticmethod
-    def __is_mbl_no_invalid(response: scrapy.Selector) -> bool:
+    def __is_mbl_number_invalid(response: scrapy.Selector) -> bool:
         error = response.css('div.error[style]')
         if error:
             return True
@@ -179,7 +180,7 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         )
 
     def handle(self, response):
-        if self.__is_container_no_invalid(response=response):
+        if self.__is_container_number_invalid(response=response):
             raise TerminalInvalidContainerNoError()
 
         container_info = self.__extract_container_info(response=response)
@@ -192,7 +193,7 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     @staticmethod
-    def __is_container_no_invalid(response: scrapy.Selector):
+    def __is_container_number_invalid(response: scrapy.Selector):
         error = response.css('div.clear.error')
         if error:
             return True
