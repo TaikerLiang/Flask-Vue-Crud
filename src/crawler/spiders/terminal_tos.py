@@ -83,8 +83,8 @@ class LoginRoutingRule(BaseRoutingRule):
             'SiteId': 'WBCT_LA',
             'SiteName': 'WBCT Los Angeles',
             'ForTosPortalSite': 'False',
-            'UserName': 'hc89scooter',
-            'Password': 'bd19841017',
+            'UserName': USERNAME,
+            'Password': PASSWORD,
         }
 
         return RequestOption(
