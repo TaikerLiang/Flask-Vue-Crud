@@ -74,7 +74,6 @@ class TerminalFenixSpider(BaseTerminalSpider):
                 meta=meta,
                 dont_filter=True,
             )
-
         elif option.method == RequestOption.METHOD_POST_BODY:
             return Request(
                 url=option.url,
@@ -84,7 +83,6 @@ class TerminalFenixSpider(BaseTerminalSpider):
                 method='POST',
                 body=option.body,
             )
-
         else:
             raise ValueError(f'Invalid option.method [{option.method}]')
 
@@ -173,13 +171,11 @@ class ListTracedContainerRoutingRule(BaseRoutingRule):
 
         if container:
             if is_first:
+                # update existing container: delete -> add
                 yield DelContainerFromTraceRoutingRule.build_request_option(
                     container_no=container_no, authorization_token=authorization_token, not_finished=True)
 
                 return
-
-            if self.__is_container_no_invalid(container=container):
-                raise TerminalInvalidContainerNoError()
 
             collated_container = self.__extract_container_info(container=container)
 
@@ -201,13 +197,6 @@ class ListTracedContainerRoutingRule(BaseRoutingRule):
                 return container
 
         return None
-
-    @staticmethod
-    def __is_container_no_invalid(container: Dict) -> bool:
-        if container['containerStatus']['name'] == 'CONTAINER_STATUS_NoStatus':
-            return True
-
-        return False
 
     @staticmethod
     def __is_container_exist(container_no: str, response_json: Dict) -> bool:
@@ -279,7 +268,11 @@ class AddContainerToTraceRoutingRule(BaseRoutingRule):
         container_no = response.meta['container_no']
         authorization_token = response.meta['authorization_token']
 
-        if response.status != 200 and response.status != 502:
+        # 502: add invalid container_no into container_traced_list
+        # 200: add valid container_no into container_traced_list
+        if response.status == 502:
+            raise TerminalInvalidContainerNoError()
+        elif response.status != 200:
             raise FenixResponseStatusCodeError(reason=f'Unexpected status code: `{response.status}`')
 
         yield ListTracedContainerRoutingRule.build_request_option(
