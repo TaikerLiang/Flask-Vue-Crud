@@ -1,3 +1,4 @@
+import dataclasses
 import json
 import re
 from typing import Dict
@@ -5,27 +6,25 @@ from typing import Dict
 from scrapy import Request
 
 from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_FATAL
-from crawler.core_terminal.base_spiders import BaseTerminalSpider, TERMINAL_DEFAULT_SETTINGS
-from crawler.core_terminal.exceptions import BaseTerminalError, TerminalResponseFormatError, \
-    TerminalInvalidContainerNoError
+from crawler.core_terminal.base_spiders import BaseTerminalSpider
+from crawler.core_terminal.exceptions import (
+    BaseTerminalError, TerminalResponseFormatError, TerminalInvalidContainerNoError
+)
 from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem, ExportErrorData
-from crawler.core_terminal.middlewares import Terminal404IsInvalidMblNoSpiderMiddleware
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 
 BASE_URL = 'https://fenixmarine.voyagecontrol.com'
 EMAIL = 'hard202006010@gmail.com'
 PASSWORD = 'hardc0re'
 
-TERMINAL_FENIX_SETTING = TERMINAL_DEFAULT_SETTINGS
-TERMINAL_FENIX_SETTING['SPIDER_MIDDLEWARES'].update(
-    {Terminal404IsInvalidMblNoSpiderMiddleware.get_setting_name(): 800},
-)
+
+@dataclasses.dataclass
+class WarningMessage:
+    msg: str
 
 
 class TerminalFenixSpider(BaseTerminalSpider):
     name = 'terminal_fenix'
-
-    custom_settings = TERMINAL_FENIX_SETTING
 
     def __init__(self, *args, **kwargs):
         super(TerminalFenixSpider, self).__init__(*args, **kwargs)
@@ -57,6 +56,8 @@ class TerminalFenixSpider(BaseTerminalSpider):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
+            elif isinstance(result, WarningMessage):
+                self.logger.warning(msg=result.msg)
             else:
                 raise RuntimeError()
 
@@ -356,12 +357,22 @@ class SearchMblRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_GET,
             url=url,
             headers=headers,
+            meta={
+                'handle_httpstatus_list': [404],
+                'mbl_no': mbl_no,
+            }
         )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.json'
 
     def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+
+        if response.status == 404:
+            yield WarningMessage(msg=f'[{self.name}] ----- handle -> mbl_no is invalid : `{mbl_no}`')
+            return
+
         response_json = json.loads(response.text)
 
         self.__check_format(response_json=response_json)
