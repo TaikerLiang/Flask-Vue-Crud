@@ -387,9 +387,7 @@ class SearchMblRoutingRule(BaseRoutingRule):
         else:
             raise TerminalResponseFormatError(reason=f'Unexpected bill_of_health format: `{bill_of_health}`')
 
-        if len(data_table) == 4:
-            pass
-        else:
+        if len(data_table) != 4:
             raise TerminalResponseFormatError(reason=f'Unexpected data-table format: `{data_table}`')
 
         if len(data_table['columns']['column']) == 12 and len(data_table['rows']['row']['field']) == 12:
