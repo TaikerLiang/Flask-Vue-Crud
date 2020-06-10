@@ -1,0 +1,55 @@
+{
+  "bill_of_health": {
+    "query-response": {
+      "data-table": {
+        "@filter": "BOLQUERY",
+        "@count": "1",
+        "columns": {
+          "column": [
+            "BL Nbr",
+            "Line Op",
+            "BL Category",
+            "Ves. Visit",
+            "POL",
+            "POL UnLoc Place Name",
+            "POD-1",
+            "POD-1 UnLoc Place Name",
+            "Dest",
+            "PIN",
+            "BLContainer Status",
+            "BL Container Status Date"
+          ]
+        },
+        "rows": {
+          "row": {
+            "@primary-key": "650249",
+            "field": [
+              "146000297601",
+              "EGR",
+              "Import",
+              "NOR0TX62",
+              "XMN",
+              "Xiamen",
+              "SPQ",
+              "San Pedro",
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        }
+      }
+    },
+    "lineStatus": {
+      "@id": "BL LINE HOLD",
+      "@time-applied": "2020-06-04T15:32:45",
+      "@applied-by": "-edi-"
+    },
+    "customsStatus": {
+      "@id": "BL LINE HOLD",
+      "@time-applied": "2020-06-04T15:32:45",
+      "@applied-by": "-edi-"
+    }
+  }
+}

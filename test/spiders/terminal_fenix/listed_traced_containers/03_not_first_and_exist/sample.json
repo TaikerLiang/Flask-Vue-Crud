@@ -1,0 +1,163 @@
+{
+  "headers": {},
+  "rows": [
+    {
+      "columns": {},
+      "status": {},
+      "advanced": null,
+      "containerStatus": {
+        "name": "CONTAINER_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "containerAAStatus": {
+        "name": "CONTAINER_AA_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "watchlistStatusEx": {
+        "name": "",
+        "internalName": "blank"
+      },
+      "id": 2741537,
+      "createdAt": "2020-06-08T09:28:04.000Z",
+      "updatedAt": "2020-06-08T09:28:04.000Z",
+      "userId": 55581,
+      "venue": "fenixmarine",
+      "containerId": "CAIU708650",
+      "watchlistStatus": "",
+      "bookingId": null,
+      "bookingRef": null,
+      "archive": false
+    },
+    {
+      "columns": {},
+      "status": {
+        "LINE_OP": "COS",
+        "T_STATE": "Inbound",
+        "APPT_NBR": null,
+        "PORT_LFD": "Invalid date",
+        "POSITION": "V-NOR0TX62-140120",
+        "UNIT_NBR": "CAIU7086501",
+        "APPT_TIME": null,
+        "DEMURRAGE": null,
+        "GATE_HOLD": "",
+        "HOLD_INFO": "",
+        "LAST_MOVE": "20-Jun-01 0823",
+        "STOP_ROAD": "false",
+        "EQUIPMENTNBR": "CAIU7086501",
+        "LAST_FREE_DAY": "--no time",
+        "STATE_(MASTER)": "Active",
+        "LOCATIONDETAILS": "On Vessel",
+        "STORAGE_CHARGES": null,
+        "APPOINTMENT_HOLD": "",
+        "IMPEDIMENTS:ROAD": null,
+        "UNIT_IMPEDIMENTS": null,
+        "LINE_LAST_FREE_DAY": "--no time",
+        "LINE_GUARANTEE_THROUGH_DAY": null
+      },
+      "advanced": null,
+      "containerStatus": {
+        "name": "CONTAINER_STATUS_Unavailable",
+        "isAvailableToBook": false
+      },
+      "containerAAStatus": {
+        "name": "CONTAINER_AA_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "watchlistStatusEx": {
+        "name": "",
+        "internalName": "blank"
+      },
+      "id": 2741590,
+      "createdAt": "2020-06-08T09:42:21.000Z",
+      "updatedAt": "2020-06-08T09:42:21.000Z",
+      "userId": 55581,
+      "venue": "fenixmarine",
+      "containerId": "CAIU7086501",
+      "watchlistStatus": "",
+      "bookingId": null,
+      "bookingRef": null,
+      "archive": false
+    },
+    {
+      "columns": {},
+      "status": {},
+      "advanced": null,
+      "containerStatus": {
+        "name": "CONTAINER_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "containerAAStatus": {
+        "name": "CONTAINER_AA_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "watchlistStatusEx": {
+        "name": "",
+        "internalName": "blank"
+      },
+      "id": 2741556,
+      "createdAt": "2020-06-08T09:37:00.000Z",
+      "updatedAt": "2020-06-08T09:37:00.000Z",
+      "userId": 55581,
+      "venue": "fenixmarine",
+      "containerId": "EITU1951219",
+      "watchlistStatus": "",
+      "bookingId": null,
+      "bookingRef": null,
+      "archive": false
+    },
+    {
+      "columns": {},
+      "status": {},
+      "advanced": null,
+      "containerStatus": {
+        "name": "CONTAINER_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "containerAAStatus": {
+        "name": "CONTAINER_AA_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "watchlistStatusEx": {
+        "name": "",
+        "internalName": "blank"
+      },
+      "id": 2741579,
+      "createdAt": "2020-06-08T09:38:23.000Z",
+      "updatedAt": "2020-06-08T09:38:23.000Z",
+      "userId": 55581,
+      "venue": "fenixmarine",
+      "containerId": "OOLU9360290",
+      "watchlistStatus": "",
+      "bookingId": null,
+      "bookingRef": null,
+      "archive": false
+    },
+    {
+      "columns": {},
+      "status": {},
+      "advanced": null,
+      "containerStatus": {
+        "name": "CONTAINER_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "containerAAStatus": {
+        "name": "CONTAINER_AA_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "watchlistStatusEx": {
+        "name": "",
+        "internalName": "blank"
+      },
+      "id": 2741567,
+      "createdAt": "2020-06-08T09:37:50.000Z",
+      "updatedAt": "2020-06-08T09:37:50.000Z",
+      "userId": 55581,
+      "venue": "fenixmarine",
+      "containerId": "TCNU6056527",
+      "watchlistStatus": "",
+      "bookingId": null,
+      "bookingRef": null,
+      "archive": false
+    }
+  ]
+}
