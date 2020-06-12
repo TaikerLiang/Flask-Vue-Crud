@@ -201,7 +201,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         etd, atd, eta, ata = None, None, None, None
         for place, time_status in schedules:
-            if time_status == 'To Be Advised …':
+            if time_status in ['To Be Advised …', None]:
                 actual_time, estimate_time = None, None
             else:
                 actual_time, estimate_time = MainInfoRoutingRule._parse_time_status(time_status)
@@ -391,7 +391,9 @@ class ScheduleParser:
             lis = ul.css('li')
             routing = lis[self.LI_ROUTING_INDEX].css('span::text').get()
             datetime = lis[self.LI_DATETIME_INDEX].css('span::text').get()
-            routing_tuple = (routing.strip(), datetime.strip())
+            # datetime could be None
+            stiped_datatime = datetime.strip() if isinstance(datetime, str) else datetime
+            routing_tuple = (routing.strip(), stiped_datatime)
 
             schdeules.append(routing_tuple)
 
