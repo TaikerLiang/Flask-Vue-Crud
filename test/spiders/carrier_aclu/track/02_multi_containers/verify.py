@@ -1,14 +1,11 @@
-from crawler.core_carrier.rules import RoutingRequest
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.spiders.carrier_aclu import DetailTrackingRoutingRule
 
 
 def verify(results):
-    assert isinstance(results[0], RoutingRequest)
-    assert isinstance(results[1], RoutingRequest)
-    assert isinstance(results[2], RoutingRequest)
-    assert isinstance(results[3], RoutingRequest)
-    assert isinstance(results[4], RoutingRequest)
-    assert isinstance(results[5], RoutingRequest)
-    assert isinstance(results[6], RoutingRequest)
-    assert isinstance(results[7], RoutingRequest)
-    assert isinstance(results[8], RoutingRequest)
-    assert isinstance(results[9], RoutingRequest)
+    assert isinstance(results[0], RequestOption)
+    assert results[0].rule_name == DetailTrackingRoutingRule.name
+
+    assert isinstance(results[9], RequestOption)
+    assert results[9].rule_name == DetailTrackingRoutingRule.name
+
