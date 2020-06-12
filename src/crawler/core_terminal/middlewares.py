@@ -5,7 +5,7 @@ import scrapy
 from scrapy.exceptions import CloseSpider
 
 from .base import TERMINAL_RESULT_STATUS_FATAL
-from .exceptions import BaseTerminalError, TerminalInvalidContainerNoError
+from .exceptions import BaseTerminalError
 from .items import ExportFinalData, ExportErrorData
 
 

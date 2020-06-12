@@ -1,6 +1,6 @@
 # FENIX
 
-![](./picture/flow_chart.png)
+![](picture/flow_chart.png)
 
 # GetLoginToken
 
@@ -56,6 +56,13 @@ scrapy.Request(
 # ListTracedContainer
 
 ## 目的
+為了找尋目標 container 的'現在'資料
+
+## 狀態
+* First : 首次列表時，如果表裡有資料，怕有目標 container 的舊資料，因而需要刪除所有 containers
+* Second : 第二次列表時，代表已經重新加入完畢，則可正常抓取資料
+
+## 行為展現
 response json 裡有所有列入追蹤的 container statuses
 
 ## 準備
@@ -93,6 +100,9 @@ scrapy.Request(
 # AddContainerToTrace
 
 ## 目的
+將目標 container 的現有狀態加入 TracedContainerList
+
+## 行為展現
 將 container 加入追蹤清單
 
 ## 準備
@@ -100,6 +110,9 @@ GetLoginToken response json 上 authorization token
 * `'token': authorization_token`
 
 container_no(可複數)
+
+# 狀態
+response 的 status code 為 502 是正常
 
 ```
 method = 'POST'
@@ -145,6 +158,9 @@ scrapy.Request(
 # DelContainerFromTrace
 
 ## 目的
+為了更新 container 的目前資料而做的前置動作 or 搜尋完 container 後的動作
+
+## 行為展現
 將 container 從追蹤清單刪除
 
 ## 準備

@@ -1,0 +1,45 @@
+{
+  "bill_of_health": {
+    "query-response": {
+      "data-table": {
+        "@filter": "BOLQUERY",
+        "@count": "1",
+        "columns": {
+          "column": [
+            "BL Nbr",
+            "Line Op",
+            "BL Category",
+            "Ves. Visit",
+            "POL",
+            "POL UnLoc Place Name",
+            "POD-1",
+            "POD-1 UnLoc Place Name",
+            "Dest",
+            "PIN",
+            "BLContainer Status",
+            "BL Container Status Date"
+          ]
+        },
+        "rows": {
+          "row": {
+            "@primary-key": "629090",
+            "field": [
+              "2638732540",
+              "OCL",
+              "Import",
+              "WGT0TX5U",
+              "XMN",
+              "Xiamen",
+              "SPQ",
+              "San Pedro",
+              null,
+              null,
+              null,
+              null
+            ]
+          }
+        }
+      }
+    }
+  }
+}

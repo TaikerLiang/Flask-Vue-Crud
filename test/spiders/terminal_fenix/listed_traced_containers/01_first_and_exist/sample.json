@@ -1,0 +1,113 @@
+{
+  "headers": {},
+  "rows": [
+    {
+      "columns": {},
+      "status": {},
+      "advanced": null,
+      "containerStatus": {
+        "name": "CONTAINER_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "containerAAStatus": {
+        "name": "CONTAINER_AA_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "watchlistStatusEx": {
+        "name": "",
+        "internalName": "blank"
+      },
+      "id": 2741537,
+      "createdAt": "2020-06-08T09:28:04.000Z",
+      "updatedAt": "2020-06-08T09:28:04.000Z",
+      "userId": 55581,
+      "venue": "fenixmarine",
+      "containerId": "CAIU708650",
+      "watchlistStatus": "",
+      "bookingId": null,
+      "bookingRef": null,
+      "archive": false
+    },
+    {
+      "columns": {},
+      "status": {},
+      "advanced": null,
+      "containerStatus": {
+        "name": "CONTAINER_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "containerAAStatus": {
+        "name": "CONTAINER_AA_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "watchlistStatusEx": {
+        "name": "",
+        "internalName": "blank"
+      },
+      "id": 2741556,
+      "createdAt": "2020-06-08T09:37:00.000Z",
+      "updatedAt": "2020-06-08T09:37:00.000Z",
+      "userId": 55581,
+      "venue": "fenixmarine",
+      "containerId": "EITU1951219",
+      "watchlistStatus": "",
+      "bookingId": null,
+      "bookingRef": null,
+      "archive": false
+    },
+    {
+      "columns": {},
+      "status": {},
+      "advanced": null,
+      "containerStatus": {
+        "name": "CONTAINER_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "containerAAStatus": {
+        "name": "CONTAINER_AA_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "watchlistStatusEx": {
+        "name": "",
+        "internalName": "blank"
+      },
+      "id": 2718491,
+      "createdAt": "2020-06-05T06:57:20.000Z",
+      "updatedAt": "2020-06-05T06:57:20.000Z",
+      "userId": 55581,
+      "venue": "fenixmarine",
+      "containerId": "OOLU9360290",
+      "watchlistStatus": "",
+      "bookingId": null,
+      "bookingRef": null,
+      "archive": false
+    },
+    {
+      "columns": {},
+      "status": {},
+      "advanced": null,
+      "containerStatus": {
+        "name": "CONTAINER_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "containerAAStatus": {
+        "name": "CONTAINER_AA_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "watchlistStatusEx": {
+        "name": "",
+        "internalName": "blank"
+      },
+      "id": 2741567,
+      "createdAt": "2020-06-08T09:37:50.000Z",
+      "updatedAt": "2020-06-08T09:37:50.000Z",
+      "userId": 55581,
+      "venue": "fenixmarine",
+      "containerId": "TCNU6056527",
+      "watchlistStatus": "",
+      "bookingId": null,
+      "bookingRef": null,
+      "archive": false
+    }
+  ]
+}
