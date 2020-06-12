@@ -7,7 +7,6 @@ from scrapy.http import TextResponse
 from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_whlc import DetailRoutingRule
 from test.spiders.carrier_whlc import detail
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -23,16 +22,15 @@ def sample_loader(sample_loader):
 def test_detail_routing_rule(sub, mbl_no, sample_loader, container_no):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    routing_request = DetailRoutingRule.build_routing_request(
+    option = DetailRoutingRule.build_request_option(
         mbl_no=mbl_no, container_no=container_no, j_idt='', view_state='')
-    url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=html_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: DetailRoutingRule.name,
                 'container_no': container_no,
