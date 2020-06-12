@@ -5,7 +5,8 @@ import scrapy
 from scrapy import Selector
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule, RoutingRequestQueue
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
 from crawler.core_carrier.items import (
     BaseCarrierItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
@@ -35,14 +36,14 @@ class CarrierHlcuSpider(BaseCarrierSpider):
         ]
 
         self._rule_manager = RuleManager(rules=rules)
-        self._request_queue = RoutingRequestQueue()
+        self._request_queue = RequestOptionQueue()
 
     def start(self):
         cookies_getter = CookiesGetter()
         cookies = cookies_getter.get_cookies()
 
-        routing_request = TracingRoutingRule.build_routing_request(mbl_no=self.mbl_no, cookies=cookies)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        request_option = TracingRoutingRule.build_request_option(mbl_no=self.mbl_no, cookies=cookies)
+        yield self._build_request_by(option=request_option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -55,15 +56,36 @@ class CarrierHlcuSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
+            elif isinstance(result, RequestOption):
                 self._request_queue.add_request(result)
             else:
                 raise RuntimeError()
 
         if not self._request_queue.is_empty():
-            routing_request = self._request_queue.get_next_request()
-            yield self._rule_manager.build_request_by(routing_request=routing_request)
+            request_option = self._request_queue.get_next_request()
+            yield self._build_request_by(option=request_option)
 
+    def _build_request_by(self, option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
+        }
+
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                cookies=option.cookies,
+                meta=meta,
+            )
+        elif option.method == RequestOption.METHOD_POST_FORM:
+            return scrapy.FormRequest(
+                url=option.url,
+                cookies=option.cookies,
+                formdata=option.form_data,
+                meta=meta,
+            )
+        else:
+            raise RuntimeError()
 
 # -------------------------------------------------------------------------------
 
@@ -75,13 +97,16 @@ class TracingRoutingRule(BaseRoutingRule):
         self._cookies_pattern = re.compile(r'^(?P<key>[^=]+)=(?P<value>[^;]+);.+$')
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, cookies: Dict) -> RoutingRequest:
-        request = scrapy.Request(
-            url=f'{BASE_URL}/online-business/tracing/tracing-by-booking.html?blno={mbl_no}',
+    def build_request_option(cls, mbl_no: str, cookies: Dict) -> RequestOption:
+        url = f'{BASE_URL}/online-business/tracing/tracing-by-booking.html?blno={mbl_no}'
+
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=url,
             cookies=cookies,
             meta={'mbl_no': mbl_no, 'cookies': cookies},
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response):
         return f'{self.name}.html'
@@ -104,7 +129,7 @@ class TracingRoutingRule(BaseRoutingRule):
             'form[id="tracing_by_booking_f"] input[name="javax.faces.ViewState"] ::attr(value)').get()
 
         for container_index, container_no in enumerate(container_nos):
-            yield ContainerRoutingRule.build_routing_request(
+            yield ContainerRoutingRule.build_request_option(
                 mbl_no=mbl_no,
                 container_key=container_no,
                 cookies=new_cookies,
@@ -182,8 +207,8 @@ class ContainerRoutingRule(BaseRoutingRule):
     name = 'CONTAINER'
 
     @classmethod
-    def build_routing_request(
-            cls, mbl_no: str, container_key, cookies: Dict, container_index, view_state) -> RoutingRequest:
+    def build_request_option(
+            cls, mbl_no: str, container_key, cookies: Dict, container_index, view_state) -> RequestOption:
         form_data = {
             'hl27': str(container_index),
             'javax.faces.ViewState': view_state,
@@ -191,13 +216,15 @@ class ContainerRoutingRule(BaseRoutingRule):
             'tracing_by_booking_f:hl27:hl53': 'Details',
             'tracing_by_booking_f_SUBMIT': '1',
         }
-        request = scrapy.FormRequest(
+
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_FORM,
             url=f'{BASE_URL}/online-business/tracing/tracing-by-booking.html?_a=tracing_by_booking',
-            formdata=form_data,
+            form_data=form_data,
             cookies=cookies,
-            meta={'container_key': container_key}
+            meta={'container_key': container_key},
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response):
         container_key = response.meta['container_key']
