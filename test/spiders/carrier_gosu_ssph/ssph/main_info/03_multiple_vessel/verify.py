@@ -1,5 +1,5 @@
 from crawler.core_carrier.items import MblItem, ContainerItem, LocationItem, VesselItem
-from crawler.core_carrier.rules import RoutingRequest
+from crawler.core_carrier.request_helpers import RequestOption
 
 
 def verify(results):
@@ -36,42 +36,42 @@ def verify(results):
         container_no='CRSU9052059',
     )
 
-    assert isinstance(results[4], RoutingRequest)
+    assert isinstance(results[4], RequestOption)
 
     assert results[5] == ContainerItem(
         container_key='ZCSU6507651',
         container_no='ZCSU6507651',
     )
 
-    assert isinstance(results[6], RoutingRequest)
+    assert isinstance(results[6], RequestOption)
 
     assert results[7] == ContainerItem(
         container_key='TGBU7177776',
         container_no='TGBU7177776',
     )
 
-    assert isinstance(results[8], RoutingRequest)
+    assert isinstance(results[8], RequestOption)
 
     assert results[9] == ContainerItem(
         container_key='TLLU4309870',
         container_no='TLLU4309870',
     )
 
-    assert isinstance(results[10], RoutingRequest)
+    assert isinstance(results[10], RequestOption)
 
     assert results[11] == ContainerItem(
         container_key='TLLU4586128',
         container_no='TLLU4586128',
     )
 
-    assert isinstance(results[12], RoutingRequest)
+    assert isinstance(results[12], RequestOption)
 
     assert results[13] == ContainerItem(
         container_key='ZCSU8528036',
         container_no='ZCSU8528036',
     )
 
-    assert isinstance(results[14], RoutingRequest)
+    assert isinstance(results[14], RequestOption)
 
     assert results[15] == ContainerItem(
         container_key='ZCSU8528268',

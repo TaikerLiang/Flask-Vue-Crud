@@ -7,7 +7,8 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, ContainerItem, ContainerStatusItem, LocationItem, VesselItem, DebugItem)
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from, CssQueryTextStartswithMatchRule
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
@@ -29,8 +30,8 @@ class SharedSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        routing_request = MainInfoRoutingRule.build_routing_request(mbl_no=self.mbl_no)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        request_option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        yield self._build_request_by(option=request_option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -43,10 +44,22 @@ class SharedSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+            elif isinstance(result, RequestOption):
+                yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
+
+    def _build_request_by(self, option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
+        }
+
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
 
 
 class CarrierSsphSpider(SharedSpider):
@@ -61,10 +74,12 @@ class MainInfoRoutingRule(BaseRoutingRule):
     name = 'MAIN_INFO'
 
     @classmethod
-    def build_routing_request(cls, mbl_no) -> RoutingRequest:
-        url = f'{URL}?hidSearch=true&hidFromHomePage=false&hidSearchType=1&id=166&l=4&textContainerNumber={mbl_no}'
-        request = scrapy.Request(url=url)
-        return RoutingRequest(request=request, rule_name=cls.name)
+    def build_request_option(cls, mbl_no) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=f'{URL}?hidSearch=true&hidFromHomePage=false&hidSearchType=1&id=166&l=4&textContainerNumber={mbl_no}'
+        )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
@@ -106,7 +121,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             )
 
             eta = container_info['eta']
-            yield ContainerStatusRoutingRule.build_routing_request(mbl_no=mbl_no, eta=eta, container_no=container_no)
+            yield ContainerStatusRoutingRule.build_request_option(mbl_no=mbl_no, eta=eta, container_no=container_no)
 
     @staticmethod
     def _check_main_info(response):
@@ -227,10 +242,13 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     name = 'CONTAINER_STATUS'
 
     @classmethod
-    def build_routing_request(cls, mbl_no, eta, container_no) -> RoutingRequest:
-        url = f'{URL}?&id=166&l=4&conNum={container_no}&blNum={mbl_no}&eta={eta}&inbId=&searchType=3'
-        request = scrapy.Request(url=url, meta={'container_key': container_no})
-        return RoutingRequest(request=request, rule_name=cls.name)
+    def build_request_option(cls, mbl_no, eta, container_no) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=f'{URL}?&id=166&l=4&conNum={container_no}&blNum={mbl_no}&eta={eta}&inbId=&searchType=3',
+            meta={'container_key': container_no},
+        )
 
     def get_save_name(self, response) -> str:
         container_no = response.meta['container_key']
