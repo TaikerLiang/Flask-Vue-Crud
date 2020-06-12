@@ -13,6 +13,9 @@ class BaseRoutingRule:
         raise NotImplementedError()
 
     def get_save_name(self, response) -> str:
+        """There are multiple types of return result(html, json), so need to overwrite this
+        method for every routing rule
+        """
         return self.name
 
     @abc.abstractmethod
