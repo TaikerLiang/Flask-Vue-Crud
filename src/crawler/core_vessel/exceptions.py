@@ -17,3 +17,11 @@ class LoadWebsiteTimeOutError(BaseVesselError):
 
     def build_error_data(self):
         return VesselErrorData(status=self.status, detail='<load-website-timeout-error>')
+
+
+class ProxyMaxRetryError(BaseVesselError):
+    status = VESSEL_RESULT_STATUS_FATAL
+
+    def build_error_data(self):
+        return VesselErrorData(status=self.status, detail='<proxy-max-retry-error>')
+

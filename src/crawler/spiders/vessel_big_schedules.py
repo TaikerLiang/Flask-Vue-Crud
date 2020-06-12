@@ -5,12 +5,16 @@ from typing import Dict, List
 import scrapy
 
 from crawler.core_vessel.items import DebugItem
-from crawler.core_vessel.rules import BaseRoutingRule, RoutingRequest, RuleManager
+from crawler.core_vessel.request_helpers import RequestOption
+from crawler.core_vessel.rules import BaseRoutingRule, RuleManager
 from crawler.core_vessel.base_spiders import BaseVesselSpider
 from crawler.core_vessel.items import VesselPortItem, BaseVesselItem
 from crawler.utils.selenium import BaseChromeDriver
 
 BASE_URL = 'https://www.bigschedules.com'
+
+EMAIL_ADDRESS = 'cherubwang110@gmail.com'
+PASSWORD = 'Crawler888'
 
 
 class VesselBigSchedulesSpider(BaseVesselSpider):
@@ -28,55 +32,67 @@ class VesselBigSchedulesSpider(BaseVesselSpider):
 
         self._rule_manager = RuleManager(rules=rules)
 
-    def start_requests(self):
-        routing_request = LoginRoutingRule.build_routing_request(scac=self.scac, vessel_name=self.vessel_name)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+    def start(self):
+        request_option = LoginRoutingRule.build_request_option(scac=self.scac, vessel_name=self.vessel_name)
+        yield self._build_request_by(option=request_option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
+        save_name = routing_rule.get_save_name(response=response)
+        self._saver.save(to=save_name, text=response.text)
+
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseVesselItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+            elif isinstance(result, RequestOption):
+                yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
 
-    @staticmethod
-    def _extract_carrier_id(response: List, scac: str) -> str:
-        for carrier in response:
-            if carrier['scac'] == scac:
-                return carrier['carrierID']
+    def _build_request_by(self, option: RequestOption):
+        meta = {
+            RuleManager.META_VESSEL_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
+        }
 
-        raise RuntimeError()
-
-    @staticmethod
-    def _extract_vessel_gid(response: List, vessel_name: str) -> str:
-        vessel_info = response[0]
-
-        if vessel_info['name'] == vessel_name:
-            return vessel_info['vesselGid']
-
-        raise RuntimeError()
+        if option.method == RequestOption.METHOD_POST_BODY:
+            return scrapy.Request(
+                method='POST',
+                url=option.url,
+                headers=option.headers,
+                body=option.body,
+                meta=meta,
+            )
+        elif option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                headers=option.headers,
+                cookies=option.cookies,
+                meta=meta,
+            )
+        else:
+            raise RuntimeError()
 
 
 class LoginRoutingRule(BaseRoutingRule):
     name = 'LOGIN'
 
     @classmethod
-    def build_routing_request(cls, scac, vessel_name) -> RoutingRequest:
+    def build_request_option(cls, scac, vessel_name) -> RequestOption:
         url = f'{BASE_URL}/api/admin/login'
 
         login_data = {
-            "emailAddress": "cherubwang110@gmail.com",
-            "password": "Crawler888",
+            "emailAddress": EMAIL_ADDRESS,
+            "password": PASSWORD,
             "DISABLE_ART": "true",
         }
 
-        request = scrapy.Request(
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_BODY,
             url=url,
             body=json.dumps(login_data),
             headers={
@@ -84,14 +100,11 @@ class LoginRoutingRule(BaseRoutingRule):
                 'Sec-Fetch-Dest': 'empty',
                 'Content-Type': 'application/json;charset=UTF-8'
             },
-            method='POST',
             meta={
                 'scac': scac,
                 'vessel_name': vessel_name,
             },
         )
-
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def handle(self, response):
         scac = response.meta['scac']
@@ -103,37 +116,43 @@ class LoginRoutingRule(BaseRoutingRule):
             key, value = item.split('=')
             cookies[key] = value
 
-        yield CarrierIDRoutingRule.build_routing_request(scac=scac, vessel_name=vessel_name, cookies=cookies)
+        yield CarrierIDRoutingRule.build_request_option(scac=scac, vessel_name=vessel_name, cookies=cookies)
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
 
 
 class CarrierIDRoutingRule(BaseRoutingRule):
     name = 'CARRIER_ID'
 
     @classmethod
-    def build_routing_request(cls, scac, vessel_name, cookies) -> RoutingRequest:
+    def build_request_option(cls, scac, vessel_name, cookies) -> RequestOption:
         url = f'{BASE_URL}/api/carrier/fuzzyQuery'
-        request = scrapy.Request(
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
             url=url,
             cookies=cookies,
             meta={
                 'scac': scac,
                 'vessel_name': vessel_name,
-            }
+            },
         )
-
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def handle(self, response):
         scac = response.meta['scac']
         vessel_name = response.meta['vessel_name']
 
         carrier_id_list = json.loads(response.text)
-        carrier_id = self._extract_carrier_id(carrier_id_list=carrier_id_list, scac=scac)
+        carrier_id = self.__extract_carrier_id(carrier_id_list=carrier_id_list, scac=scac)
 
-        yield VesselGidRoutingRule.build_routing_request(scac=scac, vessel_name=vessel_name, carrier_id=carrier_id)
+        yield VesselGidRoutingRule.build_request_option(scac=scac, vessel_name=vessel_name, carrier_id=carrier_id)
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
 
     @staticmethod
-    def _extract_carrier_id(carrier_id_list: List, scac: str) -> str:
+    def __extract_carrier_id(carrier_id_list: List, scac: str) -> str:
         for carrier in carrier_id_list:
             if carrier['scac'] == scac:
                 return carrier['carrierID']
@@ -145,18 +164,18 @@ class VesselGidRoutingRule(BaseRoutingRule):
     name = 'VESSEL_GID'
 
     @classmethod
-    def build_routing_request(cls, scac, vessel_name, carrier_id) -> RoutingRequest:
+    def build_request_option(cls, scac, vessel_name, carrier_id) -> RequestOption:
         url = f'{BASE_URL}/api/vessel/list?carrierId={carrier_id}&vesselName={vessel_name}'
-        request = scrapy.Request(
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
             url=url,
             meta={
                 'scac': scac,
                 'vessel_name': vessel_name,
                 'carrier_id': carrier_id,
-            },
+            }
         )
-
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def handle(self, response):
         scac = response.meta['scac']
@@ -164,13 +183,13 @@ class VesselGidRoutingRule(BaseRoutingRule):
         carrier_id = response.meta['carrier_id']
 
         vessel_gid_list = json.loads(response.text)
-        vessel_gid = self._extract_vessel_gid(vessel_gid_list=vessel_gid_list, vessel_name=vessel_name)
+        vessel_gid = self.__extract_vessel_gid(vessel_gid_list=vessel_gid_list, vessel_name=vessel_name)
 
         # click search button to get user detect cookie
         big_schedule_chrome_driver = BigSchedulesChromeDriver()
         cookie = big_schedule_chrome_driver.get_user_detect_cookie()
 
-        yield VesselScheduleRoutingRule.build_routing_request(
+        yield VesselScheduleRoutingRule.build_request_option(
             cookie=cookie,
             carrier_id=carrier_id,
             scac=scac,
@@ -178,8 +197,11 @@ class VesselGidRoutingRule(BaseRoutingRule):
             vessel_name=vessel_name,
         )
 
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
+
     @staticmethod
-    def _extract_vessel_gid(vessel_gid_list: List, vessel_name: str) -> str:
+    def __extract_vessel_gid(vessel_gid_list: List, vessel_name: str) -> str:
         vessel_info = vessel_gid_list[0]
 
         if vessel_info['name'] == vessel_name:
@@ -192,10 +214,12 @@ class VesselScheduleRoutingRule(BaseRoutingRule):
     name = 'VESSEL_SCHEDULE'
 
     @classmethod
-    def build_routing_request(cls, cookie, carrier_id, scac, vessel_gid, vessel_name) -> RoutingRequest:
-        local_date_time = get_local_date_time()
+    def build_request_option(cls, cookie, carrier_id, scac, vessel_gid, vessel_name) -> RequestOption:
+        local_date_time = cls.__get_local_date_time()
         url = f'{BASE_URL}/api/vesselSchedule/list?_={local_date_time}&carrierId={carrier_id}&scac={scac}&vesselGid={vessel_gid}&vesselName={vessel_name}'
-        request = scrapy.Request(
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
             url=url,
             cookies=cookie,
             headers={
@@ -204,12 +228,10 @@ class VesselScheduleRoutingRule(BaseRoutingRule):
             },
         )
 
-        return RoutingRequest(request=request, rule_name=cls.name)
-
     def handle(self, response):
         response_dict = json.loads(response.text)
 
-        port_info_list = self._extract_port_info_list(response=response_dict)
+        port_info_list = self.__extract_port_info_list(response=response_dict)
 
         for port_info in port_info_list:
             yield VesselPortItem(
@@ -221,8 +243,11 @@ class VesselScheduleRoutingRule(BaseRoutingRule):
                 un_lo_code=port_info['un_lo_code'],
             )
 
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
+
     @staticmethod
-    def _extract_port_info_list(response: Dict) -> List:
+    def __extract_port_info_list(response: Dict) -> List:
         ports_list = response['ports']
 
         return_list = []
@@ -241,9 +266,9 @@ class VesselScheduleRoutingRule(BaseRoutingRule):
 
         return return_list
 
-
-def get_local_date_time() -> str:
-    return datetime.datetime.now().strftime('%Y%m%d%H')
+    @staticmethod
+    def __get_local_date_time() -> str:
+        return datetime.datetime.now().strftime('%Y%m%d%H')
 
 
 class BigSchedulesChromeDriver(BaseChromeDriver):
