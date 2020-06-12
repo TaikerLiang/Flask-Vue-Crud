@@ -1,21 +1,14 @@
 import abc
-import dataclasses
 from typing import List, Union
 
-import scrapy
-
-
-@dataclasses.dataclass
-class RoutingRequest:
-    request: scrapy.Request
-    rule_name: str
+from crawler.core_carrier.request_helpers import RequestOption
 
 
 class BaseRoutingRule:
     name = ''
 
     @staticmethod
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
+    def build_request_option(*args, **kwargs) -> RequestOption:
         raise NotImplementedError()
 
     def get_save_name(self, response) -> str:
@@ -39,13 +32,8 @@ class RuleManager:
         rule = self._rule_map[rule_name]
         return rule
 
-    def build_request_by(self, routing_request: RoutingRequest):
-        request = routing_request.request
-        request.meta[self.META_CARRIER_CORE_RULE_NAME] = routing_request.rule_name
-        return request
 
-
-class RoutingRequestQueue:
+class RequestOptionQueue:
 
     def __init__(self):
         self._queue = []
@@ -53,8 +41,8 @@ class RoutingRequestQueue:
     def is_empty(self):
         return not self._queue
 
-    def add_request(self, routing_request: RoutingRequest):
-        self._queue.append(routing_request)
+    def add_request(self, request_option: RequestOption):
+        self._queue.append(request_option)
 
-    def get_next_request(self) -> Union[RoutingRequest, None]:
+    def get_next_request(self) -> Union[RequestOption, None]:
         return self._queue.pop(0)
