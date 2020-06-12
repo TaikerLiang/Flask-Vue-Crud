@@ -8,7 +8,8 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, ContainerItem, ContainerStatusItem, LocationItem, DebugItem)
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 
 URL = 'http://www.nbosco.com/sebusiness/ecm/ContainerMovement/selectCmContainerCurrent'
 
@@ -26,8 +27,8 @@ class Carrier12luSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        routing_request = ContainerStatusRoutingRule.build_routing_request(mbl_no=self.mbl_no, page_no=1)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        option = ContainerStatusRoutingRule.build_request_option(mbl_no=self.mbl_no, page_no=1)
+        yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -40,23 +41,38 @@ class Carrier12luSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+            elif isinstance(result, RequestOption):
+                yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
+
+    @staticmethod
+    def _build_request_by(option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta
+        }
+
+        return scrapy.Request(
+            method=option.method,
+            url=option.url,
+            meta=meta,
+        )
 
 
 class ContainerStatusRoutingRule(BaseRoutingRule):
     name = 'CONTAINER_STATUS'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, page_no: int) -> RoutingRequest:
+    def build_request_option(cls, mbl_no: str, page_no: int) -> RequestOption:
         timestamp = build_timestamp()
-        request = scrapy.Request(
+
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
             url=f'{URL}?t={timestamp}&blNo={mbl_no}&pageNum={page_no}&pageSize=20',
-            meta={'mbl_no': mbl_no, 'page_no': page_no},
+            meta={'mbl_no': mbl_no, 'page_no': page_no}
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
         mbl_no = response.meta['mbl_no']
@@ -94,7 +110,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
         total_page_no = data['totalPage']
         if page_no < total_page_no:
-            yield self.build_routing_request(mbl_no=mbl_no, page_no=page_no + 1)
+            yield self.build_request_option(mbl_no=mbl_no, page_no=page_no + 1)
 
     @staticmethod
     def _check_mbl_no(data: Dict):
