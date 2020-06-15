@@ -131,13 +131,18 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_mbl_no(response):
-        pattern = re.compile(r'^B/L Number (?P<mbl_no>\w+)$')
+        pattern = re.compile(r'\w+ Number (?P<mbl_no>\w+)$')
 
         rule = CssQueryTextStartswithMatchRule(css_query='strong::text', startswith='B/L Number')
-        selector = find_selector_from(selectors=response.css('td.BlackText'), rule=rule)
+        mbl_selector = find_selector_from(selectors=response.css('td.BlackText'), rule=rule)
 
-        if not selector:
-            return ''
+        rule = CssQueryTextStartswithMatchRule(css_query='strong::text', startswith='Booking Number')
+        booking_selector = find_selector_from(selectors=response.css('td.BlackText'), rule=rule)
+
+        if not (mbl_selector or booking_selector):
+            raise CarrierResponseFormatError(reason='mbl_no text not found')
+
+        selector = mbl_selector or booking_selector
 
         mbl_no_text = selector.css('strong::text').get()
         m = pattern.match(mbl_no_text)
