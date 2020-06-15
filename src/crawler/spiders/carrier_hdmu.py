@@ -9,7 +9,7 @@ from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierRes
 from crawler.core_carrier.items import (
     MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, BaseCarrierItem, DebugItem)
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption, ProxyMaxRetryError
-from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest, RuleManager
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import (
@@ -197,9 +197,6 @@ class CookiesRoutingRule(BaseRoutingRule):
             },
         )
 
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
-
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
 
@@ -260,9 +257,6 @@ class MainRoutingRule(BaseRoutingRule):
                 'cookiejar': cookiejar_id,
             },
         )
-
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
@@ -536,9 +530,6 @@ class ContainerRoutingRule(BaseRoutingRule):
             },
         )
 
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
-
     def get_save_name(self, response) -> str:
         container_index = response.meta['container_index']
         return f'{self.name}_{container_index}.html'
@@ -728,9 +719,6 @@ class AvailabilityRoutingRule(BaseRoutingRule):
                 'cookiejar': cookiejar_id,
             },
         )
-
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
 
     def get_save_name(self, response) -> str:
         container_no = response.meta['container_no']
