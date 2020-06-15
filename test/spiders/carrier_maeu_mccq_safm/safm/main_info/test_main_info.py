@@ -7,7 +7,6 @@ from scrapy.http import TextResponse
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.spiders.carrier_maeu_mccq_safm import MainInfoRoutingRule, CarrierSafmSpider
 from test.spiders.carrier_maeu_mccq_safm.safm import main_info
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -24,16 +23,15 @@ def sample_loader(sample_loader):
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
-    routing_request = MainInfoRoutingRule.build_routing_request(
+    option = MainInfoRoutingRule.build_request_option(
         mbl_no=mbl_no, url_format=CarrierSafmSpider.base_url_format)
-    url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=jsontext,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
         )
     )
 
@@ -50,16 +48,15 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
-    routing_request = MainInfoRoutingRule.build_routing_request(
+    option = MainInfoRoutingRule.build_request_option(
         mbl_no=mbl_no, url_format=CarrierSafmSpider.base_url_format)
-    url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=jsontext,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
         )
     )
 

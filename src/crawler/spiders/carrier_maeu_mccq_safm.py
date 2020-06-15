@@ -8,7 +8,8 @@ from crawler.core_carrier.base_spiders import (
     BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS, CARRIER_DEFAULT_SPIDER_MIDDLEWARES)
 from crawler.core_carrier.middlewares import (
     Carrier400IsInvalidMblNoSpiderMiddleware, Carrier404IsInvalidMblNoSpiderMiddleware)
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem)
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
@@ -37,8 +38,8 @@ class SharedSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        routing_request = MainInfoRoutingRule.build_routing_request(mbl_no=self.mbl_no, url_format=self.base_url_format)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no, url_format=self.base_url_format)
+        yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -51,10 +52,21 @@ class SharedSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+            elif isinstance(result, RequestOption):
+                yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
+
+    def _build_request_by(self, option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
+        }
+
+        return scrapy.Request(
+            url=option.url,
+            meta=meta,
+        )
 
 
 class CarrierMaeuSpider(SharedSpider):
@@ -79,11 +91,12 @@ class MainInfoRoutingRule(BaseRoutingRule):
     name = 'MAIN_INFO'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, url_format: str) -> RoutingRequest:
-        request = scrapy.Request(
+    def build_request_option(cls, mbl_no: str, url_format: str) -> RequestOption:
+        return RequestOption(
+            method=RequestOption.METHOD_GET,
+            rule_name=cls.name,
             url=url_format.format(mbl_no=mbl_no),
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.json'
