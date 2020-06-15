@@ -5,7 +5,8 @@ import scrapy
 from scrapy import Selector
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
@@ -28,8 +29,8 @@ class CarrierRclSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        routing_request = BasicRoutingRule.build_routing_request(mbl_no=self.mbl_no)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        request_option = BasicRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        yield self._build_request_by(option=request_option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -42,10 +43,29 @@ class CarrierRclSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+            elif isinstance(result, RequestOption):
+                yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
+
+    def _build_request_by(self, option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta
+        }
+
+        if option.rule_name == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
+        elif option.rule_name == RequestOption.METHOD_POST_FORM:
+            return scrapy.FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+            )
+        else:
+            raise RuntimeError()
 
 
 # -------------------------------------------------------------------------------
@@ -54,12 +74,13 @@ class BasicRoutingRule(BaseRoutingRule):
     name = 'BASIC'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
-        request = scrapy.Request(
+    def build_request_option(cls, mbl_no: str) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
             url=f'{RCL_BASE_URL}/Home',
             meta={'mbl_no': mbl_no},
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
@@ -70,7 +91,7 @@ class BasicRoutingRule(BaseRoutingRule):
         main_info_endpoint = self._extract_main_info_endpoint(response=response)
         form_data = self._extract_form_data(response=response, mbl_no=mbl_no)
 
-        yield MainInfoRoutingRule.build_routing_request(form_data=form_data, endpoint=main_info_endpoint)
+        yield MainInfoRoutingRule.build_request_option(form_data=form_data, endpoint=main_info_endpoint)
 
     @staticmethod
     def _extract_main_info_endpoint(response: scrapy.Selector) -> str:
@@ -117,12 +138,13 @@ class MainInfoRoutingRule(BaseRoutingRule):
     name = 'MAIN_INFO'
 
     @classmethod
-    def build_routing_request(cls, form_data, endpoint) -> RoutingRequest:
-        request = scrapy.FormRequest(
+    def build_request_option(cls, form_data, endpoint) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_FORM,
             url=f'{RCL_BASE_URL}/{endpoint}',
-            formdata=form_data,
+            form_data=form_data,
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'

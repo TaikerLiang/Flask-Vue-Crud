@@ -6,9 +6,8 @@ from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_rcl import MainInfoRoutingRule, CarrierRclSpider
+from crawler.spiders.carrier_rcl import MainInfoRoutingRule
 from test.spiders.carrier_rcl import main_info
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -25,15 +24,14 @@ def sample_loader(sample_loader):
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    routing_request = MainInfoRoutingRule.build_routing_request(form_data={}, endpoint='417Cargo_Tracking178')
-    url = extract_url_from(routing_request=routing_request)
+    option = MainInfoRoutingRule.build_request_option(form_data={}, endpoint='417Cargo_Tracking178')
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=html_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
         )
     )
 
@@ -50,15 +48,14 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    routing_request = MainInfoRoutingRule.build_routing_request(form_data={}, endpoint='417Cargo_Tracking178')
-    url = extract_url_from(routing_request=routing_request)
+    option = MainInfoRoutingRule.build_request_option(form_data={}, endpoint='417Cargo_Tracking178')
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=html_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: MainInfoRoutingRule.name,
             }
