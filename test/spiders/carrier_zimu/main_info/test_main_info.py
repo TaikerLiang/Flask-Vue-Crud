@@ -5,9 +5,8 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.spiders.carrier_zimu import CarrierZimuSpider, MainInfoRoutingRule
+from crawler.spiders.carrier_zimu import MainInfoRoutingRule
 from test.spiders.carrier_zimu import main_info
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -27,18 +26,18 @@ def sample_loader(sample_loader):
     ('07_routing_schedule_without_arrival_date', 'ZIMUORF0941773'),
     ('08_routing_schedule_without_sailing_date', 'ZIMUNGB9491892'),
 ])
-def test_main_info_routing_rule(sub, mbl_no, sample_loader):
+def test_main_info_handle(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
-    routing_request = MainInfoRoutingRule.build_routing_request(mbl_no=mbl_no)
-    url = extract_url_from(routing_request=routing_request)
+    option = MainInfoRoutingRule.build_request_option(mbl_no=mbl_no)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=httptext,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
+            meta=option.meta,
         )
     )
 
@@ -56,15 +55,15 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
-    routing_request = MainInfoRoutingRule.build_routing_request(mbl_no=mbl_no)
-    url = extract_url_from(routing_request=routing_request)
+    option = MainInfoRoutingRule.build_request_option(mbl_no=mbl_no)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=httptext,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
+            meta=option.meta,
         )
     )
 

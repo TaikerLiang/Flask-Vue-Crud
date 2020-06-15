@@ -1,13 +1,14 @@
 import dataclasses
 from typing import List, Dict, Tuple, Union
 
-from scrapy import Request, Selector
+import scrapy
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerStatusItem, ContainerItem, VesselItem, DebugItem)
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor, BaseTableCellExtractor
 from crawler.extractors.table_extractors import TopHeaderTableLocator, TableExtractor
 
@@ -25,8 +26,8 @@ class CarrierZimuSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        routing_request = MainInfoRoutingRule.build_routing_request(mbl_no=self.mbl_no)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -39,10 +40,21 @@ class CarrierZimuSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+            elif isinstance(result, RequestOption):
+                yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
+            
+    def _build_request_by(self, option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
+        }
+
+        return scrapy.Request(
+            url=option.url,
+            meta=meta,
+        )
 
 
 @dataclasses.dataclass
@@ -63,10 +75,14 @@ class MainInfoRoutingRule(BaseRoutingRule):
     name = 'MAIN_INFO'
 
     @classmethod
-    def build_routing_request(cls, mbl_no) -> RoutingRequest:
+    def build_request_option(cls, mbl_no) -> RequestOption:
         url = f'https://www.zim.com/tools/track-a-shipment?consnumber={mbl_no}'
-        request = Request(url=url)
-        return RoutingRequest(request=request, rule_name=cls.name)
+
+        return RequestOption(
+            method=RequestOption.METHOD_GET,
+            rule_name=cls.name,
+            url=url,
+        )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
@@ -156,7 +172,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             raise CarrierInvalidMblNoError()
 
     @staticmethod
-    def _extract_main_info(response: Selector):
+    def _extract_main_info(response: scrapy.Selector):
         mbl_no = response.css('dl.dl-inline dd::text').get()
 
         pod_dl = response.xpath("//dl[@class='dlist']/*[text()='POD']/..")
@@ -336,7 +352,7 @@ class AllTextCellExtractor(BaseTableCellExtractor):
     def __init__(self, css_query: str = '::text'):
         self.css_query = css_query
 
-    def extract(self, cell: Selector):
+    def extract(self, cell: scrapy.Selector):
         text_not_strip_list = cell.css(self.css_query).getall()
         text_list = [text.strip() for text in text_not_strip_list if isinstance(text, str)]
         return ' '.join(text_list)
@@ -345,7 +361,7 @@ class AllTextCellExtractor(BaseTableCellExtractor):
 # ------------------------------------------------------------------------
 
 
-def extract_dl(dl: Selector, dt_extractor=None, dd_extractor=None) -> List[Tuple[str, str]]:
+def extract_dl(dl: scrapy.Selector, dt_extractor=None, dd_extractor=None) -> List[Tuple[str, str]]:
     """
     <dl>
         <dt></dt> --+-- pair
