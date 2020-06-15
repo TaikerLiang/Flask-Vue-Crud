@@ -1,6 +1,5 @@
 from crawler.core_carrier.items import MblItem, VesselItem, LocationItem, ContainerItem
 from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RoutingRequest
 
 
 def verify(results):
