@@ -9,7 +9,8 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, ContainerItem, ContainerStatusItem, LocationItem, DebugItem)
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 
 
 URL = 'https://www.mellship.com'
@@ -29,8 +30,8 @@ class CarrierMellSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        routing_request = MainInfoRoutingRule.build_routing_request(mbl_no=self.mbl_no)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        request_option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        yield self._build_request_by(option=request_option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -43,10 +44,24 @@ class CarrierMellSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+            elif isinstance(result, RequestOption):
+                yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
+
+    def _build_request_by(self, option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta
+        }
+
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
+        else:
+            raise RuntimeError()
 
 
 class MainInfoRoutingRule(BaseRoutingRule):
@@ -56,10 +71,12 @@ class MainInfoRoutingRule(BaseRoutingRule):
         self._patt_timestamp = re.compile(r'^/Date[(](?P<time>\d{10})\d{3}[)]/$')
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
-        url = f'{URL}/Track/BL?blNo={mbl_no}'
-        request = scrapy.Request(url=url)
-        return RoutingRequest(request=request, rule_name=cls.name)
+    def build_request_option(cls, mbl_no: str) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=f'{URL}/Track/BL?blNo={mbl_no}',
+        )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.json'
