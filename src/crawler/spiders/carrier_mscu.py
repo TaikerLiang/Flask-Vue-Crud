@@ -15,7 +15,7 @@ from crawler.core_carrier.exceptions import (
 from crawler.core_carrier.items import ContainerItem, ContainerStatusItem, LocationItem, MblItem, DebugItem, \
     BaseCarrierItem
 from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest, RuleManager
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
@@ -93,9 +93,6 @@ class HomePageRoutingRule(BaseRoutingRule):
             },
         )
 
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
-
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
 
@@ -133,9 +130,6 @@ class MainRoutingRule(BaseRoutingRule):
                 'mbl_no': mbl_no,
             },
         )
-
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
