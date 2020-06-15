@@ -49,7 +49,15 @@ class CarrierAcluSpider(BaseCarrierSpider):
                 raise RuntimeError()
 
     def _build_request_by(self, option: RequestOption):
-        pass
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
+        }
+
+        return scrapy.Request(
+            url=option.url,
+            meta=meta,
+        )
 
 
 # -------------------------------------------------------------------------------
@@ -272,6 +280,9 @@ class DetailTrackingRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=f'{BASE_URL}{route}',
+            meta={
+                'container_no': container_no,
+            }
         )
 
     def get_save_name(self, response) -> str:
