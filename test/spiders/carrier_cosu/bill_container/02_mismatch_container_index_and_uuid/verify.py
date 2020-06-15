@@ -1,5 +1,5 @@
 from crawler.core_carrier.items import ContainerItem
-from crawler.core_carrier.rules import RoutingRequest
+from crawler.core_carrier.request_helpers import RequestOption
 
 
 def verify(results, mbl_no):
@@ -14,8 +14,8 @@ def verify(results, mbl_no):
     )
 
     expect_url0 = expect_url_fmt.format(container_no='UETU5171688', mbl_no=mbl_no)
-    assert isinstance(results[1], RoutingRequest)
-    assert results[1].request.url.startswith(expect_url0)
+    assert isinstance(results[1], RequestOption)
+    assert results[1].url.startswith(expect_url0)
 
     assert results[2] == ContainerItem(
         container_key='TEMU696641',
@@ -23,5 +23,5 @@ def verify(results, mbl_no):
     )
 
     expect_url1 = expect_url_fmt.format(container_no='TEMU6966419', mbl_no=mbl_no)
-    assert isinstance(results[3], RoutingRequest)
-    assert results[3].request.url.startswith(expect_url1)
+    assert isinstance(results[3], RequestOption)
+    assert results[3].url.startswith(expect_url1)

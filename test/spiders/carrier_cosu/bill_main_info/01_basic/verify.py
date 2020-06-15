@@ -1,5 +1,5 @@
 from crawler.core_carrier.items import MblItem, VesselItem, LocationItem, ContainerItem
-from crawler.core_carrier.rules import RoutingRequest
+from crawler.core_carrier.request_helpers import RequestOption
 
 
 def verify(results):
@@ -56,4 +56,4 @@ def verify(results):
         'depot_last_free_day': None,
     })
 
-    assert isinstance(results[3], RoutingRequest)
+    assert isinstance(results[3], RequestOption)
