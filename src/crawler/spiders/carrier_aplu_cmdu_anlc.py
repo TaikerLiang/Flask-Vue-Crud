@@ -50,7 +50,7 @@ class SharedSpider(BaseCarrierSpider):
     def _build_request_by(self, option: RequestOption):
         meta = {
             RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
-            **option,
+            **option.meta,
         }
 
         if option.method == RequestOption.METHOD_GET:
