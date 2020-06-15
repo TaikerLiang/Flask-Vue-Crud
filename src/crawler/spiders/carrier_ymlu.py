@@ -9,7 +9,7 @@ from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierI
 from crawler.core_carrier.items import (
     BaseCarrierItem, ContainerStatusItem, LocationItem, MblItem, ContainerItem, DebugItem)
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
-from crawler.core_carrier.rules import BaseRoutingRule, RoutingRequest, RuleManager
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
@@ -70,8 +70,7 @@ class CarrierYmluSpider(BaseCarrierSpider):
             else:
                 raise RuntimeError()
 
-    @staticmethod
-    def _build_request_by(option: RequestOption):
+    def _build_request_by(self, option: RequestOption):
         meta = {
             RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
             **option.meta,
@@ -96,10 +95,6 @@ class MainInfoRoutingRule(BaseRoutingRule):
             url=f'{BASE_URL}/blconnect.aspx?BLADG={mbl_no},&rdolType=BL&type=cargo',
             meta={'mbl_no': mbl_no}
         )
-
-    @classmethod
-    def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
-        pass
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
@@ -541,12 +536,6 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 'container_no': container_no
             },
         )
-
-    @classmethod
-    def build_routing_request(cls, response, follow_url: str, container_no: str) -> RoutingRequest:
-        request = response.follow(follow_url)
-        request.meta['container_no'] = container_no
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
         container_no = response.meta['container_no']
