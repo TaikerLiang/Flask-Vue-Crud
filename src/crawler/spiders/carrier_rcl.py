@@ -54,15 +54,16 @@ class CarrierRclSpider(BaseCarrierSpider):
             **option.meta
         }
 
-        if option.rule_name == RequestOption.METHOD_GET:
+        if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
                 url=option.url,
                 meta=meta,
             )
-        elif option.rule_name == RequestOption.METHOD_POST_FORM:
+        elif option.method == RequestOption.METHOD_POST_FORM:
             return scrapy.FormRequest(
                 url=option.url,
                 formdata=option.form_data,
+                meta=meta,
             )
         else:
             raise RuntimeError()
