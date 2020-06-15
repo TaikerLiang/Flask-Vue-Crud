@@ -5,7 +5,8 @@ from typing import Dict, List
 import scrapy
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, DebugItem)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
@@ -30,10 +31,10 @@ class CarrierSitcSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        routing_request = BasicInfoRoutingRule.build_routing_request(
+        request_option = BasicInfoRoutingRule.build_request_option(
             mbl_no=self.mbl_no, container_no_list=self.container_no_list,
         )
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        yield self._build_request_by(option=request_option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -46,10 +47,30 @@ class CarrierSitcSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+            elif isinstance(result, RequestOption):
+                yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
+
+    def _build_request_by(self, option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta
+        }
+
+        if option.rule_name == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
+        elif option.rule_name == RequestOption.METHOD_POST_FORM:
+            return scrapy.FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+                meta=meta,
+            )
+        else:
+            raise RuntimeError()
 
 
 # -------------------------------------------------------------------------------
@@ -59,7 +80,7 @@ class BasicInfoRoutingRule(BaseRoutingRule):
     name = 'BASIC_INFO'
 
     @classmethod
-    def build_routing_request(cls, mbl_no, container_no_list) -> RoutingRequest:
+    def build_request_option(cls, mbl_no, container_no_list) -> RequestOption:
         container_no, other_container_no_list = container_no_list[0], container_no_list[1:]
 
         form_data = {
@@ -67,12 +88,14 @@ class BasicInfoRoutingRule(BaseRoutingRule):
             'containerNo': container_no,
             'queryInfo': '{"queryObjectName": "com.sitc.track.bean.BlNoBkContainer4Track"}'
         }
-        request = scrapy.FormRequest(
+
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_FORM,
             url=f'{SITC_BASE_URL}?method=billNoIndexBasicNew',
-            formdata=form_data,
+            form_data=form_data,
             meta={'mbl_no': mbl_no, 'container_no': container_no, 'container_no_list': other_container_no_list},
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.json'
@@ -92,10 +115,10 @@ class BasicInfoRoutingRule(BaseRoutingRule):
                 final_dest=LocationItem(name=basic_info['final_dest_name']),
             )
 
-            yield VesselInfoRoutingRule.build_routing_request(mbl_no=mbl_no, container_no=container_no)
+            yield VesselInfoRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
 
         elif container_no_list:
-            yield BasicInfoRoutingRule.build_routing_request(mbl_no=mbl_no, container_no_list=container_no_list)
+            yield BasicInfoRoutingRule.build_request_option(mbl_no=mbl_no, container_no_list=container_no_list)
 
         else:
             raise CarrierInvalidMblNoError()
@@ -125,18 +148,20 @@ class VesselInfoRoutingRule(BaseRoutingRule):
     name = 'VESSEL_INFO'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, container_no: str) -> RoutingRequest:
+    def build_request_option(cls, mbl_no: str, container_no: str) -> RequestOption:
         form_data = {
             'blNo': mbl_no,
             'containerNo': container_no,
             'queryInfo': '{"queryObjectName": "com.sitc.track.bean.BlNoBkContainer4Track"}'
         }
-        request = scrapy.FormRequest(
+
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_FORM,
             url=f'{SITC_BASE_URL}?method=billNoIndexSailingNew',
-            formdata=form_data,
+            form_data=form_data,
             meta={'mbl_no': mbl_no, 'container_no': container_no},
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.json'
@@ -162,7 +187,7 @@ class VesselInfoRoutingRule(BaseRoutingRule):
                 ata=vessel['ata'] or None,
             )
 
-        yield ContainerInfoRoutingRule.build_routing_request(mbl_no=mbl_no, container_no=container_no)
+        yield ContainerInfoRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
 
     def _extract_vessel_info_list(self, response: Dict) -> List:
         vessel_list = response['list']
@@ -215,18 +240,20 @@ class ContainerInfoRoutingRule(BaseRoutingRule):
     name = 'CONTAINER_INFO'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, container_no: str) -> RoutingRequest:
+    def build_request_option(cls, mbl_no: str, container_no: str) -> RequestOption:
         form_data = {
             'blNo': mbl_no,
             'containerNo': container_no,
             'queryInfo': '{"queryObjectName": "com.sitc.track.bean.BlNoBkContainer4Track"}'
         }
-        request = scrapy.FormRequest(
+
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_FORM,
             url=f'{SITC_BASE_URL}?method=billNoIndexContainersNew',
-            formdata=form_data,
+            form_data=form_data,
             meta={'mbl_no': mbl_no},
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.json'
@@ -244,7 +271,7 @@ class ContainerInfoRoutingRule(BaseRoutingRule):
                 container_no=container_no,
             )
 
-            yield ContainerStatusRoutingRule.build_routing_request(mbl_no=mbl_no, container_no=container_no)
+            yield ContainerStatusRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
 
     @staticmethod
     def _extract_container_info_list(response: Dict) -> List:
@@ -263,12 +290,13 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     name = 'CONTAINER_STATUS'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, container_no: str) -> RoutingRequest:
-        request = scrapy.Request(
+    def build_request_option(cls, mbl_no: str, container_no: str) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
             url=f'{SITC_BASE_URL}?method=boxNoIndex&containerNo={container_no}&blNo={mbl_no}',
             meta={'container_key': container_no}
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
         container_key = response.meta['container_key']
