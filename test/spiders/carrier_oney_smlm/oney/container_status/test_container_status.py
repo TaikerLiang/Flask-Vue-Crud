@@ -6,7 +6,6 @@ from scrapy.http import TextResponse
 
 from crawler.spiders.carrier_oney_smlm import CarrierOneySpider, ContainerStatusRoutingRule
 from test.spiders.carrier_oney_smlm.oney import container_status
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -20,22 +19,19 @@ def sample_loader(sample_loader):
     ('01', 'SH9FSK690300', 'CLHU9129958', 'SH9FSK690300', 'CSHA9925486010'),
     ('02_event_with_empty_time', 'SGNVG4590800', 'FDCU0637220', 'SGNVG4590800', 'CSGN9A24583850'),
 ])
-def test_container_status_routing_rule(sub, mbl_no, cntr_no, bkg_no, cop_no, sample_loader):
+def test_container_status_handle(sub, mbl_no, cntr_no, bkg_no, cop_no, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
-    routing_request = ContainerStatusRoutingRule.build_routing_request(
+    option = ContainerStatusRoutingRule.build_request_option(
         container_no=cntr_no, booking_no=bkg_no, cooperation_no=cop_no, base_url=CarrierOneySpider.base_url)
-    url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=jsontext,
         encoding='utf-8',
         request=Request(
-            url=url,
-            meta={
-                'container_key': cntr_no
-            }
+            url=option.url,
+            meta=option.meta,
         )
     )
 

@@ -8,7 +8,8 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
 from crawler.core_carrier.items import (
     BaseCarrierItem, VesselItem, ContainerStatusItem, LocationItem, ContainerItem, MblItem, DebugItem)
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 
 
 class SharedSpider(BaseCarrierSpider):
@@ -29,8 +30,8 @@ class SharedSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        routing_request = FirstTierRoutingRule.build_routing_request(mbl_no=self.mbl_no, base_url=self.base_url)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        option = FirstTierRoutingRule.build_request_option(mbl_no=self.mbl_no, base_url=self.base_url)
+        yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -43,10 +44,30 @@ class SharedSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+            elif isinstance(result, RequestOption):
+                yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
+            
+    def _build_request_by(self, option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
+        }
+
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
+        elif option.method == RequestOption.METHOD_POST_FORM:
+            return scrapy.FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+                meta=meta,
+            )
+        else:
+            KeyError()
 
 
 class CarrierOneySpider(SharedSpider):
@@ -71,16 +92,18 @@ class FirstTierRoutingRule(BaseRoutingRule):
         self.base_url = base_url
 
     @classmethod
-    def build_routing_request(cls, mbl_no, base_url) -> RoutingRequest:
+    def build_request_option(cls, mbl_no, base_url) -> RequestOption:
         time_stamp = build_timestamp()
 
         url = (
             f'{base_url}?_search=false&nd={time_stamp}&rows=10000&page=1&sidx=&sord=asc&'
             f'f_cmd={cls.f_cmd}&search_type=B&search_name={mbl_no}&cust_cd='
         )
-        request = scrapy.Request(url=url)
-
-        return RoutingRequest(request=request, rule_name=cls.name)
+        return RequestOption(
+            method=RequestOption.METHOD_GET,
+            rule_name=cls.name,
+            url=url,
+        )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.json'
@@ -99,7 +122,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
             mbl_no=mbl_no
         )
 
-        yield VesselRoutingRule.build_routing_request(booking_no=booking_no, base_url=self.base_url)
+        yield VesselRoutingRule.build_request_option(booking_no=booking_no, base_url=self.base_url)
 
         for container_info in container_info_list:
             container_no = container_info['container_no']
@@ -109,20 +132,20 @@ class FirstTierRoutingRule(BaseRoutingRule):
                 container_no=container_no,
             )
 
-            yield ContainerStatusRoutingRule.build_routing_request(
+            yield ContainerStatusRoutingRule.build_request_option(
                 container_no=container_no,
                 booking_no=container_info['booking_no'],
                 cooperation_no=container_info['cooperation_no'],
                 base_url=self.base_url,
             )
 
-            yield ReleaseStatusRoutingRule.build_routing_request(
+            yield ReleaseStatusRoutingRule.build_request_option(
                 container_no=container_no,
                 booking_no=booking_no,
                 base_url=self.base_url,
             )
 
-            yield RailInfoRoutingRule.build_routing_request(
+            yield RailInfoRoutingRule.build_request_option(
                 container_no=container_no,
                 cooperation=container_info['cooperation_no'],
                 base_url=self.base_url,
@@ -180,17 +203,18 @@ class VesselRoutingRule(BaseRoutingRule):
     f_cmd = '124'
 
     @classmethod
-    def build_routing_request(cls, booking_no, base_url) -> RoutingRequest:
-        formdata = {
+    def build_request_option(cls, booking_no, base_url) -> RequestOption:
+        form_data = {
             'f_cmd': cls.f_cmd,
             'bkg_no': booking_no,
         }
-        request = scrapy.FormRequest(
-            url=base_url,
-            formdata=formdata,
-        )
 
-        return RoutingRequest(request=request, rule_name=cls.name)
+        return RequestOption(
+            method=RequestOption.METHOD_POST_FORM,
+            rule_name=cls.name,
+            url=base_url,
+            form_data=form_data,
+        )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.json'
@@ -236,20 +260,21 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     f_cmd = '125'
 
     @classmethod
-    def build_routing_request(cls, container_no, booking_no, cooperation_no, base_url):
-        formdata = {
+    def build_request_option(cls, container_no, booking_no, cooperation_no, base_url) -> RequestOption:
+        form_data = {
             'f_cmd': cls.f_cmd,
             'cntr_no': container_no,
             'bkg_no': booking_no,
             'cop_no': cooperation_no,
         }
-        request = scrapy.FormRequest(
+
+        return RequestOption(
+            method=RequestOption.METHOD_POST_FORM,
+            rule_name=cls.name,
             url=base_url,
-            formdata=formdata,
+            form_data=form_data,
             meta={'container_key': container_no},
         )
-
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
         container_key = response.meta['container_key']
@@ -301,19 +326,20 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
     f_cmd = '126'
 
     @classmethod
-    def build_routing_request(cls, container_no, booking_no, base_url) -> RoutingRequest:
-        formdata = {
+    def build_request_option(cls, container_no, booking_no, base_url) -> RequestOption:
+        form_data = {
             'f_cmd': cls.f_cmd,
             'cntr_no': container_no,
             'bkg_no': booking_no,
         }
 
-        request = scrapy.FormRequest(
+        return RequestOption(
+            method=RequestOption.METHOD_POST_FORM,
+            rule_name=cls.name,
             url=base_url,
-            formdata=formdata,
+            form_data=form_data,
             meta={'container_key': container_no},
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
         container_key = response.meta['container_key']
@@ -368,18 +394,19 @@ class RailInfoRoutingRule(BaseRoutingRule):
     f_cmd = '127'
 
     @classmethod
-    def build_routing_request(cls, container_no, cooperation, base_url) -> RoutingRequest:
-        formdata = {
+    def build_request_option(cls, container_no, cooperation, base_url) -> RequestOption:
+        form_data = {
             'f_cmd': cls.f_cmd,
             'cop_no': cooperation,
         }
-        request = scrapy.FormRequest(
+
+        return RequestOption(
+            method=RequestOption.METHOD_POST_FORM,
+            rule_name=cls.name,
             url=base_url,
-            formdata=formdata,
+            form_data=form_data,
             meta={'container_key': container_no},
         )
-
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
         container_key = response.meta['container_key']
