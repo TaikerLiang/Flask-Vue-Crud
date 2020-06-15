@@ -131,7 +131,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_mbl_no(response):
-        pattern = re.compile(r'\w+ Number (?P<mbl_no>\w+)$')
+        pattern = re.compile(r'.+ Number (?P<mbl_no>\w+)$')
 
         rule = CssQueryTextStartswithMatchRule(css_query='strong::text', startswith='B/L Number')
         mbl_selector = find_selector_from(selectors=response.css('td.BlackText'), rule=rule)
