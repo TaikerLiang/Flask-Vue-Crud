@@ -23,14 +23,14 @@ def sample_loader(sample_loader):
 def test_main_info_handler(sub, mbl_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'main_information.json')
 
-    url = f'https://www.matson.com/vcsc/tracking/bill/{mbl_no}'
+    option = MainInfoRoutingRule.build_request_option(mbl_no=mbl_no)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=json_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
             meta={
                 'mbl_no': mbl_no,
             }
@@ -50,14 +50,14 @@ def test_main_info_handler(sub, mbl_no, sample_loader):
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     json_text = sample_loader.read_file(sub, 'main_information.json')
 
-    url = f'https://www.matson.com/vcsc/tracking/bill/{mbl_no}'
+    option = MainInfoRoutingRule.build_request_option(mbl_no=mbl_no)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=json_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
             meta={
                 'mbl_no': mbl_no,
             }

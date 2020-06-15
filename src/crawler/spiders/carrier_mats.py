@@ -8,7 +8,8 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, ContainerItem, ContainerStatusItem, LocationItem, DebugItem)
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 
 URL = 'https://www.matson.com'
 
@@ -27,8 +28,8 @@ class CarrierMatsSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        routing_request = MainInfoRoutingRule.build_routing_request(mbl_no=self.mbl_no)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        request_option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        yield self._build_request_by(option=request_option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -41,20 +42,42 @@ class CarrierMatsSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+            elif isinstance(result, RequestOption):
+                yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
+
+    def _build_request_by(self, option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta
+        }
+
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
+        elif option.method == RequestOption.METHOD_POST_FORM:
+            return scrapy.FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+                meta=meta,
+            )
+        else:
+            raise RuntimeError()
 
 
 class MainInfoRoutingRule(BaseRoutingRule):
     name = 'MAIN_INFO'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
-        url = f'{URL}/vcsc/tracking/bill/{mbl_no}'
-        request = scrapy.Request(url=url)
-        return RoutingRequest(request=request, rule_name=cls.name)
+    def build_request_option(cls, mbl_no: str) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=f'{URL}/vcsc/tracking/bill/{mbl_no}',
+        )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.json'
@@ -82,7 +105,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             container_status_list = self._extract_container_status_list(container)
             for status in container_status_list:
                 status['container_key'] = container_no
-                yield TimeRoutingRule.build_routing_request(status)
+                yield TimeRoutingRule.build_request_option(status)
 
     @staticmethod
     def _check_mbl_no(container_list: List):
@@ -128,11 +151,16 @@ class TimeRoutingRule(BaseRoutingRule):
     name = 'TIME'
 
     @classmethod
-    def build_routing_request(cls, container_status: dict) -> RoutingRequest:
-        url = f'{URL}/timezonerange.php'
-        formdata = {'date': container_status['timestamp']}
-        request = scrapy.FormRequest(url=url, formdata=formdata, meta={'status': container_status})
-        return RoutingRequest(request=request, rule_name=cls.name)
+    def build_request_option(cls, container_status: dict) -> RequestOption:
+        form_data = {'date': container_status['timestamp']}
+
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_FORM,
+            url=f'{URL}/timezonerange.php',
+            form_data=form_data,
+            meta={'status': container_status},
+        )
 
     def get_save_name(self, response) -> str:
         container_no = response.meta['status']['container_key']
