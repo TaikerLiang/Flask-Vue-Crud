@@ -8,7 +8,7 @@ from scrapy import Selector, FormRequest, Request
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData, DebugItem)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError, \
@@ -79,7 +79,9 @@ class RequestOptionFactory:
     def build_container_option(
             cls, rule_name: str, basic_request_spec: BasicRequestSpec, container_link_element: str
     ) -> RequestOption:
-        form_data = cls.__build_form_data(basic_request_spec=basic_request_spec, container_link_element=container_link_element)
+        form_data = cls.__build_form_data(
+            basic_request_spec=basic_request_spec, container_link_element=container_link_element
+        )
 
         return RequestOption(
             rule_name=rule_name,
@@ -135,8 +137,7 @@ class CarrierSuduSpider(BaseCarrierSpider):
             option = self._request_queue.get_next_request_option()
             yield self._build_request_by(option=option)
 
-    @staticmethod
-    def _build_request_by(option: RequestOption):
+    def _build_request_by(self, option: RequestOption):
         meta = {
             RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
             **option.meta,
@@ -207,9 +208,6 @@ class PageInfoRoutingRule(BaseRoutingRule):
             meta={'mbl_no': mbl_no},
         )
 
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
-
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
 
@@ -244,9 +242,6 @@ class MblSearchResultRoutingRule(BaseRoutingRule):
         option = search_option.copy_and_extend_by(meta={'mbl_state': mbl_state})
 
         return option
-
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
 
     def get_save_name(self, response):
         self._save_count += 1
@@ -370,7 +365,8 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
     ) -> RequestOption:
         if mbl_state == MblState.MULTIPLE:
             container_option = RequestOptionFactory.build_container_option(
-                rule_name=cls.name, basic_request_spec=basic_request_spec, container_link_element=container_link_element)
+                rule_name=cls.name, basic_request_spec=basic_request_spec, container_link_element=container_link_element
+            )
         elif mbl_state == MblState.SINGLE:
             container_option = RequestOptionFactory.build_search_option(
                 rule_name=cls.name, basic_request_spec=basic_request_spec
@@ -385,9 +381,6 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         })
 
         return option
-
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
@@ -626,9 +619,6 @@ class VoyageRoutingRule(BaseRoutingRule):
                 'voyage_direction': voyage_spec.direction,
             },
         )
-
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
 
     def get_save_name(self, response) -> str:
         voyage_location = response.meta['voyage_location']
