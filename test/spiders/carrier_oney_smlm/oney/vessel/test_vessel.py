@@ -6,7 +6,6 @@ from scrapy.http import TextResponse
 
 from crawler.spiders.carrier_oney_smlm import CarrierOneySpider, VesselRoutingRule
 from test.spiders.carrier_oney_smlm.oney import vessel
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -20,18 +19,17 @@ def sample_loader(sample_loader):
     ('01_single_vessel', 'SH9FSK690300', 'SH9FSK690300'),
     ('02_multiple_vessels', 'SZPVF2740514', 'SZPVF2740514'),
 ])
-def test_vessel_routing_rule(sub, mbl_no, bkg_no, sample_loader):
+def test_vessel_handle(sub, mbl_no, bkg_no, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
-    routing_request = VesselRoutingRule.build_routing_request(booking_no=bkg_no, base_url=CarrierOneySpider.base_url)
-    url = extract_url_from(routing_request=routing_request)
+    option = VesselRoutingRule.build_request_option(booking_no=bkg_no, base_url=CarrierOneySpider.base_url)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=jsontext,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
         )
     )
 

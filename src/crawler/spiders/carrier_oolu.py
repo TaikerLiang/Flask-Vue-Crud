@@ -5,7 +5,7 @@ from scrapy import Selector
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
@@ -99,9 +99,6 @@ class CarrierOoluSpider(BaseCarrierSpider):
 class TokenRoutingRule(BaseRoutingRule):
     name = 'TOKEN'
 
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
-
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
 
@@ -163,9 +160,6 @@ class CargoTrackingRule(BaseRoutingRule):
                 'anonymous_token': anonymous_token,
             },
         )
-
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
@@ -612,9 +606,6 @@ class ContainerStatusRule(BaseRoutingRule):
                 'container_no': container_no,
             },
         )
-
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
 
     def get_save_name(self, response) -> str:
         container_no = response.meta['container_no']

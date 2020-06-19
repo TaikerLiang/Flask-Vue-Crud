@@ -3,6 +3,7 @@ from pathlib import Path
 
 import scrapy
 
+from crawler.core_carrier.request_helpers import RequestOption
 from .middlewares import CarrierSpiderMiddleware
 from .pipelines import CarrierItemPipeline
 from ..general.savers import BaseSaver, FileSaver, NullSaver
@@ -59,6 +60,10 @@ class BaseCarrierSpider(scrapy.Spider):
 
     @abc.abstractmethod
     def start(self):
+        pass
+
+    @abc.abstractmethod
+    def _build_request_by(self, option: RequestOption):
         pass
 
     def _prepare_saver(self, to_save: bool) -> BaseSaver:

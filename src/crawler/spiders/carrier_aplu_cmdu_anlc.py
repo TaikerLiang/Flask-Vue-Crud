@@ -3,11 +3,13 @@ from typing import Dict
 import scrapy
 from scrapy import Selector
 
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
+    SuspiciousOperationError
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem)
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor, HeaderMismatchError
 
@@ -27,8 +29,8 @@ class SharedSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        routing_request = FirstTierRoutingRule.build_routing_request(mbl_no=self.mbl_no, base_url=self.base_url)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        request_option = FirstTierRoutingRule.build_request_option(mbl_no=self.mbl_no, base_url=self.base_url)
+        yield self._build_request_by(option=request_option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -41,10 +43,24 @@ class SharedSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+            elif isinstance(result, RequestOption):
+                yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
+
+    def _build_request_by(self, option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
+        }
+
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
+        else:
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
 class CarrierApluSpider(SharedSpider):
@@ -74,11 +90,13 @@ class FirstTierRoutingRule(BaseRoutingRule):
         self.base_url = base_url
 
     @classmethod
-    def build_routing_request(cls, mbl_no, base_url) -> RoutingRequest:
-        url = f'{base_url}/ebusiness/tracking/search?SearchBy=BL&Reference={mbl_no}&search=Search'
-        request = scrapy.Request(url=url, meta={'mbl_no': mbl_no})
-
-        return RoutingRequest(request=request, rule_name=cls.name)
+    def build_request_option(cls, mbl_no, base_url) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=f'{base_url}/ebusiness/tracking/search?SearchBy=BL&Reference={mbl_no}&search=Search',
+            meta={'mbl_no': mbl_no},
+        )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
@@ -97,7 +115,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
             container_list = self._extract_container_list(response=response)
 
             for container_no in container_list:
-                yield ContainerStatusRoutingRule.build_routing_request(
+                yield ContainerStatusRoutingRule.build_request_option(
                     mbl_no=mbl_no, container_no=container_no, base_url=self.base_url)
 
         else:  # STATUS_MBL_NOT_EXIST
@@ -127,11 +145,13 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     name = 'CONTAINER_STATUS'
 
     @classmethod
-    def build_routing_request(cls, mbl_no, container_no, base_url) -> RoutingRequest:
-        url = f'{base_url}/ebusiness/tracking/detail/{container_no}?SearchCriteria=BL&SearchByReference={mbl_no}'
-        request = scrapy.Request(url=url, meta={'container_no': container_no})
-
-        return RoutingRequest(request=request, rule_name=cls.name)
+    def build_request_option(cls, mbl_no, container_no, base_url) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=f'{base_url}/ebusiness/tracking/detail/{container_no}?SearchCriteria=BL&SearchByReference={mbl_no}',
+            meta={'container_no': container_no},
+        )
 
     def get_save_name(self, response) -> str:
         container_no = response.meta['container_no']

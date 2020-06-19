@@ -6,7 +6,6 @@ from scrapy.http import TextResponse
 
 from crawler.spiders.carrier_aplu_cmdu_anlc import CarrierCmduSpider, ContainerStatusRoutingRule
 from test.spiders.carrier_aplu_cmdu_anlc.cmdu import container
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -22,16 +21,15 @@ def sample_loader(sample_loader):
 def test_container_status_routing_rule(sample_loader, sub, mbl_no, container_no):
     html_text = sample_loader.read_file(sub, 'container.html')
 
-    routing_request = ContainerStatusRoutingRule.build_routing_request(
+    option = ContainerStatusRoutingRule.build_request_option(
         mbl_no=mbl_no, container_no=container_no, base_url=CarrierCmduSpider.base_url)
-    url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         encoding='utf-8',
         body=html_text,
         request=Request(
-            url=url,
+            url=option.url,
             meta={
                 'container_no': container_no,
             },

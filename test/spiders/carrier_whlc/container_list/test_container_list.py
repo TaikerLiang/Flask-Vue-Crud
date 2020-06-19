@@ -6,9 +6,8 @@ from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_whlc import CarrierWhlcSpider, ListRoutingRule
+from crawler.spiders.carrier_whlc import ListRoutingRule
 from test.spiders.carrier_whlc import container_list
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -26,15 +25,14 @@ def sample_loader(sample_loader):
 def test_list_routing_rule(sub, mbl_no, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    routing_request = ListRoutingRule.build_routing_request(mbl_no=mbl_no, view_state='')
-    url = extract_url_from(routing_request=routing_request)
+    option = ListRoutingRule.build_request_option(mbl_no=mbl_no, view_state='')
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=html_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: ListRoutingRule.name,
                 'mbl_no': mbl_no,
@@ -56,18 +54,18 @@ def test_list_routing_rule(sub, mbl_no, sample_loader):
 def test_list_error(sub, mbl_no, expect_exception, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    routing_request = ListRoutingRule.build_routing_request(mbl_no=mbl_no, view_state='')
-    url = extract_url_from(routing_request=routing_request)
+    option = ListRoutingRule.build_request_option(mbl_no=mbl_no, view_state='')
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=html_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
             meta={
+                RuleManager.META_CARRIER_CORE_RULE_NAME: ListRoutingRule.name,
                 'mbl_no': mbl_no,
-                'cookies': {'123': '123'},
+                'cookies': {'123': '123'}
             }
         )
     )

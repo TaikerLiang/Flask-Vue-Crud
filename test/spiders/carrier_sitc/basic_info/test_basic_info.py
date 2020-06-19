@@ -5,8 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_sitc import BasicInfoRoutingRule, CarrierSitcSpider
+from crawler.spiders.carrier_sitc import BasicInfoRoutingRule
 from test.spiders.carrier_sitc import basic_info
 
 
@@ -23,17 +22,17 @@ def sample_loader(sample_loader):
 def test_main_info_routing_rule(sub, mbl_no, container_no_list, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
-    url = 'http://www.sitcline.com/track/biz/trackCargoTrack.do?method=billNoIndexBasicNew'
+    option = BasicInfoRoutingRule.build_request_option(mbl_no=mbl_no, container_no_list=container_no_list)
 
     container_no = container_no_list[0]
     other_container_no_list = container_no_list[1:]
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=json_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
             meta={
                 'mbl_no': mbl_no,
                 'container_no': container_no,
@@ -55,17 +54,17 @@ def test_main_info_routing_rule(sub, mbl_no, container_no_list, sample_loader):
 def test_main_info_handler_mbl_no_error(sub, mbl_no, container_no_list, expect_exception, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
-    url = 'http://www.sitcline.com/track/biz/trackCargoTrack.do?method=billNoIndexBasicNew'
+    option = BasicInfoRoutingRule.build_request_option(mbl_no=mbl_no, container_no_list=container_no_list)
 
     container_no = container_no_list[0]
     other_container_no_list = container_no_list[1:]
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=json_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
             meta={
                 'mbl_no': mbl_no,
                 'container_no': container_no,

@@ -1,5 +1,5 @@
 from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusItem, LocationItem
-from crawler.core_carrier.rules import RoutingRequest
+from crawler.core_carrier.request_helpers import RequestOption
 
 
 def verify(results):
@@ -75,4 +75,4 @@ def verify(results):
         voyage='9067S',
     )
 
-    assert isinstance(results[41], RoutingRequest)
+    assert isinstance(results[41], RequestOption)

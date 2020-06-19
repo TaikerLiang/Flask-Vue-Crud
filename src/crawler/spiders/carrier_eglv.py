@@ -8,10 +8,11 @@ from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import (
     BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
 from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError)
+    CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError, SuspiciousOperationError)
 from crawler.core_carrier.items import (
     ContainerStatusItem, LocationItem, ContainerItem, MblItem, BaseCarrierItem, ExportErrorData, DebugItem)
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.selector_finder import (
     find_selector_from, CssQueryExistMatchRule, CssQueryTextStartswithMatchRule)
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
@@ -44,8 +45,8 @@ class CarrierEglvSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        routing_request = CaptchaRoutingRule.build_routing_request(mbl_no=self.mbl_no)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        option = CaptchaRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -59,10 +60,30 @@ class CarrierEglvSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+            elif isinstance(result, RequestOption):
+                yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
+
+    def _build_request_by(self, option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
+        }
+
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
+        elif option.method == RequestOption.METHOD_POST_FORM:
+            return scrapy.FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+                meta=meta,
+            )
+        else:
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
 # -------------------------------------------------------------------------------
@@ -75,9 +96,13 @@ class CaptchaRoutingRule(BaseRoutingRule):
         self._captcha_analyzer = CaptchaAnalyzer()
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
-        request = scrapy.Request(url=EGLV_CAPTCHA_URL, meta={'mbl_no': mbl_no})
-        return RoutingRequest(request=request, rule_name=cls.name)
+    def build_request_option(cls, mbl_no: str) -> RequestOption:
+        return RequestOption(
+            method=RequestOption.METHOD_GET,
+            rule_name=cls.name,
+            url=EGLV_CAPTCHA_URL,
+            meta={'mbl_no': mbl_no},
+        )
 
     def get_save_name(self, response) -> str:
         return ''  # ignore captcha
@@ -88,7 +113,7 @@ class CaptchaRoutingRule(BaseRoutingRule):
         captcha_base64 = base64.b64encode(response.body)
         verification_code = self._captcha_analyzer.analyze_captcha(captcha_base64=captcha_base64)
 
-        yield MainInfoRoutingRule.build_routing_request(
+        yield MainInfoRoutingRule.build_request_option(
             mbl_no=mbl_no, verification_code=verification_code)
 
 
@@ -109,8 +134,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
         self._retry_count = 0
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, verification_code: str) -> RoutingRequest:
-        formdata = {
+    def build_request_option(cls, mbl_no: str, verification_code: str) -> RequestOption:
+        form_data = {
             'BL': mbl_no,
             'CNTR': '',
             'bkno': '',
@@ -120,8 +145,14 @@ class MainInfoRoutingRule(BaseRoutingRule):
             'captcha_input': verification_code,
             'hd_captcha_input': '',
         }
-        request = scrapy.FormRequest(url=EGLV_INFO_URL, formdata=formdata, meta={'mbl_no': mbl_no})
-        return RoutingRequest(request=request, rule_name=cls.name)
+
+        return RequestOption(
+            method=RequestOption.METHOD_POST_FORM,
+            rule_name=cls.name,
+            url=EGLV_INFO_URL,
+            form_data=form_data,
+            meta={'mbl_no': mbl_no},
+        )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
@@ -135,7 +166,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         elif self._retry_count < CAPTCHA_RETRY_LIMIT:
             self._retry_count += 1
-            yield CaptchaRoutingRule.build_routing_request(mbl_no=mbl_no)
+            yield CaptchaRoutingRule.build_request_option(mbl_no=mbl_no)
 
         else:
             raise CarrierCaptchaMaxRetryError()
@@ -182,7 +213,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 container_no=container['container_no'],
             )
 
-            yield ContainerStatusRoutingRule.build_routing_request(
+            yield ContainerStatusRoutingRule.build_request_option(
                 mbl_no=mbl_no,
                 container_no=container['container_no'],
                 onboard_date=mbl_no_info['onboard_date'],
@@ -193,13 +224,13 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         if self._check_filing_status(response=response):
             first_container_no = self._get_first_container_no(container_list=container_list)
-            yield FilingStatusRoutingRule.build_routing_request(
+            yield FilingStatusRoutingRule.build_request_option(
                 mbl_no=mbl_no,
                 pod=mbl_no_info['pod_code'],
                 first_container_no=first_container_no,
             )
 
-        yield ReleaseStatusRoutingRule.build_routing_request(mbl_no=mbl_no)
+        yield ReleaseStatusRoutingRule.build_request_option(mbl_no=mbl_no)
 
     @staticmethod
     def _check_mbl_no(response):
@@ -438,16 +469,21 @@ class FilingStatusRoutingRule(BaseRoutingRule):
     name = 'FILING_STATUS'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str, first_container_no: str, pod: str) -> RoutingRequest:
-        formdata = {
+    def build_request_option(cls, mbl_no: str, first_container_no: str, pod: str) -> RequestOption:
+        form_data = {
             'TYPE': 'GetDispInfo',
             'Item': 'AMSACK',
             'BL': mbl_no,
             'firstCtnNo': first_container_no,
             'pod': pod,
         }
-        request = scrapy.FormRequest(url=EGLV_INFO_URL, formdata=formdata)
-        return RoutingRequest(request=request, rule_name=cls.name)
+
+        return RequestOption(
+            method=RequestOption.METHOD_POST_FORM,
+            rule_name=cls.name,
+            url=EGLV_INFO_URL,
+            form_data=form_data,
+        )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
@@ -494,14 +530,19 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
     name = 'RELEASE_STATUS'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
-        formdata = {
+    def build_request_option(cls, mbl_no: str) -> RequestOption:
+        form_data = {
             'TYPE': 'GetDispInfo',
             'Item': 'RlsStatus',
             'BL': mbl_no,
         }
-        request = scrapy.FormRequest(url=EGLV_INFO_URL, formdata=formdata)
-        return RoutingRequest(request=request, rule_name=cls.name)
+
+        return RequestOption(
+            method=RequestOption.METHOD_POST_FORM,
+            rule_name=cls.name,
+            url=EGLV_INFO_URL,
+            form_data=form_data
+        )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
@@ -728,9 +769,9 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     name = 'CONTAINER_STATUS'
 
     @classmethod
-    def build_routing_request(
-            cls, mbl_no: str, container_no: str, onboard_date: str, pol: str, pod: str, podctry: str) -> RoutingRequest:
-        formdata = {
+    def build_request_option(
+            cls, mbl_no: str, container_no: str, onboard_date: str, pol: str, pod: str, podctry: str) -> RequestOption:
+        form_data = {
             'bl_no': mbl_no,
             'cntr_no': container_no,
             'onboard_date': onboard_date,
@@ -739,8 +780,14 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             'podctry': podctry,
             'TYPE': 'CntrMove',
         }
-        request = scrapy.FormRequest(url=EGLV_INFO_URL, formdata=formdata, meta={'container_no': container_no})
-        return RoutingRequest(request=request, rule_name=cls.name)
+
+        return RequestOption(
+            method=RequestOption.METHOD_POST_FORM,
+            rule_name=cls.name,
+            url=EGLV_INFO_URL,
+            form_data=form_data,
+            meta={'container_no': container_no},
+        )
 
     def get_save_name(self, response) -> str:
         container_no = response.meta['container_no']

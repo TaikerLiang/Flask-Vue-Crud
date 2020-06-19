@@ -1,5 +1,6 @@
 from crawler.core_carrier.items import MblItem, LocationItem, ContainerItem
-from crawler.core_carrier.rules import RoutingRequest
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.spiders.carrier_eglv import ReleaseStatusRoutingRule, ContainerStatusRoutingRule
 
 
 class Verifier:
@@ -24,12 +25,11 @@ class Verifier:
             container_no='EISU3983490',
         )
 
-        assert isinstance(results[2], RoutingRequest)
-        assert results[2].request.url == 'https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do'
-        assert results[2].request.meta == {
+        assert isinstance(results[2], RequestOption)
+        assert results[2].rule_name == ContainerStatusRoutingRule.name
+        assert results[2].meta == {
             'container_no': 'EISU3983490',
         }
 
-        assert results[3].request.meta != {
-            'container_no': 'EISU3983490',
-        }
+        assert isinstance(results[3], RequestOption)
+        assert results[3].rule_name == ReleaseStatusRoutingRule.name

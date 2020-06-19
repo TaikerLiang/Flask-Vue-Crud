@@ -5,10 +5,8 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_gosu_ssph import CarrierGosuSpider, MainInfoRoutingRule
+from crawler.spiders.carrier_gosu_ssph import MainInfoRoutingRule
 from test.spiders.carrier_gosu_ssph.gosu import main_info
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -27,15 +25,14 @@ def sample_loader(sample_loader):
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'main_info.html')
 
-    routing_request = MainInfoRoutingRule.build_routing_request(mbl_no=mbl_no)
-    url = extract_url_from(routing_request=routing_request)
+    option = MainInfoRoutingRule.build_request_option(mbl_no=mbl_no)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=json_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
         )
     )
 
@@ -52,15 +49,14 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     json_text = sample_loader.read_file(sub, 'main_info.html')
 
-    routing_request = MainInfoRoutingRule.build_routing_request(mbl_no=mbl_no)
-    url = extract_url_from(routing_request=routing_request)
+    option = MainInfoRoutingRule.build_request_option(mbl_no=mbl_no)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=json_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
         )
     )
 

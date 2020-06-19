@@ -1,10 +1,10 @@
 from crawler.core_carrier.items import MblItem, ContainerItem, LocationItem, VesselItem
-from crawler.core_carrier.rules import RoutingRequest
+from crawler.core_carrier.request_helpers import RequestOption
 
 
 def verify(results):
     assert results[0] == MblItem(
-        mbl_no=None,
+        mbl_no='GOSUTPE007306942',
         por=LocationItem(name=None),
         pol=LocationItem(name="Kaohsiung, Taiwan"),
         pod=LocationItem(name="Manila North Port, Philippines"),
@@ -26,4 +26,4 @@ def verify(results):
         container_no='TTNU5185836',
     )
 
-    assert isinstance(results[3], RoutingRequest)
+    assert isinstance(results[3], RequestOption)

@@ -8,7 +8,6 @@ from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_aplu_cmdu_anlc import FirstTierRoutingRule, CarrierCmduSpider
 from test.spiders.carrier_aplu_cmdu_anlc.cmdu import main_info
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -28,15 +27,14 @@ def sample_loader(sample_loader):
 def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
     html_text = sample_loader.read_file(sub, 'main_info.html')
 
-    routing_request = FirstTierRoutingRule.build_routing_request(mbl_no=mbl_no, base_url=CarrierCmduSpider.base_url)
-    url = extract_url_from(routing_request=routing_request)
+    option = FirstTierRoutingRule.build_request_option(mbl_no=mbl_no, base_url=CarrierCmduSpider.base_url)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         encoding='utf-8',
         body=html_text,
         request=Request(
-            url=url,
+            url=option.url,
             meta={
                 'mbl_no': mbl_no,
             }
@@ -56,15 +54,14 @@ def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
 def test_first_tier_routing_rule_error(sample_loader, sub, mbl_no, expect_exception):
     html_text = sample_loader.read_file(sub, 'main_info.html')
 
-    routing_request = FirstTierRoutingRule.build_routing_request(mbl_no=mbl_no, base_url=CarrierCmduSpider.base_url)
-    url = extract_url_from(routing_request=routing_request)
+    option = FirstTierRoutingRule.build_request_option(mbl_no=mbl_no, base_url=CarrierCmduSpider.base_url)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         encoding='utf-8',
         body=html_text,
         request=Request(
-            url=url,
+            url=option.url,
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: FirstTierRoutingRule.name,
                 'mbl_no': mbl_no,

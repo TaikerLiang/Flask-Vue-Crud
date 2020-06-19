@@ -7,10 +7,11 @@ from urllib3.exceptions import ReadTimeoutError
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, DebugItem)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
+    SuspiciousOperationError
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -51,8 +52,7 @@ class CarrierPabvSpider(BaseCarrierSpider):
 
             option = TrackRoutingRule.build_request_option(mbl_no=self.mbl_no, cookies=cookies)
             proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
-            routing_request = self._build_routing_request_by(option=proxy_option)
-            yield self._rule_manager.build_request_by(routing_request=routing_request)
+            yield self._build_request_by(option=proxy_option)
 
             break
 
@@ -69,26 +69,26 @@ class CarrierPabvSpider(BaseCarrierSpider):
                 yield result
             elif isinstance(result, RequestOption):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=result)
-                routing_request = self._build_routing_request_by(option=proxy_option)
-                yield self._rule_manager.build_request_by(routing_request=routing_request)
+                yield self._build_request_by(option=proxy_option)
             else:
                 raise RuntimeError()
 
-    def _build_routing_request_by(self, option: RequestOption) -> RoutingRequest:
-        assert option.method == RequestOption.METHOD_GET
+    def _build_request_by(self, option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
+        }
 
-        request = scrapy.Request(
-            url=option.url,
-            headers=option.headers,
-            cookies=option.cookies,
-            meta=option.meta,
-            callback=self.parse,
-        )
-
-        return RoutingRequest(
-            request=request,
-            rule_name=option.rule_name,
-        )
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                headers=option.headers,
+                cookies=option.cookies,
+                meta=meta,
+                callback=self.parse,
+            )
+        else:
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
 # -------------------------------------------------------------------------------
@@ -108,9 +108,6 @@ class TrackRoutingRule(BaseRoutingRule):
                 'cookies': cookies,
             },
         )
-
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
@@ -243,9 +240,6 @@ class ContainerRoutingRule(BaseRoutingRule):
                 'container_id': container_id,
             },
         )
-
-    def build_routing_request(*args, **kwargs) -> RoutingRequest:
-        pass
 
     def get_save_name(self, response) -> str:
         container_id = response.meta['container_id']

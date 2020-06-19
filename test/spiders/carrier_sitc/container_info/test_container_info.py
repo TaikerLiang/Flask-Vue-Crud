@@ -6,7 +6,6 @@ from scrapy.http import TextResponse
 
 from crawler.spiders.carrier_sitc import ContainerInfoRoutingRule
 from test.spiders.carrier_sitc import container_info
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -23,15 +22,14 @@ def sample_loader(sample_loader):
 def test_container_info_routing_rule(sub, mbl_no, container_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
-    routing_request = ContainerInfoRoutingRule.build_routing_request(mbl_no=mbl_no, container_no=container_no)
-    url = extract_url_from(routing_request=routing_request)
+    option = ContainerInfoRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=json_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
             meta={
                 'mbl_no': mbl_no,
             }

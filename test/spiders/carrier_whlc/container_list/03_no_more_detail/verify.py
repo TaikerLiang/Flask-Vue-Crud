@@ -1,5 +1,5 @@
 from crawler.core_carrier.items import ContainerItem
-from crawler.core_carrier.rules import RoutingRequest
+from crawler.core_carrier.request_helpers import RequestOption
 
 
 def verify(results):
@@ -8,6 +8,6 @@ def verify(results):
         container_no='WHSU5121845',
     )
 
-    assert isinstance(results[1], RoutingRequest)
+    assert isinstance(results[1], RequestOption)
 
     assert len(results) == 2

@@ -4,10 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_gosu_ssph import CarrierSsphSpider, ContainerStatusRoutingRule
+from crawler.spiders.carrier_gosu_ssph import ContainerStatusRoutingRule
 from test.spiders.carrier_gosu_ssph.ssph import container_status
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -23,16 +21,15 @@ def sample_loader(sample_loader):
 def test_main_info_routing_rule(sub, mbl_no, eta, container_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.html')
 
-    routing_request = ContainerStatusRoutingRule.build_routing_request(
+    option = ContainerStatusRoutingRule.build_request_option(
         mbl_no=mbl_no, eta=eta, container_no=container_no)
-    url = extract_url_from(routing_request=routing_request)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=json_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
             meta={
                 'container_key': container_no,
             }

@@ -5,9 +5,8 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_sitc import ContainerStatusRoutingRule, CarrierSitcSpider
+from crawler.spiders.carrier_sitc import ContainerStatusRoutingRule
 from test.spiders.carrier_sitc import container_status
-from test.spiders.utils import extract_url_from
 
 
 @pytest.fixture
@@ -23,15 +22,14 @@ def sample_loader(sample_loader):
 def test_container_status_routing_rule(sub, mbl_no, container_no, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    routing_request = ContainerStatusRoutingRule.build_routing_request(mbl_no=mbl_no, container_no=container_no)
-    url = extract_url_from(routing_request=routing_request)
+    option = ContainerStatusRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
 
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=html_text,
         encoding='utf-8',
         request=Request(
-            url=url,
+            url=option.url,
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: ContainerStatusRoutingRule.name,
                 'mbl_no': mbl_no,

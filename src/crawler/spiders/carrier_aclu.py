@@ -6,8 +6,10 @@ from typing import List, Pattern, Match, Dict, Union
 import scrapy
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
-from crawler.core_carrier.rules import RuleManager, RoutingRequest, BaseRoutingRule
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
+    SuspiciousOperationError
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import BaseCarrierItem, ContainerItem, ContainerStatusItem, LocationItem, DebugItem
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 
@@ -28,8 +30,8 @@ class CarrierAcluSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        routing_request = TrackRoutingRule.build_routing_request(mbl_no=self.mbl_no)
-        yield self._rule_manager.build_request_by(routing_request=routing_request)
+        option = TrackRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -42,10 +44,24 @@ class CarrierAcluSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, RoutingRequest):
-                yield self._rule_manager.build_request_by(routing_request=result)
+            elif isinstance(result, RequestOption):
+                yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
+
+    def _build_request_by(self, option: RequestOption):
+        meta = {
+            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
+        }
+
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
+        else:
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
 # -------------------------------------------------------------------------------
@@ -54,11 +70,12 @@ class TrackRoutingRule(BaseRoutingRule):
     name = 'TRACK'
 
     @classmethod
-    def build_routing_request(cls, mbl_no: str) -> RoutingRequest:
-        request = scrapy.Request(
+    def build_request_option(cls, mbl_no: str) -> RequestOption:
+        return RequestOption(
+            method=RequestOption.METHOD_GET,
+            rule_name=cls.name,
             url=f'{BASE_URL}/trackCargo.php?search_for={mbl_no}',
         )
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
@@ -68,8 +85,9 @@ class TrackRoutingRule(BaseRoutingRule):
 
         container_infos = self._extract_container_infos(response=response)
         for container_info in container_infos:
-            yield DetailTrackingRoutingRule.build_routing_request(
-                route=container_info['route'], container_no=container_info['container_no'])
+            yield DetailTrackingRoutingRule.build_request_option(
+                route=container_info['route'], container_no=container_info['container_no']
+            )
 
     @staticmethod
     def _check_mbl_no(response):
@@ -261,12 +279,15 @@ class DetailTrackingRoutingRule(BaseRoutingRule):
         self.status_transformer = StatusTransformer(parsers=self.parsers)
 
     @classmethod
-    def build_routing_request(cls, route: str, container_no: str) -> RoutingRequest:
-        request = scrapy.Request(
+    def build_request_option(cls, route: str, container_no: str) -> RequestOption:
+        return RequestOption(
+            method=RequestOption.METHOD_GET,
+            rule_name=cls.name,
             url=f'{BASE_URL}{route}',
+            meta={
+                'container_no': container_no,
+            }
         )
-        request.meta['container_no'] = container_no
-        return RoutingRequest(request=request, rule_name=cls.name)
 
     def get_save_name(self, response) -> str:
         container_no = response.meta['container_no']

@@ -26,16 +26,16 @@ def sample_loader(sample_loader):
 ])
 def test_container_status_handler(sub, mbl_no, meta_status, sample_loader):
     html_text = sample_loader.read_file(sub, 'date.html')
-
-    url = 'https://www.matson.com/timezonerange.php/'
-
     meta_status[RuleManager.META_CARRIER_CORE_RULE_NAME] = TimeRoutingRule.name
+
+    option = TimeRoutingRule.build_request_option(container_status=meta_status)
+
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=html_text,
         encoding='utf-8',
         request=FormRequest(
-            url=url,
+            url=option.url,
             formdata={'date': meta_status['timestamp']},
             meta={
                 'status': meta_status,
