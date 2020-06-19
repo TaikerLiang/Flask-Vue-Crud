@@ -6,7 +6,8 @@ from typing import List, Dict
 import scrapy
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
+    SuspiciousOperationError
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, ContainerItem, ContainerStatusItem, LocationItem, DebugItem)
 from crawler.core_carrier.request_helpers import RequestOption
@@ -61,7 +62,7 @@ class CarrierMellSpider(BaseCarrierSpider):
                 meta=meta,
             )
         else:
-            raise RuntimeError()
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
 class MainInfoRoutingRule(BaseRoutingRule):

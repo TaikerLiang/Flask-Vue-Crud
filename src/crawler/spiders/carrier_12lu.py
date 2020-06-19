@@ -5,7 +5,7 @@ from typing import Dict
 import scrapy
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, SuspiciousOperationError
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, ContainerItem, ContainerStatusItem, LocationItem, DebugItem)
 from crawler.core_carrier.request_helpers import RequestOption
@@ -46,18 +46,20 @@ class Carrier12luSpider(BaseCarrierSpider):
             else:
                 raise RuntimeError()
 
-    @staticmethod
-    def _build_request_by(option: RequestOption):
+    def _build_request_by(self, option: RequestOption):
         meta = {
             RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
             **option.meta
         }
 
-        return scrapy.Request(
-            method=option.method,
-            url=option.url,
-            meta=meta,
-        )
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                method=option.method,
+                url=option.url,
+                meta=meta,
+            )
+        else:
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
 class ContainerStatusRoutingRule(BaseRoutingRule):

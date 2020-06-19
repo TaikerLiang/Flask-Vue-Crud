@@ -9,7 +9,8 @@ from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
 from crawler.core_carrier.items import (
     BaseCarrierItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
+    SuspiciousOperationError
 from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
 
 from selenium import webdriver
@@ -85,7 +86,8 @@ class CarrierHlcuSpider(BaseCarrierSpider):
                 meta=meta,
             )
         else:
-            raise RuntimeError()
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
+
 
 # -------------------------------------------------------------------------------
 

@@ -5,7 +5,8 @@ from scrapy import Selector, Request, FormRequest
 from twisted.python.failure import Failure
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
+    SuspiciousOperationError
 from crawler.core_carrier.items import (
     MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, BaseCarrierItem, DebugItem)
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption, ProxyMaxRetryError
@@ -172,7 +173,7 @@ class CarrierHdmuSpider(BaseCarrierSpider):
             )
 
         else:
-            raise ValueError(f'Invalid option.method [{option.method}]')
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
 # -------------------------------------------------------------------------------

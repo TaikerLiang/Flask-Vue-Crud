@@ -9,7 +9,8 @@ from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, DebugItem)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
+    SuspiciousOperationError
 from crawler.extractors.table_extractors import TableExtractor, HeaderMismatchError, BaseTableLocator
 
 SITC_BASE_URL = 'http://www.sitcline.com/track/biz/trackCargoTrack.do'
@@ -70,7 +71,7 @@ class CarrierSitcSpider(BaseCarrierSpider):
                 meta=meta,
             )
         else:
-            raise RuntimeError()
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
 # -------------------------------------------------------------------------------

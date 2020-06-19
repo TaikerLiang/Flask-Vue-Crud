@@ -4,7 +4,8 @@ from typing import Dict, List
 import scrapy
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
+    SuspiciousOperationError
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, ContainerItem, ContainerStatusItem, LocationItem, VesselItem, DebugItem)
 from crawler.core_carrier.request_helpers import RequestOption
@@ -60,6 +61,8 @@ class SharedSpider(BaseCarrierSpider):
                 url=option.url,
                 meta=meta,
             )
+        else:
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
 class CarrierSsphSpider(SharedSpider):

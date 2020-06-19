@@ -11,7 +11,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
-    LoadWebsiteTimeOutError, CarrierResponseFormatError, CarrierInvalidMblNoError)
+    LoadWebsiteTimeOutError, CarrierResponseFormatError, CarrierInvalidMblNoError, SuspiciousOperationError)
 from crawler.core_carrier.items import ContainerItem, ContainerStatusItem, LocationItem, MblItem, DebugItem, \
     BaseCarrierItem
 from crawler.core_carrier.request_helpers import RequestOption
@@ -55,8 +55,7 @@ class CarrierMscuSpider(BaseCarrierSpider):
             else:
                 raise RuntimeError()
 
-    @staticmethod
-    def _build_request_by(option: RequestOption):
+    def _build_request_by(self, option: RequestOption):
         meta = {
             RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
             **option.meta,
@@ -74,6 +73,8 @@ class CarrierMscuSpider(BaseCarrierSpider):
                 formdata=option.form_data,
                 meta=meta,
             )
+        else:
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
 # -------------------------------------------------------------------------------

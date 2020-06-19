@@ -5,7 +5,8 @@ from typing import Union, Tuple, List
 from scrapy import Request, Selector
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
+    SuspiciousOperationError
 from crawler.core_carrier.items import (
     BaseCarrierItem, ContainerStatusItem, LocationItem, MblItem, ContainerItem, DebugItem)
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
@@ -76,12 +77,15 @@ class CarrierYmluSpider(BaseCarrierSpider):
             **option.meta,
         }
 
-        return Request(
-            url=option.url,
-            headers=option.headers,
-            meta=meta,
-            dont_filter=True,
-        )
+        if option.method == RequestOption.METHOD_GET:
+            return Request(
+                url=option.url,
+                headers=option.headers,
+                meta=meta,
+                dont_filter=True,
+            )
+        else:
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
 class MainInfoRoutingRule(BaseRoutingRule):

@@ -6,7 +6,8 @@ from typing import List, Pattern, Match, Dict, Union
 import scrapy
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
+    SuspiciousOperationError
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import BaseCarrierItem, ContainerItem, ContainerStatusItem, LocationItem, DebugItem
@@ -54,10 +55,13 @@ class CarrierAcluSpider(BaseCarrierSpider):
             **option.meta,
         }
 
-        return scrapy.Request(
-            url=option.url,
-            meta=meta,
-        )
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
+        else:
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
 # -------------------------------------------------------------------------------

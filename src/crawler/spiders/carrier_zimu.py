@@ -4,7 +4,8 @@ from typing import List, Dict, Tuple, Union
 import scrapy
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
+    SuspiciousOperationError
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerStatusItem, ContainerItem, VesselItem, DebugItem)
 from crawler.core_carrier.request_helpers import RequestOption
@@ -51,10 +52,13 @@ class CarrierZimuSpider(BaseCarrierSpider):
             **option.meta,
         }
 
-        return scrapy.Request(
-            url=option.url,
-            meta=meta,
-        )
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
+        else:
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
 @dataclasses.dataclass

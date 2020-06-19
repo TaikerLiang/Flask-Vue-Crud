@@ -4,7 +4,8 @@ from typing import List, Dict, Union
 
 import scrapy
 
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
+    SuspiciousOperationError
 from crawler.core_carrier.items import (
     LocationItem, MblItem, VesselItem, ContainerStatusItem, ContainerItem, BaseCarrierItem, DebugItem)
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
@@ -59,13 +60,16 @@ class CarrierCosuSpider(BaseCarrierSpider):
             RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
             **option.meta
         }
-        
-        return scrapy.Request(
-            method=option.method,
-            headers=option.headers,
-            url=option.url,
-            meta=meta,
-        )
+
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                method=option.method,
+                headers=option.headers,
+                url=option.url,
+                meta=meta,
+            )
+        else:
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
 class BillMainInfoRoutingRule(BaseRoutingRule):

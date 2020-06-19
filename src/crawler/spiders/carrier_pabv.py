@@ -10,7 +10,8 @@ from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, DebugItem)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
+    SuspiciousOperationError
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -78,13 +79,16 @@ class CarrierPabvSpider(BaseCarrierSpider):
             **option.meta,
         }
 
-        return scrapy.Request(
-            url=option.url,
-            headers=option.headers,
-            cookies=option.cookies,
-            meta=meta,
-            callback=self.parse,
-        )
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                url=option.url,
+                headers=option.headers,
+                cookies=option.cookies,
+                meta=meta,
+                callback=self.parse,
+            )
+        else:
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
 # -------------------------------------------------------------------------------

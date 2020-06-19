@@ -8,7 +8,7 @@ from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import (
     BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
 from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError)
+    CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError, SuspiciousOperationError)
 from crawler.core_carrier.items import (
     ContainerStatusItem, LocationItem, ContainerItem, MblItem, BaseCarrierItem, ExportErrorData, DebugItem)
 from crawler.core_carrier.request_helpers import RequestOption
@@ -83,7 +83,7 @@ class CarrierEglvSpider(BaseCarrierSpider):
                 meta=meta,
             )
         else:
-            raise KeyError()
+            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
 # -------------------------------------------------------------------------------
