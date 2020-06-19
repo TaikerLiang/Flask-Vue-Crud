@@ -171,13 +171,12 @@ class MainInfoRoutingRule(BaseRoutingRule):
         if wrong_format_message:
             raise CarrierInvalidMblNoError()
 
-    @staticmethod
-    def _extract_main_info(response: scrapy.Selector):
+    def _extract_main_info(self, response: scrapy.Selector):
         mbl_no = response.css('dl.dl-inline dd::text').get()
 
         pod_dl = response.xpath("//dl[@class='dlist']/*[text()='POD']/..")
         if pod_dl:
-            pod_info = dict(extract_dl(dl=pod_dl))
+            pod_info = dict(self.extract_dl(dl=pod_dl))
         else:
             pod_info = {
                 'Arrival Date': '',
@@ -186,7 +185,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         routing_schedule_dl_list = response.css('dl.dl-list')
         routing_schedule_list = []
         for routing_schedule_dl in routing_schedule_dl_list:
-            routing_schedule_info = extract_dl(dl=routing_schedule_dl)
+            routing_schedule_info = self.extract_dl(dl=routing_schedule_dl)
             routing_schedule_list.extend(routing_schedule_info)
         routing_schedule = dict(routing_schedule_list)
 
@@ -210,8 +209,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             'eta': eta.strip(),
         }
 
-    @staticmethod
-    def _extract_vessel_list(response) -> List[Dict]:
+    def _extract_vessel_list(self, response) -> List[Dict]:
         vessel_list = []
 
         vessel_td_list = response.css('table.progress-info tr.bottom-row td')
@@ -223,13 +221,12 @@ class MainInfoRoutingRule(BaseRoutingRule):
             if not vessel_dl:
                 vessel = {}
             else:
-                vessel = dict(extract_dl(dl=vessel_dl))
+                vessel = dict(self.extract_dl(dl=vessel_dl))
             vessel_list.append(vessel)
 
         return vessel_list
 
-    @staticmethod
-    def _extract_schedule_list(response) -> List[Dict]:
+    def _extract_schedule_list(self, response) -> List[Dict]:
         schedule_list = []
 
         schedule_td_list = response.css('table.progress-info tr.top-row td')
@@ -238,7 +235,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             if not schedule_dl:
                 schedule = {}
             else:
-                may_empty_schedule = dict(extract_dl(dl=schedule_dl))
+                may_empty_schedule = dict(self.extract_dl(dl=schedule_dl))
                 schedule = {} if '' in may_empty_schedule else may_empty_schedule
             schedule_list.append(schedule)
 
@@ -343,6 +340,34 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         return container_status_list
 
+    @staticmethod
+    def extract_dl(dl: scrapy.Selector, dt_extractor=None, dd_extractor=None) -> List[Tuple[str, str]]:
+        """
+        <dl>
+            <dt></dt> --+-- pair
+            <dd></dd> --+
+            <dt></dt>
+            <dd></dd>
+            ...
+        </dl>
+        """
+        if dt_extractor is None:
+            dt_extractor = FirstTextTdExtractor()
+        if dd_extractor is None:
+            dd_extractor = AllTextCellExtractor()
+
+        dt_list = dl.css('dt')
+        dl_info_list = []
+
+        for dt_index, dt in enumerate(dt_list):
+            dd = dt.xpath('following-sibling::dd[1]')
+
+            dt_text = dt_extractor.extract(dt)
+            dd_text = dd_extractor.extract(dd)
+            dl_info_list.append((dt_text, dd_text))
+
+        return dl_info_list
+
 
 # ------------------------------------------------------------------------
 
@@ -357,33 +382,3 @@ class AllTextCellExtractor(BaseTableCellExtractor):
         text_list = [text.strip() for text in text_not_strip_list if isinstance(text, str)]
         return ' '.join(text_list)
 
-
-# ------------------------------------------------------------------------
-
-
-def extract_dl(dl: scrapy.Selector, dt_extractor=None, dd_extractor=None) -> List[Tuple[str, str]]:
-    """
-    <dl>
-        <dt></dt> --+-- pair
-        <dd></dd> --+
-        <dt></dt>
-        <dd></dd>
-        ...
-    </dl>
-    """
-    if dt_extractor is None:
-        dt_extractor = FirstTextTdExtractor()
-    if dd_extractor is None:
-        dd_extractor = AllTextCellExtractor()
-
-    dt_list = dl.css('dt')
-    dl_info_list = []
-
-    for dt_index, dt in enumerate(dt_list):
-        dd = dt.xpath('following-sibling::dd[1]')
-
-        dt_text = dt_extractor.extract(dt)
-        dd_text = dd_extractor.extract(dd)
-        dl_info_list.append((dt_text, dd_text))
-
-    return dl_info_list
