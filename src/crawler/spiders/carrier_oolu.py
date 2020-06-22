@@ -2,16 +2,24 @@ import re
 from typing import Dict
 import scrapy
 from scrapy import Selector
+from scrapy.http import TextResponse
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, ProxyMaxRetryError
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
+
+
+BASE_URL = 'http://moc.oocl.com'
+
+
+class ForceRestart:
+    pass
 
 
 class CarrierOoluSpider(BaseCarrierSpider):
@@ -19,6 +27,8 @@ class CarrierOoluSpider(BaseCarrierSpider):
 
     def __init__(self, *args, **kwargs):
         super(CarrierOoluSpider, self).__init__(*args, **kwargs)
+        # cookiejar ref: https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#std:reqmeta-cookiejar
+        self._cookiejar_id = 0
 
         rules = [
             TokenRoutingRule(),
@@ -30,11 +40,7 @@ class CarrierOoluSpider(BaseCarrierSpider):
         self._proxy_manager = ProxyManager(session='oolu', logger=self.logger)
 
     def start(self):
-        self._proxy_manager.renew_proxy()
-
-        option = TokenRoutingRule.build_request_option(mbl_no=self.mbl_no)
-        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
-        yield self._build_request_by(option=proxy_option)
+        yield self._prepare_restart()
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -50,8 +56,21 @@ class CarrierOoluSpider(BaseCarrierSpider):
             elif isinstance(result, RequestOption):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=result)
                 yield self._build_request_by(option=proxy_option)
+            elif isinstance(result, ForceRestart):
+                try:
+                    yield self._prepare_restart()
+                except ProxyMaxRetryError as err:
+                    yield err.build_error_data()
             else:
                 raise RuntimeError()
+
+    def _prepare_restart(self):
+        self._proxy_manager.renew_proxy()
+        self._cookiejar_id += 1
+
+        option = TokenRoutingRule.build_request_option(mbl_no=self.mbl_no, cookie_jar_id=self._cookiejar_id)
+        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
+        return self._build_request_by(option=proxy_option)
 
     def _build_request_by(self, option: RequestOption):
         meta = {
@@ -103,30 +122,71 @@ class TokenRoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     @classmethod
-    def build_request_option(cls, mbl_no):
+    def build_request_option(cls, mbl_no, cookie_jar_id):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=(
-                f'http://moc.oocl.com/party/cargotracking/ct_search_from_other_domain.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&'
-                f'domainName=PARTY_DOMAIN&ENTRY_TYPE=OOCL&ENTRY=MCC&ctSearchType=BL&ctShipmentNumber={mbl_no}'
+                f'{BASE_URL}/party/cargotracking/ct_search_from_other_domain.jsf;jsessionid=123'
+                f'?ANONYMOUS_TOKEN=BUILD_UP&ENTRY=MCC&ENTRY_TYPE=OOCL&PREFER_LANGUAGE=en-US'
             ),
-            meta={'mbl_no': mbl_no}
+            meta={
+                'mbl_no': mbl_no,
+                'cookiejar': cookie_jar_id,
+            }
         )
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
+        cookie_jar_id = response.meta['cookiejar']
 
+        jsession_id = self._extract_jsession_id(response=response)
         user_token = response.css('input#USER_TOKEN::attr(value)').get()
         jsf_tree_64 = response.css('input#jsf_tree_64::attr(value)').get()
         jsf_state_64 = response.css('input#jsf_state_64::attr(value)').get()
 
+        if not user_token:
+            yield ForceRestart()
+            return
+
         yield CargoTrackingRule.build_request_option(
             mbl_no=mbl_no,
+            cookie_jar_id=cookie_jar_id,
+            jsession_id=jsession_id,
             anonymous_token=user_token,  # user_token == anonymous_token
             jsf_tree_64=jsf_tree_64,
             jsf_state_64=jsf_state_64,
         )
+
+    def _extract_jsession_id(self, response: TextResponse):
+        byte_cookies = response.headers.getlist('Set-Cookie')
+
+        jsession_id_cookie = None
+        for byte_cookie in byte_cookies:
+            cookie = byte_cookie.decode()
+            if cookie.startswith('JSESSIONID'):
+                jsession_id_cookie = cookie
+                break
+
+        if not jsession_id_cookie:
+            raise CarrierResponseFormatError('JSESSIONID cookie not exist')
+
+        jsession_id = self._parse_jsession_cookie(jsession_cookie=jsession_id_cookie)
+        return jsession_id
+
+    @staticmethod
+    def _parse_jsession_cookie(jsession_cookie: str):
+        """
+        jsession_cookie example:
+        'JSESSIONID=I1e3gvlbYgkKiH78G_VSxonAdncBhrMJYkWH36FKcig9bk1L7_qN!-764150054; path=/party; HttpOnly'
+        """
+        pattern = re.compile(r'JSESSIONID=(?P<jsession_id>[\S]+); path=/\w+; HttpOnly')
+        match = pattern.match(jsession_cookie)
+
+        if not match:
+            raise CarrierResponseFormatError(reason=f'Unexpected JSESSIONID cookie: `{jsession_cookie}`')
+
+        return match.group('jsession_id')
 
 
 # -------------------------------------------------------------------------------
@@ -136,7 +196,9 @@ class CargoTrackingRule(BaseRoutingRule):
     name = 'CARGO_TRACKING'
 
     @classmethod
-    def build_request_option(cls, mbl_no: str, anonymous_token, jsf_tree_64, jsf_state_64) -> RequestOption:
+    def build_request_option(
+            cls, mbl_no: str, cookie_jar_id, jsession_id, anonymous_token, jsf_tree_64, jsf_state_64
+    ) -> RequestOption:
         form_data = {
             'hiddenForm:searchType': 'BL',
             'hiddenForm:billOfLadingNumber': mbl_no,
@@ -151,13 +213,14 @@ class CargoTrackingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_FORM,
             url=(
-                f'http://moc.oocl.com/party/cargotracking/ct_search_from_other_domain.jsf?'
+                f'{BASE_URL}/party/cargotracking/ct_search_from_other_domain.jsf;jsessionid={jsession_id}?'
                 f'ANONYMOUS_TOKEN={anonymous_token}&ENTRY=MCC&ENTRY_TYPE=OOCL&PREFER_LANGUAGE=en-US'
             ),
             form_data=form_data,
             meta={
                 'mbl_no': mbl_no,
                 'anonymous_token': anonymous_token,
+                'cookiejar': cookie_jar_id,
             },
         )
 
@@ -166,6 +229,7 @@ class CargoTrackingRule(BaseRoutingRule):
 
     def handle(self, response):
         anonymous_token = response.meta['anonymous_token']
+        cookie_jar_id = response.meta['cookiejar']
 
         self.check_response(response)
 
@@ -202,6 +266,7 @@ class CargoTrackingRule(BaseRoutingRule):
         for container in container_list:
             yield ContainerStatusRule.build_request_option(
                 mbl_no=mbl_no,
+                cookie_jar_id=cookie_jar_id,
                 container_id=container['container_id'],
                 container_no=container['container_no'],
                 anonymous_token=anonymous_token,
@@ -576,7 +641,7 @@ class ContainerStatusRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(
-            cls, mbl_no: str, container_id: str, container_no: str, anonymous_token, jsf_tree_64, jsf_state_64,
+            cls, mbl_no: str, cookie_jar_id, container_id: str, container_no: str, anonymous_token, jsf_tree_64, jsf_state_64,
     ) -> RequestOption:
 
         form_data = {
@@ -596,7 +661,7 @@ class ContainerStatusRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url=f'http://moc.oocl.com/party/cargotracking/ct_result_bl.jsf?ANONYMOUS_TOKEN={anonymous_token}',
+            url=f'{BASE_URL}/party/cargotracking/ct_result_bl.jsf?ANONYMOUS_TOKEN={anonymous_token}',
             headers={
                 'Content-Type': f'multipart/form-data; boundary={boundary}',
             },
@@ -604,6 +669,7 @@ class ContainerStatusRule(BaseRoutingRule):
             meta={
                 'mbl_no': mbl_no,
                 'container_no': container_no,
+                'cookiejar': cookie_jar_id,
             },
         )
 

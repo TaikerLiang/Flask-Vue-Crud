@@ -4,7 +4,6 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_oolu import ContainerStatusRule
 from test.spiders.carrier_oolu import container_status
 
@@ -24,21 +23,23 @@ def sample_loader(sample_loader):
 def test_container_status_handler(sub, mbl_no, container_no, sample_loader):
     html_file = sample_loader.read_file(sub, 'sample.html')
 
-    url = (
-        'http://moc.oocl.com/party/cargotracking/ct_result_bl.jsf?'
-        'ANONYMOUS_TOKEN=kFiFirZYfIHjjEVjGlDTMCCOOCL&ENTRY_TYPE=OOCL'
+    option = ContainerStatusRule.build_request_option(
+        mbl_no=mbl_no,
+        cookie_jar_id=0,
+        container_id=container_no,
+        container_no=container_no,
+        anonymous_token='',
+        jsf_tree_64='',
+        jsf_state_64='',
     )
+
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=html_file,
         encoding='utf-8',
         request=Request(
-            url=url,
-            meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: ContainerStatusRule.name,
-                'mbl_no': mbl_no,
-                'container_no': container_no,
-            }
+            url=option.url,
+            meta=option.meta,
         )
     )
 

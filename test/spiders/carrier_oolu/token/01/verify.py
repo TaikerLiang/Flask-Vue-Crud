@@ -6,7 +6,8 @@ from crawler.core_carrier.request_helpers import RequestOption
 def verify(results: List):
     assert isinstance(results[0], RequestOption)
     assert results[0].url == (
-        f'http://moc.oocl.com/party/cargotracking/ct_search_from_other_domain.jsf?'
+        f'http://moc.oocl.com/party/cargotracking/ct_search_from_other_domain.jsf;'
+        f'jsessionid=n8XBQ52UdPTKMYF_v9Y847OP0R9jTvdgdpOa-_ySJ-0AssuZ6yAf!1368327407?'
         f'ANONYMOUS_TOKEN=AhKikJsQRehJvNqtZpUjMCCOOCL&ENTRY=MCC&ENTRY_TYPE=OOCL&PREFER_LANGUAGE=en-US'
     )
     assert results[0].form_data == {

@@ -4,7 +4,6 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_oolu import TokenRoutingRule
 from test.spiders.carrier_oolu import token
 
@@ -16,26 +15,29 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no', [
-    ('01', '2634031060'),
+@pytest.mark.parametrize('sub,jsession_cookie,mbl_no', [
+    (
+            '01',
+            b'JSESSIONID=n8XBQ52UdPTKMYF_v9Y847OP0R9jTvdgdpOa-_ySJ-0AssuZ6yAf!1368327407; path=/party; HttpOnly',
+            '2634031060',
+    ),
 ])
-def test_token_handler(sub, mbl_no, sample_loader):
+def test_token_handler(sub, jsession_cookie, mbl_no, sample_loader):
     html_file = sample_loader.read_file(sub, 'sample.html')
 
-    url = (
-        f'http://moc.oocl.com/party/cargotracking/ct_search_from_other_domain.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&'
-        f'domainName=PARTY_DOMAIN&ENTRY_TYPE=OOCL&ENTRY=MCC&ctSearchType=BL&ctShipmentNumber={mbl_no}'
-    )
+    option = TokenRoutingRule.build_request_option(mbl_no=mbl_no, cookie_jar_id=0)
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=html_file,
+        headers={
+            'Set-Cookie': [
+                jsession_cookie,
+            ]
+        },
         encoding='utf-8',
         request=Request(
-            url=url,
-            meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: TokenRoutingRule.name,
-                'mbl_no': mbl_no,
-            }
+            url=option.url,
+            meta=option.meta,
         )
     )
 
