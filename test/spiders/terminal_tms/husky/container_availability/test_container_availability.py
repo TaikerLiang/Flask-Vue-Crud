@@ -4,6 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
+from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError
 from crawler.core_terminal.rules import RuleManager
 from crawler.spiders.terminal_tms import ContainerAvailabilityRoutingRule
 from test.spiders.terminal_tms.husky import container_availability
@@ -42,3 +43,27 @@ def test_container_status_routing_rule(sub, container_no, sample_loader):
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
+
+
+@pytest.mark.parametrize('sub,container_no,expected_exception', [
+    ('e01_invalid_container_no', 'FCIU2218769', TerminalInvalidContainerNoError),
+])
+def test_container_availability_handler_error(sub, container_no, expected_exception, sample_loader):
+    html_text = sample_loader.read_file(sub, 'sample.html')
+
+    request_option = ContainerAvailabilityRoutingRule.build_request_option(token='', container_no=container_no)
+
+    response = TextResponse(
+        url=request_option.url,
+        body=html_text,
+        encoding='utf-8',
+        request=Request(
+            url=request_option.url,
+            meta=request_option.meta,
+        )
+    )
+
+    routing_rule = ContainerAvailabilityRoutingRule()
+    with pytest.raises(expected_exception=expected_exception):
+        list(routing_rule.handle(response=response))
+

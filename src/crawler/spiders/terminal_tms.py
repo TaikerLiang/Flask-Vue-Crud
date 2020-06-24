@@ -5,7 +5,7 @@ import scrapy
 from scrapy import Selector
 
 from crawler.core_terminal.base_spiders import BaseTerminalSpider
-from crawler.core_terminal.exceptions import TerminalResponseFormatError
+from crawler.core_terminal.exceptions import TerminalResponseFormatError, TerminalInvalidContainerNoError
 from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
@@ -234,6 +234,9 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
         )
 
     def handle(self, response):
+        if self.__is_invalid_container_no(response=response):
+            raise TerminalInvalidContainerNoError()
+
         container_info = self.__extract_container_info(response=response)
         extra_container_info = self.__extract_extra_container_info(response=response)
 
@@ -252,6 +255,14 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
             voyage=extra_container_info['voyage'],
             chassis_no=container_info['chassis_no'],
         )
+
+    @staticmethod
+    def __is_invalid_container_no(response: Selector):
+        invalid_message = response.css('a.close+ul li::text').get()
+
+        if invalid_message and invalid_message == 'No record is found.':
+            return True
+        return False
 
     def get_save_name(self, response):
         container_no = response.meta['container_no']
