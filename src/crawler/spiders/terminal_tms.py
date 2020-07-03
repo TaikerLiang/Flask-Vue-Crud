@@ -78,11 +78,11 @@ class SharedSpider(BaseTerminalSpider):
 
 class TerminalTmsLongBeachSpider(SharedSpider):
     name = 'terminal_tms_long_beach'
-    terminal_id = 1
+    terminal_id = '1'
 
 
 class TerminalTmsHuskySpider(SharedSpider):
-    terminal_id = 3
+    terminal_id = '3'
     name = 'terminal_tms_husky'
 
 
@@ -230,7 +230,7 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_POST_FORM,
             url=url,
             form_data=form_data,
-            meta={'container_no': container_no,},
+            meta={'container_no': container_no},
         )
 
     def handle(self, response):
