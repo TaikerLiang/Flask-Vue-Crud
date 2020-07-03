@@ -223,6 +223,10 @@ class VesselRoutingRule(BaseRoutingRule):
     def handle(self, response):
         response_dict = json.loads(response.text)
 
+        if self.__is_vessel_empty(response_dict=response_dict):
+            yield VesselItem()
+            return
+
         vessel_info_list = self._extract_vessel_info_list(response_dict=response_dict)
         for vessel_info in vessel_info_list:
             yield VesselItem(
@@ -236,6 +240,10 @@ class VesselRoutingRule(BaseRoutingRule):
                 eta=vessel_info['eta'],
                 ata=vessel_info['ata'],
             )
+
+    @staticmethod
+    def __is_vessel_empty(response_dict) -> List:
+        return 'list' not in response_dict
 
     @staticmethod
     def _extract_vessel_info_list(response_dict) -> List:
