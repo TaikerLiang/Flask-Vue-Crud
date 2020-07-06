@@ -1,12 +1,11 @@
-import re
+import dataclasses
 from typing import Dict
 
 import scrapy
 from scrapy import Selector
 
 from crawler.core_terminal.base_spiders import BaseTerminalSpider
-from crawler.core_terminal.exceptions import TerminalResponseFormatError, TerminalInvalidMblNoError, \
-    TerminalInvalidContainerNoError
+from crawler.core_terminal.exceptions import TerminalResponseFormatError, TerminalInvalidContainerNoError
 from crawler.core_terminal.items import DebugItem, BaseTerminalItem, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
@@ -16,6 +15,11 @@ BASE_URL = 'https://voyagertrack.portsamerica.com'
 
 USERNAME = 'hc89scooter'
 PASSWORD = 'bd19841017'
+
+
+@dataclasses.dataclass
+class WarningMessage:
+    msg: str
 
 
 class TerminalTosSpider(BaseTerminalSpider):
@@ -49,6 +53,8 @@ class TerminalTosSpider(BaseTerminalSpider):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
+            elif isinstance(result, WarningMessage):
+                self.logger.warning(msg=result.msg)
             else:
                 raise RuntimeError()
 
@@ -120,11 +126,15 @@ class MblDetailRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=url,
+            meta={'mbl_no': mbl_no},
         )
 
     def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+
         if self.__is_mbl_number_invalid(response=response):
-            raise TerminalInvalidMblNoError()
+            yield WarningMessage(msg=f'[{self.name}] ----- handle -> mbl_no is invalid : `{mbl_no}`')
+            return
 
         mbl_detail = self.__extract_mbl_detail(response=response)
         yield TerminalItem(
