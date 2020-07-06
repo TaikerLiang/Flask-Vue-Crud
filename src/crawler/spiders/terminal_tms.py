@@ -217,10 +217,10 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
     @classmethod
     def build_request_option(cls, token, container_no) -> RequestOption:
         url = f'{BASE_URL}/tms2/Import/ContainerAvailability'
-        yesterday = cls._get_yesterday_date()
+        us_date = cls._get_us_date()
         form_data = {
             '__RequestVerificationToken': token,
-            'pickupDate': yesterday,
+            'pickupDate': us_date,
             'refNums': container_no,
             'refType': 'CN',
         }
@@ -269,11 +269,12 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
         return f'{self.name}_{container_no}.html'
 
     @staticmethod
-    def _get_yesterday_date() -> str:
-        yesterday_date_time = datetime.datetime.today() - datetime.timedelta(days=1)
-        yesterday_date_text = yesterday_date_time.strftime('%m/%d/%Y')
+    def _get_us_date() -> str:
+        utc_dt = datetime.datetime.utcnow()
+        us_date_time = utc_dt.astimezone(datetime.timezone(datetime.timedelta(hours=-8)))
+        us_date_text = us_date_time.strftime('%m/%d/%Y')
 
-        return yesterday_date_text
+        return us_date_text
 
     @staticmethod
     def __extract_container_info(response: scrapy.Selector) -> Dict:
