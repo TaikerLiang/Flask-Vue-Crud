@@ -1,7 +1,8 @@
 import dataclasses
 import re
-from typing import Union, Tuple, List
+from typing import Union, Tuple, List, Dict
 
+import scrapy
 from scrapy import Request, Selector
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
@@ -18,8 +19,7 @@ BASE_URL = 'https://www.yangming.com/e-service/Track_Trace'
 
 
 @dataclasses.dataclass
-class Resent:
-    option: RequestOption
+class Restart:
     reason: str = ''
 
 
@@ -29,7 +29,10 @@ class CarrierYmluSpider(BaseCarrierSpider):
     def __init__(self, *args, **kwargs):
         super(CarrierYmluSpider, self).__init__(*args, **kwargs)
 
+        self._cookie_jar_id = 1
+
         rules = [
+            MainPageRoutingRule(),
             MainInfoRoutingRule(),
             ContainerStatusRoutingRule(),
         ]
@@ -40,7 +43,7 @@ class CarrierYmluSpider(BaseCarrierSpider):
     def start(self):
         self._proxy_manager.renew_proxy()
 
-        option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        option = MainPageRoutingRule.build_request_option(mbl_no=self.mbl_no, cookie_jar_id=self._cookie_jar_id)
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         yield self._build_request_by(option=proxy_option)
 
@@ -60,11 +63,12 @@ class CarrierYmluSpider(BaseCarrierSpider):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
                 yield self._build_request_by(option=proxy_option)
 
-            elif isinstance(result, Resent):
-                self.logger.warning(f'----- {result.reason}, try new proxy and resent request `{result.option.rule_name}`')
+            elif isinstance(result, Restart):
+                self.logger.warning(f'----- {result.reason}, try new proxy and restart')
                 self._proxy_manager.renew_proxy()
+                self._cookie_jar_id += 1
 
-                option = result.option
+                option = MainPageRoutingRule.build_request_option(mbl_no=self.mbl_no, cookie_jar_id=self._cookie_jar_id)
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(option)
                 yield self._build_request_by(proxy_option)
 
@@ -78,9 +82,17 @@ class CarrierYmluSpider(BaseCarrierSpider):
         }
 
         if option.method == RequestOption.METHOD_GET:
-            return Request(
+            return scrapy.Request(
                 url=option.url,
                 headers=option.headers,
+                meta=meta,
+                dont_filter=True,
+            )
+        elif option.method == RequestOption.METHOD_POST_FORM:
+            return scrapy.FormRequest(
+                url=option.url,
+                headers=option.headers,
+                formdata=option.form_data,
                 meta=meta,
                 dont_filter=True,
             )
@@ -88,16 +100,16 @@ class CarrierYmluSpider(BaseCarrierSpider):
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
-class MainInfoRoutingRule(BaseRoutingRule):
-    name = 'MAIN_INFO'
+class MainPageRoutingRule(BaseRoutingRule):
+    name = 'MAIN_PAGE'
 
     @classmethod
-    def build_request_option(cls, mbl_no: str) -> RequestOption:
+    def build_request_option(cls, mbl_no, cookie_jar_id) -> RequestOption:
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
-            url=f'{BASE_URL}/blconnect.aspx?BLADG={mbl_no},&rdolType=BL&type=cargo',
-            meta={'mbl_no': mbl_no}
+            url=f'{BASE_URL}/track_trace_cargo_tracking.aspx',
+            meta={'mbl_no': mbl_no, 'cookiejar': cookie_jar_id}
         )
 
     def get_save_name(self, response) -> str:
@@ -105,10 +117,68 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
+        cookie_jar_id = response.meta['cookiejar']
 
         if check_ip_error(response=response):
-            option = self.build_request_option(mbl_no=mbl_no)
-            yield Resent(option=option)
+            yield Restart(reason='IP block')
+
+        else:
+            form_inputs = self._extract_form_inputs(response=response)
+
+            yield MainInfoRoutingRule.build_request_option(
+                mbl_no=mbl_no,
+                cookie_jar_id=cookie_jar_id,
+                view_state=form_inputs['view_state'],
+                event_validation=form_inputs['event_validation'],
+            )
+
+    @staticmethod
+    def _extract_form_inputs(response: scrapy.Selector) -> Dict:
+        view_state = response.css('input#__VIEWSTATE::attr(value)').get()
+        event_validation = response.css('input#__EVENTVALIDATION::attr(value)').get()
+        view_state_generator = response.css('input#__VIEWSTATEGENERATOR::attr(value)').get()
+        return {
+            'view_state': view_state,
+            'event_validation': event_validation,
+            'view_state_generator': view_state_generator,
+        }
+
+
+class MainInfoRoutingRule(BaseRoutingRule):
+    name = 'MAIN_INFO'
+
+    @classmethod
+    def build_request_option(cls, mbl_no: str, cookie_jar_id: int, view_state: str, event_validation: str) -> RequestOption:
+        form_data = {
+            '__EVENTARGUMENT': '',
+            '__EVENTVALIDATION': event_validation,
+            '__VIEWSTATE': view_state,
+            'ctl00$ContentPlaceHolder1$rdolType': 'BL',
+            'ctl00$ContentPlaceHolder1$num1': mbl_no,
+            'ctl00$ContentPlaceHolder1$btnTrack': 'Track',
+        }
+
+        return RequestOption(
+            method=RequestOption.METHOD_POST_FORM,
+            rule_name=cls.name,
+            url=f'{BASE_URL}/track_trace_cargo_tracking.aspx',
+            form_data=form_data,
+            meta={
+                'mbl_no': mbl_no,
+                'cookiejar': cookie_jar_id,
+                'event_validation': event_validation,
+                'view_state': view_state,
+            }
+        )
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
+
+    def handle(self, response):
+        cookie_jar_id = response.meta['cookiejar']
+
+        if check_ip_error(response=response):
+            yield Restart(reason='IP block')
 
         else:
             self._check_main_info(response=response)
@@ -153,7 +223,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 )
 
                 follow_url = container_info['follow_url']
-                yield ContainerStatusRoutingRule.build_request_option(follow_url=follow_url, container_no=container_no)
+                yield ContainerStatusRoutingRule.build_request_option(
+                    follow_url=follow_url, container_no=container_no, cookie_jar_id=cookie_jar_id,
+                )
 
     @staticmethod
     def _check_main_info(response):
@@ -530,14 +602,15 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     name = 'CONTAINER_STATUS'
 
     @classmethod
-    def build_request_option(cls, follow_url: str, container_no: str) -> RequestOption:
+    def build_request_option(cls, follow_url: str, container_no: str, cookie_jar_id: int) -> RequestOption:
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=f'{BASE_URL}/{follow_url}',
             meta={
                 'follow_url': follow_url,
-                'container_no': container_no
+                'container_no': container_no,
+                'cookiejar': cookie_jar_id,
             },
         )
 
@@ -546,12 +619,10 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         return f'{self.name}_{container_no}.html'
 
     def handle(self, response):
-        follow_url = response.meta['follow_url']
         container_no = response.meta['container_no']
 
         if check_ip_error(response=response):
-            option = self.build_request_option(follow_url=follow_url, container_no=container_no)
-            yield Resent(option=option, reason='IP blocked')
+            yield Restart(reason='IP blocked')
 
         else:
             container_status_list = self._extract_container_status(response=response)
