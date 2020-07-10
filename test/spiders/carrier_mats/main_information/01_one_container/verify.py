@@ -7,7 +7,7 @@ def verify(results):
         por=LocationItem(name='NINGBO'),
         pol=LocationItem(name='NINGBO'),
         pod=LocationItem(name='LONG BEACH'),
-        final_dest=LocationItem(name='LONG BEACH'),
+        place_of_deliv=LocationItem(name='LONG BEACH'),
     )
 
     assert results[1] == ContainerItem(

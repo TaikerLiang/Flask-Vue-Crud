@@ -94,7 +94,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 por=LocationItem(name=main_info['por_name']),
                 pol=LocationItem(name=main_info['pol_name']),
                 pod=LocationItem(name=main_info['pod_name']),
-                final_dest=LocationItem(name=main_info['final_dest_name']),
+                place_of_deliv=LocationItem(name=main_info['place_of_deliv_name']),
             )
 
             yield ContainerItem(
@@ -128,7 +128,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             'por_name': container['originPort'],
             'pol_name': container['loadPort'],
             'pod_name': container['dischargePort'],
-            'final_dest_name': container['destPort'],
+            'place_of_deliv_name': container['destPort'],
         }
 
     @staticmethod
