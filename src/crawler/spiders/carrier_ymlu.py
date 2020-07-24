@@ -1,8 +1,10 @@
 import dataclasses
+import io
 import re
 from typing import Union, Tuple, List, Dict
 
 import scrapy
+from python_anticaptcha import AnticaptchaClient, ImageToTextTask
 from scrapy import Request, Selector
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
@@ -15,7 +17,7 @@ from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
-BASE_URL = 'https://www.yangming.com/e-service/Track_Trace'
+BASE_URL = 'https://www.yangming.com'
 
 
 @dataclasses.dataclass
@@ -33,6 +35,7 @@ class CarrierYmluSpider(BaseCarrierSpider):
 
         rules = [
             MainPageRoutingRule(),
+            CaptchaRoutingRule(),
             MainInfoRoutingRule(),
             ContainerStatusRoutingRule(),
         ]
@@ -52,8 +55,9 @@ class CarrierYmluSpider(BaseCarrierSpider):
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
-        save_name = routing_rule.get_save_name(response=response)
-        self._saver.save(to=save_name, text=response.text)
+        if routing_rule.name != CaptchaRoutingRule.name:
+            save_name = routing_rule.get_save_name(response=response)
+            self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
@@ -85,6 +89,7 @@ class CarrierYmluSpider(BaseCarrierSpider):
             return scrapy.Request(
                 url=option.url,
                 headers=option.headers,
+                cookies=option.cookies,
                 meta=meta,
                 dont_filter=True,
             )
@@ -108,7 +113,7 @@ class MainPageRoutingRule(BaseRoutingRule):
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
-            url=f'{BASE_URL}/track_trace_cargo_tracking.aspx',
+            url=f'{BASE_URL}/e-service/Track_Trace/CargoTracking.aspx',
             meta={'mbl_no': mbl_no, 'cookiejar': cookie_jar_id}
         )
 
@@ -125,11 +130,20 @@ class MainPageRoutingRule(BaseRoutingRule):
         else:
             form_inputs = self._extract_form_inputs(response=response)
 
-            yield MainInfoRoutingRule.build_request_option(
+            cookies_list = []
+            for cookie in response.headers.getlist('Set-Cookie'):
+                item = cookie.decode('utf-8').split(';')[0]
+                cookies_list.append(item)
+
+            cookies = ';'.join(cookies_list)
+
+            yield CaptchaRoutingRule.build_request_option(
                 mbl_no=mbl_no,
                 cookie_jar_id=cookie_jar_id,
                 view_state=form_inputs['view_state'],
                 event_validation=form_inputs['event_validation'],
+                view_state_generator=form_inputs['view_state_generator'],
+                cookies=cookies,
             )
 
     @staticmethod
@@ -144,30 +158,99 @@ class MainPageRoutingRule(BaseRoutingRule):
         }
 
 
+class CaptchaRoutingRule(BaseRoutingRule):
+    name = 'CAPTCHA'
+
+    @classmethod
+    def build_request_option(cls, mbl_no, cookie_jar_id, view_state, event_validation, view_state_generator, cookies) -> RequestOption:
+        headers = {
+            'Cache-Control': 'max-age=0',
+            'Upgrade-Insecure-Requests': '1',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+            'Sec-Fetch-Site': 'same-origin',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-User': '?1',
+            'Sec-Fetch-Dest': 'document',
+            # 'Referer': 'https://www.yangming.com/e-service/Track_Trace/CargoTracking.aspx',
+            'Origin': 'https://www.yangming.com',
+            'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+            # 'Content-Type': 'application/x-www-form-urlencoded',
+            'Cookie': cookies,
+        }
+
+        return RequestOption(
+            method=RequestOption.METHOD_GET,
+            rule_name=cls.name,
+            url=f'{BASE_URL}/e-service/schedule/CAPTCHA.ashx',
+            headers=headers,
+            meta={
+                'mbl_no': mbl_no,
+                'cookie_jar_id': cookie_jar_id,
+                'view_state': view_state,
+                'view_state_generator': view_state_generator,
+                'event_validation': event_validation,
+                'cookiejar': cookie_jar_id,
+                'headers': headers,
+            },
+        )
+
+    def get_save_name(self, response) -> str:
+        pass
+
+    def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+        view_state = response.meta['view_state']
+        event_validation = response.meta['event_validation']
+        view_state_generator = response.meta['view_state_generator']
+        cookie_jar_id = response.meta['cookie_jar_id']
+        headers = response.meta['headers']
+
+        api_key = 'f7dd6de6e36917b41d05505d249876c3'
+        captcha_fp = io.BytesIO(response.body)
+        client = AnticaptchaClient(api_key)
+        task = ImageToTextTask(captcha_fp)
+        job = client.createTask(task)
+        job.join()
+        captcha = job.get_captcha_text()
+
+        yield MainInfoRoutingRule.build_request_option(
+            mbl_no=mbl_no,
+            cookie_jar_id=cookie_jar_id,
+            view_state=view_state,
+            event_validation=event_validation,
+            view_state_generator=view_state_generator,
+            captcha=captcha,
+            headers=headers,
+        )
+
+
 class MainInfoRoutingRule(BaseRoutingRule):
     name = 'MAIN_INFO'
 
     @classmethod
-    def build_request_option(cls, mbl_no: str, cookie_jar_id: int, view_state: str, event_validation: str) -> RequestOption:
+    def build_request_option(cls, mbl_no, cookie_jar_id, view_state, event_validation, captcha, view_state_generator, headers) -> RequestOption:
         form_data = {
-            '__EVENTARGUMENT': '',
-            '__EVENTVALIDATION': event_validation,
             '__VIEWSTATE': view_state,
-            'ctl00$ContentPlaceHolder1$rdolType': 'BL',
-            'ctl00$ContentPlaceHolder1$num1': mbl_no,
-            'ctl00$ContentPlaceHolder1$btnTrack': 'Track',
+            '__VIEWSTATEGENERATOR': view_state_generator,
+            '__EVENTVALIDATION': event_validation,
+            'selCargoTracking': 'BL',
+            'Number': mbl_no,
+            'btnGo': 'Go',
+            'txtVcode': captcha,
         }
 
         return RequestOption(
             method=RequestOption.METHOD_POST_FORM,
             rule_name=cls.name,
-            url=f'{BASE_URL}/track_trace_cargo_tracking.aspx',
+            url=f'{BASE_URL}/e-service/Track_Trace/CargoTracking.aspx',
+            headers=headers,
             form_data=form_data,
             meta={
-                'mbl_no': mbl_no,
+                # 'mbl_no': mbl_no,
                 'cookiejar': cookie_jar_id,
-                'event_validation': event_validation,
-                'view_state': view_state,
+                # 'event_validation': event_validation,
+                # 'view_state': view_state,
+                'headers': headers,
             }
         )
 
@@ -175,6 +258,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def handle(self, response):
+        headers = response.meta['headers']
         cookie_jar_id = response.meta['cookiejar']
 
         if check_ip_error(response=response):
@@ -224,7 +308,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
                 follow_url = container_info['follow_url']
                 yield ContainerStatusRoutingRule.build_request_option(
-                    follow_url=follow_url, container_no=container_no, cookie_jar_id=cookie_jar_id,
+                    follow_url=follow_url, container_no=container_no, cookie_jar_id=cookie_jar_id, headers=headers,
                 )
 
     @staticmethod
@@ -602,11 +686,12 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     name = 'CONTAINER_STATUS'
 
     @classmethod
-    def build_request_option(cls, follow_url: str, container_no: str, cookie_jar_id: int) -> RequestOption:
+    def build_request_option(cls, follow_url, container_no, cookie_jar_id, headers) -> RequestOption:
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
-            url=f'{BASE_URL}/{follow_url}',
+            url=f'{BASE_URL}/e-service/Track_Trace/{follow_url}',
+            headers=headers,
             meta={
                 'follow_url': follow_url,
                 'container_no': container_no,
