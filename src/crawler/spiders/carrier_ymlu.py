@@ -4,12 +4,12 @@ import re
 from typing import Union, Tuple, List, Dict
 
 import scrapy
-from python_anticaptcha import AnticaptchaClient, ImageToTextTask
+from python_anticaptcha import AnticaptchaClient, ImageToTextTask, AnticaptchaException
 from scrapy import Request, Selector
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
-    SuspiciousOperationError
+    SuspiciousOperationError, AntiCaptchaError
 from crawler.core_carrier.items import (
     BaseCarrierItem, ContainerStatusItem, LocationItem, MblItem, ContainerItem, DebugItem)
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
@@ -171,10 +171,8 @@ class CaptchaRoutingRule(BaseRoutingRule):
             'Sec-Fetch-Mode': 'navigate',
             'Sec-Fetch-User': '?1',
             'Sec-Fetch-Dest': 'document',
-            # 'Referer': 'https://www.yangming.com/e-service/Track_Trace/CargoTracking.aspx',
             'Origin': 'https://www.yangming.com',
             'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
-            # 'Content-Type': 'application/x-www-form-urlencoded',
             'Cookie': cookies,
         }
 
@@ -205,13 +203,7 @@ class CaptchaRoutingRule(BaseRoutingRule):
         cookie_jar_id = response.meta['cookie_jar_id']
         headers = response.meta['headers']
 
-        api_key = 'f7dd6de6e36917b41d05505d249876c3'
-        captcha_fp = io.BytesIO(response.body)
-        client = AnticaptchaClient(api_key)
-        task = ImageToTextTask(captcha_fp)
-        job = client.createTask(task)
-        job.join()
-        captcha = job.get_captcha_text()
+        captcha = self._get_captcha(response.body)
 
         yield MainInfoRoutingRule.build_request_option(
             mbl_no=mbl_no,
@@ -222,6 +214,19 @@ class CaptchaRoutingRule(BaseRoutingRule):
             captcha=captcha,
             headers=headers,
         )
+
+    @staticmethod
+    def _get_captcha(captcha_code):
+        try:
+            api_key = 'fbe73f747afc996b624e8d2a95fa0f84'
+            captcha_fp = io.BytesIO(captcha_code)
+            client = AnticaptchaClient(api_key)
+            task = ImageToTextTask(captcha_fp)
+            job = client.createTask(task)
+            job.join()
+            return job.get_captcha_text()
+        except AnticaptchaException:
+            raise AntiCaptchaError()
 
 
 class MainInfoRoutingRule(BaseRoutingRule):
@@ -246,10 +251,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             headers=headers,
             form_data=form_data,
             meta={
-                # 'mbl_no': mbl_no,
                 'cookiejar': cookie_jar_id,
-                # 'event_validation': event_validation,
-                # 'view_state': view_state,
                 'headers': headers,
             }
         )
