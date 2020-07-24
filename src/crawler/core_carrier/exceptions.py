@@ -59,3 +59,9 @@ class SuspiciousOperationError(BaseCarrierError):
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail=f'<suspicious-operation> {self.msg}')
 
+
+class AntiCaptchaError(BaseCarrierError):
+    status = CARRIER_RESULT_STATUS_ERROR
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail=f'<anti-captcha-error>')

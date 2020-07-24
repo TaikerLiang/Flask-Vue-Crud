@@ -3,3 +3,4 @@ Scrapy
 click
 requests
 selenium
+python-anticaptcha
