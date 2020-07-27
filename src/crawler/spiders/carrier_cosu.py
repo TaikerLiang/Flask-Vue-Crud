@@ -105,8 +105,9 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
             # without bill
             booking_list = content['bookingNumbersInBillOfLadingTrackingGroupAssociationList']
             if booking_list:
-                booking_no = booking_list[0]['trackingGroupReferenceCode']
-                yield BookingMainInfoRoutingRule.build_request_option(mbl_no=booking_no)
+                for booking_info in booking_list:
+                    booking_no = booking_info['trackingGroupReferenceCode']
+                    yield BookingMainInfoRoutingRule.build_request_option(mbl_no=booking_no)
             else:
                 yield BookingMainInfoRoutingRule.build_request_option(mbl_no=mbl_no)
 
@@ -277,6 +278,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
         return f'{self.name}.json'
 
     def handle(self, response):
+        mbl_no = response.meta['mbl_no']
         response_dict = json.loads(response.text)
         content = response_dict['data']['content']
         self._check_mbl_no(response=response_dict)
@@ -286,7 +288,6 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
 
         first_ship = ship_list[0]
         last_ship = ship_list[-1]
-        mbl_no = tracking_info['mbl_no']
 
         yield MblItem(
             mbl_no=mbl_no,
@@ -366,7 +367,6 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
             final_dest_firms_code = tracking_na['destinationFirmsCode']
 
         return {
-            'mbl_no': tracking_path['trackingGroupReferenceCode'],
             'vessel': tracking_path['vslNme'],
             'voyage': tracking_path['voyNumber'],
             'por_name': tracking_path['fromCity'],
