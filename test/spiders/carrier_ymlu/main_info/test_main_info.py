@@ -5,8 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_ymlu import MainInfoRoutingRule
+from crawler.spiders.carrier_ymlu import MainInfoRoutingRule, HiddenFormSpec
 from test.spiders.carrier_ymlu import main_info
 
 
@@ -29,7 +28,12 @@ def sample_loader(sample_loader):
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
-    request_option = MainInfoRoutingRule.build_request_option(mbl_no=mbl_no)
+    request_option = MainInfoRoutingRule.build_request_option(
+        mbl_no=mbl_no,
+        hidden_form_spec=HiddenFormSpec(view_state_generator='', view_state='', event_validation='', previous_page=''),
+        captcha='',
+        headers={},
+    )
 
     response = TextResponse(
         url=request_option.url,
@@ -37,7 +41,7 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
         encoding='utf-8',
         request=Request(
             url=request_option.url,
-            meta={'mbl_no': mbl_no}
+            meta=request_option.meta,
         )
     )
 
@@ -49,12 +53,17 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
 
 
 @pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'W216098981', CarrierInvalidMblNoError),
+    ('e01_invalid_mbl_no', 'I209383517', CarrierInvalidMblNoError),
 ])
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
-    request_option = MainInfoRoutingRule.build_request_option(mbl_no=mbl_no)
+    request_option = MainInfoRoutingRule.build_request_option(
+        mbl_no=mbl_no,
+        hidden_form_spec=HiddenFormSpec(view_state_generator='', view_state='', event_validation='', previous_page=''),
+        captcha='',
+        headers={},
+    )
 
     response = TextResponse(
         url=request_option.url,
@@ -62,10 +71,7 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_lo
         encoding='utf-8',
         request=Request(
             url=request_option.url,
-            meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: MainInfoRoutingRule.name,
-                'mbl_no': mbl_no,
-            }
+            meta=request_option.meta,
         )
     )
 

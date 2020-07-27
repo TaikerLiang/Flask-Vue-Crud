@@ -1,15 +1,15 @@
 import dataclasses
 import io
 import re
-from typing import Union, Tuple, List, Dict
+from typing import Union, Tuple, List
 
 import scrapy
 from python_anticaptcha import AnticaptchaClient, ImageToTextTask, AnticaptchaException
-from scrapy import Request, Selector
+from scrapy import Selector
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
-    SuspiciousOperationError, AntiCaptchaError
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError, CarrierInvalidMblNoError, SuspiciousOperationError, AntiCaptchaError)
 from crawler.core_carrier.items import (
     BaseCarrierItem, ContainerStatusItem, LocationItem, MblItem, ContainerItem, DebugItem)
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
@@ -18,6 +18,14 @@ from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, Fir
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 BASE_URL = 'https://www.yangming.com'
+
+
+@dataclasses.dataclass
+class HiddenFormSpec:
+    view_state: str
+    view_state_generator: str
+    event_validation: str
+    previous_page: str
 
 
 @dataclasses.dataclass
@@ -30,7 +38,6 @@ class CarrierYmluSpider(BaseCarrierSpider):
 
     def __init__(self, *args, **kwargs):
         super(CarrierYmluSpider, self).__init__(*args, **kwargs)
-
         self._cookie_jar_id = 1
 
         rules = [
@@ -46,9 +53,10 @@ class CarrierYmluSpider(BaseCarrierSpider):
     def start(self):
         self._proxy_manager.renew_proxy()
 
-        option = MainPageRoutingRule.build_request_option(mbl_no=self.mbl_no, cookie_jar_id=self._cookie_jar_id)
+        option = MainPageRoutingRule.build_request_option(mbl_no=self.mbl_no)
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
-        yield self._build_request_by(option=proxy_option)
+        cookie_proxy_option = self.__add_cookiejar_to_request_option(proxy_option)
+        yield self._build_request_by(cookie_proxy_option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -65,16 +73,18 @@ class CarrierYmluSpider(BaseCarrierSpider):
 
             elif isinstance(result, RequestOption):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
-                yield self._build_request_by(option=proxy_option)
+                cookie_proxy_option = self.__add_cookiejar_to_request_option(proxy_option)
+                yield self._build_request_by(cookie_proxy_option)
 
             elif isinstance(result, Restart):
                 self.logger.warning(f'----- {result.reason}, try new proxy and restart')
                 self._proxy_manager.renew_proxy()
                 self._cookie_jar_id += 1
 
-                option = MainPageRoutingRule.build_request_option(mbl_no=self.mbl_no, cookie_jar_id=self._cookie_jar_id)
+                option = MainPageRoutingRule.build_request_option(mbl_no=self.mbl_no)
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(option)
-                yield self._build_request_by(proxy_option)
+                cookie_proxy_option = self.__add_cookiejar_to_request_option(proxy_option)
+                yield self._build_request_by(cookie_proxy_option)
 
             else:
                 raise RuntimeError()
@@ -89,7 +99,6 @@ class CarrierYmluSpider(BaseCarrierSpider):
             return scrapy.Request(
                 url=option.url,
                 headers=option.headers,
-                cookies=option.cookies,
                 meta=meta,
                 dont_filter=True,
             )
@@ -104,17 +113,21 @@ class CarrierYmluSpider(BaseCarrierSpider):
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
+    def __add_cookiejar_to_request_option(self, option):
+        cookie_option = option.copy_and_extend_by(meta={'cookiejar': self._cookie_jar_id})
+        return cookie_option
+
 
 class MainPageRoutingRule(BaseRoutingRule):
     name = 'MAIN_PAGE'
 
     @classmethod
-    def build_request_option(cls, mbl_no, cookie_jar_id) -> RequestOption:
+    def build_request_option(cls, mbl_no) -> RequestOption:
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
-            url=f'{BASE_URL}/e-service/Track_Trace/CargoTracking.aspx',
-            meta={'mbl_no': mbl_no, 'cookiejar': cookie_jar_id}
+            url=f'{BASE_URL}/e-service/Track_Trace/track_trace_cargo_tracking.aspx',
+            meta={'mbl_no': mbl_no},
         )
 
     def get_save_name(self, response) -> str:
@@ -122,51 +135,56 @@ class MainPageRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
-        cookie_jar_id = response.meta['cookiejar']
 
         if check_ip_error(response=response):
             yield Restart(reason='IP block')
 
         else:
-            form_inputs = self._extract_form_inputs(response=response)
-
-            cookies_list = []
-            for cookie in response.headers.getlist('Set-Cookie'):
-                item = cookie.decode('utf-8').split(';')[0]
-                cookies_list.append(item)
-
-            cookies = ';'.join(cookies_list)
+            hidden_form_spec = self._extract_hidden_form(response=response)
+            cookies_str = self._extract_cookies_str(response=response)
 
             yield CaptchaRoutingRule.build_request_option(
                 mbl_no=mbl_no,
-                cookie_jar_id=cookie_jar_id,
-                view_state=form_inputs['view_state'],
-                event_validation=form_inputs['event_validation'],
-                view_state_generator=form_inputs['view_state_generator'],
-                cookies=cookies,
+                hidden_form_spec=hidden_form_spec,
+                cookies=cookies_str,
             )
 
     @staticmethod
-    def _extract_form_inputs(response: scrapy.Selector) -> Dict:
+    def _extract_cookies_str(response) -> str:
+        cookies_list = []
+        for cookie in response.headers.getlist('Set-Cookie'):
+            item = cookie.decode('utf-8').split(';')[0]
+            cookies_list.append(item)
+
+        cookies = ';'.join(cookies_list)
+        return cookies
+
+    @staticmethod
+    def _extract_hidden_form(response: scrapy.Selector) -> HiddenFormSpec:
         view_state = response.css('input#__VIEWSTATE::attr(value)').get()
         event_validation = response.css('input#__EVENTVALIDATION::attr(value)').get()
         view_state_generator = response.css('input#__VIEWSTATEGENERATOR::attr(value)').get()
-        return {
-            'view_state': view_state,
-            'event_validation': event_validation,
-            'view_state_generator': view_state_generator,
-        }
+        previous_page = response.css('input#__PREVIOUSPAGE::attr(value)').get()
+        return HiddenFormSpec(
+            view_state=view_state,
+            event_validation=event_validation,
+            view_state_generator=view_state_generator,
+            previous_page=previous_page,
+        )
 
 
 class CaptchaRoutingRule(BaseRoutingRule):
     name = 'CAPTCHA'
 
     @classmethod
-    def build_request_option(cls, mbl_no, cookie_jar_id, view_state, event_validation, view_state_generator, cookies) -> RequestOption:
+    def build_request_option(cls, mbl_no, hidden_form_spec: HiddenFormSpec, cookies: str) -> RequestOption:
         headers = {
             'Cache-Control': 'max-age=0',
             'Upgrade-Insecure-Requests': '1',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+            'Accept': (
+                'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,'
+                'application/signed-exchange;v=b3;q=0.9'
+            ),
             'Sec-Fetch-Site': 'same-origin',
             'Sec-Fetch-Mode': 'navigate',
             'Sec-Fetch-User': '?1',
@@ -183,11 +201,7 @@ class CaptchaRoutingRule(BaseRoutingRule):
             headers=headers,
             meta={
                 'mbl_no': mbl_no,
-                'cookie_jar_id': cookie_jar_id,
-                'view_state': view_state,
-                'view_state_generator': view_state_generator,
-                'event_validation': event_validation,
-                'cookiejar': cookie_jar_id,
+                'hidden_form_spec': hidden_form_spec,
                 'headers': headers,
             },
         )
@@ -197,20 +211,14 @@ class CaptchaRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
-        view_state = response.meta['view_state']
-        event_validation = response.meta['event_validation']
-        view_state_generator = response.meta['view_state_generator']
-        cookie_jar_id = response.meta['cookie_jar_id']
+        hidden_form_spec = response.meta['hidden_form_spec']
         headers = response.meta['headers']
 
         captcha = self._get_captcha(response.body)
 
         yield MainInfoRoutingRule.build_request_option(
             mbl_no=mbl_no,
-            cookie_jar_id=cookie_jar_id,
-            view_state=view_state,
-            event_validation=event_validation,
-            view_state_generator=view_state_generator,
+            hidden_form_spec=hidden_form_spec,
             captcha=captcha,
             headers=headers,
         )
@@ -233,25 +241,28 @@ class MainInfoRoutingRule(BaseRoutingRule):
     name = 'MAIN_INFO'
 
     @classmethod
-    def build_request_option(cls, mbl_no, cookie_jar_id, view_state, event_validation, captcha, view_state_generator, headers) -> RequestOption:
+    def build_request_option(cls, mbl_no, hidden_form_spec: HiddenFormSpec, captcha, headers) -> RequestOption:
         form_data = {
-            '__VIEWSTATE': view_state,
-            '__VIEWSTATEGENERATOR': view_state_generator,
-            '__EVENTVALIDATION': event_validation,
-            'selCargoTracking': 'BL',
-            'Number': mbl_no,
-            'btnGo': 'Go',
-            'txtVcode': captcha,
+            '__EVENTARGUMENT': '',
+            '__EVENTTARGET': '',
+            '__VIEWSTATE': hidden_form_spec.view_state,
+            '__VIEWSTATEGENERATOR': hidden_form_spec.view_state_generator,
+            '__EVENTVALIDATION': hidden_form_spec.event_validation,
+            '__PREVIOUSPAGE': hidden_form_spec.previous_page,
+            'ctl00$hidButtonType': '0',
+            'ctl00$ContentPlaceHolder1$rdolType': 'BL',
+            'ctl00$ContentPlaceHolder1$num1': mbl_no,
+            'ctl00$ContentPlaceHolder1$txtVcode': captcha,
+            'ctl00$ContentPlaceHolder1$btnTrack': 'Track',
         }
 
         return RequestOption(
             method=RequestOption.METHOD_POST_FORM,
             rule_name=cls.name,
-            url=f'{BASE_URL}/e-service/Track_Trace/CargoTracking.aspx',
+            url=f'{BASE_URL}/e-service/Track_Trace/track_trace_cargo_tracking.aspx',
             headers=headers,
             form_data=form_data,
             meta={
-                'cookiejar': cookie_jar_id,
                 'headers': headers,
             }
         )
@@ -261,13 +272,17 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         headers = response.meta['headers']
-        cookie_jar_id = response.meta['cookiejar']
 
         if check_ip_error(response=response):
             yield Restart(reason='IP block')
 
         else:
-            self._check_main_info(response=response)
+            if not self._search_success(response=response):
+                yield Restart('Search Fail')
+                return
+
+            if self._is_mbl_no_invalid(response=response):
+                raise CarrierInvalidMblNoError()
 
             mbl_no = self._extract_mbl_no(response=response)
             basic_info = self._extract_basic_info(response=response)
@@ -310,20 +325,26 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
                 follow_url = container_info['follow_url']
                 yield ContainerStatusRoutingRule.build_request_option(
-                    follow_url=follow_url, container_no=container_no, cookie_jar_id=cookie_jar_id, headers=headers,
+                    follow_url=follow_url, container_no=container_no, headers=headers,
                 )
 
     @staticmethod
-    def _check_main_info(response):
+    def _search_success(response: Selector):
+        if response.css('div#ContentPlaceHolder1_divResult'):
+            return True
+        return False
+
+    @staticmethod
+    def _is_mbl_no_invalid(response):
         no_data_found_selector = response.css('div#ContentPlaceHolder1_rptBLNo_divNoDataFound_0')
         style = no_data_found_selector.css('::attr(style)').get()
 
         if 'display: none' in style:
             # Error message is hide
-            return
+            return False
 
         # Error message is shown
-        raise CarrierInvalidMblNoError()
+        return True
 
     @staticmethod
     def _extract_mbl_no(response: Selector):
@@ -541,7 +562,7 @@ class ScheduleParser:
         self.selector = selector
 
     def parse(self) -> List[Tuple]:
-        schdeules = []
+        schedules = []
 
         uls = self.selector.css('ul')
         for ul in uls:
@@ -549,12 +570,12 @@ class ScheduleParser:
             routing = lis[self.LI_ROUTING_INDEX].css('span::text').get()
             datetime = lis[self.LI_DATETIME_INDEX].css('span::text').get()
             # datetime could be None
-            stiped_datatime = datetime.strip() if isinstance(datetime, str) else datetime
-            routing_tuple = (routing.strip(), stiped_datatime)
+            striped_datetime = datetime.strip() if isinstance(datetime, str) else datetime
+            routing_tuple = (routing.strip(), striped_datetime)
 
-            schdeules.append(routing_tuple)
+            schedules.append(routing_tuple)
 
-        return schdeules
+        return schedules
 
 
 class TopHeaderStartswithTableLocator(BaseTableLocator):
@@ -688,7 +709,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     name = 'CONTAINER_STATUS'
 
     @classmethod
-    def build_request_option(cls, follow_url, container_no, cookie_jar_id, headers) -> RequestOption:
+    def build_request_option(cls, follow_url, container_no, headers) -> RequestOption:
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
@@ -697,7 +718,6 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             meta={
                 'follow_url': follow_url,
                 'container_no': container_no,
-                'cookiejar': cookie_jar_id,
             },
         )
 

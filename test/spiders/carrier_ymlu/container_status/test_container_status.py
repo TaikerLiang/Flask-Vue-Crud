@@ -33,7 +33,8 @@ def test_main_info_routing_rule(sub, mbl_no, container_no, follow_url, sample_lo
     httptext = sample_loader.read_file(sub, 'sample.html')
 
     container_status_request_option = ContainerStatusRoutingRule.build_request_option(
-        follow_url=follow_url, container_no=container_no)
+        follow_url=follow_url, container_no=container_no, headers={}
+    )
 
     response = TextResponse(
         url=container_status_request_option.url,
@@ -41,10 +42,7 @@ def test_main_info_routing_rule(sub, mbl_no, container_no, follow_url, sample_lo
         encoding='utf-8',
         request=Request(
             url=container_status_request_option.url,
-            meta={
-                'container_no': container_no,
-                'follow_url': follow_url,
-            }
+            meta=container_status_request_option.meta,
         )
     )
 
