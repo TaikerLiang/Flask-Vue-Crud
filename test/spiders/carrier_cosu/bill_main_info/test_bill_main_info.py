@@ -52,6 +52,7 @@ def test_parse_main_info(sample_loader, sub, mbl_no):
 @pytest.mark.parametrize('sub,mbl_no', [
     ('s01_only_booking', '6216853000'),
     ('s02_invalid_mbl_no_check_booking', '6213846642'),
+    ('s03_two_booking_no', '6270019960'),
 ])
 def test_parse_main_info_special(sample_loader, sub, mbl_no):
     json_text = sample_loader.read_file(sub, 'main_information.json')
