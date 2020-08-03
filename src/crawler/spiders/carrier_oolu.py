@@ -1,6 +1,8 @@
 import re
 from typing import Dict
+
 import scrapy
+from python_anticaptcha import AnticaptchaClient, NoCaptchaTaskProxylessTask, AnticaptchaException
 from scrapy import Selector
 from scrapy.http import TextResponse
 
@@ -9,7 +11,8 @@ from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, ProxyMaxRetryError
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, ProxyMaxRetryError, \
+    AntiCaptchaError
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
@@ -123,24 +126,23 @@ class TokenRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, mbl_no, cookie_jar_id):
+        url = f'{BASE_URL}/party/cargotracking/ct_search_from_other_domain.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&domainName=PARTY_DOMAIN&ENTRY_TYPE=OOCL&ENTRY=MCC&ctSearchType=BL&ctShipmentNumber={mbl_no}'
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=(
-                f'{BASE_URL}/party/cargotracking/ct_search_from_other_domain.jsf;jsessionid=123'
-                f'?ANONYMOUS_TOKEN=BUILD_UP&ENTRY=MCC&ENTRY_TYPE=OOCL&PREFER_LANGUAGE=en-US'
-            ),
+            url=url,
             meta={
                 'mbl_no': mbl_no,
+                'url': url,
                 'cookiejar': cookie_jar_id,
             }
         )
 
     def handle(self, response):
+        url = response.meta['url']
         mbl_no = response.meta['mbl_no']
         cookie_jar_id = response.meta['cookiejar']
 
-        jsession_id = self._extract_jsession_id(response=response)
         user_token = response.css('input#USER_TOKEN::attr(value)').get()
         jsf_tree_64 = response.css('input#jsf_tree_64::attr(value)').get()
         jsf_state_64 = response.css('input#jsf_state_64::attr(value)').get()
@@ -149,14 +151,43 @@ class TokenRoutingRule(BaseRoutingRule):
             yield ForceRestart()
             return
 
+        google_token = self._get_recaptcha_token(response=response, url=url)
+
+        cookie_text = self._extract_cookies_str(response=response)
+
         yield CargoTrackingRule.build_request_option(
             mbl_no=mbl_no,
             cookie_jar_id=cookie_jar_id,
-            jsession_id=jsession_id,
+            cookie=cookie_text,
             anonymous_token=user_token,  # user_token == anonymous_token
+            google_token=google_token,
             jsf_tree_64=jsf_tree_64,
             jsf_state_64=jsf_state_64,
         )
+
+    @staticmethod
+    def _get_recaptcha_token(response, url):
+        try:
+            site_key = response.css('div#recaptcha::attr("data-sitekey")').get()
+            api_key = 'fbe73f747afc996b624e8d2a95fa0f84'
+
+            client = AnticaptchaClient(api_key)
+            task = NoCaptchaTaskProxylessTask(url, site_key, is_invisible=True)
+            job = client.createTask(task)
+            job.join()
+            return job.get_solution_response()
+        except AnticaptchaException:
+            raise AntiCaptchaError()
+
+    @staticmethod
+    def _extract_cookies_str(response) -> str:
+        cookies_list = []
+        for cookie in response.headers.getlist('Set-Cookie'):
+            item = cookie.decode('utf-8').split(';')[0]
+            cookies_list.append(item)
+
+        cookies = ';'.join(cookies_list)
+        return cookies
 
     def _extract_jsession_id(self, response: TextResponse):
         byte_cookies = response.headers.getlist('Set-Cookie')
@@ -197,26 +228,52 @@ class CargoTrackingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(
-            cls, mbl_no: str, cookie_jar_id, jsession_id, anonymous_token, jsf_tree_64, jsf_state_64
+            cls, mbl_no: str, cookie_jar_id, cookie, anonymous_token, google_token, jsf_tree_64, jsf_state_64
     ) -> RequestOption:
+        headers = {
+            'Connection': 'keep-alive',
+            'Cache-Control': 'max-age=0',
+            'Upgrade-Insecure-Requests': '1',
+            'Origin': 'http://moc.oocl.com',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Cookie': cookie,
+        }
+
         form_data = {
             'hiddenForm:searchType': 'BL',
             'hiddenForm:billOfLadingNumber': mbl_no,
+            'hiddenForm:supportUtfChars': 'true',
+            'hiddenForm:bookingNumber': '',
             'hiddenForm:containerNumber': '',
+            'hiddenForm:referenceNumber': '',
+            'hiddenForm:referenceType': '',
+            'hiddenForm:timeOutToken': '',
+            'OPERATOR_USER_ID': '',
             'hiddenForm_SUBMIT': '1',
             'hiddenForm:_link_hidden_': 'hiddenForm:goToCargoTrackingBL',
+            'hiddenForm:isFromMobile': 'false',
+            'hiddenForm:embededContent': 'false',
+            'hiddenForm:selectedDomain': 'PARTY_DOMAIN',
+            'hiddenForm:token': google_token,
             'jsf_tree_64': jsf_tree_64,
             'jsf_state_64': jsf_state_64,
-            'jsf_viewid': '/cargotracking/ct_search_from_other_domain.jsp'
+            'jsf_viewid': '/cargotracking/ct_search_from_other_domain.jsp',
+            'USER_TOKEN': anonymous_token,
+            'ENTRY': 'MCC',
+            'ENTRY_TYPE': 'OOCL',
+            'PREFER_LANGUAGE': 'en-US',
         }
+
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_FORM,
             url=(
-                f'{BASE_URL}/party/cargotracking/ct_search_from_other_domain.jsf;jsessionid={jsession_id}?'
+                f'{BASE_URL}/party/cargotracking/ct_search_from_other_domain.jsf?'
                 f'ANONYMOUS_TOKEN={anonymous_token}&ENTRY=MCC&ENTRY_TYPE=OOCL&PREFER_LANGUAGE=en-US'
             ),
             form_data=form_data,
+            headers=headers,
             meta={
                 'mbl_no': mbl_no,
                 'anonymous_token': anonymous_token,
