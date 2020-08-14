@@ -1,5 +1,7 @@
+import dataclasses
+import math
 import re
-from typing import Dict
+from typing import Dict, Tuple
 
 import scrapy
 from python_anticaptcha import AnticaptchaClient, NoCaptchaTaskProxylessTask, AnticaptchaException
@@ -25,6 +27,11 @@ class ForceRestart:
     pass
 
 
+@dataclasses.dataclass
+class LogMessage:
+    msg: str
+
+
 class CarrierOoluSpider(BaseCarrierSpider):
     name = 'carrier_oolu'
 
@@ -34,6 +41,8 @@ class CarrierOoluSpider(BaseCarrierSpider):
         self._cookiejar_id = 0
 
         rules = [
+            ChallengeRoutingRule(),
+            CookiesRoutingRule(),
             TokenRoutingRule(),
             CargoTrackingRule(),
             ContainerStatusRule(),
@@ -58,12 +67,15 @@ class CarrierOoluSpider(BaseCarrierSpider):
                 yield result
             elif isinstance(result, RequestOption):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=result)
-                yield self._build_request_by(option=proxy_option)
+                proxy_cookie_option = self._add_cookie_jar_into_option(option=proxy_option)
+                yield self._build_request_by(option=proxy_cookie_option)
             elif isinstance(result, ForceRestart):
                 try:
                     yield self._prepare_restart()
                 except ProxyMaxRetryError as err:
                     yield err.build_error_data()
+            elif isinstance(result, LogMessage):
+                self.logger.info(msg=result.msg)
             else:
                 raise RuntimeError()
 
@@ -71,9 +83,10 @@ class CarrierOoluSpider(BaseCarrierSpider):
         self._proxy_manager.renew_proxy()
         self._cookiejar_id += 1
 
-        option = TokenRoutingRule.build_request_option(mbl_no=self.mbl_no, cookie_jar_id=self._cookiejar_id)
+        option = ChallengeRoutingRule.build_request_option(mbl_no=self.mbl_no)
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
-        return self._build_request_by(option=proxy_option)
+        proxy_cookie_option = self._add_cookie_jar_into_option(option=proxy_option)
+        return self._build_request_by(option=proxy_cookie_option)
 
     def _build_request_by(self, option: RequestOption):
         meta = {
@@ -114,6 +127,126 @@ class CarrierOoluSpider(BaseCarrierSpider):
         else:
             raise ValueError(f'Invalid option.method [{option.method}]')
 
+    def _add_cookie_jar_into_option(self, option):
+        return option.copy_and_extend_by(meta={'cookiejar': self._cookiejar_id})
+
+
+# -------------------------------------------------------------------------------
+
+class ChallengeRoutingRule(BaseRoutingRule):
+    name = 'CHALLENGE'
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
+
+    @classmethod
+    def build_request_option(cls, mbl_no) -> RequestOption:
+        url = (
+            f'{BASE_URL}/party/cargotracking/ct_search_from_other_domain.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&'
+            f'domainName=PARTY_DOMAIN&ENTRY_TYPE=OOCL&ENTRY=MCC&ctSearchType=BL&ctShipmentNumber={mbl_no}'
+        )
+
+        return RequestOption(
+            method=RequestOption.METHOD_GET,
+            rule_name=cls.name,
+            url=url,
+            meta={'mbl_no': mbl_no},
+        )
+
+    def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+
+        challenge, challenge_id = self.__extract_challenge_and_id(response=response)
+        challenge_result = self.__test_in_script(chall=int(challenge), var1=int(challenge))
+
+        yield CookiesRoutingRule.build_request_option(
+            mbl_no=mbl_no, challenge=challenge, challenge_id=challenge_id, challenge_result=challenge_result
+        )
+
+    @staticmethod
+    def __extract_challenge_and_id(response: scrapy.Selector) -> Tuple:
+        challenge_info_area = response.css('script::text').get()
+
+        challenge_pattern = re.compile(r'Challenge=(?P<challenge>\d+);')
+        challenge_id_pattern = re.compile(r'ChallengeId=(?P<challenge_id>\d+);')
+
+        challenge_match = challenge_pattern.search(challenge_info_area)
+        challenge_id_match = challenge_id_pattern.search(challenge_info_area)
+
+        challenge = challenge_match.group('challenge')
+        challenge_id = challenge_id_match.group('challenge_id')
+
+        return challenge, challenge_id
+
+    @staticmethod
+    def __test_in_script(chall: int, var1: int):
+        challenge_digs = [int(char) for char in str(chall)]
+
+        last_digs = challenge_digs[-1]
+        challenge_digs.reverse()
+        challenge_digs.sort()
+        min_digs = challenge_digs[0]
+
+        sub_var_1 = 2 * challenge_digs[2] + challenge_digs[1]
+        sub_var_2 = 2 * challenge_digs[2] * 10 + challenge_digs[1]
+        my_pow = math.pow(challenge_digs[0] + 2, challenge_digs[1])
+        x = var1 * 3 + sub_var_1
+        y = math.cos(math.pi * sub_var_2)
+        answer = x * y
+        answer -= my_pow
+        answer += min_digs - last_digs
+        answer = int(str(int(answer)) + str(sub_var_2))
+
+        return answer
+
+# -------------------------------------------------------------------------------
+
+
+class CookiesRoutingRule(BaseRoutingRule):
+    name = 'COOKIES'
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
+
+    @classmethod
+    def build_request_option(cls, mbl_no, challenge, challenge_id, challenge_result) -> RequestOption:
+        url = (
+            f'{BASE_URL}/party/cargotracking/ct_search_from_other_domain.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&'
+            f'domainName=PARTY_DOMAIN&ENTRY_TYPE=OOCL&ENTRY=MCC&ctSearchType=BL&ctShipmentNumber={mbl_no}'
+        )
+        headers = {
+            'X-AA-Challenge': str(challenge),
+            'X-AA-Challenge-ID': str(challenge_id),
+            'X-AA-Challenge-Result': str(challenge_result),
+            'Content-Type': 'text/plain',
+        }
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_FORM,
+            headers=headers,
+            url=url,
+            form_data={},
+            meta={'mbl_no': mbl_no},
+        )
+
+    def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+
+        if self.__cookie_not_exist(response=response):
+            yield ForceRestart()
+            return
+
+        yield TokenRoutingRule.build_request_option(mbl_no=mbl_no)
+
+    @staticmethod
+    def __cookie_not_exist(response):
+        for cookie_byte in response.headers.getlist('Set-Cookie'):
+            cookie_str = cookie_byte.decode()
+            if 'BotMitigationCookie' not in cookie_str:
+                return True
+
+        return False
+
 
 # -------------------------------------------------------------------------------
 
@@ -125,23 +258,25 @@ class TokenRoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     @classmethod
-    def build_request_option(cls, mbl_no, cookie_jar_id):
-        url = f'{BASE_URL}/party/cargotracking/ct_search_from_other_domain.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&domainName=PARTY_DOMAIN&ENTRY_TYPE=OOCL&ENTRY=MCC&ctSearchType=BL&ctShipmentNumber={mbl_no}'
+    def build_request_option(cls, mbl_no):
+        url = (
+            f'{BASE_URL}/party/cargotracking/ct_search_from_other_domain.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&'
+            f'domainName=PARTY_DOMAIN&ENTRY_TYPE=OOCL&ENTRY=MCC&ctSearchType=BL&ctShipmentNumber={mbl_no}'
+        )
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
             meta={
+                'handle_httpstatus_list': [404],
                 'mbl_no': mbl_no,
                 'url': url,
-                'cookiejar': cookie_jar_id,
-            }
+            },
         )
 
     def handle(self, response):
         url = response.meta['url']
         mbl_no = response.meta['mbl_no']
-        cookie_jar_id = response.meta['cookiejar']
 
         user_token = response.css('input#USER_TOKEN::attr(value)').get()
         jsf_tree_64 = response.css('input#jsf_tree_64::attr(value)').get()
@@ -151,13 +286,17 @@ class TokenRoutingRule(BaseRoutingRule):
             yield ForceRestart()
             return
 
-        google_token = self._get_recaptcha_token(response=response, url=url)
+        if self.__is_captcha_exist(response=response):
+            site_key = response.css('div#recaptcha::attr("data-sitekey")').get()
+            yield LogMessage(msg=f'[{self.name}] ----- handle -> recaptcha with site_key: {site_key}, url: {url}')
+            google_token = self._handle_recaptcha_token(site_key=site_key, url=url)
+        else:
+            google_token = ''
 
         cookie_text = self._extract_cookies_str(response=response)
 
         yield CargoTrackingRule.build_request_option(
             mbl_no=mbl_no,
-            cookie_jar_id=cookie_jar_id,
             cookie=cookie_text,
             anonymous_token=user_token,  # user_token == anonymous_token
             google_token=google_token,
@@ -166,9 +305,19 @@ class TokenRoutingRule(BaseRoutingRule):
         )
 
     @staticmethod
-    def _get_recaptcha_token(response, url):
+    def __is_captcha_exist(response):
+        scripts = response.css('script')
+        for script in scripts:
+
+            src = script.css('::attr(src)').get()
+            if src == 'https://www.recaptcha.net/recaptcha/api.js':
+                return True
+
+        return False
+
+    @staticmethod
+    def _handle_recaptcha_token(site_key, url):
         try:
-            site_key = response.css('div#recaptcha::attr("data-sitekey")').get()
             api_key = 'fbe73f747afc996b624e8d2a95fa0f84'
 
             client = AnticaptchaClient(api_key)
@@ -228,19 +377,20 @@ class CargoTrackingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(
-            cls, mbl_no: str, cookie_jar_id, cookie, anonymous_token, google_token, jsf_tree_64, jsf_state_64
+            cls, mbl_no: str, cookie, anonymous_token, google_token, jsf_tree_64, jsf_state_64
     ) -> RequestOption:
-        headers = {
-            'Connection': 'keep-alive',
-            'Cache-Control': 'max-age=0',
-            'Upgrade-Insecure-Requests': '1',
-            'Origin': 'http://moc.oocl.com',
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
-            'Cookie': cookie,
-        }
+        # headers = {
+        #     'Connection': 'keep-alive',
+        #     'Cache-Control': 'max-age=0',
+        #     'Upgrade-Insecure-Requests': '1',
+        #     'Origin': 'http://moc.oocl.com',
+        #     'Content-Type': 'application/x-www-form-urlencoded',
+        #     'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+        #     'Cookie': cookie,
+        # }
 
         form_data = {
+            'hiddenForm:pCTTN4': 'pCTTV4',
             'hiddenForm:searchType': 'BL',
             'hiddenForm:billOfLadingNumber': mbl_no,
             'hiddenForm:supportUtfChars': 'true',
@@ -249,7 +399,6 @@ class CargoTrackingRule(BaseRoutingRule):
             'hiddenForm:referenceNumber': '',
             'hiddenForm:referenceType': '',
             'hiddenForm:timeOutToken': '',
-            'OPERATOR_USER_ID': '',
             'hiddenForm_SUBMIT': '1',
             'hiddenForm:_link_hidden_': 'hiddenForm:goToCargoTrackingBL',
             'hiddenForm:isFromMobile': 'false',
@@ -273,11 +422,10 @@ class CargoTrackingRule(BaseRoutingRule):
                 f'ANONYMOUS_TOKEN={anonymous_token}&ENTRY=MCC&ENTRY_TYPE=OOCL&PREFER_LANGUAGE=en-US'
             ),
             form_data=form_data,
-            headers=headers,
+            # headers=headers,
             meta={
                 'mbl_no': mbl_no,
                 'anonymous_token': anonymous_token,
-                'cookiejar': cookie_jar_id,
             },
         )
 
@@ -286,7 +434,6 @@ class CargoTrackingRule(BaseRoutingRule):
 
     def handle(self, response):
         anonymous_token = response.meta['anonymous_token']
-        cookie_jar_id = response.meta['cookiejar']
 
         self.check_response(response)
 
@@ -323,7 +470,6 @@ class CargoTrackingRule(BaseRoutingRule):
         for container in container_list:
             yield ContainerStatusRule.build_request_option(
                 mbl_no=mbl_no,
-                cookie_jar_id=cookie_jar_id,
                 container_id=container['container_id'],
                 container_no=container['container_no'],
                 anonymous_token=anonymous_token,
@@ -698,7 +844,7 @@ class ContainerStatusRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(
-            cls, mbl_no: str, cookie_jar_id, container_id: str, container_no: str, anonymous_token, jsf_tree_64, jsf_state_64,
+            cls, mbl_no: str, container_id: str, container_no: str, anonymous_token, jsf_tree_64, jsf_state_64,
     ) -> RequestOption:
 
         form_data = {
@@ -726,7 +872,6 @@ class ContainerStatusRule(BaseRoutingRule):
             meta={
                 'mbl_no': mbl_no,
                 'container_no': container_no,
-                'cookiejar': cookie_jar_id,
             },
         )
 
