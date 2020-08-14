@@ -93,6 +93,9 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         self._proxy_manager = ProxyManager(session='hdmu', logger=self.logger)
 
     def start(self):
+        if self.mbl_no.startswith('HDMU'):
+            self.mbl_no = self.mbl_no[4:]
+
         yield self._prepare_restart()
 
     def retry(self, failure: Failure):
@@ -118,7 +121,6 @@ class CarrierHdmuSpider(BaseCarrierSpider):
                 rule_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=result)
                 rule_request = self._build_request_by(option=rule_proxy_option)
                 self._request_queue.add(request=rule_request)
-
             elif isinstance(result, ForceRestart):
                 try:
                     restart_request = self._prepare_restart()
@@ -126,6 +128,8 @@ class CarrierHdmuSpider(BaseCarrierSpider):
                 except ProxyMaxRetryError as err:
                     error_item = err.build_error_data()
                     self._item_recorder.record_item(key=('ERROR', None), item=error_item)
+            elif isinstance(result, BaseCarrierItem):
+                pass
             else:
                 raise RuntimeError()
 
@@ -342,6 +346,9 @@ class MainRoutingRule(BaseRoutingRule):
                 h_num -= 1
                 yield ContainerRoutingRule.build_request_option(
                     mbl_no=mbl_no, container_index=container_content.index, h_num=h_num, cookiejar_id=cookiejar_id)
+
+        # avoid this function not yield anything
+        yield MblItem()
 
     @staticmethod
     def _check_mbl_no(response):
@@ -591,6 +598,9 @@ class ContainerRoutingRule(BaseRoutingRule):
             else:
                 self._item_recorder.record_item(key=(AVAILABILITY, container_no))
 
+        # avoid this function not yield anything
+        yield MblItem()
+
     @staticmethod
     def _extract_tracking_results(response):
         table_selector = response.css('#trackingForm div.base_table01')[0]
@@ -735,6 +745,8 @@ class AvailabilityRoutingRule(BaseRoutingRule):
             ready_for_pick_up=ready_for_pick_up,
         )
         self._item_recorder.record_item(key=(AVAILABILITY, container_no), item=ava_item)
+
+        return []
 
     @staticmethod
     def _extract_availability(response):

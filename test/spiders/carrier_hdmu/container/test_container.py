@@ -35,11 +35,7 @@ def test_container_routing_rule(sub, mbl_no, sample_loader, container_no, contai
         encoding='utf-8',
         request=Request(
             url=option.url,
-            meta={
-                'mbl_no': mbl_no,
-                'container_index': container_index,
-                'cookiejar': 0,
-            }
+            meta=option.meta,
         )
     )
 
