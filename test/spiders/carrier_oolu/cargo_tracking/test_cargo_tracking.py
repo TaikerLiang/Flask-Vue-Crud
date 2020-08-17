@@ -27,7 +27,7 @@ def test_cargo_tracking_handler(sub, mbl_no, anonymous_token, sample_loader):
     html_file = sample_loader.read_file(sub, 'sample.html')
 
     option = CargoTrackingRule.build_request_option(
-        mbl_no=mbl_no, cookie_jar_id=0, jsession_id='', anonymous_token=anonymous_token, jsf_state_64='', jsf_tree_64=''
+        mbl_no=mbl_no, cookie='', anonymous_token=anonymous_token, google_token='', jsf_state_64='', jsf_tree_64=''
     )
     response = TextResponse(
         url=option.url,
@@ -53,7 +53,7 @@ def test_cargo_tracking_handler_no_mbl_error(sub, mbl_no, anonymous_token, expec
     html_file = sample_loader.read_file(sub, 'sample.html')
 
     option = CargoTrackingRule.build_request_option(
-        mbl_no=mbl_no, cookie_jar_id=0, jsession_id='', anonymous_token='', jsf_tree_64='', jsf_state_64=''
+        mbl_no=mbl_no, cookie='', anonymous_token=anonymous_token, google_token='', jsf_state_64='', jsf_tree_64=''
     )
 
     response = TextResponse(

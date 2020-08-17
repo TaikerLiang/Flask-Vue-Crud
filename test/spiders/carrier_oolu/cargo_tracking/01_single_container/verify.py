@@ -29,5 +29,4 @@ def verify(results):
     assert results[1].meta == {
         'mbl_no': '2625845270',
         'container_no': 'OOCU8081870',
-        'cookiejar': 0,
     }
