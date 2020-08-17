@@ -4,25 +4,24 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.spiders.carrier_oolu import TokenRoutingRule
-from test.spiders.carrier_oolu import token
+from crawler.spiders.carrier_oolu import ChallengeRoutingRule
+from test.spiders.carrier_oolu import challenge
 
 
 @pytest.fixture
 def sample_loader(sample_loader):
     sample_path = Path(__file__).parent
-    sample_loader.setup(sample_package=token, sample_path=sample_path)
+    sample_loader.setup(sample_package=challenge, sample_path=sample_path)
     return sample_loader
 
 
 @pytest.mark.parametrize('sub,mbl_no', [
-    ('01_no_recaptcha', '2634031060'),
-    ('02_blocked', '2644690600'),
+    ('01_basic', '2644145880'),
 ])
-def test_token_handler(sub, mbl_no, sample_loader):
+def test_cookies_handler(sub, mbl_no, sample_loader):
     http_text = sample_loader.read_file(sub, 'sample.html')
 
-    option = TokenRoutingRule.build_request_option(mbl_no=mbl_no)
+    option = ChallengeRoutingRule.build_request_option(mbl_no=mbl_no)
     response = TextResponse(
         url=option.url,
         body=http_text,
@@ -33,7 +32,7 @@ def test_token_handler(sub, mbl_no, sample_loader):
         )
     )
 
-    rule = TokenRoutingRule()
+    rule = ChallengeRoutingRule()
     results = list(rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')

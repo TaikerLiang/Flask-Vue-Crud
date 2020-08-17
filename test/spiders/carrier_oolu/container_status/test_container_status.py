@@ -25,7 +25,6 @@ def test_container_status_handler(sub, mbl_no, container_no, sample_loader):
 
     option = ContainerStatusRule.build_request_option(
         mbl_no=mbl_no,
-        cookie_jar_id=0,
         container_id=container_no,
         container_no=container_no,
         anonymous_token='',
