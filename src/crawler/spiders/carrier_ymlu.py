@@ -2,6 +2,7 @@ import dataclasses
 import io
 import re
 from typing import Union, Tuple, List
+import logging
 
 import scrapy
 from python_anticaptcha import AnticaptchaClient, ImageToTextTask, AnticaptchaException
@@ -247,6 +248,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             '__EVENTTARGET': '',
             '__VIEWSTATE': hidden_form_spec.view_state,
             '__VIEWSTATEGENERATOR': hidden_form_spec.view_state_generator,
+            '__VIEWSTATEENCRYPTED': '',
             '__EVENTVALIDATION': hidden_form_spec.event_validation,
             '__PREVIOUSPAGE': hidden_form_spec.previous_page,
             'ctl00$hidButtonType': '0',
@@ -332,6 +334,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def _search_success(response: Selector):
         if response.css('div#ContentPlaceHolder1_divResult'):
             return True
+        logging.warning(response.text)
         return False
 
     @staticmethod
