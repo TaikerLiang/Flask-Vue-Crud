@@ -4,7 +4,7 @@ from typing import List
 from scrapy import Selector, Request, FormRequest
 from twisted.python.failure import Failure
 
-from crawler.core_carrier.base_spiders import BaseCarrierSpider
+from crawler.core_carrier.base_spiders import BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
     SuspiciousOperationError
 from crawler.core_carrier.items import (
@@ -75,10 +75,14 @@ class ItemRecorder:
 
 class CarrierHdmuSpider(BaseCarrierSpider):
     name = 'carrier_hdmu'
+    custom_settings = {
+        **CARRIER_DEFAULT_SETTINGS,
+        'DOWNLOAD_TIMEOUT': 30,
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._cookiejar_id = -1
+        self._cookiejar_id = 0
         self._item_recorder = ItemRecorder()
 
         rules = [
@@ -119,7 +123,8 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, RequestOption):
                 rule_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=result)
-                rule_request = self._build_request_by(option=rule_proxy_option)
+                rule_proxy_cookie_option = self._add_cookiejar_id_into_request_option(option=rule_proxy_option)
+                rule_request = self._build_request_by(option=rule_proxy_cookie_option)
                 self._request_queue.add(request=rule_request)
             elif isinstance(result, ForceRestart):
                 try:
@@ -147,7 +152,11 @@ class CarrierHdmuSpider(BaseCarrierSpider):
 
         option = CookiesRoutingRule.build_request_option(mbl_no=self.mbl_no, cookiejar_id=self._cookiejar_id)
         restart_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
-        return self._build_request_by(option=restart_proxy_option)
+        restart_proxy_cookie_option = self._add_cookiejar_id_into_request_option(option=restart_proxy_option)
+        return self._build_request_by(option=restart_proxy_cookie_option)
+
+    def _add_cookiejar_id_into_request_option(self, option) -> RequestOption:
+        return option.copy_and_extend_by(meta={'cookiejar': self._cookiejar_id})
 
     def _build_request_by(self, option: RequestOption):
         meta = {
@@ -191,6 +200,7 @@ class CookiesRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
+            # url=f'{BASE_URL}/cms/company/engn/index.jsp',
             url=BASE_URL,
             headers={
                 'Upgrade-Insecure-Requests': '1',
@@ -207,20 +217,20 @@ class CookiesRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
-        cookiejar_id = response.meta['cookiejar']
 
-        if self._check_cookies(response=response):
-            yield MainRoutingRule.build_request_option(mbl_no=mbl_no, cookiejar_id=cookiejar_id)
+        if self._require_cookies_exists(response=response):
+            yield MainRoutingRule.build_request_option(mbl_no=mbl_no)
         else:
             yield ForceRestart()
 
     @staticmethod
-    def _check_cookies(response):
+    def _require_cookies_exists(response):
         cookies = {}
         for cookie_byte in response.headers.getlist('Set-Cookie'):
             kv = cookie_byte.decode('utf-8').split(';')[0].split('=')
             cookies[kv[0]] = kv[1]
 
+        # return 'ak_bmsc' in cookies
         return cookies
 
 
@@ -234,7 +244,7 @@ class MainRoutingRule(BaseRoutingRule):
         self._item_recorder = item_recorder
 
     @classmethod
-    def build_request_option(cls, mbl_no, cookiejar_id: int):
+    def build_request_option(cls, mbl_no):
         form_data = {
             'number': mbl_no,
             'type': '1',
@@ -254,12 +264,10 @@ class MainRoutingRule(BaseRoutingRule):
             headers={
                 'Upgrade-Insecure-Requests': '1',
                 'Host': 'www.hmm21.com',
-                'Referer': BASE_URL,
             },
             form_data=form_data,
             meta={
                 'mbl_no': mbl_no,
-                'cookiejar': cookiejar_id,
             },
         )
 
@@ -268,7 +276,6 @@ class MainRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
-        cookiejar_id = response.meta['cookiejar']
 
         self._check_mbl_no(response=response)
 
@@ -345,7 +352,7 @@ class MainRoutingRule(BaseRoutingRule):
             else:
                 h_num -= 1
                 yield ContainerRoutingRule.build_request_option(
-                    mbl_no=mbl_no, container_index=container_content.index, h_num=h_num, cookiejar_id=cookiejar_id)
+                    mbl_no=mbl_no, container_index=container_content.index, h_num=h_num)
 
         # avoid this function not yield anything
         yield MblItem()
@@ -511,7 +518,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         self._item_recorder = item_recorder
 
     @classmethod
-    def build_request_option(cls, mbl_no, container_index, h_num, cookiejar_id: int):
+    def build_request_option(cls, mbl_no, container_index, h_num):
         form_data = {
             'selectedContainerIndex': f'{container_index}',
             'hNum': f'{h_num}',
@@ -534,7 +541,6 @@ class ContainerRoutingRule(BaseRoutingRule):
             meta={
                 'mbl_no': mbl_no,
                 'container_index': container_index,
-                'cookiejar': cookiejar_id,
             },
         )
 
@@ -545,7 +551,6 @@ class ContainerRoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
         container_index = response.meta['container_index']
-        cookiejar_id = response.meta['cookiejar']
 
         container_info = self._extract_container_info(response=response, container_index=container_index)
         container_no = container_info['container_no']
@@ -590,11 +595,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         if not self._item_recorder.is_item_recorded(key=(AVAILABILITY, container_no)):
             ava_exist = self._extract_availability_exist(response=response)
             if ava_exist:
-                yield AvailabilityRoutingRule.build_request_option(
-                    mbl_no=mbl_no,
-                    container_no=container_no,
-                    cookiejar_id=cookiejar_id,
-                )
+                yield AvailabilityRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
             else:
                 self._item_recorder.record_item(key=(AVAILABILITY, container_no))
 
@@ -711,7 +712,7 @@ class AvailabilityRoutingRule(BaseRoutingRule):
         self._item_recorder = item_recorder
 
     @classmethod
-    def build_request_option(cls, mbl_no, container_no, cookiejar_id):
+    def build_request_option(cls, mbl_no, container_no):
         form_data = {
             'bno': mbl_no,
             'cntrNo': f'{container_no}',
@@ -727,7 +728,6 @@ class AvailabilityRoutingRule(BaseRoutingRule):
             form_data=form_data,
             meta={
                 'container_no': container_no,
-                'cookiejar': cookiejar_id,
             },
         )
 

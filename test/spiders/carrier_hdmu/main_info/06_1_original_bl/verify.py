@@ -110,5 +110,4 @@ def verify(results):
     assert results[9].url == 'https://www.hmm21.com/ebiz/track_trace/WUTInfo.jsp'
     assert results[9].meta == {
         'container_no': 'CAIU7479659',
-        'cookiejar': 0
     }

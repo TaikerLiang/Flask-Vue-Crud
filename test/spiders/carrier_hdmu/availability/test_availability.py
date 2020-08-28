@@ -22,7 +22,7 @@ def sample_loader(sample_loader):
 def test_availability_routing_rule(sub, mbl_no, sample_loader, container_no):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    option = AvailabilityRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no, cookiejar_id=0)
+    option = AvailabilityRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
 
     response = TextResponse(
         url=option.url,
@@ -30,10 +30,7 @@ def test_availability_routing_rule(sub, mbl_no, sample_loader, container_no):
         encoding='utf-8',
         request=Request(
             url=option.url,
-            meta={
-                'container_no': container_no,
-                'cookiejar': 0,
-            }
+            meta=option.meta,
         )
     )
 

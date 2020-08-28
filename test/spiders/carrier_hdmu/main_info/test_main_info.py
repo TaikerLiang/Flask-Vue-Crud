@@ -30,7 +30,7 @@ def sample_loader(sample_loader):
 def test_main_routing_rule(sample_loader, sub, mbl_no):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    option = MainRoutingRule.build_request_option(mbl_no=mbl_no, cookiejar_id=0)
+    option = MainRoutingRule.build_request_option(mbl_no=mbl_no)
 
     response = TextResponse(
         url=option.url,
@@ -38,10 +38,7 @@ def test_main_routing_rule(sample_loader, sub, mbl_no):
         encoding='utf-8',
         request=Request(
             url=option.url,
-            meta={
-                'mbl_no': mbl_no,
-                'cookiejar': 0,
-            }
+            meta={'mbl_no': mbl_no},
         )
     )
 
@@ -61,7 +58,7 @@ def test_main_routing_rule(sample_loader, sub, mbl_no):
 def test_main_routing_rule_error(sample_loader, sub, mbl_no, expect_exception):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    option = MainRoutingRule.build_request_option(mbl_no=mbl_no, cookiejar_id=0)
+    option = MainRoutingRule.build_request_option(mbl_no=mbl_no)
 
     response = TextResponse(
         url=option.url,
@@ -69,10 +66,7 @@ def test_main_routing_rule_error(sample_loader, sub, mbl_no, expect_exception):
         encoding='utf-8',
         request=Request(
             url=option.url,
-            meta={
-                'mbl_no': mbl_no,
-                'cookiejar': 0,
-            }
+            meta={'mbl_no': mbl_no},
         )
     )
 
