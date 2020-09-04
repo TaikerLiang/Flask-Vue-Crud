@@ -1,20 +1,25 @@
-import dataclasses
-import math
+import random
 import re
-from typing import Dict, Tuple
+import time
+from queue import Queue
+from typing import Dict, List
 
 import scrapy
-from python_anticaptcha import AnticaptchaClient, NoCaptchaTaskProxylessTask, AnticaptchaException
 from scrapy import Selector
-from scrapy.http import TextResponse
-
+from selenium import webdriver
+from selenium.webdriver import ActionChains, DesiredCapabilities
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, ProxyMaxRetryError, \
-    AntiCaptchaError
+    BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem
+)
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, ProxyMaxRetryError
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
@@ -27,11 +32,6 @@ class ForceRestart:
     pass
 
 
-@dataclasses.dataclass
-class LogMessage:
-    msg: str
-
-
 class CarrierOoluSpider(BaseCarrierSpider):
     name = 'carrier_oolu'
 
@@ -39,13 +39,12 @@ class CarrierOoluSpider(BaseCarrierSpider):
         super(CarrierOoluSpider, self).__init__(*args, **kwargs)
         # cookiejar ref: https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#std:reqmeta-cookiejar
         self._cookiejar_id = 0
+        self._queue = Queue()
+        self._driver = OoluDriver()
 
         rules = [
-            ChallengeRoutingRule(),
-            CookiesRoutingRule(),
-            TokenRoutingRule(),
-            CargoTrackingRule(),
-            ContainerStatusRule(),
+            CargoTrackingRule(self._driver),
+            ContainerStatusRule(self._driver),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -68,25 +67,28 @@ class CarrierOoluSpider(BaseCarrierSpider):
             elif isinstance(result, RequestOption):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=result)
                 proxy_cookie_option = self._add_cookie_jar_into_option(option=proxy_option)
-                yield self._build_request_by(option=proxy_cookie_option)
+                request = self._build_request_by(option=proxy_cookie_option)
+                self._queue.put(request)
             elif isinstance(result, ForceRestart):
                 try:
-                    yield self._prepare_restart()
+                    request = self._prepare_restart()
+                    self._queue.put(request)
                 except ProxyMaxRetryError as err:
                     yield err.build_error_data()
-            elif isinstance(result, LogMessage):
-                self.logger.info(msg=result.msg)
             else:
                 raise RuntimeError()
+
+        if not self._queue.empty():
+            yield self._queue.get()
 
     def _prepare_restart(self):
         self._proxy_manager.renew_proxy()
         self._cookiejar_id += 1
 
-        option = ChallengeRoutingRule.build_request_option(mbl_no=self.mbl_no)
-        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
-        proxy_cookie_option = self._add_cookie_jar_into_option(option=proxy_option)
-        return self._build_request_by(option=proxy_cookie_option)
+        option = CargoTrackingRule.build_request_option(
+            mbl_no=self.mbl_no,
+        )
+        return self._build_request_by(option=option)
 
     def _build_request_by(self, option: RequestOption):
         meta = {
@@ -118,6 +120,7 @@ class CarrierOoluSpider(BaseCarrierSpider):
                 method='POST',
                 url=option.url,
                 headers=option.headers,
+                cookies=option.cookies,
                 body=option.body,
                 meta=meta,
                 dont_filter=True,
@@ -133,299 +136,20 @@ class CarrierOoluSpider(BaseCarrierSpider):
 
 # -------------------------------------------------------------------------------
 
-class ChallengeRoutingRule(BaseRoutingRule):
-    name = 'CHALLENGE'
-
-    def get_save_name(self, response) -> str:
-        return f'{self.name}.html'
-
-    @classmethod
-    def build_request_option(cls, mbl_no) -> RequestOption:
-        url = (
-            f'{BASE_URL}/party/cargotracking/ct_search_from_other_domain.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&'
-            f'domainName=PARTY_DOMAIN&ENTRY_TYPE=OOCL&ENTRY=MCC&ctSearchType=BL&ctShipmentNumber={mbl_no}'
-        )
-
-        return RequestOption(
-            method=RequestOption.METHOD_GET,
-            rule_name=cls.name,
-            url=url,
-            meta={'mbl_no': mbl_no},
-        )
-
-    def handle(self, response):
-        mbl_no = response.meta['mbl_no']
-
-        challenge, challenge_id = self.__extract_challenge_and_id(response=response)
-        challenge_result = self.__test_in_script(chall=int(challenge), var1=int(challenge))
-
-        yield CookiesRoutingRule.build_request_option(
-            mbl_no=mbl_no, challenge=challenge, challenge_id=challenge_id, challenge_result=challenge_result
-        )
-
-    @staticmethod
-    def __extract_challenge_and_id(response: scrapy.Selector) -> Tuple:
-        challenge_info_area = response.css('script::text').get()
-
-        challenge_pattern = re.compile(r'Challenge=(?P<challenge>\d+);')
-        challenge_id_pattern = re.compile(r'ChallengeId=(?P<challenge_id>\d+);')
-
-        challenge_match = challenge_pattern.search(challenge_info_area)
-        challenge_id_match = challenge_id_pattern.search(challenge_info_area)
-
-        challenge = challenge_match.group('challenge')
-        challenge_id = challenge_id_match.group('challenge_id')
-
-        return challenge, challenge_id
-
-    @staticmethod
-    def __test_in_script(chall: int, var1: int):
-        challenge_digs = [int(char) for char in str(chall)]
-
-        last_digs = challenge_digs[-1]
-        challenge_digs.reverse()
-        challenge_digs.sort()
-        min_digs = challenge_digs[0]
-
-        sub_var_1 = 2 * challenge_digs[2] + challenge_digs[1]
-        sub_var_2 = 2 * challenge_digs[2] * 10 + challenge_digs[1]
-        my_pow = math.pow(challenge_digs[0] + 2, challenge_digs[1])
-        x = var1 * 3 + sub_var_1
-        y = math.cos(math.pi * sub_var_2)
-        answer = x * y
-        answer -= my_pow
-        answer += min_digs - last_digs
-        answer = int(str(int(answer)) + str(sub_var_2))
-
-        return answer
-
-# -------------------------------------------------------------------------------
-
-
-class CookiesRoutingRule(BaseRoutingRule):
-    name = 'COOKIES'
-
-    def get_save_name(self, response) -> str:
-        return f'{self.name}.html'
-
-    @classmethod
-    def build_request_option(cls, mbl_no, challenge, challenge_id, challenge_result) -> RequestOption:
-        url = (
-            f'{BASE_URL}/party/cargotracking/ct_search_from_other_domain.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&'
-            f'domainName=PARTY_DOMAIN&ENTRY_TYPE=OOCL&ENTRY=MCC&ctSearchType=BL&ctShipmentNumber={mbl_no}'
-        )
-        headers = {
-            'X-AA-Challenge': str(challenge),
-            'X-AA-Challenge-ID': str(challenge_id),
-            'X-AA-Challenge-Result': str(challenge_result),
-            'Content-Type': 'text/plain',
-        }
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_POST_FORM,
-            headers=headers,
-            url=url,
-            form_data={},
-            meta={'mbl_no': mbl_no},
-        )
-
-    def handle(self, response):
-        mbl_no = response.meta['mbl_no']
-
-        if self.__cookie_not_exist(response=response):
-            yield ForceRestart()
-            return
-
-        yield TokenRoutingRule.build_request_option(mbl_no=mbl_no)
-
-    @staticmethod
-    def __cookie_not_exist(response):
-        for cookie_byte in response.headers.getlist('Set-Cookie'):
-            cookie_str = cookie_byte.decode()
-            if 'BotMitigationCookie' not in cookie_str:
-                return True
-
-        return False
-
-
-# -------------------------------------------------------------------------------
-
-
-class TokenRoutingRule(BaseRoutingRule):
-    name = 'TOKEN'
-
-    def get_save_name(self, response) -> str:
-        return f'{self.name}.html'
-
-    @classmethod
-    def build_request_option(cls, mbl_no):
-        url = (
-            f'{BASE_URL}/party/cargotracking/ct_search_from_other_domain.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP&'
-            f'domainName=PARTY_DOMAIN&ENTRY_TYPE=OOCL&ENTRY=MCC&ctSearchType=BL&ctShipmentNumber={mbl_no}'
-        )
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=url,
-            meta={
-                'handle_httpstatus_list': [404],
-                'mbl_no': mbl_no,
-                'url': url,
-            },
-        )
-
-    def handle(self, response):
-        url = response.meta['url']
-        mbl_no = response.meta['mbl_no']
-
-        user_token = response.css('input#USER_TOKEN::attr(value)').get()
-        jsf_tree_64 = response.css('input#jsf_tree_64::attr(value)').get()
-        jsf_state_64 = response.css('input#jsf_state_64::attr(value)').get()
-
-        if not user_token:
-            yield ForceRestart()
-            return
-
-        if self.__is_captcha_exist(response=response):
-            site_key = response.css('div#recaptcha::attr("data-sitekey")').get()
-            yield LogMessage(msg=f'[{self.name}] ----- handle -> recaptcha with site_key: {site_key}, url: {url}')
-            google_token = self._handle_recaptcha_token(site_key=site_key, url=url)
-        else:
-            google_token = ''
-
-        cookie_text = self._extract_cookies_str(response=response)
-
-        yield CargoTrackingRule.build_request_option(
-            mbl_no=mbl_no,
-            cookie=cookie_text,
-            anonymous_token=user_token,  # user_token == anonymous_token
-            google_token=google_token,
-            jsf_tree_64=jsf_tree_64,
-            jsf_state_64=jsf_state_64,
-        )
-
-    @staticmethod
-    def __is_captcha_exist(response):
-        scripts = response.css('script')
-        for script in scripts:
-
-            src = script.css('::attr(src)').get()
-            if src == 'https://www.recaptcha.net/recaptcha/api.js':
-                return True
-
-        return False
-
-    @staticmethod
-    def _handle_recaptcha_token(site_key, url):
-        try:
-            api_key = 'fbe73f747afc996b624e8d2a95fa0f84'
-
-            client = AnticaptchaClient(api_key)
-            task = NoCaptchaTaskProxylessTask(url, site_key, is_invisible=True)
-            job = client.createTask(task)
-            job.join()
-            return job.get_solution_response()
-        except AnticaptchaException:
-            raise AntiCaptchaError()
-
-    @staticmethod
-    def _extract_cookies_str(response) -> str:
-        cookies_list = []
-        for cookie in response.headers.getlist('Set-Cookie'):
-            item = cookie.decode('utf-8').split(';')[0]
-            cookies_list.append(item)
-
-        cookies = ';'.join(cookies_list)
-        return cookies
-
-    def _extract_jsession_id(self, response: TextResponse):
-        byte_cookies = response.headers.getlist('Set-Cookie')
-
-        jsession_id_cookie = None
-        for byte_cookie in byte_cookies:
-            cookie = byte_cookie.decode()
-            if cookie.startswith('JSESSIONID'):
-                jsession_id_cookie = cookie
-                break
-
-        if not jsession_id_cookie:
-            raise CarrierResponseFormatError('JSESSIONID cookie not exist')
-
-        jsession_id = self._parse_jsession_cookie(jsession_cookie=jsession_id_cookie)
-        return jsession_id
-
-    @staticmethod
-    def _parse_jsession_cookie(jsession_cookie: str):
-        """
-        jsession_cookie example:
-        'JSESSIONID=I1e3gvlbYgkKiH78G_VSxonAdncBhrMJYkWH36FKcig9bk1L7_qN!-764150054; path=/party; HttpOnly'
-        """
-        pattern = re.compile(r'JSESSIONID=(?P<jsession_id>[\S]+); path=/\w+; HttpOnly')
-        match = pattern.match(jsession_cookie)
-
-        if not match:
-            raise CarrierResponseFormatError(reason=f'Unexpected JSESSIONID cookie: `{jsession_cookie}`')
-
-        return match.group('jsession_id')
-
-
-# -------------------------------------------------------------------------------
-
-
 class CargoTrackingRule(BaseRoutingRule):
     name = 'CARGO_TRACKING'
 
+    def __init__(self, driver):
+        self._driver = driver
+
     @classmethod
-    def build_request_option(
-            cls, mbl_no: str, cookie, anonymous_token, google_token, jsf_tree_64, jsf_state_64
-    ) -> RequestOption:
-        # headers = {
-        #     'Connection': 'keep-alive',
-        #     'Cache-Control': 'max-age=0',
-        #     'Upgrade-Insecure-Requests': '1',
-        #     'Origin': 'http://moc.oocl.com',
-        #     'Content-Type': 'application/x-www-form-urlencoded',
-        #     'Accept-Language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
-        #     'Cookie': cookie,
-        # }
-
-        form_data = {
-            'hiddenForm:pCTTN4': 'pCTTV4',
-            'hiddenForm:searchType': 'BL',
-            'hiddenForm:billOfLadingNumber': mbl_no,
-            'hiddenForm:supportUtfChars': 'true',
-            'hiddenForm:bookingNumber': '',
-            'hiddenForm:containerNumber': '',
-            'hiddenForm:referenceNumber': '',
-            'hiddenForm:referenceType': '',
-            'hiddenForm:timeOutToken': '',
-            'hiddenForm_SUBMIT': '1',
-            'hiddenForm:_link_hidden_': 'hiddenForm:goToCargoTrackingBL',
-            'hiddenForm:isFromMobile': 'false',
-            'hiddenForm:embededContent': 'false',
-            'hiddenForm:selectedDomain': 'PARTY_DOMAIN',
-            'hiddenForm:token': google_token,
-            'jsf_tree_64': jsf_tree_64,
-            'jsf_state_64': jsf_state_64,
-            'jsf_viewid': '/cargotracking/ct_search_from_other_domain.jsp',
-            'USER_TOKEN': anonymous_token,
-            'ENTRY': 'MCC',
-            'ENTRY_TYPE': 'OOCL',
-            'PREFER_LANGUAGE': 'en-US',
-        }
-
+    def build_request_option(cls, mbl_no: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_POST_FORM,
-            url=(
-                f'{BASE_URL}/party/cargotracking/ct_search_from_other_domain.jsf?'
-                f'ANONYMOUS_TOKEN={anonymous_token}&ENTRY=MCC&ENTRY_TYPE=OOCL&PREFER_LANGUAGE=en-US'
-            ),
-            form_data=form_data,
-            # headers=headers,
+            method=RequestOption.METHOD_GET,
+            url='https://www.google.com',
             meta={
                 'mbl_no': mbl_no,
-                'anonymous_token': anonymous_token,
             },
         )
 
@@ -433,8 +157,13 @@ class CargoTrackingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def handle(self, response):
-        anonymous_token = response.meta['anonymous_token']
+        mbl_no = response.meta['mbl_no']
 
+        self._driver.goto(url='http://www.oocl.com/eng/Pages/default.aspx')
+
+        self._driver.search_mbl(mbl_no=mbl_no)
+        response_text = self._driver.get_page_text()
+        response = Selector(text=response_text)
         self.check_response(response)
 
         locator = _PageLocator()
@@ -463,18 +192,15 @@ class CargoTrackingRule(BaseRoutingRule):
             customs_release_date=custom_release_info['date'] or None,
         )
 
+        anonymous_token = response.css('input#ANONYMOUS_TOKEN::attr(value)').get()
         jsf_tree_64 = response.css('input[id=jsf_tree_64]::attr(value)').get()
         jsf_state_64 = response.css('input[id=jsf_state_64]::attr(value)').get()
 
         container_list = self._extract_container_list(selector_map=selector_map)
-        for container in container_list:
+        for i, container in enumerate(container_list):
             yield ContainerStatusRule.build_request_option(
-                mbl_no=mbl_no,
-                container_id=container['container_id'],
                 container_no=container['container_no'],
-                anonymous_token=anonymous_token,
-                jsf_tree_64=jsf_tree_64,
-                jsf_state_64=jsf_state_64,
+                click_element_css=f"a[id='form:link{i}']",
             )
 
     @staticmethod
@@ -610,6 +336,176 @@ class CargoTrackingRule(BaseRoutingRule):
         return container_no_list
 
 
+class OoluDriver:
+
+    def __init__(self):
+        options = webdriver.ChromeOptions()
+        options.add_argument('--disable-extensions')
+        options.add_argument('--disable-notifications')
+        options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--window-size=1920,1080')
+        options.add_experimental_option('excludeSwitches', ['enable-automation'])
+        options.add_experimental_option('useAutomationExtension', False)
+
+        # desired_capabilities = DesiredCapabilities.CHROME.copy()
+        # desired_capabilities['proxy'] = {
+        #     "httpProxy": 'http://proxy.apify.com:8000',
+        #     "ftpProxy": 'http://proxy.apify.com:8000',
+        #     "sslProxy": 'http://proxy.apify.com:8000',
+        #     "noProxy": None,
+        #     "proxyType": "MANUAL",
+        # }
+        # self.driver = webdriver.Chrome(chrome_options=options, desired_capabilities=desired_capabilities)
+        self.driver = webdriver.Chrome(chrome_options=options)
+
+        # undefine navigator.webdriver
+        script = "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+        self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': script})
+
+    def goto(self, url):
+        self.driver.get(url=url)
+
+    def login_proxy(self, proxy_username, proxy_password):
+        alert = self.driver.switch_to.alert()
+        alert.sendKeys(proxy_username)
+        alert.sendKeys(Keys.TAB)
+
+    def get_current_url(self):
+        return self.driver.current_url
+
+    def get_page_text(self):
+        return self.driver.page_source
+
+    def find_container_btn_and_click(self, container_btn_css):
+        contaienr_btn = self.driver.find_element_by_css_selector(container_btn_css)
+        contaienr_btn.click()
+
+    def _click_cookies_and_search(self, mbl_no):
+        time.sleep(10)
+
+        cookie_accept_btn = WebDriverWait(self.driver, 20).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, 'form > button#btn_cookie_accept'))
+        )
+        cookie_accept_btn.click()
+
+        # search
+        select_btn = self.driver.find_element_by_css_selector('button[data-id=ooclCargoSelector]')
+        select_btn.click()
+
+        search_type_select = Select(self.driver.find_element_by_css_selector('select#ooclCargoSelector'))
+        search_type_select.select_by_index(1)
+
+        search_bar = self.driver.find_element_by_css_selector('input#SEARCH_NUMBER')
+        search_bar.send_keys(mbl_no)
+
+        search_btn = self.driver.find_element_by_css_selector('a#container_btn')
+        search_btn.click()
+
+    def _get_result_search_url(self):
+        WebDriverWait(self.driver, 15).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'span#nc_1_n1z'))
+        )
+        return self.driver.current_url
+
+    def _handle_with_slide(self):
+        # slide the verification
+        WebDriverWait(self.driver, 15).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'span#nc_1_n1z'))
+        )
+        tracks = self.get_track(260)
+        self.move_to_gap(tracks=tracks)
+
+    def search_mbl(self, mbl_no):
+        self._click_cookies_and_search(mbl_no=mbl_no)
+
+        # jump to popup window to get url
+        windows = self.driver.window_handles
+        self.driver.switch_to.window(windows[1])  # windows[1] is new page
+        search_page_url = self._get_result_search_url()
+        if self._is_blocked(response=Selector(text=self.driver.page_source)):
+            raise RuntimeError()
+
+        # jump back to origin window
+        self.driver.switch_to.window(windows[0])
+        self.driver.get(search_page_url)
+
+        self._handle_with_slide()
+
+        time.sleep(7)
+        return self.driver.page_source
+
+    @staticmethod
+    def _is_blocked(response):
+        res = response.xpath('/html/body/title/text()').extract()
+        if res and str(res[0]) == 'Error':
+            return True
+        else:
+            return False
+
+    def extract_cookies(self):
+        cookies = {}
+        for cookie in self.driver.get_cookies():
+            cookies[cookie['name']] = cookie['value']
+
+        return cookies
+
+    def move_to_gap(self, tracks: List):
+
+        # find slide span
+        need_move_span = self.driver.find_element_by_xpath('//*[@id="nc_1_n1t"]/span')
+        # click and hold mouse
+        ActionChains(self.driver).click_and_hold(need_move_span).perform()
+        for x in tracks:  # simulate human's motivation
+            print(x)
+            ActionChains(self.driver).move_by_offset(xoffset=x, yoffset=random.randint(1, 3)).perform()
+        time.sleep(1)
+        ActionChains(self.driver).release().perform()
+
+    @staticmethod
+    def get_track(distance):
+        """
+        follow Newton's laws of motion
+        ①v=v0+at
+        ②s=v0t+(1/2)at²
+        ③v²-v0²=2as
+
+        """
+        # initial speed
+        v = 5
+        # record the distance by 0.2 s
+        t = 0.2
+        # list of every distance of 0.2 s
+        tracks = []
+        # current distance
+        current = 0
+        # start to slow until 4/5 of total distance
+        mid = distance * 3 / 5
+
+        while current < distance:
+            if current < mid:
+                a = 30  # slower
+            else:
+                a = -10  # slower
+
+            # initial speed
+            v0 = v
+            # move distance in 0.2 s
+            s = v0 * t + 0.5 * a * (t ** 2)
+            current += s
+            tracks.append(round(s))
+
+            # next initial speed
+            v = v0 + a * t
+
+        return tracks
+
+    def quit(self):
+        self.driver.quit()
+
+
 class SummaryRightTableLocator(BaseTableLocator):
     TD_TITLE_INDEX = 0
     TD_DATA_INDEX = 1
@@ -710,7 +606,7 @@ class ContainerTableLocator(BaseTableLocator):
         self._data_len = 0
 
     def parse(self, table: scrapy.Selector):
-        tr_list = table.xpath('./tr')
+        tr_list = table.xpath('./tr') or table.xpath('./tbody/tr')
 
         main_title_list = tr_list[self.TR_MAIN_TITLE_INDEX].css('th::text').getall()
         sub_title_list = tr_list[self.TR_SUB_TITLE_INDEX].css('th::text').getall()
@@ -842,38 +738,28 @@ def get_multipart_body(form_data, boundary):
 class ContainerStatusRule(BaseRoutingRule):
     name = 'CONTAINER_STATUS'
 
+    def __init__(self, driver):
+        self._driver = driver
+
     @classmethod
-    def build_request_option(
-            cls, mbl_no: str, container_id: str, container_no: str, anonymous_token, jsf_tree_64, jsf_state_64,
-    ) -> RequestOption:
-
-        form_data = {
-            'form_SUBMIT': '1',
-            'currentContainerNumber': container_id,
-            'searchCriteriaBillOfLadingNumber': mbl_no,
-            'form:_link_hidden_': 'form:link0',
-            'jsf_tree_64': jsf_tree_64,
-            'jsf_state_64': jsf_state_64,
-            'jsf_viewid': '/cargotracking/ct_result_bl.jsp',
-        }
-
-        # generate multipart/form-data with boundary
-        boundary = '----WebKitFormBoundary7MA4YWxkTrZu0gW'
-        body = get_multipart_body(form_data=form_data, boundary=boundary)
-
+    def build_request_option(cls, container_no: str, click_element_css: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_POST_BODY,
-            url=f'{BASE_URL}/party/cargotracking/ct_result_bl.jsf?ANONYMOUS_TOKEN={anonymous_token}',
-            headers={
-                'Content-Type': f'multipart/form-data; boundary={boundary}',
-            },
-            body=body,
+            method=RequestOption.METHOD_GET,
+            url='https://www.google.com',
             meta={
-                'mbl_no': mbl_no,
                 'container_no': container_no,
+                'click_element_css': click_element_css,
             },
         )
+
+    @staticmethod
+    def transform_cookies_to_str(cookies: Dict):
+        cookies_str = ''
+        for key, value in cookies.items():
+            cookies_str += f'{key}={value}; '
+
+        return cookies_str[:-2]
 
     def get_save_name(self, response) -> str:
         container_no = response.meta['container_no']
@@ -881,6 +767,11 @@ class ContainerStatusRule(BaseRoutingRule):
 
     def handle(self, response):
         container_no = response.meta['container_no']
+        click_element_css = response.meta['click_element_css']
+
+        self._driver.find_container_btn_and_click(container_btn_css=click_element_css)
+        time.sleep(10)
+        response = Selector(text=self._driver.get_page_text())
 
         locator = _PageLocator()
         selectors_map = locator.locate_selectors(response=response)
@@ -1098,7 +989,7 @@ class _PageLocator:
     @staticmethod
     def _locate_selectors_from_summary(summary_table: scrapy.Selector):
         # top table
-        top_table = summary_table.xpath('./tr/td/table')
+        top_table = summary_table.xpath('./tr/td/table') or summary_table.xpath('./tbody/tr/td/table')
         if not top_table:
             raise CarrierResponseFormatError(reason='Can not find top_table !!!')
 
@@ -1155,13 +1046,16 @@ class _PageLocator:
 
     @staticmethod
     def _locate_detail_detention_tables(detention_tab: scrapy.Selector):
-        inner_parts = detention_tab.xpath('./table/tr/td/table')
+        inner_parts = detention_tab.xpath('./table/tr/td/table') or detention_tab.xpath('./table/tbody/tr/td/table')
         if len(inner_parts) != 2:
             raise CarrierResponseFormatError(reason=f'Amount of detention_inner_parts not right: `{len(inner_parts)}`')
 
         title_part, content_part = inner_parts
 
-        detention_tables = content_part.xpath('./tr/td/table/tr/td/table')
+        detention_tables = (
+            content_part.xpath('./tr/td/table/tr/td/table') or
+            content_part.xpath('./tbody/tr/td/table/tbody/tr/td/table')
+        )
         if len(detention_tables) != 2:
             raise CarrierResponseFormatError(
                 reason=f'Amount of detention tables does not right: {len(detention_tables)}')
