@@ -1,4 +1,5 @@
 import dataclasses
+import random
 from typing import List, Dict, Tuple, Union
 
 import scrapy
@@ -8,7 +9,7 @@ from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierRes
     SuspiciousOperationError
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerStatusItem, ContainerItem, VesselItem, DebugItem)
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.request_helpers import RequestOption, ProxyManager
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor, BaseTableCellExtractor
 from crawler.extractors.table_extractors import TopHeaderTableLocator, TableExtractor
@@ -25,10 +26,24 @@ class CarrierZimuSpider(BaseCarrierSpider):
         ]
 
         self._rule_manager = RuleManager(rules=rules)
+        self._proxy_manager = ProxyManager(session='zimu', logger=self.logger)
+        self._cookiejar_id = 1
 
     def start(self):
+        request = self.__prepare_restart()
+        yield request
+
+    def __prepare_restart(self):
+        self._proxy_manager.renew_proxy()
+        self._cookiejar_id += 1
+
         option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
-        yield self._build_request_by(option=option)
+        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
+        proxy_cookie_option = self.__add_cookiejar_to_option(option=proxy_option)
+        return self._build_request_by(option=proxy_cookie_option)
+
+    def __add_cookiejar_to_option(self, option: RequestOption):
+        return option.copy_and_extend_by(meta={'cookiejar': self._cookiejar_id})
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -45,7 +60,11 @@ class CarrierZimuSpider(BaseCarrierSpider):
                 yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
-            
+
+    def retry(self, failure):
+        request = self.__prepare_restart()
+        yield request
+
     def _build_request_by(self, option: RequestOption):
         meta = {
             RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
@@ -55,7 +74,10 @@ class CarrierZimuSpider(BaseCarrierSpider):
         if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
                 url=option.url,
+                headers=option.headers,
                 meta=meta,
+                callback=self.parse,
+                errback=self.retry,
             )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
@@ -86,7 +108,48 @@ class MainInfoRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=url,
+            headers={
+                'User-Agent': cls.__random_choose_user_agent(),
+            },
         )
+
+    @staticmethod
+    def __random_choose_user_agent():
+        user_agents = [
+            # chrome
+            (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) '
+                'Chrome/85.0.4183.83 Safari/537.36'
+            ),
+            (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) '
+                'Chrome/84.0.4147.110 Safari/537.36'
+            ),
+
+            # firefox
+            (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:80.0) '
+                'Gecko/20100101 '
+                'Firefox/80.0'
+            ),
+            (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) '
+                'Gecko/20100101 '
+                'Firefox/79.0'
+            ),
+            (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) '
+                'Gecko/20100101 '
+                'Firefox/78.0'
+            ),
+            (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0.1) '
+                'Gecko/20100101 '
+                'Firefox/78.0.1'
+            ),
+        ]
+
+        return random.choice(user_agents)
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'

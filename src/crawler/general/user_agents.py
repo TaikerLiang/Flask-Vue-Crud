@@ -4,6 +4,7 @@ import random
 def _random_choice_user_agent() -> str:
     user_agents = [
         # chrome
+        # 2020/09/14 maybe too old, new ver in zimu
         (
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2)'
             ' AppleWebKit/537.36 (KHTML, like Gecko)'
