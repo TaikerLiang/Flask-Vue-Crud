@@ -11,9 +11,11 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
-    LoadWebsiteTimeOutError, CarrierResponseFormatError, CarrierInvalidMblNoError, SuspiciousOperationError)
-from crawler.core_carrier.items import ContainerItem, ContainerStatusItem, LocationItem, MblItem, DebugItem, \
-    BaseCarrierItem
+    LoadWebsiteTimeOutError, CarrierResponseFormatError, CarrierInvalidMblNoError, SuspiciousOperationError,
+)
+from crawler.core_carrier.items import (
+    ContainerItem, ContainerStatusItem, LocationItem, MblItem, DebugItem, BaseCarrierItem
+)
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
@@ -538,7 +540,7 @@ class MscuCarrierChromeDriver:
             WebDriverWait(self._chrome_driver, 10).until(EC.presence_of_element_located(search_bar_locator))
             WebDriverWait(self._chrome_driver, 10).until(EC.element_to_be_clickable(search_button_locator))
         except TimeoutException:
-            raise LoadWebsiteTimeOutError()
+            raise LoadWebsiteTimeOutError(url=self._chrome_driver.current_url)
 
         search_bar = self._chrome_driver.find_element_by_css_selector(search_bar_css_query)
         search_button = self._chrome_driver.find_element_by_css_selector(search_button_css_query)
@@ -557,7 +559,7 @@ class MscuCarrierChromeDriver:
         try:
             WebDriverWait(self._chrome_driver, 10).until(EC.presence_of_element_located(mbl_no_locator))
         except TimeoutException:
-            raise LoadWebsiteTimeOutError()
+            raise LoadWebsiteTimeOutError(url=self._chrome_driver.current_url)
 
         body = self._chrome_driver.find_element_by_css_selector('body')
         body_text = body.get_attribute('outerHTML')
