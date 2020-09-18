@@ -9,14 +9,15 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, DebugItem)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
-    SuspiciousOperationError
+    BaseCarrierItem, MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, DebugItem
+)
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError, CarrierInvalidMblNoError, SuspiciousOperationError, LoadWebsiteTimeOutError
+)
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
-from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
@@ -311,7 +312,7 @@ class CookiesGetter:
         try:
             WebDriverWait(self._browser, self.TIMEOUT).until(self._is_cookies_ready)
         except TimeoutException:
-            raise LoadWebsiteTimeOutError()
+            raise LoadWebsiteTimeOutError(url=self._browser.current_url)
 
         cookies = {}
         for cookie_object in self._browser.get_cookies():
