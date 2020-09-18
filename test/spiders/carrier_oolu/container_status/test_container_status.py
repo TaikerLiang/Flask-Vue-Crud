@@ -23,14 +23,7 @@ def sample_loader(sample_loader):
 def test_container_status_handler(sub, mbl_no, container_no, sample_loader):
     html_file = sample_loader.read_file(sub, 'sample.html')
 
-    option = ContainerStatusRule.build_request_option(
-        mbl_no=mbl_no,
-        container_id=container_no,
-        container_no=container_no,
-        anonymous_token='',
-        jsf_tree_64='',
-        jsf_state_64='',
-    )
+    option = ContainerStatusRule.build_request_option(container_no=container_no, click_element_css='')
 
     response = TextResponse(
         url=option.url,
@@ -42,8 +35,8 @@ def test_container_status_handler(sub, mbl_no, container_no, sample_loader):
         )
     )
 
-    rule = ContainerStatusRule()
-    results = list(rule.handle(response=response))
+    rule = ContainerStatusRule(driver=None)
+    results = list(rule._handle_response(response=response, container_no=container_no))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)

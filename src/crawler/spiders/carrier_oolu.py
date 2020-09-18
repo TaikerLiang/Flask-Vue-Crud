@@ -174,6 +174,11 @@ class CargoTrackingRule(BaseRoutingRule):
 
         response_text = self._driver.get_page_text()
         response = Selector(text=response_text)
+
+        for item in self._handle_response(response):
+            yield item
+
+    def _handle_response(self, response):
         self.check_response(response)
 
         locator = _PageLocator()
@@ -201,10 +206,6 @@ class CargoTrackingRule(BaseRoutingRule):
             customs_release_status=custom_release_info['status'] or None,
             customs_release_date=custom_release_info['date'] or None,
         )
-
-        anonymous_token = response.css('input#ANONYMOUS_TOKEN::attr(value)').get()
-        jsf_tree_64 = response.css('input[id=jsf_tree_64]::attr(value)').get()
-        jsf_state_64 = response.css('input[id=jsf_state_64]::attr(value)').get()
 
         container_list = self._extract_container_list(selector_map=selector_map)
         for i, container in enumerate(container_list):
@@ -769,6 +770,10 @@ class ContainerStatusRule(BaseRoutingRule):
         time.sleep(10)
         response = Selector(text=self._driver.get_page_text())
 
+        for item in self._handle_response(response=response, container_no=container_no):
+            yield item
+
+    def _handle_response(self, response, container_no):
         locator = _PageLocator()
         selectors_map = locator.locate_selectors(response=response)
         detention_info = self._extract_detention_info(selectors_map)

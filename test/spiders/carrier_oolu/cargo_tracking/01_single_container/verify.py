@@ -25,8 +25,7 @@ def verify(results):
 
     assert isinstance(results[1], RequestOption)
     assert results[1].rule_name == ContainerStatusRule.name
-    assert 'name="currentContainerNumber"\r\n\r\nOOCU808187\r\n' in results[1].body
     assert results[1].meta == {
-        'mbl_no': '2625845270',
         'container_no': 'OOCU8081870',
+        'click_element_css': "a[id='form:link0']",
     }

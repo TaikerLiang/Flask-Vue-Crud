@@ -16,19 +16,17 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,anonymous_token', [
-    ('01_single_container', '2625845270', 'hoDzqHemrIvlddTUvyusMCCOOCL'),
-    ('02_multi_containers', '2109051600', 'ENOPAdwEwaPARWlKLrcGMCCOOCL'),
-    ('03_without_custom_release_date', '2628633440', 'VUiQgxMLesjtTyGLzEieMCCOOCL'),
-    ('04_tranship_exist', '2630699272', 'FqSuFyjIywfRykXlKlhdMCCOOCL'),
-    ('05_custom_release_title_exist_but_value_empty', '2635541720', 'GAJPRerHITnefhkFgdryMCCOOCL'),
+@pytest.mark.parametrize('sub,mbl_no', [
+    ('01_single_container', '2625845270'),
+    ('02_multi_containers', '2109051600'),
+    ('03_without_custom_release_date', '2628633440'),
+    ('04_tranship_exist', '2630699272'),
+    ('05_custom_release_title_exist_but_value_empty', '2635541720'),
 ])
-def test_cargo_tracking_handler(sub, mbl_no, anonymous_token, sample_loader):
+def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
     html_file = sample_loader.read_file(sub, 'sample.html')
 
-    option = CargoTrackingRule.build_request_option(
-        mbl_no=mbl_no, cookie='', anonymous_token=anonymous_token, google_token='', jsf_state_64='', jsf_tree_64=''
-    )
+    option = CargoTrackingRule.build_request_option(mbl_no=mbl_no)
     response = TextResponse(
         url=option.url,
         body=html_file,
@@ -39,22 +37,20 @@ def test_cargo_tracking_handler(sub, mbl_no, anonymous_token, sample_loader):
         )
     )
 
-    rule = CargoTrackingRule()
-    results = list(rule.handle(response=response))
+    rule = CargoTrackingRule(driver=None)
+    results = list(rule._handle_response(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,anonymous_token,expect_exception', [
-    ('e01_invalid_mbl_no', 'OOLU0000000000', 'vCTcIRGZjIcxoTOsrgrvMCCOOCL', CarrierInvalidMblNoError),
+@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
+    ('e01_invalid_mbl_no', 'OOLU0000000000', CarrierInvalidMblNoError),
 ])
-def test_cargo_tracking_handler_no_mbl_error(sub, mbl_no, anonymous_token, expect_exception, sample_loader):
+def test_cargo_tracking_handler_no_mbl_error(sub, mbl_no, expect_exception, sample_loader):
     html_file = sample_loader.read_file(sub, 'sample.html')
 
-    option = CargoTrackingRule.build_request_option(
-        mbl_no=mbl_no, cookie='', anonymous_token=anonymous_token, google_token='', jsf_state_64='', jsf_tree_64=''
-    )
+    option = CargoTrackingRule.build_request_option(mbl_no=mbl_no)
 
     response = TextResponse(
         url=option.url,
@@ -66,6 +62,6 @@ def test_cargo_tracking_handler_no_mbl_error(sub, mbl_no, anonymous_token, expec
         )
     )
 
-    rule = CargoTrackingRule()
+    rule = CargoTrackingRule(driver=None)
     with pytest.raises(expect_exception):
-        list(rule.handle(response=response))
+        list(rule._handle_response(response=response))

@@ -1,6 +1,6 @@
 import pytest
 
-from crawler.spiders.carrier_oolu import CargoTrackingRule, TokenRoutingRule
+from crawler.spiders.carrier_oolu import CargoTrackingRule
 
 
 @pytest.mark.parametrize('mbl_no_text,expect', [
@@ -24,13 +24,3 @@ def test_parse_custom_release_info(custom_release_info, expect):
     result = CargoTrackingRule._parse_custom_release_info(custom_release_info=custom_release_info)
     assert result == expect
 
-
-@pytest.mark.parametrize('jsession_id_cookie_text,expect', [
-    (
-        'JSESSIONID=I1e3gvlbYgkKiH78G_VSxonAdncBhrMJYkWH36FKcig9bk1L7_qN!-764150054; path=/party; HttpOnly',
-        'I1e3gvlbYgkKiH78G_VSxonAdncBhrMJYkWH36FKcig9bk1L7_qN!-764150054',
-    )
-])
-def test_parse_jsession_id(jsession_id_cookie_text, expect):
-    result = TokenRoutingRule._parse_jsession_cookie(jsession_cookie=jsession_id_cookie_text)
-    assert result == expect
