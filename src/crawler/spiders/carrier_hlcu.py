@@ -2,16 +2,16 @@ import re
 from typing import Dict
 
 import scrapy
-from scrapy import Selector
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
 from crawler.core_carrier.items import (
-    BaseCarrierItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
-    SuspiciousOperationError
-from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
+    BaseCarrierItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem
+)
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError, CarrierInvalidMblNoError, SuspiciousOperationError, LoadWebsiteTimeOutError
+)
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -19,7 +19,8 @@ from selenium.common.exceptions import TimeoutException
 
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import (
-    BaseTableLocator, HeaderMismatchError, TableExtractor, TopHeaderTableLocator)
+    BaseTableLocator, HeaderMismatchError, TableExtractor, TopHeaderTableLocator
+)
 
 
 BASE_URL = 'https://www.hapag-lloyd.com/en'
@@ -194,7 +195,7 @@ class TracingRoutingRule(BaseRoutingRule):
 
 class ContainerNoTdExtractor(BaseTableCellExtractor):
 
-    def extract(self, cell: Selector):
+    def extract(self, cell: scrapy.Selector):
         raw_text = cell.css('::text').get()
         text_list = raw_text.split()
         text = ''.join(text_list)
@@ -295,7 +296,7 @@ class ContainerStatusTableLocator(BaseTableLocator):
         self._tr_classes = []
         self._data_len = 0
 
-    def parse(self, table: Selector):
+    def parse(self, table: scrapy.Selector):
         title_list = []
         tr_classes = []
 
@@ -322,7 +323,7 @@ class ContainerStatusTableLocator(BaseTableLocator):
         self._tr_classes = tr_classes
         self._data_len = len(data_tr_list)
 
-    def get_cell(self, top, left) -> Selector:
+    def get_cell(self, top, left) -> scrapy.Selector:
         try:
             return self._td_map[top][left]
         except (KeyError, IndexError) as err:
@@ -359,7 +360,7 @@ class CookiesGetter:
         try:
             WebDriverWait(self._browser, 10).until(self._is_cookies_ready)
         except TimeoutException:
-            raise LoadWebsiteTimeOutError()
+            raise LoadWebsiteTimeOutError(url=self._browser.current_url)
 
         cookies = {}
         for cookie_object in self._browser.get_cookies():
