@@ -65,3 +65,13 @@ class AntiCaptchaError(BaseCarrierError):
 
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail=f'<anti-captcha-error>')
+
+
+class AcceptLoadWebsiteTimeOutError(BaseCarrierError):
+    status = CARRIER_RESULT_STATUS_ERROR
+
+    def __init__(self, url):
+        self.url = url
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail=f'<accept-load-website-timeout-error> on {self.url}')
