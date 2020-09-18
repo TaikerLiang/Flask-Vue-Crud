@@ -7,19 +7,23 @@ from typing import Dict, List
 import scrapy
 from scrapy import Selector
 from selenium import webdriver
-from selenium.webdriver import ActionChains, DesiredCapabilities
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
+from urllib3.exceptions import ReadTimeoutError
+
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem
-)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, ProxyMaxRetryError
+    BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem,
+    ExportErrorData)
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, ProxyMaxRetryError, \
+    BaseCarrierError, AcceptLoadWebsiteTimeOutError
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
@@ -159,11 +163,22 @@ class CargoTrackingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
 
-        self._driver.goto(url='http://www.oocl.com/eng/Pages/default.aspx')
+        try:
+            self._driver.goto(url='http://www.oocl.com/eng/Pages/default.aspx')
 
-        self._driver.search_mbl(mbl_no=mbl_no)
+            self._driver.search_mbl(mbl_no=mbl_no)
+        except ReadTimeoutError:
+            url = self._driver.get_current_url()
+            self._driver.quit()
+            raise AcceptLoadWebsiteTimeOutError(url=url)
+
         response_text = self._driver.get_page_text()
         response = Selector(text=response_text)
+
+        for item in self._handle_response(response):
+            yield item
+
+    def _handle_response(self, response):
         self.check_response(response)
 
         locator = _PageLocator()
@@ -191,10 +206,6 @@ class CargoTrackingRule(BaseRoutingRule):
             customs_release_status=custom_release_info['status'] or None,
             customs_release_date=custom_release_info['date'] or None,
         )
-
-        anonymous_token = response.css('input#ANONYMOUS_TOKEN::attr(value)').get()
-        jsf_tree_64 = response.css('input[id=jsf_tree_64]::attr(value)').get()
-        jsf_state_64 = response.css('input[id=jsf_state_64]::attr(value)').get()
 
         container_list = self._extract_container_list(selector_map=selector_map)
         for i, container in enumerate(container_list):
@@ -350,15 +361,6 @@ class OoluDriver:
         options.add_experimental_option('excludeSwitches', ['enable-automation'])
         options.add_experimental_option('useAutomationExtension', False)
 
-        # desired_capabilities = DesiredCapabilities.CHROME.copy()
-        # desired_capabilities['proxy'] = {
-        #     "httpProxy": 'http://proxy.apify.com:8000',
-        #     "ftpProxy": 'http://proxy.apify.com:8000',
-        #     "sslProxy": 'http://proxy.apify.com:8000',
-        #     "noProxy": None,
-        #     "proxyType": "MANUAL",
-        # }
-        # self.driver = webdriver.Chrome(chrome_options=options, desired_capabilities=desired_capabilities)
         self.driver = webdriver.Chrome(chrome_options=options)
 
         # undefine navigator.webdriver
@@ -367,11 +369,6 @@ class OoluDriver:
 
     def goto(self, url):
         self.driver.get(url=url)
-
-    def login_proxy(self, proxy_username, proxy_password):
-        alert = self.driver.switch_to.alert()
-        alert.sendKeys(proxy_username)
-        alert.sendKeys(Keys.TAB)
 
     def get_current_url(self):
         return self.driver.current_url
@@ -773,6 +770,10 @@ class ContainerStatusRule(BaseRoutingRule):
         time.sleep(10)
         response = Selector(text=self._driver.get_page_text())
 
+        for item in self._handle_response(response=response, container_no=container_no):
+            yield item
+
+    def _handle_response(self, response, container_no):
         locator = _PageLocator()
         selectors_map = locator.locate_selectors(response=response)
         detention_info = self._extract_detention_info(selectors_map)
