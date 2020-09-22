@@ -7,7 +7,6 @@ from typing import Dict, List
 import scrapy
 from scrapy import Selector
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
@@ -15,15 +14,15 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from urllib3.exceptions import ReadTimeoutError
 
-from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem,
-    ExportErrorData)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, ProxyMaxRetryError, \
-    BaseCarrierError, AcceptLoadWebsiteTimeOutError
+)
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError, CarrierInvalidMblNoError, ProxyMaxRetryError, LoadWebsiteTimeOutError
+)
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
@@ -170,7 +169,7 @@ class CargoTrackingRule(BaseRoutingRule):
         except ReadTimeoutError:
             url = self._driver.get_current_url()
             self._driver.quit()
-            raise AcceptLoadWebsiteTimeOutError(url=url)
+            raise LoadWebsiteTimeOutError(url=url)
 
         response_text = self._driver.get_page_text()
         response = Selector(text=response_text)
@@ -766,8 +765,14 @@ class ContainerStatusRule(BaseRoutingRule):
         container_no = response.meta['container_no']
         click_element_css = response.meta['click_element_css']
 
-        self._driver.find_container_btn_and_click(container_btn_css=click_element_css)
-        time.sleep(10)
+        try:
+            self._driver.find_container_btn_and_click(container_btn_css=click_element_css)
+            time.sleep(10)
+        except ReadTimeoutError:
+            url = self._driver.get_current_url()
+            self._driver.quit()
+            raise LoadWebsiteTimeOutError(url=url)
+
         response = Selector(text=self._driver.get_page_text())
 
         for item in self._handle_response(response=response, container_no=container_no):
@@ -819,7 +824,9 @@ class ContainerStatusRule(BaseRoutingRule):
             lfd = ''
 
         if table_locator.has_header(left='Detention Last Free Date:'):
-            det_lfd_info = table_extractor.extract_cell(top=None, left='Detention Last Free Date:', extractor=td_extractor)
+            det_lfd_info = table_extractor.extract_cell(
+                top=None, left='Detention Last Free Date:', extractor=td_extractor
+            )
             _, det_lfd = _get_est_and_actual(status=det_lfd_info['status'], time_str=det_lfd_info['time_str'])
         else:
             det_lfd = ''
