@@ -36,11 +36,21 @@ class CarrierResponseFormatError(BaseCarrierError):
         return ExportErrorData(status=self.status, detail=f'<format-error> {self.reason}')
 
 
-class LoadWebsiteTimeOutError(BaseCarrierError):
+class LoadWebsiteTimeOutFatal(BaseCarrierError):
     status = CARRIER_RESULT_STATUS_FATAL
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail='<load-website-timeout-error>')
+        return ExportErrorData(status=self.status, detail='<load-website-timeout-fatal>')
+
+
+class LoadWebsiteTimeOutError(BaseCarrierError):
+    status = CARRIER_RESULT_STATUS_ERROR
+
+    def __init__(self, url):
+        self.url = url
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail=f'<load-website-timeout-error> on {self.url}')
 
 
 class ProxyMaxRetryError(BaseCarrierError):
@@ -66,12 +76,3 @@ class AntiCaptchaError(BaseCarrierError):
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail=f'<anti-captcha-error>')
 
-
-class AcceptLoadWebsiteTimeOutError(BaseCarrierError):
-    status = CARRIER_RESULT_STATUS_ERROR
-
-    def __init__(self, url):
-        self.url = url
-
-    def build_error_data(self):
-        return ExportErrorData(status=self.status, detail=f'<accept-load-website-timeout-error> on {self.url}')
