@@ -76,3 +76,10 @@ class AntiCaptchaError(BaseCarrierError):
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail=f'<anti-captcha-error>')
 
+
+class DataNotFoundError(BaseCarrierError):
+    status = CARRIER_RESULT_STATUS_ERROR
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail='<data-not-found>')
+
