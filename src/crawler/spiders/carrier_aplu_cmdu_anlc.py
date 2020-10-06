@@ -3,10 +3,12 @@ from typing import Dict
 import scrapy
 from scrapy import Selector
 
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
-    SuspiciousOperationError
+from crawler.core_carrier.exceptions import (
+    CarrierInvalidMblNoError, CarrierResponseFormatError, SuspiciousOperationError, DataNotFoundError
+)
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem)
+    BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem
+)
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
@@ -78,9 +80,13 @@ class CarrierAnlcSpider(SharedSpider):
     base_url = 'https://www.anl.com.au'
 
 
+# ---------------------------------------------------------------------------------------------------
+
+
 STATUS_ONE_CONTAINER = 'STATUS_ONE_CONTAINER'
 STATUS_MULTI_CONTAINER = 'STATUS_MULTI_CONTAINER'
 STATUS_MBL_NOT_EXIST = 'STATUS_MBL_NOT_EXIST'
+STATUS_WEBSITE_SUSPEND = 'STATUS_WEBSITE_SUSPEND'
 
 
 class FirstTierRoutingRule(BaseRoutingRule):
@@ -118,6 +124,9 @@ class FirstTierRoutingRule(BaseRoutingRule):
                 yield ContainerStatusRoutingRule.build_request_option(
                     mbl_no=mbl_no, container_no=container_no, base_url=self.base_url)
 
+        elif mbl_status == STATUS_WEBSITE_SUSPEND:
+            raise DataNotFoundError()
+
         else:  # STATUS_MBL_NOT_EXIST
             raise CarrierInvalidMblNoError()
 
@@ -128,7 +137,13 @@ class FirstTierRoutingRule(BaseRoutingRule):
     def _extract_mbl_status(response: Selector):
         result_message = response.css('div#wrapper h2::text').get()
 
-        if result_message is None:
+        maybe_suspend_message = response.css('h1 + p::text').get()
+
+        if maybe_suspend_message == (
+                'We have decided to temporarily suspend all access to our eCommerce websites to protect our customers.'
+        ):
+            return STATUS_WEBSITE_SUSPEND
+        elif result_message is None:
             return STATUS_ONE_CONTAINER
         elif result_message.strip() == 'Results':
             return STATUS_MULTI_CONTAINER
