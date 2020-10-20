@@ -4,7 +4,30 @@
 
 ### System Requirements
 
-Install Chrome Browser
+Install Chrome Browser(mac)
+
+```bash
+brew tap homebrew/cask
+brew cask install google-chrome
+
+# version check
+# install through package manager
+google-chrome --version
+
+# or
+open -a "Google Chrome"
+# type chrome://version/ on url
+```
+
+Install Chrome Driver(Mac)
+
+```bash
+brew tap homebrew/cask
+brew cask install chromedriver
+
+# check
+chromedriver --version  # need to be same as browser
+```
 
 Install PhantomJS (Mac)
 
