@@ -36,6 +36,11 @@ class TerminalItem(BaseTerminalItem):
     hazardous = scrapy.Field()
     chassis_no = scrapy.Field()
 
+    # tti field
+    demurrage_due = scrapy.Field()
+    pay_through_date = scrapy.Field()
+    tmf = scrapy.Field()
+
 
 class DebugItem(BaseTerminalItem):
     info = scrapy.Field()
