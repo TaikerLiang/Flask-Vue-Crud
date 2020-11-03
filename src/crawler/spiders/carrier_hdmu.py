@@ -1,12 +1,12 @@
 import dataclasses
-from typing import List
+from typing import List, Dict
 
 from scrapy import Selector, Request, FormRequest
 from twisted.python.failure import Failure
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
-    SuspiciousOperationError
+from crawler.core_carrier.exceptions import (
+    CarrierInvalidMblNoError, CarrierResponseFormatError, SuspiciousOperationError)
 from crawler.core_carrier.items import (
     MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, BaseCarrierItem, DebugItem)
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption, ProxyMaxRetryError
@@ -15,7 +15,6 @@ from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, 
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import (
     TableExtractor, TopHeaderTableLocator, TopLeftHeaderTableLocator, LeftHeaderTableLocator)
-
 
 BASE_URL = 'https://www.hmm21.com'
 
@@ -185,6 +184,18 @@ class CarrierHdmuSpider(BaseCarrierSpider):
                 errback=self.retry,
             )
 
+        elif option.method == RequestOption.METHOD_POST_BODY:
+            return Request(
+                method='POST',
+                url=option.url,
+                headers=option.headers,
+                body=option.body,
+                meta=meta,
+                dont_filter=True,
+                callback=self.parse,
+                errback=self.retry,
+            )
+
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
@@ -203,8 +214,10 @@ class CookiesRoutingRule(BaseRoutingRule):
             # url=f'{BASE_URL}/cms/company/engn/index.jsp',
             url=BASE_URL,
             headers={
-                'Upgrade-Insecure-Requests': '1',
                 'Host': 'www.hmm21.com',
+                'Accept': '*/*',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
             },
             meta={
                 'mbl_no': mbl_no,
@@ -257,15 +270,20 @@ class MainRoutingRule(BaseRoutingRule):
             ],
         }
 
+        body = encode_urlencoded_body_from(form_data=form_data)
+
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_POST_FORM,
-            url=f'{BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp',
+            method=RequestOption.METHOD_POST_BODY,
+            url=f'{BASE_URL}/_/ebiz/track_trace/trackCTP_nTmp.jsp',
             headers={
-                'Upgrade-Insecure-Requests': '1',
+                'Content-Type': 'application/x-www-form-urlencoded',
                 'Host': 'www.hmm21.com',
+                'Accept': '*/*',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
             },
-            form_data=form_data,
+            body=body,
             meta={
                 'mbl_no': mbl_no,
             },
@@ -527,17 +545,20 @@ class ContainerRoutingRule(BaseRoutingRule):
                 mbl_no, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
             ],
         }
+        body = encode_urlencoded_body_from(form_data=form_data)
 
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_POST_FORM,
-            url=f'{BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={mbl_no}',
+            method=RequestOption.METHOD_POST_BODY,
+            url=f'{BASE_URL}/_/ebiz/track_trace/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={mbl_no}',
             headers={
-                'Upgrade-Insecure-Requests': '1',
+                'Content-Type': 'application/x-www-form-urlencoded',
                 'Host': 'www.hmm21.com',
-                'Referer': BASE_URL,
+                'Accept': '*/*',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
             },
-            form_data=form_data,
+            body=body,
             meta={
                 'mbl_no': mbl_no,
                 'container_index': container_index,
@@ -717,15 +738,20 @@ class AvailabilityRoutingRule(BaseRoutingRule):
             'bno': mbl_no,
             'cntrNo': f'{container_no}',
         }
+        body = encode_urlencoded_body_from(form_data=form_data)
 
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_POST_FORM,
-            url=f'{BASE_URL}/ebiz/track_trace/WUTInfo.jsp',
+            method=RequestOption.METHOD_POST_BODY,
+            url=f'{BASE_URL}/_/ebiz/track_trace/WUTInfo.jsp',
             headers={
-                'Upgrade-Insecure-Requests': '1',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Host': 'www.hmm21.com',
+                'Accept': '*/*',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
             },
-            form_data=form_data,
+            body=body,
             meta={
                 'container_no': container_no,
             },
@@ -773,4 +799,20 @@ class IgnoreDashTdExtractor(BaseTableCellExtractor):
         td_text = cell.css('::text').get()
         text = td_text.strip() if td_text else ''
         return text if text != '-' else None
+
+
+# -------------------------------------------------------------------------------
+
+
+def encode_urlencoded_body_from(form_data: Dict) -> str:
+    urlencoded_body_with_and = ''
+    for k, v in form_data.items():
+        if isinstance(v, list):
+            for v_i in v:
+                urlencoded_body_with_and += f'{k}={v_i}&'
+
+        urlencoded_body_with_and += f'{k}={v}&'
+    urlencoded_body = urlencoded_body_with_and[:-1]
+
+    return urlencoded_body
 
