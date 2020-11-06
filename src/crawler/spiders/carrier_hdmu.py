@@ -1,7 +1,8 @@
 import dataclasses
 from typing import List, Dict
+from urllib.parse import urlencode
 
-from scrapy import Selector, Request, FormRequest
+from scrapy import Selector, Request
 from twisted.python.failure import Failure
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS
@@ -173,17 +174,6 @@ class CarrierHdmuSpider(BaseCarrierSpider):
                 errback=self.retry,
             )
 
-        elif option.method == RequestOption.METHOD_POST_FORM:
-            return FormRequest(
-                url=option.url,
-                headers=option.headers,
-                formdata=option.form_data,
-                meta=meta,
-                dont_filter=True,
-                callback=self.parse,
-                errback=self.retry,
-            )
-
         elif option.method == RequestOption.METHOD_POST_BODY:
             return Request(
                 method='POST',
@@ -270,7 +260,7 @@ class MainRoutingRule(BaseRoutingRule):
             ],
         }
 
-        body = encode_urlencoded_body_from(form_data=form_data)
+        body = urlencode(query=form_data)
 
         return RequestOption(
             rule_name=cls.name,
@@ -545,7 +535,7 @@ class ContainerRoutingRule(BaseRoutingRule):
                 mbl_no, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
             ],
         }
-        body = encode_urlencoded_body_from(form_data=form_data)
+        body = urlencode(query=form_data)
 
         return RequestOption(
             rule_name=cls.name,
@@ -738,7 +728,7 @@ class AvailabilityRoutingRule(BaseRoutingRule):
             'bno': mbl_no,
             'cntrNo': f'{container_no}',
         }
-        body = encode_urlencoded_body_from(form_data=form_data)
+        body = urlencode(query=form_data)
 
         return RequestOption(
             rule_name=cls.name,
@@ -799,20 +789,4 @@ class IgnoreDashTdExtractor(BaseTableCellExtractor):
         td_text = cell.css('::text').get()
         text = td_text.strip() if td_text else ''
         return text if text != '-' else None
-
-
-# -------------------------------------------------------------------------------
-
-
-def encode_urlencoded_body_from(form_data: Dict) -> str:
-    urlencoded_body_with_and = ''
-    for k, v in form_data.items():
-        if isinstance(v, list):
-            for v_i in v:
-                urlencoded_body_with_and += f'{k}={v_i}&'
-
-        urlencoded_body_with_and += f'{k}={v}&'
-    urlencoded_body = urlencoded_body_with_and[:-1]
-
-    return urlencoded_body
 
