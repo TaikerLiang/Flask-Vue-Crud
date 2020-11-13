@@ -220,6 +220,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         yield TerminalItem(
             container_no=container_info['PO_CNTR_NO'],
             ready_for_pick_up=container_info['PO_AVAILABLE_IND'],
+            customs_release=container_info['PO_USA_STATUS'],
             appointment_date=container_info['PO_APPOINTMENT_TIME'],
             last_free_day=container_info['PO_DM_LAST_FREE_DATE'],
             demurrage=container_info['PO_DM_AMT_DUE'],
@@ -231,6 +232,14 @@ class ContainerRoutingRule(BaseRoutingRule):
             holds=container_info['PO_TMNL_HOLD_IND'],
             cy_location=container_info['PO_YARD_LOC'],
 
+            # extra field name
+            service=container_info['PO_SVC_QFR_DESC'],
+            carrier_release=container_info['PO_CARRIER_STATUS'],
+            tmf=container_info['PO_TMF_STATUS'],
+            demurrage_status=container_info['PO_DM_STATUS'],
+
+            # not on html
+            freight_release=container_info['PO_FR_STATUS'],  # not sure
         )
 
         sys_no = container_info['PO_MFSMS_SYSNO']
@@ -287,8 +296,8 @@ class MblRoutingRule(BaseRoutingRule):
         vessel, voyage = mbl_info['PO_VSLVOY'].split('/')
 
         yield TerminalItem(
-            vessel=vessel,
             mbl_no=mbl_info['PO_BL_NO'],
+            vessel=vessel,
             voyage=voyage,
         )
 
