@@ -39,6 +39,13 @@ class TerminalItem(BaseTerminalItem):
     # tti field
     demurrage_due = scrapy.Field()
     pay_through_date = scrapy.Field()
+
+    # ets field
+    service = scrapy.Field()
+    carrier_release = scrapy.Field()
+    demurrage_status = scrapy.Field()
+
+    # tti & ets field
     tmf = scrapy.Field()
 
 
