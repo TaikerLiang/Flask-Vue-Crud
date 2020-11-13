@@ -17,7 +17,8 @@ def sample_loader(sample_loader):
 
 @pytest.mark.parametrize('sub,container_no', [
     ('01_without_demurrage', 'EISU8049563'),
-    ('02_with_demurrage', 'EMCU5268400'),
+    ('02_with_demurrage_appointment', 'EMCU5268400'),
+    ('03_diff_customs_release', 'EITU1162062'),
 ])
 def test_container_handle(sub, container_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')

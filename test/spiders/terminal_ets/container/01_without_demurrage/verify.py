@@ -8,6 +8,7 @@ def verify(results: List):
     assert results[0] == TerminalItem(
         container_no='EGSU5003713',
         ready_for_pick_up='No',
+        customs_release='Hold',
         appointment_date=None,
         last_free_day=None,
         demurrage=None,
@@ -15,6 +16,15 @@ def verify(results: List):
         container_spec="40'/Reefer/9'6\"",
         holds='No',
         cy_location=None,
+
+        # extra field name
+        service='Local Port/Door Cargo',
+        carrier_release='Hold',
+        tmf='Release',
+        demurrage_status=None,
+
+        # not on html
+        freight_release='Hold',
     )
 
     assert isinstance(results[1], RequestOption)
