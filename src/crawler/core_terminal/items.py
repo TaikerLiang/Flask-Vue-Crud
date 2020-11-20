@@ -48,6 +48,10 @@ class TerminalItem(BaseTerminalItem):
     # tti & ets field
     tmf = scrapy.Field()
 
+    # lbct field
+    owed = scrapy.Field()
+    full_empty = scrapy.Field()
+
 
 class DebugItem(BaseTerminalItem):
     info = scrapy.Field()
