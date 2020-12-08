@@ -9,6 +9,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from urllib3.exceptions import ReadTimeoutError
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
@@ -89,7 +90,7 @@ class ContentGetter:
             accept_btn = WebDriverWait(self._driver, 10).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, "button[title='I Agree']"))
             )
-        except TimeoutException:
+        except (TimeoutException, ReadTimeoutError):
             raise LoadWebsiteTimeOutFatal()
 
         time.sleep(1)
