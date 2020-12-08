@@ -382,7 +382,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         etd, atd, eta, ata = None, None, None, None
         for place, time_status in schedules:
-            if time_status in ['To Be Advised …', None]:
+            if time_status in ['To Be Advised …', 'To Be Advised...', None]:
                 actual_time, estimate_time = None, None
             else:
                 actual_time, estimate_time = MainInfoRoutingRule._parse_time_status(time_status)
