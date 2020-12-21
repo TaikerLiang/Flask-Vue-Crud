@@ -5,3 +5,4 @@ requests
 selenium
 python-anticaptcha
 selenium-wire
+opencv-python

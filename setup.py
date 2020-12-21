@@ -16,7 +16,7 @@ dev_requires = get_requirements('requirements-dev.txt')
 
 setup(
     name='epsc',
-    version='0.1',
+    version='0.2',
     package_dir={'': 'src'},
     packages=find_packages('src'),
     include_package_data=True,
