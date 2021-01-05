@@ -1,5 +1,5 @@
 import dataclasses
-from typing import List, Dict
+from typing import List
 from urllib.parse import urlencode
 
 from scrapy import Selector, Request
@@ -83,6 +83,7 @@ class CarrierHdmuSpider(BaseCarrierSpider):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._cookiejar_id = 0
+        self._prefix_exist = False
         self._item_recorder = ItemRecorder()
 
         rules = [
@@ -99,6 +100,7 @@ class CarrierHdmuSpider(BaseCarrierSpider):
     def start(self):
         if self.mbl_no.startswith('HDMU'):
             self.mbl_no = self.mbl_no[4:]
+            self._prefix_exist = True
 
         yield self._prepare_restart()
 
@@ -150,7 +152,8 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         self._proxy_manager.renew_proxy()
         self._cookiejar_id += 1
 
-        option = CookiesRoutingRule.build_request_option(mbl_no=self.mbl_no, cookiejar_id=self._cookiejar_id)
+        option = CookiesRoutingRule.build_request_option(
+            mbl_no=self.mbl_no, cookiejar_id=self._cookiejar_id, prefix_exist=self._prefix_exist)
         restart_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         restart_proxy_cookie_option = self._add_cookiejar_id_into_request_option(option=restart_proxy_option)
         return self._build_request_by(option=restart_proxy_cookie_option)
@@ -197,7 +200,7 @@ class CookiesRoutingRule(BaseRoutingRule):
     name = 'COOKIES'
 
     @classmethod
-    def build_request_option(cls, mbl_no, cookiejar_id: int):
+    def build_request_option(cls, mbl_no, cookiejar_id: int, prefix_exist: bool):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
@@ -212,6 +215,7 @@ class CookiesRoutingRule(BaseRoutingRule):
             meta={
                 'mbl_no': mbl_no,
                 'cookiejar': cookiejar_id,
+                'prefix_exist': prefix_exist,
             },
         )
 
@@ -220,9 +224,10 @@ class CookiesRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
+        prefix_exist = response.meta['prefix_exist']
 
         if self._require_cookies_exists(response=response):
-            yield MainRoutingRule.build_request_option(mbl_no=mbl_no)
+            yield MainRoutingRule.build_request_option(mbl_no=mbl_no, prefix_exist=prefix_exist)
         else:
             yield ForceRestart()
 
@@ -247,7 +252,9 @@ class MainRoutingRule(BaseRoutingRule):
         self._item_recorder = item_recorder
 
     @classmethod
-    def build_request_option(cls, mbl_no):
+    def build_request_option(cls, mbl_no, prefix_exist: bool):
+        url_plug_in = '' if prefix_exist else '/_'
+
         form_data = {
             'number': mbl_no,
             'type': '1',
@@ -265,17 +272,19 @@ class MainRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url=f'{BASE_URL}/_/ebiz/track_trace/trackCTP_nTmp.jsp',
+            url=f'{BASE_URL}{url_plug_in}/ebiz/track_trace/trackCTP_nTmp.jsp',
             headers={
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'Host': 'www.hmm21.com',
                 'Accept': '*/*',
+                'Rerfer': 'https://www.hmm21.com/ebiz/track_trace/main_new.jsp?null',
                 'Accept-Encoding': 'gzip, deflate, br',
                 'Connection': 'keep-alive',
             },
             body=body,
             meta={
                 'mbl_no': mbl_no,
+                'prefix_exist': prefix_exist,
             },
         )
 
@@ -284,6 +293,7 @@ class MainRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
+        prefix_exist = response.meta['prefix_exist']
 
         self._check_mbl_no(response=response)
 
@@ -360,7 +370,7 @@ class MainRoutingRule(BaseRoutingRule):
             else:
                 h_num -= 1
                 yield ContainerRoutingRule.build_request_option(
-                    mbl_no=mbl_no, container_index=container_content.index, h_num=h_num)
+                    mbl_no=mbl_no, container_index=container_content.index, h_num=h_num, prefix_exist=prefix_exist)
 
         # avoid this function not yield anything
         yield MblItem()
@@ -526,7 +536,9 @@ class ContainerRoutingRule(BaseRoutingRule):
         self._item_recorder = item_recorder
 
     @classmethod
-    def build_request_option(cls, mbl_no, container_index, h_num):
+    def build_request_option(cls, mbl_no, container_index, h_num, prefix_exist: bool):
+        url_plug_in = '' if prefix_exist else '/_'
+
         form_data = {
             'selectedContainerIndex': f'{container_index}',
             'hNum': f'{h_num}',
@@ -540,7 +552,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url=f'{BASE_URL}/_/ebiz/track_trace/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={mbl_no}',
+            url=f'{BASE_URL}{url_plug_in}/ebiz/track_trace/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={mbl_no}',
             headers={
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'Host': 'www.hmm21.com',
@@ -552,6 +564,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             meta={
                 'mbl_no': mbl_no,
                 'container_index': container_index,
+                'prefix_exist': prefix_exist,
             },
         )
 
@@ -562,6 +575,7 @@ class ContainerRoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
         container_index = response.meta['container_index']
+        prefix_exist = response.meta['prefix_exist']
 
         container_info = self._extract_container_info(response=response, container_index=container_index)
         container_no = container_info['container_no']
@@ -606,7 +620,8 @@ class ContainerRoutingRule(BaseRoutingRule):
         if not self._item_recorder.is_item_recorded(key=(AVAILABILITY, container_no)):
             ava_exist = self._extract_availability_exist(response=response)
             if ava_exist:
-                yield AvailabilityRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
+                yield AvailabilityRoutingRule.build_request_option(
+                    mbl_no=mbl_no, container_no=container_no, prefix_exist=prefix_exist)
             else:
                 self._item_recorder.record_item(key=(AVAILABILITY, container_no))
 
@@ -723,7 +738,9 @@ class AvailabilityRoutingRule(BaseRoutingRule):
         self._item_recorder = item_recorder
 
     @classmethod
-    def build_request_option(cls, mbl_no, container_no):
+    def build_request_option(cls, mbl_no, container_no, prefix_exist: bool):
+        url_plug_in = '' if prefix_exist else '/_'
+
         form_data = {
             'bno': mbl_no,
             'cntrNo': f'{container_no}',
@@ -733,7 +750,7 @@ class AvailabilityRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url=f'{BASE_URL}/_/ebiz/track_trace/WUTInfo.jsp',
+            url=f'{BASE_URL}{url_plug_in}/ebiz/track_trace/WUTInfo.jsp',
             headers={
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'Host': 'www.hmm21.com',
@@ -744,6 +761,7 @@ class AvailabilityRoutingRule(BaseRoutingRule):
             body=body,
             meta={
                 'container_no': container_no,
+                'prefix_exist': prefix_exist,
             },
         )
 
