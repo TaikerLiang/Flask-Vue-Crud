@@ -83,7 +83,10 @@ class CarrierHdmuSpider(BaseCarrierSpider):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._cookiejar_id = 0
-        self._prefix_exist = False
+        # For HDMU mbl no, not every mbl no need 'HDMU' prefix, so we need to try both case in every request.
+        # (with and without 'HDMU' prefix)
+        # first time, the value of _prefix_exist is 0 and next is 1.
+        self._prefix_exist = -1
         self._item_recorder = ItemRecorder()
 
         rules = [
@@ -98,10 +101,6 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         self._proxy_manager = ProxyManager(session='hdmu', logger=self.logger)
 
     def start(self):
-        if self.mbl_no.startswith('HDMU'):
-            self.mbl_no = self.mbl_no[4:]
-            self._prefix_exist = True
-
         yield self._prepare_restart()
 
     def retry(self, failure: Failure):
@@ -151,9 +150,13 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         self._request_queue.clear()
         self._proxy_manager.renew_proxy()
         self._cookiejar_id += 1
-
+        self._prefix_exist += 1
+        if self._prefix_exist % 2 == 1:
+            new_mbl_no = f'HDMU{self.mbl_no}'
+        else:
+            new_mbl_no = self.mbl_no
         option = CookiesRoutingRule.build_request_option(
-            mbl_no=self.mbl_no, cookiejar_id=self._cookiejar_id, prefix_exist=self._prefix_exist)
+            mbl_no=new_mbl_no, cookiejar_id=self._cookiejar_id, prefix_exist=self._prefix_exist)
         restart_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         restart_proxy_cookie_option = self._add_cookiejar_id_into_request_option(option=restart_proxy_option)
         return self._build_request_by(option=restart_proxy_cookie_option)
@@ -298,10 +301,14 @@ class MainRoutingRule(BaseRoutingRule):
         self._check_mbl_no(response=response)
 
         if not self._item_recorder.is_item_recorded(key=(MBL, mbl_no)):
-            tracking_results = self._extract_tracking_results(response=response)
-            customs_status = self._extract_customs_status(response=response)
-            cargo_delivery_info = self._extract_cargo_delivery_info(response=response)
-            latest_update = self._extract_lastest_update(response=response)
+            try:
+                tracking_results = self._extract_tracking_results(response=response)
+                customs_status = self._extract_customs_status(response=response)
+                cargo_delivery_info = self._extract_cargo_delivery_info(response=response)
+                latest_update = self._extract_lastest_update(response=response)
+            except IndexError:
+                yield ForceRestart()
+                return
 
             mbl_item = MblItem(
                 mbl_no=mbl_no,
@@ -379,7 +386,7 @@ class MainRoutingRule(BaseRoutingRule):
     def _check_mbl_no(response):
         err_message = response.css('div#trackingForm p.text_type03::text').get()
         if err_message == 'B/L number is invalid.  Please try it again with correct number.':
-            raise CarrierInvalidMblNoError()
+            yield ForceRestart()
 
     @staticmethod
     def _extract_tracking_results(response):
@@ -536,8 +543,8 @@ class ContainerRoutingRule(BaseRoutingRule):
         self._item_recorder = item_recorder
 
     @classmethod
-    def build_request_option(cls, mbl_no, container_index, h_num, prefix_exist: bool):
-        url_plug_in = '' if prefix_exist else '/_'
+    def build_request_option(cls, mbl_no, container_index, h_num, prefix_exist: int):
+        url_plug_in = '' if prefix_exist % 2 == 0 else '/_'
 
         form_data = {
             'selectedContainerIndex': f'{container_index}',
