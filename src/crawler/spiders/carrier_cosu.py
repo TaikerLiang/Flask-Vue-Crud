@@ -109,10 +109,14 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     def _handle_item(self, content_getter, response: scrapy.Selector):
         mbl_data = self._extract_main_info(response=response)
-        if 'mbl_no' not in mbl_data:
+        print('paul here')
+        from pprint import pprint
+        pprint(mbl_data)
+        if 'mbl_no' not in mbl_data and 'booking_no' not in mbl_data:
             raise CarrierInvalidMblNoError()
+
         yield MblItem(
-            mbl_no=mbl_data['mbl_no'],
+            mbl_no=mbl_data['mbl_no'] or mbl_data['booking_no'],
             vessel=mbl_data.get('vessel', None),
             voyage=mbl_data.get('voyage', None),
             por=LocationItem(name=mbl_data.get('por_name', None)),
@@ -176,6 +180,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
         for idx in range(len(values)):
             if keys[2*idx].strip() == 'Bill of Lading Number':
                 data['mbl_no'] = values[idx].strip()
+            elif keys[2*idx].strip() == 'Booking Number':
+                data['booking_no'] = values[idx].strip()
             elif keys[2*idx].strip() == 'Place of Receipt':
                 data['por_name'] = values[idx].strip()
             elif keys[2*idx].strip() == 'Final Destination':
@@ -325,15 +331,12 @@ class ContentGetter:
         except (TimeoutException, ReadTimeoutError):
             raise LoadWebsiteTimeOutFatal()
 
+        # accept cookie
         time.sleep(1)
         accept_btn.click()
-
-        search_bar = self._driver.find_element_by_xpath("/html/body/div[1]/div[4]/div[1]/div/div[1]/div/div[2]/form/div/div[1]/div[1]/div/div[1]/input")
-        search_btn = self._driver.find_element_by_xpath("/html/body/div[1]/div[4]/div[1]/div/div[1]/div/div[2]/form/div/div[2]/button")
-
         time.sleep(1)
-        search_bar.send_keys(mbl_no)
-        search_btn.click()
+
+        self._driver.get(f'https://elines.coscoshipping.com/ebusiness/cargoTracking?trackingType=BOOKING&number={mbl_no}')
 
         try:
             time.sleep(10)
