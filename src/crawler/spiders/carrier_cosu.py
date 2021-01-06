@@ -207,10 +207,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
         else:
             data['atd'] = None
             data['etd'] = departure_value
-        
-        arrival_key = response.xpath('/html/body/div[1]/div[4]/div[1]/div/div[2]/div/div/div[2]/div[1]/div[2]/div/div[4]/div[3]/div[2]/div/div[2]/text()').get()
-        arrival_value = response.xpath('/html/body/div[1]/div[4]/div[1]/div/div[2]/div/div/div[2]/div[1]/div[2]/div/div[4]/div[3]/div[2]/div/div[3]/text()').get()
-        
+
+        arrival_key = response.xpath('/html/body/div[1]/div[4]/div[1]/div/div[2]/div/div/div[2]/div[1]/div[2]/div/div[3]/div[3]/div[2]/div/div[2]/text()').get()
+        arrival_value = response.xpath('/html/body/div[1]/div[4]/div[1]/div/div[2]/div/div/div[2]/div[1]/div[2]/div/div[3]/div[3]/div[2]/div/div[3]/text()').get()
         if arrival_key == "ATA":
             data['ata'] = arrival_value
             data['eta'] = None
@@ -218,7 +217,6 @@ class MainInfoRoutingRule(BaseRoutingRule):
             data['ata'] = None
             data['eta'] = arrival_value
 
-        # print(data)
         return data
 
     def _extract_schedule_detail_info(self, response: scrapy.Selector) -> List:
@@ -274,10 +272,6 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 if last_free_day:
                     last_free_day = last_free_day.strip()
 
-            # print('container_no', container_no)
-            # print('last_free_day', last_free_day)
-            # print('depot_lfd', depot_lfd)
-
             container_list.append(
                 {
                     'container_key': get_container_key(container_no=container_no),
@@ -297,12 +291,6 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 local_date_time = response.xpath(f'{CONTAINER_STATUS_BASE}/tbody/tr[{cts_idx+1}]/td[2]/div/div/p[2]/span/text()').get()
                 transport = response.xpath(f'{CONTAINER_STATUS_BASE}/tbody/tr[{cts_idx+1}]/td[2]/div/div/p[3]/span[2]/text()').get()
                 location = response.xpath(f'{CONTAINER_STATUS_BASE}/tbody/tr[{cts_idx+1}]/td[3]/div/span/text()').get()
-
-                # print('container_key', get_container_key(container_no=container_no))
-                # print('description', description)
-                # print('local_date_time', local_date_time)
-                # print('transport', transport)
-                # print('location', location)
 
                 container_status_list.append(
                     {
