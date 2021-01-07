@@ -176,33 +176,49 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def _extract_main_info(self, response: scrapy.Selector) -> Dict:
         keys = response.xpath('//div[@class="ivu-col ivu-col-span-4 label"]/p/text()').extract()
         values = response.xpath('//div[@class="ivu-col ivu-col-span-8 content"]/p/text()').extract()
-        data = {}
-        for idx in range(len(values)):
-            if keys[2*idx].strip() == 'Bill of Lading Number':
+        data = {
+            'mbl_no': '',
+            'booking_no': '',
+            'por_name': '',
+            'final_dest_name': '',
+            'pol_name': '',
+            'pod_name': '',
+            'vessel': '',
+            'voyage': '',
+            'pick_up_eta': '',
+            'cargo_cutoff': '',
+            'pod_firms_code': '',
+            'final_dest_firms_code': '',
+            'bl_type': '',
+            'surrendered_status': '',
+        }
+        for idx in range(min(len(values), int(len(keys)/2))):
+            print(len(values), len(keys), idx, keys[2*idx].strip(), values[idx].strip())
+            if keys[2*idx].strip() == 'Bill of Lading Number' and not data['mbl_no']:
                 data['mbl_no'] = values[idx].strip()
-            elif keys[2*idx].strip() == 'Booking Number':
+            elif keys[2*idx].strip() == 'Booking Number' and not data['booking_no']:
                 data['booking_no'] = values[idx].strip()
-            elif keys[2*idx].strip() == 'Place of Receipt':
+            elif keys[2*idx].strip() == 'Place of Receipt' and not data['por_name']:
                 data['por_name'] = values[idx].strip()
-            elif keys[2*idx].strip() == 'Final Destination':
+            elif keys[2*idx].strip() == 'Final Destination' and not data['final_dest_name']:
                 data['final_dest_name'] = values[idx].strip()
-            elif keys[2*idx].strip() == 'POL':
+            elif keys[2*idx].strip() == 'POL' and not data['pol_name']:
                 data['pol_name'] = values[idx].strip()
-            elif keys[2*idx].strip() == 'POD':
+            elif keys[2*idx].strip() == 'POD' and not data['pod_name']:
                 data['pod_name'] = values[idx].strip()
-            elif keys[2*idx].strip() == 'Vessel / Voyage':
+            elif keys[2*idx].strip() == 'Vessel / Voyage' and not (data['vessel'] or data['voyage']):
                 data['vessel'], data['voyage'] = values[idx].strip().split(' / ')
-            elif keys[2*idx].strip() == 'ETA at Place of Delivery':
+            elif keys[2*idx].strip() == 'ETA at Place of Delivery' and not data['pick_up_eta']:
                 data['pick_up_eta'] = values[idx].strip()
-            elif keys[2*idx].strip() == 'Cargo Cutoff':
+            elif keys[2*idx].strip() == 'Cargo Cutoff' and not data['cargo_cutoff']:
                 data['cargo_cutoff'] = values[idx].strip()
-            elif keys[2*idx].strip() == 'POD Firms Code':
+            elif keys[2*idx].strip() == 'POD Firms Code' and not data['pod_firms_code']:
                 data['pod_firms_code'] = values[idx].strip()
-            elif keys[2*idx].strip() == 'Final Destination Firms Code':
+            elif keys[2*idx].strip() == 'Final Destination Firms Code' and not data['final_dest_firms_code']:
                 data['final_dest_firms_code'] = values[idx].strip()
-            elif keys[2*idx].strip() == 'B/L Type':
+            elif keys[2*idx].strip() == 'B/L Type' and not data['bl_type']:
                 data['bl_type'] = values[idx].strip()
-            elif keys[2*idx].strip() == 'BL Surrendered Status':
+            elif keys[2*idx].strip() == 'BL Surrendered Status' and not data['surrendered_status']:
                 data['surrendered_status'] = values[idx].strip()
 
         departure_key = response.xpath('/html/body/div[1]/div[4]/div[1]/div/div[2]/div/div/div[2]/div[1]/div[2]/div/div[2]/div[3]/div[2]/div/div[2]/text()').get()
