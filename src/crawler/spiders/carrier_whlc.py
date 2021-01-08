@@ -1,8 +1,10 @@
 import re
+import time
 from typing import List, Dict
 
 import scrapy
 from scrapy import Selector
+from selenium import webdriver
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import (
@@ -75,12 +77,16 @@ class CarrierWhlcSpider(BaseCarrierSpider):
         if option.method == RequestOption.METHOD_POST_FORM:
             return scrapy.FormRequest(
                 url=option.url,
+                headers=option.headers,
                 formdata=option.form_data,
+                cookies=option.cookies,
                 meta=meta,
             )
         elif option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
                 url=option.url,
+                headers=option.headers,
+                cookies=option.cookies,
                 meta=meta,
             )
         else:
@@ -89,11 +95,55 @@ class CarrierWhlcSpider(BaseCarrierSpider):
 # -------------------------------------------------------------------------------
 
 
-class CarrierCookiesMaxRetryError(BaseCarrierError):
+class CarrierIpBlockError(BaseCarrierError):
     status = CARRIER_RESULT_STATUS_FATAL
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail='<cookies-max-retry-error>')
+        return ExportErrorData(status=self.status, detail='<ip-block-error>')
+
+
+class WhlcDriver:
+    def __init__(self):
+        options = webdriver.ChromeOptions()
+        options.add_argument('--disable-extensions')
+        options.add_argument('--disable-notifications')
+        options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--window-size=1920,1080')
+        options.add_experimental_option('excludeSwitches', ['enable-automation'])
+        options.add_experimental_option('useAutomationExtension', False)
+
+        self._driver = webdriver.Chrome(chrome_options=options)
+
+        # undefine navigator.webdriver
+        script = "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+        self._driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': script})
+
+    def get_cookies_dict_from_main_page(self):
+        self._driver.get(f'{WHLC_BASE_URL}/views/Main.xhtml')
+        time.sleep(3)
+        cookies = self._driver.get_cookies()
+
+        return self._transformat_to_dict(cookies=cookies)
+
+    def get_view_state(self):
+        view_state_elem = self._driver.find_element_by_css_selector('input[name="javax.faces.ViewState"]')
+        view_state = view_state_elem.get_attribute('value')
+        return view_state
+
+    def close(self):
+        self._driver.close()
+
+    @staticmethod
+    def _transformat_to_dict(cookies: List[Dict]) -> Dict:
+        return_cookies = {}
+
+        for d in cookies:
+            return_cookies[d['name']] = d['value']
+
+        return return_cookies
 
 
 class CookiesRoutingRule(BaseRoutingRule):
@@ -106,7 +156,7 @@ class CookiesRoutingRule(BaseRoutingRule):
     def build_request_option(cls, mbl_no) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_POST_FORM,
+            method=RequestOption.METHOD_GET,
             url=f'{WHLC_BASE_URL}/views/Main.xhtml',
             meta={'mbl_no': mbl_no},
         )
@@ -117,16 +167,29 @@ class CookiesRoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
 
-        if self._check_cookies(response=response):
-            view_state = self._extract_view_state(response=response)
-            yield ListRoutingRule.build_request_option(mbl_no, view_state)
+        driver = WhlcDriver()
+        cookies = driver.get_cookies_dict_from_main_page()
 
-        elif self._retry_count < COOKIES_RETRY_LIMIT:
-            self._retry_count += 1
-            yield CookiesRoutingRule.build_request_option(mbl_no)
-
+        if self._check(cookies=cookies):
+            view_state = driver.get_view_state()
+            driver.close()
+            yield ListRoutingRule.build_request_option(mbl_no, view_state, cookies=cookies)
         else:
-            raise CarrierCookiesMaxRetryError()
+            driver.close()
+            raise CarrierIpBlockError()
+
+    @staticmethod
+    def _check(cookies: Dict) -> bool:
+        # check visid_incap_2465608 & incap_ses_932_2465608 format exist
+
+        visid_incap_existence, incap_ses_existence = False, False
+        for k, v in cookies.items():
+            if 'visid_incap' in k:
+                visid_incap_existence = True
+            elif 'incap_ses' in k:
+                incap_ses_existence = True
+
+        return visid_incap_existence and incap_ses_existence
 
     @staticmethod
     def _check_cookies(response):
@@ -134,7 +197,7 @@ class CookiesRoutingRule(BaseRoutingRule):
 
         for cookie in response.headers.getlist('Set-Cookie'):
             item = cookie.decode('utf-8').split(';')[0]
-            key, value = item.split('=')
+            key, value = item.split('=', 1)
             cookies[key] = value
 
         return bool(cookies)
@@ -154,7 +217,7 @@ class ListRoutingRule(BaseRoutingRule):
         self._j_idt_patt = re.compile(r"'(?P<j_idt>j_idt[^,]+)':'(?P=j_idt)'")
 
     @classmethod
-    def build_request_option(cls, mbl_no: str, view_state) -> RequestOption:
+    def build_request_option(cls, mbl_no: str, view_state, cookies) -> RequestOption:
         form_data = {
             'cargoTrackListBean': 'cargoTrackListBean',
             'cargoType': '2',
@@ -167,8 +230,9 @@ class ListRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_FORM,
             url=f'{WHLC_BASE_URL}/views/quick/cargo_tracking.xhtml',
+            cookies=cookies,
             form_data=form_data,
-            meta={'mbl_no': mbl_no},
+            meta={'mbl_no': mbl_no, 'cookies': cookies},
         )
 
     def get_save_name(self, response) -> str:
@@ -176,6 +240,7 @@ class ListRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
+        cookies = response.meta['cookies']
 
         self._check_response(response)
 
@@ -192,11 +257,11 @@ class ListRoutingRule(BaseRoutingRule):
 
             detail_j_idt = container['detail_j_idt']
             if detail_j_idt:
-                yield DetailRoutingRule.build_request_option(mbl_no, container_no, detail_j_idt, view_state)
+                yield DetailRoutingRule.build_request_option(mbl_no, container_no, detail_j_idt, view_state, cookies)
 
             history_j_idt = container['history_j_idt']
             if history_j_idt:
-                yield HistoryRoutingRule.build_request_option(mbl_no, container_no, history_j_idt, view_state)
+                yield HistoryRoutingRule.build_request_option(mbl_no, container_no, history_j_idt, view_state, cookies)
 
     @staticmethod
     def _check_response(response):
@@ -322,7 +387,7 @@ class DetailRoutingRule(BaseRoutingRule):
     name = 'DETAIL'
 
     @classmethod
-    def build_request_option(cls, mbl_no: str, container_no, j_idt, view_state) -> RequestOption:
+    def build_request_option(cls, mbl_no: str, container_no, j_idt, view_state, cookies) -> RequestOption:
         form_data = {
             'cargoTrackListBean': 'cargoTrackListBean',
             'javax.faces.ViewState': view_state,
@@ -336,6 +401,7 @@ class DetailRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_POST_FORM,
             url=f'{WHLC_BASE_URL}/views/cargoTrack/CargoTrackList.xhtml',
             form_data=form_data,
+            cookies=cookies,
             meta={'container_no': container_no},
         )
 
@@ -499,7 +565,7 @@ class HistoryRoutingRule(BaseRoutingRule):
     name = 'HISTORY'
 
     @classmethod
-    def build_request_option(cls, mbl_no: str, container_no, j_idt, view_state) -> RequestOption:
+    def build_request_option(cls, mbl_no: str, container_no, j_idt, view_state, cookies) -> RequestOption:
         form_data = {
             'cargoTrackListBean': 'cargoTrackListBean',
             'javax.faces.ViewState': view_state,
@@ -513,6 +579,7 @@ class HistoryRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_POST_FORM,
             url=f'{WHLC_BASE_URL}/views/cargoTrack/CargoTrackList.xhtml',
             form_data=form_data,
+            cookies=cookies,
             meta={
                 'container_key': container_no,
             },

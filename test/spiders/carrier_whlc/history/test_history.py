@@ -22,7 +22,7 @@ def test_history_routing_rule(sub, mbl_no, sample_loader, container_no):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
     option = HistoryRoutingRule.build_request_option(
-        mbl_no=mbl_no, container_no=container_no, j_idt='', view_state='')
+        mbl_no=mbl_no, container_no=container_no, j_idt='', view_state='', cookies={})
 
     response = TextResponse(
         url=option.url,
