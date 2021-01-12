@@ -3,7 +3,7 @@ import re
 import time
 import base64
 from queue import Queue
-from typing import Dict, List
+from typing import Dict
 from io import BytesIO
 
 import scrapy
@@ -197,19 +197,19 @@ class CargoTrackingRule(BaseRoutingRule):
 
         yield MblItem(
             mbl_no=mbl_no,
-            vessel=routing_info['vessel'],
-            voyage=routing_info['voyage'],
-            por=LocationItem(name=routing_info['por']),
-            pol=LocationItem(name=routing_info['pol']),
-            pod=LocationItem(name=routing_info['pod']),
+            vessel=routing_info['vessel'] or None,
+            voyage=routing_info['voyage'] or None,
+            por=LocationItem(name=routing_info['por'] or None),
+            pol=LocationItem(name=routing_info['pol'] or None),
+            pod=LocationItem(name=routing_info['pod'] or None),
             etd=routing_info['etd'] or None,
             atd=routing_info['atd'] or None,
             eta=routing_info['eta'] or None,
             ata=routing_info['ata'] or None,
-            place_of_deliv=LocationItem(name=routing_info['place_of_deliv']),
+            place_of_deliv=LocationItem(name=routing_info['place_of_deliv'] or None),
             deliv_eta=routing_info['deliv_eta'] or None,
             deliv_ata=routing_info['deliv_ata'] or None,
-            final_dest=LocationItem(name=routing_info['final_dest']),
+            final_dest=LocationItem(name=routing_info['final_dest'] or None),
             customs_release_status=custom_release_info['status'] or None,
             customs_release_date=custom_release_info['date'] or None,
         )
@@ -234,7 +234,7 @@ class CargoTrackingRule(BaseRoutingRule):
     @staticmethod
     def _parse_mbl_no_text(mbl_no_text):
         # Search Result - Bill of Lading Number  2109051600
-        pattern = re.compile(r'^Search\s+Result\s+-\s+Booking\s+Number\s+(?P<mbl_no>\d+)\s+$')
+        pattern = re.compile(r'^Search\s+Result\s+-\s+Bill\s+of\s+Lading\s+Number\s+(?P<mbl_no>\d+)\s+$')
         match = pattern.match(mbl_no_text)
         if not match:
             raise CarrierResponseFormatError(reason=f'Unknown mbl_no_text: `{mbl_no_text}`')
@@ -281,7 +281,23 @@ class CargoTrackingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_routing_info(selectors_map: Dict[str, scrapy.Selector]):
-        table = selectors_map['detail:routing_table']
+        table = selectors_map.get('detail:routing_table', None)
+        if table is None:
+            return {
+                'por': '',
+                'pol': '',
+                'pod': '',
+                'place_of_deliv': '',
+                'final_dest': '',
+                'etd': '',
+                'atd': '',
+                'eta': '',
+                'ata': '',
+                'deliv_eta': '',
+                'deliv_ata': '',
+                'vessel': '',
+                'voyage': '',
+            }
 
         table_locator = RoutingTableLocator()
         table_locator.parse(table=table)
@@ -413,6 +429,12 @@ class OoluDriver:
             EC.element_to_be_clickable((By.CSS_SELECTOR, 'form > button#btn_cookie_accept'))
         )
         cookie_accept_btn.click()
+        time.sleep(2)
+
+        drop_down_btn = self.driver.find_element_by_css_selector("button[data-id='ooclCargoSelector']")
+        drop_down_btn.click()
+        bl_select = self.driver.find_element_by_css_selector("a[tabindex='0']")
+        bl_select.click()
 
         search_bar = self.driver.find_element_by_css_selector('input#SEARCH_NUMBER')
         search_bar.send_keys(mbl_no)
@@ -913,7 +935,12 @@ class ContainerStatusRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_detention_info(selectors_map: Dict[str, scrapy.Selector]):
-        table = selectors_map['detail:detention_right_table']
+        table = selectors_map.get('detail:detention_right_table', None)
+        if table is None:
+            return {
+                'last_free_day': '',
+                'det_free_time_exp_date': '',
+            }
 
         table_locator = DestinationTableLocator()
         table_locator.parse(table=table)
@@ -941,7 +968,9 @@ class ContainerStatusRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_status_list(selectors_map: Dict[str, scrapy.Selector]):
-        table = selectors_map['detail:container_status_table']
+        table = selectors_map.get('detail:container_status_table', None)
+        if table is None:
+            return []
 
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table)
@@ -1084,13 +1113,14 @@ class _PageLocator:
             raise CarrierResponseFormatError(reason='Can not find summary table !!!')
         summary_selectors_map = self._locate_selectors_from_summary(summary_table=summary_table)
 
-        # detail
+        # detail (may not exist)
         detail_rule = CssQueryTextStartswithMatchRule(
             css_query='td.groupTitle::text', startswith='Detail of OOCL Container')
         detail_table = find_selector_from(selectors=tables, rule=detail_rule)
-        if not detail_table:
-            raise CarrierResponseFormatError(reason='Can not find detail table !!!')
-        detail_selectors_map = self._locate_selectors_from_detail(detail_table=detail_table)
+        if detail_table:
+            detail_selectors_map = self._locate_selectors_from_detail(detail_table=detail_table)
+        else:
+            detail_selectors_map = {}
 
         return {
             **summary_selectors_map,
@@ -1104,7 +1134,7 @@ class _PageLocator:
         if not top_table:
             raise CarrierResponseFormatError(reason='Can not find top_table !!!')
 
-        top_inner_tables = top_table.xpath('./tbody/tr/td')
+        top_inner_tables = top_table.xpath('./tr/td') or top_table.xpath('./tbody/tr/td')
         if len(top_inner_tables) != 2:
             raise CarrierResponseFormatError(reason=f'Amount of top_inner_tables not right: `{len(top_inner_tables)}`')
 
