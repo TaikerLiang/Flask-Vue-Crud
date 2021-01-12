@@ -6,8 +6,7 @@ from scrapy import Selector, Request
 from twisted.python.failure import Failure
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS
-from crawler.core_carrier.exceptions import (
-    CarrierInvalidMblNoError, CarrierResponseFormatError, SuspiciousOperationError)
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, SuspiciousOperationError
 from crawler.core_carrier.items import (
     MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, BaseCarrierItem, DebugItem)
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption, ProxyMaxRetryError
@@ -85,7 +84,7 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         self._cookiejar_id = 0
         # For HDMU mbl no, not every mbl no need 'HDMU' prefix, so we need to try both case in every request.
         # (with and without 'HDMU' prefix)
-        # first time, the value of _prefix_exist is 0 and next is 1.
+        # prefix exist when _prefix_exist is odd, not exist when _prefix_exist is even
         self._prefix_exist = -1
         self._item_recorder = ItemRecorder()
 
@@ -151,15 +150,24 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         self._proxy_manager.renew_proxy()
         self._cookiejar_id += 1
         self._prefix_exist += 1
-        if self._prefix_exist % 2 == 1:
-            new_mbl_no = f'HDMU{self.mbl_no}'
-        else:
-            new_mbl_no = self.mbl_no
+        new_mbl_no = self._reformat_mbl_no_by(prefix_exist=bool(self._prefix_exist % 2))
         option = CookiesRoutingRule.build_request_option(
-            mbl_no=new_mbl_no, cookiejar_id=self._cookiejar_id, prefix_exist=self._prefix_exist)
+            mbl_no=new_mbl_no, cookiejar_id=self._cookiejar_id, prefix_exist=bool(self._prefix_exist % 2))
         restart_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         restart_proxy_cookie_option = self._add_cookiejar_id_into_request_option(option=restart_proxy_option)
         return self._build_request_by(option=restart_proxy_cookie_option)
+
+    def _reformat_mbl_no_by(self, prefix_exist: bool):
+        if prefix_exist:
+            if self.mbl_no.startswith('HMDU'):
+                return self.mbl_no
+            else:
+                return f'HDMU{self.mbl_no}'
+        else:
+            if self.mbl_no.startswith('HMDU'):
+                return self.mbl_no[4:]
+            else:
+                return self.mbl_no
 
     def _add_cookiejar_id_into_request_option(self, option) -> RequestOption:
         return option.copy_and_extend_by(meta={'cookiejar': self._cookiejar_id})
@@ -544,7 +552,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, mbl_no, container_index, h_num, prefix_exist: int):
-        url_plug_in = '' if prefix_exist % 2 == 0 else '/_'
+        url_plug_in = '' if prefix_exist else '/_'
 
         form_data = {
             'selectedContainerIndex': f'{container_index}',
