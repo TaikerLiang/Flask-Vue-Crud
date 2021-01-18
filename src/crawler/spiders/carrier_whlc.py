@@ -1,10 +1,15 @@
 import re
 import time
+from urllib.parse import urlencode
+from six.moves.urllib.parse import urljoin
 from typing import List, Dict
 
 import scrapy
+import requests
 from scrapy import Selector
 from selenium import webdriver
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.common.keys import Keys
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import (
@@ -19,7 +24,7 @@ from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
-WHLC_BASE_URL = 'https://www.wanhai.com'
+WHLC_BASE_URL = 'https://tw.wanhai.com'
 COOKIES_RETRY_LIMIT = 3
 
 
@@ -35,17 +40,19 @@ class CarrierWhlcSpider(BaseCarrierSpider):
         super(CarrierWhlcSpider, self).__init__(*args, **kwargs)
 
         rules = [
-            CookiesRoutingRule(),
-            ListRoutingRule(),
-            DetailRoutingRule(),
-            HistoryRoutingRule(),
+            SeleniumRule()
+            # CookiesRoutingRule(),
+            # RefreshCookieRule(),
+            # ListRoutingRule(),
+            # DetailRoutingRule(),
+            # HistoryRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
         self._request_queue = RequestOptionQueue()
 
     def start(self):
-        request_option = CookiesRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        request_option = SeleniumRule.build_request_option(mbl_no=self.mbl_no)
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -74,13 +81,14 @@ class CarrierWhlcSpider(BaseCarrierSpider):
             **option.meta,
         }
 
-        if option.method == RequestOption.METHOD_POST_FORM:
-            return scrapy.FormRequest(
+        if option.method == RequestOption.METHOD_POST_BODY:
+            return scrapy.Request(
                 url=option.url,
                 headers=option.headers,
-                formdata=option.form_data,
-                cookies=option.cookies,
                 meta=meta,
+                callback=self.parse,
+                method='POST',
+                body=option.body,
             )
         elif option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
@@ -102,13 +110,216 @@ class CarrierIpBlockError(BaseCarrierError):
         return ExportErrorData(status=self.status, detail='<ip-block-error>')
 
 
+class SeleniumRule(BaseCarrierError):
+    name = 'SELENIUM'
+
+    def __init__(self):
+        self._container_patt = re.compile(r'^(?P<container_no>\w+)')
+        self._j_idt_patt = re.compile(r"'(?P<j_idt>j_idt[^,]+)':'(?P=j_idt)'")
+
+    @classmethod
+    def build_request_option(cls, mbl_no):
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=f'https://google.com',
+            meta={'mbl_no': mbl_no},
+        )
+
+    def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+        driver = WhlcDriver()
+        cookies = driver.get_cookies_dict_from_main_page()
+        driver.search_mbl(mbl_no)
+
+        response_selector = Selector(text=driver.get_page_source())
+        container_list = self._extract_container_info(response_selector)
+
+        for idx in range(len(container_list)):
+            container_no = container_list[idx]['container_no']
+
+            yield ContainerItem(
+                container_key=container_no,
+                container_no=container_no,
+            )
+
+            # detail page
+            driver.go_detail_page(idx+2)
+            detail_selector = Selector(text=driver.get_page_source())
+            date_information = self._extract_date_information(detail_selector)
+
+            yield VesselItem(
+                vessel_key=f"{date_information['pol_vessel']} / {date_information['pol_voyage']}",
+                vessel=date_information['pol_vessel'],
+                voyage=date_information['pol_voyage'],
+                pol=LocationItem(un_lo_code=date_information['pol_un_lo_code']),
+                etd=date_information['pol_etd'],
+            )
+
+            yield VesselItem(
+                vessel_key=f"{date_information['pod_vessel']} / {date_information['pod_voyage']}",
+                vessel=date_information['pod_vessel'],
+                voyage=date_information['pod_voyage'],
+                pod=LocationItem(un_lo_code=date_information['pod_un_lo_code']),
+                eta=date_information['pod_eta'],
+            )
+
+            driver.close()
+            driver.switch_to_last()
+
+            # history page
+            driver.go_history_page(idx+2)
+            history_selector = Selector(text=driver.get_page_source())
+            container_status_list = self._extract_container_status(history_selector)
+
+            for container_status in container_status_list:
+                yield ContainerStatusItem(
+                    container_key=container_no,
+                    local_date_time=container_status['local_date_time'],
+                    description=container_status['description'],
+                    location=LocationItem(name=container_status['location_name']),
+                )
+
+            driver.close()
+            driver.switch_to_last()
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
+
+    def _extract_container_info(self, response: scrapy.Selector) -> List:
+        table_selector = response.css('table.tbl-list')[0]
+        table_locator = ContainerListTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
+        return_list = []
+        for left in table_locator.iter_left_headers():
+            container_no_text = table.extract_cell('櫃號', left)
+            container_no = self._parse_container_no_from(text=container_no_text)
+
+            detail_j_idt_text = table.extract_cell('明細查詢', left, JidtTdExtractor())
+            detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text)
+
+            history_j_idt_text = table.extract_cell('歷史動態', left, JidtTdExtractor())
+            history_j_idt = self._parse_history_j_idt_from(text=history_j_idt_text)
+
+            return_list.append({
+                'container_no': container_no,
+                'detail_j_idt': detail_j_idt,
+                'history_j_idt': history_j_idt,
+            })
+
+        return return_list
+
+    def _parse_container_no_from(self, text):
+        if not text:
+            raise CarrierResponseFormatError('container_no not found')
+
+        m = self._container_patt.match(text)
+        if not m:
+            raise CarrierResponseFormatError('container_no not match')
+
+        return m.group('container_no')
+
+    def _parse_detail_j_idt_from(self, text: str) -> str:
+        if not text:
+            return ''
+
+        m = self._j_idt_patt.search(text)
+        if not m:
+            raise CarrierResponseFormatError('detail_j_idt not match')
+
+        return m.group('j_idt')
+
+    def _parse_history_j_idt_from(self, text: str) -> str:
+        if not text:
+            return ''
+
+        m = self._j_idt_patt.search(text)
+        if not m:
+            raise CarrierResponseFormatError('History_j_idt not match')
+
+        return m.group('j_idt')
+
+    @staticmethod
+    def _extract_date_information(response) -> Dict:
+        pattern = re.compile(r'^(?P<vessel>[^/]+) / (?P<voyage>[^/]+)$')
+
+        match_rule = NameOnTableMatchRule(name='2. 出發日期 / 抵達日期 訊息')
+
+        table_selector = find_selector_from(selectors=response.css('table.tbl-list'), rule=match_rule)
+
+        if table_selector is None:
+            raise CarrierResponseFormatError(reason='data information table not found')
+
+        location_table_locator = LocationLeftTableLocator()
+        location_table_locator.parse(table=table_selector)
+        location_table = TableExtractor(table_locator=location_table_locator)
+
+        date_table_locator = DateLeftTableLocator()
+        date_table_locator.parse(table=table_selector)
+        date_table = TableExtractor(table_locator=date_table_locator)
+
+        un_lo_code_index = 0
+        vessel_voyage_index = 1
+        date_index = 0
+
+        pol_vessel_voyage = location_table.extract_cell(top=vessel_voyage_index, left='裝貨港')
+        pol_m = pattern.match(pol_vessel_voyage)
+        pol_vessel = pol_m.group('vessel')
+        pol_voyage = pol_m.group('voyage')
+
+        pod_vessel_voyage = location_table.extract_cell(top=vessel_voyage_index, left='卸貨港')
+        pod_m = pattern.match(pod_vessel_voyage)
+        pod_vessel = pod_m.group('vessel')
+        pod_voyage = pod_m.group('voyage')
+
+        return {
+            'pol_un_lo_code': location_table.extract_cell(top=un_lo_code_index, left='裝貨港'),
+            'pod_un_lo_code': location_table.extract_cell(top=un_lo_code_index, left='卸貨港'),
+            'pol_vessel': pol_vessel,
+            'pol_voyage': pol_voyage,
+            'pod_vessel': pod_vessel,
+            'pod_voyage': pod_voyage,
+            'pod_eta': date_table.extract_cell(top=date_index, left='抵達日期'),
+            'pol_etd': date_table.extract_cell(top=date_index, left='出發日期'),
+        }
+
+    @staticmethod
+    def _extract_container_status(response) -> List:
+        table_selector = response.css('table.tbl-list')
+
+        if not table_selector:
+            raise CarrierResponseFormatError(reason='container status table not found')
+
+        table_locator = ContainerStatusTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
+
+        return_list = []
+        for left in table_locator.iter_left_headers():
+
+            description = table.extract_cell(top='狀態', left=left, extractor=DescriptionTdExtractor())
+            local_date_time = table.extract_cell(top='日期', left=left, extractor=LocalDateTimeTdExtractor())
+            location_name = table.extract_cell(top='櫃場名稱', left=left, extractor=LocationNameTdExtractor())
+
+            return_list.append({
+                'local_date_time': local_date_time,
+                'description': description,
+                'location_name': location_name,
+            })
+
+        return return_list
+
+
 class WhlcDriver:
     def __init__(self):
         options = webdriver.ChromeOptions()
         options.add_argument('--disable-extensions')
         options.add_argument('--disable-notifications')
         options.add_argument('--headless')
+        options.add_argument("--enable-javascript")
         options.add_argument('--disable-gpu')
+        options.add_argument(f'user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36')
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--no-sandbox')
         options.add_argument('--window-size=1920,1080')
@@ -122,8 +333,11 @@ class WhlcDriver:
         self._driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': script})
 
     def get_cookies_dict_from_main_page(self):
-        self._driver.get(f'{WHLC_BASE_URL}/views/Main.xhtml')
-        time.sleep(3)
+
+        self._driver.get(f'{WHLC_BASE_URL}')
+        time.sleep(5)
+        # self._driver.get_screenshot_as_file("output-1.png")
+
         cookies = self._driver.get_cookies()
 
         return self._transformat_to_dict(cookies=cookies)
@@ -136,6 +350,33 @@ class WhlcDriver:
     def close(self):
         self._driver.close()
 
+    def get_page_source(self):
+        return self._driver.page_source
+
+    def search_mbl(self, mbl_no):
+        self._driver.find_element_by_xpath("//*[@id='cargoType']/option[text()='提單號碼']").click()
+        time.sleep(1)
+        input_ele = self._driver.find_element_by_xpath('//*[@id="q_ref_no1"]')
+        input_ele.send_keys(mbl_no)
+        time.sleep(3)
+        self._driver.find_element_by_xpath('//*[@id="quick_ctnr_query"]').click()
+        time.sleep(5)
+        self._driver.switch_to.window(self._driver.window_handles[-1])
+
+    def go_detail_page(self, idx: int):
+        self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u').click()
+        time.sleep(5)
+        self._driver.switch_to.window(self._driver.window_handles[-1])
+
+    def go_history_page(self, idx: int):
+        self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[11]/u').click()
+        time.sleep(5)
+        self._driver.switch_to.window(self._driver.window_handles[-1])
+
+    def switch_to_last(self):
+        self._driver.switch_to.window(self._driver.window_handles[-1])
+        time.sleep(1)
+
     @staticmethod
     def _transformat_to_dict(cookies: List[Dict]) -> Dict:
         return_cookies = {}
@@ -144,7 +385,6 @@ class WhlcDriver:
             return_cookies[d['name']] = d['value']
 
         return return_cookies
-
 
 class CookiesRoutingRule(BaseRoutingRule):
     name = 'COOKIES'
@@ -170,10 +410,11 @@ class CookiesRoutingRule(BaseRoutingRule):
         driver = WhlcDriver()
         cookies = driver.get_cookies_dict_from_main_page()
 
-        if self._check(cookies=cookies):
-            view_state = driver.get_view_state()
+        view_state = driver.get_view_state()
+        if view_state:
             driver.close()
-            yield ListRoutingRule.build_request_option(mbl_no, view_state, cookies=cookies)
+            yield RefreshCookieRule.build_request_option('ListRoutingRule', mbl_no, view_state, cookies=cookies)
+            # yield ListRoutingRule.build_request_option(mbl_no, view_state, cookies=cookies)
         else:
             driver.close()
             raise CarrierIpBlockError()
@@ -207,6 +448,81 @@ class CookiesRoutingRule(BaseRoutingRule):
         return response.css('input[name="javax.faces.ViewState"]::attr(value)').get()
 
 
+class RefreshCookieRule(BaseRoutingRule):
+    name = 'REFRESH'
+
+    @classmethod
+    def build_request_option(cls, next_rule: str, mbl_no: str, view_state, cookies):
+        if next_rule == 'ListRoutingRule':
+            form_data = {
+                'cargoTrackListBean': 'cargoTrackListBean',
+                'cargoType': '2',
+                'q_ref_no1': mbl_no,
+                'quick_ctnr_query': '查詢',
+                'javax.faces.ViewState': view_state,
+            }
+
+            headers = {
+                'cache-control': 'max-age=0',
+                'upgrade-insecure-requests': '1',
+                'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36',
+                'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-mode': 'navigate',
+                'sec-fetch-user': '?1',
+                'sec-fetch-dest': 'document',
+                'sec-ch-ua': '"Google Chrome";v="87", " Not;A Brand";v="99", "Chromium";v="87"',
+                'sec-ch-ua-mobile': '?0',
+                'referer': 'https://tw.wanhai.com/views/Main.xhtml',
+                'accept-language': 'en-US,en;q=0.9',
+                'cookie': cls._get_cookie_str(cookies),
+            }
+
+            return RequestOption(
+                rule_name=cls.name,
+                method=RequestOption.METHOD_POST_BODY,
+                url=f'{WHLC_BASE_URL}/views/quick/cargo_tracking.xhtml',
+                cookies=cookies,
+                headers=headers,
+                body=urlencode(query=form_data),
+                meta={'mbl_no': mbl_no, 'cookies': cookies, 'headers': headers},
+            )
+
+    def handle(self, response):
+
+        mbl_no = response.meta['mbl_no']
+        cookies = response.meta['cookies']
+
+        cookie_bytes = response.headers.getlist('Set-Cookie')
+
+        for cookie_byte in cookie_bytes:
+            cookie_text = cookie_byte.decode('utf-8')
+            key, value = self._parse_cookie(cookie_text=cookie_text)
+            cookies[key] = value
+
+        yield ListRoutingRule.build_request_option(mbl_no=mbl_no, cookies=cookies)
+
+    @staticmethod
+    def _get_cookie_str(cookies: Dict):
+        cookies_str = ''
+        for key, value in cookies.items():
+            cookies_str += f'{key}={value}; '
+
+    def _parse_cookie(self, cookie_text):
+        """
+        Sample 1: `TS01a3c52a=01541c804a3dfa684516e96cae7a588b5eea6236b8843ebfc7882ca3e47063c4b3fddc7cc2e58145e71bee297`
+                  `3391cc28597744f23343d7d2544d27a2ce90ca4b356ffb78f5; Path=/`
+        Sample 2: `TSff5ac71e_27=081ecde62cab2000428f3620d78d07ee66ace44f9dc6c6feb6bc1bab646fbc7179082123944d1473084a`
+                  `f55ddf1120009050da999bcc34164749e3339b930c12ec88cf3b1cfb6cd3b77b94f5d061834e;Path=/`
+        """
+        cookies_pattern = re.compile(r'^(?P<key>[^=]+)=(?P<value>[^;]+);.+$')
+        match = cookies_pattern.match(cookie_text)
+        if not match:
+            CarrierResponseFormatError(f'Unknown cookie format: `{cookie_text}`')
+
+        return match.group('key'), match.group('value')
+
+
 # -------------------------------------------------------------------------------
 
 class ListRoutingRule(BaseRoutingRule):
@@ -217,21 +533,33 @@ class ListRoutingRule(BaseRoutingRule):
         self._j_idt_patt = re.compile(r"'(?P<j_idt>j_idt[^,]+)':'(?P=j_idt)'")
 
     @classmethod
-    def build_request_option(cls, mbl_no: str, view_state, cookies) -> RequestOption:
-        form_data = {
-            'cargoTrackListBean': 'cargoTrackListBean',
-            'cargoType': '2',
-            'q_ref_no1': mbl_no,
-            'quick_ctnr_query': 'Query',
-            'javax.faces.ViewState': view_state,
+    def build_request_option(cls, mbl_no, cookies) -> RequestOption:
+        cookies_str = ''
+        for key, value in cookies.items():
+            cookies_str += f'{key}={value}; '
+
+        headers = {
+            'cache-control': 'max-age=0',
+            'upgrade-insecure-requests': '1',
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36',
+            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+            'sec-fetch-site': 'same-origin',
+            'sec-fetch-mode': 'navigate',
+            'sec-fetch-user': '?1',
+            'sec-fetch-dest': 'document',
+            'sec-ch-ua': '"Google Chrome";v="87", " Not;A Brand";v="99", "Chromium";v="87"',
+            'sec-ch-ua-mobile': '?0',
+            'referer': 'https://tw.wanhai.com/views/Main.xhtml',
+            'accept-language': 'en-US,en;q=0.9',
+            'cookie': cookies_str,
         }
 
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_POST_FORM,
-            url=f'{WHLC_BASE_URL}/views/quick/cargo_tracking.xhtml',
+            method=RequestOption.METHOD_GET,
+            url=f'{WHLC_BASE_URL}/views/cargoTrack/CargoTrackList.xhtml?file_num=65580&top_file_num=64735&parent_id=64738',
             cookies=cookies,
-            form_data=form_data,
+            headers=headers,
             meta={'mbl_no': mbl_no, 'cookies': cookies},
         )
 
@@ -277,7 +605,6 @@ class ListRoutingRule(BaseRoutingRule):
         table_locator = ContainerListTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
-
         return_list = []
         for left in table_locator.iter_left_headers():
             container_no_text = table.extract_cell('Ctnr No.', left)
