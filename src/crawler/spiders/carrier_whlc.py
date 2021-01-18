@@ -17,7 +17,7 @@ from crawler.core_carrier.base_spiders import (
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
 from crawler.core_carrier.items import (
-    BaseCarrierItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData, DebugItem)
+    MblItem, BaseCarrierItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData, DebugItem)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError, \
     SuspiciousOperationError
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
@@ -134,6 +134,8 @@ class SeleniumRule(BaseCarrierError):
 
         response_selector = Selector(text=driver.get_page_source())
         container_list = self._extract_container_info(response_selector)
+
+        yield MblItem(mbl_no=mbl_no)
 
         for idx in range(len(container_list)):
             container_no = container_list[idx]['container_no']
