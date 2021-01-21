@@ -109,9 +109,6 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     def _handle_item(self, content_getter, response: scrapy.Selector):
         mbl_data = self._extract_main_info(response=response)
-        print('paul here')
-        from pprint import pprint
-        pprint(mbl_data)
         if 'mbl_no' not in mbl_data and 'booking_no' not in mbl_data:
             raise CarrierInvalidMblNoError()
 
@@ -193,7 +190,6 @@ class MainInfoRoutingRule(BaseRoutingRule):
             'surrendered_status': '',
         }
         for idx in range(min(len(values), int(len(keys)/2))):
-            print(len(values), len(keys), idx, keys[2*idx].strip(), values[idx].strip())
             if keys[2*idx].strip() == 'Bill of Lading Number' and not data['mbl_no']:
                 data['mbl_no'] = values[idx].strip()
             elif keys[2*idx].strip() == 'Booking Number' and not data['booking_no']:
@@ -230,12 +226,21 @@ class MainInfoRoutingRule(BaseRoutingRule):
             data['atd'] = None
             data['etd'] = departure_value
 
+        arrival_key = response.xpath('/html/body/div[1]/div[4]/div[1]/div/div[2]/div/div/div[2]/div[1]/div[2]/div/div[4]/div[3]/div[2]/div/div[2]/text()').get()
+        arrival_value = response.xpath('/html/body/div[1]/div[4]/div[1]/div/div[2]/div/div/div[2]/div[1]/div[2]/div/div[4]/div[3]/div[2]/div/div[3]/text()').get()
+        if arrival_key == "ATA":
+            data['ata'] = arrival_value
+            data['eta'] = None
+        elif arrival_key == "ETA":
+            data['ata'] = None
+            data['eta'] = arrival_value
+
         arrival_key = response.xpath('/html/body/div[1]/div[4]/div[1]/div/div[2]/div/div/div[2]/div[1]/div[2]/div/div[3]/div[3]/div[2]/div/div[2]/text()').get()
         arrival_value = response.xpath('/html/body/div[1]/div[4]/div[1]/div/div[2]/div/div/div[2]/div[1]/div[2]/div/div[3]/div[3]/div[2]/div/div[3]/text()').get()
         if arrival_key == "ATA":
             data['ata'] = arrival_value
             data['eta'] = None
-        else:
+        elif arrival_key == "ETA":
             data['ata'] = None
             data['eta'] = arrival_value
 
