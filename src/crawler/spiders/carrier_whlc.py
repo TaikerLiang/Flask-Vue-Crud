@@ -388,6 +388,7 @@ class WhlcDriver:
 
         return return_cookies
 
+
 class CookiesRoutingRule(BaseRoutingRule):
     name = 'COOKIES'
 

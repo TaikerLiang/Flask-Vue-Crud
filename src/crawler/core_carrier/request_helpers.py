@@ -104,6 +104,7 @@ class ProxyManager:
             },
             meta={
                 'proxy': self.PROXY_URL,
+                'Proxy-Authorization': self._proxy_username + ":" + self.PROXY_PASSWORD,
             },
         )
 

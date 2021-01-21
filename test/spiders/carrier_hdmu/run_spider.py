@@ -13,7 +13,7 @@ if __name__ == '__main__':
     process = CrawlerProcess(settings=settings)
 
     mbl_nos = [
-        'TPEM16320700',
+        'BKKM38632802',
         # 'QSWB8014265',
         # 'QSWB9354269',
         # 'KAWB1113397',
@@ -26,7 +26,6 @@ if __name__ == '__main__':
         # 'NXWB0351471',
         # 'MPWB3821952',
         # 'TACA1099870',
-        'BKKM02611700',
         # 'HDMUCANM47289400',
         # 'HDMUSHAZ14206200',
         # 'HDMUCANM46690900',
