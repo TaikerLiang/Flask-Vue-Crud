@@ -1,15 +1,11 @@
 import re
 import time
 from urllib.parse import urlencode
-from six.moves.urllib.parse import urljoin
 from typing import List, Dict
 
 import scrapy
-import requests
 from scrapy import Selector
 from selenium import webdriver
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from selenium.webdriver.common.keys import Keys
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import (
@@ -315,31 +311,49 @@ class SeleniumRule(BaseCarrierError):
 
 class WhlcDriver:
     def __init__(self):
-        options = webdriver.ChromeOptions()
-        options.add_argument('--disable-extensions')
-        options.add_argument('--disable-notifications')
+        # Firefox
+        useragent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11.1; rv:78.0) Gecko/20100101 Firefox/78.0'
+        profile = webdriver.FirefoxProfile()
+        profile.set_preference("general.useragent.override", useragent)
+        options = webdriver.FirefoxOptions()
+        options.set_preference("dom.webnotifications.serviceworker.enabled", False)
+        options.set_preference("dom.webnotifications.enabled", False)
         options.add_argument('--headless')
-        options.add_argument("--enable-javascript")
-        options.add_argument('--disable-gpu')
-        options.add_argument(f'user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--window-size=1920,1080')
-        options.add_experimental_option('excludeSwitches', ['enable-automation'])
-        options.add_experimental_option('useAutomationExtension', False)
 
-        self._driver = webdriver.Chrome(chrome_options=options)
+        self._driver = webdriver.Firefox(firefox_profile=profile, options=options)
 
-        # undefine navigator.webdriver
-        script = "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-        self._driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': script})
+        # Google Chrome
+        # options = webdriver.ChromeOptions()
+        # options.add_argument('--disable-extensions')
+        # options.add_argument('--disable-notifications')
+        # options.add_argument('--headless')
+        # options.add_argument("--enable-javascript")
+        # options.add_argument('--disable-gpu')
+        # options.add_argument(f'user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36')
+        # options.add_argument('--disable-dev-shm-usage')
+        # options.add_argument('--no-sandbox')
+        # options.add_argument('--window-size=1920,1080')
+        # options.add_experimental_option('excludeSwitches', ['enable-automation'])
+        # options.add_experimental_option('useAutomationExtension', False)
+        # options.add_argument('--disable-blink-features=AutomationControlled')
+        #
+        # self._driver = webdriver.Chrome(chrome_options=options)
+        # self._driver.execute_script("Object.defineProperty(window, 'outerWidth', {value: 1920+800})")
+        # self._driver.execute_script("Object.defineProperty(window, 'outerHeight', {value: 1080+600})")
+        #
+        # print('hihi', self._driver.execute_script("return [window.outerWidth, window.outerHeight];"))
+        # print('soso', self._driver.execute_script("return [window.innerWidth, window.innerHeight];"))
+        #
+        # # undefine navigator.webdriver
+        # script = "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+        # self._driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': script})
+        # print('soso', self._driver.execute_script("return navigator.webdriver;"))
 
     def get_cookies_dict_from_main_page(self):
 
         self._driver.get(f'{WHLC_BASE_URL}')
         time.sleep(5)
         # self._driver.get_screenshot_as_file("output-1.png")
-
         cookies = self._driver.get_cookies()
 
         return self._transformat_to_dict(cookies=cookies)
