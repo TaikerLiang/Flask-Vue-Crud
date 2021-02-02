@@ -16,7 +16,7 @@ from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor, HeaderMismatchError
 
 
-BASE_URL = 'http://www.cma-cgm.com'
+BASE_URL = 'http://www.apl.com'
 
 
 class CarrierCmduSpider(BaseCarrierSpider):
@@ -26,6 +26,7 @@ class CarrierCmduSpider(BaseCarrierSpider):
         super(CarrierCmduSpider, self).__init__(*args, **kwargs)
 
         rules = [
+            # SearchPageRoutingRule(),
             FirstTierRoutingRule(),
             ContainerStatusRoutingRule(),
         ]
