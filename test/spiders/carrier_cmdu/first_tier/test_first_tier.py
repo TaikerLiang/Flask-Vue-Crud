@@ -6,14 +6,14 @@ from scrapy.http import TextResponse
 
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_aplu_cmdu_anlc import FirstTierRoutingRule, CarrierCmduSpider
-from test.spiders.carrier_aplu_cmdu_anlc.cmdu import main_info
+from crawler.spiders.carrier_cmdu import FirstTierRoutingRule
+from test.spiders.carrier_cmdu import first_tier
 
 
 @pytest.fixture
 def sample_loader(sample_loader):
     sample_path = Path(__file__).parent
-    sample_loader.setup(sample_package=main_info, sample_path=sample_path)
+    sample_loader.setup(sample_package=first_tier, sample_path=sample_path)
     return sample_loader
 
 
@@ -27,7 +27,7 @@ def sample_loader(sample_loader):
 def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
     html_text = sample_loader.read_file(sub, 'main_info.html')
 
-    option = FirstTierRoutingRule.build_request_option(mbl_no=mbl_no, base_url=CarrierCmduSpider.base_url)
+    option = FirstTierRoutingRule.build_request_option(mbl_no=mbl_no)
 
     response = TextResponse(
         url=option.url,
@@ -41,7 +41,7 @@ def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
         )
     )
 
-    routing_rule = FirstTierRoutingRule(base_url='http://www.cma-cgm.com')
+    routing_rule = FirstTierRoutingRule()
     results = list(routing_rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
@@ -54,7 +54,7 @@ def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
 def test_first_tier_routing_rule_error(sample_loader, sub, mbl_no, expect_exception):
     html_text = sample_loader.read_file(sub, 'main_info.html')
 
-    option = FirstTierRoutingRule.build_request_option(mbl_no=mbl_no, base_url=CarrierCmduSpider.base_url)
+    option = FirstTierRoutingRule.build_request_option(mbl_no=mbl_no)
 
     response = TextResponse(
         url=option.url,
@@ -69,7 +69,7 @@ def test_first_tier_routing_rule_error(sample_loader, sub, mbl_no, expect_except
         )
     )
 
-    routing_rule = FirstTierRoutingRule(base_url='http://www.cma-cgm.com')
+    routing_rule = FirstTierRoutingRule()
 
     with pytest.raises(expect_exception):
         list(routing_rule.handle(response=response))

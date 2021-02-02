@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Tuple, List
 
 import scrapy
 from scrapy import Selector
@@ -16,22 +16,24 @@ from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor, HeaderMismatchError
 
 
-class SharedSpider(BaseCarrierSpider):
-    name = None
-    base_url = None
+BASE_URL = 'http://www.cma-cgm.com'
+
+
+class CarrierCmduSpider(BaseCarrierSpider):
+    name = 'carrier_cmdu'
 
     def __init__(self, *args, **kwargs):
-        super(SharedSpider, self).__init__(*args, **kwargs)
+        super(CarrierCmduSpider, self).__init__(*args, **kwargs)
 
         rules = [
-            FirstTierRoutingRule(base_url=self.base_url),
+            FirstTierRoutingRule(),
             ContainerStatusRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        request_option = FirstTierRoutingRule.build_request_option(mbl_no=self.mbl_no, base_url=self.base_url)
+        request_option = FirstTierRoutingRule.build_request_option(mbl_no=self.mbl_no)
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -61,24 +63,46 @@ class SharedSpider(BaseCarrierSpider):
                 url=option.url,
                 meta=meta,
             )
+        elif option.method == RequestOption.METHOD_POST_FORM:
+            return scrapy.FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+                meta=meta,
+            )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
-class CarrierApluSpider(SharedSpider):
-    name = 'carrier_aplu'
-    base_url = 'http://www.apl.com'
+# ---------------------------------------------------------------------------------------------------
 
 
-# class CarrierCmduSpider(SharedSpider):
-#     name = 'carrier_cmdu'
-#     base_url = 'http://www.cma-cgm.com'
+class SearchPageRoutingRule(BaseRoutingRule):
+    name = 'SEARCH_PAGE'
 
+    @classmethod
+    def build_request_option(cls, mbl_no) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url='https://www.cma-cgm.com/ebusiness/tracking',
+            meta={'mbl_no': mbl_no},
+        )
 
-class CarrierAnlcSpider(SharedSpider):
-    name = 'carrier_anlc'
-    base_url = 'https://www.anl.com.au'
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
 
+    def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+
+        if not self._is_normal(response=response):
+            raise CarrierResponseFormatError
+
+        yield FirstTierRoutingRule.build_request_option(mbl_no=mbl_no)
+
+    @staticmethod
+    def _is_normal(response) -> bool:
+        container_list = response.css('div#containerList')
+        return bool(container_list)
 
 # ---------------------------------------------------------------------------------------------------
 
@@ -92,15 +116,20 @@ STATUS_WEBSITE_SUSPEND = 'STATUS_WEBSITE_SUSPEND'
 class FirstTierRoutingRule(BaseRoutingRule):
     name = 'FIRST_TIER'
 
-    def __init__(self, base_url):
-        self.base_url = base_url
-
     @classmethod
-    def build_request_option(cls, mbl_no, base_url) -> RequestOption:
+    def build_request_option(cls, mbl_no) -> RequestOption:
+        form_data = {
+            'g-recaptcha-response': '',
+            'SearchBy': 'BL',
+            'Reference': mbl_no,
+            'search': 'Search',
+        }
+
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=f'{base_url}/ebusiness/tracking/search?SearchBy=BL&Reference={mbl_no}&search=Search',
+            method=RequestOption.METHOD_POST_FORM,
+            url=f'{BASE_URL}/ebusiness/tracking/search',
+            form_data=form_data,
             meta={'mbl_no': mbl_no},
         )
 
@@ -118,11 +147,11 @@ class FirstTierRoutingRule(BaseRoutingRule):
                 yield item
 
         elif mbl_status == STATUS_MULTI_CONTAINER:
-            container_list = self._extract_container_list(response=response)
+            container_no_and_url_list = self._extract_container_no_and_url_list(response=response)
 
-            for container_no in container_list:
+            for container_no, container_url in container_no_and_url_list:
                 yield ContainerStatusRoutingRule.build_request_option(
-                    mbl_no=mbl_no, container_no=container_no, base_url=self.base_url)
+                    mbl_no=mbl_no, container_no=container_no, container_url=container_url)
 
         elif mbl_status == STATUS_WEBSITE_SUSPEND:
             raise DataNotFoundError()
@@ -151,20 +180,21 @@ class FirstTierRoutingRule(BaseRoutingRule):
             return STATUS_MBL_NOT_EXIST
 
     @staticmethod
-    def _extract_container_list(response: Selector):
-        container_list = response.css('td[data-ctnr=id] a::text').getall()
-        return container_list
+    def _extract_container_no_and_url_list(response: Selector) -> List[Tuple]:
+        container_no_list = response.css('td[data-ctnr=id] a::text').getall()
+        container_url_list = response.css('td[data-ctnr=id] a::attr(href)').getall()
+        return list(zip(container_no_list, container_url_list))
 
 
 class ContainerStatusRoutingRule(BaseRoutingRule):
     name = 'CONTAINER_STATUS'
 
     @classmethod
-    def build_request_option(cls, mbl_no, container_no, base_url) -> RequestOption:
+    def build_request_option(cls, mbl_no, container_no, container_url) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f'{base_url}/ebusiness/tracking/detail/{container_no}?SearchCriteria=BL&SearchByReference={mbl_no}',
+            url=f'{BASE_URL}{container_url}',
             meta={'container_no': container_no},
         )
 
