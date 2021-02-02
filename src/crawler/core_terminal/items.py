@@ -36,6 +36,10 @@ class TerminalItem(BaseTerminalItem):
     hazardous = scrapy.Field()
     chassis_no = scrapy.Field()
 
+    @property
+    def key(self):
+        return self.container_no
+
 
 class DebugItem(BaseTerminalItem):
     info = scrapy.Field()

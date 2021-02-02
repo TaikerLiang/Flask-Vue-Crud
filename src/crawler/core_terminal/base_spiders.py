@@ -73,3 +73,52 @@ class BaseTerminalSpider(scrapy.Spider):
 
     def mark_error(self):
         self._error = True
+
+
+class BaseMultiSearchTerminalSpider(scrapy.Spider):
+
+    custom_settings = TERMINAL_DEFAULT_SETTINGS
+
+    def __init__(self, name=None, **kwargs):
+        super().__init__(name=name, **kwargs)
+
+        self.request_args = kwargs
+
+        self.container_no_list = [container_no.strip() for container_no in kwargs['container_no_list'].split(',')]
+        self.mbl_no = kwargs.get('mbl_no', '')
+
+        to_save = ('save' in kwargs)
+        self._saver = self._prepare_saver(to_save=to_save)
+
+        self._error = False
+
+    def start_requests(self):
+        url = build_local_file_uri(local_file=LOCAL_PING_HTML)
+        yield scrapy.Request(url=url, callback=self._parse_start)
+
+    def _parse_start(self, response):
+        for r in self.start():
+            yield r
+
+    @abc.abstractmethod
+    def start(self):
+        pass
+
+    @abc.abstractmethod
+    def _build_request_by(self, option: RequestOption):
+        pass
+
+    def _prepare_saver(self, to_save: bool):
+        if not to_save:
+            return NullSaver()
+
+        save_folder = Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] {self.container_no}'
+
+        return FileSaver(folder_path=save_folder, logger=self.logger)
+
+    def has_error(self):
+        return self._error
+
+    def mark_error(self):
+        self._error = True
+
