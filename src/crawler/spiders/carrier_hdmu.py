@@ -11,7 +11,7 @@ from crawler.core_carrier.items import (
     MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, BaseCarrierItem, DebugItem)
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption, ProxyMaxRetryError
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
-from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
+from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from, BaseMatchRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import (
     TableExtractor, TopHeaderTableLocator, TopLeftHeaderTableLocator, LeftHeaderTableLocator)
@@ -392,6 +392,16 @@ class Cookies3RoutingRule(BaseRoutingRule):
 # -------------------------------------------------------------------------------
 
 
+class SpecificThTextExistMatchRule(BaseMatchRule):
+
+    def __init__(self, text):
+        self._text = text
+
+    def check(self, selector: Selector) -> bool:
+        ths = selector.css('th::text').getall()
+        return self._text in ths
+
+
 class MainRoutingRule(BaseRoutingRule):
     name = 'MAIN'
 
@@ -537,7 +547,10 @@ class MainRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_tracking_results(response):
-        table_selector = response.css('#trackingForm div.base_table01')[0]
+        tables = response.css('#trackingForm div.base_table01')
+        rule = SpecificThTextExistMatchRule(text='Origin')
+        table_selector = find_selector_from(selectors=tables, rule=rule)
+
         table_locator = TopLeftHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
@@ -611,7 +624,10 @@ class MainRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_customs_status(response):
-        table_selector = response.css('#trackingForm div.base_table01')[4]
+        tables = response.css('#trackingForm div.base_table01')
+        rule = SpecificThTextExistMatchRule(text='Nation / Item')
+        table_selector = find_selector_from(selectors=tables, rule=rule)
+
         table_locator = TopLeftHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
@@ -631,7 +647,10 @@ class MainRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_vessel(response):
-        table_selector = response.css('#trackingForm div.base_table01')[3]
+        tables = response.css('#trackingForm div.base_table01')
+        rule = SpecificThTextExistMatchRule(text='Vessel / Voyage')
+        table_selector = find_selector_from(selectors=tables, rule=rule)
+
         table_locator = TopHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
@@ -669,7 +688,10 @@ class MainRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _get_container_table(response):
-        container_table = response.css('#trackingForm div.base_table01')[1]
+        tables = response.css('#trackingForm div.base_table01')
+        rule = SpecificThTextExistMatchRule(text='Container No.')
+        container_table = find_selector_from(selectors=tables, rule=rule)
+
         return container_table
 
 
@@ -787,7 +809,10 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_tracking_results(response):
-        table_selector = response.css('#trackingForm div.base_table01')[0]
+        tables = response.css('#trackingForm div.base_table01')
+        rule = SpecificThTextExistMatchRule(text='Origin')
+        table_selector = find_selector_from(selectors=tables, rule=rule)
+
         table_locator = TopLeftHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
@@ -830,7 +855,10 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_status_list(response) -> list:
-        table_selector = response.css('#trackingForm div.base_table01')[5]
+        tables = response.css('#trackingForm div.base_table01')
+        rule = SpecificThTextExistMatchRule(text='Date')
+        table_selector = find_selector_from(selectors=tables, rule=rule)
+
         table_locator = TopHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
@@ -881,7 +909,10 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _get_container_table(response):
-        container_table = response.css('#trackingForm div.base_table01')[1]
+        tables = response.css('#trackingForm div.base_table01')
+        rule = SpecificThTextExistMatchRule(text='Container No.')
+        container_table = find_selector_from(selectors=tables, rule=rule)
+
         return container_table
 
 
