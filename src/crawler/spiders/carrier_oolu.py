@@ -391,16 +391,24 @@ class OoluDriver:
     #     self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': script})
 
     def __init__(self):
-        options = webdriver.FirefoxOptions()
+        options = webdriver.ChromeOptions()
+        options.add_argument('--disable-extensions')
+        options.add_argument('--disable-notifications')
         options.add_argument('--headless')
-        options.add_argument(
-            f'user-agent={self._random_choose_user_agent()}'
-        )
-        self.driver = webdriver.Firefox(firefox_options=options)
+        options.add_argument("--enable-javascript")
+        options.add_argument('--disable-gpu')
+        options.add_argument(f'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--window-size=1920,1080')
+        options.add_argument("--disable-blink-features=AutomationControlled")
+
+        self.driver = webdriver.Chrome(chrome_options=options)
 
     def goto(self, url):
         self.driver.get(url=url)
         time.sleep(5)
+        # self.driver.get_screenshot_as_file("output.png")
 
     def get_current_url(self):
         return self.driver.current_url
@@ -415,10 +423,14 @@ class OoluDriver:
         return self.driver.find_element_by_xpath('/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/i')
 
     def get_slider_icon_ele(self):
-        return self.driver.find_element_by_xpath('/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/div/img')
+        canvas = self.driver.find_element_by_xpath('//*[@id="bockCanvas"]')
+        canvas_base64 = self.driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
+        return canvas_base64
 
     def get_bg_img_ele(self):
-        return self.driver.find_element_by_xpath('/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[1]/div/img')
+        canvas = self.driver.find_element_by_xpath('//*[@id="imgCanvas"]')
+        canvas_base64 = self.driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
+        return canvas_base64
 
     def find_container_btn_and_click(self, container_btn_css):
         contaienr_btn = self.driver.find_element_by_css_selector(container_btn_css)
@@ -443,7 +455,6 @@ class OoluDriver:
         search_btn.click()
 
     def _get_result_search_url(self):
-        time.sleep(7)
         return self.driver.current_url
 
     def _readb64(self, base64_string):
@@ -467,16 +478,9 @@ class OoluDriver:
         :type: int
         :return: 背景图缺口位置的X轴坐标位置（缺口图片左边界位置）
         """
-        # 获取验证码的图片
-        slider_url = slider_ele.get_attribute("src")
-        background_url = background_ele.get_attribute("src")
-        tmp = slider_url.split('base64,')
-        slider_url = tmp[1]
-        tmp = background_url.split('base64,')
-        background_url = tmp[1]
 
-        slider_pic = self._readb64(slider_url)
-        background_pic = self._readb64(background_url)
+        slider_pic = self._readb64(slider_ele)
+        background_pic = self._readb64(background_ele)
 
         width, height, _ = slider_pic.shape[::-1]
         slider01 = "slider01.jpg"
@@ -538,7 +542,7 @@ class OoluDriver:
 
     def search_mbl(self, mbl_no):
         self._click_cookies_and_search(mbl_no=mbl_no)
-
+        time.sleep(7)
         # jump to popup window to get url
         windows = self.driver.window_handles
         self.driver.switch_to.window(windows[1])  # windows[1] is new page
@@ -549,6 +553,7 @@ class OoluDriver:
         # jump back to origin window
         self.driver.switch_to.window(windows[0])
         self.driver.get(search_page_url)
+        time.sleep(7)
 
         self._handle_with_slide()
 
