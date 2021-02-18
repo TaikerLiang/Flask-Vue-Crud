@@ -38,9 +38,13 @@ class TerminalItem(BaseTerminalItem):
 
     @property
     def key(self):
-        return self.container_no
+        return self['container_no']
 
 
 class DebugItem(BaseTerminalItem):
     info = scrapy.Field()
+
+
+class InvalidContainerNoItem(BaseTerminalItem):
+    container_no = scrapy.Field()
 

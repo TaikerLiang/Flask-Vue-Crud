@@ -4,7 +4,7 @@ from pathlib import Path
 import scrapy
 
 from .middlewares import TerminalSpiderMiddleware
-from .pipelines import TerminalItemPipeline
+from .pipelines import TerminalItemPipeline, TerminalMultiItemsPipeline
 from .request_helpers import RequestOption
 from ..general.savers import NullSaver, FileSaver
 from ..utils.local_files.local_file_helpers import build_local_file_uri, LOCAL_PING_HTML
@@ -75,9 +75,24 @@ class BaseTerminalSpider(scrapy.Spider):
         self._error = True
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+
+
+TERMINAL_MULTI_ITEM_PIPELINES = {
+    TerminalMultiItemsPipeline.get_setting_name(): 900,
+}
+
+
 class BaseMultiSearchTerminalSpider(scrapy.Spider):
 
-    custom_settings = TERMINAL_DEFAULT_SETTINGS
+    custom_settings = {
+        'SPIDER_MIDDLEWARES': {
+            **TERMINAL_DEFAULT_SPIDER_MIDDLEWARES,
+        },
+        'ITEM_PIPELINES': {
+            **TERMINAL_MULTI_ITEM_PIPELINES,
+        },
+    }
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name=name, **kwargs)
@@ -112,7 +127,7 @@ class BaseMultiSearchTerminalSpider(scrapy.Spider):
         if not to_save:
             return NullSaver()
 
-        save_folder = Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] {self.container_no}'
+        save_folder = Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] {self.container_no_list}'
 
         return FileSaver(folder_path=save_folder, logger=self.logger)
 
