@@ -80,12 +80,12 @@ class TerminalMultiItemsPipeline:
                 return self._default_collector.build_invalid_no_data(item=item)
             elif isinstance(item, terminal_items.ExportFinalData):
                 results = self._get_results_of_collectors()
-                return results
+                return {'results': results}
             elif isinstance(item, terminal_items.ExportErrorData):
                 results = self._default_collector.build_error_data(item)
                 collector_results = self._get_results_of_collectors()
                 results = [results] + collector_results if collector_results else results
-                return results
+                return {'results': results}
             elif isinstance(item, terminal_items.DebugItem):
                 debug_data = self._default_collector.build_debug_data(item)
                 return debug_data
