@@ -14,7 +14,7 @@ from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor
 BASE_URL = 'https://voyagertrack.portsamerica.com'
 
 USERNAME = 'hc89scooter'
-PASSWORD = 'bd19841017'
+PASSWORD = 'bd19841018'
 
 
 @dataclasses.dataclass
