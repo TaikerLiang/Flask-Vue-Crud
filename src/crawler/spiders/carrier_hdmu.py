@@ -51,7 +51,7 @@ class RequestQueue:
 class MblRequestDispatcher:
     @staticmethod
     def get_url_plug_in(mbl_no: str):
-        without_prefix = ['BKKM', 'CANM', 'DALA', 'NBOZ', 'MNLM', 'SHAZ', 'SZPM', 'SGNM', 'TAOZ', 'TPEM', 'XMNM']
+        without_prefix = ['BKKM', 'BOMM', 'CANM', 'DALA', 'NBOZ', 'MNLM', 'OLWB', 'SHAZ', 'SZPE', 'SZPM', 'SSZPE', 'SGNM', 'TAOZ', 'TPEM', 'XMNM']
 
         if any(ext in mbl_no for ext in without_prefix):
             return ''
