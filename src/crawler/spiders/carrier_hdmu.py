@@ -50,22 +50,6 @@ class RequestQueue:
         return self._queue.pop(0)
 
 
-# class MblRequestDispatcher:
-#     @staticmethod
-    # def get_url_plug_in(mbl_no: str):
-    #     return ''
-
-        # without_prefix = [
-        #     'BKKM', 'BOMM', 'CANM', 'DALA', 'NBOZ', 'MNLM', 'OLWB', 'SHAZ', 'SZPE', 'SZPM', 'SSZPE', 'SGNM', 'TAOZ',
-        #     'TPEM', 'XMNM', 'DADM', 'HANM', 'PUSM'
-        # ]
-        #
-        # if any(ext in mbl_no for ext in without_prefix):
-        #     return ''
-        # else:
-        #     return '/_'
-
-
 class CookieHelper:
     @staticmethod
     def get_cookies(response):
@@ -466,6 +450,8 @@ class MainRoutingRule(BaseRoutingRule):
         cookies.update(CookieHelper.get_cookies(response=response))
         if self._is_mbl_no_invalid(response=response):
             if not under_line:
+                # retry to send other request with underline url
+                # ex: {BASE_URL}/_/ebiz/track_trace/trackCTP_nTmp.jsp
                 yield MainRoutingRule.build_request_option(mbl_no=mbl_no, cookies=cookies, under_line=True)
                 return
 
