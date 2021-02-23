@@ -6,7 +6,9 @@ from scrapy import Selector, Request
 from twisted.python.failure import Failure
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, SuspiciousOperationError
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError, SuspiciousOperationError, CarrierInvalidMblNoError
+)
 from crawler.core_carrier.items import (
     MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, BaseCarrierItem, DebugItem)
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption, ProxyMaxRetryError
@@ -48,15 +50,20 @@ class RequestQueue:
         return self._queue.pop(0)
 
 
-class MblRequestDispatcher:
-    @staticmethod
-    def get_url_plug_in(mbl_no: str):
-        without_prefix = ['BKKM', 'BOMM', 'CANM', 'DALA', 'NBOZ', 'MNLM', 'OLWB', 'SHAZ', 'SZPE', 'SZPM', 'SSZPE', 'SGNM', 'TAOZ', 'TPEM', 'XMNM']
+# class MblRequestDispatcher:
+#     @staticmethod
+    # def get_url_plug_in(mbl_no: str):
+    #     return ''
 
-        if any(ext in mbl_no for ext in without_prefix):
-            return ''
-        else:
-            return '/_'
+        # without_prefix = [
+        #     'BKKM', 'BOMM', 'CANM', 'DALA', 'NBOZ', 'MNLM', 'OLWB', 'SHAZ', 'SZPE', 'SZPM', 'SSZPE', 'SGNM', 'TAOZ',
+        #     'TPEM', 'XMNM', 'DADM', 'HANM', 'PUSM'
+        # ]
+        #
+        # if any(ext in mbl_no for ext in without_prefix):
+        #     return ''
+        # else:
+        #     return '/_'
 
 
 class CookieHelper:
@@ -409,8 +416,8 @@ class MainRoutingRule(BaseRoutingRule):
         self._item_recorder = item_recorder
 
     @classmethod
-    def build_request_option(cls, mbl_no, cookies: Dict):
-        url_plug_in = MblRequestDispatcher.get_url_plug_in(mbl_no)
+    def build_request_option(cls, mbl_no, cookies: Dict, under_line: bool = False):
+        url_plug_in = '/_' if under_line else ''
 
         form_data = {
             'number': mbl_no,
@@ -444,6 +451,7 @@ class MainRoutingRule(BaseRoutingRule):
             meta={
                 'mbl_no': mbl_no,
                 'cookies': cookies,
+                'under_line': under_line,
             },
         )
 
@@ -453,9 +461,15 @@ class MainRoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
         cookies = response.meta['cookies']
+        under_line = response.meta['under_line']
 
         cookies.update(CookieHelper.get_cookies(response=response))
-        self._check_mbl_no(response=response)
+        if self._is_mbl_no_invalid(response=response):
+            if not under_line:
+                yield MainRoutingRule.build_request_option(mbl_no=mbl_no, cookies=cookies, under_line=True)
+                return
+
+            raise CarrierInvalidMblNoError()
 
         if not self._item_recorder.is_item_recorded(key=(MBL, mbl_no)):
             try:
@@ -534,16 +548,21 @@ class MainRoutingRule(BaseRoutingRule):
             else:
                 h_num -= 1
                 yield ContainerRoutingRule.build_request_option(
-                    mbl_no=mbl_no, container_index=container_content.index, h_num=h_num, cookies=cookies)
+                    mbl_no=mbl_no,
+                    container_index=container_content.index,
+                    h_num=h_num, cookies=cookies,
+                    under_line=under_line,
+                )
 
         # avoid this function not yield anything
         yield MblItem()
 
     @staticmethod
-    def _check_mbl_no(response):
+    def _is_mbl_no_invalid(response):
         err_message = response.css('div#trackingForm p.text_type03::text').get()
         if err_message == 'B/L number is invalid.  Please try it again with correct number.':
-            yield ForceRestart()
+            return True
+        return False
 
     @staticmethod
     def _extract_tracking_results(response):
@@ -712,8 +731,8 @@ class ContainerRoutingRule(BaseRoutingRule):
         self._item_recorder = item_recorder
 
     @classmethod
-    def build_request_option(cls, mbl_no, container_index, h_num, cookies: Dict):
-        url_plug_in = MblRequestDispatcher.get_url_plug_in(mbl_no)
+    def build_request_option(cls, mbl_no, container_index, h_num, cookies: Dict, under_line: bool = False):
+        url_plug_in = '/_' if under_line else ''
 
         form_data = {
             'selectedContainerIndex': f'{container_index}',
@@ -746,6 +765,7 @@ class ContainerRoutingRule(BaseRoutingRule):
                 'mbl_no': mbl_no,
                 'container_index': container_index,
                 'cookies': cookies,
+                'under_line': under_line,
             },
         )
 
@@ -756,6 +776,7 @@ class ContainerRoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
         container_index = response.meta['container_index']
+        under_line = response.meta['under_line']
 
         container_info = self._extract_container_info(response=response, container_index=container_index)
         container_no = container_info['container_no']
@@ -800,7 +821,8 @@ class ContainerRoutingRule(BaseRoutingRule):
         if not self._item_recorder.is_item_recorded(key=(AVAILABILITY, container_no)):
             ava_exist = self._extract_availability_exist(response=response)
             if ava_exist:
-                yield AvailabilityRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
+                yield AvailabilityRoutingRule.build_request_option(
+                    mbl_no=mbl_no, container_no=container_no, under_line=under_line)
             else:
                 self._item_recorder.record_item(key=(AVAILABILITY, container_no))
 
@@ -926,8 +948,8 @@ class AvailabilityRoutingRule(BaseRoutingRule):
         self._item_recorder = item_recorder
 
     @classmethod
-    def build_request_option(cls, mbl_no, container_no):
-        url_plug_in = MblRequestDispatcher.get_url_plug_in(mbl_no)
+    def build_request_option(cls, mbl_no, container_no, under_line: bool = False):
+        url_plug_in = '/_' if under_line else ''
 
         form_data = {
             'bno': mbl_no,
@@ -949,6 +971,7 @@ class AvailabilityRoutingRule(BaseRoutingRule):
             body=body,
             meta={
                 'container_no': container_no,
+                'under_line': under_line,
             },
         )
 
