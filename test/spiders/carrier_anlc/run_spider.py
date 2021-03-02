@@ -4,7 +4,7 @@ from scrapy.crawler import CrawlerProcess
 
 from scrapy.utils import project
 
-from crawler.spiders.carrier_aplu_cmdu_anlc import CarrierAnlcSpider
+from crawler.spiders.carrier_anlc import CarrierAnlcSpider
 
 if __name__ == '__main__':
     os.environ[project.ENVVAR] = 'crawler.settings'
@@ -13,15 +13,16 @@ if __name__ == '__main__':
     process = CrawlerProcess(settings)
 
     mbl_nos = [
-        'AWT0143454',
-        # 'AWT0143370',
-        # 'AWT0143320',
-        # 'AWT0143329',
+        'AWT0151487',
+        'AWT0156149',
+        'AWT0154490',
+        'AWT0151553',
     ]
 
     for mbl_no in mbl_nos:
         kwargs = {
             'mbl_no': mbl_no,
+            'save': '1',
         }
         process.crawl(CarrierAnlcSpider, **kwargs)
 

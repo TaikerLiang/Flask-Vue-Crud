@@ -4,7 +4,7 @@ from scrapy.crawler import CrawlerProcess
 
 from scrapy.utils import project
 
-from crawler.spiders.carrier_aplu_cmdu_anlc import CarrierApluSpider
+from crawler.spiders.carrier_aplu import CarrierApluSpider
 
 if __name__ == '__main__':
     os.environ[project.ENVVAR] = 'crawler.settings'

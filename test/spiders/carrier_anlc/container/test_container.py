@@ -4,8 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.spiders.carrier_aplu_cmdu_anlc import ContainerStatusRoutingRule, CarrierAnlcSpider
-from test.spiders.carrier_aplu_cmdu_anlc.anlc import container
+from crawler.spiders.carrier_anlc import ContainerStatusRoutingRule, CarrierAnlcSpider
+from test.spiders.carrier_anlc import container
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ def test_container_status_routing_rule(sample_loader, sub, mbl_no, container_no)
     html_text = sample_loader.read_file(sub, 'container.html')
 
     option = ContainerStatusRoutingRule.build_request_option(
-        mbl_no=mbl_no, container_no=container_no, base_url=CarrierAnlcSpider.base_url)
+        mbl_no=mbl_no, container_no=container_no)
 
     response = TextResponse(
         url=option.url,
