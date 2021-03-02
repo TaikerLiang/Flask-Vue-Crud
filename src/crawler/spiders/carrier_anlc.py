@@ -16,22 +16,24 @@ from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor, HeaderMismatchError
 
 
-class SharedSpider(BaseCarrierSpider):
-    name = None
-    base_url = None
+BASE_URL = 'https://www.anl.com.au'
+
+
+class CarrierAnlcSpider(BaseCarrierSpider):
+    name = 'carrier_anlc'
 
     def __init__(self, *args, **kwargs):
-        super(SharedSpider, self).__init__(*args, **kwargs)
+        super(CarrierAnlcSpider, self).__init__(*args, **kwargs)
 
         rules = [
-            FirstTierRoutingRule(base_url=self.base_url),
+            FirstTierRoutingRule(),
             ContainerStatusRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        request_option = FirstTierRoutingRule.build_request_option(mbl_no=self.mbl_no, base_url=self.base_url)
+        request_option = FirstTierRoutingRule.build_request_option(mbl_no=self.mbl_no)
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -61,23 +63,14 @@ class SharedSpider(BaseCarrierSpider):
                 url=option.url,
                 meta=meta,
             )
+        elif option.method == RequestOption.METHOD_POST_FORM:
+            return scrapy.FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+                meta=meta,
+            )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
-
-
-class CarrierApluSpider(SharedSpider):
-    name = 'carrier_aplu'
-    base_url = 'http://www.apl.com'
-
-
-# class CarrierCmduSpider(SharedSpider):
-#     name = 'carrier_cmdu'
-#     base_url = 'http://www.cma-cgm.com'
-
-
-class CarrierAnlcSpider(SharedSpider):
-    name = 'carrier_anlc'
-    base_url = 'https://www.anl.com.au'
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -92,15 +85,20 @@ STATUS_WEBSITE_SUSPEND = 'STATUS_WEBSITE_SUSPEND'
 class FirstTierRoutingRule(BaseRoutingRule):
     name = 'FIRST_TIER'
 
-    def __init__(self, base_url):
-        self.base_url = base_url
-
     @classmethod
-    def build_request_option(cls, mbl_no, base_url) -> RequestOption:
+    def build_request_option(cls, mbl_no) -> RequestOption:
+        form_data = {
+            'g-recaptcha-response': '',
+            'SearchBy': 'BL',
+            'Reference': mbl_no,
+            'search': 'Search',
+        }
+
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=f'{base_url}/ebusiness/tracking/search?SearchBy=BL&Reference={mbl_no}&search=Search',
+            method=RequestOption.METHOD_POST_FORM,
+            url=f'{BASE_URL}/ebusiness/tracking/search',
+            form_data=form_data,
             meta={'mbl_no': mbl_no},
         )
 
@@ -122,7 +120,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
 
             for container_no in container_list:
                 yield ContainerStatusRoutingRule.build_request_option(
-                    mbl_no=mbl_no, container_no=container_no, base_url=self.base_url)
+                    mbl_no=mbl_no, container_no=container_no)
 
         elif mbl_status == STATUS_WEBSITE_SUSPEND:
             raise DataNotFoundError()
@@ -160,11 +158,11 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     name = 'CONTAINER_STATUS'
 
     @classmethod
-    def build_request_option(cls, mbl_no, container_no, base_url) -> RequestOption:
+    def build_request_option(cls, mbl_no, container_no) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f'{base_url}/ebusiness/tracking/detail/{container_no}?SearchCriteria=BL&SearchByReference={mbl_no}',
+            url=f'{BASE_URL}/ebusiness/tracking/detail/{container_no}?SearchCriteria=BL&SearchByReference={mbl_no}',
             meta={'container_no': container_no},
         )
 
