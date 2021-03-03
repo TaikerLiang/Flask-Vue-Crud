@@ -203,7 +203,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
             elif keys[2*idx].strip() == 'POD' and not data['pod_name']:
                 data['pod_name'] = values[idx].strip()
             elif keys[2*idx].strip() == 'Vessel / Voyage' and not (data['vessel'] or data['voyage']):
-                data['vessel'], data['voyage'] = values[idx].strip().split(' / ')
+                vessel, voyage = values[idx].split('/')
+                data['vessel'], data['voyage'] = vessel.strip(), voyage.strip()
             elif keys[2*idx].strip() == 'ETA at Place of Delivery' and not data['pick_up_eta']:
                 data['pick_up_eta'] = values[idx].strip()
             elif keys[2*idx].strip() == 'Cargo Cutoff' and not data['cargo_cutoff']:
