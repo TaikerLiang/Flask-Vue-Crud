@@ -1,3 +1,4 @@
+import json
 from typing import Dict
 
 import scrapy
@@ -10,13 +11,17 @@ from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem
 )
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.request_helpers import RequestOption, ProxyManager
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor, HeaderMismatchError
 
 
 BASE_URL = 'https://www.anl.com.au'
+
+
+class ForceRestart:
+    pass
 
 
 class CarrierAnlcSpider(BaseCarrierSpider):
@@ -26,15 +31,24 @@ class CarrierAnlcSpider(BaseCarrierSpider):
         super(CarrierAnlcSpider, self).__init__(*args, **kwargs)
 
         rules = [
+            CheckIpRule(),
             FirstTierRoutingRule(),
             ContainerStatusRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
+        self._proxy_manager = ProxyManager(session='anlc', logger=self.logger)
 
     def start(self):
-        request_option = FirstTierRoutingRule.build_request_option(mbl_no=self.mbl_no)
-        yield self._build_request_by(option=request_option)
+        option = self._prepare_start()
+        yield self._build_request_by(option=option)
+
+    def _prepare_start(self):
+        self._proxy_manager.renew_proxy()
+
+        option = CheckIpRule.build_request_option(mbl_no=self.mbl_no)
+        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
+        return proxy_option
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -48,7 +62,11 @@ class CarrierAnlcSpider(BaseCarrierSpider):
             if isinstance(result, BaseCarrierItem):
                 yield result
             elif isinstance(result, RequestOption):
-                yield self._build_request_by(option=result)
+                proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
+                yield self._build_request_by(option=proxy_option)
+            elif isinstance(result, ForceRestart):
+                proxy_option = self._prepare_start()
+                yield self._build_request_by(option=proxy_option)
             else:
                 raise RuntimeError()
 
@@ -61,16 +79,55 @@ class CarrierAnlcSpider(BaseCarrierSpider):
         if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
                 url=option.url,
+                headers=option.headers,
                 meta=meta,
             )
         elif option.method == RequestOption.METHOD_POST_FORM:
             return scrapy.FormRequest(
                 url=option.url,
+                headers=option.headers,
                 formdata=option.form_data,
                 meta=meta,
             )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
+
+
+# ---------------------------------------------------------------------------------------------------
+
+
+class CheckIpRule(BaseRoutingRule):
+    name = 'IP'
+
+    @classmethod
+    def build_request_option(cls, mbl_no):
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=f'https://api.myip.com',
+            meta={
+                'mbl_no': mbl_no,
+            },
+        )
+
+    def __init__(self):
+        self._sent_ips = []
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
+
+    def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+
+        response_json = json.loads(response.text)
+        ip = response_json['ip']
+
+        if ip in self._sent_ips:
+            yield ForceRestart()
+            return
+
+        self._sent_ips.append(ip)
+        yield FirstTierRoutingRule.build_request_option(mbl_no=mbl_no)
 
 
 # ---------------------------------------------------------------------------------------------------
