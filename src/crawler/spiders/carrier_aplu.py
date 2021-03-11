@@ -61,6 +61,12 @@ class CarrierApluSpider(BaseCarrierSpider):
                 url=option.url,
                 meta=meta,
             )
+        elif option.method == RequestOption.METHOD_POST_FORM:
+            return scrapy.FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+                meta=meta,
+            )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
@@ -82,10 +88,18 @@ class FirstTierRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, mbl_no, base_url) -> RequestOption:
+        form_data = {
+            'g-recaptcha-response': '',
+            'SearchBy': 'BL',
+            'Reference': mbl_no,
+            'search': 'Search',
+        }
+
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=f'{base_url}/ebusiness/tracking/search?SearchBy=BL&Reference={mbl_no}&search=Search',
+            method=RequestOption.METHOD_POST_FORM,
+            url=f'{base_url}/ebusiness/tracking/search',
+            form_data=form_data,
             meta={'mbl_no': mbl_no},
         )
 

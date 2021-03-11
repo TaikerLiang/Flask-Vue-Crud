@@ -7,7 +7,7 @@ from scrapy.http import TextResponse
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.core_carrier.rules import RuleManager
 from crawler.spiders.carrier_aplu import CarrierApluSpider, FirstTierRoutingRule
-from test.spiders.carrier_aplu_cmdu_anlc.aplu import main_info
+from test.spiders.carrier_aplu import main_info
 
 
 @pytest.fixture

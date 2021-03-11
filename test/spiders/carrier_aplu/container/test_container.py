@@ -5,7 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.spiders.carrier_aplu import ContainerStatusRoutingRule, CarrierApluSpider
-from test.spiders.carrier_aplu_cmdu_anlc.aplu import container
+from test.spiders.carrier_aplu import container
 
 
 @pytest.fixture
