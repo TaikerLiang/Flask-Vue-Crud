@@ -18,6 +18,7 @@ def sample_loader(sample_loader):
 @pytest.mark.parametrize('sub,mbl_no,voyage_location, voyage_direction', [
     ('01_pol', 'SUDUN9998ALTNBPS', 'Shanghai CNSHA', 'Departure'),
     ('02_pod', 'SUDUN9998ALTNBPS', 'Houston USHOU', 'Arrival'),
+    ('03_no_info', 'SUDUN0SHA109846X', 'Los Angeles USLAX', 'Arrival'),
 ])
 def test_voyage_routing_rule(sub, mbl_no, voyage_location, voyage_direction, sample_loader):
     text_text = sample_loader.read_file(sub, 'sample.html')
@@ -35,13 +36,14 @@ def test_voyage_routing_rule(sub, mbl_no, voyage_location, voyage_direction, sam
         encoding='utf-8',
         request=Request(
             url=option.url,
-            meta={
-                'mbl_no': mbl_no,
-                'mbl_state': MblState.SINGLE,
-                'voyage_location': voyage_location,
-                'voyage_direction': voyage_direction,
-                'basic_request_spec': basic_request_spec,
-            }
+            meta=option.meta,
+            # meta={
+            #     'mbl_no': mbl_no,
+            #     'mbl_state': MblState.SINGLE,
+            #     'voyage_location': voyage_location,
+            #     'voyage_direction': voyage_direction,
+            #     'basic_request_spec': basic_request_spec,
+            # }
         )
     )
 
