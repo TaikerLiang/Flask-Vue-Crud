@@ -329,14 +329,16 @@ class MainInfoRoutingRule(BaseRoutingRule):
             container_no = table_extractor.extract_cell(
                 top='Container No.', left=left, extractor=OnlyContentTableCellExtractor()
             )[0]  # 0 container_no, 1 container_spec
-            lfd_related = table_extractor.extract_cell(
-                top='LFD', left=left, extractor=LabelContentTableCellExtractor())
+            lfd_related = {}
+            if table_extractor.has_header(top='LFD'):
+                lfd_related = table_extractor.extract_cell(
+                    top='LFD', left=left, extractor=LabelContentTableCellExtractor())
 
             container_infos.append({
                 'container_key': get_container_key(container_no=container_no),
                 'container_no': container_no,
                 'last_free_day': lfd_related.get('LFD'),
-                'depot_last_free_day': lfd_related['Depot LFD'],
+                'depot_last_free_day': lfd_related.get('Depot LFD'),
             })
 
         return container_infos
@@ -501,7 +503,7 @@ class ContentGetter:
         options.add_argument(
             f'user-agent={self._random_choose_user_agent()}'
         )
-        self._driver = webdriver.Firefox(firefox_options=options)
+        self._driver = webdriver.Firefox(firefox_options=options, service_log_path='/dev/null')
         self._driver.get('https://elines.coscoshipping.com/ebusiness/cargoTracking')
         self._is_first = True
 
