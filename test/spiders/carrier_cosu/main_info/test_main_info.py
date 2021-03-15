@@ -2,10 +2,9 @@ from pathlib import Path
 from typing import List
 
 import pytest
-from scrapy import Request, Selector
-from scrapy.http import TextResponse
+from scrapy import Selector
 
-from crawler.spiders.carrier_cosu import MainInfoRoutingRule
+from crawler.spiders.carrier_cosu import MainInfoRoutingRule, ItemExtractor
 
 from test.spiders.carrier_cosu import main_info
 
@@ -18,9 +17,9 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize('sub,mbl_no,make_item_fun', [
-    ('01_main_item', '6199589860', MainInfoRoutingRule._make_main_item),
-    ('02_vessel_items', '6300090760', MainInfoRoutingRule._make_vessel_items),
-    ('03_container_items', '6283228140', MainInfoRoutingRule._make_container_items),
+    ('01_main_item', '6199589860', ItemExtractor._make_main_item),
+    ('02_vessel_items', '6300090760', ItemExtractor._make_vessel_items),
+    ('03_container_items', '6283228140', ItemExtractor._make_container_items),
 ])
 def test_main_info(sample_loader, sub, mbl_no, make_item_fun):
     http_text = sample_loader.read_file(sub, 'sample.html')
@@ -48,7 +47,7 @@ def test_main_info_container_status(sample_loader, sub, mbl_no, container_no):
     resp = Selector(text=http_text)
 
     # action
-    items = MainInfoRoutingRule._make_container_status_items(container_no=container_no, response=resp)
+    items = ItemExtractor._make_container_status_items(container_no=container_no, response=resp)
 
     # assert
     verify_module = sample_loader.load_sample_module(sub, 'verify')
@@ -64,7 +63,7 @@ def test_main_info_no_invalid(sample_loader, sub, mbl_no):
     resp = Selector(text=http_text)
 
     # action
-    rule = MainInfoRoutingRule()
+    rule = MainInfoRoutingRule(content_getter=None)
     result = rule._is_mbl_no_invalid(response=resp)
 
     # assert

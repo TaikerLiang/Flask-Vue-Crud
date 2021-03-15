@@ -30,9 +30,11 @@ class CarrierCosuSpider(BaseCarrierSpider):
 
     def __init__(self, *args, **kwargs):
         super(CarrierCosuSpider, self).__init__(*args, **kwargs)
+        content_getter = ContentGetter()
 
         rules = [
-           MainInfoRoutingRule(),
+            MainInfoRoutingRule(content_getter),
+            BookingInfoRoutingRule(content_getter),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -69,6 +71,7 @@ class CarrierCosuSpider(BaseCarrierSpider):
                 headers=option.headers,
                 url=option.url,
                 meta=meta,
+                dont_filter=True,
             )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
@@ -79,6 +82,9 @@ class CarrierCosuSpider(BaseCarrierSpider):
 
 class MainInfoRoutingRule(BaseRoutingRule):
     name = 'MAIN_INFO'
+
+    def __init__(self, content_getter):
+        self._content_getter = content_getter
 
     @classmethod
     def build_request_option(cls, mbl_no) -> RequestOption:
@@ -98,48 +104,97 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
-        content_getter = ContentGetter()
 
-        response_text = content_getter.search_and_return(mbl_no=mbl_no, is_booking=False)
+        response_text = self._content_getter.search_and_return(search_no=mbl_no, is_booking=False)
         response_selector = scrapy.Selector(text=response_text)
 
-        if self._is_mbl_no_invalid(response=response_selector):
-            response_text = content_getter.search_and_return(mbl_no=mbl_no, is_booking=True)
-            response_selector = scrapy.Selector(text=response_text)
+        raw_booking_nos = response_selector.css('a.exitedBKNumber::text').getall()
+        booking_nos = [raw_booking_no.strip() for raw_booking_no in raw_booking_nos]
 
-        # handle item
-        if self._is_mbl_no_invalid(response=response_selector):
+        if self._is_mbl_no_invalid(response=response_selector) and not booking_nos:
             raise CarrierInvalidMblNoError()
 
-        mbl_item = self._make_main_item(response=response_selector)
-        vessel_items = self._make_vessel_items(response=response_selector)
-        container_items = self._make_container_items(response=response_selector)
-
-        for item in vessel_items + [mbl_item]:
-            yield item
-
-        content_getter.scroll_to_bottom_of_page()
-        for c_i, c_item in enumerate(container_items):
-            response_text = content_getter.click_container_status_button(c_i)
-            response_selector = scrapy.Selector(text=response_text)
-
-            container_status_items = self._make_container_status_items(
-                container_no=c_item['container_no'],
-                response=response_selector,
-            )
-
-            for item in container_status_items + [c_item]:
+        elif not self._is_mbl_no_invalid(response=response_selector):
+            item_extractor = ItemExtractor()
+            for item in item_extractor.extract(response=response_selector, content_getter=self._content_getter):
                 yield item
+
+        elif booking_nos:
+            yield MblItem(mbl_no=mbl_no)
+            yield BookingInfoRoutingRule.build_request_option(booking_nos=booking_nos)
 
     @staticmethod
     def _is_mbl_no_invalid(response: Selector) -> bool:
         return bool(response.css('div.noFoundTips'))
 
+
+# ---------------------------------------------------------------------------------------------------------
+
+
+class BookingInfoRoutingRule(BaseRoutingRule):
+    name = 'BOOKING_INFO'
+
+    def __init__(self, content_getter):
+        self._content_getter = content_getter
+
+    @classmethod
+    def build_request_option(cls, booking_nos: List) -> RequestOption:
+        url = f'https://www.google.com'
+
+        return RequestOption(
+            method=RequestOption.METHOD_GET,
+            rule_name=cls.name,
+            url=url,
+            meta={
+                'booking_nos': booking_nos,
+            },
+        )
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
+
+    def handle(self, response):
+        booking_nos = response.meta['booking_nos']
+
+        item_extractor = ItemExtractor()
+        for booking_no in booking_nos:
+            response_text = self._content_getter.search_and_return(search_no=booking_no, is_booking=True)
+            response_selector = scrapy.Selector(text=response_text)
+
+            for item in item_extractor.extract(response=response_selector, content_getter=self._content_getter):
+                yield item
+
+
+# ---------------------------------------------------------------------------------------------------------
+
+
+class ItemExtractor:
+
+    def extract(self, response: scrapy.Selector, content_getter) -> BaseCarrierItem:
+            mbl_item = self._make_main_item(response=response)
+            vessel_items = self._make_vessel_items(response=response)
+            container_items = self._make_container_items(response=response)
+
+            for item in vessel_items + [mbl_item]:
+                yield item
+
+            content_getter.scroll_to_bottom_of_page()
+            for c_i, c_item in enumerate(container_items):
+                response_text = content_getter.click_container_status_button(c_i)
+                response_selector = scrapy.Selector(text=response_text)
+
+                container_status_items = self._make_container_status_items(
+                    container_no=c_item['container_no'],
+                    response=response_selector,
+                )
+
+                for item in container_status_items + [c_item]:
+                    yield item
+
     @classmethod
     def _make_main_item(cls, response: scrapy.Selector) -> BaseCarrierItem:
         mbl_data = cls._extract_main_info(response=response)
-        return MblItem(
-            mbl_no=mbl_data['mbl_no'] or mbl_data['booking_no'],
+        mbl_item = MblItem(
             vessel=mbl_data.get('vessel', None),
             voyage=mbl_data.get('voyage', None),
             por=LocationItem(name=mbl_data.get('por_name', None)),
@@ -163,6 +218,10 @@ class MainInfoRoutingRule(BaseRoutingRule):
             # trans_eta=data.get('trans_eta', None),
             # container_quantity=data.get('container_quantity', None),
         )
+        if mbl_data['mbl_no']:
+            mbl_item['mbl_no'] = mbl_data['mbl_no']
+
+        return mbl_item
 
     @staticmethod
     def _extract_main_info(response: scrapy.Selector) -> Dict:
@@ -507,7 +566,7 @@ class ContentGetter:
         self._driver.get('https://elines.coscoshipping.com/ebusiness/cargoTracking')
         self._is_first = True
 
-    def search_and_return(self, mbl_no: str, is_booking: bool = True):
+    def search_and_return(self, search_no: str, is_booking: bool = True):
 
         if self._is_first:
             self._is_first = False
@@ -519,7 +578,7 @@ class ContentGetter:
             trackingType = 'BILLOFLADING'
 
         self._driver.get(
-            f'https://elines.coscoshipping.com/ebusiness/cargoTracking?trackingType={trackingType}&number={mbl_no}'
+            f'https://elines.coscoshipping.com/ebusiness/cargoTracking?trackingType={trackingType}&number={search_no}'
         )
 
         try:

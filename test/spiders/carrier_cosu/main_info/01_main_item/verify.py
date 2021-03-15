@@ -1,10 +1,9 @@
-from crawler.core_carrier.items import MblItem, VesselItem, LocationItem, ContainerItem
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.items import MblItem, LocationItem
 
 
 def verify(item):
     assert item == MblItem(**{
-        'mbl_no': '6283228140',
+        # 'mbl_no': '6283228140',
         'vessel': 'CMA CGM ALASKA',
         'voyage': '0TUERE1MA',
         'por': LocationItem(**{'name': 'Yantian ,Guangdong ,China'}),
