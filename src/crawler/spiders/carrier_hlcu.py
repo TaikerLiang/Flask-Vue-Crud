@@ -261,17 +261,19 @@ class ContainerRoutingRule(BaseRoutingRule):
         container_statuses = []
         for left in table_locator.iter_left_header():
             date = table.extract_cell(top='Date', left=left, extractor=span_extractor)
+            time = table.extract_cell(top='Time', left=left, extractor=span_extractor) or '00:00'
 
-            time = table.extract_cell(top='Time', left=left, extractor=span_extractor)
-            if not time:
-                time = '00:00'
+            if date:
+                timestamp = f'{date} {time}'
+            else:
+                timestamp = None
 
             class_name = table_locator.get_row_class(left=left)
 
             container_statuses.append({
                 'description': table.extract_cell(top='Status', left=left, extractor=span_extractor),
                 'place': table.extract_cell(top='Place of Activity', left=left, extractor=span_extractor),
-                'timestamp': f'{date} {time}',
+                'timestamp': timestamp,
                 'transport': table.extract_cell(top='Transport', left=left, extractor=span_extractor),
                 'voyage': table.extract_cell(top='Voyage No.', left=left, extractor=span_extractor) or None,
                 'est_or_actual': self._get_status_from(class_name),
