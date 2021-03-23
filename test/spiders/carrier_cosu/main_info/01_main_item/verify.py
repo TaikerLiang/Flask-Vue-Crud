@@ -3,7 +3,7 @@ from crawler.core_carrier.items import MblItem, LocationItem
 
 def verify(item):
     assert item == MblItem(**{
-        # 'mbl_no': '6283228140',
+        'mbl_no': '6283228140',
         'vessel': 'CMA CGM ALASKA',
         'voyage': '0TUERE1MA',
         'por': LocationItem(**{'name': 'Yantian ,Guangdong ,China'}),
