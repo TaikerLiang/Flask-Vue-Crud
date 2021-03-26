@@ -31,7 +31,9 @@ class LocationItem(BaseCarrierItem):
 
 
 class MblItem(BaseCarrierItem):
+    booking_no = scrapy.Field()
     mbl_no = scrapy.Field()
+    shipment_type = scrapy.Field()  # 'MBL' or 'BOOKING'
     vessel = scrapy.Field()
     voyage = scrapy.Field()
     por = scrapy.Field(serializer=LocationItem)
