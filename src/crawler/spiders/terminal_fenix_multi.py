@@ -6,7 +6,7 @@ from typing import Dict
 from scrapy import Request
 
 from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_FATAL
-from crawler.core_terminal.base_spiders import BaseMultiSearchTerminalSpider
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import BaseTerminalError, TerminalResponseFormatError
 from crawler.core_terminal.items import (
     BaseTerminalItem, DebugItem, TerminalItem, ExportErrorData, InvalidContainerNoItem
@@ -23,7 +23,7 @@ class WarningMessage:
     msg: str
 
 
-class TerminalFenixSpider(BaseMultiSearchTerminalSpider):
+class TerminalFenixSpider(BaseMultiTerminalSpider):
     name = 'terminal_fenix_multi'
 
     def __init__(self, *args, **kwargs):

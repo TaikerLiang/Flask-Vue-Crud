@@ -83,7 +83,7 @@ TERMINAL_MULTI_ITEM_PIPELINES = {
 }
 
 
-class BaseMultiSearchTerminalSpider(scrapy.Spider):
+class BaseMultiTerminalSpider(scrapy.Spider):
 
     custom_settings = {
         'SPIDER_MIDDLEWARES': {
@@ -108,6 +108,7 @@ class BaseMultiSearchTerminalSpider(scrapy.Spider):
         self._error = False
 
     def start_requests(self):
+        # main entry point of scrapy
         url = build_local_file_uri(local_file=LOCAL_PING_HTML)
         yield scrapy.Request(url=url, callback=self._parse_start)
 

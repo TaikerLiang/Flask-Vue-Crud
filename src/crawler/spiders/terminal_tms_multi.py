@@ -4,7 +4,7 @@ from typing import Dict
 import scrapy
 from scrapy import Selector
 
-from crawler.core_terminal.base_spiders import BaseMultiSearchTerminalSpider
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import TerminalResponseFormatError, TerminalInvalidContainerNoError
 from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
@@ -17,7 +17,7 @@ USER_NAME = 'BrianLee'
 PASSWORD = 'ZD_uSUFMy!6Nfu'
 
 
-class SharedSpider(BaseMultiSearchTerminalSpider):
+class SharedSpider(BaseMultiTerminalSpider):
     name = None
     terminal_id = None
 

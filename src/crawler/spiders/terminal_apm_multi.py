@@ -2,7 +2,7 @@ import json
 
 import scrapy
 
-from crawler.core_terminal.base_spiders import BaseMultiSearchTerminalSpider
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import TerminalResponseFormatError, TerminalInvalidContainerNoError
 from crawler.core_terminal.items import BaseTerminalItem, TerminalItem, DebugItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
@@ -12,7 +12,7 @@ from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 BASE_URL = 'https://www.apmterminals.com'
 
 
-class ShareSpider(BaseMultiSearchTerminalSpider):
+class ShareSpider(BaseMultiTerminalSpider):
     terminal_id = ''
 
     def __init__(self, *args, **kwargs):
