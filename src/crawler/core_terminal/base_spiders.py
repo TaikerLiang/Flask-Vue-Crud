@@ -99,8 +99,12 @@ class BaseMultiTerminalSpider(scrapy.Spider):
 
         self.request_args = kwargs
 
-        self.container_no_list = [container_no.strip() for container_no in kwargs['container_no_list'].split(',')]
-        self.mbl_no = kwargs.get('mbl_no', '')
+        self.task_ids = [task_id.strip() for task_id in kwargs['task_ids'].split(',')]
+        self.container_nos = [container_no.strip() for container_no in kwargs['container_nos'].split(',')]
+        self.cno_tid_map = {}  # container_no: [task_ids]
+        for c_no, t_id in zip(self.container_nos, self.task_ids):
+            self.cno_tid_map.setdefault(c_no, [])
+            self.cno_tid_map[c_no].append(t_id)
 
         to_save = ('save' in kwargs)
         self._saver = self._prepare_saver(to_save=to_save)
@@ -128,7 +132,7 @@ class BaseMultiTerminalSpider(scrapy.Spider):
         if not to_save:
             return NullSaver()
 
-        save_folder = Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] {self.container_no_list}'
+        save_folder = Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] {self.container_nos}'
 
         return FileSaver(folder_path=save_folder, logger=self.logger)
 

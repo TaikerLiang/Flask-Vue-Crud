@@ -62,8 +62,9 @@ class TerminalMultiItemsPipeline:
         spider.logger.info(f'[{self.__class__.__name__}] ----- open_spider -----')
 
         self._default_collector = TerminalResultCollector(request_args=spider.request_args)
-        for container_no in spider.container_no_list:
-            self._collector_map.setdefault(container_no, TerminalResultCollector(request_args={
+        for task_id, container_no in zip(spider.task_ids, spider.container_nos):
+            self._collector_map.setdefault(task_id, TerminalResultCollector(request_args={
+                'task_id': task_id,
                 'container_no': container_no,
                 'save': spider.request_args.get('save'),
             }))
@@ -154,6 +155,7 @@ class TerminalResultCollector:
             'status': TERMINAL_RESULT_STATUS_ERROR,  # default status
             'request_args': self._request_args,
             'invalid_container_no': item['container_no'],
+            'task_id': item['task_id'],
         }
 
     @staticmethod
