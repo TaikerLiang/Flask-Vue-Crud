@@ -22,7 +22,7 @@ def sample_loader(sample_loader):
 def test_availability_routing_rule(sub, mbl_no, sample_loader, container_no):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    option = AvailabilityRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
+    option = AvailabilityRoutingRule.build_request_option(search_no=mbl_no, container_no=container_no)
 
     response = TextResponse(
         url=option.url,

@@ -4,7 +4,9 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
+    CarrierInvalidSearchNoError
 from crawler.spiders.carrier_hdmu import MainRoutingRule, ItemRecorder
 from test.spiders.carrier_hdmu import main_info
 
@@ -30,7 +32,7 @@ def sample_loader(sample_loader):
 def test_main_routing_rule(sample_loader, sub, mbl_no):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    option = MainRoutingRule.build_request_option(mbl_no=mbl_no, cookies={})
+    option = MainRoutingRule.build_request_option(search_no=mbl_no, search_type=SHIPMENT_TYPE_MBL, cookies={})
 
     response = TextResponse(
         url=option.url,
@@ -43,7 +45,7 @@ def test_main_routing_rule(sample_loader, sub, mbl_no):
     )
 
     item_recorder = ItemRecorder()
-    rule = MainRoutingRule(item_recorder)
+    rule = MainRoutingRule(item_recorder, search_type=SHIPMENT_TYPE_MBL)
     request_options = list(rule.handle(response=response))
     results = item_recorder.items + request_options
 
@@ -52,13 +54,14 @@ def test_main_routing_rule(sample_loader, sub, mbl_no):
 
 
 @pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl', 'QSWB801163', CarrierInvalidMblNoError),
+    ('e01_invalid_mbl', 'QSWB801163', CarrierInvalidSearchNoError),
     ('e02_change_header', 'GJWB1899760', CarrierResponseFormatError),
 ])
 def test_main_routing_rule_error(sample_loader, sub, mbl_no, expect_exception):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    option = MainRoutingRule.build_request_option(mbl_no=mbl_no, cookies={})
+    option = MainRoutingRule.build_request_option(
+        search_no=mbl_no, search_type=SHIPMENT_TYPE_MBL, cookies={}, under_line=True)
 
     response = TextResponse(
         url=option.url,
@@ -71,6 +74,6 @@ def test_main_routing_rule_error(sample_loader, sub, mbl_no, expect_exception):
     )
 
     item_recorder = ItemRecorder()
-    rule = MainRoutingRule(item_recorder)
+    rule = MainRoutingRule(item_recorder, search_type=SHIPMENT_TYPE_MBL)
     with pytest.raises(expect_exception):
         list(rule.handle(response))

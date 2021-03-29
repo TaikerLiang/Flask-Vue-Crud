@@ -1,14 +1,16 @@
 import dataclasses
+import json
 from typing import List, Dict
 from urllib.parse import urlencode
 
-from scrapy import Selector, Request
+from scrapy import Selector, Request, FormRequest
 from twisted.python.failure import Failure
 
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS
 from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError, SuspiciousOperationError, CarrierInvalidMblNoError
-)
+    CarrierResponseFormatError, SuspiciousOperationError, CarrierInvalidMblNoError,
+    CarrierInvalidSearchNoError)
 from crawler.core_carrier.items import (
     MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, BaseCarrierItem, DebugItem)
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption, ProxyMaxRetryError
@@ -90,6 +92,7 @@ class ItemRecorder:
     def items(self):
         return self._items
 
+
 # -------------------------------------------------------------------------------
 
 
@@ -105,19 +108,35 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         self._cookiejar_id = 0
         self._item_recorder = ItemRecorder()
 
-        rules = [
+        bill_rules = [
             CheckIpRule(),
             Cookies1RoutingRule(),
             Cookies2RoutingRule(),
-            Cookies3RoutingRule(),
-            MainRoutingRule(self._item_recorder),
+            Cookies3RoutingRule(search_type=SHIPMENT_TYPE_MBL),
+            MainRoutingRule(self._item_recorder, search_type=SHIPMENT_TYPE_MBL),
+            ContainerRoutingRule(self._item_recorder),
+            AvailabilityRoutingRule(self._item_recorder),
+        ]
+
+        booking_rules = [
+            CheckIpRule(),
+            Cookies1RoutingRule(),
+            Cookies2RoutingRule(),
+            Cookies3RoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
+            MainRoutingRule(self._item_recorder, search_type=SHIPMENT_TYPE_BOOKING),
             ContainerRoutingRule(self._item_recorder),
             AvailabilityRoutingRule(self._item_recorder),
         ]
 
         self._request_queue = RequestQueue()
-        self._rule_manager = RuleManager(rules=rules)
         self._proxy_manager = ProxyManager(session='hdmu', logger=self.logger)
+
+        if self.mbl_no:
+            self._rule_manager = RuleManager(rules=bill_rules)
+            self.search_no = self.mbl_no
+        else:
+            self._rule_manager = RuleManager(rules=booking_rules)
+            self.search_no = self.booking_no
 
     def start(self):
         yield self._prepare_restart()
@@ -146,6 +165,10 @@ class CarrierHdmuSpider(BaseCarrierSpider):
                 rule_proxy_cookie_option = self._add_cookiejar_id_into_request_option(option=rule_proxy_option)
                 rule_request = self._build_request_by(option=rule_proxy_cookie_option)
                 self._request_queue.add(request=rule_request)
+
+                # # test
+                # request = self._build_request_by(option=result)
+                # self._request_queue.add(request=request)
             elif isinstance(result, ForceRestart):
                 try:
                     restart_request = self._prepare_restart()
@@ -170,23 +193,25 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         self._proxy_manager.renew_proxy()
         self._cookiejar_id += 1
 
-        option = CheckIpRule.build_request_option(
-            mbl_no=self.mbl_no, cookiejar_id=self._cookiejar_id)
+        option = CheckIpRule.build_request_option(search_no=self.search_no)
         restart_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         restart_proxy_cookie_option = self._add_cookiejar_id_into_request_option(option=restart_proxy_option)
         return self._build_request_by(option=restart_proxy_cookie_option)
 
-    def _reformat_mbl_no_by(self, prefix_exist: bool):
+        # # test
+        # return self._build_request_by(option=option)
+
+    def _reformat_search_no_by(self, prefix_exist: bool):
         if prefix_exist:
-            if self.mbl_no.startswith('HMDU'):
-                return self.mbl_no
+            if self.search_no.startswith('HMDU'):
+                return self.search_no
             else:
-                return f'HDMU{self.mbl_no}'
+                return f'HDMU{self.search_no}'
         else:
-            if self.mbl_no.startswith('HMDU'):
-                return self.mbl_no[4:]
+            if self.search_no.startswith('HMDU'):
+                return self.search_no[4:]
             else:
-                return self.mbl_no
+                return self.search_no
 
     def _add_cookiejar_id_into_request_option(self, option) -> RequestOption:
         return option.copy_and_extend_by(meta={'cookiejar': self._cookiejar_id})
@@ -201,6 +226,17 @@ class CarrierHdmuSpider(BaseCarrierSpider):
             return Request(
                 url=option.url,
                 headers=option.headers,
+                meta=meta,
+                dont_filter=True,
+                callback=self.parse,
+                errback=self.retry,
+            )
+
+        elif option.method == RequestOption.METHOD_POST_FORM:
+            return FormRequest(
+                url=option.url,
+                headers=option.headers,
+                formdata=option.form_data,
                 meta=meta,
                 dont_filter=True,
                 callback=self.parse,
@@ -228,15 +264,17 @@ class CarrierHdmuSpider(BaseCarrierSpider):
 class CheckIpRule(BaseRoutingRule):
     name = 'IP'
 
+    def __init__(self):
+        self._sent_ips = []
+
     @classmethod
-    def build_request_option(cls, mbl_no, cookiejar_id: int):
+    def build_request_option(cls, search_no):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f'https://api.myip.com/',
             meta={
-                'mbl_no': mbl_no,
-                'cookiejar': cookiejar_id,
+                'search_no': search_no,
             },
         )
 
@@ -244,33 +282,46 @@ class CheckIpRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def handle(self, response):
-        mbl_no = response.meta['mbl_no']
-        cookiejar_id = response.meta['cookiejar']
+        search_no = response.meta['search_no']
 
-        yield Cookies1RoutingRule.build_request_option(mbl_no=mbl_no, cookiejar_id=cookiejar_id)
+        response_dict = json.loads(response.text)
+        ip = response_dict['ip']
+
+        if ip in self._sent_ips:
+            print(f'[WARNING][{self.__class__.__name__}] ---- ip repeated: `{ip}`')
+            yield ForceRestart()
+        else:
+            self._sent_ips.append(ip)
+            print(f'[INFO][{self.__class__.__name__}] ---- using ip: `{ip}`')
+            yield Cookies1RoutingRule.build_request_option(search_no=search_no)
 
 
 class Cookies1RoutingRule(BaseRoutingRule):
     name = 'COOKIES1'
 
     @classmethod
-    def build_request_option(cls, mbl_no, cookiejar_id: int):
+    def build_request_option(cls, search_no):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f'{BASE_URL}/cms/company/engn/index.jsp',
-            # url=BASE_URL,
+            # url=f'{BASE_URL}/ebiz/track_trace/main_new.jsp?null',
             headers={
                 'Host': 'www.hmm21.com',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+                'Accept': (
+                    'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;'
+                    'q=0.8,application/signed-exchange;v=b3;q=0.9'
+                ),
                 'Accept-Encoding': 'gzip, deflate, br',
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36',
+                'User-Agent': (
+                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
+                    'Chrome/87.0.4280.141 Safari/537.36'
+                ),
                 'Connection': 'keep-alive',
                 'Referer': 'https://www.hmm21.com/',
             },
             meta={
-                'mbl_no': mbl_no,
-                'cookiejar': cookiejar_id,
+                'search_no': search_no,
             },
         )
 
@@ -278,18 +329,18 @@ class Cookies1RoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def handle(self, response):
-        mbl_no = response.meta['mbl_no']
-        cookiejar_id = response.meta['cookiejar']
+        search_no = response.meta['search_no']
 
-        cookies = self._require_cookies_exists(response=response)
+        cookies = self._extract_cookies_dict_from(response=response)
 
         if cookies:
-            yield Cookies2RoutingRule.build_request_option(mbl_no=mbl_no, cookiejar_id=cookiejar_id, cookies=cookies)
+            yield Cookies2RoutingRule.build_request_option(
+                search_no=search_no, cookies=cookies)
         else:
             yield ForceRestart()
 
     @staticmethod
-    def _require_cookies_exists(response):
+    def _extract_cookies_dict_from(response):
         cookies = {}
         for cookie_byte in response.headers.getlist('Set-Cookie'):
             kv = cookie_byte.decode('utf-8').split(';')[0].split('=')
@@ -303,24 +354,51 @@ class Cookies2RoutingRule(BaseRoutingRule):
     name = 'COOKIES2'
 
     @classmethod
-    def build_request_option(cls, mbl_no, cookiejar_id: int, cookies: Dict):
+    def build_request_option(cls, search_no, cookies: Dict):
+        # bill_form_body = (
+        #     'blFields=3&cnFields=3&'
+        #     f'numbers={search_no}&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&'
+        #     'numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&'
+        #     'numbers=&numbers=&numbers=&numbers=&numbers=&numbers='
+        # )
+        #
+        # booking_form_body = (
+        #     'blFields=3&cnFields=3&'
+        #     'numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&'
+        #     'numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&'
+        #     f'numbers={search_no}&numbers=&numbers=&numbers=&numbers=&numbers='
+        # )
+
+        # if search_type == BILL_OF_LADING:
+        #     form_body = bill_form_body
+        # else:
+        #     form_body = booking_form_body
+
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f'{BASE_URL}/cms/business/ebiz/trackTrace/trackTrace/index.jsp?type=1&number={mbl_no}&is_quick=Y&quick_params=',
+            url=(
+                f'{BASE_URL}/cms/business/ebiz/trackTrace/trackTrace/index.jsp?type=1&number={search_no}&'
+                f'is_quick=Y&quick_params='
+            ),
             headers={
                 'Host': 'www.hmm21.com',
                 'Upgrade-Insecure-Requests': '1',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+                'Accept': (
+                    'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;'
+                    'q=0.8,application/signed-exchange;v=b3;q=0.9'
+                ),
                 'Accept-Encoding': 'gzip, deflate, br',
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36',
+                'User-Agent': (
+                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
+                    'Chrome/87.0.4280.141 Safari/537.36'
+                ),
                 'Connection': 'keep-alive',
                 'Referer': 'http://www.hmm21.com/cms/company/engn/index.jsp',
                 'Cookie': CookieHelper.get_cookie_str(cookies),
             },
             meta={
-                'mbl_no': mbl_no,
-                'cookiejar': cookiejar_id,
+                'search_no': search_no,
                 'cookies': cookies,
             },
         )
@@ -329,14 +407,15 @@ class Cookies2RoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def handle(self, response):
-        mbl_no = response.meta['mbl_no']
+        search_no = response.meta['search_no']
         cookies = response.meta['cookies']
-        cookiejar_id = response.meta['cookiejar']
 
         cookies.update(CookieHelper.get_cookies(response=response))
 
         if cookies:
-            yield Cookies3RoutingRule.build_request_option(mbl_no=mbl_no, cookiejar_id=cookiejar_id, cookies=cookies)
+            yield Cookies3RoutingRule.build_request_option(search_no=search_no, cookies=cookies)
+            # yield MainRoutingRule.build_request_option(
+            #     search_no=search_no, search_type=self._search_type, cookies=cookies)
         else:
             yield ForceRestart()
 
@@ -344,24 +423,44 @@ class Cookies2RoutingRule(BaseRoutingRule):
 class Cookies3RoutingRule(BaseRoutingRule):
     name = 'COOKIES3'
 
+    def __init__(self, search_type):
+        self._search_type = search_type
+
     @classmethod
-    def build_request_option(cls, mbl_no, cookiejar_id: int, cookies: Dict):
+    def build_request_option(cls, search_no, cookies: Dict):
+        # form_data = {
+        #     'blFields': '3',
+        #     'cnFields': '3',
+        #     'numbers': [
+        #         '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+        #     ],
+        # }
+
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f'{BASE_URL}/ebiz/track_trace/main_new.jsp?type=1&number={mbl_no}&is_quick=Y&quick_params=',
+            url=f'{BASE_URL}/ebiz/track_trace/main_new.jsp?type=1&number={search_no}&is_quick=Y&quick_params=',
             headers={
                 'Connection': 'keep-alive',
                 'Upgrade-Insecure-Requests': '1',
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-                'Referer': f'{BASE_URL}/cms/business/ebiz/trackTrace/trackTrace/index.jsp?type=1&number={mbl_no}&is_quick=Y&quick_params=',
+                'User-Agent': (
+                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
+                    'Chrome/87.0.4280.141 Safari/537.36'
+                ),
+                'Accept': (
+                    'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;'
+                    'q=0.8,application/signed-exchange;v=b3;q=0.9'
+                ),
+                'Referer': (
+                    f'{BASE_URL}/cms/business/ebiz/trackTrace/trackTrace/index.jsp?type=1&number={search_no}&'
+                    f'is_quick=Y&quick_params='
+                ),
                 'Accept-Language': 'en-US,en;q=0.9',
                 'Cookie': CookieHelper.get_cookie_str(cookies),
             },
+            # form_data=form_data,
             meta={
-                'mbl_no': mbl_no,
-                'cookiejar': cookiejar_id,
+                'search_no': search_no,
                 'cookies': cookies,
             },
         )
@@ -370,13 +469,14 @@ class Cookies3RoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def handle(self, response):
-        mbl_no = response.meta['mbl_no']
+        search_no = response.meta['search_no']
         cookies = response.meta['cookies']
 
         cookies.update(CookieHelper.get_cookies(response=response))
 
         if cookies:
-            yield MainRoutingRule.build_request_option(mbl_no=mbl_no, cookies=cookies)
+            yield MainRoutingRule.build_request_option(
+                search_no=search_no, search_type=self._search_type, cookies=cookies)
         else:
             yield ForceRestart()
 
@@ -396,26 +496,32 @@ class SpecificThTextExistMatchRule(BaseMatchRule):
 class MainRoutingRule(BaseRoutingRule):
     name = 'MAIN'
 
-    def __init__(self, item_recorder: ItemRecorder):
+    def __init__(self, item_recorder: ItemRecorder, search_type):
         self._item_recorder = item_recorder
+        self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, mbl_no, cookies: Dict, under_line: bool = False):
+    def build_request_option(cls, search_no, search_type, cookies, under_line: bool = False):
         url_plug_in = '/_' if under_line else ''
 
         form_data = {
-            'number': mbl_no,
+            'number': '',
             'type': '1',
             'selectedContainerIndex': '',
+            'is_quick': 'Y',
             'blFields': '3',
             'cnFields': '3',
-            'is_quick': 'Y',
-            'numbers': [
-                mbl_no, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-            ],
         }
 
-        body = urlencode(query=form_data)
+        numbers = [('numbers', '')] * 24
+
+        if search_type == SHIPMENT_TYPE_MBL:
+            form_data['number'] = search_no
+            numbers[0] = ('numbers', search_no)
+        elif search_type == SHIPMENT_TYPE_BOOKING:
+            numbers[18] = ('numbers', search_no)
+
+        body = urlencode(query=form_data) + '&' + urlencode(numbers)
 
         return RequestOption(
             rule_name=cls.name,
@@ -426,14 +532,19 @@ class MainRoutingRule(BaseRoutingRule):
                 'Cache-Control': 'max-age=0',
                 'Upgrade-Insecure-Requests': '1',
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36',
-                'Referer': f'{BASE_URL}/ebiz/track_trace/main_new.jsp?type=1&number=CANM89655400&is_quick=Y&quick_params=',
+                'User-Agent': (
+                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
+                    'Chrome/87.0.4280.141 Safari/537.36'
+                ),
+                'Referer': (
+                    f'{BASE_URL}/ebiz/track_trace/main_new.jsp?type=1&number={search_no}&is_quick=Y&quick_params=',
+                ),
                 'Accept-Language': 'en-US,en;q=0.9',
                 'Cookie': CookieHelper.get_cookie_str(cookies),
             },
             body=body,
             meta={
-                'mbl_no': mbl_no,
+                'search_no': search_no,
                 'cookies': cookies,
                 'under_line': under_line,
             },
@@ -443,21 +554,22 @@ class MainRoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def handle(self, response):
-        mbl_no = response.meta['mbl_no']
+        search_no = response.meta['search_no']
         cookies = response.meta['cookies']
         under_line = response.meta['under_line']
 
         cookies.update(CookieHelper.get_cookies(response=response))
-        if self._is_mbl_no_invalid(response=response):
+        if self._is_search_no_invalid(response=response):
             if not under_line:
                 # retry to send other request with underline url
                 # ex: {BASE_URL}/_/ebiz/track_trace/trackCTP_nTmp.jsp
-                yield MainRoutingRule.build_request_option(mbl_no=mbl_no, cookies=cookies, under_line=True)
+                yield MainRoutingRule.build_request_option(
+                    search_no=search_no, search_type=self._search_type, cookies=cookies, under_line=True)
                 return
 
-            raise CarrierInvalidMblNoError()
+            raise CarrierInvalidSearchNoError(search_type=self._search_type)
 
-        if not self._item_recorder.is_item_recorded(key=(MBL, mbl_no)):
+        if not self._item_recorder.is_item_recorded(key=(MBL, search_no)):
             try:
                 tracking_results = self._extract_tracking_results(response=response)
                 customs_status = self._extract_customs_status(response=response)
@@ -468,7 +580,6 @@ class MainRoutingRule(BaseRoutingRule):
                 return
 
             mbl_item = MblItem(
-                mbl_no=mbl_no,
                 por=LocationItem(name=tracking_results['location.por']),
                 pod=LocationItem(name=tracking_results['location.pod']),
                 pol=LocationItem(name=tracking_results['location.pol']),
@@ -496,9 +607,15 @@ class MainRoutingRule(BaseRoutingRule):
                 way_bill_status=cargo_delivery_info['way_bill_status'],
                 way_bill_date=cargo_delivery_info['way_bill_time'],
             )
-            self._item_recorder.record_item(key=(MBL, mbl_no), item=mbl_item)
 
-        if not self._item_recorder.is_item_recorded(key=(VESSEL, mbl_no)):
+            if self._search_type == SHIPMENT_TYPE_MBL:
+                mbl_item['mbl_no'] = search_no
+            elif self._search_type == SHIPMENT_TYPE_BOOKING:
+                mbl_item['booking_no'] = search_no
+
+            self._item_recorder.record_item(key=(MBL, search_no), item=mbl_item)
+
+        if not self._item_recorder.is_item_recorded(key=(VESSEL, search_no)):
             vessel = self._extract_vessel(response=response)
 
             vessel_item = VesselItem(
@@ -512,7 +629,7 @@ class MainRoutingRule(BaseRoutingRule):
                 atd=vessel['atd'],
                 etd=vessel['etd'],
             )
-            self._item_recorder.record_item(key=(VESSEL, mbl_no), item=vessel_item)
+            self._item_recorder.record_item(key=(VESSEL, search_no), item=vessel_item)
 
         # parse other containers if there are many containers
         container_contents = self._extract_container_contents(response=response)
@@ -534,7 +651,8 @@ class MainRoutingRule(BaseRoutingRule):
             else:
                 h_num -= 1
                 yield ContainerRoutingRule.build_request_option(
-                    mbl_no=mbl_no,
+                    search_no=search_no,
+                    search_type=self._search_type,
                     container_index=container_content.index,
                     h_num=h_num, cookies=cookies,
                     under_line=under_line,
@@ -544,9 +662,12 @@ class MainRoutingRule(BaseRoutingRule):
         yield MblItem()
 
     @staticmethod
-    def _is_mbl_no_invalid(response):
+    def _is_search_no_invalid(response):
         err_message = response.css('div#trackingForm p.text_type03::text').get()
-        if err_message == 'B/L number is invalid.  Please try it again with correct number.':
+        if (
+                isinstance(err_message, str) and
+                'number is invalid.  Please try it again with correct number.' in err_message
+        ):
             return True
         return False
 
@@ -632,6 +753,14 @@ class MainRoutingRule(BaseRoutingRule):
         tables = response.css('#trackingForm div.base_table01')
         rule = SpecificThTextExistMatchRule(text='Nation / Item')
         table_selector = find_selector_from(selectors=tables, rule=rule)
+        if not table_selector:
+            return {
+                'us_ams': None,
+                'canada_aci': None,
+                'eu_ens': None,
+                'china_cams': None,
+                'japan_afr': None,
+            }
 
         table_locator = TopLeftHeaderTableLocator()
         table_locator.parse(table=table_selector)
@@ -717,38 +846,47 @@ class ContainerRoutingRule(BaseRoutingRule):
         self._item_recorder = item_recorder
 
     @classmethod
-    def build_request_option(cls, mbl_no, container_index, h_num, cookies: Dict, under_line: bool = False):
+    def build_request_option(cls, search_no, search_type, container_index, h_num, cookies: Dict, under_line: bool = False):
         url_plug_in = '/_' if under_line else ''
 
         form_data = {
             'selectedContainerIndex': f'{container_index}',
             'hNum': f'{h_num}',
-            'tempBLOrBKG': mbl_no,
-            'numbers': [
-                mbl_no, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-            ],
+            'tempBLOrBKG': search_no,
+            'numbers': [''] * 24,
         }
+
+        if search_type == SHIPMENT_TYPE_MBL:
+            form_data['numbers'][0] = search_no
+        else:
+            form_data['numbers'][18] = search_no
         body = urlencode(query=form_data)
 
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url=f'{BASE_URL}{url_plug_in}/ebiz/track_trace/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={mbl_no}',
+            url=f'{BASE_URL}{url_plug_in}/ebiz/track_trace/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={search_no}',
             headers={
                 'Connection': 'keep-alive',
                 'Cache-Control': 'max-age=0',
                 'Upgrade-Insecure-Requests': '1',
                 'Origin': f'{BASE_URL}',
                 'Content-Type': 'application/x-www-form-urlencoded',
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+                'User-Agent': (
+                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
+                    'Chrome/87.0.4280.141 Safari/537.36'
+                ),
+                'Accept': (
+                    'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;'
+                    'q=0.8,application/signed-exchange;v=b3;q=0.9'
+                ),
                 'Referer': f'{BASE_URL}/ebiz/track_trace/trackCTP_nTmp.jsp',
                 'Accept-Language': 'en-US,en;q=0.9',
                 'Cookie': CookieHelper.get_cookie_str(cookies),
             },
             body=body,
             meta={
-                'mbl_no': mbl_no,
+                'search_no': search_no,
                 'container_index': container_index,
                 'cookies': cookies,
                 'under_line': under_line,
@@ -760,7 +898,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         return f'{self.name}_{container_index}.html'
 
     def handle(self, response):
-        mbl_no = response.meta['mbl_no']
+        search_no = response.meta['search_no']
         container_index = response.meta['container_index']
         under_line = response.meta['under_line']
 
@@ -808,7 +946,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             ava_exist = self._extract_availability_exist(response=response)
             if ava_exist:
                 yield AvailabilityRoutingRule.build_request_option(
-                    mbl_no=mbl_no, container_no=container_no, under_line=under_line)
+                    search_no=search_no, container_no=container_no, under_line=under_line)
             else:
                 self._item_recorder.record_item(key=(AVAILABILITY, container_no))
 
@@ -934,11 +1072,11 @@ class AvailabilityRoutingRule(BaseRoutingRule):
         self._item_recorder = item_recorder
 
     @classmethod
-    def build_request_option(cls, mbl_no, container_no, under_line: bool = False):
+    def build_request_option(cls, search_no, container_no, under_line: bool = False):
         url_plug_in = '/_' if under_line else ''
 
         form_data = {
-            'bno': mbl_no,
+            'bno': search_no,
             'cntrNo': f'{container_no}',
         }
         body = urlencode(query=form_data)
