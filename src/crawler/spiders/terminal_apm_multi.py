@@ -25,8 +25,18 @@ class ShareSpider(BaseMultiTerminalSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        for container_no in self.container_no_list:
-            option = ContainerRoutingRule.build_request_option(container_no=container_no, terminal_id=self.terminal_id)
+        uni_container_nos = list(self.cno_tid_map.keys())
+        uni_container_nos_len = len(uni_container_nos)
+        group_nos = uni_container_nos_len // 20
+        others = uni_container_nos_len % 20
+
+        for group_i in range(group_nos + 1 * bool(others)):
+            if group_i < group_nos:  # twenty groups
+                container_nos = uni_container_nos[20 * group_i: 20 * (group_i + 1)]
+            else:  # rest nums
+                container_nos = uni_container_nos[20 * group_i:]
+
+            option = ContainerRoutingRule.build_request_option(container_nos=container_nos, terminal_id=self.terminal_id)
             yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -38,7 +48,13 @@ class ShareSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseTerminalItem):
+            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+                c_no = result['container_no']
+                t_ids = self.cno_tid_map[c_no]
+                for t_id in t_ids:
+                    result['task_id'] = t_id
+                    yield result
+            elif isinstance(result, BaseTerminalItem):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -78,12 +94,12 @@ class ContainerRoutingRule(BaseRoutingRule):
     name = 'CONTAINER'
 
     @classmethod
-    def build_request_option(cls, container_no, terminal_id) -> RequestOption:
+    def build_request_option(cls, container_nos, terminal_id) -> RequestOption:
         url = f'{BASE_URL}/apm/api/trackandtrace/import-availability'
 
         form_data = {
             'DateFormat': 'dd/MM/yy',
-            'Ids': [container_no],
+            'Ids': container_nos,
             'TerminalId': terminal_id,
         }
 
@@ -93,26 +109,35 @@ class ContainerRoutingRule(BaseRoutingRule):
             url=url,
             headers={'Content-Type': 'application/json'},
             body=json.dumps(form_data),
-            meta={'container_no': container_no}
+            meta={'container_nos': container_nos}
         )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.json'
 
     def handle(self, response):
-        container_no = response.meta['container_no']
+        container_nos = response.meta['container_nos']
 
         response_json = json.loads(response.text)
-        if self.__is_container_no_invalid(response_json):
-            yield InvalidContainerNoItem(container_no=container_no)
+        ava_results = response_json['ContainerAvailabilityResults']
+        if not ava_results:
+            for container_no in container_nos:
+                yield InvalidContainerNoItem(container_no=container_no)
             return
 
-        container_result = self.__extract_container_result(response_json=response_json)
+        ava_container_nos = [ava_result['ContainerId'] for ava_result in ava_results]
+        for container_no in container_nos:
+            if container_no not in ava_container_nos:
+                yield InvalidContainerNoItem(container_no=container_no)
+                continue
 
-        yield TerminalItem(**container_result)
+            container_result = self._extract_specific_container_result(
+                response_json=response_json, container_no=container_no)
+
+            yield TerminalItem(**container_result)
 
     @staticmethod
-    def __is_container_no_invalid(response_json):
+    def _is_all_container_nos_invalid(response_json):
         container_results = response_json['ContainerAvailabilityResults']
 
         if not container_results:
@@ -120,9 +145,17 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         return False
 
-    def __extract_container_result(self, response_json):
+    def _extract_specific_container_result(self, response_json, container_no):
         container_results = response_json['ContainerAvailabilityResults']
-        container = container_results[0]  # only one container
+        container = None
+        for container_result in container_results:
+            if container_result['ContainerId'] == container_no:
+                container = container_result
+                break
+
+        if container is None:
+            return container
+
         self.__check_expected_container_format(container)
 
         return {
