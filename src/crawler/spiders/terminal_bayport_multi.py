@@ -5,7 +5,7 @@ from urllib.parse import urlencode, unquote
 
 from scrapy import Request, FormRequest, Selector
 
-from crawler.core_terminal.base_spiders import BaseMultiSearchTerminalSpider
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import (
     BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
 )
@@ -15,7 +15,7 @@ from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOpt
 BASE_URL = 'https://csp.poha.com'
 
 
-class TerminalBayportMultiSpider(BaseMultiSearchTerminalSpider):
+class TerminalBayportMultiSpider(BaseMultiTerminalSpider):
     name = 'terminal_bayport_multi'
 
     def __init__(self, *args, **kwargs):

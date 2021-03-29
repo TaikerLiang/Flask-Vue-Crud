@@ -2,7 +2,7 @@ import json
 
 from scrapy import Request, FormRequest, Selector
 
-from crawler.core_terminal.base_spiders import BaseMultiSearchTerminalSpider
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import (
     BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
 )
@@ -12,7 +12,7 @@ from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatch
 BASE_URL = 'http://propassva.portofvirginia.com'
 
 
-class TerminalVirginiaMultiSpider(BaseMultiSearchTerminalSpider):
+class TerminalVirginiaMultiSpider(BaseMultiTerminalSpider):
     name = 'terminal_virginia_multi'
 
     def __init__(self, *args, **kwargs):

@@ -10,7 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-from crawler.core_terminal.base_spiders import BaseMultiSearchTerminalSpider
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import LoadWebsiteTimeOutFatal
 from crawler.core_terminal.items import (
     BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
@@ -103,7 +103,7 @@ class MaherContentGetter:
         self.driver.quit()
 
 
-class TerminalMaherMultiSpider(BaseMultiSearchTerminalSpider):
+class TerminalMaherMultiSpider(BaseMultiTerminalSpider):
     name = 'terminal_maher_multi'
 
     def __init__(self, *args, **kwargs):

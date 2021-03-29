@@ -3,7 +3,7 @@ import time
 
 from scrapy import Request, FormRequest, Selector
 
-from crawler.core_terminal.base_spiders import BaseMultiSearchTerminalSpider
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import LoginNotSuccessFatal
 from crawler.core_terminal.items import (
     BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
@@ -14,7 +14,7 @@ from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatch
 BASE_URL = 'https://ecargo.ncports.com'
 
 
-class TerminalNorthCarolinaMultiSpider(BaseMultiSearchTerminalSpider):
+class TerminalNorthCarolinaMultiSpider(BaseMultiTerminalSpider):
     name = 'terminal_north_carolina_multi'
 
     def __init__(self, *args, **kwargs):
