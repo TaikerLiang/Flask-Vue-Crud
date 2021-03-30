@@ -26,18 +26,8 @@ class ShareSpider(BaseMultiTerminalSpider):
 
     def start(self):
         uni_container_nos = list(self.cno_tid_map.keys())
-        uni_container_nos_len = len(uni_container_nos)
-        group_nos = uni_container_nos_len // 20
-        others = uni_container_nos_len % 20
-
-        for group_i in range(group_nos + 1 * bool(others)):
-            if group_i < group_nos:  # twenty groups
-                container_nos = uni_container_nos[20 * group_i: 20 * (group_i + 1)]
-            else:  # rest nums
-                container_nos = uni_container_nos[20 * group_i:]
-
-            option = ContainerRoutingRule.build_request_option(container_nos=container_nos, terminal_id=self.terminal_id)
-            yield self._build_request_by(option=option)
+        option = ContainerRoutingRule.build_request_option(container_nos=uni_container_nos, terminal_id=self.terminal_id)
+        yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
