@@ -1,7 +1,10 @@
+from typing import List
+
 from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusItem, LocationItem
 
 
-def verify(results):
+def verify(results: List):
+    results.pop(0)
 
     assert results[0] == MblItem(
         por=LocationItem(name='HUANGPU (CN)'),

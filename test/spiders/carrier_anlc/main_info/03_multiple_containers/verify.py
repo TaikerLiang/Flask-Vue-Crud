@@ -1,4 +1,9 @@
-def verify(results):
+from typing import List
+
+
+def verify(results: List):
+    results.pop(0)
+
     expect_url_fmt = \
         'https://www.anl.com.au/ebusiness/tracking/detail/{container_no}?SearchCriteria=BL&SearchByReference={mbl_no}'
 
