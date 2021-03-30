@@ -77,11 +77,11 @@ class TerminalMultiItemsPipeline:
             if isinstance(item, terminal_items.TerminalItem):
                 collector = self._collector_map[item.key] if item.key else self._default_collector
                 collector.collect_terminal_item(item=item)
+                return collector.build_final_data()
             elif isinstance(item, terminal_items.InvalidContainerNoItem):
                 return self._default_collector.build_invalid_no_data(item=item)
             elif isinstance(item, terminal_items.ExportFinalData):
-                results = self._get_results_of_collectors()
-                return {'results': results}
+                return {'status': 'CLOSE'}
             elif isinstance(item, terminal_items.ExportErrorData):
                 results = self._default_collector.build_error_data(item)
                 collector_results = self._get_results_of_collectors()
@@ -124,6 +124,7 @@ class TerminalResultCollector:
     def collect_terminal_item(self, item: terminal_items.TerminalItem):
         clean_dict = self._clean_item(item)
         self._terminal.update(clean_dict)
+        # return self._terminal
 
     def build_final_data(self) -> Dict:
         return {
