@@ -4,9 +4,10 @@ from typing import List
 
 import scrapy
 
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
-    SuspiciousOperationError
+    SuspiciousOperationError, CarrierInvalidSearchNoError
 from crawler.core_carrier.items import (
     BaseCarrierItem, VesselItem, ContainerStatusItem, LocationItem, ContainerItem, MblItem, DebugItem)
 from crawler.core_carrier.request_helpers import RequestOption
@@ -20,18 +21,31 @@ class SharedSpider(BaseCarrierSpider):
     def __init__(self, *args, **kwargs):
         super(SharedSpider, self).__init__(*args, **kwargs)
 
-        rules = [
-            FirstTierRoutingRule(base_url=self.base_url),
+        bill_rules = [
+            FirstTierRoutingRule(search_type=SHIPMENT_TYPE_MBL),
             VesselRoutingRule(),
             ContainerStatusRoutingRule(),
             ReleaseStatusRoutingRule(),
             RailInfoRoutingRule(),
         ]
 
-        self._rule_manager = RuleManager(rules=rules)
+        booking_rules = [
+            FirstTierRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
+            VesselRoutingRule(),
+            ContainerStatusRoutingRule(),
+            ReleaseStatusRoutingRule(),
+            RailInfoRoutingRule(),
+        ]
+
+        if self.mbl_no:
+            self._rule_manager = RuleManager(rules=bill_rules)
+            self.search_no = self.mbl_no
+        else:
+            self._rule_manager = RuleManager(rules=booking_rules)
+            self.search_no = self.booking_no
 
     def start(self):
-        option = FirstTierRoutingRule.build_request_option(mbl_no=self.mbl_no, base_url=self.base_url)
+        option = FirstTierRoutingRule.build_request_option(search_no=self.search_no, base_url=self.base_url)
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -88,42 +102,45 @@ class FirstTierRoutingRule(BaseRoutingRule):
     name = 'FIRST_TIER'
     f_cmd = '121'
 
-    def __init__(self, base_url):
+    def __init__(self, search_type):
         # aim to build other routing_request
-        self.base_url = base_url
+        self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, mbl_no, base_url) -> RequestOption:
+    def build_request_option(cls, search_no, base_url) -> RequestOption:
         time_stamp = build_timestamp()
 
         url = (
             f'{base_url}?_search=false&nd={time_stamp}&rows=10000&page=1&sidx=&sord=asc&'
-            f'f_cmd={cls.f_cmd}&search_type=B&search_name={mbl_no}&cust_cd='
+            f'f_cmd={cls.f_cmd}&search_type=B&search_name={search_no}&cust_cd='
         )
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=url,
+            meta={'base_url': base_url}
         )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.json'
 
     def handle(self, response):
+        base_url = response.meta['base_url']
         response_dict = json.loads(response.text)
 
-        if not self._check_mbl_no(response_dict):
-            raise CarrierInvalidMblNoError()
+        if self._is_search_no_invalid(response_dict):
+            raise CarrierInvalidSearchNoError(search_type=self._search_type)
 
         container_info_list = self._extract_container_info_list(response_dict=response_dict)
         booking_no = self._get_booking_no_from(container_list=container_info_list)
         mbl_no = self._get_mbl_no_from(container_list=container_info_list)
 
-        yield MblItem(
-            mbl_no=mbl_no
-        )
+        if self._search_type == SHIPMENT_TYPE_MBL:
+            yield MblItem(mbl_no=mbl_no)
+        else:
+            yield MblItem(booking_no=booking_no)
 
-        yield VesselRoutingRule.build_request_option(booking_no=booking_no, base_url=self.base_url)
+        yield VesselRoutingRule.build_request_option(booking_no=booking_no, base_url=base_url)
 
         for container_info in container_info_list:
             container_no = container_info['container_no']
@@ -137,24 +154,24 @@ class FirstTierRoutingRule(BaseRoutingRule):
                 container_no=container_no,
                 booking_no=container_info['booking_no'],
                 cooperation_no=container_info['cooperation_no'],
-                base_url=self.base_url,
+                base_url=base_url,
             )
 
             yield ReleaseStatusRoutingRule.build_request_option(
                 container_no=container_no,
                 booking_no=booking_no,
-                base_url=self.base_url,
+                base_url=base_url,
             )
 
             yield RailInfoRoutingRule.build_request_option(
                 container_no=container_no,
                 cooperation=container_info['cooperation_no'],
-                base_url=self.base_url,
+                base_url=base_url,
             )
 
     @staticmethod
-    def _check_mbl_no(response_dict):
-        return 'list' in response_dict
+    def _is_search_no_invalid(response_dict):
+        return 'list' not in response_dict
 
     @staticmethod
     def _extract_container_info_list(response_dict) -> List:
