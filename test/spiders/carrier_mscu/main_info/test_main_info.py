@@ -4,8 +4,9 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.spiders.carrier_mscu import CarrierMscuSpider, MainRoutingRule
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
+from crawler.core_carrier.exceptions import CarrierInvalidSearchNoError
+from crawler.spiders.carrier_mscu import MainRoutingRule
 from test.spiders.carrier_mscu import main_info
 
 
@@ -46,7 +47,7 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
         )
     )
 
-    rule = MainRoutingRule()
+    rule = MainRoutingRule(search_type=SHIPMENT_TYPE_MBL)
 
     results = list(rule.handle(response=response))
 
@@ -55,7 +56,7 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
 
 
 @pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'MEDUMY898252', CarrierInvalidMblNoError),
+    ('e01_invalid_mbl_no', 'MEDUMY898252', CarrierInvalidSearchNoError),
 ])
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     http_text = sample_loader.read_file(sub, 'sample.html')
@@ -70,7 +71,7 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_lo
         )
     )
 
-    rule = MainRoutingRule()
+    rule = MainRoutingRule(search_type=SHIPMENT_TYPE_MBL)
 
     with pytest.raises(expect_exception):
-        results = list(rule.handle(response=response))
+        list(rule.handle(response=response))
