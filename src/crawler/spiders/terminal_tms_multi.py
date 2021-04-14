@@ -6,7 +6,7 @@ from scrapy import Selector
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import TerminalResponseFormatError, TerminalInvalidContainerNoError
-from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem
+from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
@@ -34,7 +34,8 @@ class SharedSpider(BaseMultiTerminalSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        request_option = TokenRoutingRule.build_request_option(container_no_list=self.container_no_list)
+        unique_container_nos = list(self.cno_tid_map.keys())
+        request_option = TokenRoutingRule.build_request_option(container_nos=unique_container_nos)
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -46,8 +47,12 @@ class SharedSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseTerminalItem):
-                yield result
+            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+                c_no = result['container_no']
+                t_ids = self.cno_tid_map[c_no]
+                for t_id in t_ids:
+                    result['task_id'] = t_id
+                    yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
             else:
@@ -90,22 +95,22 @@ class TokenRoutingRule(BaseRoutingRule):
     name = 'TOKEN'
 
     @classmethod
-    def build_request_option(cls, container_no_list) -> RequestOption:
+    def build_request_option(cls, container_nos) -> RequestOption:
         url = f'{BASE_URL}/tms2/Account/Login'
 
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
-            meta={'container_no_list': container_no_list},
+            meta={'container_nos': container_nos},
         )
     
     def handle(self, response):
-        container_no_list = response.meta['container_no_list']
+        container_nos = response.meta['container_nos']
 
         token = self._get_token(response=response)
 
-        yield LoginRoutingRule.build_request_option(token=token, container_no_list=container_no_list)
+        yield LoginRoutingRule.build_request_option(token=token, container_nos=container_nos)
 
     def get_save_name(self, response):
         return f'{self.name}.html'
@@ -123,7 +128,7 @@ class LoginRoutingRule(BaseRoutingRule):
         self.terminal_id = terminal_id
 
     @classmethod
-    def build_request_option(cls, token, container_no_list) -> RequestOption:
+    def build_request_option(cls, token, container_nos) -> RequestOption:
         url = f'{BASE_URL}/tms2/Account/Login?ReturnUrl=%2Ftms2%2FImport%2FContainerAvailability'
         form_data = {
             '__RequestVerificationToken': token,
@@ -136,11 +141,11 @@ class LoginRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_POST_FORM,
             url=url,
             form_data=form_data,
-            meta={'container_no_list': container_no_list},
+            meta={'container_nos': container_nos},
         )
 
     def handle(self, response):
-        container_no_list = response.meta['container_no_list']
+        container_nos = response.meta['container_nos']
 
         # get terminal token for SetTerminalRoutingRule request
         set_terminal_token = self._get_terminal_token(response=response)
@@ -150,14 +155,14 @@ class LoginRoutingRule(BaseRoutingRule):
 
         current_terminal_id = self._get_current_terminal_id(response=response)
         if self.terminal_id == current_terminal_id:
-            for container_no in container_no_list:
+            for container_no in container_nos:
                 yield ContainerAvailabilityRoutingRule.build_request_option(
                     token=container_availability_token, container_no=container_no)
         else:
             yield SetTerminalRoutingRule.build_request_option(
                 set_terminal_token=set_terminal_token,
                 container_availability_token=container_availability_token,
-                container_no_list=container_no_list,
+                container_nos=container_nos,
             )
 
     def get_save_name(self, response):
@@ -183,7 +188,7 @@ class SetTerminalRoutingRule(BaseRoutingRule):
     name = 'SET_TERMINAL'
 
     @classmethod
-    def build_request_option(cls, set_terminal_token, container_availability_token, container_no_list) -> RequestOption:
+    def build_request_option(cls, set_terminal_token, container_availability_token, container_nos) -> RequestOption:
         url = f'{BASE_URL}/tms2/Account/SetTerminal'
         form_data = {
             '__RequestVerificationToken': set_terminal_token,
@@ -197,15 +202,15 @@ class SetTerminalRoutingRule(BaseRoutingRule):
             form_data=form_data,
             meta={
                 'container_availability_token': container_availability_token,
-                'container_no_list': container_no_list,
+                'container_nos': container_nos,
             },
         )
 
     def handle(self, response):
-        container_no_list = response.meta['container_no_list']
+        container_nos = response.meta['container_nos']
         container_availability_token = response.meta['container_availability_token']
 
-        for container_no in container_no_list:
+        for container_no in container_nos:
             yield ContainerAvailabilityRoutingRule.build_request_option(
                 token=container_availability_token, container_no=container_no)
 
@@ -236,8 +241,11 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
         )
 
     def handle(self, response):
+        container_no = response.meta['container_no']
+
         if self.__is_invalid_container_no(response=response):
-            raise TerminalInvalidContainerNoError()
+            yield InvalidContainerNoItem(container_no=container_no)
+            return
 
         container_info = self.__extract_container_info(response=response)
         extra_container_info = self.__extract_extra_container_info(response=response)
