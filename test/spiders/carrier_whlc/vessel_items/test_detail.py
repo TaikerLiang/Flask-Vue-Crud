@@ -5,14 +5,14 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.rules import RuleManager
-from crawler.spiders.carrier_whlc import DetailRoutingRule
-from test.spiders.carrier_whlc import detail
+from crawler.spiders.carrier_whlc import BillRoutingRule
+from test.spiders.carrier_whlc import vessel_items
 
 
 @pytest.fixture
 def sample_loader(sample_loader):
     sample_path = Path(__file__).parent
-    sample_loader.setup(sample_package=detail, sample_path=sample_path)
+    sample_loader.setup(sample_package=vessel_items, sample_path=sample_path)
     return sample_loader
 
 
@@ -22,8 +22,7 @@ def sample_loader(sample_loader):
 def test_detail_routing_rule(sub, mbl_no, sample_loader, container_no):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    option = DetailRoutingRule.build_request_option(
-        mbl_no=mbl_no, container_no=container_no, j_idt='', view_state='', cookies={})
+    option = BillRoutingRule.build_request_option()
 
     response = TextResponse(
         url=option.url,
