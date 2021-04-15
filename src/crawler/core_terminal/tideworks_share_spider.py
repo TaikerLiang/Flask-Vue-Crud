@@ -3,9 +3,9 @@ import re
 
 import scrapy
 
-from crawler.core_terminal.base_spiders import BaseTerminalSpider, BaseMultiTerminalSpider
-from crawler.core_terminal.exceptions import TerminalResponseFormatError, TerminalInvalidContainerNoError
-from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
+from crawler.core_terminal.exceptions import TerminalResponseFormatError
+from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 
@@ -18,7 +18,7 @@ class CompanyInfo:
     password: str
 
 
-class ShareSpider(BaseMultiTerminalSpider):
+class TideworksShareSpider(BaseMultiTerminalSpider):
     name = ''
     company_info = CompanyInfo(
         lower_short='',
@@ -28,7 +28,7 @@ class ShareSpider(BaseMultiTerminalSpider):
     )
 
     def __init__(self, *args, **kwargs):
-        super(ShareSpider, self).__init__(*args, **kwargs)
+        super(TideworksShareSpider, self).__init__(*args, **kwargs)
 
         rules = [
             LoginRoutingRule(),
@@ -85,86 +85,6 @@ class ShareSpider(BaseMultiTerminalSpider):
 
         else:
             raise RuntimeError()
-
-
-class TerminalPctMultiSpider(ShareSpider):
-    name = 'terminal_pct_multi'
-    company_info = CompanyInfo(
-        lower_short='pct',
-        upper_short='PCT',
-        email='m10715033@mail.ntust.edu.tw',
-        password='1234567890',
-    )
-
-
-class TerminalOictMultiSpider(ShareSpider):
-    name = 'terminal_oict_multi'
-    company_info = CompanyInfo(
-        lower_short='b58',
-        upper_short='OICT',
-        email='Scott.lu@gofreight.co',
-        password='hardc0re',
-    )
-
-
-class TerminalPierMultiSpider(ShareSpider):
-    name = 'terminal_pier_multi'
-    company_info = CompanyInfo(
-        lower_short='pier',
-        upper_short='PA',
-        email='w87818@yahoo.com.tw',
-        password='1234567890',
-    )
-
-
-class TerminalPomtocMultiSpider(ShareSpider):
-    name = 'terminal_pomtoc_multi'
-    company_info = CompanyInfo(
-        lower_short='pomtoc-online',
-        upper_short='POM',
-        email='Scott.lu@gofreight.co',
-        password='hardc0re',
-    )
-
-
-class TerminalShipperTransLAMultiSpider(ShareSpider):
-    name = 'terminal_shipper_trans_la_multi'
-    company_info = CompanyInfo(
-        lower_short='sta',
-        upper_short='STA',
-        email='Scott.lu@gofreight.co',
-        password='hardc0re',
-    )
-
-
-class TerminalShipperTransCarMultiSpider(ShareSpider):
-    name = 'terminal_shipper_trans_car_multi'
-    company_info = CompanyInfo(
-        lower_short='stl',
-        upper_short='STL',
-        email='Scott.lu@gofreight.co',
-        password='hardc0re',
-    )
-
-
-class TerminalShipperTransOakMultiSpider(ShareSpider):
-    name = 'terminal_shipper_trans_oak_multi'
-    company_info = CompanyInfo(
-        lower_short='sto',
-        upper_short='STO',
-        email='Scott.lu@gofreight.co',
-        password='hardc0re',
-    )
-
-
-class TerminalT18MultiSpider(ShareSpider):
-    name = 'terminal_t18_multi'
-    company_info = CompanyInfo(
-        lower_short='t18',
-        upper_short='T18',
-        email='Scott.lu@gofreight.co',
-        password='hardc0re',
-    )
 
 
 # -------------------------------------------------------------------------------
@@ -231,22 +151,22 @@ class SearchContainerRoutingRule(BaseRoutingRule):
         container_no = response.meta['container_no']
         company_info = response.meta['company_info']
 
-        if self.__is_invalid_container_no(response=response):
+        if self._is_invalid_container_no(response=response):
             yield InvalidContainerNoItem(container_no=container_no)
             return
 
         # for ContainerDetailRoutingRule request
-        container_url = self.__get_first_container_url(response=response)
+        container_url = self._get_first_container_url(response=response)
 
         yield ContainerDetailRoutingRule.build_request_option(container_url=container_url, company_info=company_info)
 
     @staticmethod
-    def __get_first_container_url(response: scrapy.Selector) -> str:
+    def _get_first_container_url(response: scrapy.Selector) -> str:
         url = response.css('div#result tr td a::attr(href)').get()
         return url
 
     @staticmethod
-    def __is_invalid_container_no(response: scrapy.Selector) -> bool:
+    def _is_invalid_container_no(response: scrapy.Selector) -> bool:
         a_in_td = response.css('div#result tr td a')
         raw_all_text_in_td = response.css('div#result tr td ::text').getall()
         all_text_in_td = [text.strip() for text in raw_all_text_in_td]
@@ -277,9 +197,9 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def handle(self, response):
-        container_no = self.__extract_container_no(response=response)
-        container_info = self.__extract_container_info(response=response)
-        extra_container_info = self.__extract_extra_container_info(response=response)
+        container_no = self._extract_container_no(response=response)
+        container_info = self._extract_container_info(response=response)
+        extra_container_info = self._extract_extra_container_info(response=response)
 
         yield TerminalItem(
             container_no=container_no,
@@ -288,7 +208,7 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         )
 
     @staticmethod
-    def __extract_container_no(response: scrapy.Selector):
+    def _extract_container_no(response: scrapy.Selector):
         pattern = re.compile(r'^Container - (?P<container_no>.+)$')
 
         container_no_text = response.css('div.page-header h2::text').get()
@@ -297,13 +217,13 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
 
         return container_no
 
-    def __extract_container_info(self, response: scrapy.Selector):
+    def _extract_container_info(self, response: scrapy.Selector):
         pattern = re.compile(r'^(?P<vessel>[\w\s]+)/')
         container_info = {}
 
         div_selectors = response.css('div.col-sm-4 div')
         for div in div_selectors:
-            key, value = self.__extract_container_info_div_text(div)
+            key, value = self._extract_container_info_div_text(div)
             container_info[key] = value
 
         m = pattern.match(container_info['Vessel/Voyage'])
@@ -315,20 +235,20 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
             'carrier': container_info['Line'],
             'cy_location': container_info['Location'],
             'vessel': vessel,
-            'weight': self.__reformat_weight(container_info['Weight']),
+            'weight': self._reformat_weight(container_info['Weight']),
         }
 
-    def __extract_extra_container_info(self, response: scrapy.Selector):
+    def _extract_extra_container_info(self, response: scrapy.Selector):
         extra_container_info = {}
 
         div_selector = response.css('div.col-sm-6 div')
         for div in div_selector:
-            key, value = self.__extract_extra_container_info_div_text(div)
+            key, value = self._extract_extra_container_info_div_text(div)
             extra_container_info[key] = value
 
         div_selector = response.css('div.col-sm-2 div')[:2]
         for div in div_selector:
-            key, value = self.__extract_extra_container_info_div_text(div)
+            key, value = self._extract_extra_container_info_div_text(div)
             extra_container_info[key] = value
 
         hold = extra_container_info['Holds']
@@ -343,11 +263,11 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         }
 
     @staticmethod
-    def __reformat_weight(weight_text_list):
+    def _reformat_weight(weight_text_list):
         return ' '.join(weight_text_list.split())
 
     @staticmethod
-    def __extract_container_info_div_text(div: scrapy.Selector):
+    def _extract_container_info_div_text(div: scrapy.Selector):
         div_text_list = div.css('::text').getall()
 
         if len(div_text_list) == 4:
@@ -376,7 +296,7 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         return key, value
 
     @staticmethod
-    def __extract_extra_container_info_div_text(div: scrapy.Selector):
+    def _extract_extra_container_info_div_text(div: scrapy.Selector):
         div_text_list = div.css('::text').getall()
 
         key = div_text_list[0].strip()
