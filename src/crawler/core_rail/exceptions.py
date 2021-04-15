@@ -52,3 +52,9 @@ class LoginNotSuccessFatal(BaseRailError):
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail=f'<login-not-success-fatal> status: `{self.status}`')
 
+
+class DriverMaxRetryError(BaseRailError):
+    status = RAIL_RESULT_STATUS_FATAL
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail='<driver-max-retry-error>')

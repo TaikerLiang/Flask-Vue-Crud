@@ -127,7 +127,7 @@ class RailResultCollector:
 
     def build_final_data(self) -> Dict:
         return {
-            'status': RAIL_RESULT_STATUS_FATAL,
+            'status': RAIL_RESULT_STATUS_DATA,
             'request_args': self._request_args,
             'rail': self._rail,
         }
