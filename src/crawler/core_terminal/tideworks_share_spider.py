@@ -243,13 +243,15 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
 
         div_selector = response.css('div.col-sm-6 div')
         for div in div_selector:
-            key, value = self._extract_extra_container_info_div_text(div)
-            extra_container_info[key] = value
+            key, value = self._extract_extra_container_info_div_text_colsm6(div)
+            if key:
+                extra_container_info[key] = value
 
         div_selector = response.css('div.col-sm-2 div')[:2]
         for div in div_selector:
-            key, value = self._extract_extra_container_info_div_text(div)
-            extra_container_info[key] = value
+            key, value = self._extract_extra_container_info_div_text_colsm2(div)
+            if key:
+                extra_container_info[key] = value
 
         hold = extra_container_info['Holds']
         hold = None if hold == 'None' else hold
@@ -296,10 +298,23 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         return key, value
 
     @staticmethod
-    def _extract_extra_container_info_div_text(div: scrapy.Selector):
+    def _extract_extra_container_info_div_text_colsm6(div: scrapy.Selector):
+        div_text_list = div.css('::text').getall()
+        div_text_list = [r.strip() for r in div_text_list if r.strip()]
+
+        if len(div_text_list) == 2:
+            return div_text_list[0].replace(':', ''), div_text_list[1]
+        elif len(div_text_list) == 1:
+            tmp = div_text_list[0].split(':')
+            tmp = [r.strip() for r in tmp if r.strip()]
+            return tmp[0], tmp[1]
+        return None, None
+
+    @staticmethod
+    def _extract_extra_container_info_div_text_colsm2(div: scrapy.Selector):
         div_text_list = div.css('::text').getall()
 
         key = div_text_list[0].strip()
-        key = key[:-1]      # delete colon
+        key = key[:-1] # delete colon
         value = ''.join(div_text_list[1:]).strip()
         return key, value
