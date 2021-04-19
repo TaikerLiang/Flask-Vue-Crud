@@ -19,6 +19,10 @@ from crawler.core_carrier.exceptions import (
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 
 WHLC_BASE_URL = 'https://tw.wanhai.com'
 
@@ -182,7 +186,7 @@ class BillRoutingRule(BaseRoutingRule):
         try:
             table_selector = response.css('table.tbl-list')[0]
         except IndexError as err:
-            print(response.css('table.tbl-list').get())
+            print(response.get())
             raise err
 
         table_locator = ContainerListTableLocator()
@@ -597,9 +601,26 @@ class WhlcDriver:
         time.sleep(5)
         self._driver.switch_to.window(self._driver.window_handles[-1])
 
-    def go_detail_page(self, idx: int):
+        WebDriverWait(self._driver, 30).until(EC.presence_of_element_located(
+            (By.CSS_SELECTOR, 'form#cargoTrackListBean table.tbl-list')
+        ))
+
+    def wait_until_loader_dispear(self):
+        max_wait_time = 20
+        now_wait_time = 0
         loader = self._driver.find_element_by_css_selector('div#loader')
-        print('test loader', loader.get_attribute('outerHTML'))
+        print(f'test loader(wait time {now_wait_time})', loader.get_attribute('outerHTML'))
+        while loader.get_attribute('style') != 'display: none;':
+            if now_wait_time > max_wait_time:
+                raise TimeoutError()
+
+            time.sleep(3)
+            now_wait_time += 3
+            loader = self._driver.find_element_by_css_selector('div#loader')
+    
+    def go_detail_page(self, idx: int):
+        self.wait_until_loader_dispear()
+
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u').click()
         time.sleep(5)
         self._driver.switch_to.window(self._driver.window_handles[-1])
