@@ -257,10 +257,10 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         hold = None if hold == 'None' else hold
 
         return {
-            'freight_release': extra_container_info['Line Release Status'],
-            'customs_release': extra_container_info['Customs Release Status'],
-            'last_free_day': extra_container_info['Satisfied Thru'],
-            'demurrage': extra_container_info.get('Demurrage', None),
+            'freight_release': extra_container_info.get('Line Release Status', ''),
+            'customs_release': extra_container_info.get('Customs Release Status', ''),
+            'last_free_day': extra_container_info.get('Satisfied Thru', ''),
+            'demurrage': extra_container_info.get('Demurrage', ''),
             'holds': hold,
         }
 
