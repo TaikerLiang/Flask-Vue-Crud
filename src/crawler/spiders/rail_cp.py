@@ -25,7 +25,7 @@ class Restart:
 
 
 class RailCPSpider(BaseMultiRailSpider):
-    name = 'rail_cp'
+    name = 'rail_cacpr'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

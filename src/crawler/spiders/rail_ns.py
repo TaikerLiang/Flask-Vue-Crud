@@ -25,7 +25,7 @@ class Restart:
 
 
 class RailNSSpider(BaseMultiRailSpider):
-    name = 'rail_ns'
+    name = 'rail_usnscorp'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
