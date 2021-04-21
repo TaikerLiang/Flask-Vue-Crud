@@ -172,19 +172,19 @@ class ContentGetter:
 
     def get_container_info(self, resp):
         res = []
-        tds = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table/tbody/tr/td/text()').getall()
-        for i in range(int(len(tds)/19)):
+        tds = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table/tbody/tr/td')
+        for i in range(int(len(tds)/17)):
             res.append({
-                'container_no': tds[i*19+2].strip().replace('-', ''),
-                'ready_for_pick_up': tds[i*19+3].strip(),
-                'appointment_date': tds[i*19+7].strip(),
-                'customs_release': tds[i*19+8].strip(),
-                'freight_release': tds[i*19+9].strip(),
-                'holds': tds[i*19+11].strip(),
-                'demurrage': tds[i*19+13].strip(),
-                'last_free_day': tds[i*19+14].strip(),
-                'carrier': tds[i*19+15].strip(),
-                'container_spec': tds[i*19+16].strip(),
+                'container_no': ''.join(tds[i*17+1].xpath('.//text()').extract()).strip().replace('-', ''),
+                'ready_for_pick_up': ''.join(tds[i*17+2].xpath('.//text()').extract()).strip(),
+                'appointment_date': ''.join(tds[i*17+5].xpath('.//text()').extract()).strip(),
+                'customs_release': ''.join(tds[i*17+6].xpath('.//text()').extract()).strip(),
+                'freight_release': ''.join(tds[i*17+7].xpath('.//text()').extract()).strip(),
+                'holds': ''.join(tds[i*17+9].xpath('.//text()').extract()).strip(),
+                'demurrage': ''.join(tds[i*17+11].xpath('.//text()').extract()).strip(),
+                'last_free_day': ''.join(tds[i*17+12].xpath('.//text()').extract()).strip(),
+                'carrier': ''.join(tds[i*17+13].xpath('.//text()').extract()).strip(),
+                'container_spec': ''.join(tds[i*17+14].xpath('.//text()').extract()).strip(),
             })
 
         return res
