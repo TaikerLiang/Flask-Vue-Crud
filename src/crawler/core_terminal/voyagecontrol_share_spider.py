@@ -66,10 +66,11 @@ class VoyagecontrolShareSpider(BaseMultiTerminalSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
                 c_no = result['container_no']
-                t_ids = self.cno_tid_map[c_no]
-                for t_id in t_ids:
-                    result['task_id'] = t_id
-                    yield result
+                if c_no:
+                    t_ids = self.cno_tid_map[c_no]
+                    for t_id in t_ids:
+                        result['task_id'] = t_id
+                        yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
             elif isinstance(result, WarningMessage):
@@ -136,7 +137,6 @@ class LoginRoutingRule(BaseRoutingRule):
         return f'{self.name}.json'
 
     def handle(self, response):
-        print('paul login')
         container_no_list = response.meta['container_no_list']
         company_info = response.meta['company_info']
 
@@ -180,7 +180,6 @@ class ListTracedContainerRoutingRule(BaseRoutingRule):
         return f'{self.name}.json'
 
     def handle(self, response):
-        print('paul ListTracedContainerRoutingRule')
         is_first = response.meta['is_first']
         container_no = response.meta['container_no']
         authorization_token = response.meta['authorization_token']
@@ -199,7 +198,7 @@ class ListTracedContainerRoutingRule(BaseRoutingRule):
                 return
 
             collated_container = self.__extract_container_info(container=container)
-
+            print('Taiker-1 TerminalItem', collated_container['container_no'])
             yield TerminalItem(**collated_container)
 
             yield DelContainerFromTraceRoutingRule.build_request_option(
@@ -356,8 +355,9 @@ class DelContainerFromTraceRoutingRule(BaseRoutingRule):
             )
         else:
             # because of parse(), need to yield empty item
+            print('Taiker-2 TerminalItem')
             yield TerminalItem(
-                container_no=container_no
+                container_no=''
             )
 
 
@@ -404,7 +404,7 @@ class SearchMblRoutingRule(BaseRoutingRule):
         self.__check_format(response_json=response_json)
 
         mbl_info = self.__extract_mbl_info(response_json=response_json)
-
+        print('Taiker-3 TerminalItem')
         yield TerminalItem(container='', **mbl_info)
 
     @staticmethod
