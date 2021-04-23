@@ -109,22 +109,32 @@ class ContainerRoutingRule(BaseRoutingRule):
         container_nos = response.meta['container_nos']
 
         response_json = json.loads(response.text)
-        ava_results = response_json['ContainerAvailabilityResults']
-        if not ava_results:
-            for container_no in container_nos:
-                yield InvalidContainerNoItem(container_no=container_no)
-            return
+        for container in response_json['ContainerAvailabilityResults']:
+            result = {
+                'container_no': container['ContainerId'],
+                'freight_release': container['Freight'],
+                'customs_release': container['Customs'],
+                'discharge_date': container['DischargedDate'] or None,
+                'ready_for_pick_up': container['ReadyForDelivery'],
+                'appointment_date': container['AppointmentDate'],
+                'last_free_day': container['StoragePaidThroughDate'] or None,
+                'gate_out_date': container['GateOutDate'] or None,
+                'demurrage': container['Demurrage'] or None,
+                'carrier': container['LineId'],
+                'container_spec': container['SizeTypeHeight'],
+                'holds': ','.join(container['Holds']),
+                'cy_location': container['YardLocation'],
+                'vessel': container['VesselName'],
+                'mbl_no': container['BillOfLading'][0],
+                'weight': container['GrossWeight'],
+                'hazardous': container['HazardousClass'] or None,
+            }
 
-        ava_container_nos = [ava_result['ContainerId'] for ava_result in ava_results]
+            container_nos.remove(container['ContainerId'])
+            yield TerminalItem(**result)
+
         for container_no in container_nos:
-            if container_no not in ava_container_nos:
-                yield InvalidContainerNoItem(container_no=container_no)
-                continue
-
-            container_result = self._extract_specific_container_result(
-                response_json=response_json, container_no=container_no)
-
-            yield TerminalItem(**container_result)
+            yield InvalidContainerNoItem(container_no=container_no)
 
     @staticmethod
     def _is_all_container_nos_invalid(response_json):
@@ -134,39 +144,6 @@ class ContainerRoutingRule(BaseRoutingRule):
             return True
 
         return False
-
-    def _extract_specific_container_result(self, response_json, container_no):
-        container_results = response_json['ContainerAvailabilityResults']
-        container = None
-        for container_result in container_results:
-            if container_result['ContainerId'] == container_no:
-                container = container_result
-                break
-
-        if container is None:
-            return container
-
-        self.__check_expected_container_format(container)
-
-        return {
-            'container_no': container['ContainerId'],
-            'freight_release': container['Freight'],
-            'customs_release': container['Customs'],
-            'discharge_date': container['DischargedDate'] or None,
-            'ready_for_pick_up': container['ReadyForDelivery'],
-            'appointment_date': container['AppointmentDate'],
-            'last_free_day': container['StoragePaidThroughDate'] or None,
-            'gate_out_date': container['GateOutDate'] or None,
-            'demurrage': container['Demurrage'] or None,
-            'carrier': container['LineId'],
-            'container_spec': container['SizeTypeHeight'],
-            'holds': container['Holds'][0] if container['Holds'] else None,
-            'cy_location': container['YardLocation'],
-            'vessel': container['VesselName'],
-            'mbl_no': container['BillOfLading'][0],
-            'weight': container['GrossWeight'],
-            'hazardous': container['HazardousClass'] or None,
-        }
 
     @staticmethod
     def __check_expected_container_format(container):
