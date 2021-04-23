@@ -2,7 +2,7 @@ from crawler.core_terminal.portsamerica_share_spider import PortsamericaShareSpi
 
 
 class TerminalWbctSpider(PortsamericaShareSpider):
-    name = 'terminal_wbct_multi'
+    name = 'terminal_wbct'
     company_info = CompanyInfo(
         upper_short='WBCT_LA',
         site_name='WBCT Los Angeles',
