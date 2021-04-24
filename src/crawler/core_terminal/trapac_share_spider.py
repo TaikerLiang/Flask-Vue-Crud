@@ -328,14 +328,14 @@ class ContentGetter:
         time.sleep(3)
 
         search_bar_css = 'textarea#edit-containers'
-        self._headless_browser.wait_for_appear(css=search_bar_css, wait_sec=4)
+        self._headless_browser.wait_for_appear(css=search_bar_css, wait_sec=10)
 
         search_bar = self._headless_browser.find_element_by_css_selector(search_bar_css)
         search_bar.send_keys(search_no)
 
     def press_search_button(self):
         search_button_css = 'button[type="submit"]'
-        self._headless_browser.wait_for_appear(css=search_button_css, wait_sec=4)
+        self._headless_browser.wait_for_appear(css=search_button_css, wait_sec=10)
 
         search_button = self._headless_browser.find_element_by_css_selector(css=search_button_css)
         search_button.click()
