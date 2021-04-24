@@ -1,6 +1,5 @@
 import time
-from dataclasses import dataclass
-from enum import Enum
+import dataclasses
 from typing import List
 
 import scrapy
@@ -12,8 +11,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
 from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
-from crawler.core_terminal.base_spiders import BaseTerminalSpider
-from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError, TerminalInvalidMblNoError
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, BaseTerminalItem, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
@@ -21,24 +19,37 @@ from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 
-class Location(Enum):
-    LOS_ANGELES = 'LAX'
-    OAKLAND = 'OAK'
-    JACKSONWILLE = 'JAX'
+@dataclasses.dataclass
+class CompanyInfo:
+    lower_short: str
+    upper_short: str
+    email: str
+    password: str
 
 
-@dataclass
+# class Location(Enum):
+#     LOS_ANGELES = 'LAX'
+#     OAKLAND = 'OAK'
+#     JACKSONWILLE = 'JAX'
+
+
+@dataclasses.dataclass
 class SaveItem:
     file_name: str
     text: str
 
 
-class ShareSpider(BaseTerminalSpider):
-    name = None
-    location = None
+class TrapacShareSpider(BaseMultiTerminalSpider):
+    name = ''
+    company_info = CompanyInfo(
+        lower_short='',
+        upper_short='',
+        email='',
+        password='',
+    )
 
     def __init__(self, *args, **kwargs):
-        super(ShareSpider, self).__init__(*args, **kwargs)
+        super(TrapacShareSpider, self).__init__(*args, **kwargs)
 
         rules = [
             ContentRoutingRule()
@@ -48,8 +59,8 @@ class ShareSpider(BaseTerminalSpider):
         self._save = True if 'save' in kwargs else False
 
     def start(self):
-        option = ContentRoutingRule.build_request_option(
-            container_no=self.container_no, mbl_no=self.mbl_no, location=self.location)
+        unique_container_nos = list(self.cno_tid_map.keys())
+        option = ContentRoutingRule.build_request_option(container_no_list=unique_container_nos, location=self.company_info.upper_short)
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -84,27 +95,18 @@ class ShareSpider(BaseTerminalSpider):
             raise ValueError(f'Invalid option.method [{option.method}]')
 
 
-class TerminalTraPacLASpider(ShareSpider):
-    name = 'terminal_trapac_la'
-    location = Location.LOS_ANGELES.value
-
-
-# ---------------------------------------------------------------------------------------
-
-
 class ContentRoutingRule(BaseRoutingRule):
     name = 'CONTENT'
 
     @classmethod
-    def build_request_option(cls, location, container_no, mbl_no=None) -> RequestOption:
+    def build_request_option(cls, container_no_list: List, location) -> RequestOption:
         url = 'https://www.google.com'
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
             meta={
-                'mbl_no': mbl_no,
-                'container_no': container_no,
+                'container_no_list': container_no_list,
                 'location': location,
             },
         )
@@ -114,43 +116,29 @@ class ContentRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         location = response.meta['location']
-        mbl_no = response.meta['mbl_no']
-        container_no = response.meta['container_no']
+        container_no_list = response.meta['container_no_list']
 
-        container_response = self._build_container_response(location=location, container_no=container_no)
+        container_response = self._build_container_response(location=location, container_no_list=container_no_list)
         yield SaveItem(file_name='container.html', text=container_response.get())
 
-        if self._is_search_no_invalid(response=container_response):
-            raise TerminalInvalidContainerNoError()
-        container_info = self._extract_container_result_table(response=container_response)
-
-        mbl_info = {}
-        if mbl_no:
-            mbl_no_response = self._build_mbl_response(location=location, mbl_no=mbl_no)
-            yield SaveItem(file_name='mbl_no.html', text=mbl_no_response.get())
-
-            if self._is_search_no_invalid(response=mbl_no_response):
-                raise TerminalInvalidMblNoError()
-            mbl_info = self._extract_mbl_no_result_table(response=mbl_no_response)
-
-        yield TerminalItem(  # html field
-            container_no=container_info['container_no'],  # number
-            last_free_day=container_info['last_free_day'],  # demurrage-lfd
-            customs_release=mbl_info.get('custom_release'),  # holds-customs
-            # demurrage=container_info['demurrage'],  # demurrage-amt
-            # container_spec=container_info['container_spec'],  # dimensions
-            # holds=container_info['holds'],  # demurrage-hold
-            # cy_location=container_info['cy_location'],  # yard status
-            # vessel=container_info['vessel'],  # vsl / voy
-            # voyage=container_info['voyage'],  # vsl / voy
-            # carrier=mbl_info.get('carrier'),  # mbl holds-line
-            # mbl_no=mbl_info.get('mbl_no'),  # mbl number
-        )
+        for container_info in self._extract_container_result_table(response=container_response, numbers=len(container_no_list)):
+            yield TerminalItem(  # html field
+                container_no=container_info['container_no'],  # number
+                last_free_day=container_info['last_free_day'],  # demurrage-lfd
+                customs_release=container_info.get('custom_release'),  # holds-customs
+                demurrage=container_info['demurrage'],  # demurrage-amt
+                container_spec=container_info['container_spec'],  # dimensions
+                holds=container_info['holds'],  # demurrage-hold
+                cy_location=container_info['cy_location'],  # yard status
+                vessel=container_info['vessel'],  # vsl / voy
+                voyage=container_info['voyage'],  # vsl / voy
+            )
 
     @staticmethod
-    def _build_container_response(location, container_no):
+    def _build_container_response(location, container_no_list: List):
         content_getter = ContentGetter(location=location)
-        container_response_text = content_getter.get_content(search_no=container_no)
+        container_response_text = content_getter.get_content(search_no=','.join(container_no_list))
+        time.sleep(3)
         content_getter.quit()
 
         return scrapy.Selector(text=container_response_text)
@@ -168,47 +156,28 @@ class ContentRoutingRule(BaseRoutingRule):
         return bool(response.css('tr.error-row'))
 
     @staticmethod
-    def _extract_container_result_table(response: scrapy.Selector):
+    def _extract_container_result_table(response: scrapy.Selector, numbers: int):
         table = response.css('div[class="transaction-result availability"] table')
 
         table_locator = ContainerTableLocator()
-        table_locator.parse(table=table)
+        table_locator.parse(table=table, numbers=numbers)
         table_extractor = TableExtractor(table_locator=table_locator)
 
         vessel, voyage = table_extractor.extract_cell(top='Vsl / Voy', left=0, extractor=VesselVoyageTdExtractor())
 
-        return {
-            'container_no': table_extractor.extract_cell(top='Number', left=0),
-            'carrier': table_extractor.extract_cell(top='Holds_Line', left=0),
-            'custom_release': table_extractor.extract_cell(top='Holds_Customs', left=0),
-            'cy_location': table_extractor.extract_cell(top='Yard Status', left=0),
-            'last_free_day': table_extractor.extract_cell(top='Demurrage_LFD', left=0),
-            'holds': table_extractor.extract_cell(top='Demurrage_Hold', left=0),
-            'demurrage': table_extractor.extract_cell(top='Demurrage_Amt', left=0),
-            'container_spec': table_extractor.extract_cell(top='Dimensions', left=0),
-            'vessel': vessel,
-            'voyage': voyage,
-        }
-
-    @staticmethod
-    def _extract_mbl_no_result_table(response: scrapy.Selector):
-        table = response.css('div[class="transaction-result availability"] table')
-
-        table_locator = MblTableLocator()
-        table_locator.parse(table=table)
-        table_extractor = TableExtractor(table_locator=table_locator)
-
-        vessel, voyage = table_extractor.extract_cell(top='Vsl / Voy', left=0, extractor=VesselVoyageTdExtractor())
-
-        return {
-            'mbl_no': table_extractor.extract_cell(top='Number', left=0),
-            'carrier': table_extractor.extract_cell(top='Holds_Line', left=0),
-            'custom_release': table_extractor.extract_cell(top='Holds_Customs', left=0),
-            'cy_location': table_extractor.extract_cell(top='Yard Status', left=0),
-            'container_spec': table_extractor.extract_cell(top='Dimensions', left=0),
-            'vessel': vessel,
-            'voyage': voyage,
-        }
+        for i in range(numbers):
+            yield {
+                'container_no': table_extractor.extract_cell(top='Number', left=i),
+                'carrier': table_extractor.extract_cell(top='Holds_Line', left=i),
+                'custom_release': table_extractor.extract_cell(top='Holds_Customs', left=i),
+                'cy_location': table_extractor.extract_cell(top='Yard Status', left=i),
+                'last_free_day': table_extractor.extract_cell(top='Demurrage_LFD', left=i),
+                'holds': table_extractor.extract_cell(top='Demurrage_Hold', left=i),
+                'demurrage': table_extractor.extract_cell(top='Demurrage_Amt', left=i),
+                'container_spec': table_extractor.extract_cell(top='Dimensions', left=i),
+                'vessel': vessel,
+                'voyage': voyage,
+            }
 
 
 class VesselVoyageTdExtractor(BaseTableCellExtractor):
@@ -223,32 +192,32 @@ class ContainerTableLocator(BaseTableLocator):
     TR_SECOND_TITLE_CLASS = 'th-second'
 
     def __init__(self):
-        self._td_map = {}  # title : td
+        self._td_map = []
 
-    def parse(self, table: Selector):
+    def parse(self, table: Selector, numbers: int = 1):
         main_title_tr = table.css(f'tr.{self.TR_MAIN_TITLE_CLASS}')
         second_title_tr = table.css(f'tr.{self.TR_SECOND_TITLE_CLASS}')
         data_tr = table.css('tbody tr')
 
         main_title_ths = main_title_tr.css('th')
         second_title_ths = second_title_tr.css('th')
-        data_tds = data_tr.css('td')
-
         title_list = self.__combine_title_list(main_title_ths=main_title_ths, second_title_ths=second_title_ths)
 
-        for title_index, title in enumerate(title_list):
-            data_index = title_index
-
-            self._td_map[title] = data_tds[data_index]
+        for i in range(len(data_tr)):
+            if i >= numbers:
+                continue
+            data_tds = data_tr[i].css('td')
+            row = {}
+            for title_index, title in enumerate(title_list):
+                row[title] = data_tds[title_index]
+            self._td_map.append(row)
 
     def has_header(self, top=None, left=None) -> bool:
         return (top in self._td_map) and (left is None)
 
     def get_cell(self, top, left=0) -> scrapy.Selector:
-        assert left == 0
-
         try:
-            return self._td_map[top]
+            return self._td_map[left][top]
         except (KeyError, IndexError) as err:
             raise HeaderMismatchError(repr(err))
 
@@ -289,88 +258,14 @@ class ContainerTableLocator(BaseTableLocator):
 
         return title_list
 
-
-class MblTableLocator(BaseTableLocator):
-    TR_MAIN_TITLE_CLASS = 'th-main'
-    TR_SECOND_TITLE_CLASS = 'th-second'
-
-    def __init__(self):
-        self._td_map = {}  # title : td
-
-    def parse(self, table: Selector):
-        main_title_tr = table.css(f'tr.{self.TR_MAIN_TITLE_CLASS}')
-        second_title_tr = table.css(f'tr.{self.TR_SECOND_TITLE_CLASS}')
-        data_tr = table.css('tbody tr')
-
-        main_title_ths = main_title_tr.css('th')
-        second_title_ths = second_title_tr.css('th')
-        data_tds = data_tr.css('td')
-
-        title_list = self.__combine_title_list(main_title_ths=main_title_ths, second_title_ths=second_title_ths)
-
-        for title_index, title in enumerate(title_list):
-            data_index = title_index
-
-            self._td_map[title] = data_tds[data_index]
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def get_cell(self, top, left=0) -> scrapy.Selector:
-        assert left == 0
-
-        try:
-            return self._td_map[top]
-        except (KeyError, IndexError) as err:
-            raise HeaderMismatchError(repr(err))
-
-    @staticmethod
-    def __combine_title_list(main_title_ths: List[scrapy.Selector], second_title_ths: List[scrapy.Selector]):
-        main_title_list = []
-        main_title_accumulated_col_span = []  # [(main_title, accumulated_col_span)]
-
-        accumulated_col_span = 0
-        for main_title_th in main_title_ths:
-            main_title = ''.join(main_title_th.css('::text').getall())
-            col_span = main_title_th.css('::attr(colspan)').get()
-            col_span = int(col_span) if col_span else 1
-
-            accumulated_col_span += col_span
-            main_title_list.append(main_title)
-            main_title_accumulated_col_span.append((main_title, accumulated_col_span))
-
-        title_list = []
-        main_title_index = 0
-        main_title, accumulated_col_span = main_title_accumulated_col_span[main_title_index]
-        for second_title_index, second_title_th in enumerate(second_title_ths):
-            second_title = second_title_th.css('::text').get()
-
-            if second_title in ['Size', 'LFD']:
-                second_title = None
-            elif second_title in ['Type', 'Height', 'Amt', 'Hold']:
-                continue
-
-            if second_title_index >= accumulated_col_span:
-                main_title_index += 1
-                main_title, accumulated_col_span = main_title_accumulated_col_span[main_title_index]
-
-            if second_title:
-                title_list.append(f'{main_title}_{second_title}')
-            else:
-                title_list.append(main_title)
-
-        return title_list
-
-
 # ------------------------------------------------------------------------
 
 
 class HeadlessFirefoxBrowser:
-
     def __init__(self):
         options = webdriver.FirefoxOptions()
         options.add_argument('--disable-extensions')
-        options.add_argument('--headless')
+        # options.add_argument('--headless')
         options.add_argument('--disable-gpu')
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--no-sandbox')
@@ -405,7 +300,6 @@ class HeadlessFirefoxBrowser:
 
 
 class ContentGetter:
-
     def __init__(self, location):
         self._location = location
         self._headless_browser = HeadlessFirefoxBrowser()
