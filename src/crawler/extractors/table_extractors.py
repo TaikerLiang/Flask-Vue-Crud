@@ -13,7 +13,7 @@ class HeaderMismatchError(Exception):
 class BaseTableLocator:
 
     @abc.abstractmethod
-    def parse(self, table: Selector):
+    def parse(self, table: Selector, numbers: int = 1):
         pass
 
     @abc.abstractmethod
