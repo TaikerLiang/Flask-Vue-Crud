@@ -16,6 +16,7 @@ class ExportErrorData(BaseTerminalItem):
 
 
 class TerminalItem(BaseTerminalItem):
+    available = scrapy.Field()
     container_no = scrapy.Field()
     task_id = scrapy.Field()
     freight_release = scrapy.Field()

@@ -45,6 +45,7 @@ twisted==20.3.0           # via scrapy
 urllib3==1.26.2           # via requests, selenium
 w3lib==1.22.0             # via itemloaders, parsel, scrapy
 zope.interface==5.2.0     # via scrapy, twisted
+anticaptchaofficial==1.0.31
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
