@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+
+
+
+ 
+
+
+
+<html lang="en">
+<head>
+  <title>ETS LINK</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <script type="text/javascript" src="js/tf_loader.js"></script>
+  <script type="text/javascript" src="js/jquery-2.1.3/jquery.js"></script>
+  <script src="js/bootstrap-3.3.6/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="js/bootstrap-3.3.6/bootstrap.min.css">
+</head>
+<style>
+    #loginPanel{
+         /*border:2px green solid;*/
+         border-radius:5px;
+         margin-bottom:7px;
+         //width:360px;height:100px;
+         //vertical-valign:middle;
+    }
+    #loginPanelB{
+        //position: absolute;
+    
+         border:1px green solid;
+         border-radius:5px;
+         margin-bottom:15px;
+         width:360px;height:150px;
+         //vertical-align:bottom;
+    }
+  .epayment{
+        font-family: verdana;
+        font-size: 150%;  
+        width:360px;
+        text-align :center;  
+    } 
+    
+    
+.nav-tabs > li, .nav-pills > li {
+    float:none;
+    display:inline-block;
+    *display:inline; /* ie7 fix */
+     zoom:1; /* hasLayout ie7 trigger */
+}
+
+.nav-tabs, .nav-pills {
+    text-align:center;
+}
+.tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+} 
+
+//------------------------
+
+legend.legendStyle {
+padding-left: 5px;
+padding-right: 5px;
+}
+fieldset.fsStyle {
+font-family: Verdana, Arial, sans-serif;
+font-size: small;
+font-weight: normal;
+border: 1px solid #999999;
+background-color: #FFFFFFF;
+padding: 4px;
+margin: 5px;
+display: inline-block;
+}
+legend.legendStyle {
+font-size: 100%;
+color: #888888;
+//background-color: transparent;
+font-weight: bold;
+align:center;
+}
+
+legend {
+width: auto;
+border-bottom: 0px;
+}
+
+</style>
+
+
+
+<script>
+var regiWin ; 
+var cnt = 0;
+function openRegi(){
+
+	regiWin = new Ext.Window( {  
+		title:'Register',
+		width: 800,
+		height: 600,
+		closable: true,
+		draggable: false,
+		resizable: false,
+		closeAction: 'hide',
+		modal:true,
+		html: '<iframe id="frame1" src="waut/p004/register.jsp?act_type=A" frameborder="0" width="100%" height="100%"></iframe>'  
+        });  
+
+	regiWin.show();
+}
+
+function openFWD(){
+
+	regiWin = new Ext.Window( {  
+		title:'Forgot Password',
+		width: 600,
+		height: 400,
+		closable: true,
+		draggable: false,
+		resizable: false,
+		closeAction: 'hide',
+		modal:true,
+		html: '<iframe id="frame1" src="validate_member.jsp?action=fpwd" frameborder="0" width="100%" height="100%"></iframe>'  
+        });  
+
+	regiWin.show();
+}
+
+
+function closeRegi(){
+	regiWin.close();
+}
+TF.onReady(function() {
+	
+	if (parent == null || parent.document.getElementById("tmnlInfo")==null){
+		$(".loginMain").show();
+	
+		
+    TF.clearGlobal();
+    
+    var loginWin = Ext.create('Ext.Panel', {
+        id: 'MainForm',
+        defaultType: 'textfield',
+        layout: 'fit',
+        renderTo: 'loginPanel',
+        border: false,
+        width: 350,
+        height: 125,
+        waitMsgTarget: true,
+        items: [{
+            xtype: 'form',
+            width: 355, 
+            style: "margin-left: 0px; margin-top: 0px;",
+            layout: {
+                type: 'vbox',
+                align: 'stretch'
+            },
+            defaults: {
+            	width: 200,
+                border: false,
+                allowBlank: false,
+                msgTarget: 'side',
+                xtype: 'textfield',
+                labelWidth: 70,
+                labelSeparator: '',
+                padding: '2px 1px 0px 0px'
+            },
+            items: [{
+                fieldLabel: 'User ID',
+                name: 'PI_LOGIN_ID',
+                value: '',
+                listeners: {
+                	afterrender: function(field) {
+                        field.focus();
+                    },                	
+                    specialkey: function (field, e) {
+                        if (field.getValue() != 'null') {
+                        	if (e.getKey() === e.ENTER ) {
+                            	if (this.up('form').getForm().isValid())
+                                    loginWin.login();
+                            }
+                        }
+                    }
+                }
+            }, {
+                fieldLabel: 'Password',
+                inputType: 'password',
+                name: 'PI_PASSWORD',
+                value: '',
+                maxLength : 100,
+                listeners: {
+                    specialkey: function (field, e) {
+                        if (field.getValue() != 'null') {
+                        	if (e.getKey() === e.ENTER ) {
+                            	if (this.up('form').getForm().isValid())
+                                    loginWin.login();
+                            }
+                        }
+                    }
+                }
+            }, 
+            {
+				xtype : 'container',
+				layout : 'hbox',
+				id: 'verCntr',
+				hidden:true,
+				fieldDefaults : {
+					type: 'hbox',
+                    align: 'stretch'
+				},
+				items : [ {
+					fieldLabel: 'Verify',
+					xtype:'textfield',
+					id: 'PI_VERIFY_CODE',
+	                name: 'PI_VERIFY_CODE',
+	                labelWidth: 70,
+	                width : 150,
+	                labelSeparator: '',
+	                regex:/^\d{4,4}$/,
+	            	 listeners: {
+	                     specialkey: function (field, e) {
+	                         if (field.getValue() != 'null') {
+	                         	if (e.getKey() === e.ENTER ) {
+	                             	if (this.up('form').getForm().isValid())
+	                                     loginWin.login();
+	                             }
+	                         }
+	                     }
+	                 }
+	             },
+	             { 
+	            	 name: 'PI_VERIFY_DC', xtype :'hidden', id: 'verifyDC', value:'',
+	 			 },
+	             { xtype: 'splitter', width: 5 }, ,
+	             {
+	            	 xtype: 'image',
+	            	 src: '',
+	            	 height: 25,
+	            	 width : 70,
+	            	 id: 'verifyImg',
+	             },
+	             { xtype: 'splitter', width: 5 }, ,
+	             {
+	            	 xtype: 'image',
+	            	 src: 'images/refresh.png',
+	            	 height: 25,
+	            	 listeners: {
+	            		  render: function( com, eOpts ) {
+	            		    Ext.fly(this.el).on('click', function(e, t) {
+	            		    	loginWin.setVerify();
+	            		    	
+	            		    });
+	            		  }
+	            	 }
+	             }
+	             ]
+			},
+            {
+                xtype: 'container',
+                layout: {
+                    type: 'hbox',
+                    align: 'stretch'
+                },
+                defaults: {
+                    width: 150,
+                    border: false,
+                    allowBlank: false,
+                    msgTarget: 'side',
+                    xtype: 'textfield',
+                    padding: '3px',
+                    margin: '2px 5px 0px 2px'
+                },
+                items: [{
+                    text: 'Login',
+                    xtype: 'button',
+                    handler: function() {
+                        var form = this.up('form').getForm();
+                        if( Ext.getCmp('verCntr').hidden){
+                        	Ext.getCmp('PI_VERIFY_CODE').allowBlank = true;
+                        }
+                        else 
+                        	Ext.getCmp('PI_VERIFY_CODE').allowBlank = false;
+                        	                        
+                        if (form.isValid())
+                            loginWin.login();
+                    }
+                }, {
+                    text: 'Reset',
+                    xtype: 'button',
+                    handler: function() {
+                        var form = this.up('form').getForm();
+                        form.reset();
+                    }
+                }]
+            }]
+        }],
+        setVerify :function(){
+	    	Ext.getCmp('verifyDC').setValue ( Math.floor((Math.random() * 10000000))  ); 
+	    	Ext.getCmp('verifyImg').el.dom.src = 'waut/VerifyCodeImage.jsp?dc=' + Ext.getCmp('verifyDC').getValue()+"&verifyKey=832324" ;
+        },
+        login: function() {
+            TF.wait(true);
+
+            Ext.Ajax.request({
+                url: TF.pathData + '/login',
+                params: {
+                    PI_LOGIN_ID: TF.getValue('PI_LOGIN_ID', loginWin),
+                    PI_PASSWORD: TF.getValue('PI_PASSWORD', loginWin),
+                    PI_VERIFY_CODE: TF.getValue('PI_VERIFY_CODE', loginWin),
+                    PI_VERIFY_DC: TF.getValue('PI_VERIFY_DC', loginWin),
+                    PI_VERIFY_KEY : '832324',
+                },
+                success: function(sender) {
+                    try {
+                        var resp = Ext.JSON.decode(sender.responseText);
+                        if(resp.success && resp._sk) cnt=0; else cnt++ ;
+                        
+                        if(resp.chkVerify || cnt >=5){
+                        	loginWin.setVerify();
+                        	Ext.getCmp('PI_VERIFY_CODE').allowBlank = false;
+                        	Ext.getCmp('PI_VERIFY_CODE').focus(true,200);
+                        	Ext.getCmp('verCntr').setHidden(false)  ;
+            		    	TF.wait(false);
+                        }
+                        
+                        if (resp.success && resp._sk) {
+                            
+                        	location.href = 'menu.html?_sk=' + resp._sk + (location.href.match(/.*\?.+$/) ? '&' + location.href.replace(/.*\?(.+)$/, '$1') : '');
+                            return;
+                        }
+                        else if (resp.msg){
+                        	TF.alert(resp.msg);
+                        }
+                            
+                    }
+                    catch (e) {
+                        console.err(e);
+                    }
+                    TF.wait(false);
+                }
+            });
+        }
+    });
+
+    loginWin.show();
+	}
+});
+function openTmnl(evt, tmnlName, t) {
+    var i, tabcontent, tablinks,imgText ; //imgCntr,  ;
+    
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    
+    tablinks = document.getElementsByClassName("tablinks");
+    imgCntr =  document.getElementsByClassName("imgContainer");
+    imgText =  document.getElementsByClassName("imgText");
+    
+    
+    for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active imgAct", "");
+        imgText[i].className = imgText[i].className.replace(" imgTextAct", "");
+    }
+    
+    document.getElementById(tmnlName).style.display = "block";    
+
+    if(  $("#icon"+tmnlName)!=null){
+    	var tmn = $("#icon"+tmnlName).get(0) ; 
+    	//tmn.parentElement.aria-expanded = "true";
+    	for(var i = 0; i< tmn.childElementCount; i++){
+        	
+        	if(tmn.children[i].className.indexOf("tablinks")!=-1 )
+        		tmn.children[i].className +=  " active imgAct";
+        	else if(tmn.children[i].className.indexOf("imgTex")!=-1 )
+        		tmn.children[i].className += " imgTextAct" ;
+        }
+    }
+}    
+
+</script>  
+
+<body>
+<br>
+    <div class="row">
+        <div class="col-md-6"><span class="pull-right">
+          <img src="pictures/home_page/Everport_home.png" height=200 width=450 border=0  class="img-responsive" /><br/>
+          </span>
+        </div>
+        <div class="col-md-6 centered">
+          <div class="row">
+            <div class="col-md-12">
+              <div class="loginMain">
+              <fieldset class="fsStyle">
+              <legend class="legendStyle">ETSLink Login</legend>
+                <div id="loginPanel"> </div><br>
+                <div align="center"><a href="javascript:openRegi()">Register</a> / <a href="javascript:openFWD()">Forgot Password</a></div>    
+              </fieldset>
+              <div class="epayment" ><a href="https://www.emodal.com/emodallogin.aspx" target="_blank">e-Payment</a></div>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+    
+<p>
+<div align="center" width="98%">
+<nav class="navbar navbar-inverse navbar-fixed-bottom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>                        
+      </button>
+      <a class="navbar-brand" href="#">ETSLink Terminal</a>
+    </div>
+    <div class="collapse navbar-collapse" id="myNavbar">
+      <ul class="nav navbar-nav">
+      <li><a onClick="openTmnl(event, 'LAX')">Los Angeles</a></li>
+      <li><a onClick="openTmnl(event, 'OAK')">Oakland</a></li> 
+      <li><a onClick="openTmnl(event, 'TIW')">Tacoma</a></li>
+       
+      </ul>
+    </div>
+  </div>
+</nav>
+<div align="center">
+  <ul class="nav nav-tabs">
+    <li class="active"></li>
+    <li><a data-toggle="tab"><span class="imgContainer" onclick="openTmnl(event, 'LAX')" id="iconLAX"><img src="pictures/home_page/LAX.jpg" class="tablinks" /><span class="imgText">Los Angeles</span></span></a></li>
+    <li><a data-toggle="tab"><span class="imgContainer" onclick="openTmnl(event, 'OAK')" id="iconOAK"><img src="pictures/home_page/OAK.jpg" class="tablinks" /><span class="imgText">Oakland</span></span></a></li>
+    <li><a data-toggle="tab"><span class="imgContainer" onclick="openTmnl(event, 'TIW')" id="iconTIW"><img src="pictures/home_page/TIW.jpg" class="tablinks" /><span class="imgText">Tacoma</span></span></a></li>
+  </ul>
+</div>
+
+
+
+            <a name="LAX"></a>
+            <div id="LAX" class="tabcontent">
+              <div class="tmnlTitle">   Los Angeles  </div>
+              <br>
+              <span class="contactsTitle">Terminal contacts</span>
+              <div id="contactsLA" >
+                <div class="contactHalf">
+                <p style="text-align:center"><span style="font-size:10px">Main Line for Availability: 310-221-0220</span></p>&#xa;&#xa;<p style="text-align:center">Fast results by email:</p>&#xa;&#xa;<p style="text-align:center"><u><span style="font-size:12px">ocutraffic&#x40;everport-terminals.com</span></u></p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:10px">Equipment-310-221-4858,4815</span></p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:10px">ocuequipment&#x40;everport-terminals.com</span></p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:10px">Customs-310-221-4819 ocucustoms&#x40;everport-terminals.com</span></p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:10px">Intermodal-310-221-4820 ocuintermodal&#x40;everport-terminals.com</span></p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:10px">Hazardous-310-221-4818 ocuhazardous&#x40;everport-terminals.com</span></p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:10px">Demurrage-310-221-4817 ocudemurrage&#x40;everport-terminals.com&nbsp;</span></p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:10px">Trouble Windows-310-221-4821,4817&nbsp;or press 3</span></p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:10px">Night Assistance: 310-221-4821,4817</span></p>&#xa;&#xa;<p>&nbsp;</p>&#xa;
+                </div><div class="imgHelf">
+                <img src="pictures/home_page/imageLAX.jpg">
+                </div>
+              </div>
+              <br>  
+            
+              <span class="impTitle">Important Information</span>
+              <div id="importantInfo" >
+                <p style="text-align:center"><a href="http://12.231.175.69/Snapshot/LAInGate.jpg" target="_blank">Gate Cam View - Current Snapshot In-gate</a></p>&#xa;&#xa;<p style="text-align:center"><a href="http://12.231.175.69/Snapshot/LAOutGate.jpg" target="_blank">Gate Cam View - Current Snapshot Out-gate.</a></p>&#xa;&#xa;<p><span style="font-size:14px"><strong>Effective 04/27/2020 ETS will require&nbsp;mandatory appointments for all transactions. Import Appointments will require the Pin Code to be entered before the appointment time slot can be confirmed.&nbsp;&nbsp;Along with this the Empty / Export auto Ingate process will be implemented and enforced.&nbsp;All required fields must be input for successful completion of each transaction.</strong></span></p>&#xa;&#xa;<p><span style="font-size:14px"><span style="color:&#x23;FF0000"><strong>ANY DRIVER ARRIVING AT THE TERMINAL WITHOUT PRE-LODGING AN APPOINTMENT OR MISSING ANY REQUIRED PRE-GATE APPOINTMENT INFORMATION WILL BE TURNED AWAY WITHOUT BEING SERVICED AND RISK MISSING THEIR IMPORT APPOINTMENT TIME SLOT AND WILL BE REQUIRED TO SECURE A NEW APPOINTMENT.</strong></span></span></p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p><strong><span style="font-size:18px"><u>EVERPORT TERMINAL SERVICES -&nbsp;LOS ANGELES</u></span></strong></p>&#xa;&#xa;<p><strong>Mandatory Appointments are enforced for decked imports</strong></p>&#xa;&#xa;<p>Drivers should&nbsp;arrive&nbsp;within the 1&nbsp;hour&nbsp;slot scheduled on eModal.com &#x28;there is 1/2&nbsp;grace period&#x29;</p>&#xa;&#xa;<p>Should driver miss their appt, please cancel it first then&nbsp;schedule a new one at eModal.com</p>&#xa;&#xa;<p>_______________________________</p>&#xa;&#xa;<p><u><span style="font-size:14px"><span style="color:&#x23;FF0000"><strong>Import Free Flow / Peel off</strong></span></span></u></p>&#xa;&#xa;<p><span style="font-size:16px">Import free flow program is available for customers with 75&#x2b;&nbsp;containers per vessel - No appointment&nbsp;required Contact:&nbsp;<strong>iff&#x40;everport-terminals.com&nbsp;</strong>for more information</span></p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p>&#x2a;&#x2a;&#x2a;ETS MUST receive DO&rsquo;s for containers moving for US CUSTOMS exams from the <em><u>BROKER</u></em>&nbsp;prior to driver&rsquo;s arrival. The terminal will acknowledge once the trucker&rsquo;s SCAC has been updated. Send to <a href="mailto:OCUCUSTOMS&#x40;EVERPORT-TERMINALS.COM">OCUCUSTOMS&#x40;EVERPORT-TERMINALS.COM</a> and <a href="mailto:OCUTRAFFIC&#x40;EVERPORT-TERMINALS.COM">OCUTRAFFIC&#x40;EVERPORT-TERMINALS.COM</a>&nbsp;or FAX&nbsp;&#x28;310&#x29;831-1843. Failure to follow these instructions may result in drivers being rejected&#x2a;&#x2a;&#x2a;</p>&#xa;<p><span style="color:&#x23;FF0000"><strong><u>Please be advised of the following important instructions:</u></strong></span></p>&#xa;&#xa;<p>&#x2a; NOT&nbsp;accepting WCCP Chassis</p>&#xa;&#xa;<p>&#x2a; Evergreen chassis should not be dropped at any facility other than Everport</p>&#xa;&#xa;<p>&#x2a; Evergreen export reefer container with&nbsp;Evergreen genset chassis:<em>&nbsp;If not delivering to ETS, have the terminal flip reefer and return genset chassis to ETS</em></p>&#xa;&#xa;<p><span style="color:&#x23;FF0000"><strong><u>Everport&nbsp;Empty Return Policy:</u></strong></span></p>&#xa;&#xa;<p>&#x2a; Empty Returns <strong><em><u>must</u></em></strong> be on-hired by the steamship lines</p>&#xa;&#xa;<p>&#x2a; Empty Flatracks ARMS must be in upright position when returning to the terminal</p>&#xa;&#xa;<p>&#x2a; Not Accepting On-Hire COS DRY MTY&#39;s - Starting 7/18/20 1st&nbsp;Shift</p>&#xa;&#xa;<p>&#x2a; Not Accepting On-Hire Dry&nbsp;APL/CMA MTY&#39;s&nbsp;- Starting 1st&nbsp;Shift 08/01/20</p>&#xa;&#xa;<p>&#x2a; Not Accepting On-Hire APL/CMA Reefers&nbsp;- Starting 1st&nbsp;Shift 12/23/19</p>&#xa;&#xa;<p>&#x2a; Not Accepting On-Hire Dry OOCL&nbsp;MTY&#39;s&nbsp;- Starting 1st&nbsp;Shift 10/24/19</p>&#xa;&#xa;<p>&#x2a; Accepting EMC MTY&#39;s which originated from ETS LAX &nbsp;- Starting 08/03/20</p>&#xa;&#xa;<p>&#x2a; Evergreen reefer equipment must be returned back to ETS terminal</p>&#xa;&#xa;<table border="1" cellpadding="1" cellspacing="1" style="width:500px">&#xa;&#x9;<thead>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<th scope="col">EMC Originating From</th>&#xa;&#x9;&#x9;&#x9;<th colspan="6" rowspan="1" scope="col">&nbsp; EMC Empties Should Return To</th>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;</thead>&#xa;&#x9;<tbody>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td>&nbsp;</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">20&#39;</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">40&#39;</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">40&#39; HQ</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">45&#39;</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">40&#39; Reefer</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">Special</td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">GGS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">GGS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">GGS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">GGS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">GGS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">PCT&#x2b;STE</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">PCT</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">PCT</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">PCT</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">PCT</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">LBCT &#x28;Pier E&#x29;</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">Pier E</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">Pier E</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">Pier E</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">Pier E</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">LBCT &#x28;Pier F&#x29;</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">Pier F</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">Pier F</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">Pier F</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">Pier F</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">YTI</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">ETS</td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;</tbody>&#xa;</table>&#xa;<p>&nbsp;</p>&#xa;&#xa;<p>General Break Bulk flip fees for the ETS terminal are as follows:</p>&#xa;&#xa;<p>&#x24;504&#x2a; &ndash; Requires special lifting gear to complete flip</p>&#xa;&#xa;<p>&#x24;3943&#x2a; &ndash; Complete devanning service &#x28;remove from flatrack&#x29;</p>&#xa;&#xa;<p>&#x24;3943&#x2a; &ndash; Flipping flatrack using a&nbsp;crane for pieces over 80,000 lbs that do not have pick-up points clearly marked</p>&#xa;&#xa;<p>Requires devanning at an outside facility</p>&#xa;&#xa;<p>&#x2a;Flip fees may be adjusted pending visual inspection of the cargo&#x2a;</p>&#xa;<p style="text-align: center;"><span style="font-size:16px"><strong><u>TRUCKERS RULES</u></strong></span></p>&#xa;&#xa;<p>Drivers must wear safety vest; remain in vehicle unless moved to the trucker kiosk; truckers are not allowed to open containers, they must ask for assistance at kiosk. Drivers found in violation will be removed from the terminal.&nbsp;Speed limit is 15mph; yield at unmarked intersections; yard equipment has the right of way; do not pass behind moving equipment; do not drive next to stacking rows; stay back at least one container length when toppick is in stacking row retrieving your container; do not move forward until toppick has completely backed out of the row; no passengers; do not use electronic devices while driving; zero tolerance for violence; any problems see management; obey all posted signs.</p>&#xa;               
+              </div>
+               
+                                     
+              <br>
+              <span class="vslTitle"> Vessel schedule and cutoff times</span>
+              <div id="vessel" >
+                <table border=0 id="vesselTable">
+                 <tr style=" background-color: #CCCCCC;">
+                   <td align='center' width='8%'><p7>   Terminal  </p7></td>
+                   <td align='center' width='10%'><p7>   Vessel  </p7></td>
+                   <td align='center' width='12%'><p7>   Voyage  </p7></td>
+                   <td align='center' width='10%'><p7>   ETA  </p7></td>
+                   <td align='center' width='10%'><p7>   ETD  </p7></td>
+                   <td align='center' width='10%'><p7>   &nbsp;First Available Date&nbsp;  </p7></td>
+                   <td align='center' width='10%'><p7>   &nbsp;Start/Receive Date&nbsp;  </p7></td>
+                   <td align='center' width='10%'><p7>   &nbsp;Start/Receive Date (Reefer)&nbsp;  </p7></td>
+                   <td align='center' width='10%'><p7>   &nbsp;Cargo Cutoff&nbsp;  </p7></td>
+                   <td align='center' width='10%'><p7>   &nbsp;Reefer Cutoff&nbsp;  </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSLAX </p7></td>
+                   <td align='center'><p7>    EVER LUNAR </p7></td>
+                   <td align='center'><p7>    1150-035W </p7></td>
+                   <td align='center'><p7>    08&#x2f;02&#x2f;2020 14&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;05&#x2f;2020 05&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;20&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;24&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;27&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;31&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;31&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSLAX </p7></td>
+                   <td align='center'><p7>    EVER ENVOY </p7></td>
+                   <td align='center'><p7>    0024-160W </p7></td>
+                   <td align='center'><p7>    08&#x2f;05&#x2f;2020 15&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;07&#x2f;2020 19&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;22&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;27&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;29&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;04&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;04&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSLAX </p7></td>
+                   <td align='center'><p7>    EVER LIVEN </p7></td>
+                   <td align='center'><p7>    1151-044W </p7></td>
+                   <td align='center'><p7>    08&#x2f;09&#x2f;2020 14&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;12&#x2f;2020 05&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;27&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;31&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;03&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;07&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;07&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSLAX </p7></td>
+                   <td align='center'><p7>    EVER SUMMIT </p7></td>
+                   <td align='center'><p7>    0025-092W </p7></td>
+                   <td align='center'><p7>    08&#x2f;12&#x2f;2020 15&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 17&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;29&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;03&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;05&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;11&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;11&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSLAX </p7></td>
+                   <td align='center'><p7>    TEXAS TRIUMPH </p7></td>
+                   <td align='center'><p7>    1152-015W </p7></td>
+                   <td align='center'><p7>    08&#x2f;16&#x2f;2020 18&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 05&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;03&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;07&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSLAX </p7></td>
+                   <td align='center'><p7>    EVER FAITH </p7></td>
+                   <td align='center'><p7>    1152-004W </p7></td>
+                   <td align='center'><p7>    08&#x2f;16&#x2f;2020 18&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 05&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;03&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;07&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSLAX </p7></td>
+                   <td align='center'><p7>    EVER EAGLE </p7></td>
+                   <td align='center'><p7>    0026-152W </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 14&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 17&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;05&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;12&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;18&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;18&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSLAX </p7></td>
+                   <td align='center'><p7>    TPA1 </p7></td>
+                   <td align='center'><p7>    0026-003W </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 18&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;22&#x2f;2020 03&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;05&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;12&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;18&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSLAX </p7></td>
+                   <td align='center'><p7>    EVER LEARNED </p7></td>
+                   <td align='center'><p7>    1152-038W </p7></td>
+                   <td align='center'><p7>    08&#x2f;20&#x2f;2020 14&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;23&#x2f;2020 04&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;06&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;12&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;13&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSLAX </p7></td>
+                   <td align='center'><p7>    EVER FAITH </p7></td>
+                   <td align='center'><p7>    1153-004W </p7></td>
+                   <td align='center'><p7>    08&#x2f;23&#x2f;2020 15&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 05&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSLAX </p7></td>
+                   <td align='center'><p7>    EVER LOYAL </p7></td>
+                   <td align='center'><p7>    1153-041W </p7></td>
+                   <td align='center'><p7>    08&#x2f;23&#x2f;2020 18&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 05&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSLAX </p7></td>
+                   <td align='center'><p7>    EVER SMART </p7></td>
+                   <td align='center'><p7>    0027-106W </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 15&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;28&#x2f;2020 18&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;12&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;25&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;25&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSLAX </p7></td>
+                   <td align='center'><p7>    EVER ETHIC </p7></td>
+                   <td align='center'><p7>    0018-144W </p7></td>
+                   <td align='center'><p7>    08&#x2f;28&#x2f;2020 04&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;30&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;27&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;27&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSLAX </p7></td>
+                   <td align='center'><p7>    EVER LEGEND </p7></td>
+                   <td align='center'><p7>    1154-036W </p7></td>
+                   <td align='center'><p7>    08&#x2f;30&#x2f;2020 14&#x3a;00 </p7></td>
+                   <td align='center'><p7>    09&#x2f;02&#x2f;2020 04&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;24&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;28&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;28&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                </table>
+              </div>
+                                
+              <br> 
+              <span class="gateInfoTitle"> Gate Information</span> 
+              <br>
+              <div style="width:100%">
+                 <div id="hours"><br>
+              		  <span class="gateInfoTitle"> Hours</span>
+                      <p><strong>&nbsp;</strong></p>&#xa;&#xa;<table align="center" border="1" cellpadding="1.5" cellspacing="1.5" style="height:100px; width:650px">&#xa;&#x9;<tbody>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">&nbsp;</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">Mon</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">Tue</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">Wed</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">Thu</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">Fri</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">Sat</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">Sun</span></strong></td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">&nbsp;</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">&#xa;&#x9;&#x9;&#x9;<p><strong>08/03</strong></p>&#xa;&#x9;&#x9;&#x9;</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>08/04</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>08/05</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>08/06</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>08/07</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">08/08</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">08/09</span></strong></td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">1st Shift</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">0700-1600</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">0700-1600</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">0700-1600</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">0700-1600</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">0700-1600</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">0700-1600</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><span style="color:&#x23;FF0000"><strong>CLOSED</strong></span></td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">2nd Shift</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">1900-0300</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">1900-0300</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">1900-0300</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><span style="color:&#x23;FF0000"><strong>CLOSED</strong></span></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><span style="color:&#x23;FF0000"><strong>CLOSED</strong></span></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><span style="color:&#x23;FF0000"><strong>CLOSED</strong></span></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><span style="color:&#x23;FF0000"><strong>CLOSED</strong></span></td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;</tbody>&#xa;</table>&#xa;&#xa;<p style="text-align:center">&nbsp;</p>&#xa;&#xa;<p style="text-align:center"><strong><span style="color:&#x23;000000">&nbsp;</span></strong></p>&#xa;<table align="center" border="1" cellpadding="1.5" cellspacing="1.5" style="height:100px; width:650px">&#xa;&#x9;<tbody>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">&nbsp;</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">Mon</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">Tue</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">Wed</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">Thu</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">Fri</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">Sat</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">Sun</span></strong></td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">&nbsp;</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>08/10</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">08/11</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">08/12</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">08/13</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">08/14</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>08/15</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">08/16</span></strong></td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">1st Shift</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">0700-1600</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">0700-1600</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">0700-1600</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">0700-1600</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">0700-1600</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">0700-1600</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><span style="color:&#x23;FF0000"><strong>CLOSED</strong></span></td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">2nd Shift</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">1900-0300</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;000000">1900-0300</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>1900-0300</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><span style="color:&#x23;FF0000"><strong>CLOSED</strong></span></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><span style="color:&#x23;FF0000"><strong>CLOSED</strong></span></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><span style="color:&#x23;FF0000"><strong>CLOSED</strong></span></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><span style="color:&#x23;FF0000"><strong>CLOSED</strong></span></td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;</tbody>&#xa;</table>&#xa;&#xa;<p style="text-align:center"><strong><span style="color:&#x23;000000">&nbsp;</span></strong></p>&#xa;                         		  
+                 </div><div id="activity"><br>
+              		  <span class="gateActTitle"> Activity</span>
+                      <p>&nbsp;</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p><u><strong>Imports:</strong></u></p>&#xa;&#xa;<p>Go to www.eModal.com for import appointments</p>&#xa;&#xa;<p>Contact the terminal for information regarding&nbsp;holds and containers located in BB/CC row</p>&#xa;&#xa;<p>Evergreen IPI Off Dock Cargo can only use POP chassis</p>&#xa;&#xa;<p>Pay demurrage and all other fees through eModal.com</p>&#xa;&#xa;<p>&#x24;79&nbsp;Flip Fee to mount&nbsp;container on&nbsp;OWN chassis</p>&#xa;&#xa;<p><u><strong>Export:</strong></u></p>&#xa;&#xa;<p>Refer to our vessel schedule for yard open&nbsp;and cutoff times</p>&#xa;</div>
+              </div>
+            </div>
+          
+
+            <a name="OAK"></a>
+            <div id="OAK" class="tabcontent">
+              <div class="tmnlTitle">   Oakland </div>
+              <br>
+              <span class="contactsTitle">Terminal contacts</span>
+              <div id="contactsOAK" >
+                <div class="contactHalf">
+                <p>&nbsp;</p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:12px"><strong>Customer Service</strong>: customerservice-oak&#x40;abpiusa.com</span></p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:12px">Phone&nbsp;:&nbsp;&nbsp;&#x28;385&#x29; 777-5522</span></p>&#xa;&#xa;<p style="text-align:center">&nbsp;</p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:12px">Gate Office Phone :&nbsp;&nbsp;&#x28;510&#x29; 208-8814</span></p>&#xa;&#xa;<p style="text-align:center">&nbsp;</p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:12px">Yard &amp; Gate Manager Phone :&nbsp;&nbsp;&#x28;510&#x29; 208-8815</span></p>&#xa;&#xa;<p style="text-align:center">&nbsp;</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;
+                </div><div class="imgHelf">
+                <img src="pictures/home_page/imageOAK.jpg">
+                </div>
+              </div>
+              <br>  
+            
+              <span class="impTitle">Important Information</span>
+              <div id="importantInfo" >
+                <table border=0 id="importantTable">
+                <tr>
+                  <td><p style="text-align:center"><a href="http://12.132.94.236/GateImages/ingate.jpg" target="_blank">Gate Cam View - Current Snapshot In-gate</a></p>&#xa;&#xa;<p><strong><u>Safety:</u></strong></p>&#xa;&#xa;<p>1.&#x29; Speed limit is 10 mph throughout the terminal and 5 mph through roadability.</p>&#xa;&#xa;<p>2.&#x29; No cell phone use while driving.</p>&#xa;&#xa;<p>3.&#x29; Obey all posted stop signs.</p>&#xa;&#xa;<p>4.&#x29; Stop before entering roadability and do not leave prior to being cleared.</p>&#xa;&#xa;<p>5.&#x29; Wear proper P.P.E. &#x28;hi-visibility vests, gloves, and closed toed shoes&#x29;.</p>&#xa;&#xa;<p><strong><u>T.W.I.C Cards:</u></strong></p>&#xa;&#xa;<p>No truck drivers will be allowed into the terminal without a valid Transportation Workers Identification Credential.&nbsp; For further information please refer to:&nbsp;<a href="https://www.tsa.gov/for-industry/twic" target="_blank">https://www.tsa.gov/for-industry/twic</a></p>&#xa;<p><span style="color:&#x23;0000FF"><span style="font-size:12px"><strong><u>EVERPORT TERMINAL SERVICES - OAKLAND</u></strong></span></span></p>&#xa;&#xa;<table align="left" border="3" cellpadding="3" cellspacing="3" style="width:500px">&#xa;&#x9;<caption><u><span style="font-size:14px"><strong>Evergreen Empty Return Policy</strong></span></u></caption>&#xa;&#x9;<thead>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<th colspan="12" scope="col" style="text-align:justify; vertical-align:bottom">&#xa;&#x9;&#x9;&#x9;<p style="text-align:center">&nbsp; &nbsp;Empty Return Location</p>&#xa;&#xa;&#x9;&#x9;&#x9;<p style="text-align:center">By Terminal and Size</p>&#xa;&#x9;&#x9;&#x9;</th>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<th scope="col">&#xa;&#x9;&#x9;&#x9;<p>Originating Terminal</p>&#xa;&#x9;&#x9;&#x9;</th>&#xa;&#x9;&#x9;&#x9;<th scope="col" style="background-color:rgb&#x28;187, 187, 187&#x29;">45&#39;</th>&#xa;&#x9;&#x9;&#x9;<th scope="col" style="background-color:rgb&#x28;187, 187, 187&#x29;">40&#39;HQ</th>&#xa;&#x9;&#x9;&#x9;<th scope="col" style="background-color:rgb&#x28;187, 187, 187&#x29;">40&#39;</th>&#xa;&#x9;&#x9;&#x9;<th scope="col" style="background-color:rgb&#x28;187, 187, 187&#x29;">20&#39;</th>&#xa;&#x9;&#x9;&#x9;<th scope="col" style="background-color:rgb&#x28;187, 187, 187&#x29;">40&#39;RF</th>&#xa;&#x9;&#x9;&#x9;<th scope="col" style="background-color:rgb&#x28;187, 187, 187&#x29;">Special</th>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;</thead>&#xa;&#x9;<tbody>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="background-color:rgb&#x28;204, 204, 204&#x29;">ETS OKL &#x28;Ben E. Nutter&#x29;</td>&#xa;&#x9;&#x9;&#x9;<td>ETS</td>&#xa;&#x9;&#x9;&#x9;<td>ETS</td>&#xa;&#x9;&#x9;&#x9;<td>ETS</td>&#xa;&#x9;&#x9;&#x9;<td>ETS</td>&#xa;&#x9;&#x9;&#x9;<td>ETS</td>&#xa;&#x9;&#x9;&#x9;<td>ETS</td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="background-color:rgb&#x28;187, 187, 187&#x29;">SSA &#x28;OICT&#x29;</td>&#xa;&#x9;&#x9;&#x9;<td>SSA</td>&#xa;&#x9;&#x9;&#x9;<td>SSA</td>&#xa;&#x9;&#x9;&#x9;<td>SSA</td>&#xa;&#x9;&#x9;&#x9;<td>SSA</td>&#xa;&#x9;&#x9;&#x9;<td>ETS</td>&#xa;&#x9;&#x9;&#x9;<td>ETS</td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;</tbody>&#xa;</table>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p>-Evergreen containers are good with Evergreen chassis and DCLI chassis.&nbsp;<br />&#xa;-For Evergreen export reefer container mounted on an Evergreen genset chassis: If not delivering to ETS, have the terminal flip reefer and return genset chassis back to Everport.</p>&#xa;&#xa;<p>-Reefers with nosemount gensets will need to arrive prior to 15:00&nbsp;or will be subject to possibly being rejected due to the additional time needed to remove the nosemount</p>&#xa;&#xa;<p><span style="font-size:12px"><span style="color:&#x23;0000CD"><u><strong>APPOINTMENT GUIDE BY YARD LOCATION</strong></u></span></span></p>&#xa;&#xa;<table border="1" cellpadding="1" cellspacing="1" style="width:500px">&#xa;&#x9;<tbody>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="background-color:rgb&#x28;221, 221, 221&#x29;; text-align:center"><strong>&nbsp;AREA</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="background-color:rgb&#x28;221, 221, 221&#x29;; text-align:center"><strong>APPOINTMENT REQUIRED</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="background-color:rgb&#x28;221, 221, 221&#x29;; text-align:center; width:70px"><strong>&nbsp;STATUS&nbsp;</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="background-color:rgb&#x28;221, 221, 221&#x29;; text-align:center"><strong>REQUIREMENTS</strong></td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="width:20px"><span style="font-size:14px"><strong>C1,C2,D2</strong></span><span style="font-size:12px"><strong>&nbsp;&nbsp;</strong></span></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">YES</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">OPEN</td>&#xa;&#x9;&#x9;&#x9;<td style="width:500px">&nbsp;</td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td><span style="font-size:14px"><strong>C3,D3</strong>&nbsp; &nbsp;</span></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">YES</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">OPEN</td>&#xa;&#x9;&#x9;&#x9;<td>&nbsp;</td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="width:50px">&#xa;&#x9;&#x9;&#x9;<p><span style="font-size:14px"><strong>ALL D,E,F,G,H,I&nbsp;</strong></span></p>&#xa;&#xa;&#x9;&#x9;&#x9;<p><span style="font-size:14px"><strong>Locations</strong></span><span style="font-size:12px"><strong>&nbsp;&nbsp;</strong></span></p>&#xa;&#x9;&#x9;&#x9;</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">YES</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">OPEN</td>&#xa;&#x9;&#x9;&#x9;<td>&nbsp;</td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;</tbody>&#xa;</table>&#xa;&#xa;<p>&nbsp;</p>&#xa;</td>
+                </tr>
+                </table>
+              </div>
+               
+                                     
+              <br>
+              <span class="vslTitle"> Vessel schedule and cutoff times</span>
+              <div id="vessel" >
+                <table border=0 id="vesselTable">
+                 <tr style=" background-color: #CCCCCC;">
+                   <td align='center' width='8%'><p7>   Terminal  </p7></td>
+                   <td align='center' width='10%'><p7>   Vessel  </p7></td>
+                   <td align='center' width='12%'><p7>   Voyage  </p7></td>
+                   <td align='center' width='10%'><p7>   ETA  </p7></td>
+                   <td align='center' width='10%'><p7>   ETD  </p7></td>
+                   <td align='center' width='10%'><p7>   &nbsp;First Available Date&nbsp;  </p7></td>
+                   <td align='center' width='10%'><p7>   &nbsp;Start/Receive Date&nbsp;  </p7></td>
+                   <td align='center' width='10%'><p7>   &nbsp;Start/Receive Date (Reefer)&nbsp;  </p7></td>
+                   <td align='center' width='10%'><p7>   &nbsp;Cargo Cutoff&nbsp;  </p7></td>
+                   <td align='center' width='10%'><p7>   &nbsp;Reefer Cutoff&nbsp;  </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER LUNAR </p7></td>
+                   <td align='center'><p7>    1150-035W </p7></td>
+                   <td align='center'><p7>    08&#x2f;06&#x2f;2020 04&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;07&#x2f;2020 06&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;22&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;30&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;03&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;04&#x2f;2020 16&#x3a;15 </p7></td>
+                   <td align='center'><p7>    08&#x2f;05&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER LEADER </p7></td>
+                   <td align='center'><p7>    0917-047W </p7></td>
+                   <td align='center'><p7>    08&#x2f;07&#x2f;2020 14&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;09&#x2f;2020 04&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;23&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;03&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;05&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;06&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;07&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER ENVOY </p7></td>
+                   <td align='center'><p7>    0024-160W </p7></td>
+                   <td align='center'><p7>    08&#x2f;09&#x2f;2020 04&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 04&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;24&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;03&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;05&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;06&#x2f;2020 16&#x3a;15 </p7></td>
+                   <td align='center'><p7>    08&#x2f;07&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER ENVOY </p7></td>
+                   <td align='center'><p7>    0024-161W </p7></td>
+                   <td align='center'><p7>    08&#x2f;09&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 03&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;24&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;03&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;05&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;06&#x2f;2020 16&#x3a;15 </p7></td>
+                   <td align='center'><p7>    08&#x2f;07&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER LIVEN </p7></td>
+                   <td align='center'><p7>    1151-044W </p7></td>
+                   <td align='center'><p7>    08&#x2f;13&#x2f;2020 04&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;30&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;06&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;11&#x2f;2020 16&#x3a;15 </p7></td>
+                   <td align='center'><p7>    08&#x2f;12&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER SUMMIT </p7></td>
+                   <td align='center'><p7>    0025-092W </p7></td>
+                   <td align='center'><p7>    08&#x2f;15&#x2f;2020 05&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;16&#x2f;2020 05&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;03&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;12&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;13&#x2f;2020 16&#x3a;15 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER LOGIC </p7></td>
+                   <td align='center'><p7>    0918-047W </p7></td>
+                   <td align='center'><p7>    08&#x2f;15&#x2f;2020 14&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;03&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;12&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;13&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    TEXAS TRIUMPH </p7></td>
+                   <td align='center'><p7>    1152-015W </p7></td>
+                   <td align='center'><p7>    08&#x2f;20&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;06&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;13&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;18&#x2f;2020 16&#x3a;15 </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER FAITH </p7></td>
+                   <td align='center'><p7>    1152-004W </p7></td>
+                   <td align='center'><p7>    08&#x2f;20&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;06&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;13&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;18&#x2f;2020 16&#x3a;15 </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER LINKING </p7></td>
+                   <td align='center'><p7>    0919-036W </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 16&#x3a;30 </p7></td>
+                   <td align='center'><p7>    08&#x2f;23&#x2f;2020 05&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;07&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;18&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;20&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    TPA1 </p7></td>
+                   <td align='center'><p7>    0026-003W </p7></td>
+                   <td align='center'><p7>    08&#x2f;23&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;24&#x2f;2020 03&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;20&#x2f;2020 16&#x3a;15 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER EAGLE </p7></td>
+                   <td align='center'><p7>    0026-152W </p7></td>
+                   <td align='center'><p7>    08&#x2f;23&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;24&#x2f;2020 03&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;20&#x2f;2020 16&#x3a;15 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER LEARNED </p7></td>
+                   <td align='center'><p7>    1152-038W </p7></td>
+                   <td align='center'><p7>    08&#x2f;24&#x2f;2020 12&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;25&#x2f;2020 12&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;20&#x2f;2020 16&#x3a;15 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER LOYAL </p7></td>
+                   <td align='center'><p7>    1153-041W </p7></td>
+                   <td align='center'><p7>    08&#x2f;27&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;28&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;13&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;20&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;24&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;25&#x2f;2020 16&#x3a;15 </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER FAITH </p7></td>
+                   <td align='center'><p7>    1153-004W </p7></td>
+                   <td align='center'><p7>    08&#x2f;27&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;28&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;13&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;20&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;24&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;25&#x2f;2020 16&#x3a;15 </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER LIVELY </p7></td>
+                   <td align='center'><p7>    0920-042W </p7></td>
+                   <td align='center'><p7>    08&#x2f;28&#x2f;2020 16&#x3a;30 </p7></td>
+                   <td align='center'><p7>    08&#x2f;30&#x2f;2020 05&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;25&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;27&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER LOADING </p7></td>
+                   <td align='center'><p7>    0920-037W </p7></td>
+                   <td align='center'><p7>    08&#x2f;28&#x2f;2020 16&#x3a;30 </p7></td>
+                   <td align='center'><p7>    08&#x2f;30&#x2f;2020 05&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;25&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;27&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER LOYAL </p7></td>
+                   <td align='center'><p7>    0920-041W </p7></td>
+                   <td align='center'><p7>    08&#x2f;28&#x2f;2020 16&#x3a;30 </p7></td>
+                   <td align='center'><p7>    08&#x2f;30&#x2f;2020 05&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;25&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;27&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSOAK </p7></td>
+                   <td align='center'><p7>    EVER SMART </p7></td>
+                   <td align='center'><p7>    0027-106W </p7></td>
+                   <td align='center'><p7>    08&#x2f;30&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;31&#x2f;2020 03&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;24&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;27&#x2f;2020 16&#x3a;15 </p7></td>
+                   <td align='center'><p7>    08&#x2f;28&#x2f;2020 12&#x3a;00 </p7></td>
+                 </tr>
+               
+                </table>
+              </div>
+                                
+              <br> 
+              <span class="gateInfoTitle"> Gate Information</span> 
+              <br>
+              <div style="width:100%">
+                 <div id="hours"><br>
+              		  <span class="gateInfoTitle"> Hours</span>
+              		  <p><span style="font-size:20px"><u><strong>ETS Gate Hours</strong></u></span></p>&#xa;&#xa;<p><span style="font-size:14px">Monday: &nbsp; &nbsp;07:00am - 04:15pm&nbsp;</span></p>&#xa;&#xa;<p><span style="font-size:14px">Tuesday: &nbsp; 07:00am - 04:15pm&nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</span></p>&#xa;&#xa;<p><span style="font-size:14px">Wednesday: 07:00am - 04:15pm&nbsp;<br />&#xa;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<br />&#xa;Thursday: &nbsp;07:00am - 04:15pm&nbsp;<br />&#xa;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<br />&#xa;Friday: &nbsp; &nbsp;07:00am - 04:15pm&nbsp;<br />&#xa;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<br />&#xa;Saturday: &nbsp;- <strong><span style="color:&#x23;FF0000">CLOSED &nbsp;</span></strong><br />&#xa;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</span><br />&#xa;<span style="font-size:14px">Sunday: &nbsp; &nbsp;- <strong><span style="color:&#x23;FF0000">CLOSED &nbsp;</span></strong></span></p>&#xa;&#xa;<p><span style="font-size:36px"><span style="color:&#x23;FF0000"><strong>Closed: July 28th, Tuesday</strong></span></span></p>&#xa;&#xa;<p><span style="font-size:16px"><strong><span style="color:&#x23;008000">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</span></strong></span></p>&#xa;&#xa;<p><span style="font-size:14px"><span style="color:&#x23;FF0000"><strong>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp;</strong></span></span></p>&#xa;&#xa;<p><span style="font-size:16px"><strong><span style="color:&#x23;008000">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</span></strong></span></p>&#xa;
+                 </div><div id="activity"><br>
+              		  <span class="gateActTitle"> Activity</span>
+              		  <p><strong><u>Imports:</u></strong>&nbsp;Appts required for import pickup except for wheeled containers.</p>&#xa;&#xa;<p>Containers to be picked up with&nbsp;Permit&nbsp;to Transfer &#x28;PTT&#x29; may&nbsp;without appts&nbsp;through the Trouble Office</p>&#xa;&#xa;<p><u><strong>Note:</strong></u> We will no longer be printing PTT or Exam paperwork for drivers.&nbsp; The drivers will need to bring their own copy of the PTT&nbsp;to the trouble office.</p>&#xa;&#xa;<p><strong>&#x24;86&nbsp;Flip Fee to mount&nbsp;container on&nbsp;OWN chassis</strong></p>&#xa;&#xa;<p><strong><u>Reefers:</u>&nbsp;&nbsp;</strong>Reefers with nosemount gensets will need to arrive prior to 15:00&nbsp;or will be subject to possibly being rejected due to the additional time needed to remove the nosemount</p>&#xa;&#xa;<p><strong>Firm Code WBA5</strong></p>&#xa;</div>
+
+              </div>
+            </div>              
+
+            <a name="TIW"></a>
+            <div id="TIW" class="tabcontent">
+              <div class="tmnlTitle">   Tacoma  </div>
+              <br>
+              <span class="contactsTitle">Terminal contacts</span>
+              <div id="contactsTIW" >
+                <div class="contactHalf">
+                <p style="text-align:center"><span style="font-size:18px"><strong>Customer Service:</strong> customerservice-tiw&#x40;abpiusa.com</span></p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:18px"><strong>Phone&nbsp;</strong><strong>&ndash;</strong>&nbsp;&nbsp;&#x28;385&#x29; 777-5522</span></p>&#xa;&#xa;<p style="text-align:center">&nbsp;</p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:18px"><strong>Other SSCo customer service numbers:</strong></span></p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:18px"><strong>CMA&nbsp;CGM &ndash;</strong>&nbsp;877-556-6308</span></p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:18px"><strong>APL &ndash;</strong> 800-999-7733</span></p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:18px"><strong>COSCO &ndash;</strong> 866-830-2550</span></p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:18px"><strong>OOCL &ndash;</strong> 630-645-9120</span></p>&#xa;&#xa;<p style="text-align:center">&nbsp;</p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:18px"><strong>Yard &amp; Gate: </strong>253-287-4106 or 253-287-4114 or 253-287-4113</span></p>&#xa;
+                </div><div class="imgHelf">
+                <img src="pictures/home_page/imageTIW.jpg">
+                </div>
+              </div>
+              <br>  
+            
+              <span class="impTitle">Important Information</span>
+              <div id="importantInfo" >
+                <table border=0 id="importantTable">
+                <tr>
+                  <td><p style="text-align:center">&nbsp;</p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:20px"><u><a href="http://209.147.114.204/gateimages/">ETSTCM/PCT Terminal Webcam</a></u></span></p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;<p style="text-align:center"><span style="font-size:18px"><span style="color:&#x23;FF0000"><strong><u>Attention Trucking Community</u></strong></span></span></p>&#xa;&#xa;<p><strong><span style="color:&#x23;FF0000">APPOINTMENTS ARE REQUIRED FOR ALL GATE MOVES. PLEASE GO TO EMODAL TO MAKE APPOINTMENT</span></strong></p>&#xa;&#xa;<p>All demurrage fees for Evergreen, CMA and COSCO will be collected via eModal.&nbsp; OOCL and APL will continue to collect their own demurrage fees.</p>&#xa;&#xa;<p>When entering the terminal truckers will be required to press a button to receive a gate pass that contains a gate pass number and bar code.&nbsp; When pressing the button this will also activate the gate arm to allow truckers onto the terminal.&nbsp; When truckers arrive at the in-gate lane pedestals they will need to insert their gate pass into the kiosk to have the bar code read.&nbsp; This will initiate processing into the terminal.</p>&#xa;&#xa;<p><strong><u>Safety and&nbsp;Terminal Rules:</u></strong></p>&#xa;&#xa;<p>1.&#x29; Speed limit is 10 mph throughout the terminal and 5 mph through roadability.</p>&#xa;&#xa;<p>2.&#x29; No cell phone use while driving.</p>&#xa;&#xa;<p>3.&#x29; Obey all posted stop signs and stop bars.</p>&#xa;&#xa;<p>4.&#x29; Stop before entering roadability and do not leave prior to being cleared.</p>&#xa;&#xa;<p>5.&#x29; Wear proper P.P.E. &#x28;hi-visibility vests, gloves, and closed toed shoes&#x29;.</p>&#xa;&#xa;<p>6.&#x29; Containers need to be locked down at roadability.&nbsp;</p>&#xa;&#xa;<p>7.&#x29; All trucks are required to proceed to the queuing area when it is open. Queuing area opens 2 hours prior to the gate opening.</p>&#xa;&#xa;<p>8.&#x29; No photography or videotaping inside the terminal.</p>&#xa;&#xa;<p>9.&#x29; Gaterunners will be charged a fee of &#x24;197.00.&nbsp;</p>&#xa;&#xa;<p><strong><u>T.W.I.C Cards:</u></strong></p>&#xa;&#xa;<p>No truck drivers will be allowed into Pierce County Terminal without a valid Transportation Workers Identification Credential.&nbsp; For further information please refer to:&nbsp;<a href="https://www.tsa.gov/for-industry/twic" target="_blank">https://www.tsa.gov/for-industry/twic</a></p>&#xa;&#xa;<p><u><strong>CHASSIS USAGE:</strong></u></p>&#xa;&#xa;<p>Evergreen containers use Evergreen or trucker-owned chassis only. COSCO, OOCL, APL and CMA containers use TRAC or trucker-owned chassis only.</p>&#xa;&#xa;<p><strong><u>Roadability Rules:</u></strong></p>&#xa;&#xa;<p>All chassis,&nbsp;<u>except for those chassis owned by an independent truck driver or owned by an independent non PMA affiliated trucking company and identified and proven as such</u>, shall go through roadability.</p>&#xa;&#xa;<p>If a driver with a long term leased chassis chooses to go through roadability and fails any part of the 8 part inspections, they may have mechanics make the necessary repairs or the container shall be removed and the driver may exit the facility.</p>&#xa;&#xa;<p><strong><u>Truck Driver Training Request:</u></strong></p>&#xa;&#xa;<p>All training request should be sent to ABPI Customer Service at customerservice-tiw&#x40;abpiusa.com.</p>&#xa;&#xa;<p><span style="color:&#x23;FF0000"><strong><u>DO NOT USE THE TOOLS AT ROADABILITY</u></strong></span></p>&#xa;&#xa;<p><span style="color:&#x23;000080"><span style="font-size:22px"><u><strong>All Hazardous and PTT documents should be sent to ABPI customer service at customerservice-tiw&#x40;abpiusa.com</strong></u></span></span></p>&#xa;&#xa;<p><u><strong>Terminal Closures</strong></u></p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;</td>
+                </tr>
+                </table>
+              </div>
+               
+                                     
+              <br>
+              <span class="vslTitle"> Vessel schedule and cutoff times</span>
+              <div id="vessel" >
+                <table border=0 id="vesselTable">
+                 <tr style=" background-color: #CCCCCC;">
+                   <td align='center' width='8%'><p7>   Terminal  </p7></td>
+                   <td align='center' width='10%'><p7>   Vessel  </p7></td>
+                   <td align='center' width='12%'><p7>   Voyage  </p7></td>
+                   <td align='center' width='10%'><p7>   ETA  </p7></td>
+                   <td align='center' width='10%'><p7>   ETD  </p7></td>
+                   <td align='center' width='10%'><p7>   &nbsp;First Available Date&nbsp;  </p7></td>
+                   <td align='center' width='10%'><p7>   &nbsp;Start/Receive Date&nbsp;  </p7></td>
+                   <td align='center' width='10%'><p7>   &nbsp;Start/Receive Date (Reefer)&nbsp;  </p7></td>
+                   <td align='center' width='10%'><p7>   &nbsp;Cargo Cutoff&nbsp;  </p7></td>
+                   <td align='center' width='10%'><p7>   &nbsp;Reefer Cutoff&nbsp;  </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSTIW </p7></td>
+                   <td align='center'><p7>    EVER SUPERB </p7></td>
+                   <td align='center'><p7>    0023-085W </p7></td>
+                   <td align='center'><p7>    08&#x2f;04&#x2f;2020 23&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;06&#x2f;2020 05&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;23&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;23&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;30&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;03&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;04&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSTIW </p7></td>
+                   <td align='center'><p7>    EVER UNITY </p7></td>
+                   <td align='center'><p7>    0274-169W </p7></td>
+                   <td align='center'><p7>    08&#x2f;05&#x2f;2020 23&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;07&#x2f;2020 03&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;23&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;23&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;30&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;04&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;04&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSTIW </p7></td>
+                   <td align='center'><p7>    ENSENADA </p7></td>
+                   <td align='center'><p7>    0275-004W </p7></td>
+                   <td align='center'><p7>    08&#x2f;06&#x2f;2020 22&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;08&#x2f;2020 18&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;27&#x2f;2020 03&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;27&#x2f;2020 03&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;31&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;05&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;05&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSTIW </p7></td>
+                   <td align='center'><p7>    EVER ENVOY </p7></td>
+                   <td align='center'><p7>    0024-160W </p7></td>
+                   <td align='center'><p7>    08&#x2f;11&#x2f;2020 23&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;13&#x2f;2020 05&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;30&#x2f;2020 03&#x3a;00 </p7></td>
+                   <td align='center'><p7>    07&#x2f;30&#x2f;2020 03&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;06&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;11&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSTIW </p7></td>
+                   <td align='center'><p7>    EVER UNIFIC </p7></td>
+                   <td align='center'><p7>    0276-152W </p7></td>
+                   <td align='center'><p7>    08&#x2f;13&#x2f;2020 22&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;15&#x2f;2020 18&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;03&#x2f;2020 03&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;03&#x2f;2020 03&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;07&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;12&#x2f;2020 16&#x3a;20 </p7></td>
+                   <td align='center'><p7>    08&#x2f;12&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSTIW </p7></td>
+                   <td align='center'><p7>    EVER SUMMIT </p7></td>
+                   <td align='center'><p7>    0025-092W </p7></td>
+                   <td align='center'><p7>    08&#x2f;18&#x2f;2020 10&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 19&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;06&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;06&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;12&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSTIW </p7></td>
+                   <td align='center'><p7>    EVER SALUTE </p7></td>
+                   <td align='center'><p7>    0277-088W </p7></td>
+                   <td align='center'><p7>    08&#x2f;20&#x2f;2020 22&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;22&#x2f;2020 18&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;10&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSTIW </p7></td>
+                   <td align='center'><p7>    EVER EAGLE </p7></td>
+                   <td align='center'><p7>    0026-152W </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;27&#x2f;2020 17&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;14&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;20&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;25&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;25&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSTIW </p7></td>
+                   <td align='center'><p7>    TPA1 </p7></td>
+                   <td align='center'><p7>    0026-003W </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;27&#x2f;2020 17&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;12&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;19&#x2f;2020 08&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;24&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;25&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSTIW </p7></td>
+                   <td align='center'><p7>    EVER EAGLE </p7></td>
+                   <td align='center'><p7>    0278-150W </p7></td>
+                   <td align='center'><p7>    08&#x2f;27&#x2f;2020 18&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;30&#x2f;2020 03&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSTIW </p7></td>
+                   <td align='center'><p7>    EVER ETHIC </p7></td>
+                   <td align='center'><p7>    0278-144W </p7></td>
+                   <td align='center'><p7>    08&#x2f;27&#x2f;2020 18&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;30&#x2f;2020 03&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                 <tr>
+                   <td align='center'><p7>    ETSTIW </p7></td>
+                   <td align='center'><p7>    EVER USEFUL </p7></td>
+                   <td align='center'><p7>    0278-147W </p7></td>
+                   <td align='center'><p7>    08&#x2f;27&#x2f;2020 22&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;29&#x2f;2020 18&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;17&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;21&#x2f;2020 07&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 16&#x3a;00 </p7></td>
+                   <td align='center'><p7>    08&#x2f;26&#x2f;2020 16&#x3a;00 </p7></td>
+                 </tr>
+               
+                </table>
+              </div>
+                                
+              <br> 
+              <span class="gateInfoTitle"> Gate Information</span> 
+              <div style="width:100%">
+                 <div id="hours"><br>
+              		  <span class="gateInfoTitle"> Hours</span>
+              		  <p style="text-align:center">&nbsp;</p>&#xa;&#xa;<p style="text-align:center"><span style="font-size:26px"><strong>Gate Hours</strong></span></p>&#xa;&#xa;<p style="text-align:center">&nbsp;</p>&#xa;&#xa;<table align="center" border="1" cellpadding="1.5" cellspacing="1.5" style="height:100px; width:650px">&#xa;&#x9;<tbody>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>Mon</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>Tue</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>Wed</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>Thu</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>Fri</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>Sat</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>Sun</strong></td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>7/27</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>7/28</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>7/29</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>7/30</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>7/31</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>08/01</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>08/02</strong></td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>0300-1600</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;FF0000">CLOSED</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>0300-1600</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>0300-1600</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>0700-1600</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;FF0000">&nbsp; </span><span style="color:&#x23;FF0000">CLOSED</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;FF0000">&nbsp; CLOSED &nbsp;</span></strong></td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;</tbody>&#xa;</table>&#xa;&#xa;<p style="text-align:center">&nbsp;</p>&#xa;&#xa;<table align="center" border="1" cellpadding="1.5" cellspacing="1.5" style="height:100px; width:650px">&#xa;&#x9;<tbody>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>Mon</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>Tue</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>Wed</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>Thu</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>Fri</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>Sat</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>Sun</strong></td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>08/03</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>08/04</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>08/05</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>08/06</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>08/07</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>08/08</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>08/09</strong></td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;&#x9;<tr>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>0300-1600</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>0300-1600</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>0300-1600</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong>0700-1600</strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center">&#xa;&#x9;&#x9;&#x9;<p><strong>0700-1600</strong></p>&#xa;&#x9;&#x9;&#x9;</td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;FF0000">CLOSED</span></strong></td>&#xa;&#x9;&#x9;&#x9;<td style="text-align:center"><strong><span style="color:&#x23;FF0000">&nbsp; CLOSED &nbsp;</span></strong></td>&#xa;&#x9;&#x9;</tr>&#xa;&#x9;</tbody>&#xa;</table>&#xa;&#xa;<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</p>&#xa;&#xa;<p><span style="font-size:14px"><span style="color:&#x23;FF0000">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</span></span></p>&#xa;&#xa;<p>&nbsp;</p>&#xa;
+                 </div><div id="activity"><br>
+              		  <span class="gateActTitle"> Activity</span>
+              		  <p><strong><u>Gensets:</u></strong></p>&#xa;&#xa;<p>Gensets will only be released on bookings noted to require a genset. If a booking does not require &quot;genset&quot; then one will NOT be dispatched. To have a booking updated to include a genset please contact Evergreen.</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p><strong><u>Pre-Mounted Containers:</u></strong></p>&#xa;&#xa;<p>Pre-mounted imports can be picked up from the wheeled area.</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p><strong><u>Transfer Zone Process:</u></strong></p>&#xa;&#xa;<p>Once a driver has parked in a transfer zone lane, driver is to exit the vehicle and scan the ticket. Driver is to remain in the booth until transaction is successfully completed.</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p><strong><u>Firms Code:</u></strong></p>&#xa;&#xa;<p>The firms code for Pierce County Terminal is x215.</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;&#xa;<p><strong><u>Hazardous,&nbsp;PTT, and Exam</u></strong></p>&#xa;&#xa;<p>DG, PTT and Transfer for Exam documentation should be sent to <a href="mailto:customerservice&#x40;abpiusa.com">customerservice&#x40;abpiusa.com</a>, prior to arriving at terminal for pick up.</p>&#xa;&#xa;<p>&nbsp;</p>&#xa;</div>
+
+              </div>         
+            </div>              
+
+    <br/><br/>
+    <div class="row">
+        <div class="col-md-12">
+          <center>
+          <p2>Terminal Information</p2>
+          <p2>Berths 226-236 : Everport Terminal Services</p2>
+          <p2>389 Terminal Island Way Terminal Island, CA 90731</p2>
+          </center>
+        </div>
+        <br/><br/>
+        <div class="col-md-12">
+          <center>
+          Copyright &copy; 2015,All Rights Reserved by Everport Terminal Services INC.
+          </center>
+        </div>
+    </div>
+
+
+</div>
+<br/><br/><br/><br/><br/>
+</body>
+</html>
+<style>
+    div.loginMain{
+        display:none;
+    }
+    .x-body {
+         background-color: #FFFFFF; 
+    }
+    .tmnlTitle  {
+        color: #1D68BC;
+        font-family: verdana;
+        font-size: 200%;
+        font-weight: bold;
+        padding:50px 0px 10px 0px;       
+    }
+    
+    .contactsTitle,  
+    .gateHourTitle,
+    .gateActTitle,
+    .gateInfoTitle
+    {
+        color: green;
+        font-family: verdana;
+        font-size: 150%;
+        margin-top:20px;    
+    }
+    
+    .impTitle,.vslTitle{
+        color: red;
+        font-family: verdana;
+        font-size: 150%;    
+    }
+    /*p7 vessel schedule detail*/
+    p7 {
+        color: green;
+        font-family: verdana;
+        font-size: 100%;
+
+    }
+    td  {padding:0;}
+    #contactsLA,#contactsOAK,#contactsTIW{
+         border:1px green solid;
+         border-radius:5px;
+         margin-bottom:15px;
+         padding: 20px;
+         width:98%;//height:400px;
+         vertical-align:middle;
+         text-align: center;		
+    }
+  
+    .contactHalf{
+
+         vertical-align:middle;
+         margin:5px;
+         padding: 5px;
+         width: 48%;
+         margin-left:15px;
+         display:inline-block;"
+         
+    }
+    .imgHelf{
+         vertical-align:middle;
+         margin:5px;
+         padding: 5px;
+         width: 48%;
+         display:inline-block;"
+
+    }
+        			
+    #vessel{
+         border:1px green solid;
+         border-radius:5px;
+         margin-bottom:15px;
+         width:1180px;
+         /*height:200px;*/
+         vertical-align:middle;
+         margin:5px auto;
+    }
+    #importantInfo{
+         border:1px green solid;
+         border-radius:5px;
+         margin-bottom:15px;
+         width:98%; //width:1180px;
+         /*height:200px;*/
+         vertical-align:middle;
+         //margin:5px auto;
+         padding: 20px;
+    }
+    #hours{
+         border:1px green solid;
+         border-radius:5px;
+         margin-bottom:15px;
+         //width:360px;height:540px;
+         vertical-align:middle;
+         margin:5px;
+         padding: 5px;
+         width: 48%;
+         margin-left:15px;
+         display:inline-block;"
+         
+    }
+    #activity{
+         border:1px green solid;
+         border-radius:5px;
+         margin-bottom:15px;
+         //width:360px;height:540px;
+         vertical-align:middle;
+         margin:5px;
+         padding: 5px;
+         width: 48%;
+         display:inline-block;"
+
+    }
+    #gateInfo{
+         /*border:2px green solid;*/
+         border-radius:5px;
+         margin-bottom:15px;
+         //width:1180px;
+         width:98px;
+         height:700px;
+         vertical-align:middle;
+         margin:0px auto;
+         display: inline-block;
+    } 
+    .epayment{
+        font-family: verdana;
+        font-size: 150%;    
+    }
+    
+    .imgContainer {
+        position: relative;
+        text-align: center;
+        color: white;
+        cursor: pointer;
+    }
+    .imgText {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        line-height: 30px;
+        font-family: verdana;
+        font-size: 250%;
+        font-weight: bold;
+        text-shadow: 0 2px 0 #000;
+        color : #fff;
+        white-space: nowrap; 
+    }
+    .imgAct {
+        opacity: 0.6;
+        filter:alpha(opacity=60); 
+    }
+    .imgTextAct {
+        text-shadow: 0px 0px 10px #004080;
+        color : #fff;
+    }    
+</style>
