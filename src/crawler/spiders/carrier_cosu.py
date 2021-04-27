@@ -1,17 +1,25 @@
-import json
 import time
-from typing import List, Dict, Union
+import random
+from typing import List, Dict
 
 import scrapy
+from scrapy import Selector
+from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from urllib3.exceptions import ReadTimeoutError
 
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
-    SuspiciousOperationError
+from crawler.core_carrier.exceptions import SuspiciousOperationError, LoadWebsiteTimeOutFatal, CarrierInvalidMblNoError
 from crawler.core_carrier.items import (
     LocationItem, MblItem, VesselItem, ContainerStatusItem, ContainerItem, BaseCarrierItem, DebugItem)
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
-
+from crawler.extractors.selector_finder import CssQueryExistMatchRule, find_selector_from
+from crawler.extractors.table_cell_extractors import FirstTextTdExtractor, BaseTableCellExtractor
+from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 URL = 'http://elines.coscoshipping.com'
 BASE = 'ebtracking/public'
@@ -22,21 +30,18 @@ class CarrierCosuSpider(BaseCarrierSpider):
 
     def __init__(self, *args, **kwargs):
         super(CarrierCosuSpider, self).__init__(*args, **kwargs)
+        content_getter = ContentGetter()
 
         rules = [
-            BillMainInfoRoutingRule(),
-            BookingMainInfoRoutingRule(),
-            BillContainerRoutingRule(),
-            BookingContainerRoutingRule(),
-            BillContainerStatusRoutingRule(),
-            BookingContainerStatusRoutingRule(),
+            MainInfoRoutingRule(content_getter),
+            BookingInfoRoutingRule(content_getter),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        option = BillMainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
-        yield self.__build_request_by(option=option)
+        option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -50,12 +55,11 @@ class CarrierCosuSpider(BaseCarrierSpider):
             if isinstance(result, BaseCarrierItem):
                 yield result
             elif isinstance(result, RequestOption):
-                yield self.__build_request_by(option=result)
+                yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
-            
-    @staticmethod
-    def __build_request_by(option: RequestOption):
+
+    def _build_request_by(self, option: RequestOption):
         meta = {
             RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
             **option.meta
@@ -67,603 +71,583 @@ class CarrierCosuSpider(BaseCarrierSpider):
                 headers=option.headers,
                 url=option.url,
                 meta=meta,
+                dont_filter=True,
             )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
-class BillMainInfoRoutingRule(BaseRoutingRule):
-    name = 'BILL_MAIN_INFO'
+# ---------------------------------------------------------------------------------------------------------
+
+
+class MainInfoRoutingRule(BaseRoutingRule):
+    name = 'MAIN_INFO'
+
+    def __init__(self, content_getter):
+        self._content_getter = content_getter
 
     @classmethod
-    def build_request_option(cls, mbl_no: str) -> RequestOption:
-        timestamp = build_timestamp()
-        url = f'{URL}/{BASE}/bill/{mbl_no}?timestamp={timestamp}'
-        
+    def build_request_option(cls, mbl_no) -> RequestOption:
+        url = f'https://www.google.com'
+
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=url,
-            headers={'Accept': '*/*'},
-            meta={'mbl_no': mbl_no},
+            meta={
+                'mbl_no': mbl_no,
+            },
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.json'
+        return f'{self.name}.html'
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
 
-        response_dict = json.loads(response.text)
-        message = response_dict['message']
-        content = response_dict['data']['content']
+        response_text = self._content_getter.search_and_return(search_no=mbl_no, is_booking=False)
+        response_selector = scrapy.Selector(text=response_text)
 
-        if message == '':
-            for item in self._handle_bill_main_info(content=content):
-                yield item
-        else:
-            # without bill
-            booking_list = content['bookingNumbersInBillOfLadingTrackingGroupAssociationList']
-            if booking_list:
-                for booking_info in booking_list:
-                    booking_no = booking_info['trackingGroupReferenceCode']
-                    yield BookingMainInfoRoutingRule.build_request_option(mbl_no=booking_no)
-            else:
-                yield BookingMainInfoRoutingRule.build_request_option(mbl_no=mbl_no)
+        raw_booking_nos = response_selector.css('a.exitedBKNumber::text').getall()
+        booking_nos = [raw_booking_no.strip() for raw_booking_no in raw_booking_nos]
 
-    def _handle_bill_main_info(self, content):
-        tracking_info = self._extract_bill_tracking(content=content)
-        ship_list = self._extract_actual_shipment(content=content)
-
-        first_ship = ship_list[0]
-        last_ship = ship_list[-1]
-        mbl_no = tracking_info['mbl_no']
-
-        yield MblItem(
-            mbl_no=mbl_no,
-            vessel=tracking_info['vessel'],
-            voyage=tracking_info['voyage'],
-            por=LocationItem(name=tracking_info['por_name']),
-            pol=LocationItem(name=tracking_info['pol_name']),
-            pod=LocationItem(
-                name=tracking_info['pod_name'],
-                firms_code=tracking_info['pod_firms_code'],
-            ),
-            final_dest=LocationItem(
-                name=tracking_info['final_dest_name'],
-                firms_code=tracking_info['final_dest_firms_code'],
-            ),
-            etd=first_ship['etd'],
-            atd=first_ship['atd'],
-            eta=last_ship['eta'],
-            ata=last_ship['ata'],
-            deliv_eta=tracking_info['pick_up_eta'],
-            bl_type=tracking_info['bl_type'],
-            cargo_cutoff_date=tracking_info['cargo_cutoff'],
-            surrendered_status=tracking_info['bl_real_status'],
-        )
-
-        # Crawl information of vessel
-        for ship in ship_list:
-            vessel = ship['vessel']
-
-            yield VesselItem(
-                vessel_key=vessel,
-                vessel=vessel,
-                voyage=ship['voyage'],
-                pol=LocationItem(name=ship['pol_name']),
-                pod=LocationItem(name=ship['pod_name']),
-                etd=ship['etd'],
-                eta=ship['eta'],
-                atd=ship['atd'],
-                ata=ship['ata'],
-                discharge_date=ship['discharge_date'],
-                shipping_date=ship['shipping_date'],
-                row_no=ship['row_no'],
-                sequence_no=ship['seq_no'],
-            )
-
-        container_list = self._extract_container(content=content)
-        for cargo in container_list:
-            yield ContainerItem(
-                container_key=cargo['container_key'],
-                last_free_day=cargo['last_free_day'],
-                empty_pickup_date=cargo['empty_pick_up'],
-                empty_return_date=cargo['empty_return'],
-                full_pickup_date=cargo['full_pick_up'],
-                full_return_date=cargo['full_return'],
-                ams_release=cargo['ams_release'],
-                depot_last_free_day=cargo['depot_lfd'],
-            )
-
-        yield BillContainerRoutingRule.build_request_option(mbl_no=mbl_no)
-
-    @staticmethod
-    def _extract_bill_tracking(content: Dict) -> Dict:
-        tracking_path = strip_dict_value(dic=content['trackingPath'])
-        tracking_na = strip_dict_value(dic=content['trackingNA'])
-
-        pod_firms_code = None
-        final_dest_firms_code = None
-
-        if tracking_na:
-            pod_firms_code = tracking_na['podFirmsCode']
-            final_dest_firms_code = tracking_na['destinationFirmsCode']
-
-        return {
-            'mbl_no': tracking_path['billOfladingRefCode'],
-            'vessel': tracking_path['vslNme'],
-            'voyage': tracking_path['voyNumber'],
-            'por_name': tracking_path['fromCity'],
-            'pol_name': tracking_path['pol'],
-            'pod_name': tracking_path['pod'],
-            'final_dest_name': tracking_path['toCity'],
-            'pick_up_eta': tracking_path['cgoAvailTm'],
-            'bl_real_status': tracking_path['blRealStatus'],
-            'bl_type': tracking_path['blType'],
-            'pod_firms_code': pod_firms_code,
-            'final_dest_firms_code': final_dest_firms_code,
-            'cargo_cutoff': content['cargoCutOff']
-        }
-
-    @staticmethod
-    def _extract_actual_shipment(content: Dict) -> List[Dict]:
-        not_strip_actual_shipment_list = content['actualShipment']
-        actual_shipment_list = []
-
-        for not_strip_actual_shipment in not_strip_actual_shipment_list:
-            actual_shipment = strip_dict_value(dic=not_strip_actual_shipment)
-            actual_shipment_list.append(actual_shipment)
-        actual_shipment_list = content['actualShipment']
-
-        return_list = []
-
-        for ship in actual_shipment_list:
-            return_list.append({
-                'vessel': ship['vesselName'],
-                'voyage': ship['voyageNo'],
-                'pol_name': ship['portOfLoading'],
-                'pod_name': ship['portOfDischarge'],
-                'etd': ship['expectedDateOfDeparture'],
-                'eta': ship['estimatedDateOfArrival'],
-                'atd': ship['actualDepartureDate'],
-                'ata': ship['actualArrivalDate'],
-                'row_no': ship['rownum'],
-                'seq_no': ship['sequenceNumber'],
-                'discharge_date': ship['actualDischargeDate'],
-                'shipping_date': ship['actualShippingDate'],
-            })
-        return return_list
-
-    @staticmethod
-    def _extract_container(content: Dict) -> List:
-        container_list = content['cargoTrackingContainer']
-
-        return_list = []
-        for cargo in container_list:
-            container_no = cargo['cntrNum']
-            container_key = get_container_key(container_no=container_no)
-
-            return_list.append({
-                'container_key': container_key,
-                'empty_pick_up': cargo['emptyPickUpDt'],
-                'full_return': cargo['ladenReturnDt'],
-                'full_pick_up': cargo['ladenPickUpDt'],
-                'empty_return': cargo['emptyReturnDt'],
-                'last_free_day': cargo['lfd'],
-                'ams_release': cargo['amsRelease'],
-                'depot_lfd': cargo['depotLfd'],
-            })
-
-        return return_list
-
-
-class BookingMainInfoRoutingRule(BaseRoutingRule):
-    name = 'BOOKING_MAIN_INFO'
-
-    @classmethod
-    def build_request_option(cls, mbl_no: str) -> RequestOption:
-        timestamp = build_timestamp()
-        url = f'{URL}/{BASE}/booking/{mbl_no}?timestamp={timestamp}'
-        
-        return RequestOption(
-            method=RequestOption.METHOD_GET,
-            rule_name=cls.name,
-            url=url,
-            headers={'Accept': '*/*'},
-            meta={'mbl_no': mbl_no},
-        )
-
-    def get_save_name(self, response) -> str:
-        return f'{self.name}.json'
-
-    def handle(self, response):
-        mbl_no = response.meta['mbl_no']
-        response_dict = json.loads(response.text)
-        content = response_dict['data']['content']
-        self._check_mbl_no(response=response_dict)
-
-        tracking_info = self._extract_booking_tracking(content=content)
-        ship_list = self._extract_actual_shipment(content=content)
-
-        first_ship = ship_list[0]
-        last_ship = ship_list[-1]
-
-        yield MblItem(
-            mbl_no=mbl_no,
-            vessel=tracking_info['vessel'],
-            voyage=tracking_info['voyage'],
-            por=LocationItem(name=tracking_info['por_name']),
-            pol=LocationItem(name=tracking_info['pol_name']),
-            pod=LocationItem(
-                name=tracking_info['pod_name'],
-                firms_code=tracking_info['pod_firms_code'],
-            ),
-            final_dest=LocationItem(
-                name=tracking_info['final_dest_name'],
-                firms_code=tracking_info['final_dest_firms_code'],
-            ),
-            etd=first_ship['etd'],
-            atd=first_ship['atd'],
-            eta=last_ship['eta'],
-            ata=last_ship['ata'],
-            deliv_eta=tracking_info['pick_up_eta'],
-            cargo_cutoff_date=tracking_info['cargo_cutoff'],
-            surrendered_status=tracking_info['bl_real_status'],
-            trans_eta=tracking_info['trans_eta'],
-            container_quantity=tracking_info['container_quantity'],
-        )
-
-        # Crawl information of vessel
-        for ship in ship_list:
-            vessel = ship['vessel']
-
-            yield VesselItem(
-                vessel_key=vessel,
-                vessel=vessel,
-                voyage=ship['voyage'],
-                pol=LocationItem(name=ship['pol_name']),
-                pod=LocationItem(name=ship['pod_name']),
-                etd=ship['etd'],
-                eta=ship['eta'],
-                atd=ship['atd'],
-                ata=ship['ata'],
-                discharge_date=ship['discharge_date'],
-                shipping_date=ship['shipping_date'],
-                row_no=ship['row_no'],
-                sequence_no=ship['seq_no'],
-            )
-
-        container_list = self._extract_container(content=content)
-        for cargo in container_list:
-            yield ContainerItem(
-                container_key=cargo['container_key'],
-                last_free_day=cargo['last_free_day'],
-                empty_pickup_date=cargo['empty_pick_up'],
-                empty_return_date=cargo['empty_return'],
-                full_pickup_date=cargo['full_pick_up'],
-                full_return_date=cargo['full_return'],
-                ams_release=cargo['ams_release'],
-                depot_last_free_day=cargo['depot_lfd'],
-            )
-
-        yield BookingContainerRoutingRule.build_request_option(mbl_no=mbl_no)
-
-    @staticmethod
-    def _check_mbl_no(response: Dict):
-        message = response['message']
-        if message:
+        if self._is_mbl_no_invalid(response=response_selector) and not booking_nos:
             raise CarrierInvalidMblNoError()
 
+        elif not self._is_mbl_no_invalid(response=response_selector):
+            item_extractor = ItemExtractor()
+            for item in item_extractor.extract(response=response_selector, content_getter=self._content_getter):
+                yield item
+
+        elif booking_nos:
+            yield MblItem(mbl_no=mbl_no)
+            yield BookingInfoRoutingRule.build_request_option(booking_nos=booking_nos)
+
     @staticmethod
-    def _extract_booking_tracking(content: Dict) -> Dict:
-        tracking_path = strip_dict_value(dic=content['trackingPath'])
-        tracking_na = strip_dict_value(dic=content['trackingNA'])
-        pod_firms_code = None
-        final_dest_firms_code = None
+    def _is_mbl_no_invalid(response: Selector) -> bool:
+        return bool(response.css('div.noFoundTips'))
 
-        if tracking_na:
-            pod_firms_code = tracking_na['podFirmsCode']
-            final_dest_firms_code = tracking_na['destinationFirmsCode']
 
-        return {
-            'vessel': tracking_path['vslNme'],
-            'voyage': tracking_path['voyNumber'],
-            'por_name': tracking_path['fromCity'],
-            'pol_name': tracking_path['pol'],
-            'pod_name': tracking_path['pod'],
-            'final_dest_name': tracking_path['toCity'],
-            'pick_up_eta': tracking_path['cgoAvailTm'],
-            'bl_real_status': content['blRealStatus'],
+# ---------------------------------------------------------------------------------------------------------
+
+
+class BookingInfoRoutingRule(BaseRoutingRule):
+    name = 'BOOKING_INFO'
+
+    def __init__(self, content_getter):
+        self._content_getter = content_getter
+
+    @classmethod
+    def build_request_option(cls, booking_nos: List) -> RequestOption:
+        url = f'https://www.google.com'
+
+        return RequestOption(
+            method=RequestOption.METHOD_GET,
+            rule_name=cls.name,
+            url=url,
+            meta={
+                'booking_nos': booking_nos,
+            },
+        )
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
+
+    def handle(self, response):
+        booking_nos = response.meta['booking_nos']
+
+        item_extractor = ItemExtractor()
+        for booking_no in booking_nos:
+            response_text = self._content_getter.search_and_return(search_no=booking_no, is_booking=True)
+            response_selector = scrapy.Selector(text=response_text)
+
+            for item in item_extractor.extract(response=response_selector, content_getter=self._content_getter):
+                yield item
+
+
+# ---------------------------------------------------------------------------------------------------------
+
+
+class ItemExtractor:
+
+    def extract(self, response: scrapy.Selector, content_getter) -> BaseCarrierItem:
+            mbl_item = self._make_main_item(response=response)
+            vessel_items = self._make_vessel_items(response=response)
+            container_items = self._make_container_items(response=response)
+
+            for item in vessel_items + [mbl_item]:
+                yield item
+
+            content_getter.scroll_to_bottom_of_page()
+            for c_i, c_item in enumerate(container_items):
+                response_text = content_getter.click_container_status_button(c_i)
+                response_selector = scrapy.Selector(text=response_text)
+
+                container_status_items = self._make_container_status_items(
+                    container_no=c_item['container_no'],
+                    response=response_selector,
+                )
+
+                for item in container_status_items + [c_item]:
+                    yield item
+
+    @classmethod
+    def _make_main_item(cls, response: scrapy.Selector) -> BaseCarrierItem:
+        mbl_data = cls._extract_main_info(response=response)
+        mbl_item = MblItem(
+            vessel=mbl_data.get('vessel', None),
+            voyage=mbl_data.get('voyage', None),
+            por=LocationItem(name=mbl_data.get('por_name', None)),
+            pol=LocationItem(name=mbl_data.get('pol_name', None)),
+            pod=LocationItem(
+                name=mbl_data.get('pod_name', None),
+                firms_code=mbl_data.get('pod_firms_code', None),
+            ),
+            final_dest=LocationItem(
+                name=mbl_data.get('final_dest_name', None),
+                firms_code=mbl_data.get('final_dest_firms_code', None),
+            ),
+            etd=mbl_data.get('etd', None),
+            atd=mbl_data.get('atd', None),
+            eta=mbl_data.get('eta', None),
+            ata=mbl_data.get('ata', None),
+            deliv_eta=mbl_data.get('pick_up_eta', None),
+            bl_type=mbl_data.get('bl_type', None),
+            cargo_cutoff_date=mbl_data.get('cargo_cutoff', None),
+            surrendered_status=mbl_data.get('surrendered_status', None),
+            # trans_eta=data.get('trans_eta', None),
+            # container_quantity=data.get('container_quantity', None),
+        )
+        if mbl_data['mbl_no']:
+            mbl_item['mbl_no'] = mbl_data['mbl_no']
+
+        return mbl_item
+
+    @staticmethod
+    def _extract_main_info(response: scrapy.Selector) -> Dict:
+        table_like_div = response.css('div.ivu-c-detailPart')[0]  # 0 for booking info bookmark, 1 for print bookmark
+        table_locator = LeftHeadDivTableLocator()
+        table_locator.parse(table=table_like_div)
+        table_extractor = TableExtractor(table_locator=table_locator)
+
+        vessel_voyage = table_extractor.extract_cell(left='Vessel / Voyage', top=None)
+        raw_vessel, raw_voyage = vessel_voyage.split('/')
+        vessel, voyage = raw_vessel.strip(), raw_voyage.strip()
+
+        raw_booking_no = table_extractor.extract_cell(left='Booking Number', top=None)
+        booking_no = raw_booking_no.split(' ')[0]
+
+        if table_extractor.has_header(left='POD Firms Code'):
+            pod_firms_code = table_extractor.extract_cell(left='POD Firms Code', top=None)
+        else:
+            pod_firms_code = None
+
+        if table_extractor.has_header(left='POD Firms Code'):
+            final_dest_firms_code = table_extractor.extract_cell(left='Final Destination Firms Code', top=None)
+        else:
+            final_dest_firms_code = None
+
+        if table_extractor.has_header(left='BL Surrendered Status'):
+            surrendered_status = table_extractor.extract_cell(left='BL Surrendered Status', top=None)
+        else:
+            surrendered_status = None
+
+        if table_extractor.has_header(left='B/L Type'):
+            bl_type = table_extractor.extract_cell(left='B/L Type', top=None)
+        else:
+            bl_type = None
+
+        data = {
+            'mbl_no': table_extractor.extract_cell(left='Bill of Lading Number', top=None),
+            'booking_no': booking_no,
+            'por_name': table_extractor.extract_cell(left='Place of Receipt', top=None),
+            'pol_name': table_extractor.extract_cell(left='POL', top=None),
+            'pod_name': table_extractor.extract_cell(left='POD', top=None),
+            'final_dest_name': table_extractor.extract_cell(left='Final Destination', top=None),
+            'vessel': vessel,
+            'voyage': voyage or None,
+            'bl_type': bl_type,
+            'pick_up_eta': table_extractor.extract_cell(left='ETA at Place of Delivery', top=None),
+            'cargo_cutoff': table_extractor.extract_cell(left='Cargo Cutoff', top=None),
             'pod_firms_code': pod_firms_code,
             'final_dest_firms_code': final_dest_firms_code,
-            'cargo_cutoff': content['cargoCutOff'],
-            'container_quantity': tracking_path['containerQuantity'],
-            'trans_eta': tracking_path['cgoFinalTm'],
+            'surrendered_status': surrendered_status,
         }
 
-    @staticmethod
-    def _extract_actual_shipment(content: Dict) -> List[Dict]:
-        not_strip_actual_shipment_list = content['actualShipment']
-        actual_shipment_list = []
+        vessel_schedule_div = response.css('div.ivu-steps-horizontal')
+        xtd_div = vessel_schedule_div.css('div.ivu-steps-item-pol')
+        xta_div = vessel_schedule_div.css('div.ivu-steps-item-pod')
 
-        for not_strip_actual_shipment in not_strip_actual_shipment_list:
-            actual_shipment = strip_dict_value(dic=not_strip_actual_shipment)
-            actual_shipment_list.append(actual_shipment)
-        actual_shipment_list = content['actualShipment']
+        xtd_key = xtd_div.css('div.ivu-steps-name::text').get().strip()
+        xtd_time = xtd_div.css('div.ivu-steps-date::text').get().strip()
 
-        return_list = []
+        if xtd_key == 'ATD':
+            data['atd'] = xtd_time
+            data['etd'] = None
+        else:
+            data['atd'] = None
+            data['etd'] = xtd_time
 
-        for ship in actual_shipment_list:
-            return_list.append({
-                'vessel': ship['vesselName'],
-                'voyage': ship['voyageNo'],
-                'pol_name': ship['portOfLoading'],
-                'pod_name': ship['portOfDischarge'],
-                'etd': ship['expectedDateOfDeparture'],
-                'eta': ship['estimatedDateOfArrival'],
-                'atd': ship['actualDepartureDate'],
-                'ata': ship['actualArrivalDate'],
-                'row_no': ship['rownum'],
-                'seq_no': ship['sequenceNumber'],
-                'discharge_date': ship['actualDischargeDate'],
-                'shipping_date': ship['actualShippingDate'],
-            })
-        return return_list
+        xta_key = xta_div.css('div.ivu-steps-name::text').get().strip()
+        xta_time = xta_div.css('div.ivu-steps-date::text').get().strip()
 
-    @staticmethod
-    def _extract_container(content: Dict) -> List:
-        container_list = content['cargoTrackingContainer']
+        if xta_key == 'ATA':
+            data['ata'] = xta_time
+            data['eta'] = None
+        else:
+            data['ata'] = None
+            data['eta'] = xta_time
 
-        return_list = []
-        for cargo in container_list:
-            container_no = cargo['cntrNum']
-            container_key = get_container_key(container_no=container_no)
-
-            return_list.append({
-                'container_key': container_key,
-                'empty_pick_up': cargo['emptyPickUpDt'],
-                'full_return': cargo['ladenReturnDt'],
-                'full_pick_up': cargo['ladenPickUpDt'],
-                'empty_return': cargo['emptyReturnDt'],
-                'last_free_day': cargo['lfd'],
-                'ams_release': cargo['amsRelease'],
-                'depot_lfd': cargo['depotLfd'],
-            })
-
-        return return_list
-
-
-class BillContainerRoutingRule(BaseRoutingRule):
-    name = 'BILL_CONTAINER'
+        return data
 
     @classmethod
-    def build_request_option(cls, mbl_no: str) -> RequestOption:
-        timestamp = build_timestamp()
-        url = f'{URL}/{BASE}/bill/containers/{mbl_no}?timestamp={timestamp}'
-
-        return RequestOption(
-            method=RequestOption.METHOD_GET,
-            rule_name=cls.name,
-            url=url,
-            headers={'Accept': '*/*'},
-            meta={'mbl_no': mbl_no},
-        )
-
-    def get_save_name(self, response) -> str:
-        return f'{self.name}.json'
-
-    def handle(self, response):
-        mbl_no = response.meta['mbl_no']
-
-        response_dict = json.loads(response.text)
-        content = response_dict['data']['content']
-        container_info = self._extract_container_info(content=content)
-
-        for container in container_info:
-            container_key = container['container_key']
-            container_no = container['container_no']
-
-            yield ContainerItem(
-                container_key=container_key,
-                container_no=container_no,
+    def _make_vessel_items(cls, response: scrapy.Selector) -> List[BaseCarrierItem]:
+        vessel_data = cls._extract_schedule_detail_info(response=response)
+        vessels = []
+        for vessel in vessel_data:
+            vessels.append(
+                VesselItem(
+                    vessel_key=vessel['vessel'],
+                    vessel=vessel['vessel'],
+                    voyage=vessel['voyage'],
+                    pol=LocationItem(name=vessel['pol']),
+                    pod=LocationItem(name=vessel['pod']),
+                    etd=vessel['etd'],
+                    eta=vessel['eta'],
+                    atd=vessel['atd'],
+                    ata=vessel['ata'],
+                )
             )
-
-            yield BillContainerStatusRoutingRule.build_request_option(
-                mbl_no=mbl_no, container_no=container_no, container_key=container_key)
+        return vessels
 
     @staticmethod
-    def _extract_container_info(content: Dict) -> List:
-        container_list = []
-        for container in content:
-            container_no = container['containerNumber']
-            container_key = get_container_key(container_no=container_no)
+    def _extract_schedule_detail_info(response: scrapy.Selector) -> List:
+        # 0 for booking info bookmark, 1 for print bookmark
+        table_like_div = response.css('div.cargoTrackingSailing div.ivu-table')[0]
+        table_locator = TopHeadDivTableLocator()
+        table_locator.parse(table=table_like_div)
+        table_extractor = TableExtractor(table_locator=table_locator)
 
-            container_list.append({
-                'container_key': container_key,
+        vessels = []
+        for left in table_locator.iter_left_index():
+            service_voyage = table_extractor.extract_cell(
+                top='Service / Voyage', left=left, extractor=LabelContentTableCellExtractor()
+            )
+
+            departure_date = table_extractor.extract_cell(
+                top='Departure Date', left=left, extractor=LabelContentTableCellExtractor()
+            )
+
+            arrive_date = table_extractor.extract_cell(
+                top='Arrival Date', left=left, extractor=LabelContentTableCellExtractor()
+            )
+
+            vessels.append({
+                'vessel_key': table_extractor.extract_cell(
+                    top='Vessel', left=left, extractor=FirstTextTdExtractor(css_query='a::text')),
+                'vessel': table_extractor.extract_cell(
+                    top='Vessel', left=left, extractor=FirstTextTdExtractor(css_query='a::text')),
+                'voyage': service_voyage['Voyage'],
+                'pol': table_extractor.extract_cell(
+                    top='POL', left=left, extractor=FirstTextTdExtractor(css_query='span::text')),
+                'pod': table_extractor.extract_cell(
+                    top='POD', left=left, extractor=FirstTextTdExtractor(css_query='span::text')),
+                'etd': departure_date['expected'],
+                'atd': departure_date['actual'],
+                'eta': arrive_date['expected'],
+                'ata': arrive_date['actual'],
+            })
+
+        return vessels
+
+    @classmethod
+    def _make_container_items(cls, response: scrapy.Selector) -> List[BaseCarrierItem]:
+        container_infos = cls._extract_container_infos(response=response)
+
+        container_items = []
+        for container_info in container_infos:
+            container_items.append(
+                ContainerItem(
+                    container_key=container_info['container_key'],
+                    container_no=container_info['container_no'],
+                    last_free_day=container_info['last_free_day'],
+                    depot_last_free_day=container_info['depot_last_free_day'],
+                )
+            )
+        return container_items
+
+    @staticmethod
+    def _extract_container_infos(response: scrapy.Selector):
+        table_like_div = response.css('div.movingList')[0]  # 0 for booking info bookmark, 1 for print bookmark
+        table_locator = TopHeadDivTableLocator()
+        table_locator.parse(table=table_like_div)
+        table_extractor = TableExtractor(table_locator=table_locator)
+        container_infos = []
+
+        for left in table_locator.iter_left_index():
+            container_no = table_extractor.extract_cell(
+                top='Container No.', left=left, extractor=OnlyContentTableCellExtractor()
+            )[0]  # 0 container_no, 1 container_spec
+            lfd_related = {}
+            if table_extractor.has_header(top='LFD'):
+                lfd_related = table_extractor.extract_cell(
+                    top='LFD', left=left, extractor=LabelContentTableCellExtractor())
+
+            container_infos.append({
+                'container_key': get_container_key(container_no=container_no),
                 'container_no': container_no,
+                'last_free_day': lfd_related.get('LFD'),
+                'depot_last_free_day': lfd_related.get('Depot LFD'),
             })
-        return container_list
 
-
-class BookingContainerRoutingRule(BaseRoutingRule):
-    name = 'BOOKING_CONTAINER'
+        return container_infos
 
     @classmethod
-    def build_request_option(cls, mbl_no: str) -> RequestOption:
-        timestamp = build_timestamp()
-        url = f'{URL}/{BASE}/booking/containers/{mbl_no}?timestamp={timestamp}'
+    def _make_container_status_items(cls, container_no: str, response: scrapy.Selector) -> List[BaseCarrierItem]:
+        container_status_infos = cls._extract_container_status_infos(response=response)
 
-        return RequestOption(
-            method=RequestOption.METHOD_GET,
-            rule_name=cls.name,
-            url=url,
-            headers={'Accept': '*/*'},
-            meta={'mbl_no': mbl_no},
-        )
-
-    def get_save_name(self, response) -> str:
-        return f'{self.name}.json'
-
-    def handle(self, response):
-        mbl_no = response.meta['mbl_no']
-
-        response_dict = json.loads(response.text)
-        content = response_dict['data']['content']
-        container_info = self._extract_container_info(content=content)
-
-        for container in container_info:
-            container_key = container['container_key']
-            container_no = container['container_no']
-
-            yield ContainerItem(
-                container_key=container_key,
-                container_no=container_no,
+        container_status_items = []
+        for container_status_info in container_status_infos:
+            container_status_items.append(
+                ContainerStatusItem(
+                    container_key=get_container_key(container_no),
+                    description=container_status_info['description'],
+                    local_date_time=container_status_info['local_date_time'],
+                    location=LocationItem(name=container_status_info['location']),
+                    transport=container_status_info['transport'],
+                )
             )
 
-            yield BookingContainerStatusRoutingRule.build_request_option(
-                mbl_no=mbl_no, container_no=container_no, container_key=container_key)
+        return container_status_items
 
     @staticmethod
-    def _extract_container_info(content: Dict) -> List:
-        container_list = []
-        for container in content:
-            container_no = container['containerNumber']
-            container_key = get_container_key(container_no=container_no)
+    def _extract_container_status_infos(response: scrapy.Selector):
+        pop_up_divs = response.css('div.ivu-poptip-content')
+        rule = CssQueryExistMatchRule(css_query='p.poptip-title-up')
+        container_status_div = find_selector_from(selectors=pop_up_divs, rule=rule)
 
-            container_list.append({
-                'container_key': container_key,
-                'container_no': container_no,
+        table_like_div = container_status_div.css('div.ivu-table')
+        table_locator = TopHeadDivTableLocator()
+        table_locator.parse(table=table_like_div)
+        table_extractor = TableExtractor(table_locator=table_locator)
+
+        container_status_infos = []
+        for left in table_locator.iter_left_index():
+            multi_status = table_extractor.extract_cell(
+                top='Latest Status', left=left, extractor=OnlyContentTableCellExtractor()
+            )  # 0 description, 1 time, 2 transport
+
+            container_status_infos.append({
+                'description': multi_status[0],
+                'local_date_time': multi_status[1],
+                'transport': multi_status[2],
+                'location': table_extractor.extract_cell(
+                    top='Location', left=left, extractor=JoinAllWithSpaceTableCellExtractor()
+                ),
             })
-        return container_list
+
+        return container_status_infos
 
 
-class BillContainerStatusRoutingRule(BaseRoutingRule):
-    name = 'BILL_CONTAINER_STATUS'
+class LeftHeadDivTableLocator(BaseTableLocator):
 
-    @classmethod
-    def build_request_option(cls, mbl_no: str, container_no: str, container_key: str) -> RequestOption:
-        timestamp = build_timestamp()
-        url = f'{URL}/{BASE}/container/status/{container_no}?billNumber={mbl_no}&timestamp={timestamp}'
-        
-        return RequestOption(
-            method=RequestOption.METHOD_GET,
-            rule_name=cls.name,
-            url=url,
-            headers={'Accept': '*/*'},
-            meta={'container_key': container_key},
+    def __init__(self):
+        self._td_map = {}  # title: data_td
+
+    def parse(self, table: Selector):
+        label_cells = table.css('div.label p.tebleCell')
+        content_cells = table.css('div.content p.tebleCell')
+
+        for label_cell, content_cell in zip(label_cells, content_cells):
+            raw_label_texts = label_cell.css('::text').getall()
+            label_with_colon = ''.join([raw_label_t.strip() for raw_label_t in raw_label_texts])
+            label = label_with_colon[:-1]  # delete colon
+
+            raw_content_texts = content_cell.css('::text').getall()
+            content = ''.join([raw_content_t.strip() for raw_content_t in raw_content_texts])
+
+            data_td = Selector(text=f'<td>{content}</td>')
+
+            self._td_map[label] = data_td
+
+    def get_cell(self, left: str, top=None) -> Selector:
+        assert top is None
+        try:
+            return self._td_map[left]
+        except KeyError as err:
+            raise HeaderMismatchError(repr(err))
+
+    def has_header(self, left=None, top=None) -> bool:
+        assert top is None
+        return left in self._td_map
+
+
+class TopHeadDivTableLocator(BaseTableLocator):
+    def __init__(self):
+        self._td_map = {}  # title: td
+
+    def parse(self, table: Selector):
+        ths = table.css('div.ivu-table-header th')
+        ths_span_text = [th.css('span::text').get() for th in ths]
+        trs = table.css('tr.ivu-table-row')
+
+        for tr in trs:
+            tds = tr.css('td')
+            for th_span_text, td in zip(ths_span_text, tds):
+                self._td_map.setdefault(th_span_text, [])
+                self._td_map[th_span_text].append(td)
+
+    def get_cell(self, top, left) -> Selector:
+        try:
+            return self._td_map[top][left]
+        except (KeyError, IndexError) as err:
+            raise HeaderMismatchError(repr(err))
+
+    def has_header(self, top=None, left=None) -> bool:
+        assert left is None
+        return bool(top in self._td_map)
+
+    def iter_left_index(self):
+        keys = list(self._td_map.keys())
+        first_tds = self._td_map[keys[0]]
+        for i in range(len(first_tds)):
+            yield i
+
+
+class LabelContentTableCellExtractor(BaseTableCellExtractor):
+    def extract(self, cell: Selector):
+        result = {}
+        info_items = cell.css('p.infoItem')
+
+        for info_item in info_items:
+            label_with_colon = info_item.css('span.label::text').get().strip()
+            label = label_with_colon[:-1]
+
+            raw_content = info_item.css('span.content::text').get()
+            content = raw_content.strip() if raw_content else raw_content
+
+            result[label] = content
+
+        return result
+
+
+class JoinAllWithSpaceTableCellExtractor(BaseTableCellExtractor):
+    def extract(self, cell: Selector):
+        all_texts = cell.css('::text').getall()
+        result_text = ' '.join([text.strip() for text in all_texts]).strip()
+
+        return result_text
+
+
+class OnlyContentTableCellExtractor(BaseTableCellExtractor):
+    def extract(self, cell: Selector):
+        results = []
+        info_items = cell.css('p.infoItem')
+
+        for info_item in info_items:
+            raw_content = info_item.css('span.content::text').get()
+            content = raw_content.strip() if raw_content else raw_content
+            results.append(content)
+
+        return results
+
+
+# ---------------------------------------------------------------------------------------------------------
+
+
+class ContentGetter:
+    def __init__(self):
+        options = webdriver.FirefoxOptions()
+        options.add_argument('--headless')
+        options.add_argument(
+            f'user-agent={self._random_choose_user_agent()}'
+        )
+        self._driver = webdriver.Firefox(firefox_options=options, service_log_path='/dev/null')
+        self._driver.get('https://elines.coscoshipping.com/ebusiness/cargoTracking')
+        self._is_first = True
+
+    def search_and_return(self, search_no: str, is_booking: bool = True):
+
+        if self._is_first:
+            self._is_first = False
+            self._handle_cookie()
+
+        if is_booking:
+            trackingType = 'BOOKING'
+        else:
+            trackingType = 'BILLOFLADING'
+
+        self._driver.get(
+            f'https://elines.coscoshipping.com/ebusiness/cargoTracking?trackingType={trackingType}&number={search_no}'
         )
 
-    def get_save_name(self, response) -> str:
-        container_key = response.meta['container_key']
-        return f'{self.name}_{container_key}.json'
+        try:
+            time.sleep(10)
+            return self._driver.page_source
+        except TimeoutException:
+            raise LoadWebsiteTimeOutFatal()
 
-    def handle(self, response):
-        container_key = response.meta['container_key']
-
-        container_list = self._extract_container_status(response_str=response.text)
-
-        for container in container_list:
-            yield ContainerStatusItem(
-                container_key=container_key,
-                description=container['status'],
-                local_date_time=container['local_date_time'],
-                location=LocationItem(name=container['location']),
-                transport=container['transport'],
+    def _handle_cookie(self):
+        try:
+            accept_btn = WebDriverWait(self._driver, 10).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "button[class='ivu-btn ivu-btn-primary ivu-btn-large']"))
             )
+        except (TimeoutException, ReadTimeoutError):
+            raise LoadWebsiteTimeOutFatal()
 
-    @staticmethod
-    def _extract_container_status(response_str: str) -> List:
-        response_json = json.loads(response_str)
-        not_strip_container_content = response_json['data']['content']
-        container_content = []
+        # accept cookie
+        time.sleep(1)
+        accept_btn.click()
+        time.sleep(1)
 
-        for not_strip_info in not_strip_container_content:
-            info = strip_dict_value(dic=not_strip_info)
-            container_content.append(info)
-
-        return_list = []
-
-        for info in container_content:
-            return_list.append({
-                'status': info['containerNumberStatus'],
-                'transport': info['transportation'],
-                'local_date_time': info['timeOfIssue'],
-                'location': info['location']
-            })
-        return return_list
-
-
-class BookingContainerStatusRoutingRule(BaseRoutingRule):
-    name = 'BOOKING_CONTAINER_STATUS'
-
-    @classmethod
-    def build_request_option(cls, mbl_no: str, container_no: str, container_key: str) -> RequestOption:
-        timestamp = build_timestamp()
-        url = f'{URL}/{BASE}/container/status/{container_no}?bookingNumber={mbl_no}&timestamp={timestamp}'
-
-        return RequestOption(
-            method=RequestOption.METHOD_GET,
-            rule_name=cls.name,
-            url=url,
-            headers={'Accept': '*/*'},
-            meta={'container_key': container_key},
+    def click_container_status_button(self, idx: int):
+        repeat_three_times_buttons = self._driver.find_elements_by_css_selector(
+            "i[class='ivu-icon ivu-icon-ios-information']"
         )
+        button = repeat_three_times_buttons[idx]
 
-    def get_save_name(self, response) -> str:
-        container_key = response.meta['container_key']
-        return f'{self.name}_{container_key}.json'
+        button.click()
+        time.sleep(8)
+        return self._driver.page_source
 
-    def handle(self, response):
-        container_key = response.meta['container_key']
-
-        container_list = self._extract_container_status(response_str=response.text)
-
-        for container in container_list:
-            yield ContainerStatusItem(
-                container_key=container_key,
-                description=container['status'],
-                local_date_time=container['local_date_time'],
-                location=LocationItem(name=container['location']),
-                transport=container['transport'],
-            )
+    def scroll_to_bottom_of_page(self):
+        self._driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(3)
 
     @staticmethod
-    def _extract_container_status(response_str: str) -> List:
-        response_json = json.loads(response_str)
-        container_content = response_json['data']['content']
-        return_list = []
+    def _random_choose_user_agent():
+        user_agents = [
+            # firefox
+            (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:80.0) '
+                'Gecko/20100101 '
+                'Firefox/80.0'
+            ),
+            (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) '
+                'Gecko/20100101 '
+                'Firefox/79.0'
+            ),
+            (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) '
+                'Gecko/20100101 '
+                'Firefox/78.0'
+            ),
+            (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0.1) '
+                'Gecko/20100101 '
+                'Firefox/78.0.1'
+            ),
+        ]
 
-        for info in container_content:
-            return_list.append({
-                'status': info['containerNumberStatus'],
-                'transport': info['transportation'],
-                'local_date_time': info['timeOfIssue'],
-                'location': info['location']
-            })
-        return return_list
-
-
-def build_timestamp():
-    return int(time.time() * 1000)
+        return random.choice(user_agents)
 
 
 def get_container_key(container_no: str):
     container_key = container_no[:10]
 
-    if len(container_key) != 10:
-        raise CarrierResponseFormatError(f'Invalid container_no `{container_no}`')
+    # if len(container_key) != 10:
+    #     raise CarrierResponseFormatError(f'Invalid container_no `{container_no}`')
 
     return container_key
 
-
-def strip_dict_value(dic: Union[Dict, None]) -> Union[Dict, None]:
-    if dic is None:
-        return dic
-
-    striped_dict = {}
-    for key, value in dic.items():
-        value = value.strip() if isinstance(value, str) else value
-        striped_dict[key] = value
-
-    return striped_dict

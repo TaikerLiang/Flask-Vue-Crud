@@ -107,7 +107,5 @@ def verify(results):
     )
 
     assert isinstance(results[9], RequestOption)
-    assert results[9].url == 'https://www.hmm21.com/ebiz/track_trace/WUTInfo.jsp'
-    assert results[9].meta == {
-        'container_no': 'CAIU7479659',
-    }
+    assert results[9].url == 'http://www.hmm21.com/_/ebiz/track_trace/WUTInfo.jsp'
+    assert results[9].meta['container_no'] == 'CAIU7479659'

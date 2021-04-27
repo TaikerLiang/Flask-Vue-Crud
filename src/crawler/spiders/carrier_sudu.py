@@ -13,7 +13,7 @@ from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData, DebugItem)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError, \
     SuspiciousOperationError
-from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
+from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from, BaseMatchRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import (
     BaseTableLocator, HeaderMismatchError, TableExtractor, TopHeaderTableLocator, TopLeftHeaderTableLocator)
@@ -632,24 +632,29 @@ class VoyageRoutingRule(BaseRoutingRule):
         voyage_location = response.meta['voyage_location']
         voyage_direction = response.meta['voyage_direction']
 
-        voyage_routing = self.__extract_voyage_routing(
-            response=response, location=voyage_location, direction=voyage_direction)
+        if self._is_voyage_routing_connectable(response=response):
+            voyage_routing = self.__extract_voyage_routing(
+                response=response, location=voyage_location, direction=voyage_direction)
 
-        yield VesselItem(
-            vessel_key=f'{voyage_location} {voyage_direction}',
-            vessel=voyage_routing['vessel'],
-            voyage=voyage_routing['voyage'],
-            pol=LocationItem(name=voyage_routing['pol']),
-            pod=LocationItem(name=voyage_routing['pod']),
-            etd=voyage_routing['etd'],
-            eta=voyage_routing['eta'],
-        )
+            yield VesselItem(
+                vessel_key=f'{voyage_location} {voyage_direction}',
+                vessel=voyage_routing['vessel'],
+                voyage=voyage_routing['voyage'],
+                pol=LocationItem(name=voyage_routing['pol']),
+                pod=LocationItem(name=voyage_routing['pod']),
+                etd=voyage_routing['etd'],
+                eta=voyage_routing['eta'],
+            )
 
         basic_request_spec = prepare_request_spec(mbl_no=mbl_no, response=response)
 
         yield MblSearchResultRoutingRule.build_request_option(
             basic_request_spec=basic_request_spec, mbl_state=mbl_state
         )
+
+    @staticmethod
+    def _is_voyage_routing_connectable(response: Selector) -> bool:
+        return bool(response.css('h3'))
 
     def __extract_voyage_routing(self, response, location, direction):
         raw_vessel_voyage = response.css('h3::text').get()
@@ -692,6 +697,18 @@ class VoyageRoutingRule(BaseRoutingRule):
             raise CarrierResponseFormatError(reason=f'Unknown vessel_voyage title: `{vessel_voyage}`')
 
         return match.group('vessel'), match.group('voyage')
+
+
+class TextExistsMatchRule(BaseMatchRule):
+    def __init__(self, text: str):
+        self._text = text
+
+    def check(self, selector: Selector) -> bool:
+        all_texts = selector.css('::text').getall()
+        together_text = ''.join(all_texts)
+        if self._text in together_text:
+            return True
+        return False
 
 
 # -------------------------------------------------------------------------------

@@ -77,6 +77,17 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /tmp/* /var/lib/apt/lists/*
 
+#============================================
+# Firefox & Geckodriver
+#============================================
+
+RUN sudo apt-get update \
+    && sudo apt-get install -y firefox-esr
+
+RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.28.0/geckodriver-v0.28.0-linux64.tar.gz \
+    && sudo sh -c 'tar -x geckodriver -zf geckodriver-v0.28.0-linux64.tar.gz -O > /usr/bin/geckodriver' \
+    && sudo chmod +x /usr/bin/geckodriver \
+    && rm geckodriver-v0.28.0-linux64.tar.gz
 
 ENV OPENSSL_CONF=/etc/ssl/
 ENV TERM xterm

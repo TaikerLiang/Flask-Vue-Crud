@@ -23,7 +23,8 @@ def sample_loader(sample_loader):
     ('04_multi_containers', 'W241061370'),
     ('05_with_firm_code', 'W226020752'),
     ('06_ip_blocked', 'E209048375'),
-    ('07_delivery_without_time_status', 'W209139591')
+    ('07_delivery_without_time_status', 'W209139591'),
+    ('08_to_be_advised_ver2', 'W470030608'),
 ])
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')

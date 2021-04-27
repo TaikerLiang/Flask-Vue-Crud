@@ -1,18 +1,23 @@
 import random
 import re
 import time
+import base64
 from queue import Queue
-from typing import Dict, List
+from typing import Dict
+from io import BytesIO
 
 import scrapy
+import cv2
+import numpy as np
 from scrapy import Selector
 from selenium import webdriver
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.wait import WebDriverWait
 from urllib3.exceptions import ReadTimeoutError
+from PIL import Image
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
@@ -161,18 +166,21 @@ class CargoTrackingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
-
+        page_source = None
         try:
             self._driver.goto(url='http://www.oocl.com/eng/Pages/default.aspx')
 
-            self._driver.search_mbl(mbl_no=mbl_no)
+            page_source = self._driver.search_mbl(mbl_no=mbl_no)
         except ReadTimeoutError:
             url = self._driver.get_current_url()
             self._driver.quit()
             raise LoadWebsiteTimeOutError(url=url)
 
-        response_text = self._driver.get_page_text()
-        response = Selector(text=response_text)
+        if not page_source:
+            self._driver.quit()
+            raise RuntimeError()
+
+        response = Selector(text=page_source)
 
         for item in self._handle_response(response):
             yield item
@@ -189,19 +197,19 @@ class CargoTrackingRule(BaseRoutingRule):
 
         yield MblItem(
             mbl_no=mbl_no,
-            vessel=routing_info['vessel'],
-            voyage=routing_info['voyage'],
-            por=LocationItem(name=routing_info['por']),
-            pol=LocationItem(name=routing_info['pol']),
-            pod=LocationItem(name=routing_info['pod']),
+            vessel=routing_info['vessel'] or None,
+            voyage=routing_info['voyage'] or None,
+            por=LocationItem(name=routing_info['por'] or None),
+            pol=LocationItem(name=routing_info['pol'] or None),
+            pod=LocationItem(name=routing_info['pod'] or None),
             etd=routing_info['etd'] or None,
             atd=routing_info['atd'] or None,
             eta=routing_info['eta'] or None,
             ata=routing_info['ata'] or None,
-            place_of_deliv=LocationItem(name=routing_info['place_of_deliv']),
+            place_of_deliv=LocationItem(name=routing_info['place_of_deliv'] or None),
             deliv_eta=routing_info['deliv_eta'] or None,
             deliv_ata=routing_info['deliv_ata'] or None,
-            final_dest=LocationItem(name=routing_info['final_dest']),
+            final_dest=LocationItem(name=routing_info['final_dest'] or None),
             customs_release_status=custom_release_info['status'] or None,
             customs_release_date=custom_release_info['date'] or None,
         )
@@ -273,7 +281,23 @@ class CargoTrackingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_routing_info(selectors_map: Dict[str, scrapy.Selector]):
-        table = selectors_map['detail:routing_table']
+        table = selectors_map.get('detail:routing_table', None)
+        if table is None:
+            return {
+                'por': '',
+                'pol': '',
+                'pod': '',
+                'place_of_deliv': '',
+                'final_dest': '',
+                'etd': '',
+                'atd': '',
+                'eta': '',
+                'ata': '',
+                'deliv_eta': '',
+                'deliv_ata': '',
+                'vessel': '',
+                'voyage': '',
+            }
 
         table_locator = RoutingTableLocator()
         table_locator.parse(table=table)
@@ -348,26 +372,43 @@ class CargoTrackingRule(BaseRoutingRule):
 
 class OoluDriver:
 
+    # def __init__(self):
+    #     options = webdriver.ChromeOptions()
+    #     options.add_argument('--disable-extensions')
+    #     options.add_argument('--disable-notifications')
+    #     options.add_argument('--headless')
+    #     options.add_argument('--disable-gpu')
+    #     options.add_argument('--disable-dev-shm-usage')
+    #     options.add_argument('--no-sandbox')
+    #     options.add_argument('--window-size=1920,1080')
+    #     options.add_experimental_option('excludeSwitches', ['enable-automation'])
+    #     options.add_experimental_option('useAutomationExtension', False)
+    #
+    #     self.driver = webdriver.Chrome(chrome_options=options)
+    #
+    #     # undefine navigator.webdriver
+    #     script = "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+    #     self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': script})
+
     def __init__(self):
         options = webdriver.ChromeOptions()
         options.add_argument('--disable-extensions')
         options.add_argument('--disable-notifications')
         options.add_argument('--headless')
+        options.add_argument("--enable-javascript")
         options.add_argument('--disable-gpu')
+        options.add_argument(f'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36')
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--no-sandbox')
         options.add_argument('--window-size=1920,1080')
-        options.add_experimental_option('excludeSwitches', ['enable-automation'])
-        options.add_experimental_option('useAutomationExtension', False)
+        options.add_argument("--disable-blink-features=AutomationControlled")
 
         self.driver = webdriver.Chrome(chrome_options=options)
 
-        # undefine navigator.webdriver
-        script = "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-        self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': script})
-
     def goto(self, url):
         self.driver.get(url=url)
+        time.sleep(5)
+        # self.driver.get_screenshot_as_file("output.png")
 
     def get_current_url(self):
         return self.driver.current_url
@@ -375,48 +416,133 @@ class OoluDriver:
     def get_page_text(self):
         return self.driver.page_source
 
+    def get_slider(self):
+        WebDriverWait(self.driver, 15).until(
+            EC.presence_of_element_located((By.XPATH, '/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/i'))
+        )
+        return self.driver.find_element_by_xpath('/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/i')
+
+    def get_slider_icon_ele(self):
+        canvas = self.driver.find_element_by_xpath('//*[@id="bockCanvas"]')
+        canvas_base64 = self.driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
+        return canvas_base64
+
+    def get_bg_img_ele(self):
+        canvas = self.driver.find_element_by_xpath('//*[@id="imgCanvas"]')
+        canvas_base64 = self.driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
+        return canvas_base64
+
     def find_container_btn_and_click(self, container_btn_css):
         contaienr_btn = self.driver.find_element_by_css_selector(container_btn_css)
         contaienr_btn.click()
 
     def _click_cookies_and_search(self, mbl_no):
-        time.sleep(10)
-
         cookie_accept_btn = WebDriverWait(self.driver, 20).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, 'form > button#btn_cookie_accept'))
         )
         cookie_accept_btn.click()
+        time.sleep(2)
 
-        # search
-        select_btn = self.driver.find_element_by_css_selector('button[data-id=ooclCargoSelector]')
-        select_btn.click()
-
-        search_type_select = Select(self.driver.find_element_by_css_selector('select#ooclCargoSelector'))
-        search_type_select.select_by_index(1)
+        drop_down_btn = self.driver.find_element_by_css_selector("button[data-id='ooclCargoSelector']")
+        drop_down_btn.click()
+        bl_select = self.driver.find_element_by_css_selector("a[tabindex='0']")
+        bl_select.click()
 
         search_bar = self.driver.find_element_by_css_selector('input#SEARCH_NUMBER')
         search_bar.send_keys(mbl_no)
-
+        time.sleep(3)
         search_btn = self.driver.find_element_by_css_selector('a#container_btn')
         search_btn.click()
 
     def _get_result_search_url(self):
-        WebDriverWait(self.driver, 15).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'span#nc_1_n1z'))
-        )
         return self.driver.current_url
 
+    def _readb64(self, base64_string):
+        _imgdata = base64.b64decode(base64_string)
+        _image = Image.open(BytesIO(_imgdata))
+
+        return cv2.cvtColor(np.array(_image), cv2.COLOR_RGB2BGR)
+
+    def get_element_slide_distance(self, slider_ele, background_ele, correct=0):
+        """
+        根据传入滑块，和背景的节点，计算滑块的距离
+        ​
+        该方法只能计算 滑块和背景图都是一张完整图片的场景，
+        如果背景图是通过多张小图拼接起来的背景图，
+        该方法不适用，请使用get_image_slide_distance这个方法
+        :param slider_ele: 滑块图片的节点
+        :type slider_ele: WebElement
+        :param background_ele: 背景图的节点
+        :type background_ele:WebElement
+        :param correct:滑块缺口截图的修正值，默认为0,调试截图是否正确的情况下才会用
+        :type: int
+        :return: 背景图缺口位置的X轴坐标位置（缺口图片左边界位置）
+        """
+
+        slider_pic = self._readb64(slider_ele)
+        background_pic = self._readb64(background_ele)
+
+        width, height, _ = slider_pic.shape[::-1]
+        slider01 = "slider01.jpg"
+        background_01 = "background01.jpg"
+        cv2.imwrite(background_01, background_pic)
+        cv2.imwrite(slider01, slider_pic)
+        # 读取另存的滑块图
+        slider_pic = cv2.imread(slider01)
+        # 进行色彩转换
+        slider_pic = cv2.cvtColor(slider_pic, cv2.COLOR_BGR2GRAY)
+
+        # 获取色差的绝对值
+        slider_pic = abs(255 - slider_pic)
+        # 保存图片
+        cv2.imwrite(slider01, slider_pic)
+        # 读取滑块
+        slider_pic = cv2.imread(slider01)
+        # 读取背景图
+        background_pic = cv2.imread(background_01)
+
+        # 比较两张图的重叠区域
+        result = cv2.matchTemplate(slider_pic, background_pic, cv2.TM_CCOEFF_NORMED)
+        # 获取图片的缺口位置
+        top, left = np.unravel_index(result.argmax(), result.shape)
+        # print("Current notch position:", (left, top, left + width, top + height))
+
+        return left + width + correct
+
+    def refresh(self):
+        refresh_button = self.driver.find_element_by_xpath('/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[1]/div/div/i')
+        refresh_button.click()
+        time.sleep(5)
+
+    def pass_verification_or_not(self):
+        try:
+            return self.driver.find_element_by_id('recaptcha_div')
+        except NoSuchElementException:
+            return None
+
     def _handle_with_slide(self):
-        # slide the verification
-        WebDriverWait(self.driver, 15).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'span#nc_1_n1z'))
-        )
-        tracks = self.get_track(260)
-        self.move_to_gap(tracks=tracks)
+
+        while True:
+            slider_ele = self.get_slider()
+            icon_ele = self.get_slider_icon_ele()
+            img_ele = self.get_bg_img_ele()
+
+            distance = self.get_element_slide_distance(icon_ele, img_ele, 4)
+
+            if distance <= 100:
+                self.refresh()
+                continue
+
+            track = self.get_track(distance)
+            self.move_to_gap(slider_ele, track)
+
+            time.sleep(5)
+            if not self.pass_verification_or_not():
+                break
 
     def search_mbl(self, mbl_no):
         self._click_cookies_and_search(mbl_no=mbl_no)
-
+        time.sleep(7)
         # jump to popup window to get url
         windows = self.driver.window_handles
         self.driver.switch_to.window(windows[1])  # windows[1] is new page
@@ -427,10 +553,11 @@ class OoluDriver:
         # jump back to origin window
         self.driver.switch_to.window(windows[0])
         self.driver.get(search_page_url)
+        time.sleep(7)
 
         self._handle_with_slide()
 
-        time.sleep(7)
+        time.sleep(10)
         return self.driver.page_source
 
     @staticmethod
@@ -448,59 +575,78 @@ class OoluDriver:
 
         return cookies
 
-    def move_to_gap(self, tracks: List):
+    def move_to_gap(self, slider, track):
+        ActionChains(self.driver).click_and_hold(slider).perform()
 
-        # find slide span
-        need_move_span = self.driver.find_element_by_xpath('//*[@id="nc_1_n1t"]/span')
-        # click and hold mouse
-        ActionChains(self.driver).click_and_hold(need_move_span).perform()
-        for x in tracks:  # simulate human's motivation
-            print(x)
-            ActionChains(self.driver).move_by_offset(xoffset=x, yoffset=random.randint(1, 3)).perform()
-        time.sleep(1)
+        for x in track:
+            ActionChains(self.driver).move_by_offset(xoffset=x, yoffset=0).perform()
+        time.sleep(0.5)  # move to the right place and take a break
         ActionChains(self.driver).release().perform()
 
-    @staticmethod
-    def get_track(distance):
+    def get_track(self, distance):
         """
         follow Newton's laws of motion
         ①v=v0+at
         ②s=v0t+(1/2)at²
         ③v²-v0²=2as
-
         """
-        # initial speed
-        v = 5
-        # record the distance by 0.2 s
-        t = 0.2
-        # list of every distance of 0.2 s
-        tracks = []
-        # current distance
+        track = []
         current = 0
         # start to slow until 4/5 of total distance
-        mid = distance * 3 / 5
+        mid = distance * 4 / 5
+        # time period
+        t = 0.2
+        # initial speed
+        v = 50
 
         while current < distance:
             if current < mid:
-                a = 30  # slower
+                # acceleration
+                a = 3
             else:
-                a = -10  # slower
-
-            # initial speed
+                # acceleration
+                a = -10
+            # # initial speed v0
             v0 = v
-            # move distance in 0.2 s
-            s = v0 * t + 0.5 * a * (t ** 2)
-            current += s
-            tracks.append(round(s))
-
-            # next initial speed
+            # x = v0t + 1/2 * a * t^2
+            move = v0 * t + 1 / 2 * a * t * t
+            # current speed, v = v0 + at
             v = v0 + a * t
+            current += move
+            track.append(round(move))
 
-        return tracks
+        return track
 
     def quit(self):
         self.driver.quit()
 
+    @staticmethod
+    def _random_choose_user_agent():
+        user_agents = [
+            # firefox
+            (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:80.0) '
+                'Gecko/20100101 '
+                'Firefox/80.0'
+            ),
+            (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) '
+                'Gecko/20100101 '
+                'Firefox/79.0'
+            ),
+            (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) '
+                'Gecko/20100101 '
+                'Firefox/78.0'
+            ),
+            (
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0.1) '
+                'Gecko/20100101 '
+                'Firefox/78.0.1'
+            ),
+        ]
+
+        return random.choice(user_agents)
 
 class SummaryRightTableLocator(BaseTableLocator):
     TD_TITLE_INDEX = 0
@@ -514,7 +660,7 @@ class SummaryRightTableLocator(BaseTableLocator):
 
         for tr in tr_list:
             td_list = tr.css('td')
-            if not td_list:
+            if not td_list or len(td_list) != 2:
                 continue
 
             title_td = td_list[self.TD_TITLE_INDEX]
@@ -715,22 +861,6 @@ class DelivTdExtractor(BaseTableCellExtractor):
         }
 
 
-# -------------------------------------------------------------------------------
-
-
-def get_multipart_body(form_data, boundary):
-    body = ''
-    for index, key in enumerate(form_data):
-        body += (
-            f'--{boundary}\r\n'
-            f'Content-Disposition: form-data; name="{key}"\r\n'
-            f'\r\n'
-            f'{form_data[key]}\r\n'
-        )
-    body += f'--{boundary}--'
-    return body
-
-
 class ContainerStatusRule(BaseRoutingRule):
     name = 'CONTAINER_STATUS'
 
@@ -810,7 +940,12 @@ class ContainerStatusRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_detention_info(selectors_map: Dict[str, scrapy.Selector]):
-        table = selectors_map['detail:detention_right_table']
+        table = selectors_map.get('detail:detention_right_table', None)
+        if table is None:
+            return {
+                'last_free_day': '',
+                'det_free_time_exp_date': '',
+            }
 
         table_locator = DestinationTableLocator()
         table_locator.parse(table=table)
@@ -838,7 +973,9 @@ class ContainerStatusRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_status_list(selectors_map: Dict[str, scrapy.Selector]):
-        table = selectors_map['detail:container_status_table']
+        table = selectors_map.get('detail:container_status_table', None)
+        if table is None:
+            return []
 
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table)
@@ -981,13 +1118,14 @@ class _PageLocator:
             raise CarrierResponseFormatError(reason='Can not find summary table !!!')
         summary_selectors_map = self._locate_selectors_from_summary(summary_table=summary_table)
 
-        # detail
+        # detail (may not exist)
         detail_rule = CssQueryTextStartswithMatchRule(
             css_query='td.groupTitle::text', startswith='Detail of OOCL Container')
         detail_table = find_selector_from(selectors=tables, rule=detail_rule)
-        if not detail_table:
-            raise CarrierResponseFormatError(reason='Can not find detail table !!!')
-        detail_selectors_map = self._locate_selectors_from_detail(detail_table=detail_table)
+        if detail_table:
+            detail_selectors_map = self._locate_selectors_from_detail(detail_table=detail_table)
+        else:
+            detail_selectors_map = {}
 
         return {
             **summary_selectors_map,
@@ -1001,7 +1139,7 @@ class _PageLocator:
         if not top_table:
             raise CarrierResponseFormatError(reason='Can not find top_table !!!')
 
-        top_inner_tables = top_table.css('tr table')
+        top_inner_tables = top_table.xpath('./tr/td') or top_table.xpath('./tbody/tr/td')
         if len(top_inner_tables) != 2:
             raise CarrierResponseFormatError(reason=f'Amount of top_inner_tables not right: `{len(top_inner_tables)}`')
 
@@ -1082,3 +1220,16 @@ def _get_est_and_actual(status, time_str):
         raise CarrierResponseFormatError(reason=f'Unknown status format: `{status}`')
 
     return estimate, actual
+
+
+def get_multipart_body(form_data, boundary):
+    body = ''
+    for index, key in enumerate(form_data):
+        body += (
+            f'--{boundary}\r\n'
+            f'Content-Disposition: form-data; name="{key}"\r\n'
+            f'\r\n'
+            f'{form_data[key]}\r\n'
+        )
+    body += f'--{boundary}--'
+    return body

@@ -22,6 +22,7 @@ def sample_loader(sample_loader):
     ('03_without_custom_release_date', '2628633440'),
     ('04_tranship_exist', '2630699272'),
     ('05_custom_release_title_exist_but_value_empty', '2635541720'),
+    ('06_detail_table_not_exist', '2650422090'),
 ])
 def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
     html_file = sample_loader.read_file(sub, 'sample.html')

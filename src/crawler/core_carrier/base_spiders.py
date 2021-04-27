@@ -42,7 +42,8 @@ class BaseCarrierSpider(scrapy.Spider):
 
         self.request_args = kwargs
 
-        self.mbl_no = kwargs['mbl_no']
+        self.booking_no = kwargs.get('booking_no', '')
+        self.mbl_no = kwargs.get('mbl_no', '')
         self.container_no_list = kwargs.get('container_no_list', '').split(',')
 
         to_save = ('save' in kwargs)

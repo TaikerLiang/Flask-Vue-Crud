@@ -42,7 +42,7 @@ def test_main_info_handle(sub, mbl_no, sample_loader):
     )
 
     rule = MainInfoRoutingRule()
-    results = list(rule.handle(response=response))
+    results = list(rule._handle_item(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)

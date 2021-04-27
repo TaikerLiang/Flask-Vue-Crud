@@ -1,15 +1,22 @@
 import dataclasses
 import random
+import time
 from typing import List, Dict, Tuple, Union
 
 import scrapy
+from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from urllib3.exceptions import ReadTimeoutError
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
-    SuspiciousOperationError
+from crawler.core_carrier.exceptions import (
+    CarrierInvalidMblNoError, CarrierResponseFormatError, SuspiciousOperationError, LoadWebsiteTimeOutFatal)
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerStatusItem, ContainerItem, VesselItem, DebugItem)
-from crawler.core_carrier.request_helpers import RequestOption, ProxyManager
+from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor, BaseTableCellExtractor
 from crawler.extractors.table_extractors import TopHeaderTableLocator, TableExtractor
@@ -26,24 +33,10 @@ class CarrierZimuSpider(BaseCarrierSpider):
         ]
 
         self._rule_manager = RuleManager(rules=rules)
-        self._proxy_manager = ProxyManager(session='zimu', logger=self.logger)
-        self._cookiejar_id = 1
 
     def start(self):
-        request = self.__prepare_restart()
-        yield request
-
-    def __prepare_restart(self):
-        self._proxy_manager.renew_proxy()
-        self._cookiejar_id += 1
-
         option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
-        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
-        proxy_cookie_option = self.__add_cookiejar_to_option(option=proxy_option)
-        return self._build_request_by(option=proxy_cookie_option)
-
-    def __add_cookiejar_to_option(self, option: RequestOption):
-        return option.copy_and_extend_by(meta={'cookiejar': self._cookiejar_id})
+        yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -61,10 +54,6 @@ class CarrierZimuSpider(BaseCarrierSpider):
             else:
                 raise RuntimeError()
 
-    def retry(self, failure):
-        request = self.__prepare_restart()
-        yield request
-
     def _build_request_by(self, option: RequestOption):
         meta = {
             RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
@@ -77,55 +66,55 @@ class CarrierZimuSpider(BaseCarrierSpider):
                 headers=option.headers,
                 meta=meta,
                 callback=self.parse,
-                errback=self.retry,
             )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
-@dataclasses.dataclass
-class VesselInfo:
-    vessel: Union[str, None]
-    voyage: Union[str, None]
+# ---------------------------------------------------------------------------------
 
 
-@dataclasses.dataclass
-class ScheduleInfo:
-    port_type: str
-    port_name: str
-    eta: str
-    etd: str
-
-
-class MainInfoRoutingRule(BaseRoutingRule):
-    name = 'MAIN_INFO'
-
-    @classmethod
-    def build_request_option(cls, mbl_no) -> RequestOption:
-        url = f'https://www.zim.com/tools/track-a-shipment?consnumber={mbl_no}'
-
-        return RequestOption(
-            method=RequestOption.METHOD_GET,
-            rule_name=cls.name,
-            url=url,
-            headers={
-                'User-Agent': cls.__random_choose_user_agent(),
-            },
+class ContentGetter:
+    def __init__(self):
+        options = webdriver.FirefoxOptions()
+        options.add_argument('--headless')
+        options.add_argument(
+            f'user-agent={self._random_choose_user_agent()}'
         )
+        self._driver = webdriver.Firefox(firefox_options=options)
+
+    def search_and_return(self, mbl_no: str):
+        self._driver.get('https://www.zim.com/tools/track-a-shipment')
+
+        try:
+            accept_btn = WebDriverWait(self._driver, 10).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "button[title='I Agree']"))
+            )
+        except (TimeoutException, ReadTimeoutError):
+            raise LoadWebsiteTimeOutFatal()
+
+        time.sleep(1)
+        accept_btn.click()
+
+        search_bar = self._driver.find_elements_by_css_selector("input[name='consnumber']")[0]
+        search_btn = self._driver.find_elements_by_css_selector("input[value='Track Shipment']")[0]
+
+        time.sleep(1)
+        search_bar.send_keys(mbl_no)
+        search_btn.click()
+
+        try:
+            WebDriverWait(self._driver, 20).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "div[class='bottom row']"))
+            )
+        except TimeoutException:
+            raise LoadWebsiteTimeOutFatal()
+
+        return self._driver.page_source
 
     @staticmethod
-    def __random_choose_user_agent():
+    def _random_choose_user_agent():
         user_agents = [
-            # chrome
-            (
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) '
-                'Chrome/85.0.4183.83 Safari/537.36'
-            ),
-            (
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) '
-                'Chrome/84.0.4147.110 Safari/537.36'
-            ),
-
             # firefox
             (
                 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:80.0) '
@@ -151,12 +140,53 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         return random.choice(user_agents)
 
+
+@dataclasses.dataclass
+class VesselInfo:
+    vessel: Union[str, None]
+    voyage: Union[str, None]
+
+
+@dataclasses.dataclass
+class ScheduleInfo:
+    port_type: str
+    port_name: str
+    eta: str
+    etd: str
+
+
+class MainInfoRoutingRule(BaseRoutingRule):
+    name = 'MAIN_INFO'
+
+    @classmethod
+    def build_request_option(cls, mbl_no) -> RequestOption:
+        url = f'https://www.google.com'
+
+        return RequestOption(
+            method=RequestOption.METHOD_GET,
+            rule_name=cls.name,
+            url=url,
+            meta={
+                'mbl_no': mbl_no,
+            },
+        )
+
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
 
     def handle(self, response):
+        mbl_no = response.meta['mbl_no']
+
         self._check_mbl_no(response=response)
 
+        content_getter = ContentGetter()
+        response_text = content_getter.search_and_return(mbl_no=mbl_no)
+        response_selector = scrapy.Selector(text=response_text)
+
+        for item in self._handle_item(response=response_selector):
+            yield item
+
+    def _handle_item(self, response):
         main_info = self._extract_main_info(response=response)
 
         raw_vessel_list = self._extract_vessel_list(response=response)
