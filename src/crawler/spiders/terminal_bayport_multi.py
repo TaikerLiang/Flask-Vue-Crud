@@ -1,7 +1,8 @@
+from urllib.parse import urlencode, unquote
+from datetime import datetime
 import json
 import time
 from typing import List, Dict
-from urllib.parse import urlencode, unquote
 
 from scrapy import Request, FormRequest, Selector
 
@@ -10,7 +11,6 @@ from crawler.core_terminal.items import (
     BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
 )
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
-
 
 BASE_URL = 'https://csp.poha.com'
 
@@ -29,7 +29,8 @@ class TerminalBayportMultiSpider(BaseMultiTerminalSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        option = LoginRoutingRule.build_request_option(container_no_list=self.container_no_list)
+        unique_container_nos = list(self.cno_tid_map.keys())
+        option = LoginRoutingRule.build_request_option(container_no_list=unique_container_nos)
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -41,8 +42,13 @@ class TerminalBayportMultiSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseTerminalItem):
-                yield result
+            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+                c_no = result['container_no']
+                if c_no:
+                    t_ids = self.cno_tid_map[c_no]
+                    for t_id in t_ids:
+                        result['task_id'] = t_id
+                        yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
             else:
@@ -111,9 +117,7 @@ class LoginRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_no_list = response.meta['container_no_list']
-
-        for container_no in container_no_list:
-            yield ContainerRoutingRule.build_request_option(container_no=container_no)
+        yield ContainerRoutingRule.build_request_option(container_no_list=container_no_list)
 
 
 # -------------------------------------------------------------------------------
@@ -123,80 +127,46 @@ class ContainerRoutingRule(BaseRoutingRule):
     name = 'CONTAINER'
 
     @classmethod
-    def build_request_option(cls, container_no) -> RequestOption:
-        url = (
-            f'{BASE_URL}/Lynx/VITTerminalAccess/GetEquipmentInformation.aspx?'
-            f'Action=GET&ContainerNum={container_no}&ShowAll=true&_={cls.thirteen_digits_timestamp()}'
-        )
+    def build_request_option(cls, container_no_list: List) -> RequestOption:
+        params = {
+            'WhichReq': 'Container',
+            'ContainerNum': ','.join(container_no_list),
+            'BOLNum': '',
+            'PTD': '',
+            'ContainerNotification': False,
+            '_': cls.thirteen_digits_timestamp(),
+        }
+        url = f"https://csp.poha.com/Lynx/VITTerminalAccess/GetReleaseInquiryList.aspx?{urlencode(params)}"
 
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
-            meta={
-                'container_no': container_no,
-            },
         )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
 
     def handle(self, response):
-        container_no = response.meta['container_no']
+        resp = json.loads(response.body)
 
-        if self._is_container_no_invalid(response=response):
-            yield InvalidContainerNoItem(container_no=container_no)
-            return
+        for row in resp['aaData']:
+            yield TerminalItem(
+                container_no=row[2],
+                holds=row[5],
+                customs_release=row[6],
+                last_free_day=self._get_last_free_day(),
+            )
 
-        container_data = self.extract_container_data(response=response)
-        container_histories = self.extract_container_histories(response=response)  # may contain gate_out date
+    def _get_last_free_day(self, port_lfd='5/2/2021', line_lfd='5/3/2021'):
+        port_lfd_dt = datetime.strptime(port_lfd, '%m/%d/%Y')
+        line_lfd_dt = datetime.strptime(line_lfd, '%m/%d/%Y')
 
-        yield TerminalItem(
-            container_no=container_no,
-            container_spec=container_data['spec'],
-            carrier=container_data['line'],
-            mbl_no=container_data['mbl_no'],
-            weight=container_data['weight'],
-        )
-
-    @staticmethod
-    def _is_container_no_invalid(response: Selector) -> bool:
-        return not bool(response.css('data Container'))
-
-    @staticmethod
-    def extract_container_data(response: Selector) -> Dict:
-        container_data = response.css('data Container')
-
-        size = container_data.css('EquipmentSize::text').get()
-        height = container_data.css('EquipmentHeight::text').get()
-        ttype = container_data.css('EquipmentType::text').get()
-
-        return {
-            'mbl_no': container_data.css('BillOfLadingNumber::text').get(),
-            'spec': f'{size}/{ttype}/{height}',
-            'weight': container_data.css('GrossWeight::text').get(),
-            'line': container_data.css('ShippingLineId::text').get(),
-        }
-
-    @staticmethod
-    def extract_container_histories(response: Selector):
-        data = response.css('data')
-        container_history = data.css('containerhistory::text').get()
-        container_history_json = json.loads(container_history)
-
-        results = []
-        histories = container_history_json['aaData']
-        for history in histories:
-            results.append({
-                'Performent': history[1],
-                'Performer': history[2],
-                'Event': history[3],
-                'Notes': unquote(history[4]),
-            })
-
-        return results
+        if port_lfd_dt < line_lfd_dt:
+            return port_lfd
+        else:
+            return line_lfd or port_lfd
 
     @staticmethod
     def thirteen_digits_timestamp():
         return round(time.time() * 1000)
-
