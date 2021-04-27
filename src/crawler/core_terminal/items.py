@@ -37,6 +37,22 @@ class TerminalItem(BaseTerminalItem):
     hazardous = scrapy.Field()
     chassis_no = scrapy.Field()
 
+    # tti field
+    demurrage_due = scrapy.Field()
+    pay_through_date = scrapy.Field()
+
+    # ets field
+    service = scrapy.Field()
+    carrier_release = scrapy.Field()
+    demurrage_status = scrapy.Field()
+
+    # tti & ets field
+    tmf = scrapy.Field()
+
+    # lbct field
+    owed = scrapy.Field()
+    full_empty = scrapy.Field()
+
     @property
     def key(self):
         return self['task_id']
