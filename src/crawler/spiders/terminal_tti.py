@@ -1,37 +1,52 @@
 import re
-from typing import Dict
+import random
+import string
+import time
+from typing import Dict, List
 
 import scrapy
+from scrapy import Selector
+from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver import ActionChains
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
+from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
 
-from crawler.core_terminal.base_spiders import BaseTerminalSpider
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError, TerminalInvalidMblNoError, \
     TerminalResponseFormatError
-from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem
+from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
+from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
+
 
 BASE_URL = 'https://www.ttilgb.com'
 USER_ID = 'RLTC'
 PASSWORD = 'Hardc0re'
 
 
-class TerminalTTiSpider(BaseTerminalSpider):
+class TerminalTTiSpider(BaseMultiTerminalSpider):
     name = 'terminal_tti'
 
     def __init__(self, *args, **kwargs):
         super(TerminalTTiSpider, self).__init__(*args, **kwargs)
 
         rules = [
-            LoginRoutingRule(),
-            SearchContainerRoutingRule(),
-            SearchMblRoutingRule(),
+            MainRoutingRule(),
+            # LoginRoutingRule(),
+            # SearchContainerRoutingRule(),
+            # SearchMblRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        option = LoginRoutingRule.build_request_option(container_no=self.container_no, mbl_no=self.mbl_no)
+        unique_container_nos = list(self.cno_tid_map.keys())
+        option = MainRoutingRule.build_request_option(container_no_list=unique_container_nos)
         yield self._build_request_by(option=option)
 
     def parse(self, response, **kwargs):
@@ -43,8 +58,12 @@ class TerminalTTiSpider(BaseTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseTerminalItem):
-                yield result
+            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+                c_no = result['container_no']
+                t_ids = self.cno_tid_map[c_no]
+                for t_id in t_ids:
+                    result['task_id'] = t_id
+                    yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
             else:
@@ -75,200 +94,156 @@ class TerminalTTiSpider(BaseTerminalSpider):
 
 # -------------------------------------------------------------------------------
 
-
-class LoginRoutingRule(BaseRoutingRule):
-    name = 'LOGIN'
+class MainRoutingRule(BaseRoutingRule):
+    name = 'MAIN'
 
     @classmethod
-    def build_request_option(cls, container_no, mbl_no) -> RequestOption:
-        url = f'{BASE_URL}/appAuthAction/login.do'
-        form_data = {
-            'pTmlCd': 'USLGB',
-            'pUsrId': USER_ID,
-            'pUsrPwd': PASSWORD,
-        }
-
+    def build_request_option(cls, container_no_list: List) -> RequestOption:
+        url = 'https://www.google.com'
         return RequestOption(
-            method=RequestOption.METHOD_POST_FORM,
             rule_name=cls.name,
-            url=url,
-            form_data=form_data,
-            meta={'container_no': container_no, 'mbl_no': mbl_no},
-        )
-
-    def get_save_name(self, response) -> str:
-        return f'{self.name}.html'
-
-    def handle(self, response):
-        container_no = response.meta['container_no']
-        mbl_no = response.meta['mbl_no']
-
-        yield SearchContainerRoutingRule.build_request_option(container_no=container_no)
-
-        if mbl_no:
-            yield SearchMblRoutingRule.build_request_option(mbl_no=mbl_no)
-
-
-# -------------------------------------------------------------------------------
-
-
-class SearchContainerRoutingRule(BaseRoutingRule):
-    name = 'SEARCH_CONTAINER'
-
-    @classmethod
-    def build_request_option(cls, container_no) -> RequestOption:
-        url = (
-            f'{BASE_URL}/uiArp02Action/searchContainerInformationListByCntrNo.do?tmlCd=USLGB&srchTpCd=C&'
-            f'cntrNo={container_no}&acssHis=USLGB,{USER_ID}'
-        )
-
-        return RequestOption(
             method=RequestOption.METHOD_GET,
-            rule_name=cls.name,
             url=url,
+            meta={
+                'container_no_list': container_no_list,
+            },
         )
-
-    def get_save_name(self, response) -> str:
-        return f'{self.name}.html'
 
     def handle(self, response):
-        scripts = response.css('script')
-        result_match_rule = CssQueryResultExistMatchRule('::text')
-        result_script = find_selector_from(scripts, rule=result_match_rule)
+        container_no_list = response.meta['container_no_list']
 
-        result_script_text = result_script.css('::text').get()
-        result_text = self._extract_result_text(text=result_script_text)
-        if not result_text:
-            raise TerminalInvalidContainerNoError()
+        USER_ID = 'RLTC'
+        PASSWORD = 'Hardc0re'
+        content_getter = ContentGetter()
+        content_getter.login(USER_ID, PASSWORD)
+        resp = content_getter.search(container_no_list)
 
-        result = self._transform_results_text_to_dict(result_text=result_text)
+        containers = content_getter.get_container_info(Selector(text=resp), len(container_no_list))
+        content_getter.quit()
 
-        yield TerminalItem(
-            container_no=result['cntrNo'],
-            carrier=result['scacCd'],
-            ready_for_pick_up=result.get('avlbFlg'),
-            customs_release=result['custHold'],
-            freight_release=result['cusmHold'],
-            appointment_date=result['exstApntDt'],
-            last_free_day=result.get('lstFreeDt'),
-            container_spec=result['tmlPrivCntrTpszCdNm'],
-            cy_location=result['lctnNm'],
+        for container in containers:
+            yield TerminalItem(
+                **container,
+            )
 
-            demurrage_due=result.get('dmgDueFlg'),
-            pay_through_date=result.get('paidDt'),
-            tmf=result.get('tmfFlg'),
+
+class ContentGetter:
+    def __init__(self):
+        options = webdriver.ChromeOptions()
+        options.add_argument('--disable-extensions')
+        options.add_argument('--disable-notifications')
+        options.add_argument('--headless')
+        options.add_argument("--enable-javascript")
+        options.add_argument('--disable-gpu')
+        options.add_argument(
+            f'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
+            f'Chrome/88.0.4324.96 Safari/537.36'
         )
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-blink-features=AutomationControlled')
+        options.add_experimental_option('excludeSwitches', ['enable-automation'])
+        options.add_experimental_option('useAutomationExtension', False)
 
-    @staticmethod
-    def _extract_result_text(text: str):
-        pattern = re.compile(r'\s+var\s+result\s+=\s+\[\{?(?P<results_text>.*)\}?\].+')
-        match = pattern.match(text)
-        results_text = match.group('results_text')
-        results_text = results_text.replace('"', '')
+        self._driver = webdriver.Chrome(options=options)
 
-        return results_text
+    def login(self, username, password):
+        url = f'{BASE_URL}/main/index.do'
+        self._driver.get(url)
+        time.sleep(5)
+        username_input = self._driver.find_element_by_xpath('//*[@id="pUsrId"]')
+        username_input.send_keys(username)
+        time.sleep(2)
+        password_input = self._driver.find_element_by_xpath('//*[@id="pUsrPwd"]')
+        password_input.send_keys(password)
+        time.sleep(2)
+        login_btn = self._driver.find_element_by_xpath('//*[@id="form"]/table/tbody/tr/td[1]/table/tbody/tr[3]/td/table[1]/tbody/tr[2]/td/table/tbody/tr[1]/td[3]/img')
+        login_btn.click()
+        time.sleep(8)
 
-    @staticmethod
-    def _transform_results_text_to_dict(result_text: str) -> Dict:
-        """
-        result_text form: 'key1:value1,key2:value2,...,keyN:valueN'
-        """
-        result = {}
+    def search(self, container_no_list):
+        menu_btn = self._driver.find_element_by_xpath('//*[@id="nav"]/li[3]/a')
+        menu_btn.click()
+        time.sleep(13)
 
-        result_tuples = result_text.split(',')
-        for result_t in result_tuples:
-            key, value = result_t.split(':', 1)
-            result[key] = value
+        iframe = self._driver.find_element_by_xpath('//*[@id="businessView"]')
+        time.sleep(15)
+        self._driver.switch_to.frame(iframe)
+        time.sleep(2)
 
-        return result
+        container_text_area = self._driver.find_element_by_xpath('//*[@id="cntrNos"]')
+        container_text_area.send_keys('\n'.join(container_no_list))
+        time.sleep(3)
 
+        search_btn = self._driver.find_element_by_xpath('//*[@id="form"]/table/tbody/tr/td/table/tbody/tr/td/table[2]/tbody/tr/td/table[1]/tbody/tr/td[1]/table[3]/tbody/tr/td/table/tbody/tr/td[1]/table/tbody/tr/td[2]/a')
+        search_btn.click()
+        time.sleep(8)
 
-# -------------------------------------------------------------------------------
+        return self._driver.page_source
 
+    def get_container_info(self, response: Selector, numbers: int):
+        table = response.xpath('//*[@id="gview_grid1"]')
+        table_locator = ContainerTableLocator()
+        table_locator.parse(table=table, numbers=numbers)
 
-class SearchMblRoutingRule(BaseRoutingRule):
-    name = 'SEARCH_MBL'
+        res = []
+        for i in range(numbers):
+            container = {
+                'container_no': table_locator.get_cell(left=i, top='Container No'),
+                'container_spec': table_locator.get_cell(left=i, top='Container Type/Length/Height'),
+                'customs_release': table_locator.get_cell(left=i, top='Customs Status'),
+                'ready_for_pick_up': table_locator.get_cell(left=i, top='Available for Pickup'),
+                'appointment_date': table_locator.get_cell(left=i, top='Appt Time'),
+                'freight_release': table_locator.get_cell(left=i, top='Freight Status'),
+                'holds': table_locator.get_cell(left=i, top='Hold Reason'),
+                'last_free_day': table_locator.get_cell(left=i, top='Last Free Day'),
+            }
 
-    @classmethod
-    def build_request_option(cls, mbl_no) -> RequestOption:
-        url = (
-            f'{BASE_URL}/uiArp02Action/searchBillofLadingInformationList.do?tmlCd=USLGB&blNo={mbl_no}&'
-            f'acssHis=USLGB,{USER_ID}'
-        )
+            if container['container_no']:
+                res.append(container)
 
-        return RequestOption(
-            method=RequestOption.METHOD_GET,
-            rule_name=cls.name,
-            url=url,
-        )
+        return res
 
-    def get_save_name(self, response) -> str:
-        return f'{self.name}.html'
-
-    def handle(self, response):
-        scripts = response.css('script')
-        result_match_rule = CssQueryResultExistMatchRule('::text')
-        result_script = find_selector_from(scripts, rule=result_match_rule)
-
-        result_script_text = result_script.css('::text').get()
-        result_text = self._extract_result_text(text=result_script_text)
-        result = self._transform_results_text_to_dict(result_text=result_text)
-
-        if self._check_mbl_no_invalid(result=result):
-            raise TerminalInvalidMblNoError()
-
-        yield TerminalItem(
-            mbl_no=result['blNo'],
-            vessel=result['vslNm'],
-            voyage=result['usrInVoyNo'],
-        )
-
-    @staticmethod
-    def _check_mbl_no_invalid(result: Dict):
-        if result['vldFlg'] == 'Y':
-            return False
-        elif result['vldFlg'] == 'N':
-            return True
-        else:
-            raise TerminalResponseFormatError(reason=f'Unexpected mbl valid state: `{result["vldFlg"]}`')
-
-    @staticmethod
-    def _extract_result_text(text: str):
-        pattern = re.compile(r'\s+var\s+result\s+=\s+\[\{?(?P<results_text>.*)\}?\].+')
-        match = pattern.match(text)
-        results_text = match.group('results_text')
-        results_text = results_text.replace('"', '')
-
-        return results_text
-
-    @staticmethod
-    def _transform_results_text_to_dict(result_text: str) -> Dict:
-        """
-        result_text form: 'key1:value1,key2:value2,...,keyN:valueN'
-        """
-        result = {}
-
-        result_tuples = result_text.split(',')
-        for result_t in result_tuples:
-            key, value = result_t.split(':', 1)
-            result[key] = value
-
-        return result
+    def quit(self):
+        self._driver.quit()
 
 
-# -------------------------------------------------------------------------------
+class ContainerTableLocator(BaseTableLocator):
+    def __init__(self):
+        self._td_map = []
 
+    def parse(self, table: Selector, numbers: int = 1):
+        titles_ths = table.css('th')
+        title_list = []
+        for title in titles_ths:
+            title_res = (' '.join(title.css('::text').extract())).strip()
+            title_list.append(title_res)
 
-class CssQueryResultExistMatchRule(BaseMatchRule):
+        trs = table.css('tr')
+        for tr in trs:
+            data_tds = tr.css('td')
+            data_list = []
+            is_append = False
+            for data in data_tds:
+                data_res = (' '.join(data.css('::text').extract())).strip()
+                if data_res:
+                    is_append = True
+                data_list.append(data_res)
 
-    def __init__(self, css_query: str):
-        self._css_query = css_query
+            if not is_append:
+                continue
 
-    def check(self, selector: scrapy.Selector) -> bool:
-        texts = selector.css(self._css_query).getall()
+            row = {}
+            for title_index, title in enumerate(title_list):
+                row[title] = data_list[title_index]
 
-        for t in texts:
-            if 'result' in t:
-                return True
-        return False
+            self._td_map.append(row)
 
+    def has_header(self, top=None, left=None) -> bool:
+        return (top in self._td_map) and (left is None)
+
+    def get_cell(self, top, left=0) -> scrapy.Selector:
+        try:
+            return self._td_map[left][top]
+        except (KeyError, IndexError) as err:
+            return None

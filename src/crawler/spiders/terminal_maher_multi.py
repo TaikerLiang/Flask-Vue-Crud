@@ -259,9 +259,6 @@ class MaherLeftHeadTableLocator(BaseTableLocator):
                 row[title] = data_tds[title_index]
             self._td_map.append(row)
 
-            from pprint import pprint
-            pprint(self._td_map)
-
     def _get_titles(self, table: Selector):
         titles = table.css('th::text').getall()
         return [title.strip() for title in titles]
