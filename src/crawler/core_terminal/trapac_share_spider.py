@@ -34,6 +34,7 @@ class CompanyInfo:
     email: str
     password: str
 
+
 @dataclasses.dataclass
 class ProxyOption:
     group: str
