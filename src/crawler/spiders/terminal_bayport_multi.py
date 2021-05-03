@@ -155,14 +155,17 @@ class ContainerRoutingRule(BaseRoutingRule):
                 container_no=row[2],
                 holds=row[5],
                 customs_release=row[6],
-                last_free_day=self._get_last_free_day(),
+                last_free_day=self._get_last_free_day(row[9], row[10]),
             )
 
-    def _get_last_free_day(self, port_lfd='5/2/2021', line_lfd='5/3/2021'):
-        port_lfd_dt = datetime.strptime(port_lfd, '%m/%d/%Y')
-        line_lfd_dt = datetime.strptime(line_lfd, '%m/%d/%Y')
+    def _get_last_free_day(self, port_lfd, line_lfd):
+        port_lfd_dt, line_lfd_dt = None, None
+        if port_lfd:
+            port_lfd_dt = datetime.strptime(port_lfd, '%m/%d/%Y')
+        if line_lfd:
+            line_lfd_dt = datetime.strptime(line_lfd, '%m/%d/%Y')
 
-        if port_lfd_dt < line_lfd_dt:
+        if port_lfd_dt and line_lfd_dt and port_lfd_dt < line_lfd_dt:
             return port_lfd
         else:
             return line_lfd or port_lfd
