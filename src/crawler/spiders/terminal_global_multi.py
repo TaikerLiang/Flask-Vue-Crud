@@ -126,12 +126,9 @@ class ContainerRoutingRule(BaseRoutingRule):
                 container_no=table_locator.get_cell(left=i, top='Container #'),
                 freight_release=table_locator.get_cell(left=i, top='Freight Released'),
                 customs_release=table_locator.get_cell(left=i, top='Customs Released'),
-                discharge_date=table_locator.get_cell(left=i, top='Exam Hold'),
-                ready_for_pick_up=table_locator.get_cell(left=i, top='Line Hold'),
-                last_free_day=table_locator.get_cell(left=i, top='Terminal Hold'),
-                gate_out_date=table_locator.get_cell(left=i, top='Avail for Pickup'),
-                demurrage=table_locator.get_cell(left=i, top='Discharge Date'),
-                carrier=table_locator.get_cell(left=i, top='Gate Out Date'),
+                ready_for_pick_up=table_locator.get_cell(left=i, top='Avail for Pickup'),
+                discharge_date=table_locator.get_cell(left=i, top='Discharge Date'),
+                gate_out_date=table_locator.get_cell(left=i, top='Gate Out Date'),
             )
 
     @staticmethod
