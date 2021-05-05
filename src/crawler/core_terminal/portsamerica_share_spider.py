@@ -1,7 +1,7 @@
 import dataclasses
 from typing import Dict, List
-from urllib.parse import urlencode
 import time
+import re
 
 import scrapy
 from scrapy import Selector
@@ -11,8 +11,10 @@ from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
+from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError
 
 BASE_URL = 'https://voyagertrack.portsamerica.com'
+
 
 @dataclasses.dataclass
 class CompanyInfo:
@@ -107,7 +109,7 @@ class SearchContainerRule(BaseRoutingRule):
         content_getter.login(company_info.email, company_info.password, company_info.site_name)
         resp = content_getter.search(container_no_list)
 
-        containers = content_getter.get_container_info(Selector(text=resp))
+        containers = content_getter.get_container_info(Selector(text=resp), len(container_no_list))
         content_getter.quit()
 
         for container in containers:
@@ -129,6 +131,7 @@ class ContentGetter:
             f'Chrome/88.0.4324.96 Safari/537.36'
         )
         options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--window-size=1920,1080')
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-blink-features=AutomationControlled')
         options.add_experimental_option('excludeSwitches', ['enable-automation'])
@@ -166,18 +169,26 @@ class ContentGetter:
         search_btn = self._driver.find_element_by_xpath('//*[@id="btnContainerSubmitMulti"]')
         search_btn.click()
         time.sleep(8)
-        self._driver.save_screenshot("screenshot.png")
 
         return self._driver.page_source
 
-    def get_container_info(self, resp):
+    def get_container_info(self, resp: Selector, numbers: int):
+        # table = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table')
+        # table_locator = TableLocator()
+        # table_locator.parse(table=table, numbers=numbers)
+
         res = []
         tds = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table/tbody/tr/td')
         for i in range(int(len(tds)/17)):
+            appointment_date = ''.join(tds[i*17+5].xpath('.//text()').extract())
+            appt_date_groups = re.findall(r'(.*)\n(.*)-(.*)', appointment_date)
+            if appt_date_groups and len(list(appt_date_groups[0])) >= 1:
+                appointment_date = ' '.join(list(appt_date_groups[0])[:-1])
+
             res.append({
                 'container_no': ''.join(tds[i*17+1].xpath('.//text()').extract()).strip().replace('-', ''),
                 'ready_for_pick_up': ''.join(tds[i*17+2].xpath('.//text()').extract()).strip(),
-                'appointment_date': ''.join(tds[i*17+5].xpath('.//text()').extract()).strip(),
+                'appointment_date': appointment_date.strip(),
                 'customs_release': ''.join(tds[i*17+6].xpath('.//text()').extract()).strip(),
                 'freight_release': ''.join(tds[i*17+7].xpath('.//text()').extract()).strip(),
                 'holds': ''.join(tds[i*17+9].xpath('.//text()').extract()).strip(),
@@ -192,3 +203,20 @@ class ContentGetter:
     def quit(self):
         self._driver.quit()
 
+
+class TableLocator(BaseTableLocator):
+    def __init__(self):
+        self._td_map = []
+
+    def parse(self, table: Selector, numbers: int = 1):
+        titles = self._get_titles(table)
+
+    def _get_titles(self, table: Selector):
+        titles = table.css('th::text').getall()
+        return [title.strip() for title in titles]
+
+    def get_cell(self, left, top=None) -> Selector:
+        try:
+            return self._td_map[left][top]
+        except (KeyError, IndexError) as err:
+            raise HeaderMismatchError(repr(err))
