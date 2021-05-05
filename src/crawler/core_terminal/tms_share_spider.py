@@ -1,28 +1,37 @@
 import datetime
+import dataclasses
 from typing import Dict
 
 import scrapy
 from scrapy import Selector
 
-from crawler.core_terminal.base_spiders import BaseTerminalSpider
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import TerminalResponseFormatError, TerminalInvalidContainerNoError
-from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem
+from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 BASE_URL = 'https://tms.itslb.com'
-USER_NAME = 'BrianLee'
-PASSWORD = 'ZD_uSUFMy!6Nfu'
 
 
-class SharedSpider(BaseTerminalSpider):
+@dataclasses.dataclass
+class CompanyInfo:
+    email: str
+    password: str
+
+
+class TmsSharedSpider(BaseMultiTerminalSpider):
     name = None
     terminal_id = None
+    company_info = CompanyInfo(
+        email='',
+        password='',
+    )
 
     def __init__(self, *args, **kwargs):
-        super(SharedSpider, self).__init__(*args, **kwargs)
+        super(TmsSharedSpider, self).__init__(*args, **kwargs)
 
         rules = [
             TokenRoutingRule(),
@@ -34,7 +43,8 @@ class SharedSpider(BaseTerminalSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        request_option = TokenRoutingRule.build_request_option(container_no=self.container_no)
+        unique_container_nos = list(self.cno_tid_map.keys())
+        request_option = TokenRoutingRule.build_request_option(container_nos=unique_container_nos, company_info=self.company_info)
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -46,8 +56,12 @@ class SharedSpider(BaseTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseTerminalItem):
-                yield result
+            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+                c_no = result['container_no']
+                t_ids = self.cno_tid_map[c_no]
+                for t_id in t_ids:
+                    result['task_id'] = t_id
+                    yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
             else:
@@ -76,36 +90,30 @@ class SharedSpider(BaseTerminalSpider):
             raise ValueError(f'Invalid option.method [{option.method}]')
 
 
-class TerminalTmsLongBeachSpider(SharedSpider):
-    name = 'terminal_tms_long_beach'
-    terminal_id = '1'
-
-
-class TerminalTmsHuskySpider(SharedSpider):
-    terminal_id = '3'
-    name = 'terminal_tms_husky'
-
-
 class TokenRoutingRule(BaseRoutingRule):
     name = 'TOKEN'
 
     @classmethod
-    def build_request_option(cls, container_no) -> RequestOption:
+    def build_request_option(cls, container_nos, company_info) -> RequestOption:
         url = f'{BASE_URL}/tms2/Account/Login'
 
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
-            meta={'container_no': container_no},
+            meta={
+                'container_nos': container_nos,
+                'company_info': company_info
+            },
         )
-    
+
     def handle(self, response):
-        container_no = response.meta['container_no']
+        container_nos = response.meta['container_nos']
+        company_info = response.meta['company_info']
 
         token = self._get_token(response=response)
 
-        yield LoginRoutingRule.build_request_option(token=token, container_no=container_no)
+        yield LoginRoutingRule.build_request_option(token=token, container_nos=container_nos, company_info=company_info)
 
     def get_save_name(self, response):
         return f'{self.name}.html'
@@ -123,12 +131,12 @@ class LoginRoutingRule(BaseRoutingRule):
         self.terminal_id = terminal_id
 
     @classmethod
-    def build_request_option(cls, token, container_no) -> RequestOption:
+    def build_request_option(cls, token, container_nos, company_info) -> RequestOption:
         url = f'{BASE_URL}/tms2/Account/Login?ReturnUrl=%2Ftms2%2FImport%2FContainerAvailability'
         form_data = {
             '__RequestVerificationToken': token,
-            'UserName': USER_NAME,
-            'Password': PASSWORD,
+            'UserName': company_info.email,
+            'Password': company_info.password,
         }
 
         return RequestOption(
@@ -136,11 +144,11 @@ class LoginRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_POST_FORM,
             url=url,
             form_data=form_data,
-            meta={'container_no': container_no},
+            meta={'container_nos': container_nos},
         )
 
     def handle(self, response):
-        container_no = response.meta['container_no']
+        container_nos = response.meta['container_nos']
 
         # get terminal token for SetTerminalRoutingRule request
         set_terminal_token = self._get_terminal_token(response=response)
@@ -150,13 +158,14 @@ class LoginRoutingRule(BaseRoutingRule):
 
         current_terminal_id = self._get_current_terminal_id(response=response)
         if self.terminal_id == current_terminal_id:
-            yield ContainerAvailabilityRoutingRule.build_request_option(
-                token=container_availability_token, container_no=container_no)
+            for container_no in container_nos:
+                yield ContainerAvailabilityRoutingRule.build_request_option(
+                    token=container_availability_token, container_no=container_no)
         else:
             yield SetTerminalRoutingRule.build_request_option(
                 set_terminal_token=set_terminal_token,
                 container_availability_token=container_availability_token,
-                container_no=container_no,
+                container_nos=container_nos,
             )
 
     def get_save_name(self, response):
@@ -182,7 +191,7 @@ class SetTerminalRoutingRule(BaseRoutingRule):
     name = 'SET_TERMINAL'
 
     @classmethod
-    def build_request_option(cls, set_terminal_token, container_availability_token, container_no) -> RequestOption:
+    def build_request_option(cls, set_terminal_token, container_availability_token, container_nos) -> RequestOption:
         url = f'{BASE_URL}/tms2/Account/SetTerminal'
         form_data = {
             '__RequestVerificationToken': set_terminal_token,
@@ -196,16 +205,17 @@ class SetTerminalRoutingRule(BaseRoutingRule):
             form_data=form_data,
             meta={
                 'container_availability_token': container_availability_token,
-                'container_no': container_no,
+                'container_nos': container_nos,
             },
         )
 
     def handle(self, response):
-        container_no = response.meta['container_no']
+        container_nos = response.meta['container_nos']
         container_availability_token = response.meta['container_availability_token']
 
-        yield ContainerAvailabilityRoutingRule.build_request_option(
-            token=container_availability_token, container_no=container_no)
+        for container_no in container_nos:
+            yield ContainerAvailabilityRoutingRule.build_request_option(
+                token=container_availability_token, container_no=container_no)
 
     def get_save_name(self, response):
         return f'{self.name}.html'
@@ -234,8 +244,11 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
         )
 
     def handle(self, response):
+        container_no = response.meta['container_no']
+
         if self.__is_invalid_container_no(response=response):
-            raise TerminalInvalidContainerNoError()
+            yield InvalidContainerNoItem(container_no=container_no)
+            return
 
         container_info = self.__extract_container_info(response=response)
         extra_container_info = self.__extract_extra_container_info(response=response)
@@ -253,6 +266,7 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
             vessel=extra_container_info['vessel'],
             mbl_no=extra_container_info['mbl_no'],
             voyage=extra_container_info['voyage'],
+            gate_out_date=extra_container_info['gate_out_date'],
             chassis_no=container_info['chassis_no'],
         )
 
@@ -302,6 +316,8 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
     def __extract_extra_container_info(response: scrapy.Selector) -> Dict:
         table_selector = response.css('table.table-bordered')
 
+        print('pau text', table_selector)
+
         if table_selector is None:
             raise TerminalResponseFormatError(reason='Extra container info table not found')
 
@@ -322,13 +338,13 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
             'customs_release': left_table.extract_cell(None, 'Customs'),
             'freight_release': left_table.extract_cell(None, 'Freight'),
             'voyage': middle_table.extract_cell(None, 'Voyage'),
+            'gate_out_date': middle_table.extract_cell(None, 'Spot'),
             'mbl_no': right_table.extract_cell(None, 'B/L#'),
             'demurrage': right_table.extract_cell(None, 'Demurrage'),
         }
 
 
 class TopInfoTableLocator(BaseTableLocator):
-
     """
         +---------+---------+-----+---------+ <table>
         | Title 1 | Title 2 | ... | Title N | <tr>
@@ -389,7 +405,6 @@ class TdSpanExtractor(BaseTableCellExtractor):
 
 
 class LeftExtraContainerLocator(BaseTableLocator):
-
     """
         +---------+--------+-----+-----+-----+-----+ <table>
         | Title 1 | Data 1 |     |     |     |     | <tr>
@@ -432,7 +447,6 @@ class LeftExtraContainerLocator(BaseTableLocator):
 
 
 class MiddleExtraContainerLocator(BaseTableLocator):
-
     """
         +-----+-----+---------+--------+-----+-----+ <table>
         |     |     | Title 1 | Data 1 |     |     | <tr>
@@ -476,7 +490,6 @@ class MiddleExtraContainerLocator(BaseTableLocator):
 
 
 class RightExtraContainerLocator(BaseTableLocator):
-
     """
         +-----+-----+-----+-----+---------+--------+ <table>
         |     |     |     |     | Title 1 | Data 1 | <tr>
@@ -517,5 +530,3 @@ class RightExtraContainerLocator(BaseTableLocator):
 
     def has_header(self, top=None, left=None) -> bool:
         return (top is None) and (left in self._td_map)
-
-
