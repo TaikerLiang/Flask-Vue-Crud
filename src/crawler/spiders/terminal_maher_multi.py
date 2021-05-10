@@ -44,7 +44,13 @@ class MaherContentGetter:
 
         search_btn = self.driver.find_element_by_css_selector("input[onclick='Search();']")
         search_btn.click()
-        time.sleep(3)
+        time.sleep(20)
+
+        return self.driver.page_source
+
+    def detail_search(self, container_no):
+        self.driver.get(f'https://apps.maherterminals.com/csp/importContainerAction.do?container={container_no}&index=0&method=detail')
+        time.sleep(5)
 
         return self.driver.page_source
 
@@ -76,6 +82,7 @@ class MaherContentGetter:
 
 
 class TerminalMaherMultiSpider(BaseMultiTerminalSpider):
+    firms_code = 'E416'
     name = 'terminal_maher_multi'
 
     def __init__(self, *args, **kwargs):
@@ -179,6 +186,10 @@ class SearchRoutingRule(BaseRoutingRule):
         container_info_list = self.extract_container_info(response=response, container_no_list=container_no_list)
 
         for container_info in container_info_list:
+            ct_no = container_info['container_no']
+            # detail_page_resp = content_getter.detail_search(ct_no)
+            # gate_out_date = detail_page_resp.xpath('/html/body/table/tbody/tr/td/div[3]/table/tbody/tr/td/table[4]/tbody/tr[4]/td/table/tbody/tr/td/table/tbody/tr[29]/td[2]/text()').get()
+            # print(ct_no, detail_page_resp, gate_out_date)
             yield TerminalItem(
                 **container_info
             )
@@ -240,7 +251,7 @@ class MaherLeftHeadTableLocator(BaseTableLocator):
     def __init__(self):
         self._td_map = []
 
-    def parse(self, table: Selector, numbers: int):
+    def parse(self, table: Selector, numbers: int = 1):
         titles = self._get_titles(table)
         trs = table.css('tbody tr')
 

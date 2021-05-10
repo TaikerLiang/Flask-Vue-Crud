@@ -18,6 +18,7 @@ PASSWORD = 'Bb1234567890'
 
 
 class TerminalEtsSpider(BaseMultiTerminalSpider):
+    firms_code = 'Y124'
     name = 'terminal_ets'
 
     def __init__(self, *args, **kwargs):
@@ -223,7 +224,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         return f'{self.name}.json'
 
     def handle(self, response):
-        container_info_list = self.__extract_container_info(response=response)
+        container_info_list = self._extract_container_info(response=response)
 
         for container_info in container_info_list:
             yield TerminalItem(
@@ -252,12 +253,14 @@ class ContainerRoutingRule(BaseRoutingRule):
             )
 
     @staticmethod
-    def __extract_container_info(response: HtmlResponse):
+    def _extract_container_info(response: HtmlResponse):
         response_dict = json.loads(response.text)
 
         container_info_list = []
         titles = response_dict['cols']
+        print('titles', titles)
         for resp in response_dict['data']:
+            print('paul resp', resp, len(resp))
             container_info = {}
             for title_index, title in enumerate(titles):
                 data_index = title_index

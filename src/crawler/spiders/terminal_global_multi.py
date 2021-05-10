@@ -92,36 +92,38 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         url = "http://payments.gcterminals.com/GlobalTerminal/globalSearch.do"
 
-        form_data = {
-            'containerSelectedIndexParam': '',
-            'searchId': 'BGLOB',
-            'searchType': 'container',
-            'searchTextArea': ','.join(container_no_list),
-            'searchText': '',
-            'buttonClicked': 'Search',
-        }
-
-        headers = {
-            'Connection': 'keep-alive',
-            'Cache-Control': 'max-age=0',
-            'Upgrade-Insecure-Requests': '1',
-            'Origin': 'http://payments.gcterminals.com',
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-            'Referer': 'http://payments.gcterminals.com/GlobalTerminal/globalSearch.do',
-            'Accept-Language': 'en-US,en;q=0.9',
-        }
-
-        resp = requests.request("POST", url, headers=headers, data=urlencode(form_data))
-        resp_selector = Selector(text=resp.text)
-
-        # extract
-        result_table = resp_selector.css('div#results-div table')
-        table_locator = GlobalLeftTableLocator()
-        table_locator.parse(table=result_table, numbers=len(container_no_list))
-
         for i in range(len(container_no_list)):
+            form_data = {
+                'containerSelectedIndexParam': str(i),
+                'searchId': 'BGLOB',
+                'searchType': 'container',
+                'searchTextArea': '\n'.join(container_no_list),
+                'searchText': '',
+                'buttonClicked': 'Search',
+            }
+
+            headers = {
+                'Connection': 'keep-alive',
+                'Cache-Control': 'max-age=0',
+                'Upgrade-Insecure-Requests': '1',
+                'Origin': 'http://payments.gcterminals.com',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+                'Referer': 'http://payments.gcterminals.com/GlobalTerminal/globalSearch.do',
+                'Accept-Language': 'en-US,en;q=0.9',
+            }
+
+            resp = requests.request("POST", url, headers=headers, data=urlencode(form_data))
+            resp_selector = Selector(text=resp.text)
+
+            # extract
+            result_table = resp_selector.css('div#results-div table')
+            table_locator = GlobalLeftTableLocator()
+            table_locator.parse(table=result_table, numbers=len(container_no_list))
+
+            last_free_day_val = resp_selector.xpath('//*[@id="results-div"]/center[3]/table/tr[12]/td[4]/text()').get()
+
             yield TerminalItem(
                 container_no=table_locator.get_cell(left=i, top='Container #'),
                 freight_release=table_locator.get_cell(left=i, top='Freight Released'),
@@ -129,6 +131,7 @@ class ContainerRoutingRule(BaseRoutingRule):
                 ready_for_pick_up=table_locator.get_cell(left=i, top='Avail for Pickup'),
                 discharge_date=table_locator.get_cell(left=i, top='Discharge Date'),
                 gate_out_date=table_locator.get_cell(left=i, top='Gate Out Date'),
+                last_free_day=last_free_day_val,
             )
 
     @staticmethod

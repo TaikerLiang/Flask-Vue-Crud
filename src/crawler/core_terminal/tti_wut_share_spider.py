@@ -189,6 +189,7 @@ class ContentGetter:
                 'container_no': table_locator.get_cell(left=i, top='Container No'),
                 'container_spec': table_locator.get_cell(left=i, top='Container Type/Length/Height'),
                 'customs_release': table_locator.get_cell(left=i, top='Customs Status'),
+                'cy_location': table_locator.get_cell(left=i, top='Yard Location'),
                 'ready_for_pick_up': table_locator.get_cell(left=i, top='Available for Pickup'),
                 'appointment_date': table_locator.get_cell(left=i, top='Appt Time'),
                 'freight_release': table_locator.get_cell(left=i, top='Freight Status'),

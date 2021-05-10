@@ -16,6 +16,7 @@ BASE_URL = 'https://csp.poha.com'
 
 
 class TerminalBayportMultiSpider(BaseMultiTerminalSpider):
+    firms_code = 'V136'
     name = 'terminal_bayport_multi'
 
     def __init__(self, *args, **kwargs):
