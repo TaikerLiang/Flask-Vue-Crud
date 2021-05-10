@@ -18,6 +18,7 @@ PASSWORD = 'Bb1234567890'
 
 
 class TerminalEtsSpider(BaseMultiTerminalSpider):
+    firms_code = 'Y124'
     name = 'terminal_ets'
 
     def __init__(self, *args, **kwargs):

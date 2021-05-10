@@ -30,7 +30,7 @@ class TerminalItem(BaseTerminalItem):
     carrier = scrapy.Field()
     container_spec = scrapy.Field()
     holds = scrapy.Field()
-    cy_location = scrapy.Field()  # location ?
+    cy_location = scrapy.Field()
     vessel = scrapy.Field()
     mbl_no = scrapy.Field()
     voyage = scrapy.Field()

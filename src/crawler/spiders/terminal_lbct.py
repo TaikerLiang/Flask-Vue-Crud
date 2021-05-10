@@ -15,6 +15,7 @@ BASE_URL = 'https://www.lbct.com'
 
 
 class TerminalLbctSpider(BaseMultiTerminalSpider):
+    firms_code = 'WAC8'
     name = 'terminal_lbct'
 
     def __init__(self, *args, **kwargs):

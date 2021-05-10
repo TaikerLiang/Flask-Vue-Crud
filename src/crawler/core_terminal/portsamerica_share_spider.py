@@ -181,9 +181,11 @@ class ContentGetter:
         tds = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table/tbody/tr/td')
         for i in range(int(len(tds)/17)):
             appointment_date = ''.join(tds[i*17+5].xpath('.//text()').extract())
-            appt_date_groups = re.findall(r'(.*)\n(.*)-(.*)', appointment_date)
-            if appt_date_groups and len(list(appt_date_groups[0])) >= 1:
-                appointment_date = ' '.join(list(appt_date_groups[0])[:-1])
+            if re.search('([0-9]+/[0-9]+/[0-9]{4}[0-9]{4}-[0-9]{4})', appointment_date):
+                date_split_list = appointment_date.split('/')
+                time_split_list = date_split_list[-1][4:].split('-')
+                date_split_list[-1] = date_split_list[-1][:4]
+                appointment_date = '/'.join(date_split_list) + ' ' + time_split_list[0]
 
             res.append({
                 'container_no': ''.join(tds[i*17+1].xpath('.//text()').extract()).strip().replace('-', ''),
