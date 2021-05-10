@@ -181,6 +181,7 @@ class ContentGetter:
         tds = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table/tbody/tr/td')
         for i in range(int(len(tds)/17)):
             appointment_date = ''.join(tds[i*17+5].xpath('.//text()').extract())
+
             if re.search('([0-9]+/[0-9]+/[0-9]{4}[0-9]{4}-[0-9]{4})', appointment_date):
                 date_split_list = appointment_date.split('/')
                 time_split_list = date_split_list[-1][4:].split('-')
