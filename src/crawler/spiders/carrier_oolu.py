@@ -23,7 +23,12 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem,
+    BaseCarrierItem,
+    MblItem,
+    LocationItem,
+    ContainerItem,
+    ContainerStatusItem,
+    DebugItem,
 )
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError, CarrierInvalidMblNoError, LoadWebsiteTimeOutError,
@@ -290,7 +295,7 @@ class ContentGetter:
             icon_ele = self.get_slider_icon_ele()
             img_ele = self.get_bg_img_ele()
 
-            distance = self.get_element_slide_distance(icon_ele, img_ele, 4)
+            distance = self.get_element_slide_distance(icon_ele, img_ele, 1)
 
             if distance <= 100:
                 self.refresh()
@@ -552,32 +557,36 @@ class CargoTrackingRule(BaseRoutingRule):
         # vessel_voyage
         vessel_voyage_extractor = VesselVoyageTdExtractor()
         vessel_voyage = table_extractor.extract_cell(
-            top='Vessel Voyage', left=table_locator.LAST_LEFT_HEADER, extractor=vessel_voyage_extractor)
+            top='Vessel Voyage', left=table_locator.LAST_LEFT_HEADER, extractor=vessel_voyage_extractor
+        )
 
         # por
-        por = table_extractor.extract_cell(
-            top='Origin', left=table_locator.FIRST_LEFT_HEADER, extractor=span_extractor)
+        por = table_extractor.extract_cell(top='Origin', left=table_locator.FIRST_LEFT_HEADER, extractor=span_extractor)
 
         # pol / pod
         pol_pod_extractor = PolPodTdExtractor()
 
         pol_info = table_extractor.extract_cell(
-            top='Port of Load', left=table_locator.FIRST_LEFT_HEADER, extractor=pol_pod_extractor)
+            top='Port of Load', left=table_locator.FIRST_LEFT_HEADER, extractor=pol_pod_extractor
+        )
         etd, atd = _get_est_and_actual(status=pol_info['status'], time_str=pol_info['time_str'])
 
         pod_info = table_extractor.extract_cell(
-            top='Port of Discharge', left=table_locator.LAST_LEFT_HEADER, extractor=pol_pod_extractor)
+            top='Port of Discharge', left=table_locator.LAST_LEFT_HEADER, extractor=pol_pod_extractor
+        )
         eta, ata = _get_est_and_actual(status=pod_info['status'], time_str=pod_info['time_str'])
 
         # place_of_deliv
         deliv_extractor = DelivTdExtractor()
         deliv_info = table_extractor.extract_cell(
-            top='Final Destination Hub', left=table_locator.LAST_LEFT_HEADER, extractor=deliv_extractor)
+            top='Final Destination Hub', left=table_locator.LAST_LEFT_HEADER, extractor=deliv_extractor
+        )
         deliv_eta, deliv_ata = _get_est_and_actual(status=deliv_info['status'], time_str=deliv_info['time_str'])
 
         # final_dest
         final_dest = table_extractor.extract_cell(
-            top='Destination', left=table_locator.LAST_LEFT_HEADER, extractor=span_extractor)
+            top='Destination', left=table_locator.LAST_LEFT_HEADER, extractor=span_extractor
+        )
 
         return {
             'por': por,
@@ -608,10 +617,12 @@ class CargoTrackingRule(BaseRoutingRule):
             container_no_text = table_extractor.extract_cell('Container Number', left)
             # container_no_text: OOLU843521-8
             container_id, check_no = container_no_text.split('-')
-            container_no_list.append({
-                'container_id': container_id,
-                'container_no': f'{container_id}{check_no}',
-            })
+            container_no_list.append(
+                {
+                    'container_id': container_id,
+                    'container_no': f'{container_id}{check_no}',
+                }
+            )
         return container_no_list
 
 
@@ -651,15 +662,15 @@ class SummaryRightTableLocator(BaseTableLocator):
 
 class RoutingTableLocator(BaseTableLocator):
     """
-        +-------------------------------------+ <tbody>
-        | Title 1  | Title 2  | ... |   <th>  | <tr>
-        +----------+----------+-----+---------+
-        | Data 1-1 | Data 2-1 |     |   <td>  | <tr>
-        +----------+----------+-----+---------+
-        | Data 1-2 | Data 2-2 |     |   <td>  | <tr>
-        +----------+----------+-----+---------+
-        | ...      | ...      |     |   <td>  | <tr>
-        +----------+----------+-----+---------+ </tbody>
+    +-------------------------------------+ <tbody>
+    | Title 1  | Title 2  | ... |   <th>  | <tr>
+    +----------+----------+-----+---------+
+    | Data 1-1 | Data 2-1 |     |   <td>  | <tr>
+    +----------+----------+-----+---------+
+    | Data 1-2 | Data 2-2 |     |   <td>  | <tr>
+    +----------+----------+-----+---------+
+    | ...      | ...      |     |   <td>  | <tr>
+    +----------+----------+-----+---------+ </tbody>
     """
 
     TR_TITLE_INDEX = 0
@@ -673,7 +684,7 @@ class RoutingTableLocator(BaseTableLocator):
 
     def parse(self, table: scrapy.Selector):
         title_tr = table.css('tr')[self.TR_TITLE_INDEX]
-        data_trs = table.css('tr')[self.TR_DATA_START_INDEX:]
+        data_trs = table.css('tr')[self.TR_DATA_START_INDEX :]
 
         raw_title_list = title_tr.css('th::text').getall()
         title_list = [title.strip() for title in raw_title_list if isinstance(title, str)]
@@ -706,6 +717,7 @@ class ContainerTableLocator(BaseTableLocator):
     | Data 1  | Data 2  | ... | Data  |   Data   | Data | ... | <tr> <td>     |
     +---------+---------+-----+-------------------------+-----+ <\tbody> -----+
     """
+
     TR_MAIN_TITLE_INDEX = 0
     TR_SUB_TITLE_INDEX = 1
     TR_DATA_START_INDEX = 2
@@ -719,7 +731,7 @@ class ContainerTableLocator(BaseTableLocator):
 
         main_title_list = tr_list[self.TR_MAIN_TITLE_INDEX].css('th::text').getall()
         sub_title_list = tr_list[self.TR_SUB_TITLE_INDEX].css('th::text').getall()
-        data_tr_list = tr_list[self.TR_DATA_START_INDEX:]
+        data_tr_list = tr_list[self.TR_DATA_START_INDEX :]
 
         title_list = []
         for main_title_index, main_title in enumerate(main_title_list):
@@ -757,7 +769,6 @@ class ContainerTableLocator(BaseTableLocator):
 
 
 class VesselVoyageTdExtractor(BaseTableCellExtractor):
-
     def extract(self, cell: Selector):
         text_list = cell.css('::text').getall()
 
@@ -799,7 +810,6 @@ class VesselVoyageTdExtractor(BaseTableCellExtractor):
 
 
 class PolPodTdExtractor(BaseTableCellExtractor):
-
     def extract(self, cell: Selector):
         text_list = cell.css('::text').getall()
 
@@ -814,7 +824,6 @@ class PolPodTdExtractor(BaseTableCellExtractor):
 
 
 class DelivTdExtractor(BaseTableCellExtractor):
-
     def extract(self, cell: Selector):
         text_list = cell.css('::text').getall()
 
@@ -953,31 +962,34 @@ class ContainerStatusRule(BaseRoutingRule):
 
         container_status_list = []
         for left in table_locator.iter_left_headers():
-            container_status_list.append({
-                'event': table_extractor.extract_cell(top='Event', left=left, extractor=first_text_extractor),
-                'facility': table_extractor.extract_cell(top='Facility', left=left, extractor=first_text_extractor),
-                'location': table_extractor.extract_cell(top='Location', left=left, extractor=span_extractor),
-                'transport': table_extractor.extract_cell(
-                    top='Mode', left=left, extractor=first_text_extractor) or None,
-                'local_date_time': table_extractor.extract_cell(top='Time', left=left, extractor=span_extractor),
-            })
+            container_status_list.append(
+                {
+                    'event': table_extractor.extract_cell(top='Event', left=left, extractor=first_text_extractor),
+                    'facility': table_extractor.extract_cell(top='Facility', left=left, extractor=first_text_extractor),
+                    'location': table_extractor.extract_cell(top='Location', left=left, extractor=span_extractor),
+                    'transport': table_extractor.extract_cell(top='Mode', left=left, extractor=first_text_extractor)
+                    or None,
+                    'local_date_time': table_extractor.extract_cell(top='Time', left=left, extractor=span_extractor),
+                }
+            )
         return container_status_list
 
 
 class ContainerStatusTableLocator(BaseTableLocator):
     """
-        +--------------------------------------+ <tbody>
-        | Title 1  | Title 2  | ... | Title N  | <tr> <th>
-        +----------+----------+-----+----------+
-        | Data 1,1 | Data 2,1 | ... | Data N,1 | <tr> <td>
-        +----------+----------+-----+----------+
-        | Data 1,2 | Data 2,2 | ... | Data N,2 | <tr> <td>
-        +----------+----------+-----+----------+
-        | ...      | ...      | ... | ...      | <tr> <td>
-        +----------+----------+-----+----------+
-        | Data 1,M | Data 2,M | ... | Data N,M | <tr> <td>
-        +----------+----------+-----+----------+ </tbody>
+    +--------------------------------------+ <tbody>
+    | Title 1  | Title 2  | ... | Title N  | <tr> <th>
+    +----------+----------+-----+----------+
+    | Data 1,1 | Data 2,1 | ... | Data N,1 | <tr> <td>
+    +----------+----------+-----+----------+
+    | Data 1,2 | Data 2,2 | ... | Data N,2 | <tr> <td>
+    +----------+----------+-----+----------+
+    | ...      | ...      | ... | ...      | <tr> <td>
+    +----------+----------+-----+----------+
+    | Data 1,M | Data 2,M | ... | Data N,M | <tr> <td>
+    +----------+----------+-----+----------+ </tbody>
     """
+
     DATA_START_TR_INDEX = 1
 
     def __init__(self):
@@ -986,7 +998,7 @@ class ContainerStatusTableLocator(BaseTableLocator):
 
     def parse(self, table: scrapy.Selector):
         title_list = table.css('th::text').getall()
-        data_tr_list = table.css('tr')[self.DATA_START_TR_INDEX:]
+        data_tr_list = table.css('tr')[self.DATA_START_TR_INDEX :]
 
         for title_index, title in enumerate(title_list):
             data_index = title_index
@@ -1016,18 +1028,19 @@ class ContainerStatusTableLocator(BaseTableLocator):
 
 class DestinationTableLocator(BaseTableLocator):
     """
-        +--------------------------------+ <tbody>
-        | Title 1 | Data 1,1  | Data 1,2 | <tr> <td>
-        +---------+-----------+----------+
-        | Title 2 | Data 2,1  | Data 2,2 | <tr> <td>
-        +---------+-----------+----------+
-        | Title 3 | Data 3,1  | Data 3,2 | <tr> <td>
-        +---------+-----------+----------+
-        | ...     |           |          | <tr> <td>
-        +---------+-----------+----------+
-        | Title N | Data N,1  | Data N,2 | <tr> <td>
-        +---------+-----------+----------+ </tbody>
+    +--------------------------------+ <tbody>
+    | Title 1 | Data 1,1  | Data 1,2 | <tr> <td>
+    +---------+-----------+----------+
+    | Title 2 | Data 2,1  | Data 2,2 | <tr> <td>
+    +---------+-----------+----------+
+    | Title 3 | Data 3,1  | Data 3,2 | <tr> <td>
+    +---------+-----------+----------+
+    | ...     |           |          | <tr> <td>
+    +---------+-----------+----------+
+    | Title N | Data N,1  | Data N,2 | <tr> <td>
+    +---------+-----------+----------+ </tbody>
     """
+
     TITEL_TD_INDEX = 0
     DATA_NEEDED_TD_INDEX = 2
 
@@ -1057,7 +1070,6 @@ class DestinationTableLocator(BaseTableLocator):
 
 
 class DetentionDateTdExtractor(BaseTableCellExtractor):
-
     def extract(self, cell: Selector):
         text_list = cell.css('::text').getall()
         text_list_len = len(text_list)
@@ -1075,7 +1087,6 @@ class DetentionDateTdExtractor(BaseTableCellExtractor):
 
 
 class _PageLocator:
-
     def locate_selectors(self, response: scrapy.Selector):
         tables = response.css('table.groupTable')
 
@@ -1088,7 +1099,8 @@ class _PageLocator:
 
         # detail (may not exist)
         detail_rule = CssQueryTextStartswithMatchRule(
-            css_query='td.groupTitle::text', startswith='Detail of OOCL Container')
+            css_query='td.groupTitle::text', startswith='Detail of OOCL Container'
+        )
         detail_table = find_selector_from(selectors=tables, rule=detail_rule)
         if detail_table:
             detail_selectors_map = self._locate_selectors_from_detail(detail_table=detail_table)
@@ -1166,13 +1178,13 @@ class _PageLocator:
 
         title_part, content_part = inner_parts
 
-        detention_tables = (
-            content_part.xpath('./tr/td/table/tr/td/table') or
-            content_part.xpath('./tbody/tr/td/table/tbody/tr/td/table')
+        detention_tables = content_part.xpath('./tr/td/table/tr/td/table') or content_part.xpath(
+            './tbody/tr/td/table/tbody/tr/td/table'
         )
         if len(detention_tables) != 2:
             raise CarrierResponseFormatError(
-                reason=f'Amount of detention tables does not right: {len(detention_tables)}')
+                reason=f'Amount of detention tables does not right: {len(detention_tables)}'
+            )
 
         return detention_tables
 
@@ -1193,11 +1205,6 @@ def _get_est_and_actual(status, time_str):
 def get_multipart_body(form_data, boundary):
     body = ''
     for index, key in enumerate(form_data):
-        body += (
-            f'--{boundary}\r\n'
-            f'Content-Disposition: form-data; name="{key}"\r\n'
-            f'\r\n'
-            f'{form_data[key]}\r\n'
-        )
+        body += f'--{boundary}\r\n' f'Content-Disposition: form-data; name="{key}"\r\n' f'\r\n' f'{form_data[key]}\r\n'
     body += f'--{boundary}--'
     return body

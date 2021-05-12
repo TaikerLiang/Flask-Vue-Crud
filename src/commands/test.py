@@ -18,7 +18,8 @@ def cli(target, pytest_args):
     extra_args = pytest_args.split(' ')
 
     args = [
-        '-x', target,
+        '-x',
+        target,
         *extra_args,
     ]
 

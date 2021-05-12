@@ -11,8 +11,8 @@ import ujson as json
 import scrapy
 from scrapy import Selector
 
-# from selenium import webdriver
-from seleniumwire import webdriver
+from selenium import webdriver
+# from seleniumwire import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -161,14 +161,18 @@ class MainRoutingRule(BaseRoutingRule):
         company_info = response.meta['company_info']
         container_no_list = response.meta['container_no_list']
 
-        is_g_captcha, res, cookies = self._build_container_response(company_info=company_info, container_no_list=container_no_list)
+        is_g_captcha, res, cookies = self._build_container_response(
+            company_info=company_info, container_no_list=container_no_list
+        )
         if is_g_captcha:
             yield ContentRoutingRule.build_request_option(container_no_list=container_no_list, company_info=company_info, g_token=res, cookies=cookies)
         else:
             container_response = scrapy.Selector(text=res)
             yield SaveItem(file_name='container.html', text=container_response.get())
 
-            for container_info in self._extract_container_result_table(response=container_response, numbers=len(container_no_list)):
+            for container_info in self._extract_container_result_table(
+                response=container_response, numbers=len(container_no_list)
+            ):
                 yield TerminalItem(  # html field
                     container_no=container_info['container_no'],  # number
                     last_free_day=container_info['last_free_day'],  # demurrage-lfd
@@ -296,6 +300,7 @@ class ContentRoutingRule(BaseRoutingRule):
                 voyage=voyage,
             )
 
+
 # ------------------------------------------------------------------------
 
 
@@ -322,27 +327,31 @@ class HeadlessBrowser:
         options.add_experimental_option('excludeSwitches', ['enable-automation'])
         options.add_experimental_option('useAutomationExtension', False)
 
-        PROXY_GROUP_RESIDENTIAL = 'RESIDENTIAL'
-        proxy_option = ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'trapac{self._generate_random_string()}')
-        seleniumwire_options = {
-            'connection_timeout': None,
-            'proxy': {
-                'http': f'http://{self.get_proxy_username(proxy_option)}:{self.PROXY_PASSWORD}@{self.PROXY_URL}',
-                'https': f'https://{self.get_proxy_username(proxy_option)}:{self.PROXY_PASSWORD}@{self.PROXY_URL}',
-                'no_proxy': 'localhost,127.0.0.1',
-            },
-        }
-        self._browser = webdriver.Chrome(chrome_options=options, seleniumwire_options=seleniumwire_options)
-        # self._browser = webdriver.Chrome(chrome_options=options)
+        # PROXY_GROUP_RESIDENTIAL = 'RESIDENTIAL'
+        # proxy_option = ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'trapac{self._generate_random_string()}')
+        # seleniumwire_options = {
+        #     'connection_timeout': None,
+        #     'proxy': {
+        #         'http': f'http://{self.get_proxy_username(proxy_option)}:{self.PROXY_PASSWORD}@{self.PROXY_URL}',
+        #         'https': f'https://{self.get_proxy_username(proxy_option)}:{self.PROXY_PASSWORD}@{self.PROXY_URL}',
+        #         'no_proxy': 'localhost,127.0.0.1',
+        #     },
+        # }
+        # self._browser = webdriver.Chrome(chrome_options=options, seleniumwire_options=seleniumwire_options)
+        self._browser = webdriver.Chrome(chrome_options=options)
 
     def get(self, url):
         self._browser.get(url=url)
         time.sleep(15)
 
     def accept_cookie(self):
-        cookie_btn = self._browser.find_element_by_xpath('//*[@id="cn-accept-cookie"]')
-        cookie_btn.click()
-        time.sleep(3)
+        try:
+            self._browser.save_screenshot('out.png')
+            cookie_btn = self._browser.find_element_by_xpath('//*[@id="cn-accept-cookie"]')
+            cookie_btn.click()
+            time.sleep(3)
+        except:
+            pass
 
     def wait_for_appear(self, css: str, wait_sec: int):
         locator = (By.CSS_SELECTOR, css)

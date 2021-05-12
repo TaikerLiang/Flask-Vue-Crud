@@ -24,12 +24,9 @@ class RuleManager:
     META_RAIL_CORE_RULE_NAME = 'RAIL_CORE_RULE_NAME'
 
     def __init__(self, rules: List[BaseRoutingRule]):
-        self._rule_map = {
-            r.name: r for r in rules
-        }
+        self._rule_map = {r.name: r for r in rules}
 
     def get_rule_by_response(self, response) -> BaseRoutingRule:
         rule_name = response.meta[self.META_RAIL_CORE_RULE_NAME]
         rule = self._rule_map[rule_name]
         return rule
-

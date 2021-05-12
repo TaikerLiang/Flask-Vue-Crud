@@ -8,8 +8,14 @@ from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.exceptions import (
     CarrierInvalidMblNoError, CarrierResponseFormatError, SuspiciousOperationError, DataNotFoundError,
     CarrierInvalidSearchNoError)
+
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem
+    BaseCarrierItem,
+    MblItem,
+    LocationItem,
+    ContainerItem,
+    ContainerStatusItem,
+    DebugItem,
 )
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption, ProxyManager
@@ -232,7 +238,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
         maybe_suspend_message = response.css('h1 + p::text').get()
 
         if maybe_suspend_message == (
-                'We have decided to temporarily suspend all access to our eCommerce websites to protect our customers.'
+            'We have decided to temporarily suspend all access to our eCommerce websites to protect our customers.'
         ):
             return STATUS_WEBSITE_SUSPEND
         elif result_message is None:
@@ -343,7 +349,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             yield {
                 'local_date_time': table.extract_cell('Date', index),
                 'description': table.extract_cell('Moves', index),
-                'location': table.extract_cell('Location', index),
+                'location': table.extract_cell('Location', index, LocationTdExtractor()),
                 'est_or_actual': 'A' if is_actual else 'E',
             }
 
@@ -352,7 +358,6 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
 
 class ContainerStatusTableLocator(BaseTableLocator):
-
     def __init__(self):
         self._td_map = {}
         self._data_len = 0
@@ -396,4 +401,10 @@ class ContainerStatusTableLocator(BaseTableLocator):
 class ActualIconTdExtractor(BaseTableCellExtractor):
     def extract(self, cell: Selector):
         td_i = cell.css('i').get()
+        return td_i
+
+
+class LocationTdExtractor(BaseTableCellExtractor):
+    def extract(self, cell: Selector):
+        td_i = cell.css('td::text').get().strip()
         return td_i

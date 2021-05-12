@@ -28,9 +28,7 @@ class TerminalGlobalMultiSpider(BaseMultiTerminalSpider):
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
-        option = ContainerRoutingRule.build_request_option(
-            container_no_list=unique_container_nos
-        )
+        option = ContainerRoutingRule.build_request_option(container_no_list=unique_container_nos)
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -42,9 +40,7 @@ class TerminalGlobalMultiSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(
-                result, InvalidContainerNoItem
-            ):
+            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
@@ -63,7 +59,10 @@ class TerminalGlobalMultiSpider(BaseMultiTerminalSpider):
 
         if option.method == RequestOption.METHOD_GET:
             return Request(
-                url=option.url, headers=option.headers, meta=meta, dont_filter=True,
+                url=option.url,
+                headers=option.headers,
+                meta=meta,
+                dont_filter=True,
             )
         else:
             raise ValueError(f"Invalid option.method [{option.method}]")
@@ -82,7 +81,9 @@ class ContainerRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://yahoo.com",
-            meta={"container_no_list": container_no_list,},
+            meta={
+                "container_no_list": container_no_list,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -96,7 +97,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         url = "http://payments.gcterminals.com/GlobalTerminal/globalSearch.do"
 
-        for i in range(len(container_no_list)):
+        for i in range(len(set(container_no_list))):
             form_data = {
                 "containerSelectedIndexParam": str(i),
                 "searchId": "BGLOB",
@@ -118,9 +119,7 @@ class ContainerRoutingRule(BaseRoutingRule):
                 "Accept-Language": "en-US,en;q=0.9",
             }
 
-            resp = requests.request(
-                "POST", url, headers=headers, data=urlencode(form_data)
-            )
+            resp = requests.request("POST", url, headers=headers, data=urlencode(form_data))
             resp_selector = Selector(text=resp.text)
 
             # extract
@@ -128,17 +127,13 @@ class ContainerRoutingRule(BaseRoutingRule):
             table_locator = GlobalLeftTableLocator()
             table_locator.parse(table=result_table, numbers=len(container_no_list))
 
-            last_free_day_val = resp_selector.xpath(
-                '//*[@id="results-div"]/center[3]/table/tr[12]/td[4]/text()'
-            ).get()
+            last_free_day_val = resp_selector.xpath('//*[@id="results-div"]/center[3]/table/tr[12]/td[4]/text()').get()
 
             yield TerminalItem(
                 container_no=table_locator.get_cell(left=i, top="Container #"),
                 freight_release=table_locator.get_cell(left=i, top="Freight Released"),
                 customs_release=table_locator.get_cell(left=i, top="Customs Released"),
-                ready_for_pick_up=table_locator.get_cell(
-                    left=i, top="Avail for Pickup"
-                ),
+                ready_for_pick_up=table_locator.get_cell(left=i, top="Avail for Pickup"),
                 discharge_date=table_locator.get_cell(left=i, top="Discharge Date"),
                 gate_out_date=table_locator.get_cell(left=i, top="Gate Out Date"),
                 last_free_day=last_free_day_val,

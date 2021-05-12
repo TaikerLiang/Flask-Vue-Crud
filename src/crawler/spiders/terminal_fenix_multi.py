@@ -2,6 +2,7 @@ from crawler.core_terminal.voyagecontrol_share_spider import VoyagecontrolShareS
 
 
 class TerminalFenixSpider(VoyagecontrolShareSpider):
+    firms_code = 'Y257'
     name = 'terminal_fenix_multi'
     company_info = CompanyInfo(
         lower_short='fenixmarine',

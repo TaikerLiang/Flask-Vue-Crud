@@ -6,11 +6,12 @@ import scrapy
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
-from crawler.core_carrier.items import (
-    BaseCarrierItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem
-)
+from crawler.core_carrier.items import BaseCarrierItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem
 from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError, CarrierInvalidMblNoError, SuspiciousOperationError, LoadWebsiteTimeOutError
+    CarrierResponseFormatError,
+    CarrierInvalidMblNoError,
+    SuspiciousOperationError,
+    LoadWebsiteTimeOutError,
 )
 
 from selenium import webdriver
@@ -19,7 +20,10 @@ from selenium.common.exceptions import TimeoutException
 
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import (
-    BaseTableLocator, HeaderMismatchError, TableExtractor, TopHeaderTableLocator
+    BaseTableLocator,
+    HeaderMismatchError,
+    TableExtractor,
+    TopHeaderTableLocator,
 )
 
 
@@ -101,7 +105,7 @@ class TracingRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, mbl_no: str, cookies: Dict) -> RequestOption:
-        url = f'{BASE_URL}/online-business/tracing/tracing-by-booking.html?blno={mbl_no}'
+        url = f'{BASE_URL}/online-business/track/track-by-booking-solution.html?blno={mbl_no}'
 
         return RequestOption(
             rule_name=cls.name,
@@ -129,7 +133,8 @@ class TracingRoutingRule(BaseRoutingRule):
 
         new_cookies = self._handle_cookies(cookies=cookies, response=response)
         view_state = response.css(
-            'form[id="tracing_by_booking_f"] input[name="javax.faces.ViewState"] ::attr(value)').get()
+            'form[id="tracing_by_booking_f"] input[name="javax.faces.ViewState"] ::attr(value)'
+        ).get()
 
         for container_index, container_no in enumerate(container_nos):
             yield ContainerRoutingRule.build_request_option(
@@ -194,7 +199,6 @@ class TracingRoutingRule(BaseRoutingRule):
 
 
 class ContainerNoTdExtractor(BaseTableCellExtractor):
-
     def extract(self, cell: scrapy.Selector):
         raw_text = cell.css('::text').get()
         text_list = raw_text.split()
@@ -211,7 +215,8 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(
-            cls, mbl_no: str, container_key, cookies: Dict, container_index, view_state) -> RequestOption:
+        cls, mbl_no: str, container_key, cookies: Dict, container_index, view_state
+    ) -> RequestOption:
         form_data = {
             'hl27': str(container_index),
             'javax.faces.ViewState': view_state,
@@ -223,7 +228,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_FORM,
-            url=f'{BASE_URL}/online-business/tracing/tracing-by-booking.html?_a=tracing_by_booking',
+            url=f'{BASE_URL}/online-business/track/track-by-booking-solution.html?_a=tracing_by_booking',
             form_data=form_data,
             cookies=cookies,
             meta={'container_key': container_key},
@@ -270,14 +275,16 @@ class ContainerRoutingRule(BaseRoutingRule):
 
             class_name = table_locator.get_row_class(left=left)
 
-            container_statuses.append({
-                'description': table.extract_cell(top='Status', left=left, extractor=span_extractor),
-                'place': table.extract_cell(top='Place of Activity', left=left, extractor=span_extractor),
-                'timestamp': timestamp,
-                'transport': table.extract_cell(top='Transport', left=left, extractor=span_extractor),
-                'voyage': table.extract_cell(top='Voyage No.', left=left, extractor=span_extractor) or None,
-                'est_or_actual': self._get_status_from(class_name),
-            })
+            container_statuses.append(
+                {
+                    'description': table.extract_cell(top='Status', left=left, extractor=span_extractor),
+                    'place': table.extract_cell(top='Place of Activity', left=left, extractor=span_extractor),
+                    'timestamp': timestamp,
+                    'transport': table.extract_cell(top='Transport', left=left, extractor=span_extractor),
+                    'voyage': table.extract_cell(top='Voyage No.', left=left, extractor=span_extractor) or None,
+                    'est_or_actual': self._get_status_from(class_name),
+                }
+            )
 
         return container_statuses
 
@@ -292,7 +299,6 @@ class ContainerRoutingRule(BaseRoutingRule):
 
 
 class ContainerStatusTableLocator(BaseTableLocator):
-
     def __init__(self):
         self._td_map = {}  # title: [td, ...]
         self._tr_classes = []
@@ -344,8 +350,8 @@ class ContainerStatusTableLocator(BaseTableLocator):
 
 # -------------------------------------------------------------------------------
 
-class CookiesGetter:
 
+class CookiesGetter:
     def __init__(self):
         options = webdriver.ChromeOptions()
         options.add_argument('--disable-extensions')
@@ -373,5 +379,9 @@ class CookiesGetter:
 
     def _is_cookies_ready(self, *_):
         cookies_str = str(self._browser.get_cookies())
-        return ('TS01a3c52a' in cookies_str) and ('TSa4b927ad_76' in cookies_str) and ('TSPD_101' in cookies_str) and (
-                    'TSff5ac71e_27' in cookies_str)
+        return (
+            ('TS01a3c52a' in cookies_str)
+            and ('TSa4b927ad_76' in cookies_str)
+            and ('TSPD_101' in cookies_str)
+            and ('TSff5ac71e_27' in cookies_str)
+        )

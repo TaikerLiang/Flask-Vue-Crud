@@ -44,7 +44,9 @@ class TtiWutShareSpider(BaseMultiTerminalSpider):
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
-        option = MainRoutingRule.build_request_option(container_no_list=unique_container_nos, company_info=self.company_info)
+        option = MainRoutingRule.build_request_option(
+            container_no_list=unique_container_nos, company_info=self.company_info
+        )
         yield self._build_request_by(option=option)
 
     def parse(self, response, **kwargs):
@@ -152,7 +154,9 @@ class ContentGetter:
         password_input = self._driver.find_element_by_xpath('//*[@id="pUsrPwd"]')
         password_input.send_keys(password)
         time.sleep(2)
-        login_btn = self._driver.find_element_by_xpath('//*[@id="form"]/table/tbody/tr/td[1]/table/tbody/tr[3]/td/table[1]/tbody/tr[2]/td/table/tbody/tr[1]/td[3]/img')
+        login_btn = self._driver.find_element_by_xpath(
+            '//*[@id="form"]/table/tbody/tr/td[1]/table/tbody/tr[3]/td/table[1]/tbody/tr[2]/td/table/tbody/tr[1]/td[3]/img'
+        )
         login_btn.click()
         time.sleep(8)
 
@@ -172,7 +176,9 @@ class ContentGetter:
         container_text_area.send_keys('\n'.join(container_no_list))
         time.sleep(3)
 
-        search_btn = self._driver.find_element_by_xpath('//*[@id="form"]/table/tbody/tr/td/table/tbody/tr/td/table[2]/tbody/tr/td/table[1]/tbody/tr/td[1]/table[3]/tbody/tr/td/table/tbody/tr/td[1]/table/tbody/tr/td[2]/a')
+        search_btn = self._driver.find_element_by_xpath(
+            '//*[@id="form"]/table/tbody/tr/td/table/tbody/tr/td/table[2]/tbody/tr/td/table[1]/tbody/tr/td[1]/table[3]/tbody/tr/td/table/tbody/tr/td[1]/table/tbody/tr/td[2]/a'
+        )
         search_btn.click()
         time.sleep(8)
 

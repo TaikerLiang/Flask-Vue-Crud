@@ -138,7 +138,8 @@ class CaptchaRoutingRule(BaseRoutingRule):
 
         if captcha_text:
             yield LoginRoutingRule.build_request_option(
-                captcha_text=captcha_text, container_no_list=container_no_list, dc=dc, verify_key=verify_key)
+                captcha_text=captcha_text, container_no_list=container_no_list, dc=dc, verify_key=verify_key
+            )
 
     @staticmethod
     def _get_captcha_str(captcha_code):
@@ -241,13 +242,11 @@ class ContainerRoutingRule(BaseRoutingRule):
                 ),
                 holds=container_info['PO_TMNL_HOLD_IND'],
                 cy_location=container_info['PO_YARD_LOC'],
-
                 # extra field name
                 service=container_info['PO_SVC_QFR_DESC'],
                 carrier_release=container_info['PO_CARRIER_STATUS'],
                 tmf=container_info['PO_TMF_STATUS'],
                 demurrage_status=container_info['PO_DM_STATUS'],
-
                 # not on html
                 freight_release=container_info['PO_FR_STATUS'],  # not sure
             )

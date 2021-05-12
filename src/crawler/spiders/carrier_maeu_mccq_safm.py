@@ -131,7 +131,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         containers = self._extract_containers(response_dict=response_dict)
         for container in containers:
             container_no = container['no']
-            
+
             yield ContainerItem(
                 container_key=container_no,
                 container_no=container_no,
@@ -182,21 +182,26 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 for event in location['events']:
                     timestamp, est_or_actual = self._get_time_and_status(event)
 
-                    container_statuses.append({
-                        'location_name': location_name,
-                        'description': event['activity'],
-                        'vessel': self._format_vessel_name(
-                            vessel_name=event['vessel_name'], vessel_num=event['vessel_num']),
-                        'voyage': event['voyage_num'],
-                        'timestamp': timestamp,
-                        'est_or_actual': est_or_actual,
-                    })
+                    container_statuses.append(
+                        {
+                            'location_name': location_name,
+                            'description': event['activity'],
+                            'vessel': self._format_vessel_name(
+                                vessel_name=event['vessel_name'], vessel_num=event['vessel_num']
+                            ),
+                            'voyage': event['voyage_num'],
+                            'timestamp': timestamp,
+                            'est_or_actual': est_or_actual,
+                        }
+                    )
 
-            container_info_list.append({
-                'no': container['container_num'],
-                'final_dest_eta': container['eta_final_delivery'],
-                'container_statuses': container_statuses,
-            })
+            container_info_list.append(
+                {
+                    'no': container['container_num'],
+                    'final_dest_eta': container['eta_final_delivery'],
+                    'container_statuses': container_statuses,
+                }
+            )
 
         return container_info_list
 

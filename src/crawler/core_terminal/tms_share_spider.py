@@ -1,9 +1,10 @@
-import datetime
 import dataclasses
-from typing import Dict
+from typing import Dict, List
+import time
 
 import scrapy
 from scrapy import Selector
+from selenium import webdriver
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import TerminalResponseFormatError, TerminalInvalidContainerNoError
@@ -34,17 +35,16 @@ class TmsSharedSpider(BaseMultiTerminalSpider):
         super(TmsSharedSpider, self).__init__(*args, **kwargs)
 
         rules = [
-            TokenRoutingRule(),
-            LoginRoutingRule(terminal_id=self.terminal_id),
-            SetTerminalRoutingRule(),
-            ContainerAvailabilityRoutingRule(),
+            SeleniumRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
-        request_option = TokenRoutingRule.build_request_option(container_nos=unique_container_nos, company_info=self.company_info)
+        request_option = SeleniumRoutingRule.build_request_option(
+            container_nos=unique_container_nos, terminal_id=self.terminal_id, company_info=self.company_info
+        )
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -78,227 +78,67 @@ class TmsSharedSpider(BaseMultiTerminalSpider):
                 url=option.url,
                 headers=option.headers,
                 meta=meta,
-            )
-        elif option.method == RequestOption.METHOD_POST_FORM:
-            return scrapy.FormRequest(
-                url=option.url,
-                headers=option.headers,
-                meta=meta,
-                formdata=option.form_data,
+                dont_filter=True,
             )
         else:
             raise ValueError(f'Invalid option.method [{option.method}]')
 
 
-class TokenRoutingRule(BaseRoutingRule):
-    name = 'TOKEN'
+class SeleniumRoutingRule(BaseRoutingRule):
+    name = 'SELENIUM'
 
     @classmethod
-    def build_request_option(cls, container_nos, company_info) -> RequestOption:
-        url = f'{BASE_URL}/tms2/Account/Login'
-
+    def build_request_option(cls, container_nos: List, terminal_id: int, company_info) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=url,
+            url='https://www.google.com',
             meta={
                 'container_nos': container_nos,
-                'company_info': company_info
+                'terminal_id': terminal_id,
+                'company_info': company_info,
             },
         )
 
     def handle(self, response):
         container_nos = response.meta['container_nos']
+        terminal_id = response.meta['terminal_id']
         company_info = response.meta['company_info']
 
-        token = self._get_token(response=response)
+        content_getter = ContentGetter()
+        content_getter.login(company_info.email, company_info.password)
+        content_getter.select_terminal(terminal_id)
 
-        yield LoginRoutingRule.build_request_option(token=token, container_nos=container_nos, company_info=company_info)
+        # TODO: can improve here, send request one time
+        for container_no in container_nos:
+            page_source = content_getter.search(container_no)
+            resp = Selector(text=page_source)
+            if not resp.css('table.table-borderless'):
+                continue
+            container_info = self._extract_container_info(resp)
+            extra_container_info = self._extract_extra_container_info(resp)
 
-    def get_save_name(self, response):
-        return f'{self.name}.html'
-
-    @staticmethod
-    def _get_token(response: scrapy.Selector) -> str:
-        token = response.css('form input::attr(value)').get()
-        return token
-
-
-class LoginRoutingRule(BaseRoutingRule):
-    name = 'LOGIN'
-
-    def __init__(self, terminal_id):
-        self.terminal_id = terminal_id
-
-    @classmethod
-    def build_request_option(cls, token, container_nos, company_info) -> RequestOption:
-        url = f'{BASE_URL}/tms2/Account/Login?ReturnUrl=%2Ftms2%2FImport%2FContainerAvailability'
-        form_data = {
-            '__RequestVerificationToken': token,
-            'UserName': company_info.email,
-            'Password': company_info.password,
-        }
-
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_POST_FORM,
-            url=url,
-            form_data=form_data,
-            meta={'container_nos': container_nos},
-        )
-
-    def handle(self, response):
-        container_nos = response.meta['container_nos']
-
-        # get terminal token for SetTerminalRoutingRule request
-        set_terminal_token = self._get_terminal_token(response=response)
-
-        # get container availability token for SetTerminalRoutingRule request
-        container_availability_token = self._get_container_availability_token(response=response)
-
-        current_terminal_id = self._get_current_terminal_id(response=response)
-        if self.terminal_id == current_terminal_id:
-            for container_no in container_nos:
-                yield ContainerAvailabilityRoutingRule.build_request_option(
-                    token=container_availability_token, container_no=container_no)
-        else:
-            yield SetTerminalRoutingRule.build_request_option(
-                set_terminal_token=set_terminal_token,
-                container_availability_token=container_availability_token,
-                container_nos=container_nos,
+            yield TerminalItem(
+                container_no=container_info['container_no'],
+                freight_release=extra_container_info['freight_release'],
+                customs_release=extra_container_info['customs_release'],
+                appointment_date=container_info['appointment_date'],
+                ready_for_pick_up=container_info['ready_for_pick_up'],
+                last_free_day=container_info['last_free_day'],
+                demurrage=extra_container_info['demurrage'],
+                carrier=container_info['carrier'],
+                container_spec=container_info['container_spec'],
+                vessel=extra_container_info['vessel'],
+                mbl_no=extra_container_info['mbl_no'],
+                voyage=extra_container_info['voyage'],
+                gate_out_date=extra_container_info['gate_out_date'],
+                chassis_no=container_info['chassis_no'],
             )
 
-    def get_save_name(self, response):
-        return f'{self.name}.html'
+        content_getter.close()
 
     @staticmethod
-    def _get_terminal_token(response: scrapy.Selector) -> str:
-        token = response.css('form[id="TerminalForm"] input::attr(value)').get()
-        return token
-
-    @staticmethod
-    def _get_container_availability_token(response: scrapy.Selector) -> str:
-        token = response.css('form[id="formAvailabilityHeader"] input::attr(value)').get()
-        return token
-
-    @staticmethod
-    def _get_current_terminal_id(response: scrapy.Selector) -> str:
-        terminal_id = response.css('select option[selected]::attr(value)').get()
-        return terminal_id
-
-
-class SetTerminalRoutingRule(BaseRoutingRule):
-    name = 'SET_TERMINAL'
-
-    @classmethod
-    def build_request_option(cls, set_terminal_token, container_availability_token, container_nos) -> RequestOption:
-        url = f'{BASE_URL}/tms2/Account/SetTerminal'
-        form_data = {
-            '__RequestVerificationToken': set_terminal_token,
-            'loginTerminalId': '3',
-        }
-
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_POST_FORM,
-            url=url,
-            form_data=form_data,
-            meta={
-                'container_availability_token': container_availability_token,
-                'container_nos': container_nos,
-            },
-        )
-
-    def handle(self, response):
-        container_nos = response.meta['container_nos']
-        container_availability_token = response.meta['container_availability_token']
-
-        for container_no in container_nos:
-            yield ContainerAvailabilityRoutingRule.build_request_option(
-                token=container_availability_token, container_no=container_no)
-
-    def get_save_name(self, response):
-        return f'{self.name}.html'
-
-
-class ContainerAvailabilityRoutingRule(BaseRoutingRule):
-    name = 'CONTAINER_AVAILABILITY'
-
-    @classmethod
-    def build_request_option(cls, token, container_no) -> RequestOption:
-        url = f'{BASE_URL}/tms2/Import/ContainerAvailability'
-        us_date = cls._get_us_date()
-        form_data = {
-            '__RequestVerificationToken': token,
-            'pickupDate': us_date,
-            'refNums': container_no,
-            'refType': 'CN',
-        }
-
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_POST_FORM,
-            url=url,
-            form_data=form_data,
-            meta={'container_no': container_no},
-        )
-
-    def handle(self, response):
-        container_no = response.meta['container_no']
-
-        print('paul container_no', container_no)
-        print('paul', response.text)
-
-        if self.__is_invalid_container_no(response=response):
-            yield InvalidContainerNoItem(container_no=container_no)
-            return
-
-        container_info = self.__extract_container_info(response=response)
-        extra_container_info = self.__extract_extra_container_info(response=response)
-
-        print('paul', container_info)
-        print('paul', extra_container_info)
-
-
-        yield TerminalItem(
-            container_no=container_info['container_no'],
-            freight_release=extra_container_info['freight_release'],
-            customs_release=extra_container_info['customs_release'],
-            discharge_date=container_info['discharge_date'],
-            ready_for_pick_up=container_info['ready_for_pick_up'],
-            last_free_day=container_info['last_free_day'],
-            demurrage=extra_container_info['demurrage'],
-            carrier=container_info['carrier'],
-            container_spec=container_info['container_spec'],
-            vessel=extra_container_info['vessel'],
-            mbl_no=extra_container_info['mbl_no'],
-            voyage=extra_container_info['voyage'],
-            gate_out_date=extra_container_info['gate_out_date'],
-            chassis_no=container_info['chassis_no'],
-        )
-
-    @staticmethod
-    def __is_invalid_container_no(response: Selector):
-        invalid_message = response.css('a.close+ul li::text').get()
-
-        if invalid_message and invalid_message == 'No record is found.':
-            return True
-        return False
-
-    def get_save_name(self, response):
-        container_no = response.meta['container_no']
-        return f'{self.name}_{container_no}.html'
-
-    @staticmethod
-    def _get_us_date() -> str:
-        utc_dt = datetime.datetime.utcnow()
-        us_date_time = utc_dt.astimezone(datetime.timezone(datetime.timedelta(hours=-8)))
-        us_date_text = us_date_time.strftime('%m/%d/%Y')
-
-        return us_date_text
-
-    @staticmethod
-    def __extract_container_info(response: scrapy.Selector) -> Dict:
+    def _extract_container_info(response: scrapy.Selector) -> Dict:
         table_selector = response.css('table.table-borderless')
 
         if table_selector is None:
@@ -310,7 +150,7 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
 
         for left in table_locator.iter_left_headers():
             return {
-                'discharge_date': table.extract_cell('Dschg Date', left),
+                'appointment_date': table.extract_cell('Dschg Date', left),
                 'ready_for_pick_up': table.extract_cell('Pick Up', left),
                 'last_free_day': table.extract_cell('LFD', left),
                 'container_no': table.extract_cell('Container#', left, TdSpanExtractor()),
@@ -320,10 +160,8 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
             }
 
     @staticmethod
-    def __extract_extra_container_info(response: scrapy.Selector) -> Dict:
+    def _extract_extra_container_info(response: scrapy.Selector) -> Dict:
         table_selector = response.css('table.table-bordered')
-
-        print('pau text', table_selector)
 
         if table_selector is None:
             raise TerminalResponseFormatError(reason='Extra container info table not found')
@@ -353,13 +191,13 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
 
 class TopInfoTableLocator(BaseTableLocator):
     """
-        +---------+---------+-----+---------+ <table>
-        | Title 1 | Title 2 | ... | Title N | <tr>
-        +---------+---------+-----+---------+
-        | Data 1  | Data 2  | ... | Data N  | <tr>
-        +---------+---------+-----+---------+
-        | extra container info table        | <tr>
-        +-----------------------------------+ </table>
+    +---------+---------+-----+---------+ <table>
+    | Title 1 | Title 2 | ... | Title N | <tr>
+    +---------+---------+-----+---------+
+    | Data 1  | Data 2  | ... | Data N  | <tr>
+    +---------+---------+-----+---------+
+    | extra container info table        | <tr>
+    +-----------------------------------+ </table>
     """
 
     TR_TITLE_INDEX = 0
@@ -372,7 +210,7 @@ class TopInfoTableLocator(BaseTableLocator):
 
     def parse(self, table: Selector):
         title_tr = table.css('tr')[self.TR_TITLE_INDEX]
-        data_tr_list = table.css('tr')[self.TR_DATA_INDEX_BEGIN: self.TR_DATA_INDEX_END]
+        data_tr_list = table.css('tr')[self.TR_DATA_INDEX_BEGIN : self.TR_DATA_INDEX_END]
 
         title_text_list = title_tr.css('th a::text').getall()
 
@@ -405,7 +243,6 @@ class TopInfoTableLocator(BaseTableLocator):
 
 
 class TdSpanExtractor(BaseTableCellExtractor):
-
     def extract(self, cell: Selector) -> str:
         td_text = cell.css('span::text').get()
         return td_text.strip() if td_text else ''
@@ -413,15 +250,15 @@ class TdSpanExtractor(BaseTableCellExtractor):
 
 class LeftExtraContainerLocator(BaseTableLocator):
     """
-        +---------+--------+-----+-----+-----+-----+ <table>
-        | Title 1 | Data 1 |     |     |     |     | <tr>
-        +---------+--------+-----+-----+-----+-----+
-        | Title 2 | Data 2 |     |     |     |     | <tr>
-        +---------+--------+-----+-----+-----+-----+
-        | ...     | ...    |     |     |     |     | <tr>
-        +---------+--------+-----+-----+-----+-----+
-        | Title N | Data N |     |     |     |     | <tr>
-        +---------+--------+-----+-----+-----+-----+ </table>
+    +---------+--------+-----+-----+-----+-----+ <table>
+    | Title 1 | Data 1 |     |     |     |     | <tr>
+    +---------+--------+-----+-----+-----+-----+
+    | Title 2 | Data 2 |     |     |     |     | <tr>
+    +---------+--------+-----+-----+-----+-----+
+    | ...     | ...    |     |     |     |     | <tr>
+    +---------+--------+-----+-----+-----+-----+
+    | Title N | Data N |     |     |     |     | <tr>
+    +---------+--------+-----+-----+-----+-----+ </table>
     """
 
     TR_CONTENT_BEGIN_INDEX = 0
@@ -432,7 +269,7 @@ class LeftExtraContainerLocator(BaseTableLocator):
         self._td_map = {}
 
     def parse(self, table: scrapy.Selector):
-        content_tr_list = table.css('tr')[self.TR_CONTENT_BEGIN_INDEX:]
+        content_tr_list = table.css('tr')[self.TR_CONTENT_BEGIN_INDEX :]
 
         for tr in content_tr_list:
             title_td = tr.css('td')[self.TD_TITLE_INDEX]
@@ -455,15 +292,15 @@ class LeftExtraContainerLocator(BaseTableLocator):
 
 class MiddleExtraContainerLocator(BaseTableLocator):
     """
-        +-----+-----+---------+--------+-----+-----+ <table>
-        |     |     | Title 1 | Data 1 |     |     | <tr>
-        +-----+-----+---------+--------+-----+-----+
-        |     |     | Title 2 | Data 2 |     |     | <tr>
-        +-----+-----+---------+--------+-----+-----+
-        |     |     | ...     | ...    |     |     | <tr>
-        +-----+-----+---------+--------+-----+-----+
-        |     |     | Title N | Data N |     |     | <tr>
-        +-----+-----+---------+--------+-----+-----+ </table>
+    +-----+-----+---------+--------+-----+-----+ <table>
+    |     |     | Title 1 | Data 1 |     |     | <tr>
+    +-----+-----+---------+--------+-----+-----+
+    |     |     | Title 2 | Data 2 |     |     | <tr>
+    +-----+-----+---------+--------+-----+-----+
+    |     |     | ...     | ...    |     |     | <tr>
+    +-----+-----+---------+--------+-----+-----+
+    |     |     | Title N | Data N |     |     | <tr>
+    +-----+-----+---------+--------+-----+-----+ </table>
     """
 
     TR_CONTENT_BEGIN_INDEX = 0
@@ -475,7 +312,7 @@ class MiddleExtraContainerLocator(BaseTableLocator):
         self._td_map = {}
 
     def parse(self, table: scrapy.Selector):
-        content_tr_list = table.css('tr')[self.TR_CONTENT_BEGIN_INDEX:self.TR_CONTENT_END_INDEX]
+        content_tr_list = table.css('tr')[self.TR_CONTENT_BEGIN_INDEX : self.TR_CONTENT_END_INDEX]
 
         for tr in content_tr_list:
             title_td = tr.css('td')[self.TD_TITLE_INDEX]
@@ -498,15 +335,15 @@ class MiddleExtraContainerLocator(BaseTableLocator):
 
 class RightExtraContainerLocator(BaseTableLocator):
     """
-        +-----+-----+-----+-----+---------+--------+ <table>
-        |     |     |     |     | Title 1 | Data 1 | <tr>
-        +-----+-----+-----+-----+---------+--------+
-        |     |     |     |     | Title 2 | Data 2 | <tr>
-        +-----+-----+-----+-----+---------+--------+
-        |     |     |     |     | ...     | ...    | <tr>
-        +-----+-----+-----+-----+---------+--------+
-        |     |     |     |     | Title N | Data N | <tr>
-        +-----+-----+-----+-----+---------+--------+ </table>
+    +-----+-----+-----+-----+---------+--------+ <table>
+    |     |     |     |     | Title 1 | Data 1 | <tr>
+    +-----+-----+-----+-----+---------+--------+
+    |     |     |     |     | Title 2 | Data 2 | <tr>
+    +-----+-----+-----+-----+---------+--------+
+    |     |     |     |     | ...     | ...    | <tr>
+    +-----+-----+-----+-----+---------+--------+
+    |     |     |     |     | Title N | Data N | <tr>
+    +-----+-----+-----+-----+---------+--------+ </table>
     """
 
     TR_CONTENT_BEGIN_INDEX = 0
@@ -518,7 +355,7 @@ class RightExtraContainerLocator(BaseTableLocator):
         self._td_map = {}
 
     def parse(self, table: scrapy.Selector):
-        content_tr_list = table.css('tr')[self.TR_CONTENT_BEGIN_INDEX:self.TR_CONTENT_END_INDEX]
+        content_tr_list = table.css('tr')[self.TR_CONTENT_BEGIN_INDEX : self.TR_CONTENT_END_INDEX]
 
         for tr in content_tr_list:
             title_td = tr.css('td')[self.TD_TITLE_INDEX]
@@ -537,3 +374,61 @@ class RightExtraContainerLocator(BaseTableLocator):
 
     def has_header(self, top=None, left=None) -> bool:
         return (top is None) and (left in self._td_map)
+
+
+class ContentGetter:
+    def __init__(self):
+        options = webdriver.ChromeOptions()
+        options.add_argument('--disable-extensions')
+        options.add_argument('--disable-notifications')
+        options.add_argument('--headless')
+        options.add_argument("--enable-javascript")
+        options.add_argument('--disable-gpu')
+        options.add_argument(
+            f'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
+            f'Chrome/88.0.4324.96 Safari/537.36'
+        )
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--window-size=1920,1080')
+        options.add_argument("--disable-blink-features=AutomationControlled")
+
+        self.driver = webdriver.Chrome(chrome_options=options)
+        self.driver.get('https://tms.itslb.com/tms2/Account/Login')
+        time.sleep(7)
+
+    def login(self, username: str, password: str):
+        username_input = self.driver.find_element_by_xpath('//*[@id="UserName"]')
+        username_input.send_keys(username)
+        time.sleep(1)
+        password_input = self.driver.find_element_by_xpath('//*[@id="Password"]')
+        password_input.send_keys(password)
+        time.sleep(1)
+
+        btn = self.driver.find_element_by_xpath('//*[@id="loginForm"]/form/div[6]/div/input')
+        btn.click()
+        time.sleep(7)
+
+    def select_terminal(self, terminal_id: int):
+        if terminal_id == 1:
+            self.driver.find_element_by_xpath('//*[@id="loginTerminalId"]/option[1]').click()
+        elif terminal_id == 3:
+            self.driver.find_element_by_xpath('//*[@id="loginTerminalId"]/option[2]').click()
+        time.sleep(7)
+
+    def search(self, container_no: str):
+        self.driver.get('https://tms.itslb.com/tms2/Import/ContainerAvailability')
+        time.sleep(3)
+
+        textarea = self.driver.find_element_by_xpath('//*[@id="refNums"]')
+        textarea.send_keys(container_no)
+        time.sleep(1)
+
+        btn = self.driver.find_element_by_xpath('//*[@id="formAvailabilityHeader"]/div/div[1]/div/div[2]/div/button')
+        btn.click()
+        time.sleep(7)
+
+        return self.driver.page_source
+
+    def close(self):
+        self.driver.close()

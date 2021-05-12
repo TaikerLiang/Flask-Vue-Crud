@@ -1,25 +1,40 @@
 import json
 import time
+import dataclasses
 from typing import List
 
 import scrapy
 
+from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
     SuspiciousOperationError, CarrierInvalidSearchNoError
 from crawler.core_carrier.items import (
-    BaseCarrierItem, VesselItem, ContainerStatusItem, LocationItem, ContainerItem, MblItem, DebugItem)
-from crawler.core_carrier.request_helpers import RequestOption
+    BaseCarrierItem,
+    VesselItem,
+    ContainerStatusItem,
+    LocationItem,
+    ContainerItem,
+    MblItem,
+    DebugItem,
+)
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 
 
-class SharedSpider(BaseCarrierSpider):
+@dataclasses.dataclass
+class Restart:
+    reason: str = ''
+
+
+class OneySmlmSharedSpider(BaseCarrierSpider):
     name = None
     base_url = None
 
     def __init__(self, *args, **kwargs):
-        super(SharedSpider, self).__init__(*args, **kwargs)
+        super(OneySmlmSharedSpider, self).__init__(*args, **kwargs)
+
+        self._proxy_manager = ProxyManager(session='oneysmlm', logger=self.logger)
 
         bill_rules = [
             FirstTierRoutingRule(search_type=SHIPMENT_TYPE_MBL),
@@ -45,6 +60,7 @@ class SharedSpider(BaseCarrierSpider):
             self.search_no = self.booking_no
 
     def start(self):
+        self._proxy_manager.renew_proxy()
         option = FirstTierRoutingRule.build_request_option(search_no=self.search_no, base_url=self.base_url)
         yield self._build_request_by(option=option)
 
@@ -60,10 +76,17 @@ class SharedSpider(BaseCarrierSpider):
             if isinstance(result, BaseCarrierItem):
                 yield result
             elif isinstance(result, RequestOption):
-                yield self._build_request_by(option=result)
+                proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
+                yield self._build_request_by(option=proxy_option)
+            elif isinstance(result, Restart):
+                self.logger.warning(f'----- {result.reason}, try new proxy and restart')
+                self._proxy_manager.renew_proxy()
+                option = FirstTierRoutingRule.build_request_option(search_no=self.search_no, base_url=self.base_url)
+                proxy_option = self._proxy_manager.apply_proxy_to_request_option(option)
+                yield self._build_request_by(proxy_option)
             else:
                 raise RuntimeError()
-            
+
     def _build_request_by(self, option: RequestOption):
         meta = {
             RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
@@ -74,6 +97,7 @@ class SharedSpider(BaseCarrierSpider):
             return scrapy.Request(
                 url=option.url,
                 meta=meta,
+                headers=option.headers,
             )
         elif option.method == RequestOption.METHOD_POST_FORM:
             return scrapy.FormRequest(
@@ -83,19 +107,6 @@ class SharedSpider(BaseCarrierSpider):
             )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
-
-
-class CarrierOneySpider(SharedSpider):
-    name = 'carrier_oney'
-    base_url = 'https://ecomm.one-line.com/ecom/CUP_HOM_3301GS.do'
-
-
-class CarrierSmlmSpider(SharedSpider):
-    name = 'carrier_smlm'
-    base_url = 'https://esvc.smlines.com/smline/CUP_HOM_3301GS.do'
-
-
-# -----------------------------------------------------------------------------------------------------------
 
 
 class FirstTierRoutingRule(BaseRoutingRule):
@@ -114,10 +125,26 @@ class FirstTierRoutingRule(BaseRoutingRule):
             f'{base_url}?_search=false&nd={time_stamp}&rows=10000&page=1&sidx=&sord=asc&'
             f'f_cmd={cls.f_cmd}&search_type=B&search_name={search_no}&cust_cd='
         )
+
+        headers = {
+            'authority': 'ecomm.one-line.com',
+            'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="90", "Google Chrome";v="90"',
+            'accept': 'application/json, text/javascript, */*; q=0.01',
+            'x-requested-with': 'XMLHttpRequest',
+            'sec-ch-ua-mobile': '?0',
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36',
+            'sec-fetch-site': 'same-origin',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-dest': 'empty',
+            'referer': 'https://ecomm.one-line.com/ecom/CUP_HOM_3301.do?sessLocale=en',
+            'accept-language': 'en-US,en;q=0.9',
+        }
+
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=url,
+            headers=headers,
             meta={'base_url': base_url}
         )
 
@@ -129,7 +156,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
         response_dict = json.loads(response.text)
 
         if self._is_search_no_invalid(response_dict):
-            raise CarrierInvalidSearchNoError(search_type=self._search_type)
+            yield Restart(reason='IP block')
 
         container_info_list = self._extract_container_info_list(response_dict=response_dict)
         booking_no = self._get_booking_no_from(container_list=container_info_list)
@@ -176,8 +203,6 @@ class FirstTierRoutingRule(BaseRoutingRule):
     @staticmethod
     def _extract_container_info_list(response_dict) -> List:
         container_data_list = response_dict.get('list')
-        if not container_data_list:
-            raise CarrierResponseFormatError(reason=f'Can not find container_data: `{response_dict}`')
 
         container_info_list = []
         for container_data in container_data_list:
@@ -186,12 +211,14 @@ class FirstTierRoutingRule(BaseRoutingRule):
             booking_no = container_data['bkgNo'].strip()
             cooperation_no = container_data['copNo'].strip()
 
-            container_info_list.append({
-                'mbl_no': mbl_no,
-                'container_no': container_no,
-                'booking_no': booking_no,
-                'cooperation_no': cooperation_no,
-            })
+            container_info_list.append(
+                {
+                    'mbl_no': mbl_no,
+                    'container_no': container_no,
+                    'booking_no': booking_no,
+                    'cooperation_no': cooperation_no,
+                }
+            )
 
         return container_info_list
 
@@ -267,16 +294,18 @@ class VesselRoutingRule(BaseRoutingRule):
         vessel_data_list = response_dict['list']
         vessel_info_list = []
         for vessel_data in vessel_data_list:
-            vessel_info_list.append({
-                'name': vessel_data['vslEngNm'].strip(),
-                'voyage': vessel_data['skdVoyNo'].strip() + vessel_data['skdDirCd'].strip(),
-                'pol': vessel_data['polNm'].strip(),
-                'pod': vessel_data['podNm'].strip(),
-                'etd': vessel_data['etd'].strip() if vessel_data['etdFlag'] == 'C' else None,
-                'atd': vessel_data['etd'].strip() if vessel_data['etdFlag'] == 'A' else None,
-                'eta': vessel_data['eta'].strip() if vessel_data['etaFlag'] == 'C' else None,
-                'ata': vessel_data['eta'].strip() if vessel_data['etaFlag'] == 'A' else None,
-            })
+            vessel_info_list.append(
+                {
+                    'name': vessel_data['vslEngNm'].strip(),
+                    'voyage': vessel_data['skdVoyNo'].strip() + vessel_data['skdDirCd'].strip(),
+                    'pol': vessel_data['polNm'].strip(),
+                    'pod': vessel_data['podNm'].strip(),
+                    'etd': vessel_data['etd'].strip() if vessel_data['etdFlag'] == 'C' else None,
+                    'atd': vessel_data['etd'].strip() if vessel_data['etdFlag'] == 'A' else None,
+                    'eta': vessel_data['eta'].strip() if vessel_data['etaFlag'] == 'C' else None,
+                    'ata': vessel_data['eta'].strip() if vessel_data['etaFlag'] == 'A' else None,
+                }
+            )
 
         return vessel_info_list
 
@@ -337,12 +366,14 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             status_with_br = container_status_data['statusNm'].strip()
             status = status_with_br.replace('<br>', ' ')
 
-            container_status_info_list.append({
-                'status': status,
-                'location': container_status_data['placeNm'].strip(),
-                'local_time': local_time,
-                'est_or_actual': container_status_data['actTpCd'].strip(),
-            })
+            container_status_info_list.append(
+                {
+                    'status': status,
+                    'location': container_status_data['placeNm'].strip(),
+                    'local_time': local_time,
+                    'est_or_actual': container_status_data['actTpCd'].strip(),
+                }
+            )
 
         return container_status_info_list
 
