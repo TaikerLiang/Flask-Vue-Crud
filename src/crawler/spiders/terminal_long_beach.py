@@ -5,4 +5,7 @@ class TerminalPctSpider(TmsSharedSpider):
     firms_code = "Y309"
     name = "terminal_tms_long_beach"
     terminal_id = 1
-    company_info = CompanyInfo(email="BrianLee", password="ZD_uSUFMy!6Nfu",)
+    company_info = CompanyInfo(
+        email="BrianLee",
+        password="ZD_uSUFMy!6Nfu",
+    )

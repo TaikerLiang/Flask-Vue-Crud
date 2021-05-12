@@ -9,4 +9,3 @@ class TerminalOictSpider(TideworksShareSpider):
         email='Scott.lu@gofreight.co',
         password='hardc0re',
     )
-

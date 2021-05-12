@@ -26,7 +26,9 @@ class ShareSpider(BaseMultiTerminalSpider):
 
     def start(self):
         uni_container_nos = list(self.cno_tid_map.keys())
-        option = ContainerRoutingRule.build_request_option(container_nos=uni_container_nos, terminal_id=self.terminal_id)
+        option = ContainerRoutingRule.build_request_option(
+            container_nos=uni_container_nos, terminal_id=self.terminal_id
+        )
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -99,7 +101,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             url=url,
             headers={'Content-Type': 'application/json'},
             body=json.dumps(form_data),
-            meta={'container_nos': container_nos}
+            meta={'container_nos': container_nos},
         )
 
     def get_save_name(self, response) -> str:
@@ -152,4 +154,3 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         elif len(container['BillOfLading']) != 1:
             raise TerminalResponseFormatError(reason=f'Unexpected Mbl_no: `{container["BillOfLading"]}`')
-

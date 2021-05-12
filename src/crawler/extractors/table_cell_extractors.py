@@ -4,14 +4,12 @@ from scrapy import Selector
 
 
 class BaseTableCellExtractor:
-
     @abc.abstractmethod
     def extract(self, cell: Selector):
         pass
 
 
 class FirstTextTdExtractor(BaseTableCellExtractor):
-
     def __init__(self, css_query: str = '::text'):
         self.css_query = css_query
 
@@ -24,4 +22,3 @@ class FirstTextTdExtractor(BaseTableCellExtractor):
             return ''
         else:
             return ' '.join([t.strip() for t in td_text_list])
-

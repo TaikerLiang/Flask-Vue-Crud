@@ -13,7 +13,14 @@ from urllib3.exceptions import ReadTimeoutError
 
 from crawler.core_carrier.exceptions import SuspiciousOperationError, LoadWebsiteTimeOutFatal, CarrierInvalidMblNoError
 from crawler.core_carrier.items import (
-    LocationItem, MblItem, VesselItem, ContainerStatusItem, ContainerItem, BaseCarrierItem, DebugItem)
+    LocationItem,
+    MblItem,
+    VesselItem,
+    ContainerStatusItem,
+    ContainerItem,
+    BaseCarrierItem,
+    DebugItem,
+)
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
@@ -60,10 +67,7 @@ class CarrierCosuSpider(BaseCarrierSpider):
                 raise RuntimeError()
 
     def _build_request_by(self, option: RequestOption):
-        meta = {
-            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
-            **option.meta
-        }
+        meta = {RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name, **option.meta}
 
         if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
@@ -169,27 +173,26 @@ class BookingInfoRoutingRule(BaseRoutingRule):
 
 
 class ItemExtractor:
-
     def extract(self, response: scrapy.Selector, content_getter) -> BaseCarrierItem:
-            mbl_item = self._make_main_item(response=response)
-            vessel_items = self._make_vessel_items(response=response)
-            container_items = self._make_container_items(response=response)
+        mbl_item = self._make_main_item(response=response)
+        vessel_items = self._make_vessel_items(response=response)
+        container_items = self._make_container_items(response=response)
 
-            for item in vessel_items + [mbl_item]:
+        for item in vessel_items + [mbl_item]:
+            yield item
+
+        content_getter.scroll_to_bottom_of_page()
+        for c_i, c_item in enumerate(container_items):
+            response_text = content_getter.click_container_status_button(c_i)
+            response_selector = scrapy.Selector(text=response_text)
+
+            container_status_items = self._make_container_status_items(
+                container_no=c_item['container_no'],
+                response=response_selector,
+            )
+
+            for item in container_status_items + [c_item]:
                 yield item
-
-            content_getter.scroll_to_bottom_of_page()
-            for c_i, c_item in enumerate(container_items):
-                response_text = content_getter.click_container_status_button(c_i)
-                response_selector = scrapy.Selector(text=response_text)
-
-                container_status_items = self._make_container_status_items(
-                    container_no=c_item['container_no'],
-                    response=response_selector,
-                )
-
-                for item in container_status_items + [c_item]:
-                    yield item
 
     @classmethod
     def _make_main_item(cls, response: scrapy.Selector) -> BaseCarrierItem:
@@ -342,21 +345,27 @@ class ItemExtractor:
                 top='Arrival Date', left=left, extractor=LabelContentTableCellExtractor()
             )
 
-            vessels.append({
-                'vessel_key': table_extractor.extract_cell(
-                    top='Vessel', left=left, extractor=FirstTextTdExtractor(css_query='a::text')),
-                'vessel': table_extractor.extract_cell(
-                    top='Vessel', left=left, extractor=FirstTextTdExtractor(css_query='a::text')),
-                'voyage': service_voyage['Voyage'],
-                'pol': table_extractor.extract_cell(
-                    top='POL', left=left, extractor=FirstTextTdExtractor(css_query='span::text')),
-                'pod': table_extractor.extract_cell(
-                    top='POD', left=left, extractor=FirstTextTdExtractor(css_query='span::text')),
-                'etd': departure_date['expected'],
-                'atd': departure_date['actual'],
-                'eta': arrive_date['expected'],
-                'ata': arrive_date['actual'],
-            })
+            vessels.append(
+                {
+                    'vessel_key': table_extractor.extract_cell(
+                        top='Vessel', left=left, extractor=FirstTextTdExtractor(css_query='a::text')
+                    ),
+                    'vessel': table_extractor.extract_cell(
+                        top='Vessel', left=left, extractor=FirstTextTdExtractor(css_query='a::text')
+                    ),
+                    'voyage': service_voyage['Voyage'],
+                    'pol': table_extractor.extract_cell(
+                        top='POL', left=left, extractor=FirstTextTdExtractor(css_query='span::text')
+                    ),
+                    'pod': table_extractor.extract_cell(
+                        top='POD', left=left, extractor=FirstTextTdExtractor(css_query='span::text')
+                    ),
+                    'etd': departure_date['expected'],
+                    'atd': departure_date['actual'],
+                    'eta': arrive_date['expected'],
+                    'ata': arrive_date['actual'],
+                }
+            )
 
         return vessels
 
@@ -387,18 +396,23 @@ class ItemExtractor:
         for left in table_locator.iter_left_index():
             container_no = table_extractor.extract_cell(
                 top='Container No.', left=left, extractor=OnlyContentTableCellExtractor()
-            )[0]  # 0 container_no, 1 container_spec
+            )[
+                0
+            ]  # 0 container_no, 1 container_spec
             lfd_related = {}
             if table_extractor.has_header(top='LFD'):
                 lfd_related = table_extractor.extract_cell(
-                    top='LFD', left=left, extractor=LabelContentTableCellExtractor())
+                    top='LFD', left=left, extractor=LabelContentTableCellExtractor()
+                )
 
-            container_infos.append({
-                'container_key': get_container_key(container_no=container_no),
-                'container_no': container_no,
-                'last_free_day': lfd_related.get('LFD'),
-                'depot_last_free_day': lfd_related.get('Depot LFD'),
-            })
+            container_infos.append(
+                {
+                    'container_key': get_container_key(container_no=container_no),
+                    'container_no': container_no,
+                    'last_free_day': lfd_related.get('LFD'),
+                    'depot_last_free_day': lfd_related.get('Depot LFD'),
+                }
+            )
 
         return container_infos
 
@@ -437,20 +451,21 @@ class ItemExtractor:
                 top='Latest Status', left=left, extractor=OnlyContentTableCellExtractor()
             )  # 0 description, 1 time, 2 transport
 
-            container_status_infos.append({
-                'description': multi_status[0],
-                'local_date_time': multi_status[1],
-                'transport': multi_status[2],
-                'location': table_extractor.extract_cell(
-                    top='Location', left=left, extractor=JoinAllWithSpaceTableCellExtractor()
-                ),
-            })
+            container_status_infos.append(
+                {
+                    'description': multi_status[0],
+                    'local_date_time': multi_status[1],
+                    'transport': multi_status[2],
+                    'location': table_extractor.extract_cell(
+                        top='Location', left=left, extractor=JoinAllWithSpaceTableCellExtractor()
+                    ),
+                }
+            )
 
         return container_status_infos
 
 
 class LeftHeadDivTableLocator(BaseTableLocator):
-
     def __init__(self):
         self._td_map = {}  # title: data_td
 
@@ -559,9 +574,7 @@ class ContentGetter:
     def __init__(self):
         options = webdriver.FirefoxOptions()
         options.add_argument('--headless')
-        options.add_argument(
-            f'user-agent={self._random_choose_user_agent()}'
-        )
+        options.add_argument(f'user-agent={self._random_choose_user_agent()}')
         self._driver = webdriver.Firefox(firefox_options=options, service_log_path='/dev/null')
         self._driver.get('https://elines.coscoshipping.com/ebusiness/cargoTracking')
         self._is_first = True
@@ -618,26 +631,10 @@ class ContentGetter:
     def _random_choose_user_agent():
         user_agents = [
             # firefox
-            (
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:80.0) '
-                'Gecko/20100101 '
-                'Firefox/80.0'
-            ),
-            (
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) '
-                'Gecko/20100101 '
-                'Firefox/79.0'
-            ),
-            (
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) '
-                'Gecko/20100101 '
-                'Firefox/78.0'
-            ),
-            (
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0.1) '
-                'Gecko/20100101 '
-                'Firefox/78.0.1'
-            ),
+            ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:80.0) ' 'Gecko/20100101 ' 'Firefox/80.0'),
+            ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) ' 'Gecko/20100101 ' 'Firefox/79.0'),
+            ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) ' 'Gecko/20100101 ' 'Firefox/78.0'),
+            ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0.1) ' 'Gecko/20100101 ' 'Firefox/78.0.1'),
         ]
 
         return random.choice(user_agents)
@@ -650,4 +647,3 @@ def get_container_key(container_no: str):
     #     raise CarrierResponseFormatError(f'Invalid container_no `{container_no}`')
 
     return container_key
-

@@ -41,15 +41,15 @@ class PortsamericaShareSpider(BaseMultiTerminalSpider):
     def __init__(self, *args, **kwargs):
         super(PortsamericaShareSpider, self).__init__(*args, **kwargs)
 
-        rules = [
-            SearchContainerRule()
-        ]
+        rules = [SearchContainerRule()]
 
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
-        request_option = SearchContainerRule.build_request_option(container_no_list=unique_container_nos, company_info=self.company_info)
+        request_option = SearchContainerRule.build_request_option(
+            container_no_list=unique_container_nos, company_info=self.company_info
+        )
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -179,8 +179,8 @@ class ContentGetter:
 
         res = []
         tds = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table/tbody/tr/td')
-        for i in range(int(len(tds)/17)):
-            appointment_date = ''.join(tds[i*17+5].xpath('.//text()').extract())
+        for i in range(int(len(tds) / 17)):
+            appointment_date = ''.join(tds[i * 17 + 5].xpath('.//text()').extract())
 
             if re.search('([0-9]+/[0-9]+/[0-9]{4}[0-9]{4}-[0-9]{4})', appointment_date):
                 date_split_list = appointment_date.split('/')
@@ -188,18 +188,20 @@ class ContentGetter:
                 date_split_list[-1] = date_split_list[-1][:4]
                 appointment_date = '/'.join(date_split_list) + ' ' + time_split_list[0]
 
-            res.append({
-                'container_no': ''.join(tds[i*17+1].xpath('.//text()').extract()).strip().replace('-', ''),
-                'ready_for_pick_up': ''.join(tds[i*17+2].xpath('.//text()').extract()).strip(),
-                'appointment_date': appointment_date.strip(),
-                'customs_release': ''.join(tds[i*17+6].xpath('.//text()').extract()).strip(),
-                'freight_release': ''.join(tds[i*17+7].xpath('.//text()').extract()).strip(),
-                'holds': ''.join(tds[i*17+9].xpath('.//text()').extract()).strip(),
-                'demurrage': ''.join(tds[i*17+11].xpath('.//text()').extract()).strip(),
-                'last_free_day': ''.join(tds[i*17+12].xpath('.//text()').extract()).strip(),
-                'carrier': ''.join(tds[i*17+13].xpath('.//text()').extract()).strip(),
-                'container_spec': ''.join(tds[i*17+14].xpath('.//text()').extract()).strip(),
-            })
+            res.append(
+                {
+                    'container_no': ''.join(tds[i * 17 + 1].xpath('.//text()').extract()).strip().replace('-', ''),
+                    'ready_for_pick_up': ''.join(tds[i * 17 + 2].xpath('.//text()').extract()).strip(),
+                    'appointment_date': appointment_date.strip(),
+                    'customs_release': ''.join(tds[i * 17 + 6].xpath('.//text()').extract()).strip(),
+                    'freight_release': ''.join(tds[i * 17 + 7].xpath('.//text()').extract()).strip(),
+                    'holds': ''.join(tds[i * 17 + 9].xpath('.//text()').extract()).strip(),
+                    'demurrage': ''.join(tds[i * 17 + 11].xpath('.//text()').extract()).strip(),
+                    'last_free_day': ''.join(tds[i * 17 + 12].xpath('.//text()').extract()).strip(),
+                    'carrier': ''.join(tds[i * 17 + 13].xpath('.//text()').extract()).strip(),
+                    'container_spec': ''.join(tds[i * 17 + 14].xpath('.//text()').extract()).strip(),
+                }
+            )
 
         return res
 

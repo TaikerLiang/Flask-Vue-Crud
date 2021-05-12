@@ -8,7 +8,9 @@ from scrapy import Request
 from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_FATAL
 from crawler.core_terminal.base_spiders import BaseTerminalSpider
 from crawler.core_terminal.exceptions import (
-    BaseTerminalError, TerminalResponseFormatError, TerminalInvalidContainerNoError
+    BaseTerminalError,
+    TerminalResponseFormatError,
+    TerminalInvalidContainerNoError,
 )
 from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem, ExportErrorData
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
@@ -173,7 +175,8 @@ class ListTracedContainerRoutingRule(BaseRoutingRule):
             if is_first:
                 # update existing container: delete -> add
                 yield DelContainerFromTraceRoutingRule.build_request_option(
-                    container_no=container_no, authorization_token=authorization_token, not_finished=True)
+                    container_no=container_no, authorization_token=authorization_token, not_finished=True
+                )
 
                 return
 
@@ -182,11 +185,13 @@ class ListTracedContainerRoutingRule(BaseRoutingRule):
             yield TerminalItem(**collated_container)
 
             yield DelContainerFromTraceRoutingRule.build_request_option(
-                container_no=container_no, authorization_token=authorization_token)
+                container_no=container_no, authorization_token=authorization_token
+            )
 
         else:
             yield AddContainerToTraceRoutingRule.build_request_option(
-                container_no=container_no, authorization_token=authorization_token)
+                container_no=container_no, authorization_token=authorization_token
+            )
 
     @staticmethod
     def __get_container_from(response_json: Dict, container_no: str):
@@ -258,7 +263,7 @@ class AddContainerToTraceRoutingRule(BaseRoutingRule):
                 'authorization_token': authorization_token,
                 'dont_retry': True,
                 'handle_httpstatus_list': [502],
-            }
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -273,7 +278,9 @@ class AddContainerToTraceRoutingRule(BaseRoutingRule):
         if response.status == 502:
             raise TerminalInvalidContainerNoError()
         elif response.status != 200:
-            raise FenixResponseStatusCodeError(reason=f'AddContainerToTraceRoutingRule: Unexpected status code: `{response.status}`')
+            raise FenixResponseStatusCodeError(
+                reason=f'AddContainerToTraceRoutingRule: Unexpected status code: `{response.status}`'
+            )
 
         yield ListTracedContainerRoutingRule.build_request_option(
             container_no=container_no, authorization_token=authorization_token
@@ -308,7 +315,7 @@ class DelContainerFromTraceRoutingRule(BaseRoutingRule):
                 'container_no': container_no,
                 'authorization_token': authorization_token,
                 'not_finished': not_finished,
-            }
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -320,7 +327,9 @@ class DelContainerFromTraceRoutingRule(BaseRoutingRule):
         not_finished = response.meta['not_finished']
 
         if response.status != 200:
-            raise FenixResponseStatusCodeError(reason=f'DelContainerFromTraceRoutingRule: Unexpected status code: `{response.status}`')
+            raise FenixResponseStatusCodeError(
+                reason=f'DelContainerFromTraceRoutingRule: Unexpected status code: `{response.status}`'
+            )
 
         if not_finished:
             yield AddContainerToTraceRoutingRule.build_request_option(
@@ -353,7 +362,7 @@ class SearchMblRoutingRule(BaseRoutingRule):
             meta={
                 'handle_httpstatus_list': [404],
                 'mbl_no': mbl_no,
-            }
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -431,4 +440,3 @@ class FenixResponseStatusCodeError(BaseTerminalError):
 
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail=f'<status-code-error> {self.reason}')
-

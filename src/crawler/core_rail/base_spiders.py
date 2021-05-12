@@ -38,7 +38,7 @@ class BaseRailSpider(scrapy.Spider):
 
         self.container_no = kwargs['container_no']
 
-        to_save = ('save' in kwargs)
+        to_save = 'save' in kwargs
         self._saver = self._prepare_saver(to_save=to_save)
 
         self._error = False
@@ -105,7 +105,7 @@ class BaseMultiRailSpider(scrapy.Spider):
             self.cno_tid_map.setdefault(c_no, [])
             self.cno_tid_map[c_no].append(t_id)
 
-        to_save = ('save' in kwargs)
+        to_save = 'save' in kwargs
         self._saver = self._prepare_saver(to_save=to_save)
 
         self._error = False
@@ -140,4 +140,3 @@ class BaseMultiRailSpider(scrapy.Spider):
 
     def mark_error(self):
         self._error = True
-

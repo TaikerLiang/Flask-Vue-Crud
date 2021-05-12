@@ -44,7 +44,9 @@ class TmsSharedSpider(BaseMultiTerminalSpider):
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
-        request_option = TokenRoutingRule.build_request_option(container_nos=unique_container_nos, company_info=self.company_info)
+        request_option = TokenRoutingRule.build_request_option(
+            container_nos=unique_container_nos, company_info=self.company_info
+        )
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -101,10 +103,7 @@ class TokenRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
-            meta={
-                'container_nos': container_nos,
-                'company_info': company_info
-            },
+            meta={'container_nos': container_nos, 'company_info': company_info},
         )
 
     def handle(self, response):
@@ -160,7 +159,8 @@ class LoginRoutingRule(BaseRoutingRule):
         if self.terminal_id == current_terminal_id:
             for container_no in container_nos:
                 yield ContainerAvailabilityRoutingRule.build_request_option(
-                    token=container_availability_token, container_no=container_no)
+                    token=container_availability_token, container_no=container_no
+                )
         else:
             yield SetTerminalRoutingRule.build_request_option(
                 set_terminal_token=set_terminal_token,
@@ -215,7 +215,8 @@ class SetTerminalRoutingRule(BaseRoutingRule):
 
         for container_no in container_nos:
             yield ContainerAvailabilityRoutingRule.build_request_option(
-                token=container_availability_token, container_no=container_no)
+                token=container_availability_token, container_no=container_no
+            )
 
     def get_save_name(self, response):
         return f'{self.name}.html'
@@ -258,7 +259,6 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
 
         print('paul', container_info)
         print('paul', extra_container_info)
-
 
         yield TerminalItem(
             container_no=container_info['container_no'],
@@ -353,13 +353,13 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
 
 class TopInfoTableLocator(BaseTableLocator):
     """
-        +---------+---------+-----+---------+ <table>
-        | Title 1 | Title 2 | ... | Title N | <tr>
-        +---------+---------+-----+---------+
-        | Data 1  | Data 2  | ... | Data N  | <tr>
-        +---------+---------+-----+---------+
-        | extra container info table        | <tr>
-        +-----------------------------------+ </table>
+    +---------+---------+-----+---------+ <table>
+    | Title 1 | Title 2 | ... | Title N | <tr>
+    +---------+---------+-----+---------+
+    | Data 1  | Data 2  | ... | Data N  | <tr>
+    +---------+---------+-----+---------+
+    | extra container info table        | <tr>
+    +-----------------------------------+ </table>
     """
 
     TR_TITLE_INDEX = 0
@@ -372,7 +372,7 @@ class TopInfoTableLocator(BaseTableLocator):
 
     def parse(self, table: Selector):
         title_tr = table.css('tr')[self.TR_TITLE_INDEX]
-        data_tr_list = table.css('tr')[self.TR_DATA_INDEX_BEGIN: self.TR_DATA_INDEX_END]
+        data_tr_list = table.css('tr')[self.TR_DATA_INDEX_BEGIN : self.TR_DATA_INDEX_END]
 
         title_text_list = title_tr.css('th a::text').getall()
 
@@ -405,7 +405,6 @@ class TopInfoTableLocator(BaseTableLocator):
 
 
 class TdSpanExtractor(BaseTableCellExtractor):
-
     def extract(self, cell: Selector) -> str:
         td_text = cell.css('span::text').get()
         return td_text.strip() if td_text else ''
@@ -413,15 +412,15 @@ class TdSpanExtractor(BaseTableCellExtractor):
 
 class LeftExtraContainerLocator(BaseTableLocator):
     """
-        +---------+--------+-----+-----+-----+-----+ <table>
-        | Title 1 | Data 1 |     |     |     |     | <tr>
-        +---------+--------+-----+-----+-----+-----+
-        | Title 2 | Data 2 |     |     |     |     | <tr>
-        +---------+--------+-----+-----+-----+-----+
-        | ...     | ...    |     |     |     |     | <tr>
-        +---------+--------+-----+-----+-----+-----+
-        | Title N | Data N |     |     |     |     | <tr>
-        +---------+--------+-----+-----+-----+-----+ </table>
+    +---------+--------+-----+-----+-----+-----+ <table>
+    | Title 1 | Data 1 |     |     |     |     | <tr>
+    +---------+--------+-----+-----+-----+-----+
+    | Title 2 | Data 2 |     |     |     |     | <tr>
+    +---------+--------+-----+-----+-----+-----+
+    | ...     | ...    |     |     |     |     | <tr>
+    +---------+--------+-----+-----+-----+-----+
+    | Title N | Data N |     |     |     |     | <tr>
+    +---------+--------+-----+-----+-----+-----+ </table>
     """
 
     TR_CONTENT_BEGIN_INDEX = 0
@@ -432,7 +431,7 @@ class LeftExtraContainerLocator(BaseTableLocator):
         self._td_map = {}
 
     def parse(self, table: scrapy.Selector):
-        content_tr_list = table.css('tr')[self.TR_CONTENT_BEGIN_INDEX:]
+        content_tr_list = table.css('tr')[self.TR_CONTENT_BEGIN_INDEX :]
 
         for tr in content_tr_list:
             title_td = tr.css('td')[self.TD_TITLE_INDEX]
@@ -455,15 +454,15 @@ class LeftExtraContainerLocator(BaseTableLocator):
 
 class MiddleExtraContainerLocator(BaseTableLocator):
     """
-        +-----+-----+---------+--------+-----+-----+ <table>
-        |     |     | Title 1 | Data 1 |     |     | <tr>
-        +-----+-----+---------+--------+-----+-----+
-        |     |     | Title 2 | Data 2 |     |     | <tr>
-        +-----+-----+---------+--------+-----+-----+
-        |     |     | ...     | ...    |     |     | <tr>
-        +-----+-----+---------+--------+-----+-----+
-        |     |     | Title N | Data N |     |     | <tr>
-        +-----+-----+---------+--------+-----+-----+ </table>
+    +-----+-----+---------+--------+-----+-----+ <table>
+    |     |     | Title 1 | Data 1 |     |     | <tr>
+    +-----+-----+---------+--------+-----+-----+
+    |     |     | Title 2 | Data 2 |     |     | <tr>
+    +-----+-----+---------+--------+-----+-----+
+    |     |     | ...     | ...    |     |     | <tr>
+    +-----+-----+---------+--------+-----+-----+
+    |     |     | Title N | Data N |     |     | <tr>
+    +-----+-----+---------+--------+-----+-----+ </table>
     """
 
     TR_CONTENT_BEGIN_INDEX = 0
@@ -475,7 +474,7 @@ class MiddleExtraContainerLocator(BaseTableLocator):
         self._td_map = {}
 
     def parse(self, table: scrapy.Selector):
-        content_tr_list = table.css('tr')[self.TR_CONTENT_BEGIN_INDEX:self.TR_CONTENT_END_INDEX]
+        content_tr_list = table.css('tr')[self.TR_CONTENT_BEGIN_INDEX : self.TR_CONTENT_END_INDEX]
 
         for tr in content_tr_list:
             title_td = tr.css('td')[self.TD_TITLE_INDEX]
@@ -498,15 +497,15 @@ class MiddleExtraContainerLocator(BaseTableLocator):
 
 class RightExtraContainerLocator(BaseTableLocator):
     """
-        +-----+-----+-----+-----+---------+--------+ <table>
-        |     |     |     |     | Title 1 | Data 1 | <tr>
-        +-----+-----+-----+-----+---------+--------+
-        |     |     |     |     | Title 2 | Data 2 | <tr>
-        +-----+-----+-----+-----+---------+--------+
-        |     |     |     |     | ...     | ...    | <tr>
-        +-----+-----+-----+-----+---------+--------+
-        |     |     |     |     | Title N | Data N | <tr>
-        +-----+-----+-----+-----+---------+--------+ </table>
+    +-----+-----+-----+-----+---------+--------+ <table>
+    |     |     |     |     | Title 1 | Data 1 | <tr>
+    +-----+-----+-----+-----+---------+--------+
+    |     |     |     |     | Title 2 | Data 2 | <tr>
+    +-----+-----+-----+-----+---------+--------+
+    |     |     |     |     | ...     | ...    | <tr>
+    +-----+-----+-----+-----+---------+--------+
+    |     |     |     |     | Title N | Data N | <tr>
+    +-----+-----+-----+-----+---------+--------+ </table>
     """
 
     TR_CONTENT_BEGIN_INDEX = 0
@@ -518,7 +517,7 @@ class RightExtraContainerLocator(BaseTableLocator):
         self._td_map = {}
 
     def parse(self, table: scrapy.Selector):
-        content_tr_list = table.css('tr')[self.TR_CONTENT_BEGIN_INDEX:self.TR_CONTENT_END_INDEX]
+        content_tr_list = table.css('tr')[self.TR_CONTENT_BEGIN_INDEX : self.TR_CONTENT_END_INDEX]
 
         for tr in content_tr_list:
             title_td = tr.css('td')[self.TD_TITLE_INDEX]

@@ -9,6 +9,7 @@ from urllib.parse import urlencode
 
 import scrapy
 from scrapy import Selector
+
 # from selenium import webdriver
 from seleniumwire import webdriver
 from selenium.common.exceptions import TimeoutException
@@ -78,17 +79,16 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
     def __init__(self, *args, **kwargs):
         super(TrapacShareSpider, self).__init__(*args, **kwargs)
 
-        rules = [
-            MainRoutingRule(),
-            ContentRoutingRule()
-        ]
+        rules = [MainRoutingRule(), ContentRoutingRule()]
 
         self._rule_manager = RuleManager(rules=rules)
         self._save = True if 'save' in kwargs else False
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
-        option = MainRoutingRule.build_request_option(container_no_list=unique_container_nos, company_info=self.company_info)
+        option = MainRoutingRule.build_request_option(
+            container_no_list=unique_container_nos, company_info=self.company_info
+        )
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -160,16 +160,22 @@ class MainRoutingRule(BaseRoutingRule):
         company_info = response.meta['company_info']
         container_no_list = response.meta['container_no_list']
 
-        is_g_captcha, res, cookies = self._build_container_response(company_info=company_info, container_no_list=container_no_list)
+        is_g_captcha, res, cookies = self._build_container_response(
+            company_info=company_info, container_no_list=container_no_list
+        )
         if is_g_captcha:
             if res:
                 print('print(is_g_captcha, res, cookies)', is_g_captcha, res, cookies)
-                yield ContentRoutingRule.build_request_option(container_no_list, company_info=company_info, g_token=res, cookies=cookies)
+                yield ContentRoutingRule.build_request_option(
+                    container_no_list, company_info=company_info, g_token=res, cookies=cookies
+                )
         else:
             container_response = scrapy.Selector(text=res)
             yield SaveItem(file_name='container.html', text=container_response.get())
 
-            for container_info in self._extract_container_result_table(response=container_response, numbers=len(container_no_list)):
+            for container_info in self._extract_container_result_table(
+                response=container_response, numbers=len(container_no_list)
+            ):
                 yield TerminalItem(  # html field
                     container_no=container_info['container_no'],  # number
                     last_free_day=container_info['last_free_day'],  # demurrage-lfd
@@ -199,7 +205,9 @@ class ContentRoutingRule(BaseRoutingRule):
     name = 'CONTENT'
 
     @classmethod
-    def build_request_option(cls, container_no_list: Dict, company_info: CompanyInfo, g_token: str, cookies: Dict) -> RequestOption:
+    def build_request_option(
+        cls, container_no_list: Dict, company_info: CompanyInfo, g_token: str, cookies: Dict
+    ) -> RequestOption:
         form_data = {
             'action': 'trapac_transaction',
             'recaptcha-token': g_token,
@@ -213,7 +221,7 @@ class ContentRoutingRule(BaseRoutingRule):
             'history_type': 'N',
             'services': '',
             'from_date': str(datetime.now().date()),
-            'to_date': str((datetime.now() + timedelta(days=30)).date())
+            'to_date': str((datetime.now() + timedelta(days=30)).date()),
         }
 
         headers = {
@@ -274,6 +282,7 @@ class ContentRoutingRule(BaseRoutingRule):
                 'vessel': vessel,
                 'voyage': voyage,
             }
+
 
 # ------------------------------------------------------------------------
 

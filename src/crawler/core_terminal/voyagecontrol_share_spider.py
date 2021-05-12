@@ -9,7 +9,11 @@ from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_FATAL
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import BaseTerminalError, TerminalResponseFormatError
 from crawler.core_terminal.items import (
-    BaseTerminalItem, DebugItem, TerminalItem, ExportErrorData, InvalidContainerNoItem
+    BaseTerminalItem,
+    DebugItem,
+    TerminalItem,
+    ExportErrorData,
+    InvalidContainerNoItem,
 )
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 
@@ -51,8 +55,9 @@ class VoyagecontrolShareSpider(BaseMultiTerminalSpider):
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
-        option = LoginRoutingRule.build_request_option(container_no_list=unique_container_nos,
-                                                       company_info=self.company_info)
+        option = LoginRoutingRule.build_request_option(
+            container_no_list=unique_container_nos, company_info=self.company_info
+        )
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -145,7 +150,10 @@ class LoginRoutingRule(BaseRoutingRule):
 
         for container_no in container_no_list:
             yield ListTracedContainerRoutingRule.build_request_option(
-                container_no=container_no, authorization_token=authorization_token, company_info=company_info, is_first=True,
+                container_no=container_no,
+                authorization_token=authorization_token,
+                company_info=company_info,
+                is_first=True,
             )
 
         # if mbl_no:
@@ -159,7 +167,9 @@ class ListTracedContainerRoutingRule(BaseRoutingRule):
     name = 'LIST_TRACED_CONTAINER'
 
     @classmethod
-    def build_request_option(cls, container_no, authorization_token, company_info: CompanyInfo, is_first: bool = False) -> RequestOption:
+    def build_request_option(
+        cls, container_no, authorization_token, company_info: CompanyInfo, is_first: bool = False
+    ) -> RequestOption:
         url = f'https://{company_info.lower_short}.voyagecontrol.com/lynx/container/?venue={company_info.lower_short}'
         return RequestOption(
             rule_name=cls.name,
@@ -193,7 +203,11 @@ class ListTracedContainerRoutingRule(BaseRoutingRule):
             if is_first:
                 # update existing container: delete -> add
                 yield DelContainerFromTraceRoutingRule.build_request_option(
-                    container_no=container_no, authorization_token=authorization_token, company_info=company_info, not_finished=True)
+                    container_no=container_no,
+                    authorization_token=authorization_token,
+                    company_info=company_info,
+                    not_finished=True,
+                )
 
                 return
 
@@ -202,11 +216,13 @@ class ListTracedContainerRoutingRule(BaseRoutingRule):
             yield TerminalItem(**collated_container)
 
             yield DelContainerFromTraceRoutingRule.build_request_option(
-                container_no=container_no, authorization_token=authorization_token, company_info=company_info)
+                container_no=container_no, authorization_token=authorization_token, company_info=company_info
+            )
 
         else:
             yield AddContainerToTraceRoutingRule.build_request_option(
-                container_no=container_no, authorization_token=authorization_token, company_info=company_info)
+                container_no=container_no, authorization_token=authorization_token, company_info=company_info
+            )
 
     @staticmethod
     def __get_container_from(response_json: Dict, container_no: str):
@@ -282,7 +298,7 @@ class AddContainerToTraceRoutingRule(BaseRoutingRule):
                 'dont_retry': True,
                 'handle_httpstatus_list': [502],
                 'company_info': company_info,
-            }
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -298,7 +314,9 @@ class AddContainerToTraceRoutingRule(BaseRoutingRule):
         if response.status == 502:
             return InvalidContainerNoItem()
         elif response.status != 200:
-            raise VoyagecontrolResponseStatusCodeError(reason=f'AddContainerToTraceRoutingRule: Unexpected status code: `{response.status}`')
+            raise VoyagecontrolResponseStatusCodeError(
+                reason=f'AddContainerToTraceRoutingRule: Unexpected status code: `{response.status}`'
+            )
 
         yield ListTracedContainerRoutingRule.build_request_option(
             container_no=container_no, authorization_token=authorization_token, company_info=company_info
@@ -312,7 +330,9 @@ class DelContainerFromTraceRoutingRule(BaseRoutingRule):
     name = 'DEL_CONTAINER_FROM_TRACE'
 
     @classmethod
-    def build_request_option(cls, container_no, authorization_token, company_info: CompanyInfo, not_finished: bool = False) -> RequestOption:
+    def build_request_option(
+        cls, container_no, authorization_token, company_info: CompanyInfo, not_finished: bool = False
+    ) -> RequestOption:
         url = f'https://{company_info.lower_short}.voyagecontrol.com/lynx/container/ids/delete?venue={company_info.lower_short}'
         headers = {
             'Content-Type': 'application/json',
@@ -334,7 +354,7 @@ class DelContainerFromTraceRoutingRule(BaseRoutingRule):
                 'authorization_token': authorization_token,
                 'not_finished': not_finished,
                 'company_info': company_info,
-            }
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -347,7 +367,9 @@ class DelContainerFromTraceRoutingRule(BaseRoutingRule):
         company_info = response.meta['company_info']
 
         if response.status != 200:
-            raise VoyagecontrolResponseStatusCodeError(reason=f'DelContainerFromTraceRoutingRule: Unexpected status code: `{response.status}`')
+            raise VoyagecontrolResponseStatusCodeError(
+                reason=f'DelContainerFromTraceRoutingRule: Unexpected status code: `{response.status}`'
+            )
 
         if not_finished:
             yield AddContainerToTraceRoutingRule.build_request_option(
@@ -356,9 +378,7 @@ class DelContainerFromTraceRoutingRule(BaseRoutingRule):
         else:
             # because of parse(), need to yield empty item
             print('Taiker-2 TerminalItem')
-            yield TerminalItem(
-                container_no=''
-            )
+            yield TerminalItem(container_no='')
 
 
 # -------------------------------------------------------------------------------
@@ -384,7 +404,7 @@ class SearchMblRoutingRule(BaseRoutingRule):
                 'handle_httpstatus_list': [404],
                 'mbl_no': mbl_no,
                 'company_info': company_info,
-            }
+            },
         )
 
     def get_save_name(self, response) -> str:

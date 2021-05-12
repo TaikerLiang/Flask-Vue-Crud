@@ -8,4 +8,3 @@ CARRIER_RESULT_STATUS_FATAL = 'FATAL'
 # shipment_type: use in MblItem for spider
 SHIPMENT_TYPE_MBL = 'MBL'
 SHIPMENT_TYPE_BOOKING = 'BOOKING'
-

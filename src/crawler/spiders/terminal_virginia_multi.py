@@ -3,9 +3,7 @@ import json
 from scrapy import Request, FormRequest, Selector
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import (
-    BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
-)
+from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
@@ -101,8 +99,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         for container_bar in response_json:
             fac = container_bar['facility']
             gkey = container_bar['gkey']
-            yield ContainerDetailRoutingRule.build_request_option(
-                container_no=container_no, gkey=gkey, facility=fac)
+            yield ContainerDetailRoutingRule.build_request_option(container_no=container_no, gkey=gkey, facility=fac)
 
 
 # -------------------------------------------------------------------------------
@@ -116,12 +113,7 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         url = f'{BASE_URL}/api/containers/{gkey}/{facility}'
 
         return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=url,
-            meta={
-                'container_no': container_no
-            }
+            rule_name=cls.name, method=RequestOption.METHOD_GET, url=url, meta={'container_no': container_no}
         )
 
     def get_save_name(self, response) -> str:
@@ -131,7 +123,4 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         container_no = response.meta['container_no']
         # it conclude Container data
 
-        yield TerminalItem(
-            container_no=container_no
-        )
-
+        yield TerminalItem(container_no=container_no)

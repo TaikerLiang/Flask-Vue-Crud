@@ -9,4 +9,3 @@ class TerminalPctSpider(TideworksShareSpider):
         email='m10715033@mail.ntust.edu.tw',
         password='1234567890',
     )
-

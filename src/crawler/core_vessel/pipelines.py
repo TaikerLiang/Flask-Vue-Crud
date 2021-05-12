@@ -2,7 +2,6 @@ import pprint
 
 
 class VesselItemPipeline:
-
     @classmethod
     def get_setting_name(cls):
         return f'{__name__}.{cls.__name__}'

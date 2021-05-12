@@ -11,7 +11,6 @@ def is_click_command(obj):
 
 
 class CliFactory:
-
     @staticmethod
     def build_from_package(pkg):
         inst = click.Group()

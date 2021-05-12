@@ -12,9 +12,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import LoadWebsiteTimeOutFatal
-from crawler.core_terminal.items import (
-    BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
-)
+from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
@@ -49,7 +47,9 @@ class MaherContentGetter:
         return self.driver.page_source
 
     def detail_search(self, container_no):
-        self.driver.get(f'https://apps.maherterminals.com/csp/importContainerAction.do?container={container_no}&index=0&method=detail')
+        self.driver.get(
+            f'https://apps.maherterminals.com/csp/importContainerAction.do?container={container_no}&index=0&method=detail'
+        )
         time.sleep(5)
 
         return self.driver.page_source
@@ -74,7 +74,9 @@ class MaherContentGetter:
         login_btn.click()
         time.sleep(5)
 
-        self.driver.get('https://apps.maherterminals.com/csp/importContainerAction.do?method=initial&pageTitle=Import%20Container%20Status%20Inquiry')
+        self.driver.get(
+            'https://apps.maherterminals.com/csp/importContainerAction.do?method=initial&pageTitle=Import%20Container%20Status%20Inquiry'
+        )
         time.sleep(5)
 
     def quit(self):
@@ -190,9 +192,7 @@ class SearchRoutingRule(BaseRoutingRule):
             # detail_page_resp = content_getter.detail_search(ct_no)
             # gate_out_date = detail_page_resp.xpath('/html/body/table/tbody/tr/td/div[3]/table/tbody/tr/td/table[4]/tbody/tr[4]/td/table/tbody/tr/td/table/tbody/tr[29]/td[2]/text()').get()
             # print(ct_no, detail_page_resp, gate_out_date)
-            yield TerminalItem(
-                **container_info
-            )
+            yield TerminalItem(**container_info)
 
     @staticmethod
     def _is_container_no_invalid(response: Selector) -> bool:
@@ -228,15 +228,13 @@ class SearchRoutingRule(BaseRoutingRule):
 
 
 class SpecificClassTdContainTextMatchRule(BaseMatchRule):
-
     def __init__(self, td_class: str, text: str):
         self._td_class = td_class
         self._text = text
 
     def check(self, selector: Selector) -> bool:
-        sub_headings = (
-                selector.xpath(f'./tbody/tr/td[@class="{self._td_class}"]') or
-                selector.xpath(f'./tr/td[@class="{self._td_class}"]')
+        sub_headings = selector.xpath(f'./tbody/tr/td[@class="{self._td_class}"]') or selector.xpath(
+            f'./tr/td[@class="{self._td_class}"]'
         )
 
         for sub_heading in sub_headings:
@@ -283,4 +281,3 @@ class MaherLeftHeadTableLocator(BaseTableLocator):
     def has_header(self, top=None, left=None) -> bool:
         assert top is None
         return bool(self._td_map.get(left))
-

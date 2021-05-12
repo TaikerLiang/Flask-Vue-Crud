@@ -80,12 +80,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         url = f'{BASE_URL}/CargoSearch/GetMultiCargoSearchJson?timestamp={timestamp}&listOfSearchId={",".join(container_no_list)}'
 
         return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=url,
-            meta={
-                'container_no_list': container_no_list
-            }
+            rule_name=cls.name, method=RequestOption.METHOD_GET, url=url, meta={'container_no_list': container_no_list}
         )
 
     def get_save_name(self, response) -> str:
@@ -115,11 +110,9 @@ class ContainerRoutingRule(BaseRoutingRule):
                 cy_location=container_info['location'],
                 vessel=container_info['vessel'],
                 voyage=container_info['voyage'],
-
                 # on html
                 # field same like other terminal
                 tmf=container_info['tmf_hold'],
-
                 # new field
                 owed=container_info['owed'],
                 full_empty=container_info['full/empty'],
@@ -164,5 +157,3 @@ class ContainerRoutingRule(BaseRoutingRule):
     @staticmethod
     def _build_timestamp():
         return int(time.time() * 1000)
-
-

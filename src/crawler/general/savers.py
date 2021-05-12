@@ -4,14 +4,12 @@ from pathlib import Path
 
 
 class BaseSaver:
-
     @abc.abstractmethod
     def save(self, to: str, text: str):
         pass
 
 
 class FileSaver(BaseSaver):
-
     def __init__(self, folder_path: Path, logger):
         self._folder_path = folder_path
         self._logger = logger
@@ -48,6 +46,5 @@ class FileSaver(BaseSaver):
 
 
 class NullSaver(BaseSaver):
-
     def save(self, to: str, text: str):
         pass
