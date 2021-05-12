@@ -1,5 +1,6 @@
 -r src/requirements-app.txt
 ansible
-shub
 pytest
 pytest-cov
+black
+pre-commit
