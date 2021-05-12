@@ -12,5 +12,3 @@ def verify(results: List):
         'container_no': 'CAIU7086501',
         'authorization_token': '',
     }
-
-

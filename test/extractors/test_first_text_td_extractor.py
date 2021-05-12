@@ -4,7 +4,6 @@ from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 
 
 class TestFirstTextTdExtractor:
-
     def test_extract(self):
         expect = 'This is test for td::text'
 
@@ -22,11 +21,13 @@ class TestFirstTextTdExtractor:
         expect = 'This is test for td a::text'
 
         # arrange
-        td_selector = Selector(text="""
+        td_selector = Selector(
+            text="""
             <td>
                 <a>  This is test for td a::text  </a>
             </td>
-        """)
+        """
+        )
 
         css_query = 'a::text'
         td_extractor = FirstTextTdExtractor(css_query=css_query)

@@ -28,12 +28,15 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,', [
-    ('01_without_ts_port', 'MEDUN4194175'),
-    ('02_not_arrival_yet', '177NDGNENX03449A'),
-    ('03_multi_containers', 'MEDUMY898253'),
-    # ('04_without_containers', 'MEDUH3870035'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,',
+    [
+        ('01_without_ts_port', 'MEDUN4194175'),
+        ('02_not_arrival_yet', '177NDGNENX03449A'),
+        ('03_multi_containers', 'MEDUMY898253'),
+        # ('04_without_containers', 'MEDUH3870035'),
+    ],
+)
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     http_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -44,7 +47,7 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
         encoding='utf-8',
         request=Request(
             url=url,
-        )
+        ),
     )
 
     rule = MainRoutingRule(search_type=SHIPMENT_TYPE_MBL)
@@ -68,7 +71,7 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_lo
         encoding='utf-8',
         request=Request(
             url=url,
-        )
+        ),
     )
 
     rule = MainRoutingRule(search_type=SHIPMENT_TYPE_MBL)

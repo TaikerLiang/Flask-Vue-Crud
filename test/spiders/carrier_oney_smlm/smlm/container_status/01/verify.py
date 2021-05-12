@@ -25,4 +25,3 @@ def verify(results):
         location=LocationItem(name='LONG BEACH,CA ,UNITED STATES'),
         est_or_actual='E',
     )
-

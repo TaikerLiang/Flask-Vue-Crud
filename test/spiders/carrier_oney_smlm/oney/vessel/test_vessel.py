@@ -15,11 +15,14 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,bkg_no', [
-    ('01_single_vessel', 'SH9FSK690300', 'SH9FSK690300'),
-    ('02_multiple_vessels', 'SZPVF2740514', 'SZPVF2740514'),
-    ('03_no_vessel', 'RICAT4995700', 'RICAT4995700'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,bkg_no',
+    [
+        ('01_single_vessel', 'SH9FSK690300', 'SH9FSK690300'),
+        ('02_multiple_vessels', 'SZPVF2740514', 'SZPVF2740514'),
+        ('03_no_vessel', 'RICAT4995700', 'RICAT4995700'),
+    ],
+)
 def test_vessel_handle(sub, mbl_no, bkg_no, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
@@ -31,7 +34,7 @@ def test_vessel_handle(sub, mbl_no, bkg_no, sample_loader):
         encoding='utf-8',
         request=Request(
             url=option.url,
-        )
+        ),
     )
 
     rule = VesselRoutingRule()

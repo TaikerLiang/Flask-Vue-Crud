@@ -15,11 +15,13 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,container_no', [
-    ('01_single_table', '003902245109', 'HMCU9173542'),
-    ('02_two_table', '003902385989', 'EITU1673822'),
-
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,container_no',
+    [
+        ('01_single_table', '003902245109', 'HMCU9173542'),
+        ('02_two_table', '003902385989', 'EITU1673822'),
+    ],
+)
 def test_container_status_handler(sub, mbl_no, container_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
@@ -31,8 +33,8 @@ def test_container_status_handler(sub, mbl_no, container_no, sample_loader):
             url='https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do',
             meta={
                 'container_no': container_no,
-            }
-        )
+            },
+        ),
     )
 
     rule = ContainerStatusRoutingRule()

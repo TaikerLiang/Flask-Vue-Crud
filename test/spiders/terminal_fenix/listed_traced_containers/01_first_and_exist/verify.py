@@ -12,4 +12,3 @@ def verify(results: List):
         'authorization_token': '',
         'not_finished': True,
     }
-

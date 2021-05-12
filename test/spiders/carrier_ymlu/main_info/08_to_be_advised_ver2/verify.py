@@ -35,4 +35,3 @@ def verify(results: List):
         '4W%2fuEPFrf%2bRpGP2A14%2fOijvVSIl%2fMwRSFk1y%2f9V1iVuQOUyvPVnl'
         '87C8wrgwW09vNFy1Gdchyo4XiTcGIgO7w0JJ8p%2bnJZVKPokOBt3iE3TmiVstazA%3d'
     )
-

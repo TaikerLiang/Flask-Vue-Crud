@@ -33,4 +33,3 @@ def verify(results: List):
         'https://www.yangming.com/e-service/Track_Trace/'
         'ctconnect.aspx?rdolType=BL&ctnrno=TGHU5309509&blno=I209365239&movertype=11&lifecycle=2'
     )
-

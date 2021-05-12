@@ -15,10 +15,13 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub, container_no', [
-    ('01_basic', 'CSLU6209412'),
-    ('02_available', 'TGBU8679362'),
-])
+@pytest.mark.parametrize(
+    'sub, container_no',
+    [
+        ('01_basic', 'CSLU6209412'),
+        ('02_available', 'TGBU8679362'),
+    ],
+)
 def test_container_handle(sub, container_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
@@ -39,7 +42,3 @@ def test_container_handle(sub, container_no, sample_loader):
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
-
-
-
-

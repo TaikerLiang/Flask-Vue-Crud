@@ -16,13 +16,11 @@ def verify(results: List):
         container_spec="40'/Reefer/9'6\"",
         holds='No',
         cy_location='Gate Out',
-
         # extra field name
         service='Local Port/Door Cargo',
         carrier_release='Release',
         tmf='Release',
         demurrage_status='Release',
-
         # not on html
         freight_release='Release',
     )
@@ -30,10 +28,3 @@ def verify(results: List):
     assert isinstance(results[1], RequestOption)
     assert results[1].rule_name == 'MBL'
     assert results[1].form_data['PI_MFSMS_SYSNO'] == '16701873'
-
-
-
-
-
-
-

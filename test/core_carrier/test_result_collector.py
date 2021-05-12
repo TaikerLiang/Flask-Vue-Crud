@@ -3,7 +3,6 @@ from crawler.core_carrier.pipelines import CarrierResultCollector
 
 
 class TestCarrierResultCollector:
-
     def test_collect_vessel_item(self):
         expect_vessels = [
             dict(vessel_key='V1', vessel='V1', etd='2019-08-01', eta='2019-08-10'),

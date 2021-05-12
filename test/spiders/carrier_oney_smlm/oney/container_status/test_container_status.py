@@ -15,15 +15,19 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,cntr_no,bkg_no,cop_no', [
-    ('01', 'SH9FSK690300', 'CLHU9129958', 'SH9FSK690300', 'CSHA9925486010'),
-    ('02_event_with_empty_time', 'SGNVG4590800', 'FDCU0637220', 'SGNVG4590800', 'CSGN9A24583850'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,cntr_no,bkg_no,cop_no',
+    [
+        ('01', 'SH9FSK690300', 'CLHU9129958', 'SH9FSK690300', 'CSHA9925486010'),
+        ('02_event_with_empty_time', 'SGNVG4590800', 'FDCU0637220', 'SGNVG4590800', 'CSGN9A24583850'),
+    ],
+)
 def test_container_status_handle(sub, mbl_no, cntr_no, bkg_no, cop_no, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
     option = ContainerStatusRoutingRule.build_request_option(
-        container_no=cntr_no, booking_no=bkg_no, cooperation_no=cop_no, base_url=CarrierOneySpider.base_url)
+        container_no=cntr_no, booking_no=bkg_no, cooperation_no=cop_no, base_url=CarrierOneySpider.base_url
+    )
 
     response = TextResponse(
         url=option.url,
@@ -32,7 +36,7 @@ def test_container_status_handle(sub, mbl_no, cntr_no, bkg_no, cop_no, sample_lo
         request=Request(
             url=option.url,
             meta=option.meta,
-        )
+        ),
     )
 
     rule = ContainerStatusRoutingRule()

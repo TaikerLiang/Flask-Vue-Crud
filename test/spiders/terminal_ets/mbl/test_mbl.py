@@ -15,9 +15,12 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,container_no,sys_no', [
-    ('01_basic', 'EMCU5268400', '16701873'),
-])
+@pytest.mark.parametrize(
+    'sub,container_no,sys_no',
+    [
+        ('01_basic', 'EMCU5268400', '16701873'),
+    ],
+)
 def test_main_page_handle(sub, container_no, sys_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
@@ -38,4 +41,3 @@ def test_main_page_handle(sub, container_no, sys_no, sample_loader):
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
-

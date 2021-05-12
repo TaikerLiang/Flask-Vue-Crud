@@ -15,10 +15,13 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub, container_no, mbl_no', [
-    ('01_both', 'FFAU1729638', 'MEDUN8495321'),
-    ('02_only_container', 'TGHU8593471', ''),
-])
+@pytest.mark.parametrize(
+    'sub, container_no, mbl_no',
+    [
+        ('01_both', 'FFAU1729638', 'MEDUN8495321'),
+        ('02_only_container', 'TGHU8593471', ''),
+    ],
+)
 def test_search_mbl_handle(sub, container_no, mbl_no, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -38,4 +41,3 @@ def test_search_mbl_handle(sub, container_no, mbl_no, sample_loader):
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
-

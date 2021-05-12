@@ -21,4 +21,3 @@ def verify(results):
         weight='22641.0',
         hazardous=None,
     )
-

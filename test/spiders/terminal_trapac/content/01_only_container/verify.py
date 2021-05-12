@@ -20,4 +20,3 @@ def verify(results: List):
         # carrier=None,
         # mbl_no=None,
     )
-

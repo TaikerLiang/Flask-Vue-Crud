@@ -17,11 +17,15 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,make_item_fun', [
-    ('01_main_item', '6283228140', ItemExtractor._make_main_item),
-    ('02_vessel_items', '6300090760', ItemExtractor._make_vessel_items),
-    ('03_container_items', '6283228140', ItemExtractor._make_container_items),
-])
+
+@pytest.mark.parametrize(
+    'sub,mbl_no,make_item_fun',
+    [
+        ('01_main_item', '6199589860', ItemExtractor._make_main_item),
+        ('02_vessel_items', '6300090760', ItemExtractor._make_vessel_items),
+        ('03_container_items', '6283228140', ItemExtractor._make_container_items),
+    ],
+)
 def test_main_info(sample_loader, sub, mbl_no, make_item_fun):
     http_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -42,9 +46,12 @@ def test_main_info(sample_loader, sub, mbl_no, make_item_fun):
         verify_module.verify(item=result)
 
 
-@pytest.mark.parametrize('sub,mbl_no,container_no', [
-    ('04_container_status_items', '6283228140', 'CSNU6395607'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,container_no',
+    [
+        ('04_container_status_items', '6283228140', 'CSNU6395607'),
+    ],
+)
 def test_main_info_container_status(sample_loader, sub, mbl_no, container_no):
     http_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -58,9 +65,12 @@ def test_main_info_container_status(sample_loader, sub, mbl_no, container_no):
     verify_module.verify(items=items)
 
 
-@pytest.mark.parametrize('sub,mbl_no', [
-    ('e01_invalid_mbl_no', '6213846642'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no',
+    [
+        ('e01_invalid_mbl_no', '6213846642'),
+    ],
+)
 def test_main_info_no_invalid(sample_loader, sub, mbl_no):
     http_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -72,4 +82,3 @@ def test_main_info_no_invalid(sample_loader, sub, mbl_no):
 
     # assert
     assert result is True
-

@@ -17,9 +17,12 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,container_no', [
-    ('01_basic', 'NYKU5151837'),
-])
+@pytest.mark.parametrize(
+    'sub,container_no',
+    [
+        ('01_basic', 'NYKU5151837'),
+    ],
+)
 def test_container_status_routing_rule(sub, container_no, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -34,8 +37,8 @@ def test_container_status_routing_rule(sub, container_no, sample_loader):
             meta={
                 RuleManager.META_TERMINAL_CORE_RULE_NAME: ContainerAvailabilityRoutingRule.name,
                 'container_no': container_no,
-            }
-        )
+            },
+        ),
     )
 
     routing_rule = ContainerAvailabilityRoutingRule()
@@ -45,9 +48,12 @@ def test_container_status_routing_rule(sub, container_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,container_no,expected_exception', [
-    ('e01_invalid_container_no', 'FCIU2218769', TerminalInvalidContainerNoError),
-])
+@pytest.mark.parametrize(
+    'sub,container_no,expected_exception',
+    [
+        ('e01_invalid_container_no', 'FCIU2218769', TerminalInvalidContainerNoError),
+    ],
+)
 def test_container_availability_handler_error(sub, container_no, expected_exception, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -60,10 +66,9 @@ def test_container_availability_handler_error(sub, container_no, expected_except
         request=Request(
             url=request_option.url,
             meta=request_option.meta,
-        )
+        ),
     )
 
     routing_rule = ContainerAvailabilityRoutingRule()
     with pytest.raises(expected_exception=expected_exception):
         list(routing_rule.handle(response=response))
-

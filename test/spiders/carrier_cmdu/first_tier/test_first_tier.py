@@ -17,13 +17,16 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no', [
-    ('01_not_finish', 'CNPC001499'),
-    ('02_finish', 'NBSF300899'),
-    ('03_multiple_containers', 'NBSF301194'),
-    ('04_por', 'GGZ1004320'),
-    ('05_dest', 'NBSF301068'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no',
+    [
+        ('01_not_finish', 'CNPC001499'),
+        ('02_finish', 'NBSF300899'),
+        ('03_multiple_containers', 'NBSF301194'),
+        ('04_por', 'GGZ1004320'),
+        ('05_dest', 'NBSF301068'),
+    ],
+)
 def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
     html_text = sample_loader.read_file(sub, 'main_info.html')
 
