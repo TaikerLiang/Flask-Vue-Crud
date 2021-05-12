@@ -9,4 +9,3 @@ def verify(results: List):
     assert results[0].rule_name == SearchContainerRoutingRule.name
 
     assert len(results) == 1
-

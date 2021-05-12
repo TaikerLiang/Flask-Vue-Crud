@@ -29,5 +29,5 @@ def verify(results):
         local_date_time='Sun 20 Oct 2019 12:06',
         description='Container on rail for export',
         location=LocationItem(name='BARSTOW, CA'),
-        est_or_actual='A'
+        est_or_actual='A',
     )

@@ -24,5 +24,3 @@ class Verifier:
             voyage='054E',
             est_or_actual='E',
         )
-
-

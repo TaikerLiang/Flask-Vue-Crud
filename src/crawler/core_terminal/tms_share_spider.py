@@ -246,12 +246,19 @@ class ContainerAvailabilityRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_no = response.meta['container_no']
 
+        print('paul container_no', container_no)
+        print('paul', response.text)
+
         if self.__is_invalid_container_no(response=response):
             yield InvalidContainerNoItem(container_no=container_no)
             return
 
         container_info = self.__extract_container_info(response=response)
         extra_container_info = self.__extract_extra_container_info(response=response)
+
+        print('paul', container_info)
+        print('paul', extra_container_info)
+
 
         yield TerminalItem(
             container_no=container_info['container_no'],

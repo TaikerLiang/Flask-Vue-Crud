@@ -9,4 +9,3 @@ def verify(results: List):
         mbl_no='002000261242',
         voyage='0012-159E',
     )
-

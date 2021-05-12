@@ -2,7 +2,6 @@ from crawler.core_carrier.items import ContainerStatusItem, LocationItem
 
 
 class Verifier:
-
     def verify(self, results):
         assert results[0] == ContainerStatusItem(
             container_key='HMCU9173542',

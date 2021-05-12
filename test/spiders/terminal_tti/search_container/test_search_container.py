@@ -16,12 +16,15 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub, container_no', [
-    ('01_no_lfd', 'MSDU7965509'),
-    ('02_with_lfd', 'CAAU5077128'),
-    ('03_tmf_and_diff_freight', 'HASU4204375'),
-    ('04_demurrage_and_paid', 'MSDU1314937'),
-])
+@pytest.mark.parametrize(
+    'sub, container_no',
+    [
+        ('01_no_lfd', 'MSDU7965509'),
+        ('02_with_lfd', 'CAAU5077128'),
+        ('03_tmf_and_diff_freight', 'HASU4204375'),
+        ('04_demurrage_and_paid', 'MSDU1314937'),
+    ],
+)
 def test_search_container_handle(sub, container_no, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -43,9 +46,12 @@ def test_search_container_handle(sub, container_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub, container_no, expected_exception', [
-    ('e01_invalid_container_no', 'MSDU732250', TerminalInvalidContainerNoError),
-])
+@pytest.mark.parametrize(
+    'sub, container_no, expected_exception',
+    [
+        ('e01_invalid_container_no', 'MSDU732250', TerminalInvalidContainerNoError),
+    ],
+)
 def test_search_container_handle_error(sub, container_no, expected_exception, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -63,6 +69,3 @@ def test_search_container_handle_error(sub, container_no, expected_exception, sa
     rule = SearchContainerRoutingRule()
     with pytest.raises(expected_exception=expected_exception):
         list(rule.handle(response=response))
-
-
-

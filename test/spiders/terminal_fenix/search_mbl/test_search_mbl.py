@@ -16,16 +16,17 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no', [
-    ('01_without_freight_release', '2638732540'),
-    ('02_with_freight_release', '146000297601'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no',
+    [
+        ('01_without_freight_release', '2638732540'),
+        ('02_with_freight_release', '146000297601'),
+    ],
+)
 def test_search_mbl_handle(sub, mbl_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
-    option = SearchMblRoutingRule.build_request_option(
-        mbl_no=mbl_no, token=''
-    )
+    option = SearchMblRoutingRule.build_request_option(mbl_no=mbl_no, token='')
 
     response = TextResponse(
         url=option.url,
@@ -44,13 +45,14 @@ def test_search_mbl_handle(sub, mbl_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,status_code', [
-    ('w01_invalid_mbl_no', '263873254', 404),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,status_code',
+    [
+        ('w01_invalid_mbl_no', '263873254', 404),
+    ],
+)
 def test_search_mbl_handle_warning(sub, mbl_no, status_code, sample_loader):
-    option = SearchMblRoutingRule.build_request_option(
-        mbl_no=mbl_no, token=''
-    )
+    option = SearchMblRoutingRule.build_request_option(mbl_no=mbl_no, token='')
 
     response = HtmlResponse(
         status=status_code,
@@ -70,15 +72,16 @@ def test_search_mbl_handle_warning(sub, mbl_no, status_code, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,expected_exception', [
-    ('e01_unexpected_format', '146000297601', TerminalResponseFormatError),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,expected_exception',
+    [
+        ('e01_unexpected_format', '146000297601', TerminalResponseFormatError),
+    ],
+)
 def test_search_mbl_handle_error(sub, mbl_no, expected_exception, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
-    option = SearchMblRoutingRule.build_request_option(
-        mbl_no=mbl_no, token=''
-    )
+    option = SearchMblRoutingRule.build_request_option(mbl_no=mbl_no, token='')
 
     response = TextResponse(
         url=option.url,
@@ -93,4 +96,3 @@ def test_search_mbl_handle_error(sub, mbl_no, expected_exception, sample_loader)
     rule = SearchMblRoutingRule()
     with pytest.raises(expected_exception):
         list(rule.handle(response=response))
-

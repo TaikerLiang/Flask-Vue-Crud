@@ -14,10 +14,7 @@ def verify(results: List):
         last_free_day=None,
         container_spec='Standard 40\' 9\'6\\',
         cy_location='Out-Gated (10/22/2020 15:08)',
-
         demurrage_due=None,
         pay_through_date=None,
         tmf=None,
     )
-
-

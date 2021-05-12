@@ -14,7 +14,7 @@ if __name__ == '__main__':
     mbl_nos = [
         # 'SUDUN9NGB075568X',
         # 'SUDUN9NGB061282X',
-        'SUDUN9998ALTNBPS', # mutiple containers
+        'SUDUN9998ALTNBPS',  # mutiple containers
     ]
 
     for mbl_no in mbl_nos:

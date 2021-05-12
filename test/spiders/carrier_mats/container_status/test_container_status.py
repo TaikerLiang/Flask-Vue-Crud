@@ -16,14 +16,21 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,meta_status,', [
-    ('01_basic', '9271590000', {
-        'container_key': 'MATU2332036',
-        'timestamp': '1571260260000',
-        'description': 'RETURNED FROM CONSIGNEE',
-        'location_name': 'LONG BEACH (CA)',
-    }),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,meta_status,',
+    [
+        (
+            '01_basic',
+            '9271590000',
+            {
+                'container_key': 'MATU2332036',
+                'timestamp': '1571260260000',
+                'description': 'RETURNED FROM CONSIGNEE',
+                'location_name': 'LONG BEACH (CA)',
+            },
+        ),
+    ],
+)
 def test_container_status_handler(sub, mbl_no, meta_status, sample_loader):
     html_text = sample_loader.read_file(sub, 'date.html')
     meta_status[RuleManager.META_CARRIER_CORE_RULE_NAME] = TimeRoutingRule.name
@@ -39,8 +46,8 @@ def test_container_status_handler(sub, mbl_no, meta_status, sample_loader):
             formdata={'date': meta_status['timestamp']},
             meta={
                 'status': meta_status,
-            }
-        )
+            },
+        ),
     )
 
     routing_rule = TimeRoutingRule()

@@ -15,17 +15,21 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,voyage_location, voyage_direction', [
-    ('01_pol', 'SUDUN9998ALTNBPS', 'Shanghai CNSHA', 'Departure'),
-    ('02_pod', 'SUDUN9998ALTNBPS', 'Houston USHOU', 'Arrival'),
-    ('03_no_info', 'SUDUN0SHA109846X', 'Los Angeles USLAX', 'Arrival'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,voyage_location, voyage_direction',
+    [
+        ('01_pol', 'SUDUN9998ALTNBPS', 'Shanghai CNSHA', 'Departure'),
+        ('02_pod', 'SUDUN9998ALTNBPS', 'Houston USHOU', 'Arrival'),
+        ('03_no_info', 'SUDUN0SHA109846X', 'Los Angeles USLAX', 'Arrival'),
+    ],
+)
 def test_voyage_routing_rule(sub, mbl_no, voyage_location, voyage_direction, sample_loader):
     text_text = sample_loader.read_file(sub, 'sample.html')
 
     basic_request_spec = BasicRequestSpec(mbl_no=mbl_no, view_state='', j_idt='')
     voyage_spec = VoyageSpec(
-        direction=voyage_direction, container_key='', voyage_key='', location=voyage_location, container_no='')
+        direction=voyage_direction, container_key='', voyage_key='', location=voyage_location, container_no=''
+    )
     option = VoyageRoutingRule.build_request_option(
         basic_request_spec=basic_request_spec, voyage_spec=voyage_spec, mbl_state=MblState.SINGLE
     )
@@ -44,7 +48,7 @@ def test_voyage_routing_rule(sub, mbl_no, voyage_location, voyage_direction, sam
             #     'voyage_direction': voyage_direction,
             #     'basic_request_spec': basic_request_spec,
             # }
-        )
+        ),
     )
 
     routing_rule = VoyageRoutingRule()

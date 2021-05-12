@@ -4,7 +4,6 @@ from crawler.spiders.carrier_eglv import ReleaseStatusRoutingRule, ContainerStat
 
 
 class Verifier:
-
     def verify(self, results):
         assert results[0] == MblItem(
             mbl_no='100980089898',

@@ -15,11 +15,14 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,container_no', [
-    ('01_first', '2109051600', 'OOLU9108987'),
-    ('02_without_lfd_content', '2628633440', 'OOLU9077417'),
-    ('03_without_lfd_title', '2631411950', 'OOLU1213862'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,container_no',
+    [
+        ('01_first', '2109051600', 'OOLU9108987'),
+        ('02_without_lfd_content', '2628633440', 'OOLU9077417'),
+        ('03_without_lfd_title', '2631411950', 'OOLU1213862'),
+    ],
+)
 def test_container_status_handler(sub, mbl_no, container_no, sample_loader):
     html_file = sample_loader.read_file(sub, 'sample.html')
 
@@ -32,7 +35,7 @@ def test_container_status_handler(sub, mbl_no, container_no, sample_loader):
         request=Request(
             url=option.url,
             meta=option.meta,
-        )
+        ),
     )
 
     rule = ContainerStatusRule(driver=None)

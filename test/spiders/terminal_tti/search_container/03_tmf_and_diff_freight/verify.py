@@ -14,9 +14,7 @@ def verify(results: List):
         last_free_day=None,
         container_spec='Standard 40\' 9\'6\\',
         cy_location='On Ship',
-
         demurrage_due=None,
         pay_through_date=None,
         tmf='Released',
     )
-

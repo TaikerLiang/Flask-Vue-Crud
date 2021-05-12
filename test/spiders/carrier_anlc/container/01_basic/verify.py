@@ -28,5 +28,5 @@ def verify(results):
         local_date_time='Fri 15 Nov 2019 14:25',
         description='Container to consignee',
         location=LocationItem(name='MELBOURNE'),
-        est_or_actual='A'
+        est_or_actual='A',
     )

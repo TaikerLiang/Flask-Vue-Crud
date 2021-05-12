@@ -10,4 +10,3 @@ def verify(results: List):
         'container_no': 'EISU8049563',
         'sk': '6718442984',
     }
-

@@ -10,6 +10,3 @@ def verify(results: List):
 
     assert isinstance(results[1], RequestOption)
     assert results[1].rule_name == SearchMblRoutingRule.name
-
-
-

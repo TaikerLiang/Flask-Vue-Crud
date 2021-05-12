@@ -16,10 +16,13 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,', [
-    ('01_multi_containers_finish', '589898475'),
-    ('02_multi_containers_not_finish', '588455529'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,',
+    [
+        ('01_multi_containers_finish', '589898475'),
+        ('02_multi_containers_not_finish', '588455529'),
+    ],
+)
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
@@ -31,7 +34,7 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
         encoding='utf-8',
         request=Request(
             url=option.url,
-        )
+        ),
     )
 
     routing_rule = MainInfoRoutingRule()
@@ -41,9 +44,12 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', '999455999', CarrierInvalidMblNoError),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,expect_exception',
+    [
+        ('e01_invalid_mbl_no', '999455999', CarrierInvalidMblNoError),
+    ],
+)
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
@@ -55,7 +61,7 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_lo
         encoding='utf-8',
         request=Request(
             url=option.url,
-        )
+        ),
     )
 
     routing_rule = MainInfoRoutingRule()
