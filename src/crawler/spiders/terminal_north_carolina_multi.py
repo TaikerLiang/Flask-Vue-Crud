@@ -13,6 +13,7 @@ BASE_URL = 'https://ecargo.ncports.com'
 
 
 class TerminalNorthCarolinaMultiSpider(BaseMultiTerminalSpider):
+    firms_code = 'L194'
     name = 'terminal_north_carolina_multi'
 
     def __init__(self, *args, **kwargs):

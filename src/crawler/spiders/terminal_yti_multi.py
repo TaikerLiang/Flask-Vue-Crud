@@ -5,7 +5,7 @@ from crawler.core_terminal.voyagecontrol_share_spider import (
 
 
 class TerminalYtiSpider(VoyagecontrolShareSpider):
-    code = "Y790"
+    firms_code = "Y790"
     name = "terminal_yti_multi"
     company_info = CompanyInfo(
         lower_short="yti",
