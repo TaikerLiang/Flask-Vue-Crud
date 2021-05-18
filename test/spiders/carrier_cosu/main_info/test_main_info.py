@@ -4,6 +4,7 @@ from typing import List
 import pytest
 from scrapy import Selector
 
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
 from crawler.spiders.carrier_cosu import MainInfoRoutingRule, ItemExtractor
 
 from test.spiders.carrier_cosu import main_info
@@ -14,6 +15,7 @@ def sample_loader(sample_loader):
     sample_path = Path(__file__).parent
     sample_loader.setup(sample_package=main_info, sample_path=sample_path)
     return sample_loader
+
 
 
 @pytest.mark.parametrize(
@@ -30,7 +32,10 @@ def test_main_info(sample_loader, sub, mbl_no, make_item_fun):
     resp = Selector(text=http_text)
 
     # action
-    result = make_item_fun(response=resp)
+    if make_item_fun == ItemExtractor._make_main_item:
+        result = make_item_fun(response=resp, search_type=SHIPMENT_TYPE_MBL)
+    else:
+        result = make_item_fun(response=resp)
 
     # assert
     if isinstance(result, List):

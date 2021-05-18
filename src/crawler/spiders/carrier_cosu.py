@@ -11,7 +11,9 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from urllib3.exceptions import ReadTimeoutError
 
-from crawler.core_carrier.exceptions import SuspiciousOperationError, LoadWebsiteTimeOutFatal, CarrierInvalidMblNoError
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from crawler.core_carrier.exceptions import SuspiciousOperationError, LoadWebsiteTimeOutFatal, CarrierInvalidMblNoError, \
+    CarrierInvalidSearchNoError
 from crawler.core_carrier.items import (
     LocationItem,
     MblItem,
@@ -28,9 +30,6 @@ from crawler.extractors.selector_finder import CssQueryExistMatchRule, find_sele
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor, BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
-URL = 'http://elines.coscoshipping.com'
-BASE = 'ebtracking/public'
-
 
 class CarrierCosuSpider(BaseCarrierSpider):
     name = 'carrier_cosu'
@@ -39,15 +38,25 @@ class CarrierCosuSpider(BaseCarrierSpider):
         super(CarrierCosuSpider, self).__init__(*args, **kwargs)
         content_getter = ContentGetter()
 
-        rules = [
+        bill_rules = [
             MainInfoRoutingRule(content_getter),
-            BookingInfoRoutingRule(content_getter),
+            BookingInfoRoutingRule(content_getter, origin_search_type=SHIPMENT_TYPE_MBL),
         ]
 
-        self._rule_manager = RuleManager(rules=rules)
+        booking_rules = [
+            BookingInfoRoutingRule(content_getter, origin_search_type=SHIPMENT_TYPE_BOOKING),
+        ]
+
+        if self.mbl_no:
+            self._rule_manager = RuleManager(rules=bill_rules)
+        else:
+            self._rule_manager = RuleManager(rules=booking_rules)
 
     def start(self):
-        option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        if self.mbl_no:
+            option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        else:
+            option = BookingInfoRoutingRule.build_request_option(booking_nos=[self.booking_no])
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -116,11 +125,12 @@ class MainInfoRoutingRule(BaseRoutingRule):
         booking_nos = [raw_booking_no.strip() for raw_booking_no in raw_booking_nos]
 
         if self._is_mbl_no_invalid(response=response_selector) and not booking_nos:
-            raise CarrierInvalidMblNoError()
+            raise CarrierInvalidSearchNoError(search_type=SHIPMENT_TYPE_MBL)
 
         elif not self._is_mbl_no_invalid(response=response_selector):
             item_extractor = ItemExtractor()
-            for item in item_extractor.extract(response=response_selector, content_getter=self._content_getter):
+            for item in item_extractor.extract(
+                    response=response_selector, content_getter=self._content_getter, search_type=SHIPMENT_TYPE_MBL):
                 yield item
 
         elif booking_nos:
@@ -138,8 +148,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
 class BookingInfoRoutingRule(BaseRoutingRule):
     name = 'BOOKING_INFO'
 
-    def __init__(self, content_getter):
+    def __init__(self, content_getter, origin_search_type):
         self._content_getter = content_getter
+        self._origin_search_type = origin_search_type
 
     @classmethod
     def build_request_option(cls, booking_nos: List) -> RequestOption:
@@ -165,16 +176,27 @@ class BookingInfoRoutingRule(BaseRoutingRule):
             response_text = self._content_getter.search_and_return(search_no=booking_no, is_booking=True)
             response_selector = scrapy.Selector(text=response_text)
 
-            for item in item_extractor.extract(response=response_selector, content_getter=self._content_getter):
+            if self._is_booking_no_invalid(response=response_selector) and len(booking_nos) == 1:
+                raise CarrierInvalidSearchNoError(search_type=self._origin_search_type)
+
+            for item in item_extractor.extract(
+                    response=response_selector,
+                    content_getter=self._content_getter,
+                    search_type=self._origin_search_type,
+            ):
                 yield item
+
+    @staticmethod
+    def _is_booking_no_invalid(response: Selector) -> bool:
+        return bool(response.css('div.noFoundTips'))
 
 
 # ---------------------------------------------------------------------------------------------------------
 
 
 class ItemExtractor:
-    def extract(self, response: scrapy.Selector, content_getter) -> BaseCarrierItem:
-        mbl_item = self._make_main_item(response=response)
+    def extract(self, response: scrapy.Selector, content_getter, search_type) -> BaseCarrierItem:
+        mbl_item = self._make_main_item(response=response, search_type=search_type)
         vessel_items = self._make_vessel_items(response=response)
         container_items = self._make_container_items(response=response)
 
@@ -195,7 +217,7 @@ class ItemExtractor:
                 yield item
 
     @classmethod
-    def _make_main_item(cls, response: scrapy.Selector) -> BaseCarrierItem:
+    def _make_main_item(cls, response: scrapy.Selector, search_type) -> BaseCarrierItem:
         mbl_data = cls._extract_main_info(response=response)
         mbl_item = MblItem(
             vessel=mbl_data.get('vessel', None),
@@ -221,8 +243,10 @@ class ItemExtractor:
             # trans_eta=data.get('trans_eta', None),
             # container_quantity=data.get('container_quantity', None),
         )
-        if mbl_data['mbl_no']:
+        if mbl_data['mbl_no'] and search_type == SHIPMENT_TYPE_MBL:
             mbl_item['mbl_no'] = mbl_data['mbl_no']
+        elif search_type == SHIPMENT_TYPE_BOOKING:
+            mbl_item['booking_no'] = mbl_data['booking_no']
 
         return mbl_item
 
@@ -245,7 +269,7 @@ class ItemExtractor:
         else:
             pod_firms_code = None
 
-        if table_extractor.has_header(left='POD Firms Code'):
+        if table_extractor.has_header(left='Final Destination Firms Code'):
             final_dest_firms_code = table_extractor.extract_cell(left='Final Destination Firms Code', top=None)
         else:
             final_dest_firms_code = None
