@@ -2,6 +2,7 @@ from crawler.core_terminal.tideworks_share_spider import TideworksShareSpider, C
 
 
 class TerminalPctSpider(TideworksShareSpider):
+    firms_code = 'W182'
     name = 'terminal_pct_multi'
     company_info = CompanyInfo(
         lower_short='pct',

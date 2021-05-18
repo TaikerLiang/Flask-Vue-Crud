@@ -11,6 +11,7 @@ BASE_URL = 'http://propassva.portofvirginia.com'
 
 
 class TerminalVirginiaMultiSpider(BaseMultiTerminalSpider):
+    firms_code = ''
     name = 'terminal_virginia_multi'
 
     def __init__(self, *args, **kwargs):

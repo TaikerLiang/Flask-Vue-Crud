@@ -97,7 +97,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         url = "http://payments.gcterminals.com/GlobalTerminal/globalSearch.do"
 
-        for i in range(len(container_no_list)):
+        for i in range(len(set(container_no_list))):
             form_data = {
                 "containerSelectedIndexParam": str(i),
                 "searchId": "BGLOB",

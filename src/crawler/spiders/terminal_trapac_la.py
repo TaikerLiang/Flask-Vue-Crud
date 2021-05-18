@@ -2,6 +2,7 @@ from crawler.core_terminal.trapac_share_spider import TrapacShareSpider, Company
 
 
 class TerminalTrapacLASpider(TrapacShareSpider):
+    firms_code = 'Y258'
     name = 'terminal_trapac_la'
     company_info = CompanyInfo(
         upper_short='LAX',

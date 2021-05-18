@@ -2,6 +2,7 @@ from crawler.core_terminal.tti_wut_share_spider import TtiWutShareSpider, Compan
 
 
 class TerminalWutSpider(TtiWutShareSpider):
+    firms_code = 'Z705'
     name = 'terminal_wut'
     company_info = CompanyInfo(
         upper_short='WUT',
