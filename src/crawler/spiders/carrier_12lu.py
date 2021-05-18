@@ -7,7 +7,13 @@ import scrapy
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, SuspiciousOperationError
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, ContainerItem, ContainerStatusItem, LocationItem, DebugItem)
+    BaseCarrierItem,
+    MblItem,
+    ContainerItem,
+    ContainerStatusItem,
+    LocationItem,
+    DebugItem,
+)
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 
@@ -47,10 +53,7 @@ class Carrier12luSpider(BaseCarrierSpider):
                 raise RuntimeError()
 
     def _build_request_by(self, option: RequestOption):
-        meta = {
-            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
-            **option.meta
-        }
+        meta = {RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name, **option.meta}
 
         if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
@@ -73,7 +76,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f'{URL}?t={timestamp}&blNo={mbl_no}&pageNum={page_no}&pageSize=20',
-            meta={'mbl_no': mbl_no, 'page_no': page_no}
+            meta={'mbl_no': mbl_no, 'page_no': page_no},
         )
 
     def get_save_name(self, response) -> str:
@@ -128,14 +131,16 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     def _extract_container_status_list(records: Dict):
         container_status_list = []
         for record in records:
-            container_status_list.append({
-                'container_no': record['containerNo'],
-                'description': record['movementCode'],
-                'local_date_time': record['eventDate'],
-                'location_name': record['eventPort'],
-                'vessel': record['vesselCode'],
-                'voyage': record['voyageNo'],
-            })
+            container_status_list.append(
+                {
+                    'container_no': record['containerNo'],
+                    'description': record['movementCode'],
+                    'local_date_time': record['eventDate'],
+                    'location_name': record['eventPort'],
+                    'vessel': record['vesselCode'],
+                    'voyage': record['voyageNo'],
+                }
+            )
 
         return container_status_list
 

@@ -9,10 +9,19 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, DebugItem
+    BaseCarrierItem,
+    MblItem,
+    LocationItem,
+    VesselItem,
+    ContainerItem,
+    ContainerStatusItem,
+    DebugItem,
 )
 from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError, CarrierInvalidMblNoError, SuspiciousOperationError, LoadWebsiteTimeOutError
+    CarrierResponseFormatError,
+    CarrierInvalidMblNoError,
+    SuspiciousOperationError,
+    LoadWebsiteTimeOutError,
 )
 
 from selenium import webdriver
@@ -181,12 +190,14 @@ class TrackRoutingRule(BaseRoutingRule):
     def _extract_schedule_table(content) -> Dict:
         selector = Selector(text=content['scheduletable'])
 
-        schedule_table_locator = TopHeaderStyleTableLocator(header_style_map={
-            'Arrival/Delivery': 'arrival-delivery',
-            'Location': 'location',
-            'Vessel/Voyage': 'vessel-voyage',
-            'Next Location': 'next-location',
-        })
+        schedule_table_locator = TopHeaderStyleTableLocator(
+            header_style_map={
+                'Arrival/Delivery': 'arrival-delivery',
+                'Location': 'location',
+                'Vessel/Voyage': 'vessel-voyage',
+                'Next Location': 'next-location',
+            }
+        )
         schedule_table_locator.parse(table=selector)
         schedule_table_extractor = TableExtractor(table_locator=schedule_table_locator)
 
@@ -268,12 +279,14 @@ class ContainerRoutingRule(BaseRoutingRule):
     def _extract_container_table(content) -> Dict:
         selector = Selector(text=content['data']['events_table'])
 
-        schedule_table_locator = TopHeaderStyleTableLocator(header_style_map={
-            'Container #': 'container-num',
-            'Date': 'date',
-            'Latest Event': 'latest-event',
-            'Place': 'place',
-        })
+        schedule_table_locator = TopHeaderStyleTableLocator(
+            header_style_map={
+                'Container #': 'container-num',
+                'Date': 'date',
+                'Latest Event': 'latest-event',
+                'Place': 'place',
+            }
+        )
         schedule_table_locator.parse(table=selector)
         schedule_table_extractor = TableExtractor(table_locator=schedule_table_locator)
 
@@ -299,8 +312,9 @@ class ContainerRoutingRule(BaseRoutingRule):
 
 # -------------------------------------------------------------------------------
 
+
 class CookiesGetter:
-    
+
     TIMEOUT = 40
 
     def __init__(self, phantom_js_service_args):
@@ -331,25 +345,23 @@ class CookiesGetter:
 
 class TopHeaderStyleTableLocator(BaseTableLocator):
     """
-        +---------+---------+-----+---------+
-        | Title 1 | Title 2 | ... | Title N | <tr>
-        +---------+---------+-----+---------+
-        | Data    |         |     |         | <tr>
-        +---------+---------+-----+---------+
-        | Data    |         |     |         | <tr>
-        +---------+---------+-----+---------+
-        | ...     |         |     |         | <tr>
-        +---------+---------+-----+---------+
-        | Data    |         |     |         | <tr>
-        +---------+---------+-----+---------+
+    +---------+---------+-----+---------+
+    | Title 1 | Title 2 | ... | Title N | <tr>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr>
+    +---------+---------+-----+---------+
+    | ...     |         |     |         | <tr>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr>
+    +---------+---------+-----+---------+
     """
 
     def __init__(self, header_style_map: Dict[str, str]):
         self._header_style_map = header_style_map
 
-        self._td_map = {
-            top_header: [] for top_header in self._header_style_map
-        }
+        self._td_map = {top_header: [] for top_header in self._header_style_map}
         self._data_len = 0
 
     def parse(self, table: scrapy.Selector):

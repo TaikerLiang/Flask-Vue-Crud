@@ -8,9 +8,18 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
-    SuspiciousOperationError
+    BaseCarrierItem,
+    MblItem,
+    LocationItem,
+    ContainerItem,
+    ContainerStatusItem,
+    DebugItem,
+)
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError,
+    CarrierInvalidMblNoError,
+    SuspiciousOperationError,
+)
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 RCL_BASE_URL = 'https://www.rclgroup.com'
@@ -50,10 +59,7 @@ class CarrierRclSpider(BaseCarrierSpider):
                 raise RuntimeError()
 
     def _build_request_by(self, option: RequestOption):
-        meta = {
-            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
-            **option.meta
-        }
+        meta = {RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name, **option.meta}
 
         if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
@@ -71,6 +77,7 @@ class CarrierRclSpider(BaseCarrierSpider):
 
 
 # -------------------------------------------------------------------------------
+
 
 class BasicRoutingRule(BaseRoutingRule):
     name = 'BASIC'
@@ -125,11 +132,13 @@ class BasicRoutingRule(BaseRoutingRule):
                 value = css_input.css('::attr(value)').get()
                 form_data[name] = value
 
-        form_data.update({
-            'ctl00$ContentPlaceHolder1$cCaptcha': captcha_value,
-            'ctl00$ContentPlaceHolder1$captchavalue': captcha_value,
-            'ctl00$ContentPlaceHolder1$ctracking': mbl_no,
-        })
+        form_data.update(
+            {
+                'ctl00$ContentPlaceHolder1$cCaptcha': captcha_value,
+                'ctl00$ContentPlaceHolder1$captchavalue': captcha_value,
+                'ctl00$ContentPlaceHolder1$ctracking': mbl_no,
+            }
+        )
         return form_data
 
 
@@ -241,31 +250,34 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
             # container status
             for left in table_locator.iter_left_headers():
-                return_dict[container_no].append({
-                    'local_date_time': table_extractor.extract_cell(top='Movement Date', left=left),
-                    'description': table_extractor.extract_cell(top='Movement Detail', left=left),
-                    'location_name': table_extractor.extract_cell(top='Movement Place', left=left),
-                })
+                return_dict[container_no].append(
+                    {
+                        'local_date_time': table_extractor.extract_cell(top='Movement Date', left=left),
+                        'description': table_extractor.extract_cell(top='Movement Detail', left=left),
+                        'location_name': table_extractor.extract_cell(top='Movement Place', left=left),
+                    }
+                )
 
         return return_dict
 
 
 class MainInfoTableLocator(BaseTableLocator):
     """
-        +-------------------------------------+
-        | Name                                | <tr>
-        +-------+-------+-----+-----+----+----+
-        | Title | Data  | ... |     |    |    | <tr>
-        +-------+-------+-----+-----+----+----+
-        | Title | Data  | ... |     |    |    | <tr>
-        +-------+-------+-----+-----+----+----+
+    +-------------------------------------+
+    | Name                                | <tr>
+    +-------+-------+-----+-----+----+----+
+    | Title | Data  | ... |     |    |    | <tr>
+    +-------+-------+-----+-----+----+----+
+    | Title | Data  | ... |     |    |    | <tr>
+    +-------+-------+-----+-----+----+----+
     """
+
     TR_DATA_INDEX_BEGIN = 1
     TR_DATA_INDEX_END = 3
     TD_INDEX_BEGIN = 1
 
     def __init__(self):
-        self._td_map = {}   # top_index: {left_header: td, ...}
+        self._td_map = {}  # top_index: {left_header: td, ...}
         self._left_header_set = set()
         self._table_name = ''
 
@@ -273,12 +285,12 @@ class MainInfoTableLocator(BaseTableLocator):
         self._table_name = table.css('tr th::text').get() or ''
 
         top_index_set = set()
-        data_tr = table.css('tr')[self.TR_DATA_INDEX_BEGIN:self.TR_DATA_INDEX_END]
+        data_tr = table.css('tr')[self.TR_DATA_INDEX_BEGIN : self.TR_DATA_INDEX_END]
         for tr in data_tr:
             left_header = tr.css('td.bltablehead::text').get().strip()
             self._left_header_set.add(left_header)
 
-            for top_index, td in enumerate(tr.css('td')[self.TD_INDEX_BEGIN:]):
+            for top_index, td in enumerate(tr.css('td')[self.TD_INDEX_BEGIN :]):
                 top_index_set.add(top_index)
                 td_dict = self._td_map.setdefault(top_index, {})
                 td_dict[left_header] = td
@@ -298,23 +310,24 @@ class MainInfoTableLocator(BaseTableLocator):
 
 class ContainerStatusTableLocator(BaseTableLocator):
     """
-        +-----------------------+
-        | Name                  |
-        +-------+-------+-------+
-        | Title | Title | Title |
-        +-------+-------+-------+
-        | Data  |       |       |
-        +-------+-------+-------+
-        | ...   |       |       |
-        +-------+-------+-------+
-        | Data  |       |       |
-        +-------+-------+-------+
+    +-----------------------+
+    | Name                  |
+    +-------+-------+-------+
+    | Title | Title | Title |
+    +-------+-------+-------+
+    | Data  |       |       |
+    +-------+-------+-------+
+    | ...   |       |       |
+    +-------+-------+-------+
+    | Data  |       |       |
+    +-------+-------+-------+
     """
+
     TR_TITLE_INDEX = 1
     TR_DATA_BEGIN_INDEX = 2
 
     def __init__(self):
-        self._td_map = {}   # title: data
+        self._td_map = {}  # title: data
         self._data_len = 0
         self._table_name = ''
 
@@ -322,7 +335,7 @@ class ContainerStatusTableLocator(BaseTableLocator):
         self._table_name = table.css('tr th::text').get() or ''
 
         title_td_list = table.css('tr')[self.TR_TITLE_INDEX].css('td.bltablehead')
-        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN_INDEX:]
+        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN_INDEX :]
 
         for title_index, title_td in enumerate(title_td_list):
             data_index = title_index

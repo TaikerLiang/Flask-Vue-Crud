@@ -1,0 +1,221 @@
+{
+  "success": true,
+  "msg": null,
+  "total": 1,
+  "cols": [
+    {
+      "name": "PO_ROWNUM",
+      "type": "float",
+      "must": false
+    },
+    {
+      "name": "PO_ACTION",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_MSG",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_MFSMS_SYSNO",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_CNTR_NO",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_CNTR_TYPE",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_CNTR_TYPE_S",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_CNTR_TYPE_H",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_CNTR_TYPE_T",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_CARRIER",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_CARRIER_SCAC_CODE",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_AVAILABLE_IND",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_YARD_LOC",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_WD_AREA",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_TRUCK_COMP_CODE",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_TRUCK_COMP_NAME",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_EXAM_TRUCK_COMP_CODE",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_EXAM_TRUCK_COMP_NAME",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_SVC_QFR",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_SVC_QFR_DESC",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_USA_STATUS",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_FR_STATUS",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_CARRIER_STATUS",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_TMNL_HOLD_IND",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_TMF_STATUS",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_DM_STATUS",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_DM_RATE",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_DM_AMT_DUE",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_DM_LAST_FREE_DATE",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_DM_FREE_DAYS",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_APPOINTMENT_TIME",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_CARRIER_REMARK",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_CUSTOMS_REMARK",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_TERMINAL_NAME",
+      "type": "string",
+      "must": false
+    },
+    {
+      "name": "PO_TERMINAL_ID",
+      "type": "string",
+      "must": false
+    }
+  ],
+  "data": [
+    [
+      "1",
+      "Y",
+      null,
+      "16701873",
+      "EMCU5268400",
+      "45R1",
+      "40'",
+      "9'6\"",
+      "Reefer",
+      "EMC",
+      "EGLV",
+      "No",
+      "Gate Out",
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      "Local Port/Door Cargo",
+      "Release",
+      "Release",
+      "Release",
+      "No",
+      "Release",
+      "Release",
+      null,
+      "0",
+      "20200810",
+      "0",
+      "2020-08-10 00:00~",
+      null,
+      null,
+      "ETSLAX",
+      "LAX"
+    ]
+  ]
+}

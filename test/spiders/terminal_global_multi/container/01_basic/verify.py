@@ -18,4 +18,3 @@ def verify(results: List):
         vessel='HYUNDAI HOPE',
         voyage='042',
     )
-

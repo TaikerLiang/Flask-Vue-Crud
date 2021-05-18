@@ -6,15 +6,32 @@ import scrapy
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import (
-    BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
+    BaseCarrierSpider,
+    CARRIER_DEFAULT_SETTINGS,
+    DISABLE_DUPLICATE_REQUEST_FILTER,
+)
 from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError, SuspiciousOperationError)
+    CarrierResponseFormatError,
+    CarrierInvalidMblNoError,
+    BaseCarrierError,
+    SuspiciousOperationError,
+)
 from crawler.core_carrier.items import (
-    ContainerStatusItem, LocationItem, ContainerItem, MblItem, BaseCarrierItem, ExportErrorData, DebugItem)
+    ContainerStatusItem,
+    LocationItem,
+    ContainerItem,
+    MblItem,
+    BaseCarrierItem,
+    ExportErrorData,
+    DebugItem,
+)
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.selector_finder import (
-    find_selector_from, CssQueryExistMatchRule, CssQueryTextStartswithMatchRule)
+    find_selector_from,
+    CssQueryExistMatchRule,
+    CssQueryTextStartswithMatchRule,
+)
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
@@ -113,8 +130,7 @@ class CaptchaRoutingRule(BaseRoutingRule):
         captcha_base64 = base64.b64encode(response.body)
         verification_code = self._captcha_analyzer.analyze_captcha(captcha_base64=captcha_base64)
 
-        yield MainInfoRoutingRule.build_request_option(
-            mbl_no=mbl_no, verification_code=verification_code)
+        yield MainInfoRoutingRule.build_request_option(mbl_no=mbl_no, verification_code=verification_code)
 
 
 # -------------------------------------------------------------------------------
@@ -175,7 +191,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def _check_captcha(response) -> bool:
         # wrong captcha -> back to search page
         message_under_search_table = ' '.join(
-            response.css('table table[cellpadding="1"] tr td.f12rown1::text').getall())
+            response.css('table table[cellpadding="1"] tr td.f12rown1::text').getall()
+        )
         if isinstance(message_under_search_table, str):
             message_under_search_table = message_under_search_table.strip()
         back_to_search_page_message = 'Shipments tracing by Booking NO. is available for specific countries/areas only.'
@@ -241,8 +258,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
         message_under_search_table = response.css('table table tr td.f12wrdb1::text').get()
         if isinstance(message_under_search_table, str):
             message_under_search_table = message_under_search_table.strip()
-        mbl_invalid_message = \
+        mbl_invalid_message = (
             'No information on B/L No., please enter a valid B/L No. or contact our offices for assistance.'
+        )
 
         if message_under_search_table == mbl_invalid_message:
             raise CarrierInvalidMblNoError()
@@ -351,10 +369,12 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return_list = []
 
         for left in table_locator.iter_left_headers():
-            return_list.append({
-                'container_no': table.extract_cell('Container No.', left, FirstTextTdExtractor('a::text')),
-                'date': table.extract_cell('Date', left)
-            })
+            return_list.append(
+                {
+                    'container_no': table.extract_cell('Container No.', left, FirstTextTdExtractor('a::text')),
+                    'date': table.extract_cell('Date', left),
+                }
+            )
 
         return return_list
 
@@ -372,19 +392,19 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
 class LeftBasicInfoTableLocator(BaseTableLocator):
     """
-        +-----------------------------------+ <tbody>
-        | Basic Information ...             | <tr>
-        +---------+---------+-----+---------+
-        | Title 1 | Data 1  |     |         | <tr>
-        +---------+---------+-----+---------+
-        | Title 2 | Data 2  |     |         | <tr>
-        +---------+---------+-----+---------+
-        | Title 3 | Data 3  |     |         | <tr>
-        +---------+---------+-----+---------+
-        | ...     |         |     |         | <tr>
-        +---------+---------+-----+---------+
-        | Title N | Data N  |     |         | <tr>
-        +---------+---------+-----+---------+ </tbody>
+    +-----------------------------------+ <tbody>
+    | Basic Information ...             | <tr>
+    +---------+---------+-----+---------+
+    | Title 1 | Data 1  |     |         | <tr>
+    +---------+---------+-----+---------+
+    | Title 2 | Data 2  |     |         | <tr>
+    +---------+---------+-----+---------+
+    | Title 3 | Data 3  |     |         | <tr>
+    +---------+---------+-----+---------+
+    | ...     |         |     |         | <tr>
+    +---------+---------+-----+---------+
+    | Title N | Data N  |     |         | <tr>
+    +---------+---------+-----+---------+ </tbody>
     """
 
     TR_CONTENT_BEGIN_INDEX = 1
@@ -392,10 +412,10 @@ class LeftBasicInfoTableLocator(BaseTableLocator):
     TD_DATA_INDEX = 1
 
     def __init__(self):
-        self._td_map = {}   # title: data
+        self._td_map = {}  # title: data
 
     def parse(self, table: scrapy.Selector):
-        content_tr_list = table.css('tr')[self.TR_CONTENT_BEGIN_INDEX:]
+        content_tr_list = table.css('tr')[self.TR_CONTENT_BEGIN_INDEX :]
 
         for content_tr in content_tr_list:
             title_td = content_tr.css('td')[self.TD_TITLE_INDEX]
@@ -418,19 +438,19 @@ class LeftBasicInfoTableLocator(BaseTableLocator):
 
 class RightBasicInfoTableLocator(BaseTableLocator):
     """
-        +-----------------------------------+ <tbody>
-        | Basic Information ...             | <tr>
-        +-----+---------+---------+---------+
-        |     |         | Title 1 | Data 1  | <tr>
-        +-----+---------+---------+---------+
-        |     |         | Title 2 | Data 2  | <tr>
-        +-----+---------+---------+---------+
-        |     |         | Title 3 | Data 3  | <tr>
-        +-----+---------+---------+---------+
-        |     |         | ...     | ...     | <tr>
-        +-----+---------+---------+---------+
-        |     |         | Title N | Data N  | <tr>
-        +-----+---------+---------+---------+ </tbody>
+    +-----------------------------------+ <tbody>
+    | Basic Information ...             | <tr>
+    +-----+---------+---------+---------+
+    |     |         | Title 1 | Data 1  | <tr>
+    +-----+---------+---------+---------+
+    |     |         | Title 2 | Data 2  | <tr>
+    +-----+---------+---------+---------+
+    |     |         | Title 3 | Data 3  | <tr>
+    +-----+---------+---------+---------+
+    |     |         | ...     | ...     | <tr>
+    +-----+---------+---------+---------+
+    |     |         | Title N | Data N  | <tr>
+    +-----+---------+---------+---------+ </tbody>
     """
 
     TR_CONTENT_BEGIN_INDEX = 1
@@ -438,10 +458,10 @@ class RightBasicInfoTableLocator(BaseTableLocator):
     TD_DATA_INDEX = 3
 
     def __init__(self):
-        self._td_map = {}   # title: data
+        self._td_map = {}  # title: data
 
     def parse(self, table: scrapy.Selector):
-        content_tr_list = table.css('tr')[self.TR_CONTENT_BEGIN_INDEX:]
+        content_tr_list = table.css('tr')[self.TR_CONTENT_BEGIN_INDEX :]
 
         for tr in content_tr_list:
             title_td = tr.css('td')[self.TD_TITLE_INDEX]
@@ -538,10 +558,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
         }
 
         return RequestOption(
-            method=RequestOption.METHOD_POST_FORM,
-            rule_name=cls.name,
-            url=EGLV_INFO_URL,
-            form_data=form_data
+            method=RequestOption.METHOD_POST_FORM, rule_name=cls.name, url=EGLV_INFO_URL, form_data=form_data
         )
 
     def get_save_name(self, response) -> str:
@@ -608,28 +625,28 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
 
 class CarrierStatusTableLocator(BaseTableLocator):
     """
-        +---------------------------------------------------------------+ <tbody>
-        | Release Status                                                | <tr>
-        +---------+----------+---------+---------+-----------+----------+
-        | Carrier | Title 1  | Title 2 | Title 3 |  Title 4  | Title 5  | <tr>
-        |         +----------+---------+---------+-----------+----------+
-        | Status  | Data 1   | Data 2  | Data 3  |  Data 4   | Data 5   | <tr>
-        +---------+----------+---------+---------+-----------+----------+
-        |         |          |                   |           |          | <tr>
-        |         +----------+-------------------+-----------+----------+
-        |         |          |                   |           |          | <tr>
-        |         +----------+-------------------+-----------+----------+
-        |         |          |                               |          | <tr>
-        |         +----------+-------------------------------+----------+
-        |         |          |                               |          | <tr>
-        +---------+----------+-------------------------------+----------+ </tbody>
+    +---------------------------------------------------------------+ <tbody>
+    | Release Status                                                | <tr>
+    +---------+----------+---------+---------+-----------+----------+
+    | Carrier | Title 1  | Title 2 | Title 3 |  Title 4  | Title 5  | <tr>
+    |         +----------+---------+---------+-----------+----------+
+    | Status  | Data 1   | Data 2  | Data 3  |  Data 4   | Data 5   | <tr>
+    +---------+----------+---------+---------+-----------+----------+
+    |         |          |                   |           |          | <tr>
+    |         +----------+-------------------+-----------+----------+
+    |         |          |                   |           |          | <tr>
+    |         +----------+-------------------+-----------+----------+
+    |         |          |                               |          | <tr>
+    |         +----------+-------------------------------+----------+
+    |         |          |                               |          | <tr>
+    +---------+----------+-------------------------------+----------+ </tbody>
     """
 
     TR_TITLE_INDEX = 1
     TR_DATA_INDEX = 2
 
     def __init__(self):
-        self._td_map = {}   # title: data
+        self._td_map = {}  # title: data
 
         self._title_remap = {  # title_index: rename title
             3: 'Carrier Date',
@@ -664,28 +681,28 @@ class CarrierStatusTableLocator(BaseTableLocator):
 
 class USCustomStatusTableLocator(BaseTableLocator):
     """
-        +----------------------------------------------------------------+ <tbody>
-        | Release Status                                                 | <tr>
-        +---------+----------+---------+---------+------------+----------+
-        |         |          |         |         |            |          | <tr>
-        +         +----------+---------+---------+------------+----------+
-        |         |          |         |         |            |          | <tr>
-        +---------+----------+---------+---------+------------+----------+
-        | Customs | Title 1  |     Title 2       |  Title 3   | Title 4  | <tr>
-        |         +----------+-------------------+------------+----------+
-        |         | Data 1   |     Data 2        |  Data 3    | Data 4   | <tr>
-        |         +----------+-------------------+------------+----------+
-        | Status  |          |                                |          | <tr>
-        |         +----------+--------------------------------+----------+
-        |         |          |                                |          | <tr>
-        +---------+----------+--------------------------------+----------+ </tbody>
+    +----------------------------------------------------------------+ <tbody>
+    | Release Status                                                 | <tr>
+    +---------+----------+---------+---------+------------+----------+
+    |         |          |         |         |            |          | <tr>
+    +         +----------+---------+---------+------------+----------+
+    |         |          |         |         |            |          | <tr>
+    +---------+----------+---------+---------+------------+----------+
+    | Customs | Title 1  |     Title 2       |  Title 3   | Title 4  | <tr>
+    |         +----------+-------------------+------------+----------+
+    |         | Data 1   |     Data 2        |  Data 3    | Data 4   | <tr>
+    |         +----------+-------------------+------------+----------+
+    | Status  |          |                                |          | <tr>
+    |         +----------+--------------------------------+----------+
+    |         |          |                                |          | <tr>
+    +---------+----------+--------------------------------+----------+ </tbody>
     """
 
     TR_TITLE_INDEX = 3
     TR_DATA_INDEX = 4
 
     def __init__(self):
-        self._td_map = {}   # title: data
+        self._td_map = {}  # title: data
 
     def parse(self, table: scrapy.Selector):
         title_tr = table.css('tr')[self.TR_TITLE_INDEX]
@@ -714,28 +731,28 @@ class USCustomStatusTableLocator(BaseTableLocator):
 
 class CustomReleaseStatusTableLocator(BaseTableLocator):
     """
-        +----------------------------------------------------------------+ <tbody>
-        | Release Status                                                 | <tr>
-        +---------+----------+---------+---------+------------+----------+
-        |         |          |         |         |            |          | <tr>
-        |         +----------+---------+---------+------------+----------+
-        |         |          |         |         |            |          | <tr>
-        +---------+----------+---------+---------+------------+----------+
-        | Customs |          |                   |            |          | <tr>
-        |         +----------+-------------------+------------+----------+
-        |         |          |                   |            |          | <tr>
-        |         +----------+-------------------+------------+----------+
-        | Status  | Title 1  |             Title 2            | Title 3  | <tr>
-        |         +----------+--------------------------------+----------+
-        |         | Data 1   |             Data 2             | Data 3   | <tr>
-        +---------+----------+--------------------------------+----------+ </tbody>
+    +----------------------------------------------------------------+ <tbody>
+    | Release Status                                                 | <tr>
+    +---------+----------+---------+---------+------------+----------+
+    |         |          |         |         |            |          | <tr>
+    |         +----------+---------+---------+------------+----------+
+    |         |          |         |         |            |          | <tr>
+    +---------+----------+---------+---------+------------+----------+
+    | Customs |          |                   |            |          | <tr>
+    |         +----------+-------------------+------------+----------+
+    |         |          |                   |            |          | <tr>
+    |         +----------+-------------------+------------+----------+
+    | Status  | Title 1  |             Title 2            | Title 3  | <tr>
+    |         +----------+--------------------------------+----------+
+    |         | Data 1   |             Data 2             | Data 3   | <tr>
+    +---------+----------+--------------------------------+----------+ </tbody>
     """
 
     TR_TITLE_INDEX = 5
     TR_DATA_INDEX = 6
 
     def __init__(self):
-        self._td_map = {}   # title: data
+        self._td_map = {}  # title: data
 
     def parse(self, table: scrapy.Selector):
         title_tr = table.css('tr')[self.TR_TITLE_INDEX]
@@ -770,7 +787,8 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(
-            cls, mbl_no: str, container_no: str, onboard_date: str, pol: str, pod: str, podctry: str) -> RequestOption:
+        cls, mbl_no: str, container_no: str, onboard_date: str, pol: str, pod: str, podctry: str
+    ) -> RequestOption:
         form_data = {
             'bl_no': mbl_no,
             'cntr_no': container_no,
@@ -802,7 +820,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 container_key=container_no,
                 description=container_status['description'],
                 local_date_time=container_status['timestamp'],
-                location=LocationItem(name=container_status['location_name'])
+                location=LocationItem(name=container_status['location_name']),
             )
 
     @staticmethod
@@ -820,44 +838,47 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
         container_status_list = []
         for left in table_locator.iter_left_headers():
-            container_status_list.append({
-                'timestamp': table.extract_cell('Date', left),
-                'description': table.extract_cell('Container Moves', left),
-                'location_name': table.extract_cell('Location', left),
-            })
+            container_status_list.append(
+                {
+                    'timestamp': table.extract_cell('Date', left),
+                    'description': table.extract_cell('Container Moves', left),
+                    'location_name': table.extract_cell('Location', left),
+                }
+            )
 
         return container_status_list
+
 
 # -------------------------------------------------------------------------------
 
 
 class NameOnTopHeaderTableLocator(BaseTableLocator):
     """
-        +-----------------------------------+ <tbody>
-        | Table Name                        | <tr>
-        +---------+---------+-----+---------+
-        | Title 1 | Title 2 | ... | Title N | <tr>
-        +---------+---------+-----+---------+
-        | Data    |         |     |         | <tr>
-        +---------+---------+-----+---------+
-        | Data    |         |     |         | <tr>
-        +---------+---------+-----+---------+
-        | ...     |         |     |         | <tr>
-        +---------+---------+-----+---------+
-        | Data    |         |     |         | <tr>
-        +---------+---------+-----+---------+ </tbody>
+    +-----------------------------------+ <tbody>
+    | Table Name                        | <tr>
+    +---------+---------+-----+---------+
+    | Title 1 | Title 2 | ... | Title N | <tr>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr>
+    +---------+---------+-----+---------+
+    | ...     |         |     |         | <tr>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr>
+    +---------+---------+-----+---------+ </tbody>
     """
 
     TR_TITLE_INDEX = 1
     TR_DATA_BEGIN_INDEX = 2
 
     def __init__(self):
-        self._td_map = {}   # title: [data, ...]
+        self._td_map = {}  # title: [data, ...]
         self._data_len = 0
 
     def parse(self, table: scrapy.Selector):
         title_tr = table.css('tr')[self.TR_TITLE_INDEX]
-        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN_INDEX:]
+        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN_INDEX :]
 
         title_text_list = title_tr.css('td::text').getall()
 

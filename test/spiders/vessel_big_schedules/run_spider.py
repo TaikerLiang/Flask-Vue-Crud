@@ -11,9 +11,7 @@ if __name__ == '__main__':
 
     process = CrawlerProcess(settings)
 
-    arguments = [
-        ('COSU', 'CMA CGM FIDELIO')
-    ]
+    arguments = [('COSU', 'CMA CGM FIDELIO')]
 
     for scac, vessel_name in arguments:
         kwargs = {

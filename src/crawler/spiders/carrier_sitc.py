@@ -8,9 +8,19 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, DebugItem)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
-    SuspiciousOperationError
+    BaseCarrierItem,
+    MblItem,
+    LocationItem,
+    VesselItem,
+    ContainerItem,
+    ContainerStatusItem,
+    DebugItem,
+)
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError,
+    CarrierInvalidMblNoError,
+    SuspiciousOperationError,
+)
 from crawler.extractors.table_extractors import TableExtractor, HeaderMismatchError, BaseTableLocator
 
 SITC_BASE_URL = 'http://www.sitcline.com/track/biz/trackCargoTrack.do'
@@ -33,7 +43,8 @@ class CarrierSitcSpider(BaseCarrierSpider):
 
     def start(self):
         request_option = BasicInfoRoutingRule.build_request_option(
-            mbl_no=self.mbl_no, container_no_list=self.container_no_list,
+            mbl_no=self.mbl_no,
+            container_no_list=self.container_no_list,
         )
         yield self._build_request_by(option=request_option)
 
@@ -54,10 +65,7 @@ class CarrierSitcSpider(BaseCarrierSpider):
                 raise RuntimeError()
 
     def _build_request_by(self, option: RequestOption):
-        meta = {
-            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
-            **option.meta
-        }
+        meta = {RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name, **option.meta}
 
         if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
@@ -87,7 +95,7 @@ class BasicInfoRoutingRule(BaseRoutingRule):
         form_data = {
             'blNo': mbl_no,
             'containerNo': container_no,
-            'queryInfo': '{"queryObjectName": "com.sitc.track.bean.BlNoBkContainer4Track"}'
+            'queryInfo': '{"queryObjectName": "com.sitc.track.bean.BlNoBkContainer4Track"}',
         }
 
         return RequestOption(
@@ -153,7 +161,7 @@ class VesselInfoRoutingRule(BaseRoutingRule):
         form_data = {
             'blNo': mbl_no,
             'containerNo': container_no,
-            'queryInfo': '{"queryObjectName": "com.sitc.track.bean.BlNoBkContainer4Track"}'
+            'queryInfo': '{"queryObjectName": "com.sitc.track.bean.BlNoBkContainer4Track"}',
         }
 
         return RequestOption(
@@ -198,16 +206,18 @@ class VesselInfoRoutingRule(BaseRoutingRule):
             td = self._extract_estimate_and_actual_time(vessel_time=vessel['atd'])
             ta = self._extract_estimate_and_actual_time(vessel_time=vessel['ata'])
 
-            return_list.append({
-                'vessel': vessel['vesselName'],
-                'voyage': vessel['voyage'],
-                'pol_name': vessel['portFrom'],
-                'pod_name': vessel['portTo'],
-                'etd': td['e_time'],
-                'atd': td['a_time'],
-                'eta': ta['e_time'],
-                'ata': ta['a_time'],
-            })
+            return_list.append(
+                {
+                    'vessel': vessel['vesselName'],
+                    'voyage': vessel['voyage'],
+                    'pol_name': vessel['portFrom'],
+                    'pod_name': vessel['portTo'],
+                    'etd': td['e_time'],
+                    'atd': td['a_time'],
+                    'eta': ta['e_time'],
+                    'ata': ta['a_time'],
+                }
+            )
 
         return return_list
 
@@ -245,7 +255,7 @@ class ContainerInfoRoutingRule(BaseRoutingRule):
         form_data = {
             'blNo': mbl_no,
             'containerNo': container_no,
-            'queryInfo': '{"queryObjectName": "com.sitc.track.bean.BlNoBkContainer4Track"}'
+            'queryInfo': '{"queryObjectName": "com.sitc.track.bean.BlNoBkContainer4Track"}',
         }
 
         return RequestOption(
@@ -280,9 +290,11 @@ class ContainerInfoRoutingRule(BaseRoutingRule):
 
         return_list = []
         for container in container_list:
-            return_list.append({
-                'container_no': container['containerNo'],
-            })
+            return_list.append(
+                {
+                    'container_no': container['containerNo'],
+                }
+            )
 
         return return_list
 
@@ -296,7 +308,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f'{SITC_BASE_URL}?method=boxNoIndex&containerNo={container_no}&blNo={mbl_no}',
-            meta={'container_key': container_no}
+            meta={'container_key': container_no},
         )
 
     def get_save_name(self, response) -> str:
@@ -312,7 +324,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 container_key=container_key,
                 description=container_status['description'],
                 local_date_time=container_status['local_date_time'],
-                location=LocationItem(name=container_status['location_name'])
+                location=LocationItem(name=container_status['location_name']),
             )
 
     @staticmethod
@@ -328,11 +340,13 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
         container_status_list = []
         for left in table_locator.iter_left_headers():
-            container_status_list.append({
-                'local_date_time': table.extract_cell('Occurrence Time', left),
-                'description': table.extract_cell('Current Status', left),
-                'location_name': table.extract_cell('Locale', left),
-            })
+            container_status_list.append(
+                {
+                    'local_date_time': table.extract_cell('Occurrence Time', left),
+                    'description': table.extract_cell('Current Status', left),
+                    'location_name': table.extract_cell('Locale', left),
+                }
+            )
 
         return container_status_list
 
@@ -377,4 +391,3 @@ class ContainerStatusTableLocator(BaseTableLocator):
     def iter_left_headers(self):
         for index in range(self._data_len):
             yield index
-

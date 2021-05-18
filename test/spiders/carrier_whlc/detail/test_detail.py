@@ -16,14 +16,18 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,container_no', [
-    ('01_basic', '0349531933', 'DFSU7597714'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,container_no',
+    [
+        ('01_basic', '0349531933', 'DFSU7597714'),
+    ],
+)
 def test_detail_routing_rule(sub, mbl_no, sample_loader, container_no):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
     option = DetailRoutingRule.build_request_option(
-        mbl_no=mbl_no, container_no=container_no, j_idt='', view_state='', cookies={})
+        mbl_no=mbl_no, container_no=container_no, j_idt='', view_state='', cookies={}
+    )
 
     response = TextResponse(
         url=option.url,
@@ -34,8 +38,8 @@ def test_detail_routing_rule(sub, mbl_no, sample_loader, container_no):
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: DetailRoutingRule.name,
                 'container_no': container_no,
-            }
-        )
+            },
+        ),
     )
 
     routing_rule = DetailRoutingRule()

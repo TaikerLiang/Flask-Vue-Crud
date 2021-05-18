@@ -58,4 +58,3 @@ class LoginNotSuccessFatal(BaseTerminalError):
 
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail=f'<login-not-success-fatal> status: `{self.status}`')
-

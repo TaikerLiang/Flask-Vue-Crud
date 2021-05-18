@@ -10,13 +10,30 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData, DebugItem)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError, \
-    SuspiciousOperationError
+    BaseCarrierItem,
+    MblItem,
+    LocationItem,
+    VesselItem,
+    ContainerItem,
+    ContainerStatusItem,
+    ExportErrorData,
+    DebugItem,
+)
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError,
+    CarrierInvalidMblNoError,
+    BaseCarrierError,
+    SuspiciousOperationError,
+)
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from, BaseMatchRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import (
-    BaseTableLocator, HeaderMismatchError, TableExtractor, TopHeaderTableLocator, TopLeftHeaderTableLocator)
+    BaseTableLocator,
+    HeaderMismatchError,
+    TableExtractor,
+    TopHeaderTableLocator,
+    TopLeftHeaderTableLocator,
+)
 
 BASE_URL = 'https://www.hamburgsud-line.com/linerportal/pages/hsdg/tnt.xhtml'
 
@@ -44,7 +61,6 @@ class VoyageSpec:
 
 
 class RequestOptionFactory:
-
     @staticmethod
     def __build_form_data(basic_request_spec: BasicRequestSpec, container_link_element: str = ''):
         j_idt2 = 'j_idt8' if basic_request_spec.j_idt == 'j_idt6' else 'j_idt9'
@@ -77,7 +93,7 @@ class RequestOptionFactory:
 
     @classmethod
     def build_container_option(
-            cls, rule_name: str, basic_request_spec: BasicRequestSpec, container_link_element: str
+        cls, rule_name: str, basic_request_spec: BasicRequestSpec, container_link_element: str
     ) -> RequestOption:
         form_data = cls.__build_form_data(
             basic_request_spec=basic_request_spec, container_link_element=container_link_element
@@ -179,7 +195,6 @@ class VoyageQueuePusher:
 
 
 class RequestOptionQueue:
-
     def __init__(self):
         self._queue = []
 
@@ -357,11 +372,11 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(
-            cls,
-            basic_request_spec: BasicRequestSpec,
-            mbl_state: MblState,
-            container_link_element: str = '',
-            voyage_spec: VoyageSpec = None,
+        cls,
+        basic_request_spec: BasicRequestSpec,
+        mbl_state: MblState,
+        container_link_element: str = '',
+        voyage_spec: VoyageSpec = None,
     ) -> RequestOption:
         if mbl_state == MblState.MULTIPLE:
             container_option = RequestOptionFactory.build_container_option(
@@ -374,11 +389,13 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         else:
             raise SuspiciousOperationError(msg=f'Unexpected mbl_state: `{mbl_state}`')
 
-        option = container_option.copy_and_extend_by(meta={
+        option = container_option.copy_and_extend_by(
+            meta={
                 'container_key': container_link_element,  # for voyage purpose
                 'voyage_spec': voyage_spec,
                 'mbl_state': mbl_state,
-        })
+            }
+        )
 
         return option
 
@@ -511,14 +528,16 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         for left in top_header_locator.iter_left_header():
             vessel_voyage_info = table.extract_cell(top='Mode/Vendor', left=left, extractor=vessel_voyage_extractor)
 
-            container_statuses.append({
-                'timestamp': table.extract_cell(top='Date', left=left),
-                'location': table.extract_cell(top='Place', left=left),
-                'description': table.extract_cell(top='Movement', left=left),
-                'vessel': vessel_voyage_info['vessel'],
-                'voyage': vessel_voyage_info['voyage'],
-                'voyage_css_id': vessel_voyage_info['voyage_css_id'],
-            })
+            container_statuses.append(
+                {
+                    'timestamp': table.extract_cell(top='Date', left=left),
+                    'location': table.extract_cell(top='Place', left=left),
+                    'description': table.extract_cell(top='Movement', left=left),
+                    'vessel': vessel_voyage_info['vessel'],
+                    'voyage': vessel_voyage_info['voyage'],
+                    'voyage_css_id': vessel_voyage_info['voyage_css_id'],
+                }
+            )
 
         container_statuses.reverse()
 
@@ -526,7 +545,7 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def __get_container_voyage_link_element_specs(
-            por, final_dest, container_statuses, container_key, container_no
+        por, final_dest, container_statuses, container_key, container_no
     ) -> Tuple:
         # voyage part
         departure_voyages = []
@@ -567,7 +586,6 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
 
 
 class VesselVoyageTdExtractor(BaseTableCellExtractor):
-
     def extract(self, cell: Selector):
         a_list = cell.css('a')
 
@@ -596,7 +614,7 @@ class VoyageRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(
-            cls, basic_request_spec: BasicRequestSpec, voyage_spec: VoyageSpec, mbl_state: MblState
+        cls, basic_request_spec: BasicRequestSpec, voyage_spec: VoyageSpec, mbl_state: MblState
     ) -> RequestOption:
         j_idt2 = 'j_idt8' if basic_request_spec.j_idt == 'j_idt6' else 'j_idt9'
         search_form = f'{basic_request_spec.j_idt}:searchForm'
@@ -634,7 +652,8 @@ class VoyageRoutingRule(BaseRoutingRule):
 
         if self._is_voyage_routing_connectable(response=response):
             voyage_routing = self.__extract_voyage_routing(
-                response=response, location=voyage_location, direction=voyage_direction)
+                response=response, location=voyage_location, direction=voyage_direction
+            )
 
             yield VesselItem(
                 vessel_key=f'{voyage_location} {voyage_direction}',
@@ -715,7 +734,6 @@ class TextExistsMatchRule(BaseMatchRule):
 
 
 class IncorrectValueError(BaseCarrierError):
-
     def __init__(self, value):
         self.value = value
 
@@ -724,7 +742,6 @@ class IncorrectValueError(BaseCarrierError):
 
 
 class MainDivTableLocator(BaseTableLocator):
-
     def __init__(self):
         self._td_map = {}  # title: data
 
@@ -770,4 +787,3 @@ def prepare_request_spec(mbl_no: str, response) -> BasicRequestSpec:
     j_idt = response.css('form ::attr(id)').get().strip(':searchForm')
 
     return BasicRequestSpec(mbl_no=mbl_no, view_state=view_state, j_idt=j_idt)
-

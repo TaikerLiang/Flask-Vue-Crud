@@ -49,4 +49,3 @@ class DebugItem(BaseRailItem):
 class InvalidContainerNoItem(BaseRailItem):
     task_id = scrapy.Field()
     container_no = scrapy.Field()
-

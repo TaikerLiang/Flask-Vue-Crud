@@ -16,10 +16,13 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no', [
-    ('01_single_container', 'HLCUSHA1904CCVX4'),
-    ('02_multi_containers', 'HLCUSHA1911AVPN9'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no',
+    [
+        ('01_single_container', 'HLCUSHA1904CCVX4'),
+        ('02_multi_containers', 'HLCUSHA1911AVPN9'),
+    ],
+)
 def test_tracing_rule_handler(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
@@ -34,8 +37,8 @@ def test_tracing_rule_handler(sub, mbl_no, sample_loader):
             meta={
                 'mbl_no': mbl_no,
                 'cookies': '',
-            }
-        )
+            },
+        ),
     )
 
     rule = TracingRoutingRule()
@@ -46,9 +49,12 @@ def test_tracing_rule_handler(sub, mbl_no, sample_loader):
     verifier.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'HLCUHKG1911AVNM', CarrierInvalidMblNoError),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,expect_exception',
+    [
+        ('e01_invalid_mbl_no', 'HLCUHKG1911AVNM', CarrierInvalidMblNoError),
+    ],
+)
 def test_tracing_rule_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
@@ -63,8 +69,8 @@ def test_tracing_rule_handler_mbl_no_error(sub, mbl_no, expect_exception, sample
             meta={
                 'mbl_no': mbl_no,
                 'cookies': '',
-            }
-        )
+            },
+        ),
     )
 
     rule = TracingRoutingRule()

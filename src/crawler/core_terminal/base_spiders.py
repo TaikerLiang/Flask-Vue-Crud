@@ -39,7 +39,7 @@ class BaseTerminalSpider(scrapy.Spider):
         self.container_no = kwargs['container_no']
         self.mbl_no = kwargs.get('mbl_no', '')
 
-        to_save = ('save' in kwargs)
+        to_save = 'save' in kwargs
         self._saver = self._prepare_saver(to_save=to_save)
 
         self._error = False
@@ -101,12 +101,13 @@ class BaseMultiTerminalSpider(scrapy.Spider):
 
         self.task_ids = [task_id.strip() for task_id in kwargs['task_id_list'].split(',')]
         self.container_nos = [container_no.strip() for container_no in kwargs['container_no_list'].split(',')]
+        self.mbl_no = kwargs.get('mbl_no', '')
         self.cno_tid_map = {}  # container_no: [task_ids]
         for c_no, t_id in zip(self.container_nos, self.task_ids):
             self.cno_tid_map.setdefault(c_no, [])
             self.cno_tid_map[c_no].append(t_id)
 
-        to_save = ('save' in kwargs)
+        to_save = 'save' in kwargs
         self._saver = self._prepare_saver(to_save=to_save)
 
         self._error = False
@@ -141,4 +142,3 @@ class BaseMultiTerminalSpider(scrapy.Spider):
 
     def mark_error(self):
         self._error = True
-

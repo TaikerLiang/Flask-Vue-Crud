@@ -13,5 +13,3 @@ def verify(results: List):
         'dont_retry': True,
         'handle_httpstatus_list': [502],
     }
-
-

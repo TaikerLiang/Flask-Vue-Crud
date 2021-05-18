@@ -15,9 +15,12 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,container_no,', [
-    ('01_basic', 'EMCU6085091'),
-])
+@pytest.mark.parametrize(
+    'sub,container_no,',
+    [
+        ('01_basic', 'EMCU6085091'),
+    ],
+)
 def test_container_detail_routing_rule(sub, container_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
@@ -30,7 +33,7 @@ def test_container_detail_routing_rule(sub, container_no, sample_loader):
         encoding='utf-8',
         request=Request(
             url=request_option.url,
-        )
+        ),
     )
 
     rule = ContainerDetailRoutingRule()
@@ -38,5 +41,3 @@ def test_container_detail_routing_rule(sub, container_no, sample_loader):
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
-
-

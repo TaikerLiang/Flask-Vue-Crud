@@ -9,4 +9,3 @@ class TerminalShipperTransOakSpider(TideworksShareSpider):
         email='Scott.lu@gofreight.co',
         password='hardc0re',
     )
-

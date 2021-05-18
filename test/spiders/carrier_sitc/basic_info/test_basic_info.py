@@ -16,9 +16,12 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,container_no_list', [
-    ('01_basic', 'SITDNBBK351734', ['TEXU1590997']),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,container_no_list',
+    [
+        ('01_basic', 'SITDNBBK351734', ['TEXU1590997']),
+    ],
+)
 def test_main_info_routing_rule(sub, mbl_no, container_no_list, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
@@ -37,8 +40,8 @@ def test_main_info_routing_rule(sub, mbl_no, container_no_list, sample_loader):
                 'mbl_no': mbl_no,
                 'container_no': container_no,
                 'container_no_list': other_container_no_list,
-            }
-        )
+            },
+        ),
     )
 
     routing_rule = BasicInfoRoutingRule()
@@ -48,9 +51,12 @@ def test_main_info_routing_rule(sub, mbl_no, container_no_list, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,container_no_list,expect_exception', [
-    ('e01_invalid_mbl_no', 'SITDNBBK351734', ['TEXU1590990'], CarrierInvalidMblNoError),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,container_no_list,expect_exception',
+    [
+        ('e01_invalid_mbl_no', 'SITDNBBK351734', ['TEXU1590990'], CarrierInvalidMblNoError),
+    ],
+)
 def test_main_info_handler_mbl_no_error(sub, mbl_no, container_no_list, expect_exception, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
@@ -69,8 +75,8 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, container_no_list, expect_e
                 'mbl_no': mbl_no,
                 'container_no': container_no,
                 'container_no_list': other_container_no_list,
-            }
-        )
+            },
+        ),
     )
 
     routing_rule = BasicInfoRoutingRule()

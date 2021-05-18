@@ -26,7 +26,9 @@ class ShareSpider(BaseMultiTerminalSpider):
 
     def start(self):
         uni_container_nos = list(self.cno_tid_map.keys())
-        option = ContainerRoutingRule.build_request_option(container_nos=uni_container_nos, terminal_id=self.terminal_id)
+        option = ContainerRoutingRule.build_request_option(
+            container_nos=uni_container_nos, terminal_id=self.terminal_id
+        )
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -76,6 +78,7 @@ class TerminalApmPESpider(ShareSpider):
 
 
 class TerminalApmLASpider(ShareSpider):
+    firms_code = 'W185'
     name = 'terminal_apm_la_multi'
     terminal_id = 'c56ab48b-586f-4fd2-9a1f-06721c94f3bb'
 
@@ -99,7 +102,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             url=url,
             headers={'Content-Type': 'application/json'},
             body=json.dumps(form_data),
-            meta={'container_nos': container_nos}
+            meta={'container_nos': container_nos},
         )
 
     def get_save_name(self, response) -> str:
@@ -109,22 +112,32 @@ class ContainerRoutingRule(BaseRoutingRule):
         container_nos = response.meta['container_nos']
 
         response_json = json.loads(response.text)
-        ava_results = response_json['ContainerAvailabilityResults']
-        if not ava_results:
-            for container_no in container_nos:
-                yield InvalidContainerNoItem(container_no=container_no)
-            return
+        for container in response_json['ContainerAvailabilityResults']:
+            result = {
+                'container_no': container['ContainerId'],
+                'freight_release': container['Freight'],
+                'customs_release': container['Customs'],
+                'discharge_date': container['DischargedDate'] or None,
+                'ready_for_pick_up': container['ReadyForDelivery'],
+                'appointment_date': container['AppointmentDate'],
+                'last_free_day': container['StoragePaidThroughDate'] or None,
+                'gate_out_date': container['GateOutDate'] or None,
+                'demurrage': container['Demurrage'] or None,
+                'carrier': container['LineId'],
+                'container_spec': container['SizeTypeHeight'],
+                'holds': ','.join(container['Holds']),
+                'cy_location': container['YardLocation'],
+                'vessel': container['VesselName'],
+                'mbl_no': container['BillOfLading'][0],
+                'weight': container['GrossWeight'],
+                'hazardous': container['HazardousClass'] or None,
+            }
 
-        ava_container_nos = [ava_result['ContainerId'] for ava_result in ava_results]
+            container_nos.remove(container['ContainerId'])
+            yield TerminalItem(**result)
+
         for container_no in container_nos:
-            if container_no not in ava_container_nos:
-                yield InvalidContainerNoItem(container_no=container_no)
-                continue
-
-            container_result = self._extract_specific_container_result(
-                response_json=response_json, container_no=container_no)
-
-            yield TerminalItem(**container_result)
+            yield InvalidContainerNoItem(container_no=container_no)
 
     @staticmethod
     def _is_all_container_nos_invalid(response_json):
@@ -135,39 +148,6 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         return False
 
-    def _extract_specific_container_result(self, response_json, container_no):
-        container_results = response_json['ContainerAvailabilityResults']
-        container = None
-        for container_result in container_results:
-            if container_result['ContainerId'] == container_no:
-                container = container_result
-                break
-
-        if container is None:
-            return container
-
-        self.__check_expected_container_format(container)
-
-        return {
-            'container_no': container['ContainerId'],
-            'freight_release': container['Freight'],
-            'customs_release': container['Customs'],
-            'discharge_date': container['DischargedDate'] or None,
-            'ready_for_pick_up': container['ReadyForDelivery'],
-            'appointment_date': container['AppointmentDate'],
-            'last_free_day': container['StoragePaidThroughDate'] or None,
-            'gate_out_date': container['GateOutDate'] or None,
-            'demurrage': container['Demurrage'] or None,
-            'carrier': container['LineId'],
-            'container_spec': container['SizeTypeHeight'],
-            'holds': container['Holds'][0] if container['Holds'] else None,
-            'cy_location': container['YardLocation'],
-            'vessel': container['VesselName'],
-            'mbl_no': container['BillOfLading'][0],
-            'weight': container['GrossWeight'],
-            'hazardous': container['HazardousClass'] or None,
-        }
-
     @staticmethod
     def __check_expected_container_format(container):
         if len(container['Holds']) >= 2:
@@ -175,4 +155,3 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         elif len(container['BillOfLading']) != 1:
             raise TerminalResponseFormatError(reason=f'Unexpected Mbl_no: `{container["BillOfLading"]}`')
-

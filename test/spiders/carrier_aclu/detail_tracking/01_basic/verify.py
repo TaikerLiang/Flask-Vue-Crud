@@ -54,6 +54,3 @@ def verify(results):
         local_date_time='01/15/18 15:12',
         vessel=None,
     )
-
-
-
