@@ -10,7 +10,6 @@ from .items import ExportFinalData, ExportErrorData
 
 
 class CarrierSpiderMiddleware:
-
     @classmethod
     def get_setting_name(cls):
         return f'{__name__}.{cls.__name__}'
@@ -74,7 +73,6 @@ def build_error_data_from_exc(exc_type, exc_value, exc_traceback) -> ExportError
 
 
 class Carrier400IsInvalidMblNoSpiderMiddleware:
-
     @classmethod
     def get_setting_name(cls):
         return f'{__name__}.{cls.__name__}'
@@ -93,7 +91,6 @@ class Carrier400IsInvalidMblNoSpiderMiddleware:
 
 
 class Carrier404IsInvalidMblNoSpiderMiddleware:
-
     @classmethod
     def get_setting_name(cls):
         return f'{__name__}.{cls.__name__}'

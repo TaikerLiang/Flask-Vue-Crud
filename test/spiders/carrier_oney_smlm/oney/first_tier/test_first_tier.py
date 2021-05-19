@@ -16,10 +16,13 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,base_url', [
-    ('01_single_container', 'SH9FSK690300', CarrierOneySpider.base_url),
-    ('02_multiple_containers', 'SZPVF2740514', CarrierOneySpider.base_url),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,base_url',
+    [
+        ('01_single_container', 'SH9FSK690300', CarrierOneySpider.base_url),
+        ('02_multiple_containers', 'SZPVF2740514', CarrierOneySpider.base_url),
+    ],
+)
 def test_first_tier_handle(sub, mbl_no, base_url, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
@@ -31,7 +34,7 @@ def test_first_tier_handle(sub, mbl_no, base_url, sample_loader):
         encoding='utf-8',
         request=Request(
             url=option.url,
-        )
+        ),
     )
 
     rule = FirstTierRoutingRule(CarrierOneySpider.base_url)
@@ -41,9 +44,12 @@ def test_first_tier_handle(sub, mbl_no, base_url, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'SH9ACBH1540', CarrierInvalidMblNoError),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,expect_exception',
+    [
+        ('e01_invalid_mbl_no', 'SH9ACBH1540', CarrierInvalidMblNoError),
+    ],
+)
 def test_main_info_handl_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
@@ -55,7 +61,7 @@ def test_main_info_handl_mbl_no_error(sub, mbl_no, expect_exception, sample_load
         encoding='utf-8',
         request=Request(
             url=option.url,
-        )
+        ),
     )
 
     rule = FirstTierRoutingRule(CarrierOneySpider.base_url)

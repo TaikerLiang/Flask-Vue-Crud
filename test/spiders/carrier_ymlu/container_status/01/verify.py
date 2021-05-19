@@ -27,4 +27,3 @@ def verify(results: List):
         location=LocationItem(name='KAOHSIUNG (KAOHSIUNG TERMINAL NO.3-#70)'),
         transport=None,
     )
-

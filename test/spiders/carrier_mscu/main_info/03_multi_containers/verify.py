@@ -46,4 +46,3 @@ def verify(results):
         place_of_deliv=LocationItem(name='LOS ANGELES, US'),
         latest_update='04.03.2020 at 04:05 W. Europe Standard Time',
     )
-

@@ -13,9 +13,20 @@ from urllib3.exceptions import ReadTimeoutError
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
-    CarrierInvalidMblNoError, CarrierResponseFormatError, SuspiciousOperationError, LoadWebsiteTimeOutFatal)
+    CarrierInvalidMblNoError,
+    CarrierResponseFormatError,
+    SuspiciousOperationError,
+    LoadWebsiteTimeOutFatal,
+)
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, LocationItem, ContainerStatusItem, ContainerItem, VesselItem, DebugItem)
+    BaseCarrierItem,
+    MblItem,
+    LocationItem,
+    ContainerStatusItem,
+    ContainerItem,
+    VesselItem,
+    DebugItem,
+)
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor, BaseTableCellExtractor
@@ -78,9 +89,7 @@ class ContentGetter:
     def __init__(self):
         options = webdriver.FirefoxOptions()
         options.add_argument('--headless')
-        options.add_argument(
-            f'user-agent={self._random_choose_user_agent()}'
-        )
+        options.add_argument(f'user-agent={self._random_choose_user_agent()}')
         self._driver = webdriver.Firefox(firefox_options=options)
 
     def search_and_return(self, mbl_no: str):
@@ -116,26 +125,10 @@ class ContentGetter:
     def _random_choose_user_agent():
         user_agents = [
             # firefox
-            (
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:80.0) '
-                'Gecko/20100101 '
-                'Firefox/80.0'
-            ),
-            (
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) '
-                'Gecko/20100101 '
-                'Firefox/79.0'
-            ),
-            (
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) '
-                'Gecko/20100101 '
-                'Firefox/78.0'
-            ),
-            (
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0.1) '
-                'Gecko/20100101 '
-                'Firefox/78.0.1'
-            ),
+            ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:80.0) ' 'Gecko/20100101 ' 'Firefox/80.0'),
+            ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) ' 'Gecko/20100101 ' 'Firefox/79.0'),
+            ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) ' 'Gecko/20100101 ' 'Firefox/78.0'),
+            ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0.1) ' 'Gecko/20100101 ' 'Firefox/78.0.1'),
         ]
 
         return random.choice(user_agents)
@@ -195,12 +188,15 @@ class MainInfoRoutingRule(BaseRoutingRule):
         vessel_list = self._arrange_vessel_list(raw_vessel_list)
 
         schedule_list = self._arrange_schedule_list(
-            raw_schedule_list, pol=main_info['pol'], etd=main_info['etd'], pod=main_info['pod'], eta=main_info['eta'],
+            raw_schedule_list,
+            pol=main_info['pol'],
+            etd=main_info['etd'],
+            pod=main_info['pod'],
+            eta=main_info['eta'],
         )
 
         if len(vessel_list) >= len(schedule_list):
-            raise CarrierResponseFormatError(
-                reason=f'vessel_list: `{vessel_list}`, schedule_list: `{schedule_list}`')
+            raise CarrierResponseFormatError(reason=f'vessel_list: `{vessel_list}`, schedule_list: `{schedule_list}`')
 
         for vessel_index, vessel in enumerate(vessel_list):
             departure_info = schedule_list[vessel_index]
@@ -360,20 +356,24 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 continue
 
             elif 'Transshipment' in schedule:
-                result.append(ScheduleInfo(
-                    port_type='Transshipment',
-                    port_name=schedule['Transshipment'],
-                    eta=schedule.get('Arrival Date', ''),
-                    etd=schedule.get('Sailing Date', ''),
-                ))
+                result.append(
+                    ScheduleInfo(
+                        port_type='Transshipment',
+                        port_name=schedule['Transshipment'],
+                        eta=schedule.get('Arrival Date', ''),
+                        etd=schedule.get('Sailing Date', ''),
+                    )
+                )
 
             elif 'POD' in schedule:
-                result.append(ScheduleInfo(
-                    port_type='POD',
-                    port_name=schedule['POD'],
-                    eta=schedule['Arrival Date'],
-                    etd='',
-                ))
+                result.append(
+                    ScheduleInfo(
+                        port_type='POD',
+                        port_name=schedule['POD'],
+                        eta=schedule['Arrival Date'],
+                        etd='',
+                    )
+                )
 
             elif 'POL' in schedule:
                 pass
@@ -384,12 +384,14 @@ class MainInfoRoutingRule(BaseRoutingRule):
         # add POD ?
         last_schedule = result[-1]
         if last_schedule.port_type != 'POD':
-            result.append(ScheduleInfo(
-                port_type='POD',
-                port_name=pod,
-                eta=eta,
-                etd='',
-            ))
+            result.append(
+                ScheduleInfo(
+                    port_type='POD',
+                    port_name=pod,
+                    eta=eta,
+                    etd='',
+                )
+            )
 
         return result
 
@@ -426,14 +428,19 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         container_status_list = []
         for left in table_locator.iter_left_header():
-            container_status_list.append({
-                'description': table_extractor.extract_cell(
-                    top='Activity', left=left, extractor=first_text_td_extractor),
-                'location': table_extractor.extract_cell(
-                    top='Location', left=left, extractor=first_text_td_extractor),
-                'local_time': table_extractor.extract_cell(
-                    top='Local Date & Time', left=left, extractor=first_text_td_extractor),
-            })
+            container_status_list.append(
+                {
+                    'description': table_extractor.extract_cell(
+                        top='Activity', left=left, extractor=first_text_td_extractor
+                    ),
+                    'location': table_extractor.extract_cell(
+                        top='Location', left=left, extractor=first_text_td_extractor
+                    ),
+                    'local_time': table_extractor.extract_cell(
+                        top='Local Date & Time', left=left, extractor=first_text_td_extractor
+                    ),
+                }
+            )
 
         return container_status_list
 
@@ -470,7 +477,6 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
 
 class AllTextCellExtractor(BaseTableCellExtractor):
-
     def __init__(self, css_query: str = '::text'):
         self.css_query = css_query
 
@@ -478,4 +484,3 @@ class AllTextCellExtractor(BaseTableCellExtractor):
         text_not_strip_list = cell.css(self.css_query).getall()
         text_list = [text.strip() for text in text_not_strip_list if isinstance(text, str)]
         return ' '.join(text_list)
-

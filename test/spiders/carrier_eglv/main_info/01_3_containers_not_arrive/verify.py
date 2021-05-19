@@ -4,7 +4,6 @@ from crawler.spiders.carrier_eglv import ContainerStatusRoutingRule, FilingStatu
 
 
 class Verifier:
-
     def verify(self, results):
         assert results[0] == MblItem(
             mbl_no='003902245109',
@@ -77,4 +76,3 @@ class Verifier:
             'Item': 'RlsStatus',
             'BL': '003902245109',
         }
-

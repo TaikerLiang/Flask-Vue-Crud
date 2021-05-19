@@ -17,11 +17,14 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,', [
-    ('01_single_container', 'SSPHJOR8017471'),
-    ('02_multiple_container', 'SSPHLAX0137876'),
-    ('03_multiple_vessel', 'SSPHLAX0137883'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,',
+    [
+        ('01_single_container', 'SSPHJOR8017471'),
+        ('02_multiple_container', 'SSPHLAX0137876'),
+        ('03_multiple_vessel', 'SSPHLAX0137883'),
+    ],
+)
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -35,8 +38,8 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
             url=option.url,
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: MainInfoRoutingRule.name,
-            }
-        )
+            },
+        ),
     )
 
     routing_rule = MainInfoRoutingRule()
@@ -46,9 +49,12 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'SSPHJOR801747', CarrierInvalidMblNoError),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,expect_exception',
+    [
+        ('e01_invalid_mbl_no', 'SSPHJOR801747', CarrierInvalidMblNoError),
+    ],
+)
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -62,8 +68,8 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_lo
             url=option.url,
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: MainInfoRoutingRule.name,
-            }
-        )
+            },
+        ),
     )
 
     routing_rule = MainInfoRoutingRule()

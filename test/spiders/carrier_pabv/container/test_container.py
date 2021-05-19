@@ -16,10 +16,13 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,container_id', [
-    ('01_normal', 'NKAI90055900', 'PCIU9477648'),
-    ('02_ignore_pending_events', 'NGRI90598700', 'PCIU0142052'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,container_id',
+    [
+        ('01_normal', 'NKAI90055900', 'PCIU9477648'),
+        ('02_ignore_pending_events', 'NGRI90598700', 'PCIU0142052'),
+    ],
+)
 def test_container_handler(sub, mbl_no, container_id, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
@@ -39,8 +42,8 @@ def test_container_handler(sub, mbl_no, container_id, sample_loader):
                 'mbl_no': mbl_no,
                 'cookies': '',
                 'container_id': container_id,
-            }
-        )
+            },
+        ),
     )
 
     rule = ContainerRoutingRule()

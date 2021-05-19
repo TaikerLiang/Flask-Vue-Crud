@@ -29,7 +29,7 @@ def verify(results):
         local_date_time='Mon 17 Jun 2019 00:36',
         description='Discharged',
         location=LocationItem(name='LOS ANGELES, CA'),
-        est_or_actual='A'
+        est_or_actual='A',
     )
 
     assert results[11] == ContainerStatusItem(
@@ -37,5 +37,5 @@ def verify(results):
         local_date_time='Mon 24 Jun 2019 17:15',
         description='Train arrival for import',
         location=LocationItem(name='HOUSTON, TX'),
-        est_or_actual='A'
+        est_or_actual='A',
     )

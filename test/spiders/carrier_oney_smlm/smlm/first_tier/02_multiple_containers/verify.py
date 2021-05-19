@@ -1,7 +1,10 @@
 from crawler.core_carrier.items import MblItem, ContainerItem
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.spiders.carrier_oney_smlm import (
-    VesselRoutingRule, ReleaseStatusRoutingRule, ContainerStatusRoutingRule, RailInfoRoutingRule
+    VesselRoutingRule,
+    ReleaseStatusRoutingRule,
+    ContainerStatusRoutingRule,
+    RailInfoRoutingRule,
 )
 
 
@@ -73,4 +76,3 @@ def verify(results):
         'f_cmd': RailInfoRoutingRule.f_cmd,
         'cop_no': 'CSHA9918403940',
     }
-

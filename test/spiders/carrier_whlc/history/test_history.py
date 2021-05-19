@@ -15,25 +15,24 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,container_no', [
-    ('01_basic', '0349531933', 'DFSU7597714'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,container_no',
+    [
+        ('01_basic', '0349531933', 'DFSU7597714'),
+    ],
+)
 def test_history_routing_rule(sub, mbl_no, sample_loader, container_no):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
     option = HistoryRoutingRule.build_request_option(
-        mbl_no=mbl_no, container_no=container_no, j_idt='', view_state='', cookies={})
+        mbl_no=mbl_no, container_no=container_no, j_idt='', view_state='', cookies={}
+    )
 
     response = TextResponse(
         url=option.url,
         body=html_text,
         encoding='utf-8',
-        request=Request(
-            url=option.url,
-            meta={
-                'container_key': container_no
-            }
-        )
+        request=Request(url=option.url, meta={'container_key': container_no}),
     )
 
     routing_rule = HistoryRoutingRule()

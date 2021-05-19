@@ -17,35 +17,17 @@ def _random_choice_user_agent() -> str:
             ' Chrome/79.0.3945.88'
             ' Safari/537.36'
         ),
-
         # firefox
-        (
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:67.0)'
-            ' Gecko/20100101'
-            ' Firefox/67.0'
-        ),
-        (
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:68.0)'
-            ' Gecko/20100101'
-            ' Firefox/68.0'
-        ),
-        (
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:69.0)'
-            ' Gecko/20100101'
-            ' Firefox/69.0'
-        ),
-        (
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:70.0)'
-            ' Gecko/20100101'
-            ' Firefox/70.0'
-        ),
+        ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:67.0)' ' Gecko/20100101' ' Firefox/67.0'),
+        ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:68.0)' ' Gecko/20100101' ' Firefox/68.0'),
+        ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:69.0)' ' Gecko/20100101' ' Firefox/69.0'),
+        ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:70.0)' ' Gecko/20100101' ' Firefox/70.0'),
     ]
 
     return random.choice(user_agents)
 
 
 class UserAgentDownloaderMiddleware:
-
     def __init__(self, user_agent: str):
         assert user_agent
         self.user_agent = user_agent
