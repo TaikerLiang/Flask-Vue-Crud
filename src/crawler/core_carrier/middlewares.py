@@ -10,7 +10,6 @@ from .items import ExportFinalData, ExportErrorData
 
 
 class CarrierSpiderMiddleware:
-
     @classmethod
     def get_setting_name(cls):
         return f'{__name__}.{cls.__name__}'
@@ -71,4 +70,3 @@ def build_error_data_from_exc(exc_type, exc_value, exc_traceback) -> ExportError
     error_data['traceback_info'] = tb_info_list
 
     return error_data
-

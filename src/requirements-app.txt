@@ -9,7 +9,7 @@ automat==20.2.0           # via twisted
 certifi==2020.12.5        # via requests
 cffi==1.14.4              # via cryptography
 chardet==4.0.0            # via requests
-click==7.0.0              # via -r src/requirements-app.in
+click==7.1.2              # via -r src/requirements-app.in
 constantly==15.1.0        # via twisted
 cryptography==3.3.1       # via pyopenssl, scrapy, service-identity
 cssselect==1.1.0          # via parsel, scrapy
@@ -45,6 +45,7 @@ twisted==20.3.0           # via scrapy
 urllib3==1.26.2           # via requests, selenium
 w3lib==1.22.0             # via itemloaders, parsel, scrapy
 zope.interface==5.2.0     # via scrapy, twisted
+anticaptchaofficial==1.0.31
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

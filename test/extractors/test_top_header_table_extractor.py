@@ -6,7 +6,8 @@ from crawler.extractors.table_extractors import TableExtractor, TopHeaderTableLo
 
 @pytest.fixture
 def top_header_table_selector():
-    return Selector(text="""
+    return Selector(
+        text="""
         <table>
             <thead>
                 <tr>
@@ -33,20 +34,24 @@ def top_header_table_selector():
                 </tr>
             </tbody>
         </table>
-    """)
+    """
+    )
 
 
-@pytest.mark.parametrize('top,left,expect', [
-    ('top1', 0, '(1, 1)'),
-    ('top2', 0, '(2, 1)'),
-    ('top3', 0, '(3, 1)'),
-    ('top1', 1, '(1, 2)'),
-    ('top2', 1, '(2, 2)'),
-    ('top3', 1, '(3, 2)'),
-    ('top1', 2, '(1, 3)'),
-    ('top2', 2, '(2, 3)'),
-    ('top3', 2, '(3, 3)'),
-])
+@pytest.mark.parametrize(
+    'top,left,expect',
+    [
+        ('top1', 0, '(1, 1)'),
+        ('top2', 0, '(2, 1)'),
+        ('top3', 0, '(3, 1)'),
+        ('top1', 1, '(1, 2)'),
+        ('top2', 1, '(2, 2)'),
+        ('top3', 1, '(3, 2)'),
+        ('top1', 2, '(1, 3)'),
+        ('top2', 2, '(2, 3)'),
+        ('top3', 2, '(3, 3)'),
+    ],
+)
 def test_get_td(top, left, expect, top_header_table_selector):
     locator = TopHeaderTableLocator()
     locator.parse(table=top_header_table_selector)
@@ -56,10 +61,13 @@ def test_get_td(top, left, expect, top_header_table_selector):
     assert result == expect
 
 
-@pytest.mark.parametrize('top,left', [
-    ('top1', 4),
-    ('top4', 0),
-])
+@pytest.mark.parametrize(
+    'top,left',
+    [
+        ('top1', 4),
+        ('top4', 0),
+    ],
+)
 def test_header_mismatch_error(top, left, top_header_table_selector):
     expect_exception = HeaderMismatchError
 

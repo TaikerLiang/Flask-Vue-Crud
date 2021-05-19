@@ -6,8 +6,11 @@ from typing import List, Pattern, Match, Dict, Union
 import scrapy
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
-    SuspiciousOperationError
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError,
+    CarrierInvalidMblNoError,
+    SuspiciousOperationError,
+)
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import BaseCarrierItem, ContainerItem, ContainerStatusItem, LocationItem, DebugItem
@@ -66,6 +69,7 @@ class CarrierAcluSpider(BaseCarrierSpider):
 
 # -------------------------------------------------------------------------------
 
+
 class TrackRoutingRule(BaseRoutingRule):
     name = 'TRACK'
 
@@ -106,7 +110,8 @@ class TrackRoutingRule(BaseRoutingRule):
 
         tds = table.css('td')
         mbl_not_active_rule = CssQueryTextStartswithMatchRule(
-            css_query='::text', startswith='Unit is no longer active, please contact ACL for additional information')
+            css_query='::text', startswith='Unit is no longer active, please contact ACL for additional information'
+        )
         mbl_not_active_td = find_selector_from(selectors=tds, rule=mbl_not_active_rule)
         if mbl_not_active_td:
             raise CarrierInvalidMblNoError()
@@ -265,14 +270,10 @@ class DetailTrackingRoutingRule(BaseRoutingRule):
                 ),
             ),
             TimeStatusParser(
-                patt=re.compile(
-                    r'^(?P<description>Stripped at) On (?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
-                ),
+                patt=re.compile(r'^(?P<description>Stripped at) On (?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'),
             ),
             TimeStatusParser(
-                patt=re.compile(
-                    r'^(?P<description>Stuffed at) On (?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'
-                ),
+                patt=re.compile(r'^(?P<description>Stuffed at) On (?P<local_date_time>\w{2}/\w{2}/\w{2} \w{2}:\w{2})'),
             ),
         ]
 
@@ -286,7 +287,7 @@ class DetailTrackingRoutingRule(BaseRoutingRule):
             url=f'{BASE_URL}{route}',
             meta={
                 'container_no': container_no,
-            }
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -352,7 +353,6 @@ class DetailTrackingRoutingRule(BaseRoutingRule):
 
 
 class BaseStatusParser:
-
     @abc.abstractmethod
     def match(self, status_text: str) -> Union[Match, None]:
         pass
@@ -363,7 +363,6 @@ class BaseStatusParser:
 
 
 class StatusTransformer:
-
     def __init__(self, parsers: List[BaseStatusParser]):
         self.parsers = parsers
 
@@ -380,7 +379,6 @@ class StatusTransformer:
 
 
 class TimeStatusParser(BaseStatusParser):
-
     def __init__(self, patt: Pattern):
         assert 'description' in patt.groupindex
         assert 'local_date_time' in patt.groupindex
@@ -400,7 +398,6 @@ class TimeStatusParser(BaseStatusParser):
 
 
 class LocationTimeStatusParser(BaseStatusParser):
-
     def __init__(self, patt: Pattern):
         assert 'description' in patt.groupindex
         assert 'location' in patt.groupindex
@@ -422,7 +419,6 @@ class LocationTimeStatusParser(BaseStatusParser):
 
 
 class VesselLocationTimeStatusParser(BaseStatusParser):
-
     def __init__(self, patt: Pattern):
         assert 'description' in patt.groupindex
         assert 'vessel' in patt.groupindex
@@ -446,7 +442,6 @@ class VesselLocationTimeStatusParser(BaseStatusParser):
 
 
 class LoadedFullWithETAStatusParser(BaseStatusParser):
-
     def __init__(self, patt: Pattern):
         assert 'load_event' in patt.groupindex
         assert 'vessel' in patt.groupindex
@@ -484,7 +479,6 @@ class LoadedFullWithETAStatusParser(BaseStatusParser):
 
 
 class LoadedFullStatusParser(BaseStatusParser):
-
     def __init__(self, patt: Pattern):
         assert 'load_event' in patt.groupindex
         assert 'vessel' in patt.groupindex

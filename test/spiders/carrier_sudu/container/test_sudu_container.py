@@ -16,26 +16,29 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,mbl_state, container_link_element', [
-    (
+@pytest.mark.parametrize(
+    'sub,mbl_no,mbl_state, container_link_element',
+    [
+        (
             '01_single_with_pol_pod',
             'SUDUN0NGB009496X',
             MblState.SINGLE,
             '',
-    ),
-    (
+        ),
+        (
             '02_multiple_without_pol_pod',
             'SUDU20GUC000717X',
             MblState.MULTIPLE,
             'j_idt6:searchForm:j_idt24:j_idt27:0:contDetailsLink',
-    ),
-    (
+        ),
+        (
             '03_multiple_with_voyage_spec_departure',
             'SUDUN9998ALTNBPS',
             MblState.MULTIPLE,
             'j_idt6:searchForm:j_idt24:j_idt27:1:contDetailsLink',
-    ),
-])
+        ),
+    ],
+)
 def test_container_handle(sub, mbl_no, mbl_state, container_link_element, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -61,8 +64,8 @@ def test_container_handle(sub, mbl_no, mbl_state, container_link_element, sample
                 'container_key': container_link_element,
                 'mbl_state': mbl_state,
                 'voyage_spec': voyage_spec,
-            }
-        )
+            },
+        ),
     )
 
     voyage_queue = Queue()

@@ -16,9 +16,12 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,container_no,expect_exception', [
-    ('e01_invalid_container_no', 'EMCU608509', TerminalInvalidContainerNoError),
-])
+@pytest.mark.parametrize(
+    'sub,container_no,expect_exception',
+    [
+        ('e01_invalid_container_no', 'EMCU608509', TerminalInvalidContainerNoError),
+    ],
+)
 def test_search_container_invalid_container_no_error(sub, container_no, expect_exception, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
@@ -30,7 +33,7 @@ def test_search_container_invalid_container_no_error(sub, container_no, expect_e
         encoding='utf-8',
         request=Request(
             url=request_option.url,
-        )
+        ),
     )
 
     rule = SearchContainerRoutingRule()

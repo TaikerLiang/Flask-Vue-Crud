@@ -15,11 +15,14 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,container_no,is_first', [
-    ('01_first_and_exist', 'TCNU6056527', True),
-    ('02_first_and_not_exist', 'EITU1651783', True),
-    ('03_not_first_and_exist', 'CAIU7086501', False),
-])
+@pytest.mark.parametrize(
+    'sub,container_no,is_first',
+    [
+        ('01_first_and_exist', 'TCNU6056527', True),
+        ('02_first_and_not_exist', 'EITU1651783', True),
+        ('03_not_first_and_exist', 'CAIU7086501', False),
+    ],
+)
 def test_container_handle(sub, container_no, is_first, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
@@ -46,4 +49,3 @@ def test_container_handle(sub, container_no, is_first, sample_loader):
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
-

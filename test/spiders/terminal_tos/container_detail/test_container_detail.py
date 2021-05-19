@@ -16,9 +16,12 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,container_no,', [
-    ('01_basic', 'TGBU6787455'),
-])
+@pytest.mark.parametrize(
+    'sub,container_no,',
+    [
+        ('01_basic', 'TGBU6787455'),
+    ],
+)
 def test_container_detail_routing_rule(sub, container_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
@@ -30,7 +33,7 @@ def test_container_detail_routing_rule(sub, container_no, sample_loader):
         encoding='utf-8',
         request=Request(
             url=request_option.url,
-        )
+        ),
     )
 
     rule = ContainerDetailRoutingRule()
@@ -40,9 +43,12 @@ def test_container_detail_routing_rule(sub, container_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,container_no,expect_exception', [
-    ('e01_invalid_container_no', 'TGBU6787', TerminalInvalidContainerNoError),
-])
+@pytest.mark.parametrize(
+    'sub,container_no,expect_exception',
+    [
+        ('e01_invalid_container_no', 'TGBU6787', TerminalInvalidContainerNoError),
+    ],
+)
 def test_container_detail_invalid_container_no_error(sub, container_no, expect_exception, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
@@ -54,7 +60,7 @@ def test_container_detail_invalid_container_no_error(sub, container_no, expect_e
         encoding='utf-8',
         request=Request(
             url=request_option.url,
-        )
+        ),
     )
 
     rule = ContainerDetailRoutingRule()

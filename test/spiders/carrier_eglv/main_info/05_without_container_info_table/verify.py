@@ -2,7 +2,6 @@ from crawler.core_carrier.items import MblItem, LocationItem
 
 
 class Verifier:
-
     def verify(self, results):
         assert results[0] == MblItem(
             mbl_no='003903689108',

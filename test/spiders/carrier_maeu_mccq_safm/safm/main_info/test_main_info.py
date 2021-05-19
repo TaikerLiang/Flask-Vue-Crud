@@ -17,10 +17,13 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,', [
-    ('01_single_container_not_finish', '712027741'),
-    ('02_multi_containers_not_finish', '712044685'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,',
+    [
+        ('01_single_container_not_finish', '712027741'),
+        ('02_multi_containers_not_finish', '712044685'),
+    ],
+)
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
@@ -33,7 +36,7 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
         encoding='utf-8',
         request=Request(
             url=option.url,
-        )
+        ),
     )
 
     routing_rule = MainInfoRoutingRule(search_type=SHIPMENT_TYPE_MBL)
@@ -52,13 +55,14 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_lo
     option = MainInfoRoutingRule.build_request_option(
         search_no=mbl_no, url_format=CarrierSafmSpider.base_url_format)
 
+
     response = TextResponse(
         url=option.url,
         body=jsontext,
         encoding='utf-8',
         request=Request(
             url=option.url,
-        )
+        ),
     )
 
     routing_rule = MainInfoRoutingRule(search_type=SHIPMENT_TYPE_MBL)

@@ -25,4 +25,3 @@ def verify(results):
         location=LocationItem(name='HENDERSON, CO ,UNITED STATES'),
         est_or_actual='E',
     )
-

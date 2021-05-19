@@ -9,9 +9,7 @@ def verify(results):
     )
 
     assert results[1] == ContainerItem(
-        container_key='FXLU1794508',
-        container_no='FXLU1794508',
-        final_dest_eta='2019-12-17T08:00:00.000'
+        container_key='FXLU1794508', container_no='FXLU1794508', final_dest_eta='2019-12-17T08:00:00.000'
     )
 
     assert results[2] == ContainerStatusItem(
@@ -35,9 +33,7 @@ def verify(results):
     )
 
     assert results[10] == ContainerItem(
-        container_key='FXLU1795947',
-        container_no='FXLU1795947',
-        final_dest_eta='2019-12-17T08:00:00.000'
+        container_key='FXLU1795947', container_no='FXLU1795947', final_dest_eta='2019-12-17T08:00:00.000'
     )
 
     assert results[11] == ContainerStatusItem(
@@ -59,4 +55,3 @@ def verify(results):
         voyage=None,
         est_or_actual='E',
     )
-

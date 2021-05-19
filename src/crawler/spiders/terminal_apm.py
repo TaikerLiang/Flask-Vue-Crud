@@ -147,4 +147,3 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         elif len(container['BillOfLading']) != 1:
             raise TerminalResponseFormatError(reason=f'Unexpected Mbl_no: `{container["BillOfLading"]}`')
-

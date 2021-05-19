@@ -15,14 +15,18 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,cntr_no,cop_no', [
-    ('01', 'SHSM9C747300', 'CCLU3451951', 'CSHA9827358813'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,cntr_no,cop_no',
+    [
+        ('01', 'SHSM9C747300', 'CCLU3451951', 'CSHA9827358813'),
+    ],
+)
 def test_rail_information_handle(sub, mbl_no, cntr_no, cop_no, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
     option = RailInfoRoutingRule.build_request_option(
-        container_no=cntr_no, cooperation=cop_no, base_url=CarrierSmlmSpider.base_url)
+        container_no=cntr_no, cooperation=cop_no, base_url=CarrierSmlmSpider.base_url
+    )
 
     response = TextResponse(
         url=option.url,
@@ -31,7 +35,7 @@ def test_rail_information_handle(sub, mbl_no, cntr_no, cop_no, sample_loader):
         request=Request(
             url=option.url,
             meta=option.meta,
-        )
+        ),
     )
 
     rule = RailInfoRoutingRule()
