@@ -41,7 +41,8 @@ class TideworksShareSpider(BaseMultiTerminalSpider):
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
         option = LoginRoutingRule.build_request_option(
-            container_nos=unique_container_nos, company_info=self.company_info)
+            container_nos=unique_container_nos, company_info=self.company_info
+        )
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -257,10 +258,10 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         hold = None if hold == 'None' else hold
 
         return {
-            'freight_release': extra_container_info['Line Release Status'],
-            'customs_release': extra_container_info['Customs Release Status'],
-            'last_free_day': extra_container_info['Satisfied Thru'],
-            'demurrage': extra_container_info.get('Demurrage', None),
+            'freight_release': extra_container_info.get('Line Release Status', ''),
+            'customs_release': extra_container_info.get('Customs Release Status', ''),
+            'last_free_day': extra_container_info.get('Satisfied Thru', ''),
+            'demurrage': extra_container_info.get('Demurrage', ''),
             'holds': hold,
         }
 
@@ -274,12 +275,12 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
 
         if len(div_text_list) == 4:
             key = div_text_list[0].strip()
-            key = key[:-1]      # delete colon
+            key = key[:-1]  # delete colon
             value = div_text_list[3].strip()
 
         elif len(div_text_list) in [2, 3]:
             key = div_text_list[0].strip()
-            key = key[:-1]      # delete colon
+            key = key[:-1]  # delete colon
             value = div_text_list[1].strip()
 
         elif len(div_text_list) == 1:  # only title
@@ -315,6 +316,6 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         div_text_list = div.css('::text').getall()
 
         key = div_text_list[0].strip()
-        key = key[:-1] # delete colon
+        key = key[:-1]  # delete colon
         value = ''.join(div_text_list[1:]).strip()
         return key, value

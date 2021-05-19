@@ -16,6 +16,7 @@ class ExportErrorData(BaseTerminalItem):
 
 
 class TerminalItem(BaseTerminalItem):
+    available = scrapy.Field()
     container_no = scrapy.Field()
     task_id = scrapy.Field()
     freight_release = scrapy.Field()
@@ -29,13 +30,29 @@ class TerminalItem(BaseTerminalItem):
     carrier = scrapy.Field()
     container_spec = scrapy.Field()
     holds = scrapy.Field()
-    cy_location = scrapy.Field()  # location ?
+    cy_location = scrapy.Field()
     vessel = scrapy.Field()
     mbl_no = scrapy.Field()
     voyage = scrapy.Field()
     weight = scrapy.Field()
     hazardous = scrapy.Field()
     chassis_no = scrapy.Field()
+
+    # tti field
+    demurrage_due = scrapy.Field()
+    pay_through_date = scrapy.Field()
+
+    # ets field
+    service = scrapy.Field()
+    carrier_release = scrapy.Field()
+    demurrage_status = scrapy.Field()
+
+    # tti & ets field
+    tmf = scrapy.Field()
+
+    # lbct field
+    owed = scrapy.Field()
+    full_empty = scrapy.Field()
 
     @property
     def key(self):
@@ -49,4 +66,3 @@ class DebugItem(BaseTerminalItem):
 class InvalidContainerNoItem(BaseTerminalItem):
     task_id = scrapy.Field()
     container_no = scrapy.Field()
-

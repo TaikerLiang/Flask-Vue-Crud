@@ -54,7 +54,7 @@ def verify(results):
         por_etd=None,
         pol_eta=None,
         final_dest_eta='21-Aug-2019 5:00 PM',
-        ready_for_pick_up=None
+        ready_for_pick_up=None,
     )
 
     assert results[3] == ContainerStatusItem(

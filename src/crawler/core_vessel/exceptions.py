@@ -24,4 +24,3 @@ class ProxyMaxRetryError(BaseVesselError):
 
     def build_error_data(self):
         return VesselErrorData(status=self.status, detail='<proxy-max-retry-error>')
-

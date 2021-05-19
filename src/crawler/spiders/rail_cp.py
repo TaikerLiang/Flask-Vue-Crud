@@ -25,7 +25,7 @@ class Restart:
 
 
 class RailCPSpider(BaseMultiRailSpider):
-    name = 'rail_cp'
+    name = 'rail_cacpr'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -165,7 +165,8 @@ class ContainerRoutingRule(BaseRoutingRule):
         container_infos = {}
         for left in table_locator.iter_left_header():
             c_no_and_spec = table_extractor.extract_cell(
-                top='Equipment', left=left, extractor=ContainerNoSpecCellExtractor())
+                top='Equipment', left=left, extractor=ContainerNoSpecCellExtractor()
+            )
             container_no = c_no_and_spec['container_no']
 
             xtd = table_extractor.extract_cell(top='Act Arrival', left=left, extractor=ArrivalCellExtractor())
@@ -173,7 +174,8 @@ class ContainerRoutingRule(BaseRoutingRule):
             ata = xtd['ata']
 
             holds_in_span = table_extractor.extract_cell(
-                    top='Holds', left=left, extractor=FirstTextTdExtractor(css_query='span::text'))
+                top='Holds', left=left, extractor=FirstTextTdExtractor(css_query='span::text')
+            )
             holds = table_extractor.extract_cell(top='Holds', left=left)
 
             container_infos[container_no] = {
@@ -250,9 +252,9 @@ class ContentGetter:
 
     def _login(self):
         # login
-        username_input = WebDriverWait(self._driver, 20).until(EC.presence_of_element_located(
-            (By.CSS_SELECTOR, 'input#username')
-        ))
+        username_input = WebDriverWait(self._driver, 20).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'input#username'))
+        )
         password_input = self._driver.find_element_by_id('password')
 
         time.sleep(random.randint(1, 3))
@@ -260,9 +262,9 @@ class ContentGetter:
         password_input.send_keys(self.PASS_WORD)
 
         random.randint(1, 3)
-        login_btn = WebDriverWait(self._driver, 20).until(EC.element_to_be_clickable(
-            (By.CSS_SELECTOR, 'button.login_button')
-        ))
+        login_btn = WebDriverWait(self._driver, 20).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, 'button.login_button'))
+        )
         login_btn.click()
 
         random.randint(1, 3)
@@ -273,30 +275,30 @@ class ContentGetter:
             self._is_first = False
 
         # find iframe to check page is done
-        WebDriverWait(self._driver, 60).until(EC.presence_of_element_located(
-            (By.CSS_SELECTOR, 'iframe')
-        ))
+        WebDriverWait(self._driver, 60).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'iframe')))
         self._driver.execute_script('document.getElementById("sapUshellDashboardPage-cont").scrollTo({top: 1200});')
-        track_a = WebDriverWait(self._driver, 5).until(EC.element_to_be_clickable(
-            (
-                By.CSS_SELECTOR,
-                'a[href="https://www8.cpr.ca/cx/sap/bc/ui5_ui5/ui2/ushell/shells/abap/Fiorilaunchpad.html?'
-                'appState=lean#ZLegacy-ttinter?Newtab_ApplicationID=TT_INTERMODAL"]',
+        track_a = WebDriverWait(self._driver, 5).until(
+            EC.element_to_be_clickable(
+                (
+                    By.CSS_SELECTOR,
+                    'a[href="https://www8.cpr.ca/cx/sap/bc/ui5_ui5/ui2/ushell/shells/abap/Fiorilaunchpad.html?'
+                    'appState=lean#ZLegacy-ttinter?Newtab_ApplicationID=TT_INTERMODAL"]',
+                )
             )
-        ))
+        )
         track_a.click()
 
         # switch to search page and search
         self._driver.switch_to.window(self._driver.window_handles[-1])
-        shipment_manage_a = WebDriverWait(self._driver, 30).until(EC.element_to_be_clickable(
-            (By.CSS_SELECTOR, 'a.Nav')
-        ))
+        shipment_manage_a = WebDriverWait(self._driver, 30).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, 'a.Nav'))
+        )
         random.randint(1, 3)
         shipment_manage_a.click()
 
-        search_input = WebDriverWait(self._driver, 30).until(EC.presence_of_element_located(
-            (By.CSS_SELECTOR, 'textarea')
-        ))
+        search_input = WebDriverWait(self._driver, 30).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'textarea'))
+        )
         random.randint(1, 3)
         search_input.send_keys('\n'.join(container_nos))
 
@@ -308,11 +310,8 @@ class ContentGetter:
         run_btn = self._driver.find_element_by_css_selector('input[value="Run"]')
         run_btn.click()
 
-        WebDriverWait(self._driver, 30).until(EC.presence_of_element_located(
-            (By.CSS_SELECTOR, 'table#rowTable')
-        ))
+        WebDriverWait(self._driver, 30).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'table#rowTable')))
         return self._driver.page_source
 
     def quit(self):
         self._driver.quit()
-

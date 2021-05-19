@@ -8,13 +8,28 @@ from selenium import webdriver
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import (
-    BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
+    BaseCarrierSpider,
+    CARRIER_DEFAULT_SETTINGS,
+    DISABLE_DUPLICATE_REQUEST_FILTER,
+)
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
 from crawler.core_carrier.items import (
-    MblItem, BaseCarrierItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData, DebugItem)
+    MblItem,
+    BaseCarrierItem,
+    LocationItem,
+    VesselItem,
+    ContainerItem,
+    ContainerStatusItem,
+    ExportErrorData,
+    DebugItem,
+)
 from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError, BaseCarrierError, SuspiciousOperationError, CarrierInvalidSearchNoError
+    CarrierResponseFormatError,
+    CarrierInvalidMblNoError,
+    BaseCarrierError,
+    SuspiciousOperationError,
+    CarrierInvalidSearchNoError
 )
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
@@ -103,6 +118,7 @@ class CarrierWhlcSpider(BaseCarrierSpider):
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
+
 # -------------------------------------------------------------------------------
 
 
@@ -154,8 +170,8 @@ class BillRoutingRule(BaseRoutingRule):
                 container_no=container_no,
             )
 
-            # detail page -- extract vessel
-            driver.go_detail_page(idx+2)
+            # detail page
+            driver.go_detail_page(idx + 2)
             detail_selector = Selector(text=driver.get_page_source())
             vessel_items = self._make_vessel_items(response=detail_selector)
             for item in vessel_items:
@@ -515,11 +531,13 @@ class BookingRoutingRule(BaseRoutingRule):
             local_date_time = table.extract_cell(top='日期', left=left, extractor=LocalDateTimeTdExtractor())
             location_name = table.extract_cell(top='櫃場名稱', left=left, extractor=LocationNameTdExtractor())
 
-            return_list.append({
-                'local_date_time': local_date_time,
-                'description': description,
-                'location_name': location_name,
-            })
+            return_list.append(
+                {
+                    'local_date_time': local_date_time,
+                    'description': description,
+                    'location_name': location_name,
+                }
+            )
 
         return return_list
 
@@ -617,7 +635,7 @@ class WhlcDriver:
             time.sleep(3)
             now_wait_time += 3
             loader = self._driver.find_element_by_css_selector('div#loader')
-    
+
     def go_detail_page(self, idx: int):
         self.wait_until_loader_dispear()
 
@@ -658,7 +676,7 @@ class ContainerListTableLocator(BaseTableLocator):
 
     def parse(self, table: Selector):
         title_tr = table.css('tr')[self.TR_TITLE_INDEX]
-        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN_INDEX:]
+        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN_INDEX :]
 
         title_text_list = title_tr.css('th::text').getall()
 
@@ -692,12 +710,12 @@ class ContainerListTableLocator(BaseTableLocator):
 
 class LocationLeftTableLocator(BaseTableLocator):
     """
-        +------------------------------------------------+ <tbody>
-        | Title 1 | Data 1  | Data 2 | Title    | Data   | <tr>
-        +---------+---------+--------+----------+--------+
-        | Title 2 |         |        | Title    | Data   | <tr>
-        +---------+---------+--------+----------+--------+ </tbody>
-        (       only use here        )
+    +------------------------------------------------+ <tbody>
+    | Title 1 | Data 1  | Data 2 | Title    | Data   | <tr>
+    +---------+---------+--------+----------+--------+
+    | Title 2 |         |        | Title    | Data   | <tr>
+    +---------+---------+--------+----------+--------+ </tbody>
+    (       only use here        )
     """
 
     TR_TITLE_INDEX_BEGIN = 1
@@ -711,13 +729,13 @@ class LocationLeftTableLocator(BaseTableLocator):
 
     def parse(self, table: Selector):
         top_index_set = set()
-        tr_list = table.css('tr')[self.TR_TITLE_INDEX_BEGIN:]
+        tr_list = table.css('tr')[self.TR_TITLE_INDEX_BEGIN :]
 
         for tr in tr_list:
             left_header = tr.css('th::text')[self.TH_TITLE_INDEX].get().strip()
             self._left_header_set.add(left_header)
 
-            data_td_list = tr.css('td')[self.TD_DATA_INDEX_BEGIN:self.TD_DATA_INDEX_END]
+            data_td_list = tr.css('td')[self.TD_DATA_INDEX_BEGIN : self.TD_DATA_INDEX_END]
             for top_index, td in enumerate(data_td_list):
                 top_index_set.add(top_index)
                 td_dict = self._td_map.setdefault(top_index, {})
@@ -735,12 +753,12 @@ class LocationLeftTableLocator(BaseTableLocator):
 
 class DateLeftTableLocator(BaseTableLocator):
     """
-        +------------------------------------------------+ <tbody>
-        | Title   | Data    | Data   | Title 1  | Data   | <tr>
-        +---------+---------+--------+----------+--------+
-        | Title   |         |        | Title 2  | Data   | <tr>
-        +---------+---------+--------+----------+--------+ </tbody>
-                                     (   only use here   )
+    +------------------------------------------------+ <tbody>
+    | Title   | Data    | Data   | Title 1  | Data   | <tr>
+    +---------+---------+--------+----------+--------+
+    | Title   |         |        | Title 2  | Data   | <tr>
+    +---------+---------+--------+----------+--------+ </tbody>
+                                 (   only use here   )
     """
 
     TR_TITLE_INDEX_BEGIN = 1
@@ -754,13 +772,13 @@ class DateLeftTableLocator(BaseTableLocator):
 
     def parse(self, table: Selector):
         top_index_set = set()
-        tr_list = table.css('tr')[self.TR_TITLE_INDEX_BEGIN:]
+        tr_list = table.css('tr')[self.TR_TITLE_INDEX_BEGIN :]
 
         for tr in tr_list:
             left_header = tr.css('th::text')[self.TH_TITLE_INDEX].get().strip()
             self._left_header_set.add(left_header)
 
-            data_td_list = tr.css('td')[self.TD_DATA_INDEX_BEGIN:self.TD_DATA_INDEX_END]
+            data_td_list = tr.css('td')[self.TD_DATA_INDEX_BEGIN : self.TD_DATA_INDEX_END]
             for top_index, td in enumerate(data_td_list):
                 top_index_set.add(top_index)
                 td_dict = self._td_map.setdefault(top_index, {})
@@ -778,17 +796,17 @@ class DateLeftTableLocator(BaseTableLocator):
 
 class ContainerStatusTableLocator(BaseTableLocator):
     """
-        +-----------------------------------+ <tbody>
-        | Title 1 | Title 2 | ... | Title N | <tr>
-        +---------+---------+-----+---------+
-        | Data    |         |     |         | <tr>
-        +---------+---------+-----+---------+
-        | Data    |         |     |         | <tr>
-        +---------+---------+-----+---------+
-        | ...     |         |     |         | <tr>
-        +---------+---------+-----+---------+
-        | Data    |         |     |         | <tr>
-        +---------+---------+-----+---------+ </tbody>
+    +-----------------------------------+ <tbody>
+    | Title 1 | Title 2 | ... | Title N | <tr>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr>
+    +---------+---------+-----+---------+
+    | ...     |         |     |         | <tr>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr>
+    +---------+---------+-----+---------+ </tbody>
     """
 
     TR_TITLE_INDEX = 0
@@ -800,7 +818,7 @@ class ContainerStatusTableLocator(BaseTableLocator):
 
     def parse(self, table: Selector):
         title_tr = table.css('tr')[self.TR_TITLE_INDEX]
-        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN_INDEX:]
+        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN_INDEX :]
 
         title_text_list = title_tr.css('th::text').getall()
 
@@ -832,7 +850,6 @@ class ContainerStatusTableLocator(BaseTableLocator):
 
 
 class DescriptionTdExtractor(BaseTableCellExtractor):
-
     def extract(self, cell: Selector) -> str:
         td_text = cell.css('::text').get()
         td_text = td_text.replace('\\n', '')
@@ -841,7 +858,6 @@ class DescriptionTdExtractor(BaseTableCellExtractor):
 
 
 class LocalDateTimeTdExtractor(BaseTableCellExtractor):
-
     def extract(self, cell: Selector) -> str:
         td_text = cell.css('::text').get()
         td_text = td_text.replace('\\n', '')
@@ -849,7 +865,6 @@ class LocalDateTimeTdExtractor(BaseTableCellExtractor):
 
 
 class LocationNameTdExtractor(BaseTableCellExtractor):
-
     def extract(self, cell: Selector) -> str:
         td_text = cell.css('::text').get()
         td_text = td_text.replace('\\n', '')

@@ -17,10 +17,13 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,', [
-    ('01_NKAI90055900', 'NKAI90055900'),
-    ('02_HUPE90310700', 'HUPE90310700'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,',
+    [
+        ('01_NKAI90055900', 'NKAI90055900'),
+        ('02_HUPE90310700', 'HUPE90310700'),
+    ],
+)
 def test_track_handler(sub, mbl_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
@@ -36,8 +39,8 @@ def test_track_handler(sub, mbl_no, sample_loader):
                 RuleManager.META_CARRIER_CORE_RULE_NAME: TrackRoutingRule.name,
                 'mbl_no': mbl_no,
                 'cookies': {},
-            }
-        )
+            },
+        ),
     )
 
     rule = TrackRoutingRule()
@@ -48,10 +51,13 @@ def test_track_handler(sub, mbl_no, sample_loader):
     verifier.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,sample_file,expect_exception', [
-    ('e01_invalid_mbl_no', 'NKAI00000000', 'sample.json', CarrierInvalidMblNoError),
-    ('e02_invalid_cookies', 'NKAI90055900', 'sample.html', CarrierResponseFormatError),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,sample_file,expect_exception',
+    [
+        ('e01_invalid_mbl_no', 'NKAI00000000', 'sample.json', CarrierInvalidMblNoError),
+        ('e02_invalid_cookies', 'NKAI90055900', 'sample.html', CarrierResponseFormatError),
+    ],
+)
 def test_track_handler_no_mbl_error(sub, mbl_no, sample_file, expect_exception, sample_loader):
     json_text = sample_loader.read_file(sub, sample_file)
 
@@ -67,8 +73,8 @@ def test_track_handler_no_mbl_error(sub, mbl_no, sample_file, expect_exception, 
                 RuleManager.META_CARRIER_CORE_RULE_NAME: TrackRoutingRule.name,
                 'mbl_no': mbl_no,
                 'cookies': '',
-            }
-        )
+            },
+        ),
     )
 
     rule = TrackRoutingRule()

@@ -4,10 +4,20 @@ from typing import Dict, List
 import scrapy
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
-    SuspiciousOperationError
+from crawler.core_carrier.exceptions import (
+    CarrierInvalidMblNoError,
+    CarrierResponseFormatError,
+    SuspiciousOperationError,
+)
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, ContainerItem, ContainerStatusItem, LocationItem, VesselItem, DebugItem)
+    BaseCarrierItem,
+    MblItem,
+    ContainerItem,
+    ContainerStatusItem,
+    LocationItem,
+    VesselItem,
+    DebugItem,
+)
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from, CssQueryTextStartswithMatchRule
@@ -81,7 +91,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f'{URL}?hidSearch=true&hidFromHomePage=false&hidSearchType=1&id=166&l=4&textContainerNumber={mbl_no}'
+            url=f'{URL}?hidSearch=true&hidFromHomePage=false&hidSearchType=1&id=166&l=4&textContainerNumber={mbl_no}',
         )
 
     def get_save_name(self, response) -> str:
@@ -197,14 +207,16 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 etd, pol = self._get_local_date_time_and_location(local_date_time_text=etd_text)
                 eta, pod = self._get_local_date_time_and_location(local_date_time_text=eta_text)
 
-                return_list.append({
-                    'etd': etd,
-                    'eta': eta,
-                    'vessel': vessel,
-                    'voyage': voyage,
-                    'pol_name': pol,
-                    'pod_name': pod,
-                })
+                return_list.append(
+                    {
+                        'etd': etd,
+                        'eta': eta,
+                        'vessel': vessel,
+                        'voyage': voyage,
+                        'pol_name': pol,
+                        'pod_name': pod,
+                    }
+                )
 
         return return_list
 
@@ -222,12 +234,16 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         return_list = []
         for left in table_locator.iter_left_headers():
-            return_list.append({
-                'container_no': table_extractor.extract_cell(
-                    top='Container No.', left=left, extractor=a_text_td_extractor),
-                'eta': table_extractor.extract_cell(
-                    top='Estimated Arrival Date', left=left, extractor=first_text_td_extractor),
-            })
+            return_list.append(
+                {
+                    'container_no': table_extractor.extract_cell(
+                        top='Container No.', left=left, extractor=a_text_td_extractor
+                    ),
+                    'eta': table_extractor.extract_cell(
+                        top='Estimated Arrival Date', left=left, extractor=first_text_td_extractor
+                    ),
+                }
+            )
 
         return return_list
 
@@ -286,28 +302,30 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
         return_list = []
         for left in table_locator.iter_left_headers():
-            return_list.append({
-                'description': table_extractor.extract_cell(top='Activity', left=left, extractor=td_extractor),
-                'location_name': table_extractor.extract_cell(top='Location', left=left, extractor=td_extractor),
-                'local_date_time': table_extractor.extract_cell(top='Date', left=left, extractor=td_extractor),
-            })
+            return_list.append(
+                {
+                    'description': table_extractor.extract_cell(top='Activity', left=left, extractor=td_extractor),
+                    'location_name': table_extractor.extract_cell(top='Location', left=left, extractor=td_extractor),
+                    'local_date_time': table_extractor.extract_cell(top='Date', left=left, extractor=td_extractor),
+                }
+            )
 
         return return_list
 
 
 class TrDataTableLocator(BaseTableLocator):
     """
-       +---------+---------+-----+---------+
-       | Title 1 | Title 2 | ... | Title N | <tr>
-       +---------+---------+-----+---------+
-       | Data    |         |     |         | <tr>
-       +---------+---------+-----+---------+
-       | Data    |         |     |         | <tr>
-       +---------+---------+-----+---------+
-       | ...     |         |     |         | <tr>
-       +---------+---------+-----+---------+
-       | Data    |         |     |         | <tr>
-       +---------+---------+-----+---------+
+    +---------+---------+-----+---------+
+    | Title 1 | Title 2 | ... | Title N | <tr>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr>
+    +---------+---------+-----+---------+
+    | ...     |         |     |         | <tr>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr>
+    +---------+---------+-----+---------+
     """
 
     TR_DATA_BEGIN = 1
@@ -318,7 +336,7 @@ class TrDataTableLocator(BaseTableLocator):
 
     def parse(self, table: scrapy.Selector):
         title_td_list = table.css('tr')[0].css('td strong')
-        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN:].css('[bgcolor]')
+        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN :].css('[bgcolor]')
 
         for title_index, title_td in enumerate(title_td_list):
             data_index = title_index

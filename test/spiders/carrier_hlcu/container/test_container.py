@@ -15,11 +15,14 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,container_no', [
-    ('01_finish', 'HLCUSHA1904CCVX4', 'HLBU2060615'),
-    ('02_not_finish', 'HLCUSHA1911AVPN9', 'UACU5837527'),
-    ('03_without_time', 'HLCULGB191208765', 'TCLU7285161'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,container_no',
+    [
+        ('01_finish', 'HLCUSHA1904CCVX4', 'HLBU2060615'),
+        ('02_not_finish', 'HLCUSHA1911AVPN9', 'UACU5837527'),
+        ('03_without_time', 'HLCULGB191208765', 'TCLU7285161'),
+    ],
+)
 def test_container_handler(sub, mbl_no, container_no, sample_loader):
     http_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -34,8 +37,8 @@ def test_container_handler(sub, mbl_no, container_no, sample_loader):
             meta={
                 'mbl_no': mbl_no,
                 'container_key': container_no,
-            }
-        )
+            },
+        ),
     )
 
     rule = ContainerRoutingRule()
