@@ -3,14 +3,13 @@ import pytest
 from crawler.spiders.carrier_oolu import CargoTrackingRule
 
 
-@pytest.mark.parametrize(
-    'mbl_no_text,expect',
-    [
-        ('Search Result - Bill of Lading Number  2109051600 ', '2109051600'),
-    ],
-)
-def test_parse_mbl_no_text(mbl_no_text, expect):
-    result = CargoTrackingRule._parse_mbl_no_text(mbl_no_text=mbl_no_text)
+@pytest.mark.parametrize('search_no_text,expect', [
+    ('Search Result - Bill of Lading Number  2109051600 ', '2109051600'),
+    ('Search Result - Booking Number  2109052988 ', '2109052988'),
+])
+def test_parse_mbl_no_text(search_no_text, expect):
+    result = CargoTrackingRule._parse_search_no_text(search_no_text=search_no_text)
+ 
     assert result == expect
 
 

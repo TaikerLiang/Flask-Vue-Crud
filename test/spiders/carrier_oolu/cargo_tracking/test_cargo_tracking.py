@@ -4,7 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierInvalidSearchNoError
 from crawler.spiders.carrier_oolu import CargoTrackingRule
 from test.spiders.carrier_oolu import cargo_tracking
 
@@ -30,7 +31,7 @@ def sample_loader(sample_loader):
 def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
     html_file = sample_loader.read_file(sub, 'sample.html')
 
-    option = CargoTrackingRule.build_request_option(mbl_no=mbl_no)
+    option = CargoTrackingRule.build_request_option(search_no=mbl_no)
     response = TextResponse(
         url=option.url,
         body=html_file,
@@ -41,23 +42,19 @@ def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
         ),
     )
 
-    rule = CargoTrackingRule(driver=None)
-    results = list(rule._handle_response(response=response))
+    results = list(CargoTrackingRule._handle_response(response=response, search_type=SHIPMENT_TYPE_MBL))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize(
-    'sub,mbl_no,expect_exception',
-    [
-        ('e01_invalid_mbl_no', 'OOLU0000000000', CarrierInvalidMblNoError),
-    ],
-)
+@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
+    ('e01_invalid_mbl_no', 'OOLU0000000000', CarrierInvalidSearchNoError),
+])
 def test_cargo_tracking_handler_no_mbl_error(sub, mbl_no, expect_exception, sample_loader):
     html_file = sample_loader.read_file(sub, 'sample.html')
 
-    option = CargoTrackingRule.build_request_option(mbl_no=mbl_no)
+    option = CargoTrackingRule.build_request_option(search_no=mbl_no)
 
     response = TextResponse(
         url=option.url,
@@ -69,6 +66,5 @@ def test_cargo_tracking_handler_no_mbl_error(sub, mbl_no, expect_exception, samp
         ),
     )
 
-    rule = CargoTrackingRule(driver=None)
     with pytest.raises(expect_exception):
-        list(rule._handle_response(response=response))
+        list(CargoTrackingRule._handle_response(response=response, search_type=SHIPMENT_TYPE_MBL))
