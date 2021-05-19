@@ -4,7 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
+from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierInvalidSearchNoError
 from crawler.spiders.carrier_maeu_mccq_safm import MainInfoRoutingRule, CarrierMccqSpider
 from test.spiders.carrier_maeu_mccq_safm.mccq import main_info
 
@@ -26,7 +27,7 @@ def sample_loader(sample_loader):
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
-    option = MainInfoRoutingRule.build_request_option(mbl_no=mbl_no, url_format=CarrierMccqSpider.base_url_format)
+    option = MainInfoRoutingRule.build_request_option(search_no=mbl_no, url_format=CarrierMccqSpider.base_url_format)
 
     response = TextResponse(
         url=option.url,
@@ -37,23 +38,20 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
         ),
     )
 
-    routing_rule = MainInfoRoutingRule()
+    routing_rule = MainInfoRoutingRule(search_type=SHIPMENT_TYPE_MBL)
     results = list(routing_rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize(
-    'sub,mbl_no,expect_exception',
-    [
-        ('e01_invalid_mbl_no', '999455999', CarrierInvalidMblNoError),
-    ],
-)
+@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
+    ('e01_invalid_mbl_no', '999455999', CarrierInvalidSearchNoError),
+])
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
-    option = MainInfoRoutingRule.build_request_option(mbl_no=mbl_no, url_format=CarrierMccqSpider.base_url_format)
+    option = MainInfoRoutingRule.build_request_option(search_no=mbl_no, url_format=CarrierMccqSpider.base_url_format)
 
     response = TextResponse(
         url=option.url,
@@ -64,7 +62,7 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_lo
         ),
     )
 
-    routing_rule = MainInfoRoutingRule()
+    routing_rule = MainInfoRoutingRule(search_type=SHIPMENT_TYPE_MBL)
 
     with pytest.raises(expect_exception):
         list(routing_rule.handle(response=response))
