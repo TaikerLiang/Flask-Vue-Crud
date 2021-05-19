@@ -16,11 +16,14 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,container_no,terminal_id', [
-    ('01', 'EISU9133920', TerminalApmLASpider.terminal_id),
-    ('02_holds_empty', 'EGHU9572519', TerminalApmLASpider.terminal_id),
-    ('03_lfd_exist', 'EGHU9427104', TerminalApmLASpider.terminal_id),
-])
+@pytest.mark.parametrize(
+    'sub,container_no,terminal_id',
+    [
+        ('01', 'EISU9133920', TerminalApmLASpider.terminal_id),
+        ('02_holds_empty', 'EGHU9572519', TerminalApmLASpider.terminal_id),
+        ('03_lfd_exist', 'EGHU9427104', TerminalApmLASpider.terminal_id),
+    ],
+)
 def test_container_handle(sub, container_no, terminal_id, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
@@ -42,9 +45,11 @@ def test_container_handle(sub, container_no, terminal_id, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,container_no,terminal_id,expect_exception', [
-    ('e01_no_result', 'EISU9133921', 'c56ab48b-586f-4fd2-9a1f-06721c94f3bb', TerminalInvalidContainerNoError),
-    ]
+@pytest.mark.parametrize(
+    'sub,container_no,terminal_id,expect_exception',
+    [
+        ('e01_no_result', 'EISU9133921', 'c56ab48b-586f-4fd2-9a1f-06721c94f3bb', TerminalInvalidContainerNoError),
+    ],
 )
 def test_container_handle_container_error(sub, container_no, terminal_id, expect_exception, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
@@ -64,4 +69,3 @@ def test_container_handle_container_error(sub, container_no, terminal_id, expect
 
     with pytest.raises(expect_exception):
         list(rule.handle(response=response))
-

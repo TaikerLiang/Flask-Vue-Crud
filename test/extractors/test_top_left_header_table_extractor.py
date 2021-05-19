@@ -6,7 +6,8 @@ from crawler.extractors.table_extractors import TableExtractor, TopLeftHeaderTab
 
 @pytest.fixture
 def top_left_header_table_selector():
-    return Selector(text="""
+    return Selector(
+        text="""
         <table>
             <thead>
                 <tr>
@@ -37,20 +38,24 @@ def top_left_header_table_selector():
                 </tr>
             </tbody>
         </table>
-    """)
+    """
+    )
 
 
-@pytest.mark.parametrize('top,left,expect', [
-    ('top1', 'left1', '(1, 1)'),
-    ('top1', 'left2', '(1, 2)'),
-    ('top1', 'left3', '(1, 3)'),
-    ('top2', 'left1', '(2, 1)'),
-    ('top2', 'left2', '(2, 2)'),
-    ('top2', 'left3', '(2, 3)'),
-    ('top3', 'left1', '(3, 1)'),
-    ('top3', 'left2', '(3, 2)'),
-    ('top3', 'left3', '(3, 3)'),
-])
+@pytest.mark.parametrize(
+    'top,left,expect',
+    [
+        ('top1', 'left1', '(1, 1)'),
+        ('top1', 'left2', '(1, 2)'),
+        ('top1', 'left3', '(1, 3)'),
+        ('top2', 'left1', '(2, 1)'),
+        ('top2', 'left2', '(2, 2)'),
+        ('top2', 'left3', '(2, 3)'),
+        ('top3', 'left1', '(3, 1)'),
+        ('top3', 'left2', '(3, 2)'),
+        ('top3', 'left3', '(3, 3)'),
+    ],
+)
 def test_get_td(top, left, expect, top_left_header_table_selector):
     locator = TopLeftHeaderTableLocator()
     locator.parse(table=top_left_header_table_selector)
@@ -60,10 +65,13 @@ def test_get_td(top, left, expect, top_left_header_table_selector):
     assert result == expect
 
 
-@pytest.mark.parametrize('top,left', [
-    ('top1', 'NOT EXIST'),
-    ('NOT EXIST', 'left1'),
-])
+@pytest.mark.parametrize(
+    'top,left',
+    [
+        ('top1', 'NOT EXIST'),
+        ('NOT EXIST', 'left1'),
+    ],
+)
 def test_header_mismatch_error(top, left, top_left_header_table_selector):
     expect_exception = HeaderMismatchError
 

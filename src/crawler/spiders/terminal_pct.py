@@ -243,13 +243,13 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
 
         if len(div_text_list) == 4:
             key = div_text_list[0].strip()
-            key = key[:-1]      # delete colon
+            key = key[:-1]  # delete colon
             value = div_text_list[3].strip()
             return key, value
 
         elif len(div_text_list) in [2, 3]:
             key = div_text_list[0].strip()
-            key = key[:-1]      # delete colon
+            key = key[:-1]  # delete colon
             value = div_text_list[1].strip()
             return key, value
 
@@ -261,6 +261,6 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         div_text_list = div.css('::text').getall()
 
         key = div_text_list[0].strip()
-        key = key[:-1]      # delete colon
+        key = key[:-1]  # delete colon
         value = ''.join(div_text_list[1:]).strip()
         return key, value

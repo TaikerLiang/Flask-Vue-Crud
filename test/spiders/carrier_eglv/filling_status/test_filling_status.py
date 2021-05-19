@@ -16,11 +16,14 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,', [
-    ('01_only_us', '003902245109'),
-    ('02_ca_and_us', '143986250473'),
-    ('03_without_us', '149905244604'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,',
+    [
+        ('01_only_us', '003902245109'),
+        ('02_ca_and_us', '143986250473'),
+        ('03_without_us', '149905244604'),
+    ],
+)
 def test_filing_status_handler(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
@@ -32,8 +35,8 @@ def test_filing_status_handler(sub, mbl_no, sample_loader):
             url='https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do',
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: FilingStatusRoutingRule.name,
-            }
-        )
+            },
+        ),
     )
 
     rule = FilingStatusRoutingRule()

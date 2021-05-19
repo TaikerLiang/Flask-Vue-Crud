@@ -1,0 +1,206 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+
+
+
+
+
+
+<script language="JavaScript">
+function selectContainer(container) {
+	document.forms["searchFormBean"].containerSelectedIndexParam.value=container;
+	document.forms["searchFormBean"].submit();
+	return false;
+}
+function clearResults() {
+		document.getElementById("results-div").style.display="block";
+		document.getElementById("results-div").style.display="none";
+		document.getElementById("results-div").style.visibilty="hidden";
+}
+
+function changeTextFieldVisibility() {
+	if(document.forms["searchFormBean"].searchType.value=="container") {
+		document.getElementById("textDiv").style.display="block";
+		document.getElementById("textDiv").style.display="none";
+		document.getElementById("textDiv").style.visibilty="hidden";
+		document.getElementById("textAreaDiv").style.display="";
+		document.getElementById("textAreaDiv").style.display="";
+		document.getElementById("textAreaDiv").style.visibilty="";
+		document.getElementById("textAreaDivText").style.display="";
+		document.getElementById("textAreaDivText").style.display="";
+		document.getElementById("textAreaDivText").style.visibilty="";
+	} else {
+		document.getElementById("textDiv").style.display="";
+		document.getElementById("textDiv").style.display="";
+		document.getElementById("textDiv").style.visibilty="";
+		document.getElementById("textAreaDiv").style.display="block";
+		document.getElementById("textAreaDiv").style.display="none";
+		document.getElementById("textAreaDiv").style.visibilty="hidden";
+		document.getElementById("textAreaDivText").style.display="block";
+		document.getElementById("textAreaDivText").style.display="none";
+		document.getElementById("textAreaDivText").style.visibilty="hidden";
+	}
+}
+
+</script>
+
+
+
+<form name="searchFormBean" method="post" action="/GlobalTerminal/globalSearch.do">
+<head>
+   <title>Search Form</title>
+   	<link rel="stylesheet" href="/GlobalTerminal/search-form.css" type="text/css">
+   	<link rel="stylesheet" href="/GlobalTerminal/search-form.css" type="text/css">
+</head>
+<body bgcolor="white">
+	<input type="hidden" name="containerSelectedIndexParam" value="">	
+	
+	<div class="header">GCT Bayonne LP</div>
+	<hr>
+	<center>
+	
+	
+
+	
+	
+	
+	<!-- Data Entry Tables -->
+	<table border=0>
+	<tr>
+		<td class="top-table-col-1">
+			<table border=0>
+				<tr>
+					<td class="data-entry-col-1">Enter Your ID:</td>
+					<td class="data-entry-col-1"><input type="text" name="searchId" value="BGLOB" class="id-entry-field"></td>
+				</tr>
+			</table>
+		</td>
+		<td>
+			<table border=0>
+				<tr><td class="data-entry-col-2">Please be advised that our website has changed.&nbsp;&nbsp;For those who<br/>do not have a 5 letter "short code", please enter the code BGLOB as your ID.</td></tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td class="top-table-col-1">
+			<table border=0>
+				<tr>
+					<td class="data-entry-col-1">Search:</td>
+					<td class="data-entry-col-1">
+						<select name="searchType" onchange="changeTextFieldVisibility();clearResults();" class="search-type-select"><option value="container" selected="selected">Container #</option>
+						<option value="booking">Booking #</option>
+						<option value="bol">Bill of Lading #</option>
+						<!--<option value="release">Release #</option>--></select>
+					</td>
+				</tr>
+				<tr><td></td><td><div id="textAreaDivText" style="font-family: Arial;font-size: 8pt;display='block'; display='none'; visibilty='hidden'">Enter up to 20 container<br/>numbers (one per line)</div></td></tr>
+			</table>
+		</td>
+		<td>
+			<table border=0>
+				<tr>
+				<td>
+					<div id="textAreaDiv" style="display='block'; display='none'; visibilty='hidden'"><textarea name="searchTextArea" cols="40" rows="5" class="search-text-area">KKFU7634200</textarea></div>
+					<div id="textDiv" style="display='block'; display='none'; visibilty='hidden'"><input type="text" name="searchText" size="32" value="" class="search-entry-field"></div>
+				</td>
+				<td class="search-button-column"><input type="submit" name="buttonClicked" value="Search"></td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	</table>
+	</center>
+	
+	<br/>
+
+<div id="results-div">	
+	<!-- No Results Found Messages -->
+	<center>
+		
+		
+			
+		
+		
+		
+	
+	</center>
+	
+	<!-- Container Summary Listing Table for when we have more than one container result -->
+	
+	
+	<!-- Bill of Lading Detail -->
+	
+	
+	
+	
+	<!-- Selected Container Detail Section -->
+	
+	
+	<!-- Single Container Results -->
+	
+		<center>
+		<div class="container">Container Inquiry</div>
+		<br/>
+		<table>
+		
+			
+				<!-- <tr><td colspan="4" style="font-family: Arial;font-size: 8pt;color: black;"><center>Execution Time: </center><br/></td></tr> -->
+				<tr><td class="label-column">Container #:</td><td class="data-column">KKFU7634200</td><td class="label-column">Freight Released:	</td><td class="data-column">Yes</td></tr>	
+				<tr><td class="label-column">Bill of Lading:</td><td class="data-column">Yes</td><td class="label-column">Customs Released:</td><td class="data-column">Yes</td></tr>
+				
+				
+				<tr><td class="label-column">Line:</td><td class="data-column">ONE</td><td class="label-column">Exam Hold:</td><td class="data-column">No</td></tr>
+				<tr><td class="label-column">Container Type:</td><td class="data-column">40-GP-96</td><td class="label-column">Line Hold:</td><td class="data-column">No</td></tr>
+				<tr><td class="label-column">Cargo Type:</td><td class="data-column">GP</td><td class="label-column">Terminal Hold:</td><td class="data-column">No</td></tr>
+				<tr><td class="label-column">Vessel:</td><td class="data-column">HYUNDAI HOPE</td><td class="label-column">Payment Hold:</td><td class="data-column">No</td></tr>
+				<tr><td class="label-column">Voyage:</td><td class="data-column">042</td><td class="label-column">In Yard:</td><td class="data-column">No</td></tr>
+				
+				
+				<tr><td class="label-column">Remarks:</td><td class="data-column"></td><td class="label-column">Available for Pickup:</td>
+				
+				
+					<td class="data-column-red">No</td>
+				
+				</tr>
+				
+				<tr><td></td><td></td><td class="label-column">Discharge Date:</td><td class="data-column">02/09/2021</td></tr>
+				<tr><td></td><td></td><td class="label-column">Gate Out Date:</td><td class="data-column">02/11/2021</td></tr>
+				<tr><td></td><td></td><td class="label-column">Days In Yard:</td><td class="data-column">2</td></tr>
+				
+				<tr><td></td><td></td><td class="label-column">Last Free Day:</td>
+				
+				
+				
+					<td class="data-column">02/15/2021</td>
+				
+				</tr>
+				
+				<tr><td></td><td></td><td></td><td></td></tr>
+
+		
+		
+			
+				<tr><td></td><td></td><td class="label-column">Demurrage:</td><td class="data-column"></td></tr>
+				<tr><td></td><td></td><td class="label-column">Amount Paid:</td><td class="data-column"></td></tr>
+				<tr><td></td><td></td><td class="label-column">Amount Guaranteed:</td><td class="data-column"></td></tr>
+				<tr><td></td><td></td><td class="label-column">Amount Due:</td><td class="data-column"></td></tr>
+				<tr><td></td><td></td><td class="label-column">Customs Charge:</td><td class="data-column"></td></tr>
+			
+		
+		</table>
+		</center>
+	
+	
+	<!-- Booking Results -->
+	
+
+
+</div>		
+		
+</body>
+</form>
+
+<SCRIPT language="JavaScript">
+	changeTextFieldVisibility();
+</SCRIPT>
+

@@ -8,4 +8,3 @@ def verify(results):
 
     assert isinstance(results[9], RequestOption)
     assert results[9].rule_name == DetailTrackingRoutingRule.name
-

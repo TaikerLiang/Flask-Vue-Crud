@@ -6,9 +6,7 @@ import pytest
 
 @pytest.fixture
 def sample_loader():
-
     class _Loader:
-
         def __init__(self):
             self.sample_package = None
             self.sample_path = None

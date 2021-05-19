@@ -14,15 +14,19 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,scac,vessel_name,carrier_id,vessel_gid', [
-    ('01_basic', 'COSU', 'CMA CGM FIDELIO', '2', 'V000001036'),
-])
+@pytest.mark.parametrize(
+    'sub,scac,vessel_name,carrier_id,vessel_gid',
+    [
+        ('01_basic', 'COSU', 'CMA CGM FIDELIO', '2', 'V000001036'),
+    ],
+)
 def test_vessel_schedule_routing_rule(sub, scac, vessel_name, carrier_id, vessel_gid, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
     cookie = {}
     option = VesselScheduleRoutingRule.build_request_option(
-        scac=scac, vessel_name=vessel_name, carrier_id=carrier_id, vessel_gid=vessel_gid, cookie=cookie)
+        scac=scac, vessel_name=vessel_name, carrier_id=carrier_id, vessel_gid=vessel_gid, cookie=cookie
+    )
 
     response = TextResponse(
         url=option.url,

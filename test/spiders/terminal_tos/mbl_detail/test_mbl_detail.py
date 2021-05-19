@@ -15,9 +15,12 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,', [
-    ('01_basic', 'YMLUW202129800'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,',
+    [
+        ('01_basic', 'YMLUW202129800'),
+    ],
+)
 def test_mbl_detail_routing_rule(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
@@ -30,7 +33,7 @@ def test_mbl_detail_routing_rule(sub, mbl_no, sample_loader):
         request=Request(
             url=request_option.url,
             meta={'mbl_no': mbl_no},
-        )
+        ),
     )
 
     rule = MblDetailRoutingRule()
@@ -40,9 +43,12 @@ def test_mbl_detail_routing_rule(sub, mbl_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no',[
-    ('w01_invalid_mbl_no', 'YMLUW2021298'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no',
+    [
+        ('w01_invalid_mbl_no', 'YMLUW2021298'),
+    ],
+)
 def test_mbl_detail_handle_warning(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
@@ -55,7 +61,7 @@ def test_mbl_detail_handle_warning(sub, mbl_no, sample_loader):
         request=Request(
             url=request_option.url,
             meta={'mbl_no': mbl_no},
-        )
+        ),
     )
 
     rule = MblDetailRoutingRule()

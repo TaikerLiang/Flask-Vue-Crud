@@ -42,3 +42,19 @@ class ProxyMaxRetryError(BaseTerminalError):
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail='<proxy-max-retry-error>')
 
+
+class LoadWebsiteTimeOutFatal(BaseTerminalError):
+    status = TERMINAL_RESULT_STATUS_FATAL
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail='<load-website-timeout-fatal>')
+
+
+class LoginNotSuccessFatal(BaseTerminalError):
+    status = TERMINAL_RESULT_STATUS_FATAL
+
+    def __init__(self, success_status):
+        self.status = success_status
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail=f'<login-not-success-fatal> status: `{self.status}`')

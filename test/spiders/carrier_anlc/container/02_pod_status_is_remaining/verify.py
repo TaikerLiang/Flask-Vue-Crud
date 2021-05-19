@@ -28,5 +28,5 @@ def verify(results):
         local_date_time='Wed 11 Dec 2019 03:00',
         description='Arrival final port of discharge',
         location=LocationItem(name='ADELAIDE'),
-        est_or_actual='E'
+        est_or_actual='E',
     )

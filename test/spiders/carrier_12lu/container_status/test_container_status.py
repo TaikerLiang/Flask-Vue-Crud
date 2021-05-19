@@ -16,11 +16,14 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,page_no', [
-    ('01_single_container', 'NOSNB9GX16042', 1),
-    ('02_multiple_pages_not_finished', 'NOSNB9TZ35829', 1),
-    ('03_multiple_pages_finished', 'NOSNB9TZ35829', 2),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,page_no',
+    [
+        ('01_single_container', 'NOSNB9GX16042', 1),
+        ('02_multiple_pages_not_finished', 'NOSNB9TZ35829', 1),
+        ('03_multiple_pages_finished', 'NOSNB9TZ35829', 2),
+    ],
+)
 def test_container_status_handle(sub, mbl_no, page_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
@@ -33,7 +36,7 @@ def test_container_status_handle(sub, mbl_no, page_no, sample_loader):
         request=Request(
             url=option.url,
             meta=option.meta,
-        )
+        ),
     )
 
     routing_rule = ContainerStatusRoutingRule()
@@ -43,9 +46,12 @@ def test_container_status_handle(sub, mbl_no, page_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,page_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'NOSNB9GX1604', 1, CarrierInvalidMblNoError),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,page_no,expect_exception',
+    [
+        ('e01_invalid_mbl_no', 'NOSNB9GX1604', 1, CarrierInvalidMblNoError),
+    ],
+)
 def test_container_status_handler_mbl_no_error(sub, mbl_no, page_no, expect_exception, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
@@ -58,7 +64,7 @@ def test_container_status_handler_mbl_no_error(sub, mbl_no, page_no, expect_exce
         request=Request(
             url=option.url,
             meta=option.meta,
-        )
+        ),
     )
 
     routing_rule = ContainerStatusRoutingRule()

@@ -16,10 +16,13 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,', [
-    ('01_single_container', 'CRSU9164589'),
-    ('02_multi_containers', 'S317458555'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,',
+    [
+        ('01_single_container', 'CRSU9164589'),
+        ('02_multi_containers', 'S317458555'),
+    ],
+)
 def test_track_routing_rule(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
@@ -32,7 +35,7 @@ def test_track_routing_rule(sub, mbl_no, sample_loader):
         request=Request(
             url=option.url,
             meta=option.meta,
-        )
+        ),
     )
 
     rule = TrackRoutingRule()
@@ -42,23 +45,20 @@ def test_track_routing_rule(sub, mbl_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'CRSU9164588', CarrierInvalidMblNoError),
-    ('e02_mbl_no_not_activate', 'GCNU4723103', CarrierInvalidMblNoError),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,expect_exception',
+    [
+        ('e01_invalid_mbl_no', 'CRSU9164588', CarrierInvalidMblNoError),
+        ('e02_mbl_no_not_activate', 'GCNU4723103', CarrierInvalidMblNoError),
+    ],
+)
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
     option = TrackRoutingRule.build_request_option(mbl_no=mbl_no)
 
     response = TextResponse(
-        url=option.url,
-        body=httptext,
-        encoding='utf-8',
-        request=Request(
-            url=option.url,
-            meta=option.meta
-        )
+        url=option.url, body=httptext, encoding='utf-8', request=Request(url=option.url, meta=option.meta)
     )
 
     rule = TrackRoutingRule()

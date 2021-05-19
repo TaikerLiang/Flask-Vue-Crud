@@ -10,7 +10,6 @@ from crawler.core_vessel.exceptions import LoadWebsiteTimeOutError
 
 
 class BaseChromeDriver:
-
     def __init__(self, extra_chrome_options: List):
         options = webdriver.ChromeOptions()
         options.add_argument("--disable-extensions")
@@ -25,8 +24,9 @@ class BaseChromeDriver:
 
     def _click_button(self, xpath: str, wait_time: int):
         try:
-            WebDriverWait(self._browser, wait_time).until(expected_conditions.visibility_of_element_located(
-                (By.XPATH, xpath)))
+            WebDriverWait(self._browser, wait_time).until(
+                expected_conditions.visibility_of_element_located((By.XPATH, xpath))
+            )
         except TimeoutException as e:
             raise LoadWebsiteTimeOutError()
 

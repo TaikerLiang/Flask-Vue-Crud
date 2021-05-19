@@ -17,11 +17,14 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no', [
-    ('01_single_container', '0249538702'),
-    ('02_multiple_container', '0349531933'),
-    ('03_no_more_detail', '0249558425'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no',
+    [
+        ('01_single_container', '0249538702'),
+        ('02_multiple_container', '0349531933'),
+        ('03_no_more_detail', '0249558425'),
+    ],
+)
 def test_list_routing_rule(sub, mbl_no, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -36,9 +39,9 @@ def test_list_routing_rule(sub, mbl_no, sample_loader):
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: ListRoutingRule.name,
                 'mbl_no': mbl_no,
-                'cookies': {'123': '123'}
-            }
-        )
+                'cookies': {'123': '123'},
+            },
+        ),
     )
 
     routing_rule = ListRoutingRule()
@@ -48,9 +51,12 @@ def test_list_routing_rule(sub, mbl_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', '0249538703', CarrierInvalidMblNoError),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,expect_exception',
+    [
+        ('e01_invalid_mbl_no', '0249538703', CarrierInvalidMblNoError),
+    ],
+)
 def test_list_error(sub, mbl_no, expect_exception, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -65,9 +71,9 @@ def test_list_error(sub, mbl_no, expect_exception, sample_loader):
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: ListRoutingRule.name,
                 'mbl_no': mbl_no,
-                'cookies': {'123': '123'}
-            }
-        )
+                'cookies': {'123': '123'},
+            },
+        ),
     )
 
     routing_rule = ListRoutingRule()

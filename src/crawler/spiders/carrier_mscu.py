@@ -14,7 +14,12 @@ from crawler.core_carrier.exceptions import (
     LoadWebsiteTimeOutError, CarrierResponseFormatError, CarrierInvalidMblNoError, SuspiciousOperationError,
     CarrierInvalidSearchNoError)
 from crawler.core_carrier.items import (
-    ContainerItem, ContainerStatusItem, LocationItem, MblItem, DebugItem, BaseCarrierItem
+    ContainerItem,
+    ContainerStatusItem,
+    LocationItem,
+    MblItem,
+    DebugItem,
+    BaseCarrierItem,
 )
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
@@ -215,7 +220,6 @@ class MainRoutingRule(BaseRoutingRule):
 
 
 class Extractor:
-
     def __init__(self):
         self._mbl_no_pattern = re.compile(r'^Bill of lading: (?P<mbl_no>\S+) ([(]\d+ containers?[)])?$')
         self._container_no_pattern = re.compile(r'^Container: (?P<container_no>\S+)$')
@@ -244,8 +248,9 @@ class Extractor:
     @staticmethod
     def extract_main_info(response: scrapy.Selector):
         main_outer = response.css('div#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_pnlBOLContent')
-        error_message = 'Can not find main information frame by css `div#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00' \
-                        '_pnlBOLContent`'
+        error_message = (
+            'Can not find main information frame by css `div#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00' '_pnlBOLContent`'
+        )
         if not main_outer:
             raise CarrierResponseFormatError(reason=error_message)
 
@@ -288,11 +293,13 @@ class Extractor:
             if not movements_table:
                 raise CarrierResponseFormatError(reason='Can not find movements_table !!!')
 
-            map_list.append({
-                'container_no_bar': container_no_bar,
-                'container_stats_table': container_stats_table,
-                'movements_table': movements_table,
-            })
+            map_list.append(
+                {
+                    'container_no_bar': container_no_bar,
+                    'container_stats_table': container_stats_table,
+                    'movements_table': movements_table,
+                }
+            )
 
         return map_list
 
@@ -346,14 +353,16 @@ class Extractor:
             else:
                 raise CarrierResponseFormatError(reason=f'Unknown schedule_status: `{schedule_status}`')
 
-            container_status_list.append({
-                'location': table_extractor.extract_cell(top='Location', left=left, extractor=td_extractor),
-                'local_date_time': table_extractor.extract_cell(top='Date', left=left, extractor=td_extractor),
-                'description': table_extractor.extract_cell(top='Description', left=left, extractor=td_extractor),
-                'vessel': table_extractor.extract_cell(top='Vessel', left=left, extractor=td_extractor),
-                'voyage': table_extractor.extract_cell(top='Voyage', left=left, extractor=td_extractor),
-                'est_or_actual': est_or_actual,
-            })
+            container_status_list.append(
+                {
+                    'location': table_extractor.extract_cell(top='Location', left=left, extractor=td_extractor),
+                    'local_date_time': table_extractor.extract_cell(top='Date', left=left, extractor=td_extractor),
+                    'description': table_extractor.extract_cell(top='Description', left=left, extractor=td_extractor),
+                    'vessel': table_extractor.extract_cell(top='Vessel', left=left, extractor=td_extractor),
+                    'voyage': table_extractor.extract_cell(top='Voyage', left=left, extractor=td_extractor),
+                    'est_or_actual': est_or_actual,
+                }
+            )
 
         return container_status_list
 
@@ -495,10 +504,7 @@ class ContainerStatusTableLocator(BaseTableLocator):
                 self._td_map[top_header].append(data_td)
 
         tr_class_name_list = [data_tr.css('::attr(class)').get() for data_tr in data_tr_list]
-        status_td_list = [
-            scrapy.Selector(text=f'<td>{tr_class_name}</td>')
-            for tr_class_name in tr_class_name_list
-        ]
+        status_td_list = [scrapy.Selector(text=f'<td>{tr_class_name}</td>') for tr_class_name in tr_class_name_list]
         self._td_map[self.STATUS_TOP] = status_td_list
 
         self._data_len = len(data_tr_list)
@@ -523,7 +529,6 @@ class ContainerStatusTableLocator(BaseTableLocator):
 
 
 class MscuCarrierChromeDriver:
-
     def __init__(self):
         prefs = {
             'profile.default_content_setting_values': {'images': 2},
