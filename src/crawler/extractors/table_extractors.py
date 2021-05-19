@@ -11,9 +11,8 @@ class HeaderMismatchError(Exception):
 
 
 class BaseTableLocator:
-
     @abc.abstractmethod
-    def parse(self, table: Selector):
+    def parse(self, table: Selector, numbers: int = 1):
         pass
 
     @abc.abstractmethod
@@ -26,7 +25,6 @@ class BaseTableLocator:
 
 
 class TableExtractor:
-
     def __init__(self, table_locator: BaseTableLocator):
         self._table_locator = table_locator
 
@@ -42,7 +40,6 @@ class TableExtractor:
 
 
 class TopHeaderTableLocator(BaseTableLocator):
-
     def __init__(self):
         self._td_map = {}  # top_header: [td, ...]
         self._data_len = 0
@@ -82,7 +79,6 @@ class TopHeaderTableLocator(BaseTableLocator):
 
 
 class TopLeftHeaderTableLocator(BaseTableLocator):
-
     def __init__(self):
         self._td_map = {}  # top_header: {left_header: td, ...}
         self._left_header_set = set()
@@ -124,7 +120,6 @@ class TopLeftHeaderTableLocator(BaseTableLocator):
 
 
 class LeftHeaderTableLocator(BaseTableLocator):
-
     def __init__(self):
         self._td_map = {}  # top_index: {left_header: td, ...}
         self._left_header_set = set()

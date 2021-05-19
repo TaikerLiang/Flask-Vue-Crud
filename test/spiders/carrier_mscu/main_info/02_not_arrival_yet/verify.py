@@ -36,4 +36,3 @@ def verify(results):
         place_of_deliv=LocationItem(name='SUAPE, BR'),
         latest_update='04.03.2020 at 04:18 W. Europe Standard Time',
     )
-

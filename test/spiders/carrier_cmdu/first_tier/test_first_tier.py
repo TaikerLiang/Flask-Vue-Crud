@@ -17,13 +17,16 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no', [
-    ('01_not_finish', 'CNPC001499'),
-    ('02_finish', 'NBSF300899'),
-    ('03_multiple_containers', 'NBSF301194'),
-    ('04_por', 'GGZ1004320'),
-    ('05_dest', 'NBSF301068'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no',
+    [
+        ('01_not_finish', 'CNPC001499'),
+        ('02_finish', 'NBSF300899'),
+        ('03_multiple_containers', 'NBSF301194'),
+        ('04_por', 'GGZ1004320'),
+        ('05_dest', 'NBSF301068'),
+    ],
+)
 def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
     html_text = sample_loader.read_file(sub, 'main_info.html')
 
@@ -37,8 +40,8 @@ def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
             url=option.url,
             meta={
                 'mbl_no': mbl_no,
-            }
-        )
+            },
+        ),
     )
 
     routing_rule = FirstTierRoutingRule()
@@ -48,9 +51,12 @@ def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'NBSF300898', CarrierInvalidMblNoError),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,expect_exception',
+    [
+        ('e01_invalid_mbl_no', 'NBSF300898', CarrierInvalidMblNoError),
+    ],
+)
 def test_first_tier_routing_rule_error(sample_loader, sub, mbl_no, expect_exception):
     html_text = sample_loader.read_file(sub, 'main_info.html')
 
@@ -65,8 +71,8 @@ def test_first_tier_routing_rule_error(sample_loader, sub, mbl_no, expect_except
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: FirstTierRoutingRule.name,
                 'mbl_no': mbl_no,
-            }
-        )
+            },
+        ),
     )
 
     routing_rule = FirstTierRoutingRule()

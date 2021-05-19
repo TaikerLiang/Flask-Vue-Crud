@@ -120,3 +120,10 @@ Verify
 ```
 pip install -e '.[dev]'
 ```
+
+
+## Pre-commit
+
+```
+$ pre-commit install
+```

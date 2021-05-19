@@ -44,6 +44,5 @@ def verify(results):
         container_key='ZIMU1413332',
         description='Vessel departure from Port of Loading to Transshipment Port',
         local_date_time='09-Nov-2019 02:52',
-        location=LocationItem(name='WILMINGTON (NC), U.S.A.')
+        location=LocationItem(name='WILMINGTON (NC), U.S.A.'),
     )
-

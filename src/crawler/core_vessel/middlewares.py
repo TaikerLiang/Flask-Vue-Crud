@@ -6,7 +6,6 @@ from crawler.core_vessel.items import VesselErrorData
 
 
 class VesselSpiderMiddleware:
-
     @classmethod
     def get_setting_name(cls):
         return f'{__name__}.{cls.__name__}'

@@ -2,7 +2,6 @@ from crawler.core_carrier.items import MblItem
 
 
 class Verifier:
-
     def verify(self, results):
         assert results[0] == MblItem(
             carrier_status='Released',

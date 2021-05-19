@@ -24,4 +24,3 @@ def verify(results):
         transport='Rail',
         local_date_time='03 Nov 2019, 16:28 EST',
     )
-

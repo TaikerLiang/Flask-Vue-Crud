@@ -17,10 +17,13 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,base_url', [
-    ('01_single_container', 'SHSM9C747300', CarrierSmlmSpider.base_url),
-    ('02_multiple_containers', 'SHFA9A128100', CarrierSmlmSpider.base_url),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,base_url',
+    [
+        ('01_single_container', 'SHSM9C747300', CarrierSmlmSpider.base_url),
+        ('02_multiple_containers', 'SHFA9A128100', CarrierSmlmSpider.base_url),
+    ],
+)
 def test_first_tier_handle(sub, mbl_no, base_url, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 

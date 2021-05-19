@@ -1,0 +1,159 @@
+
+
+
+<html>
+<head>
+<title>Bill of Lading Information</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" type="text/css" media="screen" href="/resource/css/custom/jquery-ui-1.8.5.custom.css"/>
+<link rel="stylesheet" type="text/css" media="screen" href="/resource/css/ustti.jqgrid.css" />
+<link rel="stylesheet" type="text/css" media="screen" href="/resource/css/ustti.jquery.searchFilter.css"/>
+<link rel="stylesheet" type="text/css" media="screen" href="/resource/css/ustti.ui4.css"/>
+<style type="text/css">
+<!--
+body {
+ margin-left: 20px;
+ margin-top: 0px;
+ margin-right: 40px;
+ margin-bottom: 0px;
+ overflow-y: auto;
+ overflow-x: auto;
+}
+-->
+</style>
+<script type="text/javascript" src="/resource/js/jquery/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="/resource/js/i18n/grid.locale-en.js"></script>
+<script type="text/javascript" src="/resource/js/jquery/jquery.jqGrid.min.js"></script>
+<script type="text/javascript" src="/resource/js/jquery/jquery.bestupper.min.js"></script>
+<script type="text/javascript" src="/resource/js/jquery/jquery.validate.js"></script>
+<script type="text/javascript" src="/resource/js/jquery/jquery.json-2.2.js"></script>
+<script type="text/javascript" src="/resource/js/jquery/jquery.ui.core.js"></script>
+<script type="text/javascript" src="/resource/js/jquery/jquery.ui.widget.js"></script>
+<script type="text/javascript" src="/resource/js/jquery/jquery.ui.datepicker.js"></script>
+<script type="text/javascript" src="/resource/js/CoCommon.js"></script>
+<script type="text/javascript" src="/resource/js/CoCalendar.js"></script>
+<script type="text/javascript" src="/resource/js/CoGrid.js"></script>
+<script type="text/javascript" src="/resource/js/CoUtil.js"></script>
+<script type="text/javascript" src="/resource/js/CoPopup.js"></script>
+<script type="text/javascript" src="/resource/js/biz/arp/UI-ARP-02.js"></script>
+<script type="text/javascript">
+	var result  = [{"tmlCd":"USLGB","blNo":"SUDUN0KSZ075516X","vldFlg":"N","mode":0}];
+	
+	var sslUrl = 'https://www.ttilgb.com:443';
+	var httpUrl = 'https://www.ttilgb.com:443';
+</script>
+</head>
+
+<body onload="Screen_OnLoad();"> 
+<form id="form" name="form">
+<input type="hidden" name="checkLogin" id="checkLogin" value="true">
+<input type="hidden" name="tmlCd" id="tmlCd" value="USLGB">
+<input type="hidden" name="usrId" id="usrId" value="RLTC">
+<input type="hidden" name="usrEml" id="usrEml" value="alex@hardcoretech.co">
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+	<tr>
+		<td valign="top">
+			<!--  Main(s)-->		
+			<table class="search" border="0" style="width:100%;">  
+				<tr>
+					<td style="padding:0, 10, 0, 10">
+						<table width="100%" border="0" cellspacing="0" cellpadding="0">
+							<tr>
+								<td>
+									<table border="0" cellpadding="0" cellspacing="0">
+										<tr>
+											<td width="18"><img src="/resource/img/icon_title_dot.gif" width="13" height="14" alt="" border="0"/></td>
+											<td class="title">Bill of Lading Information</td>
+										</tr>
+            						</table>      
+      							</td>
+      							<td style="padding-right:0px; padding-bottom:0px; vertical-align:bottom;" align="right">
+									<table border="0" cellpadding="0" cellspacing="0">
+          								<tr>
+            								<td width="">
+		   	  								<table width="100%" border="0" cellpadding="0" cellspacing="0">
+											<tr><td width="14"><img src="/resource/img/btn_tti1_left.gif" width="14" height="25" alt="" border="0"/></td>
+											<td class="btn1" background="/resource/img/btn_tti1_bg.gif"><a href="javascript:onclick=Back_OnClick();">Back</a></td>
+											<td><img src="/resource/img/btn_tti1_right.gif" width="6" height="25" alt="" border="0"/></td></tr>
+			  								</table>
+											</td>
+			 							</tr>
+          							</table>	
+								</td>
+    						</tr>
+   						</table>	
+						<table><tr><td height="5"></td></tr></table>
+						<!-- : (Comments) (S) -->		
+						<table style="width:500px;">
+							<tr>
+								<td>Request Notification - Email to alex@hardcoretech.co</td>
+								<!-- : (Button_Request) (S) -->
+								<td>
+									<table border="0" cellpadding="0" cellspacing="0">
+          								<tr>
+            								<td width="">
+		   	  								<table width="100%" border="0" cellpadding="0" cellspacing="0">
+											<tr><td width="14"><img src="/resource/img/btn_tti1_left.gif" width="14" height="25" alt="" border="0"/></td>
+											<td class="btn1" background="/resource/img/btn_tti1_bg.gif"><a href="#" id="gEqNo">Request</a></td>
+											<td><img src="/resource/img/btn_tti1_right.gif" width="6" height="25" alt="" border="0"/></td></tr>
+			  								</table>
+											</td>
+			 							</tr>
+          							</table>									
+								</td>
+								<!-- : (Button_Request) (E) -->
+							</tr>
+						</table>
+						<!-- : (Comments) (E) -->
+						<table><tr><td height="5"/></tr></table>
+					</td>
+				</tr>
+			</table> 
+		</td>
+	</tr>
+</table>
+<!-- : ( Grid1 Main ) (S) -->
+<table id="grid1">
+	<tr>
+		<td>
+			<script language="javascript">setGridObject('#grid1');</script>
+		</td>
+	</tr>
+</table>
+<!-- : ( Grid1 Main ) (E) -->
+<table><tr><td height="5"></td></tr></table>
+<table align="right"><tr><td>
+	<table><tr><td style="text-decoration:underline;color:blue;">
+		<a href="javascript:onclick=DemurragePayMultiplePayFuture_OnClick();">Demurrage - Pay Multiple, Pay Future Date</a>
+	</td><td width="20"></td></tr></table>
+</td></tr></table>
+<table><tr><td height="15"/></tr></table>
+<!-- : ( Grid2 Main ) (S) -->
+<table id="grid2">
+	<tr>
+		<td>
+			<script language="javascript">setGridObject('#grid2');</script>
+		</td>
+	</tr>
+</table>
+<!-- : ( Grid2 Main ) (E) -->
+<table><tr><td height="5"/></tr></table>
+<div id="transApnt" style="display:block;">
+<table border="0" cellpadding="0" cellspacing="0" align="right">
+    <tr>
+        <td width="">
+		   	<table width="100%" border="0" cellpadding="0" cellspacing="0">
+			<tr><td width="14"><img src="/resource/img/btn_tti1_left.gif" width="14" height="25" alt="" border="0"/></td>
+			<td class="btn1" background="/resource/img/btn_tti1_bg.gif"><a href="javascript:onclick=Transfer_OnClick();">Transfer to Appt</a></td>
+			<td><img src="/resource/img/btn_tti1_right.gif" width="6" height="25" alt="" border="0"/></td></tr>
+			 </table>
+		</td>
+	</tr>
+</table>
+</div>
+<table><tr><td height="10"/></tr></table>
+</form>
+</body>
+<script src="fwb/df_lib.js"></script><script>var fp=new fingerprint,df_id,stable_df_id,post_details=0;fp.isUAMac()||fp.isUAMobile()?(post_details=1,stable_df_id=df_id=2):(post_details=1,df_id=0);postItems();function postItems(){if(0!=post_details){0==df_id&&(df_id=fp.getFingerprint().MD5,stable_df_id=fp.getFingerprint().Stable_MD5);var b=fp.getPostItems();b.df_id=df_id;b.stable_df_id=stable_df_id;post("/fwb/first_submit.df",b)}}
+function post(b,d){var a;a=window.XMLHttpRequest?new XMLHttpRequest:new ActiveXObject("Microsoft.XMLHTTP");a.onreadystatechange=function(){4==a.readyState&&200==a.status&&eval(a.responseText)};a.open("POST",b,!0);a.setRequestHeader("Content-type","application/x-www-form-urlencoded");var e="",c;for(c in d)value=c+"="+encodeURIComponent(d[c])+"&",e+=value;a.send(e)};</script>
+</html>

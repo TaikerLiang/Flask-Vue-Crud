@@ -17,12 +17,15 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no', [
-    ('01_not_finish', 'AWT0143054'),
-    ('02_finish', 'AWT0143291'),
-    ('03_multiple_containers', 'AWT0143454'),
-    ('04_pod_status_is_remaining', 'AWT0143370'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no',
+    [
+        ('01_not_finish', 'AWT0143054'),
+        ('02_finish', 'AWT0143291'),
+        ('03_multiple_containers', 'AWT0143454'),
+        ('04_pod_status_is_remaining', 'AWT0143370'),
+    ],
+)
 def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
     html_text = sample_loader.read_file(sub, 'main_info.html')
 
@@ -36,8 +39,8 @@ def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
             url=option.url,
             meta={
                 'mbl_no': mbl_no,
-            }
-        )
+            },
+        ),
     )
 
     routing_rule = FirstTierRoutingRule()
@@ -47,9 +50,12 @@ def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'AWT0143111', CarrierInvalidMblNoError),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,expect_exception',
+    [
+        ('e01_invalid_mbl_no', 'AWT0143111', CarrierInvalidMblNoError),
+    ],
+)
 def test_first_tier_routing_rule_error(sample_loader, sub, mbl_no, expect_exception):
     html_text = sample_loader.read_file(sub, 'main_info.html')
 
@@ -64,7 +70,7 @@ def test_first_tier_routing_rule_error(sample_loader, sub, mbl_no, expect_except
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: FirstTierRoutingRule.name,
                 'mbl_no': mbl_no,
-            }
+            },
         ),
     )
     routing_rule = FirstTierRoutingRule()

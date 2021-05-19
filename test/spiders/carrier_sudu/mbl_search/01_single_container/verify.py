@@ -17,4 +17,3 @@ def verify_output(results: List):
 
 def verify_local_variable(routing_rule: MblSearchResultRoutingRule):
     assert routing_rule._containers_set == set()
-
