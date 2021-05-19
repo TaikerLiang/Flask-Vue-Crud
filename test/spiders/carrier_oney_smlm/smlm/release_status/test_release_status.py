@@ -15,14 +15,18 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,cntr_no,bkg_no', [
-    ('01', 'SHSM9C747300', 'CCLU3451951', 'SHSM9C747300'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,cntr_no,bkg_no',
+    [
+        ('01', 'SHSM9C747300', 'CCLU3451951', 'SHSM9C747300'),
+    ],
+)
 def test_release_status_handle(sub, mbl_no, cntr_no, bkg_no, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
     option = ReleaseStatusRoutingRule.build_request_option(
-        container_no=cntr_no, booking_no=bkg_no, base_url=CarrierSmlmSpider.base_url)
+        container_no=cntr_no, booking_no=bkg_no, base_url=CarrierSmlmSpider.base_url
+    )
 
     response = TextResponse(
         url=option.url,
@@ -31,7 +35,7 @@ def test_release_status_handle(sub, mbl_no, cntr_no, bkg_no, sample_loader):
         request=Request(
             url=option.url,
             meta=option.meta,
-        )
+        ),
     )
 
     rule = ReleaseStatusRoutingRule()

@@ -5,10 +5,20 @@ from typing import List
 import scrapy
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
-    SuspiciousOperationError
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError,
+    CarrierInvalidMblNoError,
+    SuspiciousOperationError,
+)
 from crawler.core_carrier.items import (
-    BaseCarrierItem, VesselItem, ContainerStatusItem, LocationItem, ContainerItem, MblItem, DebugItem)
+    BaseCarrierItem,
+    VesselItem,
+    ContainerStatusItem,
+    LocationItem,
+    ContainerItem,
+    MblItem,
+    DebugItem,
+)
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 
@@ -49,7 +59,7 @@ class SharedSpider(BaseCarrierSpider):
                 yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
-            
+
     def _build_request_by(self, option: RequestOption):
         meta = {
             RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
@@ -119,9 +129,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
         booking_no = self._get_booking_no_from(container_list=container_info_list)
         mbl_no = self._get_mbl_no_from(container_list=container_info_list)
 
-        yield MblItem(
-            mbl_no=mbl_no
-        )
+        yield MblItem(mbl_no=mbl_no)
 
         yield VesselRoutingRule.build_request_option(booking_no=booking_no, base_url=self.base_url)
 
@@ -169,12 +177,14 @@ class FirstTierRoutingRule(BaseRoutingRule):
             booking_no = container_data['bkgNo'].strip()
             cooperation_no = container_data['copNo'].strip()
 
-            container_info_list.append({
-                'mbl_no': mbl_no,
-                'container_no': container_no,
-                'booking_no': booking_no,
-                'cooperation_no': cooperation_no,
-            })
+            container_info_list.append(
+                {
+                    'mbl_no': mbl_no,
+                    'container_no': container_no,
+                    'booking_no': booking_no,
+                    'cooperation_no': cooperation_no,
+                }
+            )
 
         return container_info_list
 
@@ -250,16 +260,18 @@ class VesselRoutingRule(BaseRoutingRule):
         vessel_data_list = response_dict['list']
         vessel_info_list = []
         for vessel_data in vessel_data_list:
-            vessel_info_list.append({
-                'name': vessel_data['vslEngNm'].strip(),
-                'voyage': vessel_data['skdVoyNo'].strip() + vessel_data['skdDirCd'].strip(),
-                'pol': vessel_data['polNm'].strip(),
-                'pod': vessel_data['podNm'].strip(),
-                'etd': vessel_data['etd'].strip() if vessel_data['etdFlag'] == 'C' else None,
-                'atd': vessel_data['etd'].strip() if vessel_data['etdFlag'] == 'A' else None,
-                'eta': vessel_data['eta'].strip() if vessel_data['etaFlag'] == 'C' else None,
-                'ata': vessel_data['eta'].strip() if vessel_data['etaFlag'] == 'A' else None,
-            })
+            vessel_info_list.append(
+                {
+                    'name': vessel_data['vslEngNm'].strip(),
+                    'voyage': vessel_data['skdVoyNo'].strip() + vessel_data['skdDirCd'].strip(),
+                    'pol': vessel_data['polNm'].strip(),
+                    'pod': vessel_data['podNm'].strip(),
+                    'etd': vessel_data['etd'].strip() if vessel_data['etdFlag'] == 'C' else None,
+                    'atd': vessel_data['etd'].strip() if vessel_data['etdFlag'] == 'A' else None,
+                    'eta': vessel_data['eta'].strip() if vessel_data['etaFlag'] == 'C' else None,
+                    'ata': vessel_data['eta'].strip() if vessel_data['etaFlag'] == 'A' else None,
+                }
+            )
 
         return vessel_info_list
 
@@ -320,12 +332,14 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             status_with_br = container_status_data['statusNm'].strip()
             status = status_with_br.replace('<br>', ' ')
 
-            container_status_info_list.append({
-                'status': status,
-                'location': container_status_data['placeNm'].strip(),
-                'local_time': local_time,
-                'est_or_actual': container_status_data['actTpCd'].strip(),
-            })
+            container_status_info_list.append(
+                {
+                    'status': status,
+                    'location': container_status_data['placeNm'].strip(),
+                    'local_time': local_time,
+                    'est_or_actual': container_status_data['actTpCd'].strip(),
+                }
+            )
 
         return container_status_info_list
 

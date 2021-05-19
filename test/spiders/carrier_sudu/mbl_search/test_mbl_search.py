@@ -18,10 +18,13 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,mbl_state', [
-    ('01_single_container', 'SUDUN0498AQEP33P', MblState.FIRST),
-    ('02_multiple_containers', 'SUDUN9998ALTNBPS', MblState.FIRST),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,mbl_state',
+    [
+        ('01_single_container', 'SUDUN0498AQEP33P', MblState.FIRST),
+        ('02_multiple_containers', 'SUDUN9998ALTNBPS', MblState.FIRST),
+    ],
+)
 def test_mbl_search_result_handle_first(sub, mbl_no, mbl_state, sample_loader):
     text_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -39,8 +42,8 @@ def test_mbl_search_result_handle_first(sub, mbl_no, mbl_state, sample_loader):
             meta={
                 'mbl_no': mbl_no,
                 'mbl_state': mbl_state,
-            }
-        )
+            },
+        ),
     )
 
     voyage_queue_popper = VoyageQueuePopper(Queue())
@@ -52,9 +55,12 @@ def test_mbl_search_result_handle_first(sub, mbl_no, mbl_state, sample_loader):
     verify_module.verify_local_variable(routing_rule=routing_rule)
 
 
-@pytest.mark.parametrize('sub,mbl_no,mbl_state', [
-    ('03_second_multiple_containers', 'SUDUN9998ALTNBPS', MblState.MULTIPLE),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,mbl_state',
+    [
+        ('03_second_multiple_containers', 'SUDUN9998ALTNBPS', MblState.MULTIPLE),
+    ],
+)
 def test_mbl_search_result_handle_multiple_without_voyage_queue(sub, mbl_no, mbl_state, sample_loader):
     text_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -72,8 +78,8 @@ def test_mbl_search_result_handle_multiple_without_voyage_queue(sub, mbl_no, mbl
             meta={
                 'mbl_no': mbl_no,
                 'mbl_state': mbl_state,
-            }
-        )
+            },
+        ),
     )
 
     container_info = sample_loader.load_sample_module(sub, 'container_info')
@@ -89,10 +95,13 @@ def test_mbl_search_result_handle_multiple_without_voyage_queue(sub, mbl_no, mbl
     verify_module.verify_local_variable(routing_rule=routing_rule)
 
 
-@pytest.mark.parametrize('sub,mbl_no,mbl_state', [
-    ('04_second_single_container', 'SUDUN0498AQEP33P', MblState.SINGLE),
-    ('05_third_multiple_containers', 'SUDUN9998ALTNBPS', MblState.MULTIPLE),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,mbl_state',
+    [
+        ('04_second_single_container', 'SUDUN0498AQEP33P', MblState.SINGLE),
+        ('05_third_multiple_containers', 'SUDUN9998ALTNBPS', MblState.MULTIPLE),
+    ],
+)
 def test_mbl_search_result_handle_with_voyage_queue(sub, mbl_no, mbl_state, sample_loader):
     text_text = sample_loader.read_file(sub, 'sample.html')
     fake_voyage_queue = queue_generator.get_queue_by_sub(sub=sub)
@@ -111,8 +120,8 @@ def test_mbl_search_result_handle_with_voyage_queue(sub, mbl_no, mbl_state, samp
             meta={
                 'mbl_no': mbl_no,
                 'mbl_state': mbl_state,
-            }
-        )
+            },
+        ),
     )
 
     voyage_queue_popper = VoyageQueuePopper(fake_voyage_queue)
@@ -123,9 +132,12 @@ def test_mbl_search_result_handle_with_voyage_queue(sub, mbl_no, mbl_state, samp
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'SUDUN9998ALTNBPU', CarrierInvalidMblNoError),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,expect_exception',
+    [
+        ('e01_invalid_mbl_no', 'SUDUN9998ALTNBPU', CarrierInvalidMblNoError),
+    ],
+)
 def test_mbl_search_result_handle_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     text_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -143,8 +155,8 @@ def test_mbl_search_result_handle_mbl_no_error(sub, mbl_no, expect_exception, sa
             meta={
                 'mbl_no': mbl_no,
                 'mbl_state': MblState.FIRST,
-            }
-        )
+            },
+        ),
     )
 
     voyage_queue_popper = VoyageQueuePopper(Queue())

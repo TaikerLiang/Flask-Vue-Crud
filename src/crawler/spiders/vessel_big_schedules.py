@@ -98,7 +98,7 @@ class LoginRoutingRule(BaseRoutingRule):
             headers={
                 'Accept': 'application/json, text/plain, */*',
                 'Sec-Fetch-Dest': 'empty',
-                'Content-Type': 'application/json;charset=UTF-8'
+                'Content-Type': 'application/json;charset=UTF-8',
             },
             meta={
                 'scac': scac,
@@ -174,7 +174,7 @@ class VesselGidRoutingRule(BaseRoutingRule):
                 'scac': scac,
                 'vessel_name': vessel_name,
                 'carrier_id': carrier_id,
-            }
+            },
         )
 
     def handle(self, response):
@@ -255,14 +255,16 @@ class VesselScheduleRoutingRule(BaseRoutingRule):
             departure = port['departure']
             arrival = port['arrival']
 
-            return_list.append({
-                'etd': departure['estimated'],
-                'atd': departure.get('actual'),
-                'eta': arrival['estimated'],
-                'ata': arrival.get('actual'),
-                'name': port['name'],
-                'un_lo_code': port['unlocode'],
-            })
+            return_list.append(
+                {
+                    'etd': departure['estimated'],
+                    'atd': departure.get('actual'),
+                    'eta': arrival['estimated'],
+                    'ata': arrival.get('actual'),
+                    'name': port['name'],
+                    'un_lo_code': port['unlocode'],
+                }
+            )
 
         return return_list
 
@@ -272,7 +274,6 @@ class VesselScheduleRoutingRule(BaseRoutingRule):
 
 
 class BigSchedulesChromeDriver(BaseChromeDriver):
-
     def __init__(self):
         extra_chrome_options = ["--window-size=1920,1080"]
         super().__init__(extra_chrome_options=extra_chrome_options)

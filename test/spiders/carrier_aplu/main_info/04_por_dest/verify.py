@@ -29,5 +29,5 @@ def verify(results):
         local_date_time='Wed 31 Jul 2019 18:23',
         description='Empty in depot',
         location=LocationItem(name='DALLAS, TX'),
-        est_or_actual='A'
+        est_or_actual='A',
     )

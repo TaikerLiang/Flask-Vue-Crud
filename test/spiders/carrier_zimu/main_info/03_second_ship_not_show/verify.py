@@ -34,6 +34,5 @@ def verify(results):
         container_key='TRHU2925251',
         description='Vessel departure from Port of Loading to Transshipment Port',
         local_date_time='17-Oct-2019 15:25',
-        location=LocationItem(name="NINGBO (ZJ), CHINA. PEOPLE'S REPUBLIC")
+        location=LocationItem(name="NINGBO (ZJ), CHINA. PEOPLE'S REPUBLIC"),
     )
-

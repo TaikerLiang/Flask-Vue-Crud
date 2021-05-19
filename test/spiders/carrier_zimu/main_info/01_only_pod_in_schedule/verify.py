@@ -40,7 +40,3 @@ def verify(results):
         container_key='TCNU2750709',
         container_no='TCNU2750709',
     )
-
-
-
-

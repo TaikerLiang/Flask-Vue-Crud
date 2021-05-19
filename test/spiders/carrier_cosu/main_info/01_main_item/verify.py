@@ -2,29 +2,35 @@ from crawler.core_carrier.items import MblItem, LocationItem
 
 
 def verify(item):
-    assert item == MblItem(**{
-        # 'mbl_no': '6283228140',
-        'vessel': 'CMA CGM ALASKA',
-        'voyage': '0TUERE1MA',
-        'por': LocationItem(**{'name': 'Yantian ,Guangdong ,China'}),
-        'pol': LocationItem(**{'name': "Yantian - Yantian  Int'l  Container Tml"}),
-        'pod': LocationItem(**{
-            'name': 'Los Angeles - American President Line',
-            'firms_code': None,
-        }),
-        'final_dest': LocationItem(**{
-            'name': 'Los Angeles ,California ,United States-American President Line',
-            'firms_code': None,
-        }),
-        'etd': None,
-        'atd': '2020-12-02 10:45',
-        'eta': None,
-        'ata': '2020-12-26 11:01',
-        'bl_type': 'Sea WayBill',
-        'deliv_eta': '2020-12-27 22:00',
-        'cargo_cutoff_date': '2020-11-30 12:00',
-        'surrendered_status': 'Sea Waybill',
-    })
+    assert item == MblItem(
+        **{
+            # 'mbl_no': '6283228140',
+            'vessel': 'CMA CGM ALASKA',
+            'voyage': '0TUERE1MA',
+            'por': LocationItem(**{'name': 'Yantian ,Guangdong ,China'}),
+            'pol': LocationItem(**{'name': "Yantian - Yantian  Int'l  Container Tml"}),
+            'pod': LocationItem(
+                **{
+                    'name': 'Los Angeles - American President Line',
+                    'firms_code': None,
+                }
+            ),
+            'final_dest': LocationItem(
+                **{
+                    'name': 'Los Angeles ,California ,United States-American President Line',
+                    'firms_code': None,
+                }
+            ),
+            'etd': None,
+            'atd': '2020-12-02 10:45',
+            'eta': None,
+            'ata': '2020-12-26 11:01',
+            'bl_type': 'Sea WayBill',
+            'deliv_eta': '2020-12-27 22:00',
+            'cargo_cutoff_date': '2020-11-30 12:00',
+            'surrendered_status': 'Sea Waybill',
+        }
+    )
 
     # assert results[1] == VesselItem(**{
     #     'vessel_key': 'CMA CGM TAGE',

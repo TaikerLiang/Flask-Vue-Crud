@@ -9,9 +9,7 @@ def verify(results):
     )
 
     assert results[1] == ContainerItem(
-        container_key='TCKU6590749',
-        container_no='TCKU6590749',
-        final_dest_eta='2019-11-08T23:56:00.000'
+        container_key='TCKU6590749', container_no='TCKU6590749', final_dest_eta='2019-11-08T23:56:00.000'
     )
 
     assert results[2] == ContainerStatusItem(
@@ -33,4 +31,3 @@ def verify(results):
         voyage='942N',
         est_or_actual='A',
     )
-

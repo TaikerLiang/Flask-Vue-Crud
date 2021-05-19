@@ -10,9 +10,19 @@ from scrapy import Selector
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError, CarrierInvalidMblNoError, SuspiciousOperationError, AntiCaptchaError)
+    CarrierResponseFormatError,
+    CarrierInvalidMblNoError,
+    SuspiciousOperationError,
+    AntiCaptchaError,
+)
 from crawler.core_carrier.items import (
-    BaseCarrierItem, ContainerStatusItem, LocationItem, MblItem, ContainerItem, DebugItem)
+    BaseCarrierItem,
+    ContainerStatusItem,
+    LocationItem,
+    MblItem,
+    ContainerItem,
+    DebugItem,
+)
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
@@ -266,7 +276,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             form_data=form_data,
             meta={
                 'headers': headers,
-            }
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -327,7 +337,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
                 follow_url = container_info['follow_url']
                 yield ContainerStatusRoutingRule.build_request_option(
-                    follow_url=follow_url, container_no=container_no, headers=headers,
+                    follow_url=follow_url,
+                    container_no=container_no,
+                    headers=headers,
                 )
 
     @staticmethod
@@ -370,8 +382,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             'por': table.extract_cell(top='Receipt', left=None, extractor=span_text_td_extractor) or None,
             'pol': table.extract_cell(top='Loading', left=None, extractor=span_text_td_extractor) or None,
             'pod': table.extract_cell(top='Discharge', left=None, extractor=span_text_td_extractor) or None,
-            'place_of_deliv': table.extract_cell(
-                top='Delivery', left=None, extractor=span_text_td_extractor) or None,
+            'place_of_deliv': table.extract_cell(top='Delivery', left=None, extractor=span_text_td_extractor) or None,
         }
 
     @staticmethod
@@ -434,10 +445,12 @@ class MainInfoRoutingRule(BaseRoutingRule):
             container_no = table.extract_cell(top='Container No.', left=left, extractor=a_text_td_extractor)
             follow_url = table.extract_cell(top='Container No.', left=left, extractor=a_href_td_extractor)
 
-            container_info_list.append({
-                'container_no': container_no,
-                'follow_url': follow_url,
-            })
+            container_info_list.append(
+                {
+                    'container_no': container_no,
+                    'follow_url': follow_url,
+                }
+            )
 
         return container_info_list
 
@@ -506,8 +519,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
     @staticmethod
     def _extract_firms_code(response: Selector):
         # [0]WEST BASIN CONTAINER TERMINAL [1](Firms code:Y773)
-        discharged_port_terminal_text = \
-            response.css('span#ContentPlaceHolder1_rptBLNo_lblDischarged_0 ::text').getall()
+        discharged_port_terminal_text = response.css('span#ContentPlaceHolder1_rptBLNo_lblDischarged_0 ::text').getall()
         if len(discharged_port_terminal_text) == 1:
             return None
         elif len(discharged_port_terminal_text) > 2:
@@ -667,6 +679,7 @@ class TopHeaderThInTbodyTableLocator(BaseTableLocator):
     | Data 1,M | Data 2,M | ... | Data N,M | <tr> <td>
     +----------+----------+-----+----------+ <\tbody>
     """
+
     TR_DATA_BEGIN = 1
 
     def __init__(self):
@@ -675,7 +688,7 @@ class TopHeaderThInTbodyTableLocator(BaseTableLocator):
 
     def parse(self, table: Selector):
         title_td_list = table.css('th')
-        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN:]
+        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN :]
 
         for title_index, title_td in enumerate(title_td_list):
             data_index = title_index
@@ -759,15 +772,18 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         container_stauts_list = []
         for left in table_locator.iter_left_headers():
             location_name_with_eol = table.extract_cell(
-                top='At Facility', left=left, extractor=span_all_text_td_extractor)
+                top='At Facility', left=left, extractor=span_all_text_td_extractor
+            )
             location_name = location_name_with_eol.replace('\n', ' ')
 
-            container_stauts_list.append({
-                'timestamp': table.extract_cell(top='Date/Time', left=left, extractor=span_text_td_extractor),
-                'description': table.extract_cell(top='Event', left=left, extractor=span_text_td_extractor),
-                'location_name': location_name,
-                'transport': table.extract_cell(top='Mode', left=left, extractor=span_all_text_td_extractor),
-            })
+            container_stauts_list.append(
+                {
+                    'timestamp': table.extract_cell(top='Date/Time', left=left, extractor=span_text_td_extractor),
+                    'description': table.extract_cell(top='Event', left=left, extractor=span_text_td_extractor),
+                    'location_name': location_name,
+                    'transport': table.extract_cell(top='Mode', left=left, extractor=span_all_text_td_extractor),
+                }
+            )
 
         return container_stauts_list
 

@@ -15,14 +15,17 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,container_no,route', [
-    (
+@pytest.mark.parametrize(
+    'sub,container_no,route',
+    [
+        (
             '01_basic',
             'CRSU9164589',
             '/trackCargo.php?EquiPk=12012928456&ShipFk=0&EmoFk=0&acl_track=CRSU9164589'
-            '&Equino=CRSU9164589&verbosity=detail'
-    ),
-])
+            '&Equino=CRSU9164589&verbosity=detail',
+        ),
+    ],
+)
 def test_detail_tracking_info_routing_rule(sub, container_no, route, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
     option = DetailTrackingRoutingRule.build_request_option(route=route, container_no=container_no)
@@ -33,7 +36,7 @@ def test_detail_tracking_info_routing_rule(sub, container_no, route, sample_load
         encoding='utf-8',
         request=Request(
             url=option.url,
-        )
+        ),
     )
 
     routing_rule = DetailTrackingRoutingRule()

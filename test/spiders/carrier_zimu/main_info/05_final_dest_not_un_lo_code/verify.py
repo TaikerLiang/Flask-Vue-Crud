@@ -34,6 +34,5 @@ def verify(results):
         container_key='ZCSU8513632',
         description='Container is available to be released / delivered',
         local_date_time='22-Nov-2019 19:18',
-        location=LocationItem(name='CHARLOTTE (NC), U.S.A.')
+        location=LocationItem(name='CHARLOTTE (NC), U.S.A.'),
     )
-

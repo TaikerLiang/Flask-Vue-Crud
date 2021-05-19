@@ -17,14 +17,17 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no', [
-    ('01_single_container', '2625845270'),
-    ('02_multi_containers', '2109051600'),
-    ('03_without_custom_release_date', '2628633440'),
-    ('04_tranship_exist', '2630699272'),
-    ('05_custom_release_title_exist_but_value_empty', '2635541720'),
-    ('06_detail_table_not_exist', '2650422090'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no',
+    [
+        ('01_single_container', '2625845270'),
+        ('02_multi_containers', '2109051600'),
+        ('03_without_custom_release_date', '2628633440'),
+        ('04_tranship_exist', '2630699272'),
+        ('05_custom_release_title_exist_but_value_empty', '2635541720'),
+        ('06_detail_table_not_exist', '2650422090'),
+    ],
+)
 def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
     html_file = sample_loader.read_file(sub, 'sample.html')
 
@@ -36,7 +39,7 @@ def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
         request=Request(
             url=option.url,
             meta=option.meta,
-        )
+        ),
     )
 
     results = list(CargoTrackingRule._handle_response(response=response, search_type=SHIPMENT_TYPE_MBL))
@@ -60,7 +63,7 @@ def test_cargo_tracking_handler_no_mbl_error(sub, mbl_no, expect_exception, samp
         request=Request(
             url=option.url,
             meta=option.meta,
-        )
+        ),
     )
 
     with pytest.raises(expect_exception):

@@ -56,4 +56,3 @@ def verify(results):
         local_date_time='14-Jan-2019 10:25',
         location=LocationItem(name='DURRES, ALBANIA'),
     )
-
