@@ -138,6 +138,157 @@ class CarrierOoluSpider(BaseCarrierSpider):
         else:
             raise ValueError(f'Invalid option.method [{option.method}]')
 
+    def get_current_url(self):
+        return self.driver.current_url
+
+    def get_page_text(self):
+        return self.driver.page_source
+
+    def find_container_btn_and_click(self, container_btn_css):
+        contaienr_btn = self.driver.find_element_by_css_selector(container_btn_css)
+        contaienr_btn.click()
+
+    def get_element_slide_distance(self, slider_ele, background_ele, correct=0):
+        """
+        根据传入滑块，和背景的节点，计算滑块的距离
+        ​
+        该方法只能计算 滑块和背景图都是一张完整图片的场景，
+        如果背景图是通过多张小图拼接起来的背景图，
+        该方法不适用，请使用get_image_slide_distance这个方法
+        :param slider_ele: 滑块图片的节点
+        :type slider_ele: WebElement
+        :param background_ele: 背景图的节点
+        :type background_ele:WebElement
+        :param correct:滑块缺口截图的修正值，默认为0,调试截图是否正确的情况下才会用
+        :type: int
+        :return: 背景图缺口位置的X轴坐标位置（缺口图片左边界位置）
+        """
+
+        slider_pic = self._readb64(slider_ele)
+        background_pic = self._readb64(background_ele)
+
+        width, height, _ = slider_pic.shape[::-1]
+        slider01 = "slider01.jpg"
+        background_01 = "background01.jpg"
+        cv2.imwrite(background_01, background_pic)
+        cv2.imwrite(slider01, slider_pic)
+        # 读取另存的滑块图
+        slider_pic = cv2.imread(slider01)
+        # 进行色彩转换
+        slider_pic = cv2.cvtColor(slider_pic, cv2.COLOR_BGR2GRAY)
+
+        # 获取色差的绝对值
+        slider_pic = abs(255 - slider_pic)
+        # 保存图片
+        cv2.imwrite(slider01, slider_pic)
+        # 读取滑块
+        slider_pic = cv2.imread(slider01)
+        # 读取背景图
+        background_pic = cv2.imread(background_01)
+
+        # 比较两张图的重叠区域
+        result = cv2.matchTemplate(slider_pic, background_pic, cv2.TM_CCOEFF_NORMED)
+        # 获取图片的缺口位置
+        top, left = np.unravel_index(result.argmax(), result.shape)
+        # print("Current notch position:", (left, top, left + width, top + height))
+
+        return left + width + correct
+
+    def _readb64(self, base64_string):
+        _imgdata = base64.b64decode(base64_string)
+        _image = Image.open(BytesIO(_imgdata))
+
+        return cv2.cvtColor(np.array(_image), cv2.COLOR_RGB2BGR)
+
+    def refresh(self):
+        refresh_button = self.driver.find_element_by_xpath(
+            '/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[1]/div/div/i')
+        refresh_button.click()
+        time.sleep(5)
+
+    def pass_verification_or_not(self):
+        try:
+            return self.driver.find_element_by_id('recaptcha_div')
+        except NoSuchElementException:
+            return None
+
+    def _handle_with_slide(self):
+
+        while True:
+            slider_ele = self.get_slider()
+            icon_ele = self.get_slider_icon_ele()
+            img_ele = self.get_bg_img_ele()
+
+            distance = self.get_element_slide_distance(icon_ele, img_ele, 1)
+
+            if distance <= 100:
+                self.refresh()
+                continue
+
+            track = self.get_track(distance)
+            self.move_to_gap(slider_ele, track)
+
+            time.sleep(5)
+            if not self.pass_verification_or_not():
+                break
+
+    def get_slider(self):
+        WebDriverWait(self.driver, 15).until(
+            EC.presence_of_element_located(
+                (By.XPATH, '/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/i'))
+        )
+        return self.driver.find_element_by_xpath('/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/i')
+
+    def get_slider_icon_ele(self):
+        canvas = self.driver.find_element_by_xpath('//*[@id="bockCanvas"]')
+        canvas_base64 = self.driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
+        return canvas_base64
+
+    def get_bg_img_ele(self):
+        canvas = self.driver.find_element_by_xpath('//*[@id="imgCanvas"]')
+        canvas_base64 = self.driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
+        return canvas_base64
+
+    def move_to_gap(self, slider, track):
+        ActionChains(self.driver).click_and_hold(slider).perform()
+
+        for x in track:
+            ActionChains(self.driver).move_by_offset(xoffset=x, yoffset=0).perform()
+        time.sleep(0.5)  # move to the right place and take a break
+        ActionChains(self.driver).release().perform()
+
+    def get_track(self, distance):
+        """
+        follow Newton's laws of motion
+        ①v=v0+at
+        ②s=v0t+(1/2)at²
+        ③v²-v0²=2as
+        """
+        track = []
+        current = 0
+        # start to slow until 4/5 of total distance
+        mid = distance * 4 / 5
+        # time period
+        t = 0.2
+        # initial speed
+        v = 50
+
+        while current < distance:
+            if current < mid:
+                # acceleration
+                a = 3
+            else:
+                # acceleration
+                a = -10
+            # # initial speed v0
+            v0 = v
+            # x = v0t + 1/2 * a * t^2
+            move = v0 * t + 1 / 2 * a * t * t
+            # current speed, v = v0 + at
+            v = v0 + a * t
+            current += move
+            track.append(round(move))
+
     def _add_cookie_jar_into_option(self, option):
         return option.copy_and_extend_by(meta={'cookiejar': self._cookiejar_id})
 
