@@ -181,6 +181,7 @@ class ContentGetter:
         tds = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table/tbody/tr/td')
         for i in range(int(len(tds) / 17)):
             appointment_date = ''.join(tds[i * 17 + 5].xpath('.//text()').extract())
+            gate_out_date = ''.join(tds[i * 17 + 3].xpath('.//text()').extract()).strip()
 
             if re.search('([0-9]+/[0-9]+/[0-9]{4}[0-9]{4}-[0-9]{4})', appointment_date):
                 date_split_list = appointment_date.split('/')
@@ -188,10 +189,15 @@ class ContentGetter:
                 date_split_list[-1] = date_split_list[-1][:4]
                 appointment_date = '/'.join(date_split_list) + ' ' + time_split_list[0]
 
+            if re.search('([0-9]+/[0-9]+/[0-9]{4} [0-9]+:[0-9]{2})', gate_out_date):
+                date_split_list = gate_out_date.split('\n')
+                gate_out_date = date_split_list[-1]
+
             res.append(
                 {
                     'container_no': ''.join(tds[i * 17 + 1].xpath('.//text()').extract()).strip().replace('-', ''),
                     'ready_for_pick_up': ''.join(tds[i * 17 + 2].xpath('.//text()').extract()).strip(),
+                    'gate_out_date': gate_out_date,
                     'appointment_date': appointment_date.strip(),
                     'customs_release': ''.join(tds[i * 17 + 6].xpath('.//text()').extract()).strip(),
                     'freight_release': ''.join(tds[i * 17 + 7].xpath('.//text()').extract()).strip(),
