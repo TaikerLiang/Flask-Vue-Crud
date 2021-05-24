@@ -295,7 +295,7 @@ class ContentGetter:
             icon_ele = self.get_slider_icon_ele()
             img_ele = self.get_bg_img_ele()
 
-            distance = self.get_element_slide_distance(icon_ele, img_ele, 4)
+            distance = self.get_element_slide_distance(icon_ele, img_ele, 1)
 
             if distance <= 100:
                 self.refresh()
