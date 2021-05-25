@@ -27,17 +27,30 @@ class MaherContentGetter:
     def __init__(self):
         options = webdriver.ChromeOptions()
         options.add_argument('--disable-extensions')
+        options.add_argument('--disable-notifications')
         options.add_argument('--headless')
+        options.add_argument("--enable-javascript")
         options.add_argument('--disable-gpu')
+        options.add_argument(
+            f'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
+            f'Chrome/88.0.4324.96 Safari/537.36'
+        )
         options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--no-sandbox')
         options.add_argument('--window-size=1920,1080')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-blink-features=AutomationControlled')
+        options.add_experimental_option('excludeSwitches', ['enable-automation'])
+        options.add_experimental_option('useAutomationExtension', False)
 
         self.driver = webdriver.Chrome(options=options)
 
     def search(self, container_no_list: List):
         container_inquiry_text_area = self.driver.find_element_by_css_selector("textarea[name='equipment']")
         container_inquiry_text_area.clear()
+
+        if len(container_no_list) == 1:
+            container_no_list = container_no_list + container_no_list
+
         container_inquiry_text_area.send_keys('\n'.join(container_no_list))
 
         search_btn = self.driver.find_element_by_css_selector("input[onclick='Search();']")
@@ -208,7 +221,7 @@ class SearchRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table, numbers=len(container_no_list))
 
         res = []
-        for i in range(len(container_no_list)):
+        for i in range(len(set(container_no_list))):
             res.append(
                 {
                     'container_no': table_locator.get_cell(left=i, top='Container'),

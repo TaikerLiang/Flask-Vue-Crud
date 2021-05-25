@@ -151,6 +151,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
 
         mbl_status = self._extract_mbl_status(response=response)
 
+        # TODO: refactor here
         if mbl_status == STATUS_ONE_CONTAINER:
             routing_rule = ContainerStatusRoutingRule()
             for item in routing_rule.handle(response=response):
