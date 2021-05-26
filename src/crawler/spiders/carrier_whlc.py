@@ -418,7 +418,6 @@ class BookingRoutingRule(BaseRoutingRule):
         for container_status in event_list:
             container_statuses.append(
                 ContainerStatusItem(
-                    container_no=container_no,
                     container_key=container_no,
                     local_date_time=container_status['local_date_time'],
                     description=container_status['description'],
