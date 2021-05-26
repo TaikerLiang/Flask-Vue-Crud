@@ -4,6 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
 from crawler.spiders.carrier_hdmu import ContainerRoutingRule, ItemRecorder
 from test.spiders.carrier_hdmu import container
 
@@ -26,8 +27,7 @@ def test_container_routing_rule(sub, mbl_no, sample_loader, container_no, contai
     html_text = sample_loader.read_file(sub, 'sample.html')
 
     option = ContainerRoutingRule.build_request_option(
-        mbl_no=mbl_no, container_index=container_index, h_num=0, cookies={}
-    )
+        search_no=mbl_no, search_type=SHIPMENT_TYPE_MBL, container_index=container_index, h_num=0, cookies={})
 
     response = TextResponse(
         url=option.url,
