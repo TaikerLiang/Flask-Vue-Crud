@@ -368,6 +368,11 @@ class BookingRoutingRule(BaseRoutingRule):
             event_list = self._extract_container_status(response=history_selector)
             container_status_items = self._make_container_status_items(container_no, event_list)
 
+            yield ContainerItem(
+                container_key=container_no,
+                container_no=container_no,
+            )
+
             for item in container_status_items:
                 yield item
 
