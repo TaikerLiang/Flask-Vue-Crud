@@ -1005,7 +1005,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
 
     def _extract_booking_no_and_vessel_voyage(self, response: scrapy.Selector) -> Dict:
         tables = response.css('table table')
-        rule = CssQueryExistMatchRule(css_query='td.f13tabb2')
+        rule = CssQueryExistMatchRule(css_query='td.f12wrdb2')
         table = find_selector_from(selectors=tables, rule=rule)
 
         data_tds = table.css('td.f12wrdb2')[1:]  # first td is icon
@@ -1106,12 +1106,19 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table)
         table_extractor = TableExtractor(table_locator=table_locator)
 
+        date_pattern = re.compile(r"\w+-\d+-\d+\s\d+:\d+") # "MAY-10-2021 16:31"
+
         for left in table_locator.iter_left_headers():
+            full_date_cell = table_extractor.extract_cell(top='Empty Out', left=left)
+            empty_date_cell = table_extractor.extract_cell(top='Full return to', left=left)
+
+            print("=======================================================")
+
             container_infos.append({
                 'container_no': table_extractor.extract_cell(
                     top='Container No.', left=left, extractor=FirstTextTdExtractor(css_query='a::text')),
-                'full_pickup_date': table_extractor.extract_cell(top='Pickup Date', left=left),
-                'empty_pickup_date': table_extractor.extract_cell(top='Full in Date', left=left),
+                'full_pickup_date': date_pattern.search(full_date_cell).group(0),
+                'empty_pickup_date': date_pattern.search(empty_date_cell).group(0),
             })
 
         return container_infos
