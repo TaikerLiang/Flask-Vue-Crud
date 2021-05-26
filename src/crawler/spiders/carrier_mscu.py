@@ -8,13 +8,18 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
     LoadWebsiteTimeOutError, CarrierResponseFormatError, CarrierInvalidMblNoError, SuspiciousOperationError,
-)
+    CarrierInvalidSearchNoError)
 from crawler.core_carrier.items import (
-    ContainerItem, ContainerStatusItem, LocationItem, MblItem, DebugItem, BaseCarrierItem
+    ContainerItem,
+    ContainerStatusItem,
+    LocationItem,
+    MblItem,
+    DebugItem,
+    BaseCarrierItem,
 )
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
@@ -30,15 +35,25 @@ class CarrierMscuSpider(BaseCarrierSpider):
     def __init__(self, *args, **kwargs):
         super(CarrierMscuSpider, self).__init__(*args, **kwargs)
 
-        rules = [
+        bill_rules = [
             HomePageRoutingRule(),
-            MainRoutingRule(),
+            MainRoutingRule(search_type=SHIPMENT_TYPE_MBL),
         ]
 
-        self._rule_manager = RuleManager(rules=rules)
+        booking_rules = [
+            HomePageRoutingRule(),
+            MainRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
+        ]
+
+        if self.mbl_no:
+            self._rule_manager = RuleManager(rules=bill_rules)
+            self.search_no = self.mbl_no
+        else:
+            self._rule_manager = RuleManager(rules=booking_rules)
+            self.search_no = self.booking_no
 
     def start(self):
-        option = HomePageRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        option = HomePageRoutingRule.build_request_option(search_no=self.search_no)
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -86,13 +101,13 @@ class HomePageRoutingRule(BaseRoutingRule):
     name = 'HOME_PAGE'
 
     @classmethod
-    def build_request_option(cls, mbl_no) -> RequestOption:
+    def build_request_option(cls, search_no) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url='https://www.msc.com/track-a-shipment?agencyPath=twn',
             meta={
-                'mbl_no': mbl_no,
+                'search_no': search_no,
             },
         )
 
@@ -100,13 +115,13 @@ class HomePageRoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def handle(self, response):
-        mbl_no = response.meta['mbl_no']
+        search_no = response.meta['search_no']
 
         view_state = response.css('input#__VIEWSTATE::attr(value)').get()
         validation = response.css('input#__EVENTVALIDATION::attr(value)').get()
 
         yield MainRoutingRule.build_request_option(
-            mbl_no=mbl_no, view_state=view_state, validation=validation)
+            search_no=search_no, view_state=view_state, validation=validation)
 
 
 # -------------------------------------------------------------------------------
@@ -115,13 +130,16 @@ class HomePageRoutingRule(BaseRoutingRule):
 class MainRoutingRule(BaseRoutingRule):
     name = 'MAIN'
 
+    def __init__(self, search_type):
+        self._search_type = search_type
+
     @classmethod
-    def build_request_option(cls, mbl_no, view_state, validation) -> RequestOption:
+    def build_request_option(cls, search_no, view_state, validation) -> RequestOption:
         form_data = {
             '__EVENTTARGET': 'ctl00$ctl00$plcMain$plcMain$TrackSearch$hlkSearch',
             '__EVENTVALIDATION': validation,
             '__VIEWSTATE': view_state,
-            'ctl00$ctl00$plcMain$plcMain$TrackSearch$txtBolSearch$TextField': mbl_no,
+            'ctl00$ctl00$plcMain$plcMain$TrackSearch$txtBolSearch$TextField': search_no,
         }
 
         return RequestOption(
@@ -129,16 +147,14 @@ class MainRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_POST_FORM,
             form_data=form_data,
             url='https://www.msc.com/track-a-shipment?agencyPath=twn',
-            meta={
-                'mbl_no': mbl_no,
-            },
         )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
 
     def handle(self, response):
-        self._check_mbl_no(response=response)
+        if self._is_search_no_invalid(response=response):
+            raise CarrierInvalidSearchNoError(search_type=self._search_type)
 
         extractor = Extractor()
 
@@ -174,12 +190,11 @@ class MainRoutingRule(BaseRoutingRule):
         else:
             raise CarrierResponseFormatError(reason=f'Different place_of_deliv: `{place_of_deliv_set}`')
 
-        mbl_no = extractor.extract_mbl_no(response=response)
+        search_no = extractor.extract_search_no(response=response)
         main_info = extractor.extract_main_info(response=response)
         latest_update = extractor.extract_latest_update(response=response)
 
-        yield MblItem(
-            mbl_no=mbl_no,
+        mbl_item = MblItem(
             pol=LocationItem(name=main_info['pol']),
             pod=LocationItem(name=main_info['pod']),
             etd=main_info['etd'],
@@ -187,31 +202,36 @@ class MainRoutingRule(BaseRoutingRule):
             place_of_deliv=LocationItem(name=place_of_deliv),
             latest_update=latest_update,
         )
+        if self._search_type == SHIPMENT_TYPE_MBL:
+            mbl_item['mbl_no'] = search_no
+        else:
+            mbl_item['booking_no'] = search_no
+        yield mbl_item
 
     @staticmethod
-    def _check_mbl_no(response: scrapy.Selector):
+    def _is_search_no_invalid(response: scrapy.Selector):
         error_message = response.css('div#ctl00_ctl00_plcMain_plcMain_pnlTrackingResults > h3::text').get()
         if error_message == 'No matching tracking information. Please try again.':
-            raise CarrierInvalidMblNoError()
+            return True
+        return False
 
 
 # -------------------------------------------------------------------------------
 
 
 class Extractor:
-
     def __init__(self):
         self._mbl_no_pattern = re.compile(r'^Bill of lading: (?P<mbl_no>\S+) ([(]\d+ containers?[)])?$')
         self._container_no_pattern = re.compile(r'^Container: (?P<container_no>\S+)$')
         self._latest_update_pattern = re.compile(r'^Tracking results provided by MSC on (?P<latest_update>.+)$')
 
-    def extract_mbl_no(self, response: scrapy.Selector):
-        mbl_no_text = response.css('a#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_hlkBOLToggle::text').get()
+    def extract_search_no(self, response: scrapy.Selector):
+        search_no_text = response.css('a#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_hlkBOLToggle::text').get()
 
-        if not mbl_no_text:
+        if not search_no_text:
             return None
 
-        return self._parse_mbl_no(mbl_no_text)
+        return self._parse_mbl_no(search_no_text)
 
     def _parse_mbl_no(self, mbl_no_text: str):
         """
@@ -228,8 +248,9 @@ class Extractor:
     @staticmethod
     def extract_main_info(response: scrapy.Selector):
         main_outer = response.css('div#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_pnlBOLContent')
-        error_message = 'Can not find main information frame by css `div#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00' \
-                        '_pnlBOLContent`'
+        error_message = (
+            'Can not find main information frame by css `div#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00' '_pnlBOLContent`'
+        )
         if not main_outer:
             raise CarrierResponseFormatError(reason=error_message)
 
@@ -272,11 +293,13 @@ class Extractor:
             if not movements_table:
                 raise CarrierResponseFormatError(reason='Can not find movements_table !!!')
 
-            map_list.append({
-                'container_no_bar': container_no_bar,
-                'container_stats_table': container_stats_table,
-                'movements_table': movements_table,
-            })
+            map_list.append(
+                {
+                    'container_no_bar': container_no_bar,
+                    'container_stats_table': container_stats_table,
+                    'movements_table': movements_table,
+                }
+            )
 
         return map_list
 
@@ -330,14 +353,16 @@ class Extractor:
             else:
                 raise CarrierResponseFormatError(reason=f'Unknown schedule_status: `{schedule_status}`')
 
-            container_status_list.append({
-                'location': table_extractor.extract_cell(top='Location', left=left, extractor=td_extractor),
-                'local_date_time': table_extractor.extract_cell(top='Date', left=left, extractor=td_extractor),
-                'description': table_extractor.extract_cell(top='Description', left=left, extractor=td_extractor),
-                'vessel': table_extractor.extract_cell(top='Vessel', left=left, extractor=td_extractor),
-                'voyage': table_extractor.extract_cell(top='Voyage', left=left, extractor=td_extractor),
-                'est_or_actual': est_or_actual,
-            })
+            container_status_list.append(
+                {
+                    'location': table_extractor.extract_cell(top='Location', left=left, extractor=td_extractor),
+                    'local_date_time': table_extractor.extract_cell(top='Date', left=left, extractor=td_extractor),
+                    'description': table_extractor.extract_cell(top='Description', left=left, extractor=td_extractor),
+                    'vessel': table_extractor.extract_cell(top='Vessel', left=left, extractor=td_extractor),
+                    'voyage': table_extractor.extract_cell(top='Voyage', left=left, extractor=td_extractor),
+                    'est_or_actual': est_or_actual,
+                }
+            )
 
         return container_status_list
 
@@ -479,10 +504,7 @@ class ContainerStatusTableLocator(BaseTableLocator):
                 self._td_map[top_header].append(data_td)
 
         tr_class_name_list = [data_tr.css('::attr(class)').get() for data_tr in data_tr_list]
-        status_td_list = [
-            scrapy.Selector(text=f'<td>{tr_class_name}</td>')
-            for tr_class_name in tr_class_name_list
-        ]
+        status_td_list = [scrapy.Selector(text=f'<td>{tr_class_name}</td>') for tr_class_name in tr_class_name_list]
         self._td_map[self.STATUS_TOP] = status_td_list
 
         self._data_len = len(data_tr_list)
@@ -507,7 +529,6 @@ class ContainerStatusTableLocator(BaseTableLocator):
 
 
 class MscuCarrierChromeDriver:
-
     def __init__(self):
         prefs = {
             'profile.default_content_setting_values': {'images': 2},

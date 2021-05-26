@@ -17,10 +17,13 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,', [
-    ('01_single_container', 'NGBCB19030998'),
-    ('02_multiple_container', 'NGBCB19030160'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,',
+    [
+        ('01_single_container', 'NGBCB19030998'),
+        ('02_multiple_container', 'NGBCB19030160'),
+    ],
+)
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -32,7 +35,7 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
         encoding='utf-8',
         request=Request(
             url=option.url,
-        )
+        ),
     )
 
     routing_rule = MainInfoRoutingRule()
@@ -42,9 +45,12 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'NGBCB1903016', CarrierInvalidMblNoError),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,expect_exception',
+    [
+        ('e01_invalid_mbl_no', 'NGBCB1903016', CarrierInvalidMblNoError),
+    ],
+)
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -58,8 +64,8 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_lo
             url=option.url,
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: MainInfoRoutingRule.name,
-            }
-        )
+            },
+        ),
     )
 
     routing_rule = MainInfoRoutingRule()

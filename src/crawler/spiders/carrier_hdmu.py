@@ -12,13 +12,24 @@ from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError, SuspiciousOperationError, CarrierInvalidMblNoError,
     CarrierInvalidSearchNoError)
 from crawler.core_carrier.items import (
-    MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, BaseCarrierItem, DebugItem)
+    MblItem,
+    LocationItem,
+    VesselItem,
+    ContainerItem,
+    ContainerStatusItem,
+    BaseCarrierItem,
+    DebugItem,
+)
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption, ProxyMaxRetryError
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from, BaseMatchRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import (
-    TableExtractor, TopHeaderTableLocator, TopLeftHeaderTableLocator, LeftHeaderTableLocator)
+    TableExtractor,
+    TopHeaderTableLocator,
+    TopLeftHeaderTableLocator,
+    LeftHeaderTableLocator,
+)
 
 BASE_URL = 'http://www.hmm21.com'
 # item_name
@@ -35,7 +46,6 @@ class ForceRestart:
 
 
 class RequestQueue:
-
     def __init__(self):
         self._queue = []
 
@@ -261,6 +271,7 @@ class CarrierHdmuSpider(BaseCarrierSpider):
 
 # -------------------------------------------------------------------------------
 
+
 class CheckIpRule(BaseRoutingRule):
     name = 'IP'
 
@@ -480,11 +491,11 @@ class Cookies3RoutingRule(BaseRoutingRule):
         else:
             yield ForceRestart()
 
+
 # -------------------------------------------------------------------------------
 
 
 class SpecificThTextExistMatchRule(BaseMatchRule):
-
     def __init__(self, text):
         self._text = text
 
@@ -635,10 +646,12 @@ class MainRoutingRule(BaseRoutingRule):
         container_contents = self._extract_container_contents(response=response)
         h_num = -1
         for container_content in container_contents:
-            if all([
+            if all(
+                [
                     self._item_recorder.is_item_recorded(key=(CONTAINER, container_content.container_no)),
                     self._item_recorder.is_item_recorded(key=(AVAILABILITY, container_content.container_no)),
-            ]):
+                ]
+            ):
                 continue
 
             elif container_content.is_current:
@@ -654,7 +667,8 @@ class MainRoutingRule(BaseRoutingRule):
                     search_no=search_no,
                     search_type=self._search_type,
                     container_index=container_content.index,
-                    h_num=h_num, cookies=cookies,
+                    h_num=h_num,
+                    cookies=cookies,
                     under_line=under_line,
                 )
 
@@ -702,7 +716,8 @@ class MainRoutingRule(BaseRoutingRule):
     @staticmethod
     def _extract_cargo_delivery_info(response):
         table_exist_match_rule = CssQueryTextStartswithMatchRule(
-            css_query='::text', startswith='Cargo Delivery Information')
+            css_query='::text', startswith='Cargo Delivery Information'
+        )
         table_exist = find_selector_from(selectors=response.css('h4'), rule=table_exist_match_rule)
 
         if not table_exist:
@@ -813,11 +828,13 @@ class MainRoutingRule(BaseRoutingRule):
         for index, selector in enumerate(container_selectors):
             container_no = selector.css('a::text').get()
             is_current = bool(selector.css('a[class="redBoldLink"]').get())
-            container_contents.append(ContainerContent(
-                container_no=container_no,
-                index=index,
-                is_current=is_current,
-            ))
+            container_contents.append(
+                ContainerContent(
+                    container_no=container_no,
+                    index=index,
+                    is_current=is_current,
+                )
+            )
         return container_contents
 
     @staticmethod
@@ -1016,12 +1033,14 @@ class ContainerRoutingRule(BaseRoutingRule):
             location = table.extract_cell('Location', index, extractor=IgnoreDashTdExtractor())
             mode = table.extract_cell('Mode', index, extractor=IgnoreDashTdExtractor())
 
-            container_status_list.append({
-                'date': f'{date} {time}',
-                'location': location,
-                'status': table.extract_cell('Status Description', index),
-                'mode': mode,
-            })
+            container_status_list.append(
+                {
+                    'date': f'{date} {time}',
+                    'location': location,
+                    'status': table.extract_cell('Status Description', index),
+                    'mode': mode,
+                }
+            )
 
         return container_status_list
 
@@ -1033,7 +1052,8 @@ class ContainerRoutingRule(BaseRoutingRule):
     @staticmethod
     def _extract_empty_return_location(response):
         table_exist_match_rule = CssQueryTextStartswithMatchRule(
-            css_query='::text', startswith='Empty Container Return Location')
+            css_query='::text', startswith='Empty Container Return Location'
+        )
         table_exist = find_selector_from(selectors=response.css('h4'), rule=table_exist_match_rule)
 
         if not table_exist:
@@ -1126,7 +1146,6 @@ class AvailabilityRoutingRule(BaseRoutingRule):
 
 
 class RedBlueTdExtractor(BaseTableCellExtractor):
-
     def extract(self, cell: Selector):
         red_text_list = [c.strip() for c in cell.css('span.font_red::text').getall()]
         blue_text_list = [c.strip() for c in cell.css('span.font_blue::text').getall()]
@@ -1141,4 +1160,3 @@ class IgnoreDashTdExtractor(BaseTableCellExtractor):
         td_text = cell.css('::text').get()
         text = td_text.strip() if td_text else ''
         return text if text != '-' else None
-

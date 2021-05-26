@@ -17,14 +17,17 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no', [
-    ('01_not_finish', 'AXK0185154'),
-    ('02_finish', 'XHMN810789'),
-    ('03_multiple_containers', 'SHSE015942'),
-    ('04_por_dest', 'AWB0135426'),
-    ('05_pod_status_is_remaining', 'NANZ001007'),
-    ('06_container_status_has_extra_tr', 'AYU0320031')
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no',
+    [
+        ('01_not_finish', 'AXK0185154'),
+        ('02_finish', 'XHMN810789'),
+        ('03_multiple_containers', 'SHSE015942'),
+        ('04_por_dest', 'AWB0135426'),
+        ('05_pod_status_is_remaining', 'NANZ001007'),
+        ('06_container_status_has_extra_tr', 'AYU0320031'),
+    ],
+)
 def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
     html_text = sample_loader.read_file(sub, 'main_info.html')
 
@@ -39,8 +42,8 @@ def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: FirstTierRoutingRule.name,
                 'mbl_no': mbl_no,
-            }
-        )
+            },
+        ),
     )
 
     routing_rule = FirstTierRoutingRule(base_url='http://www.apl.com')
@@ -50,9 +53,12 @@ def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'XHMN810788', CarrierInvalidMblNoError),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,expect_exception',
+    [
+        ('e01_invalid_mbl_no', 'XHMN810788', CarrierInvalidMblNoError),
+    ],
+)
 def test_first_tier_routing_rule_error(sample_loader, sub, mbl_no, expect_exception):
     html_text = sample_loader.read_file(sub, 'main_info.html')
 
@@ -67,7 +73,7 @@ def test_first_tier_routing_rule_error(sample_loader, sub, mbl_no, expect_except
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: FirstTierRoutingRule.name,
                 'mbl_no': mbl_no,
-            }
+            },
         ),
     )
 

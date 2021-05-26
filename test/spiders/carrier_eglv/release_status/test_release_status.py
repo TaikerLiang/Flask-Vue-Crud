@@ -15,10 +15,13 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,', [
-    ('01_all_fill', '143982920890'),
-    ('02_release_status_data_not_found', '003902773938'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,',
+    [
+        ('01_all_fill', '143982920890'),
+        ('02_release_status_data_not_found', '003902773938'),
+    ],
+)
 def test_release_status_handler(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
@@ -28,7 +31,7 @@ def test_release_status_handler(sub, mbl_no, sample_loader):
         encoding='utf-8',
         request=Request(
             url='https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do',
-        )
+        ),
     )
 
     rule = ReleaseStatusRoutingRule()

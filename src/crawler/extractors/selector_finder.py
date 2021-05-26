@@ -5,7 +5,6 @@ import scrapy
 
 
 class BaseMatchRule:
-
     @abc.abstractmethod
     def check(self, selector: scrapy.Selector) -> bool:
         pass
@@ -34,7 +33,6 @@ class CssQueryExistMatchRule(BaseMatchRule):
 
 
 class CssQueryTextStartswithMatchRule(BaseMatchRule):
-
     def __init__(self, css_query: str, startswith: str):
         self._css_query = css_query
         self._startswith = startswith

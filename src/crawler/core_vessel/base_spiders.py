@@ -18,7 +18,7 @@ class BaseVesselSpider(scrapy.Spider):
         },
         'ITEM_PIPELINES': {
             VesselItemPipeline.get_setting_name(): 900,
-        }
+        },
     }
 
     def __init__(self, name=None, **kwargs):
@@ -28,7 +28,7 @@ class BaseVesselSpider(scrapy.Spider):
         self.vessel_name = kwargs['vessel_name']
         self.request_args = kwargs
 
-        to_save = ('save' in kwargs)
+        to_save = 'save' in kwargs
         self._saver = self._prepare_saver(to_save=to_save)
 
         self._error = False
@@ -53,7 +53,9 @@ class BaseVesselSpider(scrapy.Spider):
         if not to_save:
             return NullSaver()
 
-        save_folder = Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] {self.scac} {self.vessel_name}'
+        save_folder = (
+            Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] {self.scac} {self.vessel_name}'
+        )
 
         return FileSaver(folder_path=save_folder, logger=self.logger)
 

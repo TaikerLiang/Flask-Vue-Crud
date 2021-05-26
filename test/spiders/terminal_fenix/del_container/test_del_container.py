@@ -16,10 +16,10 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,container_no,not_finished', [
-    ('01_del_for_update', 'CAIU7086501', True),
-    ('02_del_after_search', 'CMAU6382395', False)
-])
+@pytest.mark.parametrize(
+    'sub,container_no,not_finished',
+    [('01_del_for_update', 'CAIU7086501', True), ('02_del_after_search', 'CMAU6382395', False)],
+)
 def test_del_container_handle(sub, container_no, not_finished, sample_loader):
     option = DelContainerFromTraceRoutingRule.build_request_option(
         container_no=container_no, authorization_token='', not_finished=not_finished
@@ -41,4 +41,3 @@ def test_del_container_handle(sub, container_no, not_finished, sample_loader):
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
-

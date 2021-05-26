@@ -18,17 +18,20 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no', [
-    ('01_one_container', 'GJWB1899760'),
-    ('02_multiple_containers', 'QSWB8011462'),
-    ('03_availability', 'TAWB0789799'),
-    ('04_red_time', 'NXWB1903966'),
-    ('05_1_without_lfd', 'QSWB8011632'),
-    ('05_2_without_lfd', 'QSWB8011630'),
-    ('06_1_original_bl', 'KETC0876470'),
-    ('06_2_original_bl', 'QSLB8267628'),
-    ('07_without_cargo_delivery_information', 'TYWB0924004')
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no',
+    [
+        ('01_one_container', 'GJWB1899760'),
+        ('02_multiple_containers', 'QSWB8011462'),
+        ('03_availability', 'TAWB0789799'),
+        ('04_red_time', 'NXWB1903966'),
+        ('05_1_without_lfd', 'QSWB8011632'),
+        ('05_2_without_lfd', 'QSWB8011630'),
+        ('06_1_original_bl', 'KETC0876470'),
+        ('06_2_original_bl', 'QSLB8267628'),
+        ('07_without_cargo_delivery_information', 'TYWB0924004'),
+    ],
+)
 def test_main_routing_rule(sample_loader, sub, mbl_no):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
@@ -41,7 +44,7 @@ def test_main_routing_rule(sample_loader, sub, mbl_no):
         request=Request(
             url=option.url,
             meta=option.meta,
-        )
+        ),
     )
 
     item_recorder = ItemRecorder()
@@ -70,7 +73,7 @@ def test_main_routing_rule_error(sample_loader, sub, mbl_no, expect_exception):
         request=Request(
             url=option.url,
             meta=option.meta,
-        )
+        ),
     )
 
     item_recorder = ItemRecorder()

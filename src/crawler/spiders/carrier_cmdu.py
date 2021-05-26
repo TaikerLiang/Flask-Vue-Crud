@@ -4,10 +4,18 @@ import scrapy
 from scrapy import Selector
 
 from crawler.core_carrier.exceptions import (
-    CarrierInvalidMblNoError, CarrierResponseFormatError, SuspiciousOperationError, DataNotFoundError
+    CarrierInvalidMblNoError,
+    CarrierResponseFormatError,
+    SuspiciousOperationError,
+    DataNotFoundError,
 )
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem
+    BaseCarrierItem,
+    MblItem,
+    LocationItem,
+    ContainerItem,
+    ContainerStatusItem,
+    DebugItem,
 )
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
@@ -105,6 +113,7 @@ class SearchPageRoutingRule(BaseRoutingRule):
         container_list = response.css('div#containerList')
         return bool(container_list)
 
+
 # ---------------------------------------------------------------------------------------------------
 
 
@@ -142,6 +151,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
 
         mbl_status = self._extract_mbl_status(response=response)
 
+        # TODO: refactor here
         if mbl_status == STATUS_ONE_CONTAINER:
             routing_rule = ContainerStatusRoutingRule()
             for item in routing_rule.handle(response=response):
@@ -152,7 +162,8 @@ class FirstTierRoutingRule(BaseRoutingRule):
 
             for container_no, container_url in container_no_and_url_list:
                 yield ContainerStatusRoutingRule.build_request_option(
-                    mbl_no=mbl_no, container_no=container_no, container_url=container_url)
+                    mbl_no=mbl_no, container_no=container_no, container_url=container_url
+                )
 
         elif mbl_status == STATUS_WEBSITE_SUSPEND:
             raise DataNotFoundError()
@@ -170,7 +181,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
         maybe_suspend_message = response.css('h1 + p::text').get()
 
         if maybe_suspend_message == (
-                'We have decided to temporarily suspend all access to our eCommerce websites to protect our customers.'
+            'We have decided to temporarily suspend all access to our eCommerce websites to protect our customers.'
         ):
             return STATUS_WEBSITE_SUSPEND
         elif result_message is None:
@@ -287,7 +298,6 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
 
 class ContainerStatusTableLocator(BaseTableLocator):
-
     def __init__(self):
         self._td_map = {}
         self._data_len = 0

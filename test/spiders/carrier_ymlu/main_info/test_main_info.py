@@ -16,16 +16,19 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,', [
-    ('01_all_exist', 'W216104890'),
-    ('02_no_xta', 'W209047989'),
-    ('03_no_release', 'I209365239'),
-    ('04_multi_containers', 'W241061370'),
-    ('05_with_firm_code', 'W226020752'),
-    ('06_ip_blocked', 'E209048375'),
-    ('07_delivery_without_time_status', 'W209139591'),
-    ('08_to_be_advised_ver2', 'W470030608'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,',
+    [
+        ('01_all_exist', 'W216104890'),
+        ('02_no_xta', 'W209047989'),
+        ('03_no_release', 'I209365239'),
+        ('04_multi_containers', 'W241061370'),
+        ('05_with_firm_code', 'W226020752'),
+        ('06_ip_blocked', 'E209048375'),
+        ('07_delivery_without_time_status', 'W209139591'),
+        ('08_to_be_advised_ver2', 'W470030608'),
+    ],
+)
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
@@ -43,7 +46,7 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
         request=Request(
             url=request_option.url,
             meta=request_option.meta,
-        )
+        ),
     )
 
     rule = MainInfoRoutingRule()
@@ -53,9 +56,12 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'I209383517', CarrierInvalidMblNoError),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,expect_exception',
+    [
+        ('e01_invalid_mbl_no', 'I209383517', CarrierInvalidMblNoError),
+    ],
+)
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
@@ -73,7 +79,7 @@ def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_lo
         request=Request(
             url=request_option.url,
             meta=request_option.meta,
-        )
+        ),
     )
 
     rule = MainInfoRoutingRule()

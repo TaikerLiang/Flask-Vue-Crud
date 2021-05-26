@@ -15,20 +15,23 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,container_no,follow_url', [
-    (
-        '01',
-        'W209131160',
-        'YMLU3555177',
-        'ctconnect.aspx?rdolType=BL&ctnrno=YMLU3555177&blno=W209131160&movertype=31&lifecycle=2',
-    ),
-    (
-        '02_eol_in_location',
-        'W232317137',
-        'DRYU4228115',
-        'ctconnect.aspx?rdolType=BL&ctnrno=DRYU4228115&blno=W232317137&movertype=11&lifecycle=1',
-    ),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,container_no,follow_url',
+    [
+        (
+            '01',
+            'W209131160',
+            'YMLU3555177',
+            'ctconnect.aspx?rdolType=BL&ctnrno=YMLU3555177&blno=W209131160&movertype=31&lifecycle=2',
+        ),
+        (
+            '02_eol_in_location',
+            'W232317137',
+            'DRYU4228115',
+            'ctconnect.aspx?rdolType=BL&ctnrno=DRYU4228115&blno=W232317137&movertype=11&lifecycle=1',
+        ),
+    ],
+)
 def test_main_info_routing_rule(sub, mbl_no, container_no, follow_url, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
@@ -43,7 +46,7 @@ def test_main_info_routing_rule(sub, mbl_no, container_no, follow_url, sample_lo
         request=Request(
             url=container_status_request_option.url,
             meta=container_status_request_option.meta,
-        )
+        ),
     )
 
     rule = ContainerStatusRoutingRule()

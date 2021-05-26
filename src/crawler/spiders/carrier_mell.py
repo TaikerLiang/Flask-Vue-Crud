@@ -6,10 +6,19 @@ from typing import List, Dict
 import scrapy
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
-    SuspiciousOperationError
+from crawler.core_carrier.exceptions import (
+    CarrierInvalidMblNoError,
+    CarrierResponseFormatError,
+    SuspiciousOperationError,
+)
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, ContainerItem, ContainerStatusItem, LocationItem, DebugItem)
+    BaseCarrierItem,
+    MblItem,
+    ContainerItem,
+    ContainerStatusItem,
+    LocationItem,
+    DebugItem,
+)
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 
@@ -51,10 +60,7 @@ class CarrierMellSpider(BaseCarrierSpider):
                 raise RuntimeError()
 
     def _build_request_by(self, option: RequestOption):
-        meta = {
-            RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name,
-            **option.meta
-        }
+        meta = {RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name, **option.meta}
 
         if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
@@ -158,11 +164,13 @@ class MainInfoRoutingRule(BaseRoutingRule):
         for container_status in container_status_list:
             local_date_time = self._timestamp_to_date(container_status['DateTime'])
 
-            return_container_status_list.append({
-                'local_date_time': local_date_time,
-                'location_name': f'{container_status["PortName"]} ({container_status["LocationName"]})',
-                'description': container_status['Name'],
-            })
+            return_container_status_list.append(
+                {
+                    'local_date_time': local_date_time,
+                    'location_name': f'{container_status["PortName"]} ({container_status["LocationName"]})',
+                    'description': container_status['Name'],
+                }
+            )
 
         return return_container_status_list
 

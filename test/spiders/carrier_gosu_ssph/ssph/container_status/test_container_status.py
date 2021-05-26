@@ -15,14 +15,16 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,eta,container_no', [
-    ('01_basic', 'SSPHJOR8017471', '06-Oct-2019', 'ZCSU8832075'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,eta,container_no',
+    [
+        ('01_basic', 'SSPHJOR8017471', '06-Oct-2019', 'ZCSU8832075'),
+    ],
+)
 def test_main_info_routing_rule(sub, mbl_no, eta, container_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.html')
 
-    option = ContainerStatusRoutingRule.build_request_option(
-        mbl_no=mbl_no, eta=eta, container_no=container_no)
+    option = ContainerStatusRoutingRule.build_request_option(mbl_no=mbl_no, eta=eta, container_no=container_no)
 
     response = TextResponse(
         url=option.url,
@@ -32,8 +34,8 @@ def test_main_info_routing_rule(sub, mbl_no, eta, container_no, sample_loader):
             url=option.url,
             meta={
                 'container_key': container_no,
-            }
-        )
+            },
+        ),
     )
 
     routing_rule = ContainerStatusRoutingRule()
