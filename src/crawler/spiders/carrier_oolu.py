@@ -463,7 +463,7 @@ class CargoTrackingRule(BaseRoutingRule):
         container_list = cls._extract_container_list(selector_map=selector_map)
         for i, container in enumerate(container_list):
             yield ContainerStatusRule.build_request_option(
-                container_no=container['container_no'],
+                container_no=container['container_no'].strip(),
                 click_element_css=f"a[id='form:link{i}']",
             )
 
