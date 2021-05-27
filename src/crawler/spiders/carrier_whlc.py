@@ -463,7 +463,7 @@ class WhlcDriver:
         options = webdriver.FirefoxOptions()
         options.set_preference("dom.webnotifications.serviceworker.enabled", False)
         options.set_preference("dom.webnotifications.enabled", False)
-        options.add_argument('--headless')
+        # options.add_argument('--headless')
 
         self._driver = webdriver.Firefox(firefox_profile=profile, options=options)
 
@@ -559,11 +559,15 @@ class BookingBasicTableLocator(BaseTableLocator):
         tr_list = table.css('tbody tr')
 
         for tr in tr_list:
-            titles = tr.css('th strong::text').getall()
-            values = tr.css('td::text').getall()
+            # the value will be emtpy
+            titles = tr.css('th')
+            values = tr.css('td')
 
             for i in range(len(titles)):
-                self._td_map[titles[i].strip()] = values[i].strip()
+                title = titles[i].css('strong::text').get().strip()
+                value = (values[i].css('::text').get() or '').strip()
+                self._td_map[title] = value
+
 
     def get_cell(self, top, left=None) -> Selector:
         return self._td_map[top]
