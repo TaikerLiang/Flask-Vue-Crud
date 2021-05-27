@@ -463,7 +463,7 @@ class WhlcDriver:
         options = webdriver.FirefoxOptions()
         options.set_preference("dom.webnotifications.serviceworker.enabled", False)
         options.set_preference("dom.webnotifications.enabled", False)
-        # options.add_argument('--headless')
+        options.add_argument('--headless')
 
         self._driver = webdriver.Firefox(firefox_profile=profile, options=options)
 
