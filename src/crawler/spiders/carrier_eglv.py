@@ -37,6 +37,7 @@ from crawler.extractors.selector_finder import (
 )
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
+from scrapy import selector
 
 CAPTCHA_RETRY_LIMIT = 3
 EGLV_INFO_URL = 'https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do'
@@ -863,7 +864,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     def _extract_container_status_list(response: scrapy.Selector) -> List[Dict]:
         tables = response.css('table table')
 
-        rule = CssQueryTextStartswithMatchRule(css_query='td.f13tabb2::text', startswith='Container Moves')
+        rule = CssQueryTextStartswithMatchRule(css_query='td::text', startswith='Container Moves')
         table_selector = find_selector_from(selectors=tables, rule=rule)
         if table_selector is None:
             raise CarrierResponseFormatError(reason='Can not found Container Status table!!!')
@@ -997,7 +998,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
             )
 
             yield ContainerStatusRoutingRule.build_request_option(
-                search_no=booking_no,
+                search_no=hidden_form_info['bl_no'],
                 container_no=container_info['container_no'],
                 onboard_date=hidden_form_info['onboard_date'],
                 pol=hidden_form_info['pol'],
@@ -1005,7 +1006,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
 
     def _extract_booking_no_and_vessel_voyage(self, response: scrapy.Selector) -> Dict:
         tables = response.css('table table')
-        rule = CssQueryExistMatchRule(css_query='td.f13tabb2')
+        rule = CssQueryExistMatchRule(css_query='td.f12wrdb2')
         table = find_selector_from(selectors=tables, rule=rule)
 
         data_tds = table.css('td.f12wrdb2')[1:]  # first td is icon
@@ -1064,8 +1065,8 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_filing_info(response: scrapy.Selector) -> Dict:
-        tables = response.css('table table')
-        rule = CssQueryTextStartswithMatchRule(css_query='td.f12rowb4::text', startswith='Advance Filing Status')
+        tables = response.css('table')
+        rule = CssQueryTextStartswithMatchRule(css_query='td.f13tabb2::text', startswith='Advance Filing Status')
         table = find_selector_from(selectors=tables, rule=rule)
         if not table:
             return {
@@ -1106,12 +1107,17 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table)
         table_extractor = TableExtractor(table_locator=table_locator)
 
+        date_pattern = re.compile(r"\w+-\d+-\d+\s\d+:\d+") # "MAY-10-2021 16:31"
+
         for left in table_locator.iter_left_headers():
+            full_date_cell = table_extractor.extract_cell(top='Empty Out', left=left)
+            empty_date_cell = table_extractor.extract_cell(top='Full return to', left=left)
+
             container_infos.append({
                 'container_no': table_extractor.extract_cell(
                     top='Container No.', left=left, extractor=FirstTextTdExtractor(css_query='a::text')),
-                'full_pickup_date': table_extractor.extract_cell(top='Pickup Date', left=left),
-                'empty_pickup_date': table_extractor.extract_cell(top='Full in Date', left=left),
+                'full_pickup_date': date_pattern.search(full_date_cell).group(0),
+                'empty_pickup_date': date_pattern.search(empty_date_cell).group(0),
             })
 
         return container_infos
