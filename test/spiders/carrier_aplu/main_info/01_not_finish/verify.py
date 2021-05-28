@@ -2,6 +2,7 @@ from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusIt
 
 
 def verify(results):
+    results.pop(0)
 
     assert results[0] == MblItem(
         por=LocationItem(name=None),

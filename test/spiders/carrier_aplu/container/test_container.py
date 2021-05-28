@@ -4,7 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.spiders.carrier_aplu import ContainerStatusRoutingRule, CarrierApluSpider
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
+from crawler.spiders.carrier_anlc_aplu_cmdu import ContainerStatusRoutingRule, CarrierApluSpider
 from test.spiders.carrier_aplu import container
 
 
@@ -26,8 +27,7 @@ def test_container_status_routing_rule(sample_loader, sub, mbl_no, container_no)
     html_text = sample_loader.read_file(sub, 'container.html')
 
     option = ContainerStatusRoutingRule.build_request_option(
-        mbl_no=mbl_no, container_no=container_no, base_url=CarrierApluSpider.base_url
-    )
+        container_no=container_no, search_no=mbl_no, search_type=SHIPMENT_TYPE_MBL, base_url=CarrierApluSpider.base_url)
 
     response = TextResponse(
         url=option.url,
@@ -35,9 +35,7 @@ def test_container_status_routing_rule(sample_loader, sub, mbl_no, container_no)
         body=html_text,
         request=Request(
             url=option.url,
-            meta={
-                'container_no': container_no,
-            },
+            meta=option.meta,
         ),
     )
 
