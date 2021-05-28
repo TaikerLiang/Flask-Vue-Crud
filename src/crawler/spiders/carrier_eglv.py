@@ -1065,8 +1065,8 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_filing_info(response: scrapy.Selector) -> Dict:
-        tables = response.css('table table')
-        rule = CssQueryTextStartswithMatchRule(css_query='td.f12rowb4::text', startswith='Advance Filing Status')
+        tables = response.css('table')
+        rule = CssQueryTextStartswithMatchRule(css_query='td.f13tabb2::text', startswith='Advance Filing Status')
         table = find_selector_from(selectors=tables, rule=rule)
         if not table:
             return {
