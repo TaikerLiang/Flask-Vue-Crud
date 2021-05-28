@@ -34,6 +34,5 @@ def verify(results):
         container_key='FCIU4134820',
         description='Export gate-in from Customer to Port of Loading',
         local_date_time='28-Mar-2020 12:11',
-        location=LocationItem(name="NINGBO (ZJ), CHINA. PEOPLE'S REPUBLIC")
+        location=LocationItem(name="NINGBO (ZJ), CHINA. PEOPLE'S REPUBLIC"),
     )
-

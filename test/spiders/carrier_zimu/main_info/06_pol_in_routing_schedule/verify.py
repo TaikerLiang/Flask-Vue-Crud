@@ -34,6 +34,5 @@ def verify(results):
         container_key='GAOU6141898',
         description='Vessel departure from Port of Loading to Port of Discharge',
         local_date_time='29-Nov-2019 03:15',
-        location=LocationItem(name='SAVANNAH (GA), U.S.A.')
+        location=LocationItem(name='SAVANNAH (GA), U.S.A.'),
     )
-

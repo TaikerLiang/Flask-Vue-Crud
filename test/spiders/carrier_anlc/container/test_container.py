@@ -16,10 +16,13 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,container_no', [
-    ('01_basic', 'BHCU2231403', 'BHCU2231403'),
-    ('02_pod_status_is_remaining', 'TEXU1028151', 'TEXU1028151'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,container_no',
+    [
+        ('01_basic', 'BHCU2231403', 'BHCU2231403'),
+        ('02_pod_status_is_remaining', 'TEXU1028151', 'TEXU1028151'),
+    ],
+)
 def test_container_status_routing_rule(sample_loader, sub, mbl_no, container_no):
     html_text = sample_loader.read_file(sub, 'container.html')
 

@@ -59,4 +59,3 @@ def verify(results):
         voyage='947E',
         est_or_actual='E',
     )
-

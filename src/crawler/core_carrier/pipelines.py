@@ -10,7 +10,6 @@ from .base import CARRIER_RESULT_STATUS_DATA, CARRIER_RESULT_STATUS_DEBUG, CARRI
 
 
 class CarrierItemPipeline:
-
     @classmethod
     def get_setting_name(cls):
         return f'{__name__}.{cls.__name__}'
@@ -53,7 +52,6 @@ class CarrierItemPipeline:
 
 
 class CarrierResultCollector:
-
     def __init__(self, request_args):
         self._request_args = dict(request_args)
         self._basic = {}
@@ -132,8 +130,4 @@ class CarrierResultCollector:
         """
         drop private keys (startswith '_')
         """
-        return {
-            k: v
-            for k, v in item.items()
-            if not k.startswith('_')
-        }
+        return {k: v for k, v in item.items() if not k.startswith('_')}

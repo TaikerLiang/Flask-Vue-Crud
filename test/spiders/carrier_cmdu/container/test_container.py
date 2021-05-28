@@ -16,9 +16,12 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,container_no', [
-    ('01_basic', 'NBSF301194', 'ECMU9893257'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,container_no',
+    [
+        ('01_basic', 'NBSF301194', 'ECMU9893257'),
+    ],
+)
 def test_container_status_routing_rule(sample_loader, sub, mbl_no, container_no):
     html_text = sample_loader.read_file(sub, 'container.html')
 

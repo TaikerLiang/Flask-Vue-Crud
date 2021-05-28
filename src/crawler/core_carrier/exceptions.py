@@ -92,4 +92,3 @@ class DataNotFoundError(BaseCarrierError):
 
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail='<data-not-found>')
-

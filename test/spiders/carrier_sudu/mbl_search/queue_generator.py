@@ -17,4 +17,3 @@ def get_queue_by_sub(sub: str):
         queue.put(VoyageSpec(**voyage_spec_dict))
 
     return queue
-

@@ -4,8 +4,10 @@ from typing import List
 def verify(results: List):
     results.pop(0)
 
-    expect_url_fmt = \
-        'http://www.apl.com/ebusiness/tracking/detail/{container_no}?SearchCriteria=BL&SearchByReference={mbl_no}'
+    expect_url_fmt = (
+        f'http://www.apl.com/ebusiness/tracking/detail/{container_no}?SearchCriteria=BL&SearchByReference={mbl_no}'
+    )
+
 
     expect_url = expect_url_fmt.format(container_no='ECMU9893257', mbl_no='NBSF301194')
 
