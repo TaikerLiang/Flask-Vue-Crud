@@ -37,6 +37,7 @@ from crawler.extractors.selector_finder import (
 )
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
+from scrapy import selector
 
 CAPTCHA_RETRY_LIMIT = 3
 EGLV_INFO_URL = 'https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do'
@@ -863,7 +864,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     def _extract_container_status_list(response: scrapy.Selector) -> List[Dict]:
         tables = response.css('table table')
 
-        rule = CssQueryTextStartswithMatchRule(css_query='td.f13tabb2::text', startswith='Container Moves')
+        rule = CssQueryTextStartswithMatchRule(css_query='td::text', startswith='Container Moves')
         table_selector = find_selector_from(selectors=tables, rule=rule)
         if table_selector is None:
             raise CarrierResponseFormatError(reason='Can not found Container Status table!!!')
@@ -997,7 +998,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
             )
 
             yield ContainerStatusRoutingRule.build_request_option(
-                search_no=booking_no,
+                search_no=hidden_form_info['bl_no'],
                 container_no=container_info['container_no'],
                 onboard_date=hidden_form_info['onboard_date'],
                 pol=hidden_form_info['pol'],
@@ -1111,8 +1112,6 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
         for left in table_locator.iter_left_headers():
             full_date_cell = table_extractor.extract_cell(top='Empty Out', left=left)
             empty_date_cell = table_extractor.extract_cell(top='Full return to', left=left)
-
-            print("=======================================================")
 
             container_infos.append({
                 'container_no': table_extractor.extract_cell(
