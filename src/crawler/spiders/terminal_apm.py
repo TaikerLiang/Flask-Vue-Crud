@@ -73,6 +73,16 @@ class TerminalApmLASpider(ShareSpider):
     terminal_id = 'c56ab48b-586f-4fd2-9a1f-06721c94f3bb'
 
 
+class TerminalApmMASpider(ShareSpider):
+    name = 'terminal_apm_ma'
+    terminal_id = '369d208d-f0ad-4ea9-93d4-fbef44bbb5d8'
+
+
+class TerminalApmMBSpider(ShareSpider):
+    name = 'terminal_apm_mb'
+    terminal_id = 'eabe062a-f605-49a7-94d0-452695487430'
+
+
 class ContainerRoutingRule(BaseRoutingRule):
     name = 'CONTAINER'
 
