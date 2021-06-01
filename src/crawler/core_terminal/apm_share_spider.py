@@ -11,7 +11,7 @@ from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 BASE_URL = 'https://www.apmterminals.com'
 
 
-class ShareSpider(BaseMultiTerminalSpider):
+class ApmShareSpider(BaseMultiTerminalSpider):
     terminal_id = ''
 
     def __init__(self, *args, **kwargs):
