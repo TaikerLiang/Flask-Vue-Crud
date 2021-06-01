@@ -73,6 +73,7 @@ class ShareSpider(BaseMultiTerminalSpider):
 
 
 class TerminalApmPESpider(ShareSpider):
+    firms_code = 'E425'
     name = 'terminal_apm_pe_multi'
     terminal_id = 'cfc387ee-e47e-400a-80c5-85d4316f1af9'
 
@@ -81,6 +82,18 @@ class TerminalApmLASpider(ShareSpider):
     firms_code = 'W185'
     name = 'terminal_apm_la_multi'
     terminal_id = 'c56ab48b-586f-4fd2-9a1f-06721c94f3bb'
+
+
+class TerminalApmMASpider(ShareSpider):
+    firms_code = 'N775'
+    name = 'terminal_apm_ma_multi'
+    terminal_id = '369d208d-f0ad-4ea9-93d4-fbef44bbb5d8'
+
+
+class TerminalApmMBSpider(ShareSpider):
+    firms_code = 'R103'
+    name = 'terminal_apm_mb_multi'
+    terminal_id = 'eabe062a-f605-49a7-94d0-452695487430'
 
 
 class ContainerRoutingRule(BaseRoutingRule):
