@@ -126,12 +126,12 @@ class MblRoutingRule(BaseRoutingRule):
         self._j_idt_patt = re.compile(r"'(?P<j_idt>j_idt[^,]+)':'(?P=j_idt)'")
 
     @classmethod
-    def build_request_option(cls, mbl_no):
+    def build_request_option(cls, search_no):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f'https://google.com',
-            meta={'mbl_no': mbl_no},
+            meta={'mbl_no': search_no},
         )
 
     def handle(self, response):
@@ -320,7 +320,6 @@ class MblRoutingRule(BaseRoutingRule):
         return return_list
 
 
-
 class BookingRoutingRule(BaseRoutingRule):
     name = 'BOOKING'
 
@@ -351,11 +350,26 @@ class BookingRoutingRule(BaseRoutingRule):
             raise CarrierInvalidSearchNoError(search_type=self._search_type)
 
         driver.go_detail_page(2)  # only one booking_no to click
-
         basic_info = self._extract_basic_info(Selector(text=driver.get_page_source()))
-        basic_info.update({'booking_no': search_no})
+        vessel_info = self._extract_vessel_info(Selector(text=driver.get_page_source()))
 
-        yield MblItem(**basic_info)
+        yield MblItem(booking_no=search_no)
+
+        yield VesselItem(
+            vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
+            vessel=basic_info['vessel'],
+            voyage=basic_info['voyage'],
+            pol=LocationItem(name=vessel_info['pol']),
+            etd=vessel_info['etd'],
+        )
+
+        yield VesselItem(
+            vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
+            vessel=basic_info['vessel'],
+            voyage=basic_info['voyage'],
+            pod=LocationItem(name=vessel_info['pod']),
+            eta=vessel_info['eta'],
+        )
 
         container_nos = self._extract_container_no_and_status_links(Selector(text=driver.get_page_source()))
 
@@ -389,9 +403,21 @@ class BookingRoutingRule(BaseRoutingRule):
 
     def _extract_basic_info(self, response: scrapy.Selector):
         tables = response.css('table.tbl-list')
-        table = tables[1]
+        table = tables[0]
 
         table_locator = BookingBasicTableLocator()
+        table_locator.parse(table=table)
+
+        return {
+            'vessel': table_locator.get_cell('船名'),
+            'voyage': table_locator.get_cell('航次'),
+        }
+
+    def _extract_vessel_info(self, response: scrapy.Selector):
+        tables = response.css('table.tbl-list')
+        table = tables[1]
+
+        table_locator = BookingVesselTableLocator()
         table_locator.parse(table=table)
 
         return {
@@ -551,7 +577,6 @@ class WhlcDriver:
 
 
 class BookingBasicTableLocator(BaseTableLocator):
-
     def __init__(self):
         self._td_map = {}
 
@@ -568,6 +593,30 @@ class BookingBasicTableLocator(BaseTableLocator):
                 value = (values[i].css('::text').get() or '').strip()
                 self._td_map[title] = value
 
+    def get_cell(self, top, left=None) -> Selector:
+        return self._td_map[top]
+
+    def has_header(self, top=None, left=None) -> bool:
+        pass
+
+
+class BookingVesselTableLocator(BaseTableLocator):
+
+    def __init__(self):
+        self._td_map = {}
+
+    def parse(self, table: Selector, numbers: int = 1):
+        tr_list = table.css('tbody tr')
+
+        for tr in tr_list:
+            # the value will be emtpy
+            titles = tr.css('th')
+            values = tr.css('td')
+
+            for i in range(len(titles)):
+                title = titles[i].css('strong::text').get().strip()
+                value = (values[i].css('::text').get() or '').strip()
+                self._td_map[title] = value
 
     def get_cell(self, top, left=None) -> Selector:
         return self._td_map[top]
