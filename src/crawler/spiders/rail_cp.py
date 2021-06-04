@@ -261,13 +261,13 @@ class ContentGetter:
         username_input.send_keys(self.USER_NAME)
         password_input.send_keys(self.PASS_WORD)
 
-        random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
         login_btn = WebDriverWait(self._driver, 20).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, 'button.login_button'))
         )
         login_btn.click()
 
-        random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
 
     def search(self, container_nos):
         if self._is_first:
@@ -293,20 +293,20 @@ class ContentGetter:
         shipment_manage_a = WebDriverWait(self._driver, 30).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, 'a.Nav'))
         )
-        random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
         shipment_manage_a.click()
 
         search_input = WebDriverWait(self._driver, 30).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, 'textarea'))
         )
-        random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
         search_input.send_keys('\n'.join(container_nos))
 
-        random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
         lfd_input = self._driver.find_elements_by_css_selector('input[type="checkbox"]')[3]
         lfd_input.click()
 
-        random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
         run_btn = self._driver.find_element_by_css_selector('input[value="Run"]')
         run_btn.click()
 
