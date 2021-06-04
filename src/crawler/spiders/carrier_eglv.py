@@ -862,18 +862,19 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_status_list(response: scrapy.Selector) -> List[Dict]:
+        container_status_list = []
+
         tables = response.css('table table')
 
         rule = CssQueryTextStartswithMatchRule(css_query='td::text', startswith='Container Moves')
         table_selector = find_selector_from(selectors=tables, rule=rule)
         if table_selector is None:
-            raise CarrierResponseFormatError(reason='Can not found Container Status table!!!')
+            return container_status_list
 
         table_locator = NameOnTopHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
 
-        container_status_list = []
         for left in table_locator.iter_left_headers():
             container_status_list.append(
                 {
