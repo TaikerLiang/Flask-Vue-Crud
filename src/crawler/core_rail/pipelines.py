@@ -9,7 +9,6 @@ from .base import RAIL_RESULT_STATUS_DATA, RAIL_RESULT_STATUS_FATAL, RAIL_RESULT
 
 
 class RailItemPipeline:
-
     @classmethod
     def get_setting_name(cls):
         return f'{__name__}.{cls.__name__}'
@@ -49,7 +48,6 @@ class RailItemPipeline:
 
 
 class RailMultiItemsPipeline:
-
     def __init__(self):
         self._collector_map = {}
 
@@ -62,11 +60,16 @@ class RailMultiItemsPipeline:
 
         self._default_collector = RailResultCollector(request_args=spider.request_args)
         for task_id, container_no in zip(spider.task_ids, spider.container_nos):
-            self._collector_map.setdefault(task_id, RailResultCollector(request_args={
-                'task_id': task_id,
-                'container_no': container_no,
-                'save': spider.request_args.get('save'),
-            }))
+            self._collector_map.setdefault(
+                task_id,
+                RailResultCollector(
+                    request_args={
+                        'task_id': task_id,
+                        'container_no': container_no,
+                        'save': spider.request_args.get('save'),
+                    }
+                ),
+            )
 
     def process_item(self, item, spider):
         spider.logger.info(f'[{self.__class__.__name__}] ----- process_item -----')
@@ -115,7 +118,6 @@ class RailMultiItemsPipeline:
 
 
 class RailResultCollector:
-
     def __init__(self, request_args):
         self._request_args = dict(request_args)
         self._rail = {}
@@ -163,12 +165,7 @@ class RailResultCollector:
         """
         drop private keys (startswith '_')
         """
-        return {
-            k: v
-            for k, v in item.items()
-            if not k.startswith('_')
-        }
+        return {k: v for k, v in item.items() if not k.startswith('_')}
 
     def is_item_empty(self) -> bool:
         return not bool(self._rail)
-

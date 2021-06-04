@@ -34,6 +34,5 @@ def verify(results):
         container_key='SZLU9062541',
         description='Container was discharged at Port of Destination',
         local_date_time='03-Nov-2019 06:52',
-        location=LocationItem(name='KAOHSIUNG, TAIWAN')
+        location=LocationItem(name='KAOHSIUNG, TAIWAN'),
     )
-

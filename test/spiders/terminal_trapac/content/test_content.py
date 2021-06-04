@@ -32,11 +32,13 @@ def monkeypatch_mbl_response(monkeypatch, mbl_httptext):
     )
 
 
-@pytest.mark.parametrize('sub,container_no,mbl_no', [
-    ('01_only_container', 'YMMU4127027', ''),
-    ('02_container_and_mbl', 'KOCU4427065', 'NXWB7009876'),
-
-])
+@pytest.mark.parametrize(
+    'sub,container_no,mbl_no',
+    [
+        ('01_only_container', 'YMMU4127027', ''),
+        ('02_container_and_mbl', 'KOCU4427065', 'NXWB7009876'),
+    ],
+)
 def test_content_routing_rule(sub, container_no, mbl_no, sample_loader, monkeypatch):
     container_httptext = sample_loader.read_file(sub, 'container_sample.html')
     mbl_httptext = sample_loader.read_file(sub, 'mbl_sample.html')
@@ -46,7 +48,9 @@ def test_content_routing_rule(sub, container_no, mbl_no, sample_loader, monkeypa
 
     rule = ContentRoutingRule()
     option = ContentRoutingRule.build_request_option(
-        location=Location.LOS_ANGELES.value, container_no=container_no, mbl_no=mbl_no,
+        location=Location.LOS_ANGELES.value,
+        container_no=container_no,
+        mbl_no=mbl_no,
     )
     response = TextResponse(
         url=option.url,
@@ -61,10 +65,13 @@ def test_content_routing_rule(sub, container_no, mbl_no, sample_loader, monkeypa
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,container_no,mbl_no,expect_exception', [
-    ('e01_invalid_container_no', 'KOCU442706', '', TerminalInvalidContainerNoError),
-    ('e02_invalid_mbl_no', 'KOCU4427065', 'NXWB700987', TerminalInvalidMblNoError),
-])
+@pytest.mark.parametrize(
+    'sub,container_no,mbl_no,expect_exception',
+    [
+        ('e01_invalid_container_no', 'KOCU442706', '', TerminalInvalidContainerNoError),
+        ('e02_invalid_mbl_no', 'KOCU4427065', 'NXWB700987', TerminalInvalidMblNoError),
+    ],
+)
 def test_content_search_no_invalid_error(sub, container_no, mbl_no, expect_exception, sample_loader, monkeypatch):
     container_httptext = sample_loader.read_file(sub, 'container_sample.html')
     mbl_httptext = sample_loader.read_file(sub, 'mbl_sample.html')
@@ -73,7 +80,9 @@ def test_content_search_no_invalid_error(sub, container_no, mbl_no, expect_excep
     monkeypatch_mbl_response(monkeypatch=monkeypatch, mbl_httptext=mbl_httptext)
 
     option = ContentRoutingRule.build_request_option(
-        location=Location.LOS_ANGELES.value, container_no=container_no, mbl_no=mbl_no,
+        location=Location.LOS_ANGELES.value,
+        container_no=container_no,
+        mbl_no=mbl_no,
     )
     response = TextResponse(
         url=option.url,
@@ -86,4 +95,3 @@ def test_content_search_no_invalid_error(sub, container_no, mbl_no, expect_excep
     rule = ContentRoutingRule()
     with pytest.raises(expect_exception):
         list(rule.handle(response=response))
-

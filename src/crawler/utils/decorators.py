@@ -7,7 +7,9 @@ def merge_yields(f):
         process_spider_exception() not invoked for generators
         (https://github.com/scrapy/scrapy/issues/220)
     """
+
     @wraps(f)
     def _wrapper(*args, **kwargs):
         return list(f(*args, **kwargs))
+
     return _wrapper

@@ -5,12 +5,15 @@ from typing import Dict
 from scrapy.exceptions import DropItem
 
 from . import items as terminal_items
-from .base import TERMINAL_RESULT_STATUS_DATA, TERMINAL_RESULT_STATUS_FATAL, TERMINAL_RESULT_STATUS_DEBUG, \
-    TERMINAL_RESULT_STATUS_ERROR
+from .base import (
+    TERMINAL_RESULT_STATUS_DATA,
+    TERMINAL_RESULT_STATUS_FATAL,
+    TERMINAL_RESULT_STATUS_DEBUG,
+    TERMINAL_RESULT_STATUS_ERROR,
+)
 
 
 class TerminalItemPipeline:
-
     @classmethod
     def get_setting_name(cls):
         return f'{__name__}.{cls.__name__}'
@@ -50,7 +53,6 @@ class TerminalItemPipeline:
 
 
 class TerminalMultiItemsPipeline:
-
     def __init__(self):
         self._collector_map = {}
 
@@ -63,11 +65,16 @@ class TerminalMultiItemsPipeline:
 
         self._default_collector = TerminalResultCollector(request_args=spider.request_args)
         for task_id, container_no in zip(spider.task_ids, spider.container_nos):
-            self._collector_map.setdefault(task_id, TerminalResultCollector(request_args={
-                'task_id': task_id,
-                'container_no': container_no,
-                'save': spider.request_args.get('save'),
-            }))
+            self._collector_map.setdefault(
+                task_id,
+                TerminalResultCollector(
+                    request_args={
+                        'task_id': task_id,
+                        'container_no': container_no,
+                        'save': spider.request_args.get('save'),
+                    }
+                ),
+            )
 
     def process_item(self, item, spider):
         spider.logger.info(f'[{self.__class__.__name__}] ----- process_item -----')
@@ -116,7 +123,6 @@ class TerminalMultiItemsPipeline:
 
 
 class TerminalResultCollector:
-
     def __init__(self, request_args):
         self._request_args = dict(request_args)
         self._terminal = {}
@@ -164,12 +170,7 @@ class TerminalResultCollector:
         """
         drop private keys (startswith '_')
         """
-        return {
-            k: v
-            for k, v in item.items()
-            if not k.startswith('_')
-        }
+        return {k: v for k, v in item.items() if not k.startswith('_')}
 
     def is_item_empty(self) -> bool:
         return not bool(self._terminal)
-

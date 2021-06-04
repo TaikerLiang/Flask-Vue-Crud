@@ -63,16 +63,16 @@ class ProxyOption:
 
 
 class ProxyManager:
-    PROXY_URL = 'http://proxy.apify.com:8000'
+    PROXY_DOMAIN = 'proxy.apify.com:8000'
     PROXY_PASSWORD = 'XZTBLpciyyTCFb3378xWJbuYY'
 
     def __init__(self, session: str, logger: Logger):
         self._logger = logger
 
         self._proxy_options = [
-            ProxyOption(group=PROXY_GROUP_SHADER, session=f'{session}{self._generate_random_string()}'),
-            ProxyOption(group=PROXY_GROUP_SHADER, session=f'{session}{self._generate_random_string()}'),
-            ProxyOption(group=PROXY_GROUP_SHADER, session=f'{session}{self._generate_random_string()}'),
+            # ProxyOption(group=PROXY_GROUP_SHADER, session=f'{session}{self._generate_random_string()}'),
+            # ProxyOption(group=PROXY_GROUP_SHADER, session=f'{session}{self._generate_random_string()}'),
+            # ProxyOption(group=PROXY_GROUP_SHADER, session=f'{session}{self._generate_random_string()}'),
             ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
             ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
             ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
@@ -98,13 +98,10 @@ class ProxyManager:
         self._proxy_username = f'groups-{option.group},session-{option.session}'
 
     def apply_proxy_to_request_option(self, option: RequestOption) -> RequestOption:
+        proxy_url = f"http://{self._proxy_username}:{self.PROXY_PASSWORD}@{self.PROXY_DOMAIN}"
         return option.copy_and_extend_by(
-            headers={
-                'Proxy-Authorization': basic_auth_header(self._proxy_username, self.PROXY_PASSWORD),
-            },
             meta={
-                'proxy': self.PROXY_URL,
-                'Proxy-Authorization': self._proxy_username + ":" + self.PROXY_PASSWORD,
+                'proxy': proxy_url,
             },
         )
 

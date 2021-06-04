@@ -4,42 +4,40 @@ import scrapy
 
 import json
 
-from crawler.core_carrier.base_spiders import (
-    BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS, CARRIER_DEFAULT_SPIDER_MIDDLEWARES)
-from crawler.core_carrier.middlewares import (
-    Carrier400IsInvalidMblNoSpiderMiddleware, Carrier404IsInvalidMblNoSpiderMiddleware)
+from crawler.core_carrier.base import SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
+from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem)
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
-    SuspiciousOperationError
+    SuspiciousOperationError, CarrierInvalidSearchNoError
 
 
 class SharedSpider(BaseCarrierSpider):
     name = ''
     base_url_format = ''
 
-    custom_settings = {
-        **CARRIER_DEFAULT_SETTINGS,
-        'SPIDER_MIDDLEWARES': {
-            **CARRIER_DEFAULT_SPIDER_MIDDLEWARES,
-            Carrier400IsInvalidMblNoSpiderMiddleware.get_setting_name(): 300,
-            Carrier404IsInvalidMblNoSpiderMiddleware.get_setting_name(): 304,
-        },
-    }
-
     def __init__(self, *args, **kwargs):
         super(SharedSpider, self).__init__(*args, **kwargs)
 
-        rules = [
-            MainInfoRoutingRule(),
+        bill_rules = [
+            MainInfoRoutingRule(SHIPMENT_TYPE_MBL),
         ]
 
-        self._rule_manager = RuleManager(rules=rules)
+        booking_rules = [
+            MainInfoRoutingRule(SHIPMENT_TYPE_BOOKING),
+        ]
+
+        if self.mbl_no:
+            self._rule_manager = RuleManager(rules=bill_rules)
+            self.search_no = self.mbl_no
+        else:
+            self._rule_manager = RuleManager(rules=booking_rules)
+            self.search_no = self.booking_no
 
     def start(self):
-        option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no, url_format=self.base_url_format)
+        option = MainInfoRoutingRule.build_request_option(search_no=self.search_no, url_format=self.base_url_format)
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -75,17 +73,17 @@ class SharedSpider(BaseCarrierSpider):
 
 class CarrierMaeuSpider(SharedSpider):
     name = 'carrier_maeu'
-    base_url_format = 'https://api.maerskline.com/track/{mbl_no}'
+    base_url_format = 'https://api.maerskline.com/track/{search_no}'
 
 
 class CarrierMccqSpider(SharedSpider):
     name = 'carrier_mccq'
-    base_url_format = 'https://api.maerskline.com/track/{mbl_no}?operator=mcpu'
+    base_url_format = 'https://api.maerskline.com/track/{search_no}?operator=mcpu'
 
 
 class CarrierSafmSpider(SharedSpider):
     name = 'carrier_safm'
-    base_url_format = 'https://api.maerskline.com/track/{mbl_no}?operator=safm'
+    base_url_format = 'https://api.maerskline.com/track/{search_no}?operator=safm'
 
 
 # -------------------------------------------------------------------------------
@@ -94,12 +92,18 @@ class CarrierSafmSpider(SharedSpider):
 class MainInfoRoutingRule(BaseRoutingRule):
     name = 'MAIN_INFO'
 
+    def __init__(self, search_type):
+        self._search_type = search_type
+
     @classmethod
-    def build_request_option(cls, mbl_no: str, url_format: str) -> RequestOption:
+    def build_request_option(cls, search_no: str, url_format: str) -> RequestOption:
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
-            url=url_format.format(mbl_no=mbl_no),
+            url=url_format.format(search_no=search_no),
+            meta={
+                'handle_httpstatus_list': [400],
+            }
         )
 
     def get_save_name(self, response) -> str:
@@ -108,21 +112,26 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def handle(self, response):
         response_dict = json.loads(response.text)
 
-        self.check_mbl_no(response_dict)
+        if self.is_search_no_invalid(response_dict):
+            raise CarrierInvalidSearchNoError(search_type=self._search_type)
 
-        mbl_no = self._extract_mbl_no(response_dict=response_dict)
+        search_no = self._extract_search_no(response_dict=response_dict)
         routing_info = self._extract_routing_info(response_dict=response_dict)
 
-        yield MblItem(
-            mbl_no=mbl_no,
+        mbl_item = MblItem(
             por=LocationItem(name=routing_info['por']),
             final_dest=LocationItem(name=routing_info['final_dest']),
         )
+        if self._search_type == SHIPMENT_TYPE_MBL:
+            mbl_item['mbl_no'] = search_no
+        else:
+            mbl_item['booking_no'] = search_no
+        yield mbl_item
 
         containers = self._extract_containers(response_dict=response_dict)
         for container in containers:
             container_no = container['no']
-            
+
             yield ContainerItem(
                 container_key=container_no,
                 container_no=container_no,
@@ -141,12 +150,13 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 )
 
     @staticmethod
-    def check_mbl_no(response_dict):
+    def is_search_no_invalid(response_dict):
         if 'error' in response_dict:
-            raise CarrierInvalidMblNoError()
+            return True
+        return False
 
     @staticmethod
-    def _extract_mbl_no(response_dict):
+    def _extract_search_no(response_dict):
         return response_dict['tpdoc_num']
 
     def _extract_routing_info(self, response_dict):
@@ -172,21 +182,26 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 for event in location['events']:
                     timestamp, est_or_actual = self._get_time_and_status(event)
 
-                    container_statuses.append({
-                        'location_name': location_name,
-                        'description': event['activity'],
-                        'vessel': self._format_vessel_name(
-                            vessel_name=event['vessel_name'], vessel_num=event['vessel_num']),
-                        'voyage': event['voyage_num'],
-                        'timestamp': timestamp,
-                        'est_or_actual': est_or_actual,
-                    })
+                    container_statuses.append(
+                        {
+                            'location_name': location_name,
+                            'description': event['activity'],
+                            'vessel': self._format_vessel_name(
+                                vessel_name=event['vessel_name'], vessel_num=event['vessel_num']
+                            ),
+                            'voyage': event['voyage_num'],
+                            'timestamp': timestamp,
+                            'est_or_actual': est_or_actual,
+                        }
+                    )
 
-            container_info_list.append({
-                'no': container['container_num'],
-                'final_dest_eta': container['eta_final_delivery'],
-                'container_statuses': container_statuses,
-            })
+            container_info_list.append(
+                {
+                    'no': container['container_num'],
+                    'final_dest_eta': container['eta_final_delivery'],
+                    'container_statuses': container_statuses,
+                }
+            )
 
         return container_info_list
 

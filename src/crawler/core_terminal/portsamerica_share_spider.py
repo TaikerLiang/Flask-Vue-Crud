@@ -1,7 +1,7 @@
 import dataclasses
 from typing import Dict, List
-from urllib.parse import urlencode
 import time
+import re
 
 import scrapy
 from scrapy import Selector
@@ -11,8 +11,10 @@ from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
+from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError
 
 BASE_URL = 'https://voyagertrack.portsamerica.com'
+
 
 @dataclasses.dataclass
 class CompanyInfo:
@@ -39,15 +41,15 @@ class PortsamericaShareSpider(BaseMultiTerminalSpider):
     def __init__(self, *args, **kwargs):
         super(PortsamericaShareSpider, self).__init__(*args, **kwargs)
 
-        rules = [
-            SearchContainerRule()
-        ]
+        rules = [SearchContainerRule()]
 
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
-        request_option = SearchContainerRule.build_request_option(container_no_list=unique_container_nos, company_info=self.company_info)
+        request_option = SearchContainerRule.build_request_option(
+            container_no_list=unique_container_nos, company_info=self.company_info
+        )
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -107,7 +109,7 @@ class SearchContainerRule(BaseRoutingRule):
         content_getter.login(company_info.email, company_info.password, company_info.site_name)
         resp = content_getter.search(container_no_list)
 
-        containers = content_getter.get_container_info(Selector(text=resp))
+        containers = content_getter.get_container_info(Selector(text=resp), len(container_no_list))
         content_getter.quit()
 
         for container in containers:
@@ -129,6 +131,7 @@ class ContentGetter:
             f'Chrome/88.0.4324.96 Safari/537.36'
         )
         options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--window-size=1920,1080')
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-blink-features=AutomationControlled')
         options.add_experimental_option('excludeSwitches', ['enable-automation'])
@@ -166,29 +169,65 @@ class ContentGetter:
         search_btn = self._driver.find_element_by_xpath('//*[@id="btnContainerSubmitMulti"]')
         search_btn.click()
         time.sleep(8)
-        self._driver.save_screenshot("screenshot.png")
 
         return self._driver.page_source
 
-    def get_container_info(self, resp):
+    def get_container_info(self, resp: Selector, numbers: int):
+        # table = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table')
+        # table_locator = TableLocator()
+        # table_locator.parse(table=table, numbers=numbers)
+
         res = []
         tds = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table/tbody/tr/td')
-        for i in range(int(len(tds)/17)):
-            res.append({
-                'container_no': ''.join(tds[i*17+1].xpath('.//text()').extract()).strip().replace('-', ''),
-                'ready_for_pick_up': ''.join(tds[i*17+2].xpath('.//text()').extract()).strip(),
-                'appointment_date': ''.join(tds[i*17+5].xpath('.//text()').extract()).strip(),
-                'customs_release': ''.join(tds[i*17+6].xpath('.//text()').extract()).strip(),
-                'freight_release': ''.join(tds[i*17+7].xpath('.//text()').extract()).strip(),
-                'holds': ''.join(tds[i*17+9].xpath('.//text()').extract()).strip(),
-                'demurrage': ''.join(tds[i*17+11].xpath('.//text()').extract()).strip(),
-                'last_free_day': ''.join(tds[i*17+12].xpath('.//text()').extract()).strip(),
-                'carrier': ''.join(tds[i*17+13].xpath('.//text()').extract()).strip(),
-                'container_spec': ''.join(tds[i*17+14].xpath('.//text()').extract()).strip(),
-            })
+        for i in range(int(len(tds) / 17)):
+            appointment_date = ''.join(tds[i * 17 + 5].xpath('.//text()').extract())
+            gate_out_date = ''.join(tds[i * 17 + 3].xpath('.//text()').extract()).strip()
+
+            if re.search('([0-9]+/[0-9]+/[0-9]{4}[0-9]{4}-[0-9]{4})', appointment_date):
+                date_split_list = appointment_date.split('/')
+                time_split_list = date_split_list[-1][4:].split('-')
+                date_split_list[-1] = date_split_list[-1][:4]
+                appointment_date = '/'.join(date_split_list) + ' ' + time_split_list[0]
+
+            if re.search('([0-9]+/[0-9]+/[0-9]{4} [0-9]+:[0-9]{2})', gate_out_date):
+                date_split_list = gate_out_date.split('\n')
+                gate_out_date = date_split_list[-1]
+
+            res.append(
+                {
+                    'container_no': ''.join(tds[i * 17 + 1].xpath('.//text()').extract()).strip().replace('-', ''),
+                    'ready_for_pick_up': ''.join(tds[i * 17 + 2].xpath('.//text()').extract()).strip(),
+                    'gate_out_date': gate_out_date,
+                    'appointment_date': appointment_date.strip(),
+                    'customs_release': ''.join(tds[i * 17 + 6].xpath('.//text()').extract()).strip(),
+                    'freight_release': ''.join(tds[i * 17 + 7].xpath('.//text()').extract()).strip(),
+                    'holds': ''.join(tds[i * 17 + 9].xpath('.//text()').extract()).strip(),
+                    'demurrage': ''.join(tds[i * 17 + 11].xpath('.//text()').extract()).strip(),
+                    'last_free_day': ''.join(tds[i * 17 + 12].xpath('.//text()').extract()).strip(),
+                    'carrier': ''.join(tds[i * 17 + 13].xpath('.//text()').extract()).strip(),
+                    'container_spec': ''.join(tds[i * 17 + 14].xpath('.//text()').extract()).strip(),
+                }
+            )
 
         return res
 
     def quit(self):
         self._driver.quit()
 
+
+class TableLocator(BaseTableLocator):
+    def __init__(self):
+        self._td_map = []
+
+    def parse(self, table: Selector, numbers: int = 1):
+        titles = self._get_titles(table)
+
+    def _get_titles(self, table: Selector):
+        titles = table.css('th::text').getall()
+        return [title.strip() for title in titles]
+
+    def get_cell(self, left, top=None) -> Selector:
+        try:
+            return self._td_map[left][top]
+        except (KeyError, IndexError) as err:
+            raise HeaderMismatchError(repr(err))

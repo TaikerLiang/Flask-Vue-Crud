@@ -24,12 +24,9 @@ class RuleManager:
     META_TERMINAL_CORE_RULE_NAME = 'TERMINAL_CORE_RULE_NAME'
 
     def __init__(self, rules: List[BaseRoutingRule]):
-        self._rule_map = {
-            r.name: r for r in rules
-        }
+        self._rule_map = {r.name: r for r in rules}
 
     def get_rule_by_response(self, response) -> BaseRoutingRule:
         rule_name = response.meta[self.META_TERMINAL_CORE_RULE_NAME]
         rule = self._rule_map[rule_name]
         return rule
-

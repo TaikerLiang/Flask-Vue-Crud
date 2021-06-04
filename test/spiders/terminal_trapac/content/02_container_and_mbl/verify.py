@@ -7,7 +7,7 @@ from crawler.spiders.terminal_trapac import SaveItem
 def verify(results: List):
     assert isinstance(results[0], SaveItem)
     assert isinstance(results[1], SaveItem)
-    
+
     assert results[2] == TerminalItem(
         container_no='KOCU4427065',
         last_free_day='N/A',
@@ -21,4 +21,3 @@ def verify(results: List):
         # mbl_no='NXWB7009876',
         # carrier='Released',
     )
-

@@ -15,14 +15,17 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.parametrize('sub,mbl_no,container_no', [
-    ('01_first', 'TAWB0789799', 'CAIU7479659'),
-    ('02_value_not_exist', 'TYWB0960059', 'BMOU4101393'),
-])
+@pytest.mark.parametrize(
+    'sub,mbl_no,container_no',
+    [
+        ('01_first', 'TAWB0789799', 'CAIU7479659'),
+        ('02_value_not_exist', 'TYWB0960059', 'BMOU4101393'),
+    ],
+)
 def test_availability_routing_rule(sub, mbl_no, sample_loader, container_no):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    option = AvailabilityRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
+    option = AvailabilityRoutingRule.build_request_option(search_no=mbl_no, container_no=container_no)
 
     response = TextResponse(
         url=option.url,
@@ -31,7 +34,7 @@ def test_availability_routing_rule(sub, mbl_no, sample_loader, container_no):
         request=Request(
             url=option.url,
             meta=option.meta,
-        )
+        ),
     )
 
     item_recorder = ItemRecorder()

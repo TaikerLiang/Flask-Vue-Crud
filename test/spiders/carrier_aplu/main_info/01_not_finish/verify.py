@@ -2,6 +2,7 @@ from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusIt
 
 
 def verify(results):
+    results.pop(0)
 
     assert results[0] == MblItem(
         por=LocationItem(name=None),
@@ -29,7 +30,7 @@ def verify(results):
         local_date_time='Mon 19 Aug 2019 11:04',
         description='Discharged in transhipment',
         location=LocationItem(name='NANSHA'),
-        est_or_actual='A'
+        est_or_actual='A',
     )
 
     assert results[8] == ContainerStatusItem(
@@ -37,5 +38,5 @@ def verify(results):
         local_date_time='Sun 08 Sep 2019 15:00',
         description='Arrival final port of discharge',
         location=LocationItem(name='LONG BEACH, CA'),
-        est_or_actual='E'
+        est_or_actual='E',
     )

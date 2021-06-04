@@ -12,9 +12,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import LoadWebsiteTimeOutFatal
-from crawler.core_terminal.items import (
-    BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
-)
+from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
@@ -29,38 +27,47 @@ class MaherContentGetter:
     def __init__(self):
         options = webdriver.ChromeOptions()
         options.add_argument('--disable-extensions')
-        # options.add_argument('--headless')
+        options.add_argument('--disable-notifications')
+        options.add_argument('--headless')
+        options.add_argument("--enable-javascript")
         options.add_argument('--disable-gpu')
+        options.add_argument(
+            f'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
+            f'Chrome/88.0.4324.96 Safari/537.36'
+        )
         options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--no-sandbox')
         options.add_argument('--window-size=1920,1080')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-blink-features=AutomationControlled')
+        options.add_experimental_option('excludeSwitches', ['enable-automation'])
+        options.add_experimental_option('useAutomationExtension', False)
 
         self.driver = webdriver.Chrome(options=options)
-        self._is_first = True
 
-    def search_and_return(self, container_no):
-        if self._is_first:
-            self._is_first = False
-            self._login_and_go_to_search_page()
-
-        try:
-            WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "textarea[name='equipment']"))
-            )
-        except TimeoutException:
-            raise LoadWebsiteTimeOutFatal()
-
+    def search(self, container_no_list: List):
         container_inquiry_text_area = self.driver.find_element_by_css_selector("textarea[name='equipment']")
         container_inquiry_text_area.clear()
-        container_inquiry_text_area.send_keys(container_no)
+
+        if len(container_no_list) == 1:
+            container_no_list = container_no_list + container_no_list
+
+        container_inquiry_text_area.send_keys('\n'.join(container_no_list))
 
         search_btn = self.driver.find_element_by_css_selector("input[onclick='Search();']")
         search_btn.click()
+        time.sleep(20)
 
-        time.sleep(3)
         return self.driver.page_source
 
-    def _login_and_go_to_search_page(self):
+    def detail_search(self, container_no):
+        self.driver.get(
+            f'https://apps.maherterminals.com/csp/importContainerAction.do?container={container_no}&index=0&method=detail'
+        )
+        time.sleep(5)
+
+        return self.driver.page_source
+
+    def login(self):
         self.driver.get('https://apps.maherterminals.com/csp/loginAction.do?method=login')
 
         try:
@@ -78,32 +85,19 @@ class MaherContentGetter:
 
         login_btn = self.driver.find_element_by_css_selector("input[name='cancelButton']")
         login_btn.click()
+        time.sleep(5)
 
-        try:
-            WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "div#lnk4"))
-            )
-        except TimeoutException:
-            raise LoadWebsiteTimeOutFatal()
-
-        equipment_btn = self.driver.find_element_by_css_selector('div#lnk4')
-        ActionChains(driver=self.driver).move_to_element(equipment_btn).perform()
-
-        time.sleep(0.5)
-
-        inquiry_btn = self.driver.find_element_by_css_selector('div#lnk18')
-        ActionChains(driver=self.driver).move_to_element(inquiry_btn).perform()
-
-        time.sleep(0.5)
-
-        container_inquiry_btn = self.driver.find_element_by_css_selector('a#lnk20')
-        ActionChains(driver=self.driver).move_to_element(container_inquiry_btn).click().perform()
+        self.driver.get(
+            'https://apps.maherterminals.com/csp/importContainerAction.do?method=initial&pageTitle=Import%20Container%20Status%20Inquiry'
+        )
+        time.sleep(5)
 
     def quit(self):
         self.driver.quit()
 
 
 class TerminalMaherMultiSpider(BaseMultiTerminalSpider):
+    firms_code = 'E416'
     name = 'terminal_maher_multi'
 
     def __init__(self, *args, **kwargs):
@@ -116,7 +110,8 @@ class TerminalMaherMultiSpider(BaseMultiTerminalSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        option = SearchRoutingRule.build_request_option(container_no_list=self.container_no_list)
+        unique_container_nos = list(self.cno_tid_map.keys())
+        option = SearchRoutingRule.build_request_option(container_no_list=unique_container_nos)
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -128,8 +123,12 @@ class TerminalMaherMultiSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseTerminalItem):
-                yield result
+            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+                c_no = result['container_no']
+                t_ids = self.cno_tid_map[c_no]
+                for t_id in t_ids:
+                    result['task_id'] = t_id
+                    yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
             else:
@@ -195,19 +194,18 @@ class SearchRoutingRule(BaseRoutingRule):
         container_no_list = response.meta['container_no_list']
 
         content_getter = MaherContentGetter()
+        content_getter.login()
+        response_text = content_getter.search(container_no_list)
+        time.sleep(3)
+        response = Selector(text=response_text)
+        container_info_list = self.extract_container_info(response=response, container_no_list=container_no_list)
 
-        for container_no in container_no_list:
-            response_text = content_getter.search_and_return(container_no=container_no)
-            response = Selector(text=response_text)
-
-            if self._is_container_no_invalid(response=response):
-                yield InvalidContainerNoItem(container_no=container_no)
-                return
-
-            container_info = self.extract_container_info(response=response)
-            yield TerminalItem(
-                **container_info
-            )
+        for container_info in container_info_list:
+            ct_no = container_info['container_no']
+            # detail_page_resp = content_getter.detail_search(ct_no)
+            # gate_out_date = detail_page_resp.xpath('/html/body/table/tbody/tr/td/div[3]/table/tbody/tr/td/table[4]/tbody/tr[4]/td/table/tbody/tr/td/table/tbody/tr[29]/td[2]/text()').get()
+            # print(ct_no, detail_page_resp, gate_out_date)
+            yield TerminalItem(**container_info)
 
     @staticmethod
     def _is_container_no_invalid(response: Selector) -> bool:
@@ -216,40 +214,40 @@ class SearchRoutingRule(BaseRoutingRule):
         return bool(find_selector_from(selectors=tables, rule=rule))
 
     @staticmethod
-    def extract_container_info(response: Selector):
-        tables = response.css('table')
-        rule = SpecificClassTdContainTextMatchRule(td_class='clsRedSubHeading', text='Equipment Status')
+    def extract_container_info(response: Selector, container_no_list: List):
+        table = response.xpath('//*[@id="sortTable"]')
 
-        table = find_selector_from(selectors=tables, rule=rule)
         table_locator = MaherLeftHeadTableLocator()
-        table_locator.parse(table=table)
-        table_extractor = TableExtractor(table_locator=table_locator)
+        table_locator.parse(table=table, numbers=len(container_no_list))
 
-        return {
-            'container_no': table_extractor.extract_cell(left='Container', top=None),
-            'container_spec': table_extractor.extract_cell(left='LHT', top=None),
-            'weight': table_extractor.extract_cell(left='Gross Weight', top=None),
-            'holds': table_extractor.extract_cell(left='Holds', top=None),
-            'hazardous': table_extractor.extract_cell(left='Hazards', top=None),
-            'cy_location': table_extractor.extract_cell(left='Location Type', top=None),
-            'vessel': table_extractor.extract_cell(left='Vessel', top=None),
-            'voyage': table_extractor.extract_cell(left='Voyage', top=None),
-        }
+        res = []
+        for i in range(len(set(container_no_list))):
+            res.append(
+                {
+                    'container_no': table_locator.get_cell(left=i, top='Container'),
+                    'container_spec': table_locator.get_cell(left=i, top='LHT'),
+                    'available': table_locator.get_cell(left=i, top='Available'),
+                    'customs_release': table_locator.get_cell(left=i, top='Customs Released'),
+                    'discharge_date': table_locator.get_cell(left=i, top='Date Discharged'),
+                    'last_free_day': table_locator.get_cell(left=i, top='Last Free Date'),
+                    'freight_release': table_locator.get_cell(left=i, top='Freight Released'),
+                }
+            )
+
+        return res
 
 
 # -------------------------------------------------------------------------------
 
 
 class SpecificClassTdContainTextMatchRule(BaseMatchRule):
-
     def __init__(self, td_class: str, text: str):
         self._td_class = td_class
         self._text = text
 
     def check(self, selector: Selector) -> bool:
-        sub_headings = (
-                selector.xpath(f'./tbody/tr/td[@class="{self._td_class}"]') or
-                selector.xpath(f'./tr/td[@class="{self._td_class}"]')
+        sub_headings = selector.xpath(f'./tbody/tr/td[@class="{self._td_class}"]') or selector.xpath(
+            f'./tr/td[@class="{self._td_class}"]'
         )
 
         for sub_heading in sub_headings:
@@ -262,30 +260,37 @@ class SpecificClassTdContainTextMatchRule(BaseMatchRule):
 
 class MaherLeftHeadTableLocator(BaseTableLocator):
     def __init__(self):
-        self._td_map = {}  # title: data_td
+        self._td_map = []
 
-    def parse(self, table: Selector):
-        trs = table.css('tr')
+    def parse(self, table: Selector, numbers: int = 1):
+        titles = self._get_titles(table)
+        trs = table.css('tbody tr')
 
         for tr in trs:
-            if tr.css('td.clsRedSubHeading'):
+            data_tds = tr.css('td a::text').getall() + tr.css('td::text').getall()
+            data_tds = [v.strip() for v in data_tds]
+            if len(data_tds) > len(titles):
+                data_tds = data_tds[:1] + data_tds[3:]
+            elif len(data_tds) == 2:
+                data_tds = data_tds + [''] * 9
+            else:
                 continue
 
-            titles = tr.css('td.clsBlackBold::text').getall()
-            titles = [title.strip()[:-1] for title in titles]
-            data_tds = tr.css('td.clsBlack')
+            row = {}
+            for title_index, title in enumerate(titles):
+                row[title] = data_tds[title_index]
+            self._td_map.append(row)
 
-            for title, data_td in zip(titles, data_tds):
-                self._td_map[title] = data_td
+    def _get_titles(self, table: Selector):
+        titles = table.css('th::text').getall()
+        return [title.strip() for title in titles]
 
     def get_cell(self, left, top=None) -> Selector:
-        assert top is None
         try:
-            return self._td_map[left]
-        except KeyError as err:
+            return self._td_map[left][top]
+        except (KeyError, IndexError) as err:
             raise HeaderMismatchError(repr(err))
 
     def has_header(self, top=None, left=None) -> bool:
         assert top is None
         return bool(self._td_map.get(left))
-

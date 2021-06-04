@@ -161,14 +161,18 @@ class MainRoutingRule(BaseRoutingRule):
         company_info = response.meta['company_info']
         container_no_list = response.meta['container_no_list']
 
-        is_g_captcha, res, cookies = self._build_container_response(company_info=company_info, container_no_list=container_no_list)
+        is_g_captcha, res, cookies = self._build_container_response(
+            company_info=company_info, container_no_list=container_no_list
+        )
         if is_g_captcha:
             yield ContentRoutingRule.build_request_option(container_no_list=container_no_list, company_info=company_info, g_token=res, cookies=cookies)
         else:
             container_response = scrapy.Selector(text=res)
             yield SaveItem(file_name='container.html', text=container_response.get())
 
-            for container_info in self._extract_container_result_table(response=container_response, numbers=len(container_no_list)):
+            for container_info in self._extract_container_result_table(
+                response=container_response, numbers=len(container_no_list)
+            ):
                 yield TerminalItem(  # html field
                     container_no=container_info['container_no'],  # number
                     last_free_day=container_info['last_free_day'],  # demurrage-lfd
@@ -295,6 +299,7 @@ class ContentRoutingRule(BaseRoutingRule):
                 vessel=vessel,
                 voyage=voyage,
             )
+
 
 # ------------------------------------------------------------------------
 

@@ -36,4 +36,3 @@ def verify(results):
         place_of_deliv=LocationItem(name='LONG BEACH, US'),
         latest_update='04.03.2020 at 03:33 W. Europe Standard Time',
     )
-

@@ -12,6 +12,16 @@ class BaseCarrierError(Exception):
         pass
 
 
+class CarrierInvalidSearchNoError(BaseCarrierError):
+    status = CARRIER_RESULT_STATUS_ERROR
+
+    def __init__(self, search_type):
+        self._search_type = search_type
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail=f'<invalid-search-no> search type: `{self._search_type}`')
+
+
 class CarrierInvalidMblNoError(BaseCarrierError):
     status = CARRIER_RESULT_STATUS_ERROR
 
@@ -82,4 +92,3 @@ class DataNotFoundError(BaseCarrierError):
 
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail='<data-not-found>')
-

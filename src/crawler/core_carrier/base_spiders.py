@@ -28,9 +28,7 @@ CARRIER_DEFAULT_SETTINGS = {
     },
 }
 
-DISABLE_DUPLICATE_REQUEST_FILTER = {
-    'DUPEFILTER_CLASS': 'scrapy.dupefilters.BaseDupeFilter'
-}
+DISABLE_DUPLICATE_REQUEST_FILTER = {'DUPEFILTER_CLASS': 'scrapy.dupefilters.BaseDupeFilter'}
 
 
 class BaseCarrierSpider(scrapy.Spider):
@@ -46,7 +44,7 @@ class BaseCarrierSpider(scrapy.Spider):
         self.mbl_no = kwargs.get('mbl_no', '')
         self.container_no_list = kwargs.get('container_no_list', '').split(',')
 
-        to_save = ('save' in kwargs)
+        to_save = 'save' in kwargs
         self._saver = self._prepare_saver(to_save=to_save)
 
         self._error = False
@@ -71,7 +69,10 @@ class BaseCarrierSpider(scrapy.Spider):
         if not to_save:
             return NullSaver()
 
-        save_folder = Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] {self.mbl_no}'
+        save_folder = (
+                Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] '
+                f'{self.mbl_no or self.booking_no}'
+        )
 
         return FileSaver(folder_path=save_folder, logger=self.logger)
 

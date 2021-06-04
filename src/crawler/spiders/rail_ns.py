@@ -137,12 +137,13 @@ class ContainerRoutingRule(BaseRoutingRule):
                 yield InvalidContainerNoItem(container_no=cno)
 
         container_infos = self._extract_container_infos(response=response)
-        for valid_c_no in (set(container_nos) - set(invalid_container_nos)):
+        for valid_c_no in set(container_nos) - set(invalid_container_nos):
             valid_c_no_without_check_code = valid_c_no[:-1]
             c_no_info = container_infos.get(valid_c_no_without_check_code)
             if c_no_info is None:
                 raise RailResponseFormatError(
-                    reason=f'{valid_c_no_without_check_code} is not invalid nor existing on search result')
+                    reason=f'{valid_c_no_without_check_code} is not invalid nor existing on search result'
+                )
 
             yield RailItem(
                 container_no=valid_c_no,
@@ -185,9 +186,8 @@ class ContainerRoutingRule(BaseRoutingRule):
         if not error_p:
             raise RailResponseFormatError(reason=f'xpath: `{self.ERROR_P_XPATH}` can\'t find error text')
 
-        raw_invalid_container_nos = error_p.css('::text').get_all()[1: -1]  # 0: title, -1: space
-        invalid_container_nos = [
-            cno.replace(' ', '') for cno in raw_invalid_container_nos]
+        raw_invalid_container_nos = error_p.css('::text').get_all()[1:-1]  # 0: title, -1: space
+        invalid_container_nos = [cno.replace(' ', '') for cno in raw_invalid_container_nos]
 
         return invalid_container_nos
 
@@ -218,9 +218,9 @@ class ContentGetter:
         self._is_first = True
 
     def _login(self):
-        username_input = WebDriverWait(self._driver, 40).until(EC.presence_of_element_located(
-            (By.CSS_SELECTOR, 'input#textfield-1016-inputEl')
-        ))
+        username_input = WebDriverWait(self._driver, 40).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'input#textfield-1016-inputEl'))
+        )
         password_input = self._driver.find_element_by_id('textfield-1017-inputEl')
 
         time.sleep(random.randint(1, 3))
@@ -239,14 +239,13 @@ class ContentGetter:
             self._is_first = False
 
         # search
-        WebDriverWait(self._driver, 20).until(EC.presence_of_element_located(
-            (By.CSS_SELECTOR, 'div.x-panel-header')
-        ))
+        WebDriverWait(self._driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.x-panel-header')))
         self._driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
 
         search_input = self._driver.find_element_by_css_selector('textarea[placeholder]')
         search_btn = self._driver.find_elements_by_css_selector(
-            'span[class="x-btn-inner x-btn-inner-default-toolbar-small"]')[-1]
+            'span[class="x-btn-inner x-btn-inner-default-toolbar-small"]'
+        )[-1]
 
         search_input.send_keys('\n'.join(container_nos))
         time.sleep(random.randint(1, 3))
@@ -313,4 +312,3 @@ class DivTopHeaderTableLocator(BaseTableLocator):
 
         for i in range(content_len):
             yield i
-

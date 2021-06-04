@@ -1,7 +1,10 @@
+from typing import List
+
 from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusItem, LocationItem
 
 
-def verify(results):
+def verify(results: List):
+    results.pop(0)
 
     assert results[0] == MblItem(
         por=LocationItem(name='TAICHUNG (TW)'),
@@ -29,5 +32,5 @@ def verify(results):
         local_date_time='Wed 31 Jul 2019 18:23',
         description='Empty in depot',
         location=LocationItem(name='DALLAS, TX'),
-        est_or_actual='A'
+        est_or_actual='A',
     )
