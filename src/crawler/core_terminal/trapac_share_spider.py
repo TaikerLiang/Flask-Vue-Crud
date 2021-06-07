@@ -11,8 +11,8 @@ import ujson as json
 import scrapy
 from scrapy import Selector
 
-# from selenium import webdriver
-from seleniumwire import webdriver
+from selenium import webdriver
+# from seleniumwire import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -327,18 +327,18 @@ class HeadlessBrowser:
         options.add_experimental_option('excludeSwitches', ['enable-automation'])
         options.add_experimental_option('useAutomationExtension', False)
 
-        PROXY_GROUP_RESIDENTIAL = 'RESIDENTIAL'
-        proxy_option = ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'trapac{self._generate_random_string()}')
-        seleniumwire_options = {
-            'connection_timeout': None,
-            'proxy': {
-                'http': f'http://{self.get_proxy_username(proxy_option)}:{self.PROXY_PASSWORD}@{self.PROXY_URL}',
-                'https': f'https://{self.get_proxy_username(proxy_option)}:{self.PROXY_PASSWORD}@{self.PROXY_URL}',
-                'no_proxy': 'localhost,127.0.0.1',
-            },
-        }
-        self._browser = webdriver.Chrome(chrome_options=options, seleniumwire_options=seleniumwire_options)
-        # self._browser = webdriver.Chrome(chrome_options=options)
+        # PROXY_GROUP_RESIDENTIAL = 'RESIDENTIAL'
+        # proxy_option = ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'trapac{self._generate_random_string()}')
+        # seleniumwire_options = {
+        #     'connection_timeout': None,
+        #     'proxy': {
+        #         'http': f'http://{self.get_proxy_username(proxy_option)}:{self.PROXY_PASSWORD}@{self.PROXY_URL}',
+        #         'https': f'https://{self.get_proxy_username(proxy_option)}:{self.PROXY_PASSWORD}@{self.PROXY_URL}',
+        #         'no_proxy': 'localhost,127.0.0.1',
+        #     },
+        # }
+        # self._browser = webdriver.Chrome(chrome_options=options, seleniumwire_options=seleniumwire_options)
+        self._browser = webdriver.Chrome(chrome_options=options)
 
     def get(self, url):
         self._browser.get(url=url)
