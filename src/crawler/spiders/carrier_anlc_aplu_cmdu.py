@@ -349,7 +349,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             yield {
                 'local_date_time': table.extract_cell('Date', index),
                 'description': table.extract_cell('Moves', index),
-                'location': table.extract_cell('Location', index),
+                'location': table.extract_cell('Location', index, LocationTdExtractor()),
                 'est_or_actual': 'A' if is_actual else 'E',
             }
 
@@ -401,4 +401,10 @@ class ContainerStatusTableLocator(BaseTableLocator):
 class ActualIconTdExtractor(BaseTableCellExtractor):
     def extract(self, cell: Selector):
         td_i = cell.css('i').get()
+        return td_i
+
+
+class LocationTdExtractor(BaseTableCellExtractor):
+    def extract(self, cell: Selector):
+        td_i = cell.css('td::text').get().strip()
         return td_i
