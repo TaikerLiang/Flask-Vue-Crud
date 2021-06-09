@@ -148,7 +148,8 @@ class ContainerRoutingRule(BaseRoutingRule):
                 current_location=c_no_info['current_location'],
                 status=c_no_info['equipment_status'],
                 grounded=c_no_info['grounded'],
-                last_event=c_no_info['last_reported'],
+                last_event_location=c_no_info['last_event_location'],
+                last_event_time=c_no_info['last_event_time'],
                 lfd=c_no_info['lfd'],
                 hold=c_no_info['holds'],
                 eta=c_no_info['eta'],
@@ -157,36 +158,42 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_infos(response: scrapy.Selector):
-        table = response.css('table#rowTable')
-        table_locator = TopHeaderTableLocator()
-        table_locator.parse(table=table)
-        table_extractor = TableExtractor(table_locator=table_locator)
+        container_no_table = response.css('table#__table8-table-fixed') # use xpath instead
+        container_no_table_locator = TopHeaderTableLocator()
+        container_no_table_locator.parse(table=container_no_table)
+        container_no_table_extractor = TableExtractor(table_locator=container_no_table_locator)
+
+        container_info_table = response.css('table#rowTable')
+        container_info_table_locator = TopHeaderTableLocator()
+        container_info_table_locator.parse(table=container_info_table)
+        container_info_table_extractor = TableExtractor(table_locator=container_info_table_locator)
 
         container_infos = {}
-        for left in table_locator.iter_left_header():
-            c_no_and_spec = table_extractor.extract_cell(
+        for left in container_no_table_locator.iter_left_header():
+            c_no_and_spec = container_no_table_extractor.extract_cell(
                 top='Equipment', left=left, extractor=ContainerNoSpecCellExtractor()
             )
             container_no = c_no_and_spec['container_no']
 
-            xtd = table_extractor.extract_cell(top='Act Arrival', left=left, extractor=ArrivalCellExtractor())
+            xtd = container_info_table_extractor.extract_cell(top='Act Arrival', left=left, extractor=ArrivalCellExtractor())
             eta = xtd['eta']
             ata = xtd['ata']
 
-            holds_in_span = table_extractor.extract_cell(
+            holds_in_span = container_info_table_extractor.extract_cell(
                 top='Holds', left=left, extractor=FirstTextTdExtractor(css_query='span::text')
             )
-            holds = table_extractor.extract_cell(top='Holds', left=left)
+            holds = container_info_table_extractor.extract_cell(top='Holds', left=left)
 
             container_infos[container_no] = {
-                'current_location': table_extractor.extract_cell(top='Current Position', left=left),
-                'last_reported': table_extractor.extract_cell(top='Last Reported', left=left),
-                'equipment_status': table_extractor.extract_cell(top='Equipment Status', left=left),
-                'grounded': table_extractor.extract_cell(top='Grounded', left=left),
+                'current_location': container_info_table_extractor.extract_cell(top='Current Position', left=left),
+                'last_reported': container_info_table_extractor.extract_cell(top='Last Reported', left=left),
+                'equipment_status': container_info_table_extractor.extract_cell(top='Equipment Status', left=left),
+                'load_status':container_info_table_extractor.extract_cell(top='', left=left),
+                'grounded': container_info_table_extractor.extract_cell(top='Grounded', left=left),
                 'eta': eta,
                 'ata': ata,
                 'holds': holds or holds_in_span,
-                'lfd': table_extractor.extract_cell(top='Last Free Day', left=left),
+                'last_free_day': container_info_table_extractor.extract_cell(top='Last Free Day', left=left),
             }
 
         return container_infos
@@ -261,13 +268,13 @@ class ContentGetter:
         username_input.send_keys(self.USER_NAME)
         password_input.send_keys(self.PASS_WORD)
 
-        random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
         login_btn = WebDriverWait(self._driver, 20).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, 'button.login_button'))
         )
         login_btn.click()
 
-        random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
 
     def search(self, container_nos):
         if self._is_first:
@@ -277,12 +284,12 @@ class ContentGetter:
         # find iframe to check page is done
         WebDriverWait(self._driver, 60).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'iframe')))
         self._driver.execute_script('document.getElementById("sapUshellDashboardPage-cont").scrollTo({top: 1200});')
-        track_a = WebDriverWait(self._driver, 5).until(
+        track_a = WebDriverWait(self._driver, 10).until(
             EC.element_to_be_clickable(
                 (
                     By.CSS_SELECTOR,
                     'a[href="https://www8.cpr.ca/cx/sap/bc/ui5_ui5/ui2/ushell/shells/abap/Fiorilaunchpad.html?'
-                    'appState=lean#ZLegacy-ttinter?Newtab_ApplicationID=TT_INTERMODAL"]',
+                    'appState=lean#ZTrackAndTrace-display"]',
                 )
             )
         )
@@ -290,27 +297,36 @@ class ContentGetter:
 
         # switch to search page and search
         self._driver.switch_to.window(self._driver.window_handles[-1])
-        shipment_manage_a = WebDriverWait(self._driver, 30).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, 'a.Nav'))
+
+        search_input = WebDriverWait(self._driver, 75).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="search"]'))
         )
-        random.randint(1, 3)
-        shipment_manage_a.click()
 
-        search_input = WebDriverWait(self._driver, 30).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'textarea'))
+        # view settings button
+        view_settings_btn = WebDriverWait(self._driver, 30).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[title="Settings"]'))
         )
-        random.randint(1, 3)
-        search_input.send_keys('\n'.join(container_nos))
+        view_settings_btn.click()
+        time.sleep(random.randint(1,3))
 
-        random.randint(1, 3)
-        lfd_input = self._driver.find_elements_by_css_selector('input[type="checkbox"]')[3]
-        lfd_input.click()
+        # lfd checkbox
+        lfd_xpath = '//td[@class="sapMListTblCell"][span[text()="Last Free Day"]]/\
+                    ../td[@class="sapMListTblSelCol"]/div/div/input'
 
-        random.randint(1, 3)
-        run_btn = self._driver.find_element_by_css_selector('input[value="Run"]')
-        run_btn.click()
+        lfd_checkbox = WebDriverWait(self._driver, 60).until( EC.presence_of_element_located((By.XPATH, lfd_xpath)) )
 
-        WebDriverWait(self._driver, 30).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'table#rowTable')))
+        # print('================================')
+        # print(lfd_checkbox.get_attribute('innerHTML'))
+        WebDriverWait(self._driver, 20).until(
+            EC.element_to_be_clickable((By.XPATH, lfd_xpath)))
+        lfd_checkbox.click()
+        time.sleep(random.randint(1,3))
+
+        ok_btn = self._driver.find_element_by_xpath('//bdi[text()="OK"]')
+        ok_btn.click()
+        time.sleep(5)
+
+        search_input.send_keys(','.join(container_nos))
         return self._driver.page_source
 
     def quit(self):
