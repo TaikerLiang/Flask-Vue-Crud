@@ -345,9 +345,13 @@ class HeadlessBrowser:
         time.sleep(15)
 
     def accept_cookie(self):
-        cookie_btn = self._browser.find_element_by_xpath('//*[@id="cn-accept-cookie"]')
-        cookie_btn.click()
-        time.sleep(3)
+        try:
+            self._browser.save_screenshot('out.png')
+            cookie_btn = self._browser.find_element_by_xpath('//*[@id="cn-accept-cookie"]')
+            cookie_btn.click()
+            time.sleep(3)
+        except:
+            pass
 
     def wait_for_appear(self, css: str, wait_sec: int):
         locator = (By.CSS_SELECTOR, css)
