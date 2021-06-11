@@ -18,6 +18,7 @@ class ExportErrorData(BaseRailItem):
 class RailItem(BaseRailItem):
     task_id = scrapy.Field()
     container_no = scrapy.Field()
+    description = scrapy.Field()
 
     # CP
     status = scrapy.Field()
@@ -28,9 +29,9 @@ class RailItem(BaseRailItem):
 
     # NS
     last_event_date = scrapy.Field()
-    # last_event_code
     origin_location = scrapy.Field()
     final_destination = scrapy.Field()
+    final_dest_eta = scrapy.Field()
 
     # Share
     current_location = scrapy.Field()
