@@ -2,17 +2,20 @@ import random
 import time
 
 import scrapy
+from scrapy import Selector
 
 from crawler.core_rail.base_spiders import BaseMultiRailSpider
-from crawler.core_rail.exceptions import DriverMaxRetryError
+from crawler.core_rail.exceptions import DriverMaxRetryError, RailInvalidContainerNoError
 from crawler.core_rail.items import BaseRailItem, RailItem, DebugItem, InvalidContainerNoItem
 from crawler.core_rail.request_helpers import RequestOption
 from crawler.core_rail.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
-from crawler.extractors.table_extractors import TableExtractor, TopHeaderTableLocator
+from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor, TopHeaderTableLocator
 from selenium import webdriver
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -136,100 +139,125 @@ class ContainerRoutingRule(BaseRoutingRule):
         container_infos = self._extract_container_infos(response=response)
 
         for c_no in container_nos:
-            c_no_wiout_check_code = c_no[:10]
-            c_no_info = container_infos[c_no_wiout_check_code]
+            c_no_info = container_infos[c_no]
 
-            if c_no_info['last_reported'] == 'No information found matching the specified criteria':
+            if c_no_info['last_reported'] == '':
                 yield InvalidContainerNoItem(container_no=c_no)
                 continue
 
             yield RailItem(
                 container_no=c_no,
-                current_location=c_no_info['current_location'],
-                status=c_no_info['equipment_status'],
-                grounded=c_no_info['grounded'],
+                last_event=c_no_info['last_event'],
                 last_event_location=c_no_info['last_event_location'],
                 last_event_time=c_no_info['last_event_time'],
-                lfd=c_no_info['lfd'],
-                hold=c_no_info['holds'],
                 eta=c_no_info['eta'],
                 ata=c_no_info['ata'],
+                last_free_day=c_no_info['lfd'],
             )
 
     @staticmethod
     def _extract_container_infos(response: scrapy.Selector):
-        container_no_table = response.css('table#__table8-table-fixed') # use xpath instead
-        container_no_table_locator = TopHeaderTableLocator()
-        container_no_table_locator.parse(table=container_no_table)
-        container_no_table_extractor = TableExtractor(table_locator=container_no_table_locator)
+        container_no_header_table = response.css('table[id$=header-fixed-fixrow]') # header table (container_no)
+        # print('container no header check:',container_no_header_table)
 
-        container_info_table = response.css('table#rowTable')
-        container_info_table_locator = TopHeaderTableLocator()
-        container_info_table_locator.parse(table=container_info_table)
-        container_info_table_extractor = TableExtractor(table_locator=container_info_table_locator)
+        container_no_content_table = response.css('div > table[id$=-table-fixed]') # content table (container_no)
+        # print('container no content check:',container_no_content_table)
+
+        container_info_header_table = response.css('div.sapUiTableCtrlScr > table') # header table (container_info)
+        # print('container info header check:', container_info_header_table)
+
+        container_info_content_table = response.css('div.sapUiTableCtrlCnt > table[id$=-table]') # content table (container_info)
+        # print('container info content check:',container_info_content_table)
+
+        container_no_table_parser = ContainerNoTableParser()
+        container_no_table_parser.parse(header_table=container_no_header_table, content_table=container_no_content_table)
+        container_no_results = container_no_table_parser.get()
+        # print('container_no_results check:', container_no_results)
+
+        container_info_table_parser = ContainerInfoTableParser()
+        container_info_table_parser.parse(header_table=container_info_header_table, content_table=container_info_content_table)
+        container_info_results = container_info_table_parser.get()
+        # print('container_info_results check:', container_info_results)
 
         container_infos = {}
-        for left in container_no_table_locator.iter_left_header():
-            c_no_and_spec = container_no_table_extractor.extract_cell(
-                top='Equipment', left=left, extractor=ContainerNoSpecCellExtractor()
-            )
-            container_no = c_no_and_spec['container_no']
+        for container_info in zip(container_no_results, container_info_results):
+            container_info = dict(container_info[0], **container_info[1])
 
-            xtd = container_info_table_extractor.extract_cell(top='Act Arrival', left=left, extractor=ArrivalCellExtractor())
-            eta = xtd['eta']
-            ata = xtd['ata']
+            # re-think output structure
+            container_no = container_info['Equipment']
 
-            holds_in_span = container_info_table_extractor.extract_cell(
-                top='Holds', left=left, extractor=FirstTextTdExtractor(css_query='span::text')
-            )
-            holds = container_info_table_extractor.extract_cell(top='Holds', left=left)
+            last_reported = container_info['Last Reported Station'].split()[1:]
+            last_event_location = ' '.join(last_reported[:-1])
+
+            last_event_time = last_reported[-1]
+            last_event = container_info['Equipment Status'] + ', ' + container_info['Load Status']
+            xta = container_info['ETA']
+            eta = xta[1:] if len(xta) == 4 else ''
+            ata = xta[2:] if len(xta) == 5 else ''
 
             container_infos[container_no] = {
-                'current_location': container_info_table_extractor.extract_cell(top='Current Position', left=left),
-                'last_reported': container_info_table_extractor.extract_cell(top='Last Reported', left=left),
-                'equipment_status': container_info_table_extractor.extract_cell(top='Equipment Status', left=left),
-                'load_status':container_info_table_extractor.extract_cell(top='', left=left),
-                'grounded': container_info_table_extractor.extract_cell(top='Grounded', left=left),
+                'last_event_location': last_event_location,
+                'last_event_time': last_event_time,
+                'last_event': last_event,
                 'eta': eta,
                 'ata': ata,
-                'holds': holds or holds_in_span,
-                'last_free_day': container_info_table_extractor.extract_cell(top='Last Free Day', left=left),
+                'last_free_day': container_info['Last Free Day'],
             }
 
         return container_infos
 
 
-class ContainerNoSpecCellExtractor(BaseTableCellExtractor):
-    def extract(self, cell: scrapy.Selector):
-        all_texts = cell.css('::text').getall()
-        raw_container_no = all_texts[1]  # ex: BEAU 0000455397
-        prefix, numbers = raw_container_no.split(' ')
-        container_no = prefix + numbers[4:]
+class ContainerNoTableParser:
+    def __init__(self):
+        self.items = []
 
-        spec = None if len(all_texts) != 3 else all_texts[2].strip()
+    def parse(self, header_table: Selector, content_table: Selector):
+        headers = header_table.css('tbody > tr > td')
+        container_no_header = headers[1].css('span::text').get().strip()
 
-        return {
-            'container_no': container_no,
-            'spec': spec,
-        }
+        for tr in content_table.css('tbody > tr'):
+            td = tr.css('td')[1]
+            container_no = td.css('a ::text').get()
+            if container_no:
+                self.items.append({container_no_header: container_no})
+            else:
+                return
+
+    def get(self):
+        return self.items
 
 
-class ArrivalCellExtractor(BaseTableCellExtractor):
-    def extract(self, cell: scrapy.Selector):
-        i_text = cell.css('i::text').get()
-        first_text = cell.css('::text').get()
+class ContainerInfoTableParser:
+    def __init__(self):
+        self.items = []
+        self._header_set = {
+            4, #'Last Reported Station'
+            6, #'Equipment Status',
+            7, #'Load Status',
+            9, #'ETA',
+            16, #'Last Free Day',
+            }
 
-        if isinstance(i_text, str):
-            eta = i_text[1:-1]
-            ata = ''
-        elif isinstance(first_text, str):
-            eta = ''
-            ata = first_text.strip()
-        else:
-            eta = ''
-            ata = ''
+    def parse(self, header_table: Selector, content_table: Selector):
+        header_list = header_table.css('tbody > tr > td span::text').getall()
+        # print('info headers check:', header_list)
+        headers = {i: v for i, v in enumerate(header_list)}
 
-        return {'eta': eta, 'ata': ata}
+
+        for tr in content_table.css('tbody > tr'):
+            content_list = tr.css('td span::text').getall()
+            info_dict = {}
+
+            for i, content in enumerate(content_list):
+                if i in self._header_set:
+                    info_dict[headers[i]] = content
+
+            self.items.append(info_dict)
+
+
+    def get(self):
+        print('item check', self.items)
+        return self.items
 
 
 class ContentGetter:
@@ -249,6 +277,7 @@ class ContentGetter:
         )
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--no-sandbox')
+        options.add_argument('window-size=1200x600')
         options.add_argument('--disable-blink-features=AutomationControlled')
         options.add_experimental_option('excludeSwitches', ['enable-automation'])
         options.add_experimental_option('useAutomationExtension', False)
@@ -301,33 +330,42 @@ class ContentGetter:
         search_input = WebDriverWait(self._driver, 75).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="search"]'))
         )
+        time.sleep(5)
+        search_input.send_keys(','.join(container_nos))
 
         # view settings button
         view_settings_btn = WebDriverWait(self._driver, 30).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[title="Settings"]'))
         )
+        WebDriverWait(self._driver, 10).until(EC.invisibility_of_element((By.CSS_SELECTOR, 'div[id$=-busyIndicator]')))
         view_settings_btn.click()
-        time.sleep(random.randint(1,3))
+        time.sleep(3)
+        self._driver.execute_script('document.getElementsByClassName("sapMScrollContScroll")[0].scrollTo(0, 200);')
 
         # lfd checkbox
         lfd_xpath = '//td[@class="sapMListTblCell"][span[text()="Last Free Day"]]/\
-                    ../td[@class="sapMListTblSelCol"]/div/div/input'
+                    ../td[@class="sapMListTblSelCol"]/div/div'
+        WebDriverWait(self._driver, 10).until(EC.invisibility_of_element((By.CSS_SELECTOR, 'div[id$=-busyIndicator]')))
 
-        lfd_checkbox = WebDriverWait(self._driver, 60).until( EC.presence_of_element_located((By.XPATH, lfd_xpath)) )
+        lfd_checkbox = WebDriverWait(self._driver, 120).until( EC.presence_of_element_located((By.XPATH, lfd_xpath)) )
+        try:
+            lfd_checkbox.click()
+        except:
+            time.sleep(10)
+            lfd_checkbox.click() # attempt to click again
 
-        # print('================================')
-        # print(lfd_checkbox.get_attribute('innerHTML'))
-        WebDriverWait(self._driver, 20).until(
-            EC.element_to_be_clickable((By.XPATH, lfd_xpath)))
-        lfd_checkbox.click()
         time.sleep(random.randint(1,3))
 
         ok_btn = self._driver.find_element_by_xpath('//bdi[text()="OK"]')
         ok_btn.click()
-        time.sleep(5)
 
-        search_input.send_keys(','.join(container_nos))
+        WebDriverWait(self._driver, 60).until(self.container_no_has_value)
         return self._driver.page_source
+
+    def container_no_has_value(self, driver):
+        container_no_holder = driver.find_element_by_css_selector('div[id^="__data"] > a')
+        return len(container_no_holder.text) != 0
 
     def quit(self):
         self._driver.quit()
+

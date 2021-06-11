@@ -20,7 +20,7 @@ class RailItem(BaseRailItem):
     container_no = scrapy.Field()
 
     # CP
-    equipment_status = scrapy.Field()
+    last_event = scrapy.Field()
     load_status = scrapy.Field()
     grounded = scrapy.Field()
     last_event_location = scrapy.Field()
@@ -36,7 +36,7 @@ class RailItem(BaseRailItem):
     eta = scrapy.Field()
     ata = scrapy.Field()
     last_free_day = scrapy.Field()
-    last_event_date = scrapy.Field()
+    last_event_time = scrapy.Field()
 
     @property
     def key(self):
