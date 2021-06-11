@@ -25,3 +25,7 @@ ghostdriver.log
 
 # macOS
 .DS_Store
+
+# others
+*.releases
+*geckodriver.log
