@@ -235,7 +235,7 @@ class ContentGetter:
         return random.choice(user_agents)
 
     def _login(self):
-        time.sleep(40)
+        time.sleep(60)
         username_input = self._driver.find_element_by_xpath('//*[@id="textfield-1016-inputEl"]')
         password_input = self._driver.find_element_by_xpath('//*[@id="textfield-1017-inputEl"]')
         username_input.send_keys(self.USER_NAME)
@@ -244,7 +244,7 @@ class ContentGetter:
         time.sleep(random.randint(2, 4))
         login_btn = self._driver.find_element_by_id('button-1019')
         login_btn.click()
-        time.sleep(40)
+        time.sleep(60)
 
     def search(self, container_nos):
         if self._is_first:
@@ -252,9 +252,8 @@ class ContentGetter:
             self._is_first = False
 
         # search
-        WebDriverWait(self._driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.x-panel-header')))
+        WebDriverWait(self._driver, 40).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.x-panel-header')))
         self._driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
-
         search_input = self._driver.find_element_by_css_selector('textarea[placeholder]')
         search_btn = self._driver.find_element_by_xpath('//*[@id="button-1413-btnInnerEl"]')
 
