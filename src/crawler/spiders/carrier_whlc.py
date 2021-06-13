@@ -1,6 +1,7 @@
 import re
 import time
 from urllib.parse import urlencode
+from urllib3.exceptions import ReadTimeoutError
 from typing import List, Dict
 
 import scrapy
@@ -17,7 +18,7 @@ from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
 from crawler.core_carrier.items import (
     MblItem, BaseCarrierItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData, DebugItem)
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, BaseCarrierError, \
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, LoadWebsiteTimeOutError, BaseCarrierError, \
     SuspiciousOperationError, CarrierInvalidSearchNoError
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
@@ -138,7 +139,10 @@ class MblRoutingRule(BaseRoutingRule):
         mbl_no = response.meta['mbl_no']
         driver = WhlcDriver()
         cookies = driver.get_cookies_dict_from_main_page()
-        driver.search_mbl(mbl_no)
+        try:
+            driver.search_mbl(mbl_no)
+        except ReadTimeoutError:
+            raise LoadWebsiteTimeOutError(url=WHLC_BASE_URL)
 
         response_selector = Selector(text=driver.get_page_source())
         container_list = self._extract_container_info(response_selector)
@@ -522,10 +526,10 @@ class WhlcDriver:
 
     def search_mbl(self, mbl_no):
         self._driver.find_element_by_xpath("//*[@id='cargoType']/option[text()='提單號碼']").click()
-        time.sleep(1)
+        time.sleep(2)
         input_ele = self._driver.find_element_by_xpath('//*[@id="q_ref_no1"]')
         input_ele.send_keys(mbl_no)
-        time.sleep(3)
+        time.sleep(2)
         self._driver.find_element_by_xpath('//*[@id="quick_ctnr_query"]').click()
         time.sleep(5)
         self._driver.switch_to.window(self._driver.window_handles[-1])
