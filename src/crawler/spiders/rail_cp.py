@@ -139,20 +139,20 @@ class ContainerRoutingRule(BaseRoutingRule):
         container_infos = self._extract_container_infos(response=response)
 
         for c_no in container_nos:
-            c_no_info = container_infos[c_no]
+            info = container_infos[c_no]
 
-            if c_no_info['last_reported'] == '':
+            if info['last_event'] == '':
                 yield InvalidContainerNoItem(container_no=c_no)
                 continue
 
             yield RailItem(
                 container_no=c_no,
-                last_event=c_no_info['last_event'],
-                last_event_location=c_no_info['last_event_location'],
-                last_event_time=c_no_info['last_event_time'],
-                eta=c_no_info['eta'],
-                ata=c_no_info['ata'],
-                last_free_day=c_no_info['lfd'],
+                last_event=info['last_event'],
+                last_event_location=info['last_event_location'],
+                last_event_time=info['last_event_time'],
+                eta=info['eta'],
+                ata=info['ata'],
+                last_free_day=info['last_free_day'],
             )
 
     @staticmethod
@@ -170,30 +170,31 @@ class ContainerRoutingRule(BaseRoutingRule):
         # print('container info content check:',container_info_content_table)
 
         container_no_table_parser = ContainerNoTableParser()
-        container_no_table_parser.parse(header_table=container_no_header_table, content_table=container_no_content_table)
+        container_no_table_parser.parse(header_table=container_no_header_table,
+                                        content_table=container_no_content_table)
         container_no_results = container_no_table_parser.get()
-        # print('container_no_results check:', container_no_results)
 
         container_info_table_parser = ContainerInfoTableParser()
-        container_info_table_parser.parse(header_table=container_info_header_table, content_table=container_info_content_table)
+        container_info_table_parser.parse(header_table=container_info_header_table,
+                                          content_table=container_info_content_table,
+                                          rows=len(container_no_results))
         container_info_results = container_info_table_parser.get()
-        # print('container_info_results check:', container_info_results)
 
         container_infos = {}
         for container_info in zip(container_no_results, container_info_results):
             container_info = dict(container_info[0], **container_info[1])
 
-            # re-think output structure
             container_no = container_info['Equipment']
-
             last_reported = container_info['Last Reported Station'].split()[1:]
             last_event_location = ' '.join(last_reported[:-1])
 
             last_event_time = last_reported[-1]
             last_event = container_info['Equipment Status'] + ', ' + container_info['Load Status']
-            xta = container_info['ETA']
-            eta = xta[1:] if len(xta) == 4 else ''
-            ata = xta[2:] if len(xta) == 5 else ''
+            xta = container_info['ETA'].split('\n')
+
+            head, value = xta[0], xta[1]
+            eta = value if head == 'ETA' else ''
+            ata = value if head == 'Arrived on' else ''
 
             container_infos[container_no] = {
                 'last_event_location': last_event_location,
@@ -209,7 +210,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
 class ContainerNoTableParser:
     def __init__(self):
-        self.items = []
+        self._items = []
 
     def parse(self, header_table: Selector, content_table: Selector):
         headers = header_table.css('tbody > tr > td')
@@ -217,47 +218,51 @@ class ContainerNoTableParser:
 
         for tr in content_table.css('tbody > tr'):
             td = tr.css('td')[1]
-            container_no = td.css('a ::text').get()
+            container_no = td.css('a::text').get()
             if container_no:
-                self.items.append({container_no_header: container_no})
+                self._items.append({container_no_header: container_no})
             else:
                 return
 
     def get(self):
-        return self.items
+        return self._items
 
 
 class ContainerInfoTableParser:
     def __init__(self):
-        self.items = []
+        self._items = []
         self._header_set = {
-            4, #'Last Reported Station'
-            6, #'Equipment Status',
-            7, #'Load Status',
-            9, #'ETA',
-            16, #'Last Free Day',
-            }
+            'Last Reported Station',
+            'Equipment Status',
+            'Load Status',
+            'ETA',
+            'Last Free Day',
+        }
 
-    def parse(self, header_table: Selector, content_table: Selector):
-        header_list = header_table.css('tbody > tr > td span::text').getall()
-        # print('info headers check:', header_list)
-        headers = {i: v for i, v in enumerate(header_list)}
+    def parse(self, header_table: Selector, content_table: Selector, rows):
+        headers = header_table.css('tbody > tr > td span::text').getall()
 
+        for tr in content_table.css('tbody > tr')[:rows]:
+            content_list = self.get_content_list(tr=tr)
 
-        for tr in content_table.css('tbody > tr'):
-            content_list = tr.css('td span::text').getall()
             info_dict = {}
-
             for i, content in enumerate(content_list):
-                if i in self._header_set:
-                    info_dict[headers[i]] = content
+                header = headers[i]
+                if header in self._header_set:
+                    info_dict[header] = content
 
-            self.items.append(info_dict)
+            self._items.append(info_dict)
 
+    def get_content_list(self, tr: Selector):
+        content_list = []
+        for td in tr.css('td')[:-1]:
+            content = td.css('div>span::text').get()
+            content_list.append(content)
+
+        return content_list
 
     def get(self):
-        print('item check', self.items)
-        return self.items
+        return self._items
 
 
 class ContentGetter:
