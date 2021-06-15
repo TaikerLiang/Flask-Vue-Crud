@@ -5,17 +5,13 @@ import scrapy
 from scrapy import Selector
 
 from crawler.core_rail.base_spiders import BaseMultiRailSpider
-from crawler.core_rail.exceptions import DriverMaxRetryError, RailInvalidContainerNoError
+from crawler.core_rail.exceptions import DriverMaxRetryError
 from crawler.core_rail.items import BaseRailItem, RailItem, DebugItem, InvalidContainerNoItem
 from crawler.core_rail.request_helpers import RequestOption
 from crawler.core_rail.rules import RuleManager, BaseRoutingRule
-from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
-from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor, TopHeaderTableLocator
 from selenium import webdriver
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -158,16 +154,9 @@ class ContainerRoutingRule(BaseRoutingRule):
     @staticmethod
     def _extract_container_infos(response: scrapy.Selector):
         container_no_header_table = response.css('table[id$=header-fixed-fixrow]') # header table (container_no)
-        # print('container no header check:',container_no_header_table)
-
         container_no_content_table = response.css('div > table[id$=-table-fixed]') # content table (container_no)
-        # print('container no content check:',container_no_content_table)
-
         container_info_header_table = response.css('div.sapUiTableCtrlScr > table') # header table (container_info)
-        # print('container info header check:', container_info_header_table)
-
         container_info_content_table = response.css('div.sapUiTableCtrlCnt > table[id$=-table]') # content table (container_info)
-        # print('container info content check:',container_info_content_table)
 
         container_no_table_parser = ContainerNoTableParser()
         container_no_table_parser.parse(header_table=container_no_header_table,
@@ -288,7 +277,8 @@ class ContentGetter:
         options.add_experimental_option('useAutomationExtension', False)
 
         self._driver = webdriver.Chrome(options=options)
-        self._driver.get('https://www8.cpr.ca/f5idp/saml/idp/profile/redirectorpost/sso')
+        # self._driver.get('https://www8.cpr.ca/f5idp/saml/idp/profile/redirectorpost/sso')
+        self._driver.get('https://www8.cpr.ca/cx/sap/bc/ui5_ui5/ui2/ushell/shells/abap/Fiorilaunchpad.html?#Shell-home')
         self._is_first = True
 
     def _login(self):
