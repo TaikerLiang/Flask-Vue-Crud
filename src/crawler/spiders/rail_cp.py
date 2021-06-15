@@ -5,7 +5,7 @@ import scrapy
 from scrapy import Selector
 
 from crawler.core_rail.base_spiders import BaseMultiRailSpider
-from crawler.core_rail.exceptions import DriverMaxRetryError
+from crawler.core_rail.exceptions import DriverMaxRetryError, RailInvalidContainerNoError
 from crawler.core_rail.items import BaseRailItem, RailItem, DebugItem, InvalidContainerNoItem
 from crawler.core_rail.request_helpers import RequestOption
 from crawler.core_rail.rules import RuleManager, BaseRoutingRule
@@ -174,13 +174,16 @@ class ContainerRoutingRule(BaseRoutingRule):
             container_info = dict(container_info[0], **container_info[1])
 
             container_no = container_info['Equipment']
-            last_reported = container_info['Last Reported Station'].split()[1:]
-            last_event_location = ' '.join(last_reported[:-1])
+            last_reported = container_info['Last Reported Station']
+            if last_reported is None:
+                raise RailInvalidContainerNoError
 
+            last_reported = last_reported.split()[1:]
+            last_event_location = ' '.join(last_reported[:-1])
             last_event_time = last_reported[-1]
             last_event = container_info['Equipment Status'] + ', ' + container_info['Load Status']
-            xta = container_info['ETA'].split('\n')
 
+            xta = container_info['ETA'].split('\n')
             head, value = xta[0], xta[1]
             eta = value if head == 'ETA' else ''
             ata = value if head == 'Arrived on' else ''
