@@ -14,6 +14,10 @@ class ExportFinalData(BaseCarrierItem):
     pass
 
 
+class ExportData(BaseCarrierItem):
+    task_id = scrapy.Field()
+
+
 class ExportErrorData(BaseCarrierItem):
     status = scrapy.Field()
     detail = scrapy.Field()
@@ -76,6 +80,8 @@ class MblItem(BaseCarrierItem):
     customs_release_status = scrapy.Field()
     customs_release_date = scrapy.Field()
 
+    task_id = scrapy.Field()
+
 
 class VesselItem(BaseCarrierItem):
     vessel_key = scrapy.Field()
@@ -91,6 +97,8 @@ class VesselItem(BaseCarrierItem):
     shipping_date = scrapy.Field()
     row_no = scrapy.Field()
     sequence_no = scrapy.Field()
+
+    task_id = scrapy.Field()
 
     @property
     def key(self):
@@ -114,6 +122,8 @@ class ContainerItem(BaseCarrierItem):
     final_dest_eta = scrapy.Field()
     ready_for_pick_up = scrapy.Field()
 
+    task_id = scrapy.Field()
+
     @property
     def key(self):
         return self['container_key']
@@ -128,6 +138,8 @@ class ContainerStatusItem(BaseCarrierItem):
     vessel = scrapy.Field()
     voyage = scrapy.Field()
     est_or_actual = scrapy.Field()
+
+    task_id = scrapy.Field()
 
     @property
     def key(self):
