@@ -6,7 +6,7 @@ from typing import Dict
 from scrapy.exceptions import DropItem
 
 from . import items as carrier_items
-from .base import CARRIER_RESULT_STATUS_DATA, CARRIER_RESULT_STATUS_DEBUG, CARRIER_RESULT_STATUS_FATAL
+from .base import CARRIER_RESULT_STATUS_DATA, CARRIER_RESULT_STATUS_DEBUG, CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
 
 
 class CarrierItemPipeline:
@@ -49,6 +49,79 @@ class CarrierItemPipeline:
             return self._collector.build_error_data(err_item)
 
         raise DropItem('item processed')
+
+
+class CarrierMultiItemsPipeline:
+    def __init__(self):
+        self._collector_map = {}
+
+    @classmethod
+    def get_setting_name(cls):
+        return f'{__name__}.{cls.__name__}'
+
+    def open_spider(self, spider):
+        spider.logger.info(f'[{self.__class__.__name__}] ----- open_spider -----')
+        for task_id, search_no in zip(spider.task_ids, spider.search_nos):
+            request_args = {
+                'task_id': task_id,
+                'save': spider.request_args.get('save'),
+            }
+
+            if spider.search_type == SHIPMENT_TYPE_MBL:
+                request_args.update({'mbl_no': search_no})
+            elif spider.search_type == SHIPMENT_TYPE_BOOKING:
+                request_args.update({'booking_no': search_no})
+
+            self._collector_map.setdefault(task_id, CarrierResultCollector(request_args=request_args))
+
+    def process_item(self, item, spider):
+        spider.logger.info(f'[{self.__class__.__name__}] ----- process_item -----')
+        spider.logger.info(f'item : {pprint.pformat(item)}')
+
+        default_collector = CarrierResultCollector(request_args=spider.request_args)
+        try:
+            collector = self._collector_map[item['task_id']] if 'task_id' in item else default_collector
+
+            if isinstance(item, carrier_items.MblItem):
+                collector.collect_mbl_item(item=item)
+            elif isinstance(item, carrier_items.VesselItem):
+                collector.collect_vessel_item(item=item)
+            elif isinstance(item, carrier_items.ContainerItem):
+                collector.collect_container_item(item=item)
+            elif isinstance(item, carrier_items.ContainerStatusItem):
+                collector.collect_container_status_item(item=item)
+            elif isinstance(item, carrier_items.ExportData):
+                return self._collector_map[item['task_id']].build_final_data()
+            elif isinstance(item, carrier_items.ExportFinalData):
+                return {'status': 'CLOSE'}
+            elif isinstance(item, carrier_items.ExportErrorData):
+                results = default_collector.build_error_data(item)
+                collector_results = self._get_results_of_collectors()
+                results = [results] + collector_results if collector_results else results
+                return {'results': results}
+            elif isinstance(item, carrier_items.DebugItem):
+                debug_data = default_collector.build_debug_data(item)
+                return debug_data
+            else:
+                raise DropItem(f'unknown item: {item}')
+        except:
+            spider.mark_error()
+            status = CARRIER_RESULT_STATUS_FATAL
+            detail = traceback.format_exc()
+            err_item = carrier_items.ExportErrorData(status=status, detail=detail)
+            results = default_collector.build_error_data(err_item)
+            collector_results = self._get_results_of_collectors()
+            results = [results] + collector_results if collector_results else results
+            return results
+
+        raise DropItem('item processed')
+
+    def _get_results_of_collectors(self):
+        results = []
+        for _, collector in self._collector_map.items():
+            results.append(collector.build_final_data())
+
+        return results
 
 
 class CarrierResultCollector:
@@ -100,12 +173,29 @@ class CarrierResultCollector:
         }
 
     def build_final_data(self) -> Dict:
+        # remove task_id, task_id is just for link different items in same task
+        if 'task_id' in self._basic:
+            del self._basic['task_id']
+
+        vessels = []
+        for vessel in list(self._vessels.values()):
+            if 'task_id' in vessel:
+                del vessel['task_id']
+            vessels.append(vessel)
+
+        containers = []
+        for container in list(self._containers.values()):
+            for status in container['status']:
+                if 'task_id' in status:
+                    del status['task_id']
+            containers.append(container)
+
         return {
             'status': CARRIER_RESULT_STATUS_DATA,
             'request_args': self._request_args,
             'basic': self._basic,
-            'vessels': list(self._vessels.values()),
-            'containers': list(self._containers.values()),
+            'vessels': vessels,
+            'containers': containers,
         }
 
     def build_error_data(self, item: carrier_items.ExportErrorData) -> Dict:
