@@ -29,3 +29,11 @@ ghostdriver.log
 # others
 *.releases
 *geckodriver.log
+
+# env
+.env
+
+# dockerfile
+Dockerfile.dev
+Dockerfile.eval
+Dockerfile.prd
