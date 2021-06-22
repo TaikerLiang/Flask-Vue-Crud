@@ -91,9 +91,12 @@ class CarrierMultiItemsPipeline:
             elif isinstance(item, carrier_items.ContainerStatusItem):
                 collector.collect_container_status_item(item=item)
             elif isinstance(item, carrier_items.ExportData):
-                return self._collector_map[item['task_id']].build_final_data()
+                for task_id, item_collector in self._collector_map.items():
+                    if task_id != item['task_id']:
+                        return item_collector.build_final_data()
             elif isinstance(item, carrier_items.ExportFinalData):
-                return {'status': 'CLOSE'}
+                for task_id, item_collector in self._collector_map.items():
+                    return item_collector.build_final_data()
             elif isinstance(item, carrier_items.ExportErrorData):
                 results = default_collector.build_error_data(item)
                 collector_results = self._get_results_of_collectors()
@@ -123,6 +126,8 @@ class CarrierMultiItemsPipeline:
 
         return results
 
+    def _send_result_back_to_engine(self):
+        pass
 
 class CarrierResultCollector:
     def __init__(self, request_args):
