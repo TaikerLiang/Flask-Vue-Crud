@@ -305,8 +305,6 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 est_or_actual=container_status['est_or_actual'],
             )
 
-        yield ExportData(task_id=task_id)
-
     @staticmethod
     def _extract_page_title(response: Selector):
         page_title_selector = response.css('div.o-pagetitle')

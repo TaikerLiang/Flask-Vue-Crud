@@ -1,4 +1,5 @@
 import pprint
+import os
 import traceback
 from collections import OrderedDict
 from typing import Dict
@@ -7,6 +8,7 @@ from scrapy.exceptions import DropItem
 
 from . import items as carrier_items
 from .base import CARRIER_RESULT_STATUS_DATA, CARRIER_RESULT_STATUS_DEBUG, CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
+from crawler.services.edi_service import EdiClientService, EdiDataHandler
 
 
 class CarrierItemPipeline:
@@ -90,10 +92,9 @@ class CarrierMultiItemsPipeline:
                 collector.collect_container_item(item=item)
             elif isinstance(item, carrier_items.ContainerStatusItem):
                 collector.collect_container_status_item(item=item)
-            elif isinstance(item, carrier_items.ExportData):
-                return self._collector_map[item['task_id']].build_final_data()
             elif isinstance(item, carrier_items.ExportFinalData):
-                return {'status': 'CLOSE'}
+                res = self._send_result_back_edi_engine()
+                return {'status': 'CLOSE', 'result': res}
             elif isinstance(item, carrier_items.ExportErrorData):
                 results = default_collector.build_error_data(item)
                 collector_results = self._get_results_of_collectors()
@@ -122,6 +123,20 @@ class CarrierMultiItemsPipeline:
             results.append(collector.build_final_data())
 
         return results
+
+    def _send_result_back_edi_engine(self):
+        user = os.environ.get('EDI_ENGINE_USER')
+        token = os.environ.get('EDI_ENGINE_TOKEN')
+        edi_client = EdiClientService(edi_user=user, edi_token=token)
+
+        res = []
+        for task_id, collector in self._collector_map.items():
+            item_result = collector.build_final_data()
+            result = EdiDataHandler.build_response_data(task_id=task_id, spider_tag='scrapy_cloud_api', result=item_result)
+            status_code, text = edi_client.send_provider_result_back(task_id=task_id, provider_code='scrapy_cloud_api', result=result)
+            res.append({'task_id': task_id, 'status_code': status_code, 'text': text})
+
+        return res
 
 
 class CarrierResultCollector:
@@ -220,4 +235,13 @@ class CarrierResultCollector:
         """
         drop private keys (startswith '_')
         """
-        return {k: v for k, v in item.items() if not k.startswith('_')}
+        res = {}
+        for k, v in item.items():
+            if k.startswith('_'):
+                continue
+            if isinstance(v, carrier_items.LocationItem):
+                res.update({k: dict(v)})
+            else:
+                res.update({k: v})
+
+        return res
