@@ -29,3 +29,6 @@ ghostdriver.log
 # others
 *.releases
 *geckodriver.log
+
+# env
+.env

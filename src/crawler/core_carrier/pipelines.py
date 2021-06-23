@@ -1,4 +1,5 @@
 import pprint
+import os
 import traceback
 from collections import OrderedDict
 from typing import Dict
@@ -7,6 +8,7 @@ from scrapy.exceptions import DropItem
 
 from . import items as carrier_items
 from .base import CARRIER_RESULT_STATUS_DATA, CARRIER_RESULT_STATUS_DEBUG, CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
+from crawler.services.edi_service import EdiClientService
 
 
 class CarrierItemPipeline:
@@ -90,13 +92,9 @@ class CarrierMultiItemsPipeline:
                 collector.collect_container_item(item=item)
             elif isinstance(item, carrier_items.ContainerStatusItem):
                 collector.collect_container_status_item(item=item)
-            elif isinstance(item, carrier_items.ExportData):
-                for task_id, item_collector in self._collector_map.items():
-                    if task_id != item['task_id']:
-                        return item_collector.build_final_data()
             elif isinstance(item, carrier_items.ExportFinalData):
-                for task_id, item_collector in self._collector_map.items():
-                    return item_collector.build_final_data()
+                res = self._send_result_back_to_edi_engine()
+                return {'status': 'CLOSE', 'result': res}
             elif isinstance(item, carrier_items.ExportErrorData):
                 results = default_collector.build_error_data(item)
                 collector_results = self._get_results_of_collectors()
@@ -126,8 +124,19 @@ class CarrierMultiItemsPipeline:
 
         return results
 
-    def _send_result_back_to_engine(self):
-        pass
+    def _send_result_back_to_edi_engine(self):
+        user = os.environ.get('EDI_ENGINE_USER')
+        token = os.environ.get('EDI_ENGINE_TOKEN')
+        edi_client = EdiClientService(edi_user=user, edi_token=token)
+
+        res = []
+        for task_id, collector in self._collector_map.items():
+            item_result = collector.build_final_data()
+            status_code, text = edi_client.send_provider_result_back(task_id=task_id, provider_code='scrapy_cloud_api', item_result=item_result)
+            res.append({'task_id': task_id, 'status_code': status_code, 'text': text})
+
+        return res
+
 
 class CarrierResultCollector:
     def __init__(self, request_args):
@@ -225,4 +234,13 @@ class CarrierResultCollector:
         """
         drop private keys (startswith '_')
         """
-        return {k: v for k, v in item.items() if not k.startswith('_')}
+        res = {}
+        for k, v in item.items():
+            if k.startswith('_'):
+                continue
+            if isinstance(v, carrier_items.LocationItem):
+                res.update({k: dict(v)})
+            else:
+                res.update({k: v})
+
+        return res
