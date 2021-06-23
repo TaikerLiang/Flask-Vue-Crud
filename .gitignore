@@ -35,8 +35,3 @@ ghostdriver.log
 
 # env
 .env
-
-# dockerfile
-Dockerfile.dev
-Dockerfile.eval
-Dockerfile.prd
