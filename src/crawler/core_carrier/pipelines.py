@@ -93,7 +93,7 @@ class CarrierMultiItemsPipeline:
             elif isinstance(item, carrier_items.ContainerStatusItem):
                 collector.collect_container_status_item(item=item)
             elif isinstance(item, carrier_items.ExportFinalData):
-                res = self._send_result_back_edi_engine()
+                res = self._send_result_back_to_edi_engine()
                 return {'status': 'CLOSE', 'result': res}
             elif isinstance(item, carrier_items.ExportErrorData):
                 results = default_collector.build_error_data(item)
@@ -124,7 +124,7 @@ class CarrierMultiItemsPipeline:
 
         return results
 
-    def _send_result_back_edi_engine(self):
+    def _send_result_back_to_edi_engine(self):
         user = os.environ.get('EDI_ENGINE_USER')
         token = os.environ.get('EDI_ENGINE_TOKEN')
         edi_client = EdiClientService(edi_user=user, edi_token=token)
