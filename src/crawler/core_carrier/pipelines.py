@@ -8,7 +8,7 @@ from scrapy.exceptions import DropItem
 
 from . import items as carrier_items
 from .base import CARRIER_RESULT_STATUS_DATA, CARRIER_RESULT_STATUS_DEBUG, CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
-from crawler.services.edi_service import EdiClientService, EdiDataHandler
+from crawler.services.edi_service import EdiClientService
 
 
 class CarrierItemPipeline:
@@ -132,8 +132,7 @@ class CarrierMultiItemsPipeline:
         res = []
         for task_id, collector in self._collector_map.items():
             item_result = collector.build_final_data()
-            result = EdiDataHandler.build_response_data(task_id=task_id, spider_tag='scrapy_cloud_api', result=item_result)
-            status_code, text = edi_client.send_provider_result_back(task_id=task_id, provider_code='scrapy_cloud_api', result=result)
+            status_code, text = edi_client.send_provider_result_back(task_id=task_id, provider_code='scrapy_cloud_api', item_result=item_result)
             res.append({'task_id': task_id, 'status_code': status_code, 'text': text})
 
         return res

@@ -23,25 +23,23 @@ class EdiClientService:
             'Host': os.environ.get('EDI_HOST')
         }
 
-    def send_provider_result_back(self, task_id: int, provider_code: str, result: Dict) -> Tuple[int, str]:
-        data = {
-            'provider_code': provider_code,
-            'task_id': task_id,
-            'result_data': json.dumps(result),
-        }
-
+    def send_provider_result_back(self, task_id: int, provider_code: str, item_result: Dict) -> Tuple[int, str]:
+        data = self._build_provider_result(task_id=task_id, provider_code=provider_code, item_result=item_result)
         resp = requests.post(url=self.url, data=data, headers=self.build_header())
 
         return resp.status_code, resp.text
 
-
-class EdiDataHandler:
-    @staticmethod
-    def build_response_data(task_id: int, spider_tag: str, result: Dict) -> Dict:
-        return {
+    def _build_provider_result(self, task_id: int, provider_code: str, item_result: Dict) -> Dict:
+        result_data = {
             'task_id': task_id,
             'job_key': '-',
-            'spider': spider_tag,
+            'spider': 'scrapy_cloud_api',
             'close_reason': '',
-            'items': [result],
+            'items': [item_result],
+        }
+
+        return {
+            'provider_code': provider_code,
+            'task_id': task_id,
+            'result_data': json.dumps(result_data),
         }
