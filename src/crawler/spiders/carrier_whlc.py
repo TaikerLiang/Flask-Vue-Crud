@@ -1,15 +1,12 @@
 import re
 import time
-from urllib.parse import urlencode
 from urllib3.exceptions import ReadTimeoutError
 from typing import List, Dict
 
 import scrapy
 from scrapy import Selector
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import (
@@ -158,41 +155,47 @@ class MblRoutingRule(BaseRoutingRule):
             )
 
             # detail page
-            driver.go_detail_page(idx + 2)
-            detail_selector = Selector(text=driver.get_page_source())
-            date_information = self._extract_date_information(detail_selector)
+            try:
+                driver.go_detail_page(idx + 2)
+                detail_selector = Selector(text=driver.get_page_source())
+                date_information = self._extract_date_information(detail_selector)
 
-            yield VesselItem(
-                vessel_key=f"{date_information['pol_vessel']} / {date_information['pol_voyage']}",
-                vessel=date_information['pol_vessel'],
-                voyage=date_information['pol_voyage'],
-                pol=LocationItem(un_lo_code=date_information['pol_un_lo_code']),
-                etd=date_information['pol_etd'],
-            )
+                yield VesselItem(
+                    vessel_key=f"{date_information['pol_vessel']} / {date_information['pol_voyage']}",
+                    vessel=date_information['pol_vessel'],
+                    voyage=date_information['pol_voyage'],
+                    pol=LocationItem(un_lo_code=date_information['pol_un_lo_code']),
+                    etd=date_information['pol_etd'],
+                )
 
-            yield VesselItem(
-                vessel_key=f"{date_information['pod_vessel']} / {date_information['pod_voyage']}",
-                vessel=date_information['pod_vessel'],
-                voyage=date_information['pod_voyage'],
-                pod=LocationItem(un_lo_code=date_information['pod_un_lo_code']),
-                eta=date_information['pod_eta'],
-            )
+                yield VesselItem(
+                    vessel_key=f"{date_information['pod_vessel']} / {date_information['pod_voyage']}",
+                    vessel=date_information['pod_vessel'],
+                    voyage=date_information['pod_voyage'],
+                    pod=LocationItem(un_lo_code=date_information['pod_un_lo_code']),
+                    eta=date_information['pod_eta'],
+                )
 
-            driver.close()
-            driver.switch_to_last()
+                driver.close()
+                driver.switch_to_last()
+            except NoSuchElementException:
+                pass
 
             # history page
-            driver.go_history_page(idx + 2)
-            history_selector = Selector(text=driver.get_page_source())
-            container_status_list = self._extract_container_status(history_selector)
+            try:
+                driver.go_history_page(idx + 2)
+                history_selector = Selector(text=driver.get_page_source())
+                container_status_list = self._extract_container_status(history_selector)
 
-            for container_status in container_status_list:
-                yield ContainerStatusItem(
-                    container_key=container_no,
-                    local_date_time=container_status['local_date_time'],
-                    description=container_status['description'],
-                    location=LocationItem(name=container_status['location_name']),
-                )
+                for container_status in container_status_list:
+                    yield ContainerStatusItem(
+                        container_key=container_no,
+                        local_date_time=container_status['local_date_time'],
+                        description=container_status['description'],
+                        location=LocationItem(name=container_status['location_name']),
+                    )
+            except NoSuchElementException:
+                pass
 
             driver.close()
             driver.switch_to_last()
@@ -531,7 +534,7 @@ class WhlcDriver:
         input_ele.send_keys(mbl_no)
         time.sleep(2)
         self._driver.find_element_by_xpath('//*[@id="quick_ctnr_query"]').click()
-        time.sleep(5)
+        time.sleep(10)
         self._driver.switch_to.window(self._driver.window_handles[-1])
 
     def search(self, search_no, search_type):
@@ -543,12 +546,8 @@ class WhlcDriver:
         input_ele.send_keys(search_no)
         time.sleep(3)
         self._driver.find_element_by_xpath('//*[@id="quick_ctnr_query"]').click()
-        time.sleep(5)
+        time.sleep(10)
         self._driver.switch_to.window(self._driver.window_handles[-1])
-
-        WebDriverWait(self._driver, 30).until(EC.presence_of_element_located(
-            (By.CSS_SELECTOR, 'form#cargoTrackListBean table.tbl-list')
-        ))
 
     def go_detail_page(self, idx: int):
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u').click()
