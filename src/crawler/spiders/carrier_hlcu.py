@@ -105,7 +105,7 @@ class TracingRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, mbl_no: str, cookies: Dict) -> RequestOption:
-        url = f'{BASE_URL}/online-business/tracing/tracing-by-booking.html?blno={mbl_no}'
+        url = f'{BASE_URL}/online-business/track/track-by-booking-solution.html?blno={mbl_no}'
 
         return RequestOption(
             rule_name=cls.name,
@@ -228,7 +228,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_FORM,
-            url=f'{BASE_URL}/online-business/tracing/tracing-by-booking.html?_a=tracing_by_booking',
+            url=f'{BASE_URL}/online-business/track/track-by-booking-solution.html?_a=tracing_by_booking',
             form_data=form_data,
             cookies=cookies,
             meta={'container_key': container_key},
