@@ -35,7 +35,8 @@ class CarrierItemPipeline:
             elif isinstance(item, carrier_items.ContainerStatusItem):
                 self._collector.collect_container_status_item(item=item)
             elif isinstance(item, carrier_items.ExportFinalData):
-                return self._collector.build_final_data()
+                res = self._send_result_back_to_edi_engine()
+                return {'status': 'CLOSE', 'result': res}
             elif isinstance(item, carrier_items.ExportErrorData):
                 return self._collector.build_error_data(item)
             elif isinstance(item, carrier_items.DebugItem):
@@ -51,6 +52,21 @@ class CarrierItemPipeline:
             return self._collector.build_error_data(err_item)
 
         raise DropItem('item processed')
+
+    def _send_result_back_to_edi_engine(self):
+        user = os.environ.get('EDI_ENGINE_USER')
+        token = os.environ.get('EDI_ENGINE_TOKEN')
+        edi_client = EdiClientService(edi_user=user, edi_token=token)
+
+        res = []
+        item_result = self._collector.build_final_data()
+        task_id = item_result.get('request_args', {}).get('task_id')
+        if task_id:
+            status_code, text = edi_client.send_provider_result_back(task_id=task_id, provider_code='scrapy_cloud_api', item_result=item_result)
+            res.append({'task_id': task_id, 'status_code': status_code, 'text': text})
+            return res
+        else:
+            return {'status_code': -1, 'text': 'no task id in request_args'}
 
 
 class CarrierMultiItemsPipeline:
