@@ -316,7 +316,11 @@ class ItemExtractor:
             data['etd'] = xtd_time
 
         xta_key = xta_div.css('div.ivu-steps-name::text').get().strip()
-        xta_time = xta_div.css('div.ivu-steps-date::text').get().strip()
+        xta_time = xta_div.css('div.ivu-steps-date::text').get()
+
+        # xta_time might be None
+        if xta_time:
+            xta_time.strip()
 
         if xta_key == 'ATA':
             data['ata'] = xta_time
