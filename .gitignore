@@ -33,5 +33,3 @@ ghostdriver.log
 *.releases
 *geckodriver.log
 
-# env
-.env
