@@ -79,6 +79,8 @@ class TerminalMultiItemsPipeline:
         spider.logger.info(f'[{self.__class__.__name__}] ----- process_item -----')
         spider.logger.info(f'item : {pprint.pformat(item)}')
 
+        self._default_collector = TerminalResultCollector(request_args=spider.request_args)
+
         try:
             if isinstance(item, terminal_items.TerminalItem):
                 collector = self._collector_map[item.key] if item.key else self._default_collector
