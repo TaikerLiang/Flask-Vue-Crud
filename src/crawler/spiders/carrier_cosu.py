@@ -552,6 +552,9 @@ class TopHeadDivTableLocator(BaseTableLocator):
 
     def iter_left_index(self):
         keys = list(self._td_map.keys())
+        if not keys:
+            return 0
+
         first_tds = self._td_map[keys[0]]
         for i in range(len(first_tds)):
             yield i
