@@ -1,5 +1,6 @@
 import re
 from typing import List, Dict
+import time
 
 import scrapy
 from selenium import webdriver
@@ -21,7 +22,7 @@ from crawler.core_carrier.items import (
     DebugItem,
     BaseCarrierItem,
 )
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.request_helpers import RequestOption, ProxyManager
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
@@ -50,10 +51,18 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         elif self.search_type == SHIPMENT_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
 
+        self._proxy_manager = ProxyManager(session='share', logger=self.logger)
+
     def start(self):
         for s_no, t_id in zip(self.search_nos, self.task_ids):
-            option = HomePageRoutingRule.build_request_option(search_no=s_no, task_id=t_id)
+            option = self._prepare_start(search_no=s_no, task_id=t_id)
             yield self._build_request_by(option=option)
+
+    def _prepare_start(self, search_no: str, task_id: str):
+        self._proxy_manager.renew_proxy()
+        option = HomePageRoutingRule.build_request_option(search_no=search_no, task_id=task_id)
+        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
+        return proxy_option
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -89,7 +98,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
                 url=option.url,
                 formdata=option.form_data,
                 meta=meta,
-                dont_filter=True,
+                # dont_filter=True,
             )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
@@ -151,6 +160,7 @@ class MainRoutingRule(BaseRoutingRule):
             form_data=form_data,
             url='https://www.msc.com/track-a-shipment?agencyPath=twn',
             meta={
+                'search_no': search_no,
                 'task_id': task_id,
             }
         )
@@ -162,8 +172,14 @@ class MainRoutingRule(BaseRoutingRule):
         if self._is_search_no_invalid(response=response):
             raise CarrierInvalidSearchNoError(search_type=self._search_type)
 
-        task_id=response.meta['task_id']
+        task_id = response.meta['task_id']
+        search_no = response.meta['search_no']
         extractor = Extractor()
+
+        print('=============================')
+        print("search_no:", search_no)
+        print("task_id:", task_id)
+        print('=============================')
 
         place_of_deliv_set = set()
         container_selector_map_list = extractor.locate_container_selector(response=response)
