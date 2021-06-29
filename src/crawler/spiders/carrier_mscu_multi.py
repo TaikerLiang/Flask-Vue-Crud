@@ -1,4 +1,5 @@
 import re
+import json
 from typing import List, Dict
 import time
 
@@ -32,6 +33,7 @@ URL = 'https://www.msc.com'
 
 class CarrierMscuSpider(BaseMultiCarrierSpider):
     name = 'carrier_mscu'
+    custom_settings = {'CONCURRENT_REQUESTS': '1'}
 
     def __init__(self, *args, **kwargs):
         super(CarrierMscuSpider, self).__init__(*args, **kwargs)
@@ -51,7 +53,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         elif self.search_type == SHIPMENT_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
 
-        self._proxy_manager = ProxyManager(session='share', logger=self.logger)
+        self._proxy_manager = ProxyManager(session='mscu', logger=self.logger)
 
     def start(self):
         for s_no, t_id in zip(self.search_nos, self.task_ids):
@@ -175,11 +177,6 @@ class MainRoutingRule(BaseRoutingRule):
         task_id = response.meta['task_id']
         search_no = response.meta['search_no']
         extractor = Extractor()
-
-        print('=============================')
-        print("search_no:", search_no)
-        print("task_id:", task_id)
-        print('=============================')
 
         place_of_deliv_set = set()
         container_selector_map_list = extractor.locate_container_selector(response=response)
