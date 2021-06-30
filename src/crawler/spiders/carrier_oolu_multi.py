@@ -130,7 +130,7 @@ class ContentGetter:
         options = webdriver.ChromeOptions()
         options.add_argument('--disable-extensions')
         options.add_argument('--disable-notifications')
-        # options.add_argument('--headless')
+        options.add_argument('--headless')
         options.add_argument("--enable-javascript")
         options.add_argument('--disable-gpu')
         options.add_argument(
@@ -160,7 +160,6 @@ class ContentGetter:
             self._handle_with_slide()
             time.sleep(10)
 
-        # close windows[1] here?
         return self.driver.page_source
 
     def search_again_and_return(self, search_no, search_type):
