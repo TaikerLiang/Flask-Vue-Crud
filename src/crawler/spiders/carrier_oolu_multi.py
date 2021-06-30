@@ -43,6 +43,7 @@ BASE_URL = 'http://moc.oocl.com'
 
 class CarrierOoluSpider(BaseMultiCarrierSpider):
     name = 'carrier_oolu'
+    custom_settings = {'CONCURRENT_REQUESTS': '1'}
 
     def __init__(self, *args, **kwargs):
         super(CarrierOoluSpider, self).__init__(*args, **kwargs)
@@ -129,7 +130,7 @@ class ContentGetter:
         options = webdriver.ChromeOptions()
         options.add_argument('--disable-extensions')
         options.add_argument('--disable-notifications')
-        options.add_argument('--headless')
+        # options.add_argument('--headless')
         options.add_argument("--enable-javascript")
         options.add_argument('--disable-gpu')
         options.add_argument(
@@ -159,6 +160,7 @@ class ContentGetter:
             self._handle_with_slide()
             time.sleep(10)
 
+        # close windows[1] here?
         return self.driver.page_source
 
     def search_again_and_return(self, search_no, search_type):
@@ -220,8 +222,8 @@ class ContentGetter:
         return self.driver.page_source
 
     def find_container_btn_and_click(self, container_btn_css):
-        contaienr_btn = self.driver.find_element_by_css_selector(container_btn_css)
-        contaienr_btn.click()
+        container_btn = self.driver.find_element_by_css_selector(container_btn_css)
+        container_btn.click()
 
     def get_element_slide_distance(self, slider_ele, background_ele, correct=0):
         """
@@ -401,6 +403,11 @@ class CargoTrackingRule(BaseRoutingRule):
         task_id = response.meta['task_id']
 
         try:
+            windows = self._content_getter.driver.window_handles
+            if len(windows) > 1:
+                self._content_getter.driver.close()
+                self._content_getter.driver.switch_to.window(windows[0])
+
             res = self._content_getter.search_and_return(search_no=search_no, search_type=self._search_type)
             response = Selector(text=res)
 
@@ -464,11 +471,16 @@ class CargoTrackingRule(BaseRoutingRule):
 
         container_list = cls._extract_container_list(selector_map=selector_map)
         for i, container in enumerate(container_list):
+            # need to be under windows[1]
             yield ContainerStatusRule.build_request_option(
-                task_id = task_id,
+                is_last = True if i == len(container_list) else False,
+                task_id=task_id,
                 container_no=container['container_no'].strip(),
                 click_element_css=f"a[id='form:link{i}']",
             )
+
+    def get_driver(self):
+        return self._content_getter
 
     @staticmethod
     def is_search_no_invalid(response):
@@ -847,12 +859,13 @@ class ContainerStatusRule(BaseRoutingRule):
         self._content_getter = content_getter
 
     @classmethod
-    def build_request_option(cls, task_id: str, container_no: str, click_element_css: str) -> RequestOption:
+    def build_request_option(cls, is_last: bool, task_id: str, container_no: str, click_element_css: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url='https://www.google.com',
             meta={
+                'is_last': is_last,
                 'task_id': task_id,
                 'container_no': container_no,
                 'click_element_css': click_element_css,
