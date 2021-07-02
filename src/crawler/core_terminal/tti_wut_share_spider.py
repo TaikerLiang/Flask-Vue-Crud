@@ -199,6 +199,7 @@ class ContentGetter:
                 'ready_for_pick_up': table_locator.get_cell(left=i, top='Available for Pickup'),
                 'appointment_date': table_locator.get_cell(left=i, top='Appt Time'),
                 'freight_release': table_locator.get_cell(left=i, top='Freight Status'),
+                'carrier_release': table_locator.get_cell(left=i, top='Freight Status'),
                 'holds': table_locator.get_cell(left=i, top='Hold Reason'),
                 'last_free_day': table_locator.get_cell(left=i, top='Last Free Day'),
             }

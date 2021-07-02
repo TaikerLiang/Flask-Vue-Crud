@@ -121,6 +121,7 @@ class SeleniumRoutingRule(BaseRoutingRule):
             yield TerminalItem(
                 container_no=container_info['container_no'],
                 freight_release=extra_container_info['freight_release'],
+                carrier_release=extra_container_info['freight_release'],
                 customs_release=extra_container_info['customs_release'],
                 appointment_date=container_info['appointment_date'],
                 ready_for_pick_up=container_info['ready_for_pick_up'],

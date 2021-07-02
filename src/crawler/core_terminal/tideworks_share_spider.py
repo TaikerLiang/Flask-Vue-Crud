@@ -259,6 +259,7 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
 
         return {
             'freight_release': extra_container_info.get('Line Release Status', ''),
+            'carrier_release': extra_container_info.get('Line Release Status', ''),
             'customs_release': extra_container_info.get('Customs Release Status', ''),
             'last_free_day': extra_container_info.get('Satisfied Thru', ''),
             'demurrage': extra_container_info.get('Demurrage', ''),
