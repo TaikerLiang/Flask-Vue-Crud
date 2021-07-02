@@ -285,11 +285,11 @@ class Extractor:
             if not container_no_bar:
                 raise CarrierResponseFormatError(reason='Can not find container_no_bar !!!')
 
-            container_stats_table = container_content.css('table.containerStats')
+            container_stats_table = container_content.css('table.singleRowTable')
             if not container_stats_table:
                 raise CarrierResponseFormatError(reason='Can not find container_stats_table !!!')
 
-            movements_table = container_content.css('table.resultTable')
+            movements_table = container_content.css("table[class='resultTable']")
             if not movements_table:
                 raise CarrierResponseFormatError(reason='Can not find movements_table !!!')
 
