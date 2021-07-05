@@ -45,7 +45,7 @@ EGLV_CAPTCHA_URL = 'https://www.shipmentlink.com/servlet/TUF1_CaptchaUtils'
 
 
 class CarrierEglvSpider(BaseMultiCarrierSpider):
-    name = 'carrier_eglv'
+    name = 'carrier_eglv_multi'
 
     custom_settings = {
         **CARRIER_DEFAULT_SETTINGS,
