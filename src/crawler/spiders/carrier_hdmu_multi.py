@@ -107,7 +107,7 @@ class ItemRecorder:
 
 
 class CarrierHdmuSpider(BaseMultiCarrierSpider):
-    name = 'carrier_hdmu'
+    name = 'carrier_hdmu_multi'
     custom_settings = {
         **CARRIER_DEFAULT_SETTINGS,
         'DOWNLOAD_TIMEOUT': 30,
