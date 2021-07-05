@@ -21,7 +21,7 @@ from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
-WHLC_BASE_URL = 'https://tw.wanhai.com'
+WHLC_BASE_URL = 'https://www.wanhai.com/views/Main.xhtml'
 COOKIES_RETRY_LIMIT = 3
 
 
@@ -224,13 +224,13 @@ class MblRoutingRule(BaseRoutingRule):
         table = TableExtractor(table_locator=table_locator)
         return_list = []
         for left in table_locator.iter_left_headers():
-            container_no_text = table.extract_cell('櫃號', left)
+            container_no_text = table.extract_cell('Ctnr No.', left)
             container_no = self._parse_container_no_from(text=container_no_text)
 
-            detail_j_idt_text = table.extract_cell('明細查詢', left, JidtTdExtractor())
+            detail_j_idt_text = table.extract_cell('More detail', left, JidtTdExtractor())
             detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text)
 
-            history_j_idt_text = table.extract_cell('歷史動態', left, JidtTdExtractor())
+            history_j_idt_text = table.extract_cell('More History', left, JidtTdExtractor())
             history_j_idt = self._parse_history_j_idt_from(text=history_j_idt_text)
 
             return_list.append({
@@ -275,7 +275,7 @@ class MblRoutingRule(BaseRoutingRule):
     def _extract_date_information(response) -> Dict:
         pattern = re.compile(r'^(?P<vessel>[^/]+) / (?P<voyage>[^/]+)$')
 
-        match_rule = NameOnTableMatchRule(name='2. 出發日期 / 抵達日期 訊息')
+        match_rule = NameOnTableMatchRule(name='2. Departure Date / Arrival Date Information')
 
         table_selector = find_selector_from(selectors=response.css('table.tbl-list'), rule=match_rule)
 
@@ -294,25 +294,25 @@ class MblRoutingRule(BaseRoutingRule):
         vessel_voyage_index = 1
         date_index = 0
 
-        pol_vessel_voyage = location_table.extract_cell(top=vessel_voyage_index, left='裝貨港')
+        pol_vessel_voyage = location_table.extract_cell(top=vessel_voyage_index, left='Loading Port')
         pol_m = pattern.match(pol_vessel_voyage)
         pol_vessel = pol_m.group('vessel')
         pol_voyage = pol_m.group('voyage')
 
-        pod_vessel_voyage = location_table.extract_cell(top=vessel_voyage_index, left='卸貨港')
+        pod_vessel_voyage = location_table.extract_cell(top=vessel_voyage_index, left='Discharging Port')
         pod_m = pattern.match(pod_vessel_voyage)
         pod_vessel = pod_m.group('vessel')
         pod_voyage = pod_m.group('voyage')
 
         return {
-            'pol_un_lo_code': location_table.extract_cell(top=un_lo_code_index, left='裝貨港'),
-            'pod_un_lo_code': location_table.extract_cell(top=un_lo_code_index, left='卸貨港'),
+            'pol_un_lo_code': location_table.extract_cell(top=un_lo_code_index, left='Loading Port'),
+            'pod_un_lo_code': location_table.extract_cell(top=un_lo_code_index, left='Discharging Port'),
             'pol_vessel': pol_vessel,
             'pol_voyage': pol_voyage,
             'pod_vessel': pod_vessel,
             'pod_voyage': pod_voyage,
-            'pod_eta': date_table.extract_cell(top=date_index, left='抵達日期'),
-            'pol_etd': date_table.extract_cell(top=date_index, left='出發日期'),
+            'pod_eta': date_table.extract_cell(top=date_index, left='Arrival Date'),
+            'pol_etd': date_table.extract_cell(top=date_index, left='Departure Date'),
         }
 
     @staticmethod
@@ -328,9 +328,9 @@ class MblRoutingRule(BaseRoutingRule):
 
         return_list = []
         for left in table_locator.iter_left_headers():
-            description = table.extract_cell(top='狀態', left=left, extractor=DescriptionTdExtractor())
-            local_date_time = table.extract_cell(top='日期', left=left, extractor=LocalDateTimeTdExtractor())
-            location_name = table.extract_cell(top='櫃場名稱', left=left, extractor=LocationNameTdExtractor())
+            description = table.extract_cell(top='Status Name', left=left, extractor=DescriptionTdExtractor())
+            local_date_time = table.extract_cell(top='Ctnr Date', left=left, extractor=LocalDateTimeTdExtractor())
+            location_name = table.extract_cell(top='Ctnr Depot Name', left=left, extractor=LocationNameTdExtractor())
 
             return_list.append({
                 'local_date_time': local_date_time,
@@ -440,8 +440,8 @@ class BookingRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table)
 
         return {
-            'vessel': table_locator.get_cell('船名'),
-            'voyage': table_locator.get_cell('航次'),
+            'vessel': table_locator.get_cell('Vessel Name'),
+            'voyage': table_locator.get_cell('Voyage'),
         }
 
     def _extract_vessel_info(self, response: scrapy.Selector):
@@ -452,12 +452,12 @@ class BookingRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table)
 
         return {
-            'por': table_locator.get_cell('收貨地'),
-            'pol': table_locator.get_cell('裝貨港'),
-            'pod': table_locator.get_cell('卸貨港'),
-            'place_of_deliv': table_locator.get_cell('目的地'),
-            'eta': table_locator.get_cell('預定出發日期'),
-            'etd': table_locator.get_cell('預定抵達日期'),
+            'por': table_locator.get_cell('Place of Receipt').replace(u'\xa0', u' '),
+            'pol': table_locator.get_cell('Port of Loading').replace(u'\xa0', u' '),
+            'pod': table_locator.get_cell('Port of Discharge').replace(u'\xa0', u' '),
+            'place_of_deliv': table_locator.get_cell('Place of Delivery').replace(u'\xa0', u' '),
+            'eta': table_locator.get_cell('Estimated Departure Date'),
+            'etd': table_locator.get_cell('Estimated Arrival Date'),
         }
 
     def _extract_container_no_and_status_links(self, response: scrapy.Selector) -> List:
@@ -496,9 +496,9 @@ class BookingRoutingRule(BaseRoutingRule):
 
         return_list = []
         for left in table_locator.iter_left_headers():
-            description = table.extract_cell(top='狀態', left=left, extractor=DescriptionTdExtractor())
-            local_date_time = table.extract_cell(top='日期', left=left, extractor=LocalDateTimeTdExtractor())
-            location_name = table.extract_cell(top='櫃場名稱', left=left, extractor=LocationNameTdExtractor())
+            description = table.extract_cell(top='Status Name', left=left, extractor=DescriptionTdExtractor())
+            local_date_time = table.extract_cell(top='Ctnr Date', left=left, extractor=LocalDateTimeTdExtractor())
+            location_name = table.extract_cell(top='Ctnr Depot Name', left=left, extractor=LocationNameTdExtractor())
 
             return_list.append(
                 {
@@ -525,8 +525,8 @@ class WhlcDriver:
         self._driver = webdriver.Firefox(firefox_profile=profile, options=options)
 
         self._type_select_text_map = {
-            SHIPMENT_TYPE_MBL: '提單號碼',
-            SHIPMENT_TYPE_BOOKING: '訂艙號碼',
+            SHIPMENT_TYPE_MBL: 'BL no.',
+            SHIPMENT_TYPE_BOOKING: 'Book No.',
         }
 
     def get_cookies_dict_from_main_page(self):
@@ -552,7 +552,7 @@ class WhlcDriver:
         return self._driver.page_source
 
     def search_mbl(self, mbl_no):
-        self._driver.find_element_by_xpath("//*[@id='cargoType']/option[text()='提單號碼']").click()
+        self._driver.find_element_by_xpath("//*[@id='cargoType']/option[text()='BL no.']").click()
         time.sleep(2)
         input_ele = self._driver.find_element_by_xpath('//*[@id="q_ref_no1"]')
         input_ele.send_keys(mbl_no)
@@ -677,13 +677,13 @@ class BookingContainerListTableLocator(BaseTableLocator):
                 container_no = data_tr.css('td a::text').get().strip()
                 tds = data_tr.css('td')
                 row[title_text] = (tds[title_index].css('::text').get() or '').strip()
-                if title_text == '櫃號':
+                if title_text == 'Ctnr No.':
                     row[title_text] = container_no
 
             self._td_map.append(row)
 
     def get_container_no_list(self) -> List:
-        return [row['櫃號'] for row in self._td_map]
+        return [row['Ctnr No.'] for row in self._td_map]
 
     def get_cell(self, top, left) -> scrapy.Selector:
         try:
