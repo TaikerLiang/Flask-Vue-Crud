@@ -26,7 +26,7 @@ COOKIES_RETRY_LIMIT = 3
 
 
 class CarrierWhlcSpider(BaseMultiCarrierSpider):
-    name = 'carrier_whlc'
+    name = 'carrier_whlc_multi'
 
     custom_settings = {
         **CARRIER_DEFAULT_SETTINGS,
