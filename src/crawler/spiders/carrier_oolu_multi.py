@@ -42,7 +42,7 @@ BASE_URL = 'http://moc.oocl.com'
 
 
 class CarrierOoluSpider(BaseMultiCarrierSpider):
-    name = 'carrier_oolu'
+    name = 'carrier_oolu_multi'
     custom_settings = {'CONCURRENT_REQUESTS': '1'}
 
     def __init__(self, *args, **kwargs):
