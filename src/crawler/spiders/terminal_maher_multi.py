@@ -230,7 +230,6 @@ class SearchRoutingRule(BaseRoutingRule):
                     'customs_release': table_locator.get_cell(left=i, top='Customs Released'),
                     'discharge_date': table_locator.get_cell(left=i, top='Date Discharged'),
                     'last_free_day': table_locator.get_cell(left=i, top='Last Free Date'),
-                    'freight_release': table_locator.get_cell(left=i, top='Freight Released'),
                     'carrier_release': table_locator.get_cell(left=i, top='Freight Released'),
                 }
             )

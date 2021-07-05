@@ -259,7 +259,6 @@ class ListTracedContainerRoutingRule(BaseRoutingRule):
             'cy_location': container['status'].get('LOCATIONDETAILS', ''),
             # release information might be elsewhere(i.e. container inquiry) for fenix
             'customs_release': container['status'].get('CUSTOMS', ''),
-            'freight_release': container['status'].get('FREIGHT', ''),
             'carrier_release': container['status'].get('FREIGHT', ''),
         }
 
