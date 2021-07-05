@@ -46,7 +46,7 @@ class Restart:
 
 
 class CarrierYmluSpider(BaseMultiCarrierSpider):
-    name = 'carrier_ymlu'
+    name = 'carrier_ymlu_multi'
 
     def __init__(self, *args, **kwargs):
         super(CarrierYmluSpider, self).__init__(*args, **kwargs)
