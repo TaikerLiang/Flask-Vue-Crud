@@ -111,7 +111,7 @@ class RequestOptionFactory:
 
 
 class CarrierSuduSpider(BaseMultiCarrierSpider):
-    name = 'carrier_sudu'
+    name = 'carrier_sudu_multi'
     # custom_settings = {'CONCURRENT_REQUESTS': '1'}
 
     def __init__(self, *args, **kwargs):
