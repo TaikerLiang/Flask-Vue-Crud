@@ -31,7 +31,7 @@ BASE_URL = 'https://www.hapag-lloyd.com/en'
 
 
 class CarrierHlcuSpider(BaseMultiCarrierSpider):
-    name = 'carrier_hlcu'
+    name = 'carrier_hlcu_multi'
 
     def __init__(self, *args, **kwargs):
         super(CarrierHlcuSpider, self).__init__(*args, **kwargs)
