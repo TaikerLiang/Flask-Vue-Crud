@@ -5,7 +5,7 @@ import scrapy
 import json
 
 from crawler.core_carrier.base import SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
-from crawler.core_carrier.base_spiders import BaseCarrierSpider
+from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
@@ -14,7 +14,7 @@ from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierRes
     SuspiciousOperationError, CarrierInvalidSearchNoError
 
 
-class MaeuMccqSafmShareSpider(BaseCarrierSpider):
+class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
     name = ''
     base_url_format = ''
 
@@ -35,8 +35,9 @@ class MaeuMccqSafmShareSpider(BaseCarrierSpider):
             self._rule_manager = RuleManager(rules=booking_rules)
 
     def start(self):
-        option = MainInfoRoutingRule.build_request_option(search_no=self.search_no, url_format=self.base_url_format)
-        yield self._build_request_by(option=option)
+        for s_no, t_id in zip(self.search_nos, self.task_ids):
+            option = MainInfoRoutingRule.build_request_option(search_no=s_no, task_id=t_id, url_format=self.base_url_format)
+            yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -77,12 +78,13 @@ class MainInfoRoutingRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, search_no: str, url_format: str) -> RequestOption:
+    def build_request_option(cls, search_no: str, task_id: str, url_format: str) -> RequestOption:
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=url_format.format(search_no=search_no),
             meta={
+                'task_id': task_id,
                 'handle_httpstatus_list': [400],
             }
         )
@@ -91,6 +93,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return f'{self.name}.json'
 
     def handle(self, response):
+        task_id = response.meta['task_id']
         response_dict = json.loads(response.text)
 
         if self.is_search_no_invalid(response_dict):
@@ -100,6 +103,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         routing_info = self._extract_routing_info(response_dict=response_dict)
 
         mbl_item = MblItem(
+            task_id=task_id,
             por=LocationItem(name=routing_info['por']),
             final_dest=LocationItem(name=routing_info['final_dest']),
         )
@@ -114,6 +118,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             container_no = container['no']
 
             yield ContainerItem(
+                task_id=task_id,
                 container_key=container_no,
                 container_no=container_no,
                 final_dest_eta=container['final_dest_eta'],
@@ -121,6 +126,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
             for container_status in container['container_statuses']:
                 yield ContainerStatusItem(
+                    task_id=task_id,
                     container_key=container_no,
                     description=container_status['description'],
                     local_date_time=container_status['timestamp'],
