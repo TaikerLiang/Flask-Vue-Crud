@@ -32,7 +32,7 @@ from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatch
 
 
 class CarrierCosuSpider(BaseMultiCarrierSpider):
-    name = 'carrier_cosu'
+    name = 'carrier_cosu_multi'
 
     def __init__(self, *args, **kwargs):
         super(CarrierCosuSpider, self).__init__(*args, **kwargs)
