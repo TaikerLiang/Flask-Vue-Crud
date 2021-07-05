@@ -4,6 +4,7 @@ from typing import List, Dict
 
 import scrapy
 
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, SuspiciousOperationError
 from crawler.core_carrier.items import (
@@ -21,21 +22,30 @@ URL = 'https://www.matson.com'
 
 
 class CarrierMatsSpider(BaseMultiCarrierSpider):
-    name = 'carrier_mats'
+    name = 'carrier_mats_multi'
 
     def __init__(self, *args, **kwargs):
         super(CarrierMatsSpider, self).__init__(*args, **kwargs)
 
-        rules = [
-            MainInfoRoutingRule(),
+        bill_rules = [
+            MainInfoRoutingRule(search_type=SHIPMENT_TYPE_MBL),
             TimeRoutingRule(),
         ]
 
-        self._rule_manager = RuleManager(rules=rules)
+        booking_rules = [
+            MainInfoRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
+            TimeRoutingRule(),
+        ]
+
+        if self.search_type == SHIPMENT_TYPE_MBL:
+            self._rule_manager = RuleManager(rules=bill_rules)
+        elif self.search_type == SHIPMENT_TYPE_BOOKING:
+            self._rule_manager = RuleManager(rules=booking_rules)
 
     def start(self):
         for s_no, t_id in zip(self.search_nos, self.task_ids):
-            request_option = MainInfoRoutingRule.build_request_option(mbl_no=s_no, task_id=t_id)
+            request_option = MainInfoRoutingRule.build_request_option(
+                search_no=s_no, task_id=t_id, search_type=self.search_type)
             yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -76,12 +86,21 @@ class CarrierMatsSpider(BaseMultiCarrierSpider):
 class MainInfoRoutingRule(BaseRoutingRule):
     name = 'MAIN_INFO'
 
+    def __init__(self, search_type):
+        self._search_type = search_type
+
     @classmethod
-    def build_request_option(cls, mbl_no: str, task_id: str) -> RequestOption:
+    def build_request_option(cls, search_no: str, task_id: str, search_type: str) -> RequestOption:
+        url = ''
+        if search_type == SHIPMENT_TYPE_MBL:
+            url = f'{URL}/vcsc/tracking/bill/{search_no}'
+        else:
+            url = f'{URL}/vcsc/tracking/booking/{search_no}'
+
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f'{URL}/vcsc/tracking/bill/{mbl_no}',
+            url=url,
             meta={'task_id': task_id,}
         )
 
