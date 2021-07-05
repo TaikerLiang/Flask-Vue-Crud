@@ -88,7 +88,7 @@ projects:
 image: true
 ```
 
-### Deploy Image 
+### Deploy Image
 
 ```bash
 shub image upload [PROJECT-ID]

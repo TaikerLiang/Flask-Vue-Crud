@@ -255,20 +255,22 @@ class ContentGetter:
         WebDriverWait(self._driver, 40).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.x-panel-header')))
         self._driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
         search_input = self._driver.find_element_by_css_selector('textarea[placeholder]')
-        search_btn = self._driver.find_element_by_xpath('//*[@id="button-1413-btnInnerEl"]')
+        # search_btn = self._driver.find_element_by_xpath('//*[@id="button-1429-btnInnerEl"]')
+        search_btn = self._driver.find_element_by_css_selector('a.x-btn.ns-button__action.x-box-item')
 
         search_input.send_keys('\n'.join(container_nos))
         time.sleep(random.randint(3, 5))
         search_btn.click()
 
         # wait for result
-        time.sleep(10)
-        try:
-            result_btn = self._driver.find_element_by_xpath('//*[@id="button-1005"]')
-            result_btn.click()
-        except NoSuchElementException:
-            pass
-        time.sleep(10)
+        time.sleep(5)
+
+        # try:
+        #     result_btn = self._driver.find_element_by_xpath('//*[@id="button-1005"]')
+        #     result_btn.click()
+        # except NoSuchElementException:
+        #     pass
+        # time.sleep(10)
         # # close result and clean search bar
         # close_btn = self._driver.find_element_by_css_selector('div[data-qtip="Close dialog"]')
         # close_btn.click()

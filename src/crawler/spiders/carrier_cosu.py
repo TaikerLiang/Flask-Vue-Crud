@@ -316,7 +316,11 @@ class ItemExtractor:
             data['etd'] = xtd_time
 
         xta_key = xta_div.css('div.ivu-steps-name::text').get().strip()
-        xta_time = xta_div.css('div.ivu-steps-date::text').get().strip()
+        xta_time = xta_div.css('div.ivu-steps-date::text').get()
+
+        # xta_time might be None
+        if xta_time:
+            xta_time.strip()
 
         if xta_key == 'ATA':
             data['ata'] = xta_time
@@ -548,6 +552,9 @@ class TopHeadDivTableLocator(BaseTableLocator):
 
     def iter_left_index(self):
         keys = list(self._td_map.keys())
+        if not keys:
+            return 0
+
         first_tds = self._td_map[keys[0]]
         for i in range(len(first_tds)):
             yield i

@@ -12,7 +12,6 @@ import scrapy
 from scrapy import Selector
 
 from selenium import webdriver
-# from seleniumwire import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -291,7 +290,7 @@ class ContentRoutingRule(BaseRoutingRule):
             yield TerminalItem(
                 container_no=table_extractor.extract_cell(top='Number', left=i),
                 customs_release=table_extractor.extract_cell(top='Holds_Customs', left=i),
-                cy_location=table_extractor.extract_cell(top='Yard Status', left=i),
+                gate_out_date=table_extractor.extract_cell(top='Yard Status', left=i),
                 last_free_day=table_extractor.extract_cell(top='Demurrage_LFD', left=i),
                 holds=table_extractor.extract_cell(top='Demurrage_Hold', left=i),
                 demurrage=table_extractor.extract_cell(top='Demurrage_Amt', left=i),
@@ -327,17 +326,6 @@ class HeadlessBrowser:
         options.add_experimental_option('excludeSwitches', ['enable-automation'])
         options.add_experimental_option('useAutomationExtension', False)
 
-        # PROXY_GROUP_RESIDENTIAL = 'RESIDENTIAL'
-        # proxy_option = ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'trapac{self._generate_random_string()}')
-        # seleniumwire_options = {
-        #     'connection_timeout': None,
-        #     'proxy': {
-        #         'http': f'http://{self.get_proxy_username(proxy_option)}:{self.PROXY_PASSWORD}@{self.PROXY_URL}',
-        #         'https': f'https://{self.get_proxy_username(proxy_option)}:{self.PROXY_PASSWORD}@{self.PROXY_URL}',
-        #         'no_proxy': 'localhost,127.0.0.1',
-        #     },
-        # }
-        # self._browser = webdriver.Chrome(chrome_options=options, seleniumwire_options=seleniumwire_options)
         self._browser = webdriver.Chrome(chrome_options=options)
 
     def get(self, url):
@@ -346,7 +334,6 @@ class HeadlessBrowser:
 
     def accept_cookie(self):
         try:
-            self._browser.save_screenshot('out.png')
             cookie_btn = self._browser.find_element_by_xpath('//*[@id="cn-accept-cookie"]')
             cookie_btn.click()
             time.sleep(3)
@@ -455,9 +442,6 @@ class ContentGetter:
         self._headless_browser.accept_cookie()
         self._headless_browser.key_in_search_bar(search_no=search_no)
         cookies = self._headless_browser.get_cookies()
-
-        g_response = self._headless_browser.solve_google_recaptcha(self._company.lower_short)
-        print('get_g_token', g_response)
         self._headless_browser.press_search_button()
 
         if self._headless_browser.get_google_recaptcha():
