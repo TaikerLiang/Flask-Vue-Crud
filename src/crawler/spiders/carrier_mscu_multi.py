@@ -32,7 +32,7 @@ URL = 'https://www.msc.com'
 
 
 class CarrierMscuSpider(BaseMultiCarrierSpider):
-    name = 'carrier_mscu'
+    name = 'carrier_mscu_multi'
     custom_settings = {'CONCURRENT_REQUESTS': '1'}
 
     def __init__(self, *args, **kwargs):
