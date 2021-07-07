@@ -80,6 +80,9 @@ class ProxyManager:
             ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
             ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
             ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
         ]
 
         self._proxy_username = ''
