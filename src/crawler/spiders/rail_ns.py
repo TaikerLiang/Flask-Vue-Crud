@@ -132,7 +132,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         invalid_container_nos = []
         if self._is_some_container_nos_invalid(response=response):
-            invalid_container_nos = self._extract_invalid_container_nos(response=response)
+            invalid_container_nos = self._extract_invalid_container_nos(response=response, container_nos=container_nos)
             for cno in invalid_container_nos:
                 yield InvalidContainerNoItem(container_no=cno)
 
@@ -180,15 +180,21 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         return bool(error_btn)
 
-    def _extract_invalid_container_nos(self, response: scrapy.Selector) -> List:
+    def _extract_invalid_container_nos(self, response: scrapy.Selector, container_nos: List) -> List:
+        # should map to original input container_no
         error_p = response.xpath(self.ERROR_P_XPATH)
         if not error_p:
             raise RailResponseFormatError(reason=f'xpath: `{self.ERROR_P_XPATH}` can\'t find error text')
 
-        raw_invalid_container_nos = error_p.css('::text').get_all()[1:-1]  # 0: title, -1: space
+        raw_invalid_container_nos = error_p.css('::text').getall()[1:-1]  # 0: title, -1: space
         invalid_container_nos = [cno.replace(' ', '') for cno in raw_invalid_container_nos]
 
-        return invalid_container_nos
+        full_invalid_container_nos = []
+        for cno in container_nos:
+            if cno[:-1] in invalid_container_nos:
+                full_invalid_container_nos.append(cno)
+
+        return full_invalid_container_nos
 
 
 class ContentGetter:
@@ -323,8 +329,12 @@ class DivTopHeaderTableLocator(BaseTableLocator):
         return (left is None) and (top in self._td_map)
 
     def iter_left_header(self):
-        first_title = list(self._td_map.keys())[0]
-        content_len = len(self._td_map[first_title])
+        first_title = list(self._td_map.keys())
+        content_len = 0
+
+        if first_title:
+            first_title = first_title[0]
+            content_len = len(self._td_map[first_title])
 
         for i in range(content_len):
             yield i
