@@ -227,13 +227,13 @@ class ArrivalCellExtractor(BaseTableCellExtractor):
 
 class ContentGetter:
     USER_NAME = 'gftracking'
-    PASS_WORD = 'GoFreight2021'
+    PASS_WORD = 'GoFt2021'
 
     def __init__(self):
         options = webdriver.ChromeOptions()
         options.add_argument('--disable-extensions')
         options.add_argument('--disable-notifications')
-        options.add_argument('--headless')
+        # options.add_argument('--headless')
         options.add_argument("--enable-javascript")
         options.add_argument('--disable-gpu')
         options.add_argument(
