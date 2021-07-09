@@ -1,5 +1,6 @@
 import random
 import time
+from typing import List
 
 import scrapy
 from scrapy import Selector
@@ -132,12 +133,12 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         response = scrapy.Selector(text=response_text)
 
-        container_infos = self._extract_container_infos(response=response)
+        container_infos = self._extract_container_infos(response=response, container_nos=container_nos)
 
         for c_no in container_nos:
             info = container_infos[c_no]
 
-            if info['last_event'] == '':
+            if info['load_empty'] == '': # need refactor
                 yield InvalidContainerNoItem(container_no=c_no)
                 continue
 
@@ -152,7 +153,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             )
 
     @staticmethod
-    def _extract_container_infos(response: scrapy.Selector):
+    def _extract_container_infos(response: scrapy.Selector, container_nos: List):
         container_no_header_table = response.css('table[id$=header-fixed-fixrow]') # header table (container_no)
         container_no_content_table = response.css('div > table[id$=-table-fixed]') # content table (container_no)
         container_info_header_table = response.css('div.sapUiTableCtrlScr > table') # header table (container_info)
@@ -169,26 +170,33 @@ class ContainerRoutingRule(BaseRoutingRule):
                                           rows=len(container_no_results))
         container_info_results = container_info_table_parser.get()
 
+        cno_map = {cno[:-1]: cno for cno in container_nos}
         container_infos = {}
         for container_info in zip(container_no_results, container_info_results):
             container_info = dict(container_info[0], **container_info[1])
 
-            container_no = container_info['Equipment']
-            last_reported = container_info['Last Reported Station']
-            if last_reported is None:
-                raise RailInvalidContainerNoError
+            container_no = cno_map[container_info['Equipment']] # map to original input container_no
+            load_empty = container_info['Load/Empty'] # check this for invalid container_no
 
-            last_reported = last_reported.split()[1:]
-            last_event_location = ' '.join(last_reported[:-1])
-            last_event_time = last_reported[-1]
+            last_reported = container_info['Last Reported Station']
+            last_event_location, last_event_time = '', ''
+
+            if last_reported:
+                last_reported = last_reported.split()[1:]
+                last_event_location = ' '.join(last_reported[:-1])
+                last_event_time = last_reported[-1]
+
             last_event = container_info['Equipment Status'] + ', ' + container_info['Load Status']
 
             xta = container_info['ETA'].split('\n')
-            head, value = xta[0], xta[1]
+            if len(xta) > 1:
+                head, value = xta[0], xta[1]
+
             eta = value if head == 'ETA' else ''
             ata = value if head == 'Arrived on' else ''
 
             container_infos[container_no] = {
+                'load_empty': load_empty,
                 'last_event_location': last_event_location,
                 'last_event_time': last_event_time,
                 'last_event': last_event,
@@ -224,6 +232,7 @@ class ContainerInfoTableParser:
     def __init__(self):
         self._items = []
         self._header_set = {
+            'Load/Empty',
             'Last Reported Station',
             'Equipment Status',
             'Load Status',
@@ -241,7 +250,7 @@ class ContainerInfoTableParser:
             for i, content in enumerate(content_list):
                 header = headers[i]
                 if header in self._header_set:
-                    info_dict[header] = content
+                    info_dict[header] = content if content else ''
 
             self._items.append(info_dict)
 
