@@ -199,7 +199,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
 class ContentGetter:
     USER_NAME = 'hvv26'
-    PASS_WORD = 'gofrt123'
+    PASS_WORD = 'Goft2021'
 
     def __init__(self):
 
