@@ -10,7 +10,7 @@ from selenium.common.exceptions import NoSuchElementException
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import (
-    BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
+    BaseMultiCarrierSpider, CARRIER_DEFAULT_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
 from crawler.core_carrier.items import (
@@ -25,8 +25,8 @@ WHLC_BASE_URL = 'https://www.wanhai.com/views/Main.xhtml'
 COOKIES_RETRY_LIMIT = 3
 
 
-class CarrierWhlcSpider(BaseCarrierSpider):
-    name = 'carrier_whlc'
+class CarrierWhlcSpider(BaseMultiCarrierSpider):
+    name = 'carrier_whlc_multi'
 
     custom_settings = {
         **CARRIER_DEFAULT_SETTINGS,
@@ -44,21 +44,22 @@ class CarrierWhlcSpider(BaseCarrierSpider):
             BookingRoutingRule()
         ]
 
-        if self.mbl_no:
+        if self.search_type == SHIPMENT_TYPE_MBL:
             self._rule_manager = RuleManager(rules=bill_rules)
-            self.search_no = self.mbl_no
-        else:
+        elif self.search_type == SHIPMENT_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
-            self.search_no = self.booking_no
 
         self._request_queue = RequestOptionQueue()
 
     def start(self):
-        if self.mbl_no:
-            request_option = MblRoutingRule.build_request_option(search_no=self.search_no)
+        if self.search_type == SHIPMENT_TYPE_MBL:
+            for s_no, t_id in zip(self.search_nos, self.task_ids):
+                request_option = MblRoutingRule.build_request_option(search_no=s_no, task_id=t_id)
+                yield self._build_request_by(option=request_option)
         else:
-            request_option = BookingRoutingRule.build_request_option(search_no=self.search_no)
-        yield self._build_request_by(option=request_option)
+            for s_no, t_id in zip(self.search_nos, self.task_ids):
+                request_option = BookingRoutingRule.build_request_option(search_no=s_no, task_id=t_id)
+                yield self._build_request_by(option=request_option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -94,6 +95,7 @@ class CarrierWhlcSpider(BaseCarrierSpider):
                 callback=self.parse,
                 method='POST',
                 body=option.body,
+                dont_filter=True,
             )
         elif option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
@@ -101,6 +103,7 @@ class CarrierWhlcSpider(BaseCarrierSpider):
                 headers=option.headers,
                 cookies=option.cookies,
                 meta=meta,
+                dont_filter=True,
             )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
@@ -124,15 +127,19 @@ class MblRoutingRule(BaseRoutingRule):
         self._j_idt_patt = re.compile(r"'(?P<j_idt>j_idt[^,]+)':'(?P=j_idt)'")
 
     @classmethod
-    def build_request_option(cls, search_no):
+    def build_request_option(cls, search_no, task_id):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f'https://google.com',
-            meta={'mbl_no': search_no},
+            meta={
+                'mbl_no': search_no,
+                'task_id': task_id
+            },
         )
 
     def handle(self, response):
+        task_id = response.meta['task_id']
         mbl_no = response.meta['mbl_no']
         driver = WhlcDriver()
         cookies = driver.get_cookies_dict_from_main_page()
@@ -144,12 +151,16 @@ class MblRoutingRule(BaseRoutingRule):
         response_selector = Selector(text=driver.get_page_source())
         container_list = self._extract_container_info(response_selector)
 
-        yield MblItem(mbl_no=mbl_no)
+        yield MblItem(
+            task_id=task_id,
+            mbl_no=mbl_no
+        )
 
         for idx in range(len(container_list)):
             container_no = container_list[idx]['container_no']
 
             yield ContainerItem(
+                task_id=task_id,
                 container_key=container_no,
                 container_no=container_no,
             )
@@ -161,6 +172,7 @@ class MblRoutingRule(BaseRoutingRule):
                 date_information = self._extract_date_information(detail_selector)
 
                 yield VesselItem(
+                    task_id=task_id,
                     vessel_key=f"{date_information['pol_vessel']} / {date_information['pol_voyage']}",
                     vessel=date_information['pol_vessel'],
                     voyage=date_information['pol_voyage'],
@@ -169,6 +181,7 @@ class MblRoutingRule(BaseRoutingRule):
                 )
 
                 yield VesselItem(
+                    task_id=task_id,
                     vessel_key=f"{date_information['pod_vessel']} / {date_information['pod_voyage']}",
                     vessel=date_information['pod_vessel'],
                     voyage=date_information['pod_voyage'],
@@ -189,6 +202,7 @@ class MblRoutingRule(BaseRoutingRule):
 
                 for container_status in container_status_list:
                     yield ContainerStatusItem(
+                        task_id=task_id,
                         container_key=container_no,
                         local_date_time=container_status['local_date_time'],
                         description=container_status['description'],
@@ -335,18 +349,22 @@ class BookingRoutingRule(BaseRoutingRule):
         self._container_patt = re.compile(r'^(?P<container_no>\w+)')
 
     @classmethod
-    def build_request_option(cls, search_no):
+    def build_request_option(cls, search_no, task_id):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f'https://google.com',
-            meta={'search_no': search_no},
+            meta={
+                'search_no': search_no,
+                'task_id': task_id,
+            },
         )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
 
     def handle(self, response):
+        task_id = response.meta['task_id']
         search_no = response.meta['search_no']
         driver = WhlcDriver()
         cookies = driver.get_cookies_dict_from_main_page()
@@ -360,9 +378,13 @@ class BookingRoutingRule(BaseRoutingRule):
         basic_info = self._extract_basic_info(Selector(text=driver.get_page_source()))
         vessel_info = self._extract_vessel_info(Selector(text=driver.get_page_source()))
 
-        yield MblItem(booking_no=search_no)
+        yield MblItem(
+            task_id=task_id,
+            booking_no=search_no,
+        )
 
         yield VesselItem(
+            task_id=task_id,
             vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
             vessel=basic_info['vessel'],
             voyage=basic_info['voyage'],
@@ -371,6 +393,7 @@ class BookingRoutingRule(BaseRoutingRule):
         )
 
         yield VesselItem(
+            task_id=task_id,
             vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
             vessel=basic_info['vessel'],
             voyage=basic_info['voyage'],
@@ -390,6 +413,7 @@ class BookingRoutingRule(BaseRoutingRule):
             container_status_items = self._make_container_status_items(container_no, event_list)
 
             yield ContainerItem(
+                task_id=task_id,
                 container_key=container_no,
                 container_no=container_no,
             )

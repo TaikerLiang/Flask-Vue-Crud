@@ -7,7 +7,7 @@ import scrapy
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import (
-    BaseCarrierSpider,
+    BaseMultiCarrierSpider,
     CARRIER_DEFAULT_SETTINGS,
     DISABLE_DUPLICATE_REQUEST_FILTER,
 )
@@ -44,8 +44,8 @@ EGLV_INFO_URL = 'https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do'
 EGLV_CAPTCHA_URL = 'https://www.shipmentlink.com/servlet/TUF1_CaptchaUtils'
 
 
-class CarrierEglvSpider(BaseCarrierSpider):
-    name = 'carrier_eglv'
+class CarrierEglvSpider(BaseMultiCarrierSpider):
+    name = 'carrier_eglv_multi'
 
     custom_settings = {
         **CARRIER_DEFAULT_SETTINGS,
@@ -56,7 +56,7 @@ class CarrierEglvSpider(BaseCarrierSpider):
         super(CarrierEglvSpider, self).__init__(*args, **kwargs)
 
         bill_rules = [
-            CaptchaRoutingRule(route_type=SHIPMENT_TYPE_MBL),
+            CaptchaRoutingRule(search_type=SHIPMENT_TYPE_MBL),
             BillMainInfoRoutingRule(),
             FilingStatusRoutingRule(),
             ReleaseStatusRoutingRule(),
@@ -64,21 +64,20 @@ class CarrierEglvSpider(BaseCarrierSpider):
         ]
 
         booking_rules = [
-            CaptchaRoutingRule(route_type=SHIPMENT_TYPE_BOOKING),
+            CaptchaRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
             BookingMainInfoRoutingRule(),
             ContainerStatusRoutingRule(),
         ]
 
-        if self.mbl_no:
+        if self.search_type == SHIPMENT_TYPE_MBL:
             self._rule_manager = RuleManager(rules=bill_rules)
-            self.search_no = self.mbl_no
-        else:
+        elif self.search_type == SHIPMENT_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
-            self.search_no = self.booking_no
 
     def start(self):
-        option = CaptchaRoutingRule.build_request_option(search_no=self.search_no)
-        yield self._build_request_by(option=option)
+        for s_no, t_id in zip(self.search_nos, self.task_ids):
+            option = CaptchaRoutingRule.build_request_option(search_no=s_no, task_id=t_id)
+            yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -124,35 +123,39 @@ class CarrierEglvSpider(BaseCarrierSpider):
 class CaptchaRoutingRule(BaseRoutingRule):
     name = 'CAPTCHA'
 
-    def __init__(self, route_type):
+    def __init__(self, search_type):
         self._captcha_analyzer = CaptchaAnalyzer()
-        self._route_type = route_type
+        self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, search_no: str) -> RequestOption:
+    def build_request_option(cls, search_no: str, task_id: str) -> RequestOption:
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=EGLV_CAPTCHA_URL,
-            meta={'search_no': search_no},
+            meta={
+                'search_no': search_no,
+                'task_id': task_id,
+            },
         )
 
     def get_save_name(self, response) -> str:
         return ''  # ignore captcha
 
     def handle(self, response):
+        task_id = response.meta['task_id']
         search_no = response.meta['search_no']
 
         captcha_base64 = base64.b64encode(response.body)
         verification_code = self._captcha_analyzer.analyze_captcha(captcha_base64=captcha_base64)
 
-        if self._route_type == SHIPMENT_TYPE_BOOKING:
+        if self._search_type == SHIPMENT_TYPE_BOOKING:
             yield BookingMainInfoRoutingRule.build_request_option(
-                booking_no=search_no, verification_code=verification_code)
+                booking_no=search_no, verification_code=verification_code, task_id=task_id)
 
-        elif self._route_type == SHIPMENT_TYPE_MBL:
+        elif self._search_type == SHIPMENT_TYPE_MBL:
             yield BillMainInfoRoutingRule.build_request_option(
-                mbl_no=search_no, verification_code=verification_code)
+                mbl_no=search_no, verification_code=verification_code, task_id=task_id)
 
 
 
@@ -173,7 +176,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
         self._retry_count = 0
 
     @classmethod
-    def build_request_option(cls, mbl_no: str, verification_code: str) -> RequestOption:
+    def build_request_option(cls, mbl_no: str, verification_code: str, task_id: str) -> RequestOption:
         form_data = {
             'BL': mbl_no,
             'CNTR': '',
@@ -190,13 +193,17 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=EGLV_INFO_URL,
             form_data=form_data,
-            meta={'mbl_no': mbl_no},
+            meta={
+                'mbl_no': mbl_no,
+                'task_id': task_id,
+            },
         )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
 
     def handle(self, response):
+        task_id = response.meta['task_id']
         mbl_no = response.meta['mbl_no']
 
         if self._check_captcha(response=response):
@@ -205,7 +212,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
 
         elif self._retry_count < CAPTCHA_RETRY_LIMIT:
             self._retry_count += 1
-            yield CaptchaRoutingRule.build_request_option(search_no=mbl_no)
+            yield CaptchaRoutingRule.build_request_option(search_no=mbl_no, task_id=task_id)
 
         else:
             raise CarrierCaptchaMaxRetryError()
@@ -229,11 +236,13 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
         if self._is_mbl_no_invalid(response=response):
             raise CarrierInvalidSearchNoError(search_type=SHIPMENT_TYPE_MBL)
 
+        task_id = response.meta['task_id']
         mbl_no_info = self._extract_hidden_info(response=response)
         basic_info = self._extract_basic_info(response=response)
         vessel_info = self._extract_vessel_info(response=response, pod=basic_info['pod_name'])
 
         yield MblItem(
+            task_id=task_id,
             mbl_no=mbl_no_info['mbl_no'],
             vessel=vessel_info['vessel'],
             voyage=vessel_info['voyage'],
@@ -250,11 +259,13 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
         container_list = self._extract_container_info(response=response)
         for container in container_list:
             yield ContainerItem(
+                task_id=task_id,
                 container_key=container['container_no'],
                 container_no=container['container_no'],
             )
 
             yield ContainerStatusRoutingRule.build_request_option(
+                task_id=task_id,
                 search_no=mbl_no,
                 container_no=container['container_no'],
                 onboard_date=mbl_no_info['onboard_date'],
@@ -267,12 +278,13 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
             first_container_no = self._get_first_container_no(container_list=container_list)
             yield FilingStatusRoutingRule.build_request_option(
                 search_no=mbl_no,
+                task_id=task_id,
                 # search_type=search_type,
                 pod=mbl_no_info['pod_code'],
                 first_container_no=first_container_no,
             )
 
-        yield ReleaseStatusRoutingRule.build_request_option(search_no=mbl_no)
+        yield ReleaseStatusRoutingRule.build_request_option(search_no=mbl_no, task_id=task_id)
 
     @staticmethod
     def _is_mbl_no_invalid(response):
@@ -516,7 +528,7 @@ class FilingStatusRoutingRule(BaseRoutingRule):
     name = 'FILING_STATUS'
 
     @classmethod
-    def build_request_option(cls, search_no: str, first_container_no: str, pod: str) -> RequestOption:
+    def build_request_option(cls, search_no: str, task_id: str, first_container_no: str, pod: str) -> RequestOption:
         form_data = {
             'TYPE': 'GetDispInfo',
             'Item': 'AMSACK',
@@ -530,6 +542,9 @@ class FilingStatusRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=EGLV_INFO_URL,
             form_data=form_data,
+            meta = {
+                'task_id': task_id,
+            }
         )
 
     def get_save_name(self, response) -> str:
@@ -537,8 +552,10 @@ class FilingStatusRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         status = self._extract_filing_status(response=response)
+        task_id = response.meta['task_id']
 
         yield MblItem(
+            task_id=task_id,
             us_filing_status=status['filing_status'],
             us_filing_date=status['filing_date'],
         )
@@ -577,7 +594,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
     name = 'RELEASE_STATUS'
 
     @classmethod
-    def build_request_option(cls, search_no: str) -> RequestOption:
+    def build_request_option(cls, search_no: str, task_id: str) -> RequestOption:
         form_data = {
             'TYPE': 'GetDispInfo',
             'Item': 'RlsStatus',
@@ -585,16 +602,24 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
         }
 
         return RequestOption(
-            method=RequestOption.METHOD_POST_FORM, rule_name=cls.name, url=EGLV_INFO_URL, form_data=form_data
+            method=RequestOption.METHOD_POST_FORM,
+            rule_name=cls.name,
+            url=EGLV_INFO_URL,
+            form_data=form_data,
+            meta={
+                'task_id': task_id,
+            }
         )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
 
     def handle(self, response):
+        task_id=response.meta['task_id']
         release_status = self._extract_release_status(response=response)
 
         yield MblItem(
+            task_id=task_id,
             carrier_status=release_status['carrier_status'],
             carrier_release_date=release_status['carrier_release_date'],
             us_customs_status=release_status['us_customs_status'],
@@ -816,6 +841,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     def build_request_option(
             cls,
             search_no: str,
+            task_id: str,
             container_no: str,
             onboard_date: str,
             pol: str,
@@ -841,7 +867,10 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=EGLV_INFO_URL,
             form_data=form_data,
-            meta={'container_no': container_no},
+            meta={
+                'container_no': container_no,
+                'task_id': task_id,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -849,11 +878,13 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         return f'{self.name}_{container_no}.html'
 
     def handle(self, response):
+        task_id = response.meta['task_id']
         container_no = response.meta['container_no']
 
         container_status_list = self._extract_container_status_list(response=response)
         for container_status in container_status_list:
             yield ContainerStatusItem(
+                task_id=task_id,
                 container_key=container_no,
                 description=container_status['description'],
                 local_date_time=container_status['timestamp'],
@@ -897,7 +928,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
         self._retry_count = 0
 
     @classmethod
-    def build_request_option(cls, booking_no: str, verification_code: str) -> RequestOption:
+    def build_request_option(cls, booking_no: str, verification_code: str, task_id: str) -> RequestOption:
         form_data = {
             'BL': '',
             'CNTR': '',
@@ -914,13 +945,16 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=EGLV_INFO_URL,
             form_data=form_data,
-            meta={'booking_no': booking_no},
+            meta={
+                'booking_no': booking_no,
+                'task_id': task_id},
         )
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
 
     def handle(self, response):
+        task_id = response.meta['task_id']
         booking_no = response.meta['booking_no']
 
         if self._check_captcha(response=response):
@@ -932,7 +966,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
 
         elif self._retry_count < CAPTCHA_RETRY_LIMIT:
             self._retry_count += 1
-            yield CaptchaRoutingRule.build_request_option(search_no=booking_no)
+            yield CaptchaRoutingRule.build_request_option(search_no=booking_no, task_id=task_id)
 
         else:
             raise CarrierCaptchaMaxRetryError()
@@ -969,11 +1003,13 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
             return True
 
     def _handle_main_info_page(self, response, booking_no):
-
+        task_id = response.meta['task_id']
         booking_no_and_vessel_voyage = self._extract_booking_no_and_vessel_voyage(response=response)
         basic_info = self._extract_basic_info(response=response)
         filing_info = self._extract_filing_info(response=response)
+
         yield MblItem(
+            task_id=task_id,
             booking_no=booking_no_and_vessel_voyage['booking_no'],
             por=LocationItem(name=basic_info['por_name']),
             pol=LocationItem(name=basic_info['pol_name']),
@@ -993,6 +1029,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
         container_infos = self._extract_container_infos(response=response)
         for container_info in container_infos:
             yield ContainerItem(
+                task_id=task_id,
                 container_key=container_info['container_no'],
                 container_no=container_info['container_no'],
                 full_pickup_date=container_info['full_pickup_date'],
@@ -1000,6 +1037,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
 
             yield ContainerStatusRoutingRule.build_request_option(
                 search_no=hidden_form_info['bl_no'],
+                task_id=task_id,
                 container_no=container_info['container_no'],
                 onboard_date=hidden_form_info['onboard_date'],
                 pol=hidden_form_info['pol'],
