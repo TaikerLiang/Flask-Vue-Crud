@@ -63,7 +63,6 @@ class TerminalMultiItemsPipeline:
     def open_spider(self, spider):
         spider.logger.info(f'[{self.__class__.__name__}] ----- open_spider -----')
 
-        self._default_collector = TerminalResultCollector(request_args=spider.request_args)
         for task_id, container_no in zip(spider.task_ids, spider.container_nos):
             self._collector_map.setdefault(
                 task_id,
@@ -79,6 +78,8 @@ class TerminalMultiItemsPipeline:
     def process_item(self, item, spider):
         spider.logger.info(f'[{self.__class__.__name__}] ----- process_item -----')
         spider.logger.info(f'item : {pprint.pformat(item)}')
+
+        self._default_collector = TerminalResultCollector(request_args=spider.request_args)
 
         try:
             if isinstance(item, terminal_items.TerminalItem):
@@ -115,7 +116,7 @@ class TerminalMultiItemsPipeline:
 
     def _get_results_of_collectors(self):
         results = []
-        for container_no, collector in self._collector_map.items():
+        for _, collector in self._collector_map.items():
             if not collector.is_item_empty():
                 results.append(collector.build_final_data())
 

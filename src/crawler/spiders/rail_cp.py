@@ -259,7 +259,7 @@ class ContainerInfoTableParser:
 
 class ContentGetter:
     USER_NAME = 'gftracking'
-    PASS_WORD = 'GoFreight2021'
+    PASS_WORD = 'GoFt2021'
 
     def __init__(self):
         options = webdriver.ChromeOptions()

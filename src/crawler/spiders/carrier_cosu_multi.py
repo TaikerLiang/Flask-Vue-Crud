@@ -23,7 +23,7 @@ from crawler.core_carrier.items import (
     BaseCarrierItem,
     DebugItem,
 )
-from crawler.core_carrier.base_spiders import BaseCarrierSpider
+from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.selector_finder import CssQueryExistMatchRule, find_selector_from
@@ -31,8 +31,8 @@ from crawler.extractors.table_cell_extractors import FirstTextTdExtractor, BaseT
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 
-class CarrierCosuSpider(BaseCarrierSpider):
-    name = 'carrier_cosu'
+class CarrierCosuSpider(BaseMultiCarrierSpider):
+    name = 'carrier_cosu_multi'
 
     def __init__(self, *args, **kwargs):
         super(CarrierCosuSpider, self).__init__(*args, **kwargs)
@@ -47,17 +47,21 @@ class CarrierCosuSpider(BaseCarrierSpider):
             BookingInfoRoutingRule(content_getter, origin_search_type=SHIPMENT_TYPE_BOOKING),
         ]
 
-        if self.mbl_no:
+        if self.search_type == SHIPMENT_TYPE_MBL:
             self._rule_manager = RuleManager(rules=bill_rules)
-        else:
+        elif self.search_type == SHIPMENT_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
 
     def start(self):
-        if self.mbl_no:
-            option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        if self.search_type == SHIPMENT_TYPE_MBL:
+            for s_no, t_id in zip(self.search_nos, self.task_ids):
+                option = MainInfoRoutingRule.build_request_option(mbl_no=s_no, task_id=t_id)
+                yield self._build_request_by(option=option)
         else:
-            option = BookingInfoRoutingRule.build_request_option(booking_nos=[self.booking_no])
-        yield self._build_request_by(option=option)
+            for s_no, t_id in zip(self.search_nos, self.task_ids):
+                # option = BookingInfoRoutingRule.build_request_option(booking_nos=[self.booking_no], task_id=t_id)
+                option = BookingInfoRoutingRule.build_request_option(booking_no=s_no, task_id=t_id)
+                yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -100,7 +104,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         self._content_getter = content_getter
 
     @classmethod
-    def build_request_option(cls, mbl_no) -> RequestOption:
+    def build_request_option(cls, mbl_no, task_id) -> RequestOption:
         url = f'https://www.google.com'
 
         return RequestOption(
@@ -109,6 +113,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             url=url,
             meta={
                 'mbl_no': mbl_no,
+                'task_id': task_id,
             },
         )
 
@@ -117,6 +122,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
+        task_id = response.meta['task_id']
 
         response_text = self._content_getter.search_and_return(search_no=mbl_no, is_booking=False)
         response_selector = scrapy.Selector(text=response_text)
@@ -128,14 +134,15 @@ class MainInfoRoutingRule(BaseRoutingRule):
             raise CarrierInvalidSearchNoError(search_type=SHIPMENT_TYPE_MBL)
 
         elif not self._is_mbl_no_invalid(response=response_selector):
-            item_extractor = ItemExtractor()
+            item_extractor = ItemExtractor(task_id=task_id)
             for item in item_extractor.extract(
                     response=response_selector, content_getter=self._content_getter, search_type=SHIPMENT_TYPE_MBL):
                 yield item
 
         elif booking_nos:
-            yield MblItem(mbl_no=mbl_no)
-            yield BookingInfoRoutingRule.build_request_option(booking_nos=booking_nos)
+            for booking_no in booking_nos:
+                yield MblItem(task_id=task_id, mbl_no=mbl_no)
+                yield BookingInfoRoutingRule.build_request_option(task_id=task_id, booking_no=booking_no)
 
     @staticmethod
     def _is_mbl_no_invalid(response: Selector) -> bool:
@@ -153,7 +160,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
         self._origin_search_type = origin_search_type
 
     @classmethod
-    def build_request_option(cls, booking_nos: List) -> RequestOption:
+    def build_request_option(cls, task_id: str, booking_no: str) -> RequestOption:
         url = f'https://www.google.com'
 
         return RequestOption(
@@ -161,7 +168,8 @@ class BookingInfoRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=url,
             meta={
-                'booking_nos': booking_nos,
+                'booking_no': booking_no,
+                'task_id': task_id,
             },
         )
 
@@ -169,22 +177,23 @@ class BookingInfoRoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def handle(self, response):
-        booking_nos = response.meta['booking_nos']
+        task_id = response.meta['task_id']
+        booking_no = response.meta['booking_no']
 
-        item_extractor = ItemExtractor()
-        for booking_no in booking_nos:
-            response_text = self._content_getter.search_and_return(search_no=booking_no, is_booking=True)
-            response_selector = scrapy.Selector(text=response_text)
+        item_extractor = ItemExtractor(task_id=task_id)
 
-            if self._is_booking_no_invalid(response=response_selector) and len(booking_nos) == 1:
-                raise CarrierInvalidSearchNoError(search_type=self._origin_search_type)
+        response_text = self._content_getter.search_and_return(search_no=booking_no, is_booking=True)
+        response_selector = scrapy.Selector(text=response_text)
 
-            for item in item_extractor.extract(
-                    response=response_selector,
-                    content_getter=self._content_getter,
-                    search_type=self._origin_search_type,
-            ):
-                yield item
+        if self._is_booking_no_invalid(response=response_selector):
+            raise CarrierInvalidSearchNoError(search_type=self._origin_search_type)
+
+        for item in item_extractor.extract(
+            response=response_selector,
+            content_getter=self._content_getter,
+            search_type=self._origin_search_type,
+        ):
+            yield item
 
     @staticmethod
     def _is_booking_no_invalid(response: Selector) -> bool:
@@ -195,6 +204,9 @@ class BookingInfoRoutingRule(BaseRoutingRule):
 
 
 class ItemExtractor:
+    def __init__(self, task_id):
+        self.task_id = task_id
+
     def extract(self, response: scrapy.Selector, content_getter, search_type) -> BaseCarrierItem:
         mbl_item = self._make_main_item(response=response, search_type=search_type)
         vessel_items = self._make_vessel_items(response=response)
@@ -209,6 +221,7 @@ class ItemExtractor:
             response_selector = scrapy.Selector(text=response_text)
 
             container_status_items = self._make_container_status_items(
+                task_id=self.task_id,
                 container_no=c_item['container_no'],
                 response=response_selector,
             )
@@ -445,13 +458,14 @@ class ItemExtractor:
         return container_infos
 
     @classmethod
-    def _make_container_status_items(cls, container_no: str, response: scrapy.Selector) -> List[BaseCarrierItem]:
+    def _make_container_status_items(cls, task_id: str, container_no: str, response: scrapy.Selector) -> List[BaseCarrierItem]:
         container_status_infos = cls._extract_container_status_infos(response=response)
 
         container_status_items = []
         for container_status_info in container_status_infos:
             container_status_items.append(
                 ContainerStatusItem(
+                    task_id=task_id,
                     container_key=get_container_key(container_no),
                     description=container_status_info['description'],
                     local_date_time=container_status_info['local_date_time'],

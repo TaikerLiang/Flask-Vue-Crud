@@ -16,24 +16,30 @@ from crawler.core_carrier.items import (
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
+    ExportData,
 )
-from crawler.core_carrier.base_spiders import BaseCarrierSpider
+from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption, ProxyManager
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor, HeaderMismatchError
+
+STATUS_ONE_CONTAINER = 'STATUS_ONE_CONTAINER'
+STATUS_MULTI_CONTAINER = 'STATUS_MULTI_CONTAINER'
+STATUS_MBL_NOT_EXIST = 'STATUS_MBL_NOT_EXIST'
+STATUS_WEBSITE_SUSPEND = 'STATUS_WEBSITE_SUSPEND'
 
 
 class ForceRestart:
     pass
 
 
-class ShareSpider(BaseCarrierSpider):
+class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
     name = ''
     base_url = ''
 
     def __init__(self, *args, **kwargs):
-        super(ShareSpider, self).__init__(*args, **kwargs)
+        super(AnlcApluCmduShareSpider, self).__init__(*args, **kwargs)
 
         bill_rules = [
             CheckIpRule(search_type=SHIPMENT_TYPE_MBL),
@@ -47,23 +53,21 @@ class ShareSpider(BaseCarrierSpider):
             ContainerStatusRoutingRule(),
         ]
 
-        if self.mbl_no:
+        if self.search_type == SHIPMENT_TYPE_MBL:
             self._rule_manager = RuleManager(rules=bill_rules)
-            self.search_no = self.mbl_no
-        else:
+        elif self.search_type == SHIPMENT_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
-            self.search_no = self.booking_no
 
         self._proxy_manager = ProxyManager(session='share', logger=self.logger)
 
     def start(self):
-        option = self._prepare_start()
-        yield self._build_request_by(option=option)
+        for s_no, t_id in zip(self.search_nos, self.task_ids):
+            option = self._prepare_start(search_no=s_no, task_id=t_id)
+            yield self._build_request_by(option=option)
 
-    def _prepare_start(self):
+    def _prepare_start(self, search_no: str, task_id: str):
         self._proxy_manager.renew_proxy()
-
-        option = CheckIpRule.build_request_option(search_no=self.search_no, base_url=self.base_url)
+        option = CheckIpRule.build_request_option(search_no=search_no, base_url=self.base_url, task_id=task_id)
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         return proxy_option
 
@@ -71,7 +75,6 @@ class ShareSpider(BaseCarrierSpider):
         yield DebugItem(info={'meta': dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
-
         save_name = routing_rule.get_save_name(response=response)
         self._saver.save(to=save_name, text=response.text)
 
@@ -85,7 +88,8 @@ class ShareSpider(BaseCarrierSpider):
                 proxy_option = self._prepare_start()
                 yield self._build_request_by(option=proxy_option)
             else:
-                raise RuntimeError()
+                # raise RuntimeError()
+                pass
 
     def _build_request_by(self, option: RequestOption):
         meta = {
@@ -98,6 +102,7 @@ class ShareSpider(BaseCarrierSpider):
                 url=option.url,
                 headers=option.headers,
                 meta=meta,
+                dont_filter=True,
             )
         elif option.method == RequestOption.METHOD_POST_FORM:
             return scrapy.FormRequest(
@@ -105,29 +110,14 @@ class ShareSpider(BaseCarrierSpider):
                 headers=option.headers,
                 formdata=option.form_data,
                 meta=meta,
+                dont_filter=True,
             )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
 
-class CarrierAnlcSpider(ShareSpider):
-    name = 'carrier_anlc'
-    base_url = 'https://www.anl.com.au'
-
-
-class CarrierApluSpider(ShareSpider):
-    name = 'carrier_aplu'
-    base_url = 'http://www.apl.com'
-
-
-class CarrierCmduSpider(ShareSpider):
-    name = 'carrier_cmdu'
-    base_url = 'http://www.apl.com'
-
-# ---------------------------------------------------------------------------------------------------
-
-
 class CheckIpRule(BaseRoutingRule):
+    # TODO: Refactor later
     name = 'IP'
 
     def __init__(self, search_type):
@@ -135,7 +125,7 @@ class CheckIpRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, base_url, search_no):
+    def build_request_option(cls, base_url: str, search_no: str, task_id:str):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
@@ -143,6 +133,7 @@ class CheckIpRule(BaseRoutingRule):
             meta={
                 'search_no': search_no,
                 'base_url': base_url,
+                'task_id': task_id,
             },
         )
 
@@ -152,6 +143,7 @@ class CheckIpRule(BaseRoutingRule):
     def handle(self, response):
         search_no = response.meta['search_no']
         base_url = response.meta['base_url']
+        task_id = response.meta['task_id']
 
         response_json = json.loads(response.text)
         ip = response_json['ip']
@@ -162,16 +154,7 @@ class CheckIpRule(BaseRoutingRule):
 
         self._sent_ips.append(ip)
         yield FirstTierRoutingRule.build_request_option(
-            base_url=base_url, search_no=search_no, search_type=self._search_type)
-
-
-# ---------------------------------------------------------------------------------------------------
-
-
-STATUS_ONE_CONTAINER = 'STATUS_ONE_CONTAINER'
-STATUS_MULTI_CONTAINER = 'STATUS_MULTI_CONTAINER'
-STATUS_MBL_NOT_EXIST = 'STATUS_MBL_NOT_EXIST'
-STATUS_WEBSITE_SUSPEND = 'STATUS_WEBSITE_SUSPEND'
+            base_url=base_url, search_no=search_no, search_type=self._search_type, task_id=task_id)
 
 
 class FirstTierRoutingRule(BaseRoutingRule):
@@ -181,7 +164,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, base_url, search_no, search_type) -> RequestOption:
+    def build_request_option(cls, base_url: str, search_no: str, search_type: str, task_id: str) -> RequestOption:
         form_data = {
             'g-recaptcha-response': '',
             'SearchBy': 'BL' if search_type == SHIPMENT_TYPE_MBL else 'Booking',
@@ -194,7 +177,11 @@ class FirstTierRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_POST_FORM,
             url=f'{base_url}/ebusiness/tracking/search',
             form_data=form_data,
-            meta={'search_no': search_no, 'base_url': base_url},
+            meta={
+                'search_no': search_no,
+                'base_url': base_url,
+                'task_id': task_id,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -203,13 +190,20 @@ class FirstTierRoutingRule(BaseRoutingRule):
     def handle(self, response):
         search_no = response.meta['search_no']
         base_url = response.meta['base_url']
+        task_id = response.meta['task_id']
 
         mbl_status = self._extract_mbl_status(response=response)
 
         if self._search_type == SHIPMENT_TYPE_MBL:
-            basic_mbl_item = MblItem(mbl_no=search_no)
+            basic_mbl_item = MblItem(
+                task_id=task_id,
+                mbl_no=search_no
+            )
         else:
-            basic_mbl_item = MblItem(booking_no=search_no)
+            basic_mbl_item = MblItem(
+                task_id=task_id,
+                booking_no=search_no
+            )
 
         if mbl_status == STATUS_ONE_CONTAINER:
             yield basic_mbl_item
@@ -223,7 +217,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
 
             for container_no in container_list:
                 yield ContainerStatusRoutingRule.build_request_option(
-                    container_no=container_no, base_url=base_url, search_no=search_no, search_type=self._search_type)
+                    container_no=container_no, base_url=base_url, search_no=search_no, search_type=self._search_type, task_id=task_id)
 
         elif mbl_status == STATUS_WEBSITE_SUSPEND:
             raise DataNotFoundError()
@@ -258,7 +252,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     name = 'CONTAINER_STATUS'
 
     @classmethod
-    def build_request_option(cls, container_no, base_url, search_no, search_type) -> RequestOption:
+    def build_request_option(cls, container_no: str, base_url: str, search_no: str, search_type: str, task_id: str) -> RequestOption:
         search_criteria = 'BL' if search_type == SHIPMENT_TYPE_MBL else 'Booking'
         return RequestOption(
             rule_name=cls.name,
@@ -267,7 +261,10 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 f'{base_url}/ebusiness/tracking/detail/{container_no}?SearchCriteria={search_criteria}&'
                 f'SearchByReference={search_no}'
             ),
-            meta={'container_no': container_no},
+            meta={
+                'container_no': container_no,
+                'task_id': task_id,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -275,10 +272,13 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         return f'container_status_{container_no}.html'
 
     def handle(self, response):
+        task_id = response.meta['task_id']
+
         container_info = self._extract_page_title(response=response)
         main_info = self._extract_tracking_no_map(response=response)
 
         yield MblItem(
+            task_id=task_id,
             por=LocationItem(name=main_info['por']),
             pol=LocationItem(name=main_info['pol']),
             pod=LocationItem(name=main_info['pod']),
@@ -289,6 +289,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         container_no = container_info['container_no']
 
         yield ContainerItem(
+            task_id=task_id,
             container_key=container_no,
             container_no=container_no,
         )
@@ -296,6 +297,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         container_status_list = self._extract_container_status(response=response)
         for container_status in container_status_list:
             yield ContainerStatusItem(
+                task_id=task_id,
                 container_key=container_no,
                 local_date_time=container_status['local_date_time'],
                 description=container_status['description'],
@@ -352,9 +354,6 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 'location': table.extract_cell('Location', index, LocationTdExtractor()),
                 'est_or_actual': 'A' if is_actual else 'E',
             }
-
-
-# -----------------------------------------------------------------------------------------------------------
 
 
 class ContainerStatusTableLocator(BaseTableLocator):

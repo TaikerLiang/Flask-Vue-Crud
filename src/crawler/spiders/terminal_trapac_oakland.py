@@ -6,7 +6,7 @@ class TerminalTrapacOakSpider(TrapacShareSpider):
     name = 'terminal_trapac_oakland'
     company_info = CompanyInfo(
         upper_short='OAK',
-        lower_short='oak',
+        lower_short='oakland',
         email='',
         password='',
     )
