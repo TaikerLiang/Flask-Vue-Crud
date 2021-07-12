@@ -139,7 +139,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         for c_no in container_nos:
             info = container_infos[c_no]
 
-            if info['load_empty'] == '': # need refactor
+            if info['load_empty'] == '':
                 yield InvalidContainerNoItem(container_no=c_no)
                 continue
 
@@ -229,20 +229,11 @@ class TableParser:
         container_info_items = self._container_info_table_parser.parse()
 
         for i in range(self.n_queries - 5):
-            self.scroll_to_next_row()
-            # wait for last row maybe
+            self._content_getter.scroll_to_next_row()
             container_no_items.append(self._container_no_table_parser.parse_last_row())
             container_info_items.append(self._container_info_table_parser.parse_last_row())
 
         self._items = zip(container_no_items, container_info_items)
-
-    def scroll_to_next_row(self):
-        # target_height = 185 * (i + 6)
-        # self._content_getter._driver.execute_script(f'document.getElementById("__table0-table-fixed").scrollTo(0, {target_height});')
-        scroll_bar = self._content_getter._driver.find_element_by_id('__table0-vsb')
-        scroll_bar.send_keys(Keys.DOWN)
-        # scroll_bar.send_keys(Keys.DOWN)
-        time.sleep(3)
 
     def get(self):
         return self._items
@@ -250,14 +241,11 @@ class TableParser:
 
 class ContainerNoTableParser:
     def __init__(self, content_getter, header_table: Selector, content_table: Selector):
-        # self._items = []
         self._content_getter = content_getter
         self._header_table = header_table
         self._content_table = content_table
 
     def parse(self):
-        # headers = self._header_table.css('tbody > tr > td')
-        # container_no_header = headers[1].css('span::text').get().strip()
         items = []
         for tr in self._content_table.css('tbody tr'):
             td = tr.css('td')[1]
@@ -272,17 +260,12 @@ class ContainerNoTableParser:
         tr = table.css('tr.sapUiTableLastRow')
         td = tr.css('td')[1]
         container_no = td.css('a::text').get()
-
         if container_no:
             return {"Equipment": container_no}
-
-    # def get(self):
-    #     return self._items
 
 
 class ContainerInfoTableParser:
     def __init__(self, content_getter, header_table: Selector, content_table: Selector):
-        # self._items = []
         self._content_getter = content_getter
         self._header_table = header_table
         self._headers = []
@@ -334,9 +317,6 @@ class ContainerInfoTableParser:
             content_list.append(content)
 
         return content_list
-
-    def get(self):
-        return self._items
 
 
 class ContentGetter:
@@ -448,6 +428,11 @@ class ContentGetter:
 
     def get_page_source(self):
         return self._driver.page_source
+
+    def scroll_to_next_row(self):
+        scroll_bar = self._driver.find_element_by_id('__table0-vsb')
+        scroll_bar.send_keys(Keys.DOWN)
+        time.sleep(3)
 
     def quit(self):
         self._driver.quit()
