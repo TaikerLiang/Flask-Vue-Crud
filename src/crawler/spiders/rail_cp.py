@@ -13,6 +13,7 @@ from crawler.core_rail.rules import RuleManager, BaseRoutingRule
 from selenium import webdriver
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -133,12 +134,12 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         response = scrapy.Selector(text=response_text)
 
-        container_infos = self._extract_container_infos(response=response, container_nos=container_nos)
+        container_infos = self._extract_container_infos(response=response, container_nos=container_nos, content_getter=content_getter)
 
         for c_no in container_nos:
             info = container_infos[c_no]
 
-            if info['load_empty'] == '': # need refactor
+            if info['load_empty'] == '':
                 yield InvalidContainerNoItem(container_no=c_no)
                 continue
 
@@ -153,26 +154,30 @@ class ContainerRoutingRule(BaseRoutingRule):
             )
 
     @staticmethod
-    def _extract_container_infos(response: scrapy.Selector, container_nos: List):
+    def _extract_container_infos(response: scrapy.Selector, container_nos: List, content_getter):
         container_no_header_table = response.css('table[id$=header-fixed-fixrow]') # header table (container_no)
         container_no_content_table = response.css('div > table[id$=-table-fixed]') # content table (container_no)
         container_info_header_table = response.css('div.sapUiTableCtrlScr > table') # header table (container_info)
         container_info_content_table = response.css('div.sapUiTableCtrlCnt > table[id$=-table]') # content table (container_info)
 
-        container_no_table_parser = ContainerNoTableParser()
-        container_no_table_parser.parse(header_table=container_no_header_table,
-                                        content_table=container_no_content_table)
-        container_no_results = container_no_table_parser.get()
-
-        container_info_table_parser = ContainerInfoTableParser()
-        container_info_table_parser.parse(header_table=container_info_header_table,
-                                          content_table=container_info_content_table,
-                                          rows=len(container_no_results))
-        container_info_results = container_info_table_parser.get()
-
         cno_map = {cno[:-1]: cno for cno in container_nos}
+        n_queries = len(container_nos)
+
+        container_no_table_parser = ContainerNoTableParser(content_getter=content_getter,
+                                                           header_table=container_no_header_table,
+                                                           content_table=container_no_content_table)
+        container_info_table_parser = ContainerInfoTableParser(content_getter=content_getter,
+                                                               header_table=container_info_header_table,
+                                                               content_table=container_info_content_table)
+        table_parser = TableParser(content_getter=content_getter,
+                                   container_no_table_parser=container_no_table_parser,
+                                   container_info_table_parser=container_info_table_parser,
+                                   n_queries=n_queries)
+
+        table_parser.parse()
+
         container_infos = {}
-        for container_info in zip(container_no_results, container_info_results):
+        for container_info in table_parser.get():
             container_info = dict(container_info[0], **container_info[1])
 
             container_no = cno_map[container_info['Equipment']] # map to original input container_no
@@ -189,11 +194,14 @@ class ContainerRoutingRule(BaseRoutingRule):
             last_event = container_info['Equipment Status'] + ', ' + container_info['Load Status']
 
             xta = container_info['ETA'].split('\n')
+            head, value, eta, ata = '', '', '', ''
             if len(xta) > 1:
                 head, value = xta[0], xta[1]
 
-            eta = value if head == 'ETA' else ''
-            ata = value if head == 'Arrived on' else ''
+            if head == 'ETA':
+                eta = value
+            else: # 'Arrived on'
+                ata = value
 
             container_infos[container_no] = {
                 'load_empty': load_empty,
@@ -208,29 +216,61 @@ class ContainerRoutingRule(BaseRoutingRule):
         return container_infos
 
 
-class ContainerNoTableParser:
-    def __init__(self):
+class TableParser:
+    def __init__(self, content_getter, container_no_table_parser, container_info_table_parser, n_queries):
+        self._content_getter = content_getter
+        self._container_no_table_parser = container_no_table_parser
+        self._container_info_table_parser = container_info_table_parser
+        self.n_queries = n_queries
         self._items = []
 
-    def parse(self, header_table: Selector, content_table: Selector):
-        headers = header_table.css('tbody > tr > td')
-        container_no_header = headers[1].css('span::text').get().strip()
+    def parse(self):
+        container_no_items = self._container_no_table_parser.parse()
+        container_info_items = self._container_info_table_parser.parse()
 
-        for tr in content_table.css('tbody > tr'):
-            td = tr.css('td')[1]
-            container_no = td.css('a::text').get()
-            if container_no:
-                self._items.append({container_no_header: container_no})
-            else:
-                return
+        for i in range(self.n_queries - 5):
+            self._content_getter.scroll_to_next_row()
+            container_no_items.append(self._container_no_table_parser.parse_last_row())
+            container_info_items.append(self._container_info_table_parser.parse_last_row())
+
+        self._items = zip(container_no_items, container_info_items)
 
     def get(self):
         return self._items
 
 
+class ContainerNoTableParser:
+    def __init__(self, content_getter, header_table: Selector, content_table: Selector):
+        self._content_getter = content_getter
+        self._header_table = header_table
+        self._content_table = content_table
+
+    def parse(self):
+        items = []
+        for tr in self._content_table.css('tbody tr'):
+            td = tr.css('td')[1]
+            container_no = td.css('a::text').get()
+            if container_no:
+                items.append({"Equipment": container_no})
+        return items
+
+    def parse_last_row(self):
+        new_page = Selector(text=self._content_getter.get_page_source())
+        table = new_page.css('div > table[id$=-table-fixed]')
+        tr = table.css('tr.sapUiTableLastRow')
+        td = tr.css('td')[1]
+        container_no = td.css('a::text').get()
+        if container_no:
+            return {"Equipment": container_no}
+
+
 class ContainerInfoTableParser:
-    def __init__(self):
-        self._items = []
+    def __init__(self, content_getter, header_table: Selector, content_table: Selector):
+        self._content_getter = content_getter
+        self._header_table = header_table
+        self._headers = []
+
+        self._content_table = content_table
         self._header_set = {
             'Load/Empty',
             'Last Reported Station',
@@ -240,19 +280,35 @@ class ContainerInfoTableParser:
             'Last Free Day',
         }
 
-    def parse(self, header_table: Selector, content_table: Selector, rows):
-        headers = header_table.css('tbody > tr > td span::text').getall()
+    def parse(self):
+        self._headers = self._header_table.css('tbody > tr > td span::text').getall()
 
-        for tr in content_table.css('tbody > tr')[:rows]:
+        items = []
+        for tr in self._content_table.css('tbody > tr'):
             content_list = self.get_content_list(tr=tr)
 
             info_dict = {}
             for i, content in enumerate(content_list):
-                header = headers[i]
+                header = self._headers[i]
                 if header in self._header_set:
                     info_dict[header] = content if content else ''
 
-            self._items.append(info_dict)
+            items.append(info_dict)
+
+        return items
+
+    def parse_last_row(self):
+        new_page = Selector(text=self._content_getter.get_page_source())
+        table = new_page.css('div.sapUiTableCtrlCnt > table[id$=-table]')
+        last_row = table.css('tr.sapUiTableLastRow')
+
+        content_list = self.get_content_list(last_row)
+        info_dict = {}
+        for i, content in enumerate(content_list):
+            header = self._headers[i]
+            if header in self._header_set:
+                info_dict[header] = content if content else ''
+        return info_dict
 
     def get_content_list(self, tr: Selector):
         content_list = []
@@ -261,9 +317,6 @@ class ContainerInfoTableParser:
             content_list.append(content)
 
         return content_list
-
-    def get(self):
-        return self._items
 
 
 class ContentGetter:
@@ -372,6 +425,14 @@ class ContentGetter:
     def container_no_has_value(self, driver):
         container_no_holder = driver.find_element_by_css_selector('div[id^="__data"] > a')
         return len(container_no_holder.text) != 0
+
+    def get_page_source(self):
+        return self._driver.page_source
+
+    def scroll_to_next_row(self):
+        scroll_bar = self._driver.find_element_by_id('__table0-vsb')
+        scroll_bar.send_keys(Keys.DOWN)
+        time.sleep(3)
 
     def quit(self):
         self._driver.quit()
