@@ -43,11 +43,12 @@ BASE_URL = 'http://moc.oocl.com'
 
 class CarrierOoluSpider(BaseMultiCarrierSpider):
     name = 'carrier_oolu_multi'
-    custom_settings = {'CONCURRENT_REQUESTS': '1'}
 
     def __init__(self, *args, **kwargs):
         super(CarrierOoluSpider, self).__init__(*args, **kwargs)
         self._content_getter = ContentGetter()
+
+        self.custom_settings.update({'CONCURRENT_REQUESTS': '1'})
 
         bill_rules = [
             CargoTrackingRule(self._content_getter, search_type=SHIPMENT_TYPE_MBL),
@@ -107,25 +108,6 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
 
 
 class ContentGetter:
-
-    # def __init__(self):
-    #     options = webdriver.ChromeOptions()
-    #     options.add_argument('--disable-extensions')
-    #     options.add_argument('--disable-notifications')
-    #     options.add_argument('--headless')
-    #     options.add_argument('--disable-gpu')
-    #     options.add_argument('--disable-dev-shm-usage')
-    #     options.add_argument('--no-sandbox')
-    #     options.add_argument('--window-size=1920,1080')
-    #     options.add_experimental_option('excludeSwitches', ['enable-automation'])
-    #     options.add_experimental_option('useAutomationExtension', False)
-    #
-    #     self.driver = webdriver.Chrome(chrome_options=options)
-    #
-    #     # undefine navigator.webdriver
-    #     script = "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-    #     self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': script})
-
     def __init__(self):
         options = webdriver.ChromeOptions()
         options.add_argument('--disable-extensions')
