@@ -36,9 +36,9 @@ class RailItemPipeline:
 
         except:
             spider.mark_error()
-            status = TERMINAL_RESULT_STATUS_FATAL
+            status = RAIL_RESULT_STATUS_FATAL
             detail = traceback.format_exc()
-            err_item = terminal_items.ExportErrorData(status=status, detail=detail)
+            err_item = rail_items.ExportErrorData(status=status, detail=detail)
             return self._collector.build_error_data(err_item)
 
         raise DropItem('item processed')

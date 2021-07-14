@@ -104,10 +104,9 @@ class BaseMultiCarrierSpider(scrapy.Spider):
         super().__init__(name=name, **kwargs)
 
         self.request_args = kwargs
-
         self.task_ids = [task_id.strip() for task_id in kwargs['task_ids'].split(',')]
-        self.mbl_nos = [mbl_no.strip() for mbl_no in kwargs.get('mbl_nos', '').split(',')]
-        self.booking_nos = [booking_no.strip() for booking_no in kwargs.get('booking_nos', '').split(',')]
+        self.mbl_nos = [mbl_no.strip() for mbl_no in kwargs.get('mbl_nos', '').split(',') if mbl_no]
+        self.booking_nos = [booking_no.strip() for booking_no in kwargs.get('booking_nos', '').split(',') if booking_no]
         self.search_no_tasks_map = {}  # search_no: [task_ids]
 
         if self.mbl_nos:
