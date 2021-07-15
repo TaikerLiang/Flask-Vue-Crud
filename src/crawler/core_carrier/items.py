@@ -19,6 +19,7 @@ class ExportData(BaseCarrierItem):
 
 
 class ExportErrorData(BaseCarrierItem):
+    task_id = scrapy.Field()
     status = scrapy.Field()
     detail = scrapy.Field()
     traceback_info = scrapy.Field()

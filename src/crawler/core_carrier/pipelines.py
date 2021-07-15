@@ -7,7 +7,8 @@ from typing import Dict
 from scrapy.exceptions import DropItem
 
 from . import items as carrier_items
-from .base import CARRIER_RESULT_STATUS_DATA, CARRIER_RESULT_STATUS_DEBUG, CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
+from .base import CARRIER_RESULT_STATUS_DATA, CARRIER_RESULT_STATUS_DEBUG, CARRIER_RESULT_STATUS_FATAL, \
+    SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
 from crawler.services.edi_service import EdiClientService
 
 
@@ -62,7 +63,8 @@ class CarrierItemPipeline:
         item_result = self._collector.build_final_data()
         task_id = item_result.get('request_args', {}).get('task_id')
         if task_id:
-            status_code, text = edi_client.send_provider_result_back(task_id=task_id, provider_code='scrapy_cloud_api', item_result=item_result)
+            status_code, text = edi_client.send_provider_result_back(task_id=task_id, provider_code='scrapy_cloud_api',
+                                                                     item_result=item_result)
             res.append({'task_id': task_id, 'status_code': status_code, 'text': text})
             return res
         else:
@@ -148,8 +150,8 @@ class CarrierMultiItemsPipeline:
         for task_id, collector in self._collector_map.items():
             item_result = collector.build_final_data()
             status_code, text = self.edi_client.send_provider_result_back(task_id=task_id,
-                                                                     provider_code='scrapy_cloud_api',
-                                                                     item_result=item_result)
+                                                                          provider_code='scrapy_cloud_api',
+                                                                          item_result=item_result)
             res.append({'task_id': task_id, 'status_code': status_code, 'text': text})
 
         return res
@@ -159,13 +161,13 @@ class CarrierMultiItemsPipeline:
         for task_id, collector in self._collector_map.items():
             if collector.is_default():
                 status_code, text = self.edi_client.send_provider_result_back(task_id=task_id,
-                                                                         provider_code='scrapy_cloud_api',
-                                                                         item_result=result)
+                                                                              provider_code='scrapy_cloud_api',
+                                                                              item_result=result)
             else:
                 item_result = collector.build_final_data()
                 status_code, text = self.edi_client.send_provider_result_back(task_id=task_id,
-                                                                         provider_code='scrapy_cloud_api',
-                                                                         item_result=item_result)
+                                                                              provider_code='scrapy_cloud_api',
+                                                                              item_result=item_result)
 
             res.append({'task_id': task_id, 'status_code': status_code, 'text': text})
 
