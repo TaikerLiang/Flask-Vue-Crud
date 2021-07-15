@@ -108,10 +108,6 @@ class ItemRecorder:
 
 class CarrierHdmuSpider(BaseMultiCarrierSpider):
     name = 'carrier_hdmu_multi'
-    custom_settings = {
-        **CARRIER_DEFAULT_SETTINGS,
-        'DOWNLOAD_TIMEOUT': 30,
-    }
     cur_search_no = ''
     cur_task_id = ''
 
@@ -119,6 +115,8 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
         super().__init__(*args, **kwargs)
         self._cookiejar_id = 0
         self._item_recorder = ItemRecorder()
+
+        self.custom_settings.update({'DOWNLOAD_TIMEOUT': 30})
 
         bill_rules = [
             CheckIpRule(),

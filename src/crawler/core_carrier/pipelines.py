@@ -72,6 +72,10 @@ class CarrierItemPipeline:
 class CarrierMultiItemsPipeline:
     def __init__(self):
         self._collector_map = {}
+        # edi client setting
+        user = os.environ.get('EDI_ENGINE_USER')
+        token = os.environ.get('EDI_ENGINE_TOKEN')
+        self.edi_client = EdiClientService(edi_user=user, edi_token=token)
 
     @classmethod
     def get_setting_name(cls):
@@ -112,10 +116,9 @@ class CarrierMultiItemsPipeline:
                 res = self._send_result_back_to_edi_engine()
                 return {'status': 'CLOSE', 'result': res}
             elif isinstance(item, carrier_items.ExportErrorData):
-                results = default_collector.build_error_data(item)
-                collector_results = self._get_results_of_collectors()
-                results = [results] + collector_results if collector_results else results
-                return {'results': results}
+                result = default_collector.build_error_data(item)
+                res = self._send_error_msg_back_to_edi_engine(result=result)
+                return {'status': 'CLOSE', 'result': res}
             elif isinstance(item, carrier_items.DebugItem):
                 debug_data = default_collector.build_debug_data(item)
                 return debug_data
@@ -126,10 +129,10 @@ class CarrierMultiItemsPipeline:
             status = CARRIER_RESULT_STATUS_FATAL
             detail = traceback.format_exc()
             err_item = carrier_items.ExportErrorData(status=status, detail=detail)
-            results = default_collector.build_error_data(err_item)
-            collector_results = self._get_results_of_collectors()
-            results = [results] + collector_results if collector_results else results
-            return results
+            result = default_collector.build_error_data(err_item)
+
+            res = self._send_error_msg_back_to_edi_engine(result=result)
+            return {'status': 'CLOSE', 'result': res}
 
         raise DropItem('item processed')
 
@@ -141,14 +144,29 @@ class CarrierMultiItemsPipeline:
         return results
 
     def _send_result_back_to_edi_engine(self):
-        user = os.environ.get('EDI_ENGINE_USER')
-        token = os.environ.get('EDI_ENGINE_TOKEN')
-        edi_client = EdiClientService(edi_user=user, edi_token=token)
-
         res = []
         for task_id, collector in self._collector_map.items():
             item_result = collector.build_final_data()
-            status_code, text = edi_client.send_provider_result_back(task_id=task_id, provider_code='scrapy_cloud_api', item_result=item_result)
+            status_code, text = self.edi_client.send_provider_result_back(task_id=task_id,
+                                                                     provider_code='scrapy_cloud_api',
+                                                                     item_result=item_result)
+            res.append({'task_id': task_id, 'status_code': status_code, 'text': text})
+
+        return res
+
+    def _send_error_msg_back_to_edi_engine(self, result: Dict):
+        res = []
+        for task_id, collector in self._collector_map.items():
+            if collector.is_default():
+                status_code, text = self.edi_client.send_provider_result_back(task_id=task_id,
+                                                                         provider_code='scrapy_cloud_api',
+                                                                         item_result=result)
+            else:
+                item_result = collector.build_final_data()
+                status_code, text = self.edi_client.send_provider_result_back(task_id=task_id,
+                                                                         provider_code='scrapy_cloud_api',
+                                                                         item_result=item_result)
+
             res.append({'task_id': task_id, 'status_code': status_code, 'text': text})
 
         return res
@@ -199,6 +217,7 @@ class CarrierResultCollector:
     def _get_default_container_data(container_key: str):
         return {
             'container_key': container_key,
+            'container_no': container_key,
             'status': [],
         }
 
@@ -260,3 +279,6 @@ class CarrierResultCollector:
                 res.update({k: v})
 
         return res
+
+    def is_default(self):
+        return False if self._basic else True

@@ -1,14 +1,7 @@
 import re
-import json
 from typing import List, Dict
-import time
 
 import scrapy
-from selenium import webdriver
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.wait import WebDriverWait
 
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
@@ -33,10 +26,11 @@ URL = 'https://www.msc.com'
 
 class CarrierMscuSpider(BaseMultiCarrierSpider):
     name = 'carrier_mscu_multi'
-    custom_settings = {'CONCURRENT_REQUESTS': '1'}
 
     def __init__(self, *args, **kwargs):
         super(CarrierMscuSpider, self).__init__(*args, **kwargs)
+
+        self.custom_settings.update({'CONCURRENT_REQUESTS': '1'})
 
         bill_rules = [
             HomePageRoutingRule(),
@@ -308,11 +302,12 @@ class Extractor:
             if not container_no_bar:
                 raise CarrierResponseFormatError(reason='Can not find container_no_bar !!!')
 
-            container_stats_table = container_content.css('table.containerStats')
+            container_stats_table = container_content.xpath('//*[@id="ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_rptContainers_ctl01_pnlContainer"]/table[1]')
+
             if not container_stats_table:
                 raise CarrierResponseFormatError(reason='Can not find container_stats_table !!!')
 
-            movements_table = container_content.css('table.resultTable')
+            movements_table = container_content.xpath('//*[@id="ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_rptContainers_ctl01_pnlContainer"]/table[2]')
             if not movements_table:
                 raise CarrierResponseFormatError(reason='Can not find movements_table !!!')
 
@@ -549,72 +544,3 @@ class ContainerStatusTableLocator(BaseTableLocator):
     def iter_left_header(self):
         for i in range(self._data_len):
             yield i
-
-
-class MscuCarrierChromeDriver:
-    def __init__(self):
-        prefs = {
-            'profile.default_content_setting_values': {'images': 2},
-        }
-
-        options = webdriver.ChromeOptions()
-        options.add_experimental_option('prefs', prefs)
-        options.add_argument('--disable-plugins')
-        options.add_argument('--disable-extensions')
-        options.add_argument('--headless')
-        options.add_argument('window-size=1024x768')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-gpu')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--disable-infobars')
-
-        self._chrome_driver = webdriver.Chrome(chrome_options=options)
-
-    def search_mbl_no(self, mbl_no):
-        track_url = f'{URL}/track-a-shipment?agencyPath=twn'
-        self._chrome_driver.get(url=track_url)
-
-        search_bar_css_query = 'input#ctl00_ctl00_plcMain_plcMain_TrackSearch_txtBolSearch_TextField'
-        search_bar_locator = (By.CSS_SELECTOR, search_bar_css_query)
-
-        search_button_css_query = 'a#ctl00_ctl00_plcMain_plcMain_TrackSearch_hlkSearch'
-        search_button_locator = (By.CSS_SELECTOR, search_button_css_query)
-
-        try:
-            WebDriverWait(self._chrome_driver, 10).until(EC.presence_of_element_located(search_bar_locator))
-            WebDriverWait(self._chrome_driver, 10).until(EC.element_to_be_clickable(search_button_locator))
-        except TimeoutException:
-            raise LoadWebsiteTimeOutError(url=self._chrome_driver.current_url)
-
-        search_bar = self._chrome_driver.find_element_by_css_selector(search_bar_css_query)
-        search_button = self._chrome_driver.find_element_by_css_selector(search_button_css_query)
-        search_bar.send_keys(mbl_no)
-
-        pop_up_reject_btn_locator = (By.CSS_SELECTOR, 'a#ctl00_ctl00_ucNewsetterSignupPopup_btnReject')
-        if self._check_element_clickable(pop_up_reject_btn_locator):
-            pop_up_reject_btn = self._chrome_driver.find_element(pop_up_reject_btn_locator)
-            pop_up_reject_btn.click()
-
-        search_button.click()
-
-    def get_body_text(self):
-        mbl_no_locator = (By.CSS_SELECTOR, 'div#ctl00_ctl00_plcMain_plcMain_pnlTrackingResults')
-
-        try:
-            WebDriverWait(self._chrome_driver, 10).until(EC.presence_of_element_located(mbl_no_locator))
-        except TimeoutException:
-            raise LoadWebsiteTimeOutError(url=self._chrome_driver.current_url)
-
-        body = self._chrome_driver.find_element_by_css_selector('body')
-        body_text = body.get_attribute('outerHTML')
-
-        return body_text
-
-    def close(self):
-        self._chrome_driver.close()
-
-    def _check_element_clickable(self, locator):
-        try:
-            return bool(EC.element_to_be_clickable(locator)(self._chrome_driver))
-        except NoSuchElementException:
-            return False

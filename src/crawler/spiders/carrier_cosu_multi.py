@@ -450,8 +450,8 @@ class ItemExtractor:
                 {
                     'container_key': get_container_key(container_no=container_no),
                     'container_no': container_no,
-                    'last_free_day': lfd_related.get('LFD'),
-                    'depot_last_free_day': lfd_related.get('Depot LFD'),
+                    'last_free_day': lfd_related.get('LFD', ''),
+                    'depot_last_free_day': lfd_related.get('Depot LFD', ''),
                 }
             )
 

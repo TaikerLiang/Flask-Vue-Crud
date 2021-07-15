@@ -47,11 +47,6 @@ EGLV_CAPTCHA_URL = 'https://www.shipmentlink.com/servlet/TUF1_CaptchaUtils'
 class CarrierEglvSpider(BaseMultiCarrierSpider):
     name = 'carrier_eglv_multi'
 
-    custom_settings = {
-        **CARRIER_DEFAULT_SETTINGS,
-        **DISABLE_DUPLICATE_REQUEST_FILTER,
-    }
-
     def __init__(self, *args, **kwargs):
         super(CarrierEglvSpider, self).__init__(*args, **kwargs)
 

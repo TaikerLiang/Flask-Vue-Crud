@@ -6,8 +6,6 @@ import string
 from logging import Logger
 from typing import Dict
 
-from w3lib.http import basic_auth_header
-
 from .exceptions import ProxyMaxRetryError
 
 
@@ -70,9 +68,11 @@ class ProxyManager:
         self._logger = logger
 
         self._proxy_options = [
-            # ProxyOption(group=PROXY_GROUP_SHADER, session=f'{session}{self._generate_random_string()}'),
-            # ProxyOption(group=PROXY_GROUP_SHADER, session=f'{session}{self._generate_random_string()}'),
-            # ProxyOption(group=PROXY_GROUP_SHADER, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
+            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
             ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
             ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),
             ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f'{session}{self._generate_random_string()}'),

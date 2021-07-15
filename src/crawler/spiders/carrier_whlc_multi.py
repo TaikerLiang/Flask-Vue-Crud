@@ -9,8 +9,7 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
-from crawler.core_carrier.base_spiders import (
-    BaseMultiCarrierSpider, CARRIER_DEFAULT_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
+from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
 from crawler.core_carrier.items import (
@@ -27,11 +26,6 @@ COOKIES_RETRY_LIMIT = 3
 
 class CarrierWhlcSpider(BaseMultiCarrierSpider):
     name = 'carrier_whlc_multi'
-
-    custom_settings = {
-        **CARRIER_DEFAULT_SETTINGS,
-        **DISABLE_DUPLICATE_REQUEST_FILTER,
-    }
 
     def __init__(self, *args, **kwargs):
         super(CarrierWhlcSpider, self).__init__(*args, **kwargs)
