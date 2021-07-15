@@ -154,6 +154,7 @@ class ContainerRoutingRule(BaseRoutingRule):
                 container_no=row[2],
                 holds=row[5],
                 customs_release=row[6],
+                carrier_release=row[7],
                 last_free_day=self._get_last_free_day(row[9], row[10]),
             )
 
