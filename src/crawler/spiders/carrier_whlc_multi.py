@@ -404,7 +404,7 @@ class BookingRoutingRule(BaseRoutingRule):
             history_selector = Selector(text=driver.get_page_source())
 
             event_list = self._extract_container_status(response=history_selector)
-            container_status_items = self._make_container_status_items(container_no, event_list)
+            container_status_items = self._make_container_status_items(task_id, container_no, event_list)
 
             yield ContainerItem(
                 task_id=task_id,
@@ -464,11 +464,12 @@ class BookingRoutingRule(BaseRoutingRule):
         return table_locator.get_container_no_list()
 
     @classmethod
-    def _make_container_status_items(cls, container_no, event_list):
+    def _make_container_status_items(cls, task_id, container_no, event_list):
         container_statuses = []
         for container_status in event_list:
             container_statuses.append(
                 ContainerStatusItem(
+                    task_id=task_id,
                     container_key=container_no,
                     local_date_time=container_status['local_date_time'],
                     description=container_status['description'],

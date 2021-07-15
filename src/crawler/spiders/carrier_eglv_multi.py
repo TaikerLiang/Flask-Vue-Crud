@@ -272,8 +272,8 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
         if self._check_filing_status(response=response):
             first_container_no = self._get_first_container_no(container_list=container_list)
             yield FilingStatusRoutingRule.build_request_option(
-                search_no=mbl_no,
                 task_id=task_id,
+                search_no=mbl_no,
                 # search_type=search_type,
                 pod=mbl_no_info['pod_code'],
                 first_container_no=first_container_no,

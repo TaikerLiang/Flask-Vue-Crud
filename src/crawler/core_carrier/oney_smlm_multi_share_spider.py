@@ -25,6 +25,8 @@ from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 @dataclasses.dataclass
 class Restart:
     reason: str = ''
+    search_no: str = ''
+    task_id: str = ''
 
 
 class OneySmlmSharedSpider(BaseMultiCarrierSpider):
@@ -83,7 +85,11 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
             elif isinstance(result, Restart):
                 self.logger.warning(f'----- {result.reason}, try new proxy and restart')
                 self._proxy_manager.renew_proxy()
-                option = FirstTierRoutingRule.build_request_option(search_no=self.search_no, base_url=self.base_url)
+
+                search_no = result.search_no
+                task_id = result.task_id
+
+                option = FirstTierRoutingRule.build_request_option(search_no=search_no, task_id=task_id, base_url=self.base_url)
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(option)
                 yield self._build_request_by(proxy_option)
             else:
@@ -152,6 +158,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
             meta={
                 'base_url': base_url,
                 'task_id': task_id,
+                'search_no': search_no,
             }
         )
 
@@ -160,11 +167,12 @@ class FirstTierRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         task_id = response.meta['task_id']
+        search_no = response.meta['search_no']
         base_url = response.meta['base_url']
         response_dict = json.loads(response.text)
 
         if self._is_search_no_invalid(response_dict):
-            yield Restart(reason='IP block')
+            yield Restart(reason='IP block', search_no=search_no, task_id=task_id)
 
         container_info_list = self._extract_container_info_list(response_dict=response_dict)
         booking_no = self._get_booking_no_from(container_list=container_info_list)
@@ -282,7 +290,7 @@ class VesselRoutingRule(BaseRoutingRule):
         response_dict = json.loads(response.text)
 
         if self.__is_vessel_empty(response_dict=response_dict):
-            yield VesselItem()
+            yield VesselItem(task_id=task_id)
             return
 
         vessel_info_list = self._extract_vessel_info_list(response_dict=response_dict)
