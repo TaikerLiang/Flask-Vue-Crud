@@ -264,6 +264,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 f'SearchByReference={search_no}'
             ),
             meta={
+                'search_no': search_no,
                 'container_no': container_no,
                 'task_id': task_id,
             },
