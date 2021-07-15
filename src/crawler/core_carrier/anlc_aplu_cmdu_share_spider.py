@@ -1,6 +1,4 @@
-from dataclasses import dataclass
 import json
-from re import search
 from typing import Dict
 
 import scrapy
