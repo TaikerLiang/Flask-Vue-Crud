@@ -77,7 +77,8 @@ class CarrierMultiItemsPipeline:
         # edi client setting
         user = os.environ.get('EDI_ENGINE_USER')
         token = os.environ.get('EDI_ENGINE_TOKEN')
-        self.edi_client = EdiClientService(edi_user=user, edi_token=token)
+        url = os.environ.get('EDI_ENGINE_URL')
+        self.edi_client = EdiClientService(url=url, edi_user=user, edi_token=token)
 
     @classmethod
     def get_setting_name(cls):
