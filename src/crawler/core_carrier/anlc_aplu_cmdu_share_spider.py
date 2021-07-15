@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 import json
+from re import search
 from typing import Dict
 
 import scrapy
@@ -28,7 +30,6 @@ STATUS_ONE_CONTAINER = 'STATUS_ONE_CONTAINER'
 STATUS_MULTI_CONTAINER = 'STATUS_MULTI_CONTAINER'
 STATUS_MBL_NOT_EXIST = 'STATUS_MBL_NOT_EXIST'
 STATUS_WEBSITE_SUSPEND = 'STATUS_WEBSITE_SUSPEND'
-
 
 class ForceRestart:
     pass
@@ -78,6 +79,9 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
         save_name = routing_rule.get_save_name(response=response)
         self._saver.save(to=save_name, text=response.text)
 
+        search_no = response.meta['search_no']
+        task_id = response.meta['task_id']
+
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
@@ -85,7 +89,7 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
                 yield self._build_request_by(option=proxy_option)
             elif isinstance(result, ForceRestart):
-                proxy_option = self._prepare_start()
+                proxy_option = self._prepare_start(search_no=search_no, task_id=task_id)
                 yield self._build_request_by(option=proxy_option)
             else:
                 # raise RuntimeError()
