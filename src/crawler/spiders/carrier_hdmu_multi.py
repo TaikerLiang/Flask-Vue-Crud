@@ -158,7 +158,7 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
         except ProxyMaxRetryError as err:
             for item in self._item_recorder.items:
                 yield item
-            yield err.build_error_data()
+            yield err.build_error_data(task_id=self.cur_task_id)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -188,7 +188,7 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
                     restart_request = self._prepare_restart(search_no=search_no, task_id=task_id)
                     self._request_queue.add(request=restart_request)
                 except ProxyMaxRetryError as err:
-                    error_item = err.build_error_data()
+                    error_item = err.build_error_data(task_id=task_id)
                     self._item_recorder.record_item(key=('ERROR', None), item=error_item)
             elif isinstance(result, BaseCarrierItem):
                 pass
@@ -986,10 +986,10 @@ class ContainerRoutingRule(BaseRoutingRule):
                 yield AvailabilityRoutingRule.build_request_option(
                     search_no=search_no, task_id=task_id, container_no=container_no, under_line=under_line)
             else:
-                self._item_recorder.record_item(key=(AVAILABILITY, container_no))
+                self._item_recorder.record_item(key=(AVAILABILITY, container_no), items=container_status_items)
 
         # avoid this function not yield anything
-        yield MblItem()
+        yield MblItem(task_id=task_id)
 
     @staticmethod
     def _extract_tracking_results(response):
