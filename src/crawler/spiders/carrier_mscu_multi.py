@@ -94,7 +94,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
                 url=option.url,
                 formdata=option.form_data,
                 meta=meta,
-                # dont_filter=True,
+                dont_filter=True,
             )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')

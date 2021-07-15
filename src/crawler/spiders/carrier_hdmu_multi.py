@@ -179,10 +179,6 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
                 rule_proxy_cookie_option = self._add_cookiejar_id_into_request_option(option=rule_proxy_option)
                 rule_request = self._build_request_by(option=rule_proxy_cookie_option)
                 self._request_queue.add(request=rule_request)
-
-                # # test
-                # request = self._build_request_by(option=result)
-                # self._request_queue.add(request=request)
             elif isinstance(result, ForceRestart):
                 try:
                     restart_request = self._prepare_restart(search_no=search_no, task_id=task_id)
