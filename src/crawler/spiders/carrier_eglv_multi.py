@@ -47,13 +47,10 @@ EGLV_CAPTCHA_URL = 'https://www.shipmentlink.com/servlet/TUF1_CaptchaUtils'
 class CarrierEglvSpider(BaseMultiCarrierSpider):
     name = 'carrier_eglv_multi'
 
-    custom_settings = {
-        **CARRIER_DEFAULT_SETTINGS,
-        **DISABLE_DUPLICATE_REQUEST_FILTER,
-    }
-
     def __init__(self, *args, **kwargs):
         super(CarrierEglvSpider, self).__init__(*args, **kwargs)
+
+        self.custom_settings.update({'CONCURRENT_REQUESTS': '1'})
 
         bill_rules = [
             CaptchaRoutingRule(search_type=SHIPMENT_TYPE_MBL),
@@ -76,6 +73,7 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
 
     def start(self):
         for s_no, t_id in zip(self.search_nos, self.task_ids):
+            print(s_no, t_id)
             option = CaptchaRoutingRule.build_request_option(search_no=s_no, task_id=t_id)
             yield self._build_request_by(option=option)
 
@@ -106,11 +104,13 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
             return scrapy.Request(
                 url=option.url,
                 meta=meta,
+                dont_filter=True,
             )
         elif option.method == RequestOption.METHOD_POST_FORM:
             return scrapy.FormRequest(
                 url=option.url,
                 formdata=option.form_data,
+                dont_filter=True,
                 meta=meta,
             )
         else:
@@ -277,8 +277,8 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
         if self._check_filing_status(response=response):
             first_container_no = self._get_first_container_no(container_list=container_list)
             yield FilingStatusRoutingRule.build_request_option(
-                search_no=mbl_no,
                 task_id=task_id,
+                search_no=mbl_no,
                 # search_type=search_type,
                 pod=mbl_no_info['pod_code'],
                 first_container_no=first_container_no,

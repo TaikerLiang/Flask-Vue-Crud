@@ -65,6 +65,7 @@ class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
             return scrapy.Request(
                 url=option.url,
                 meta=meta,
+                dont_filter=True,
             )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')

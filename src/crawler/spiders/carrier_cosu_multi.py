@@ -208,9 +208,9 @@ class ItemExtractor:
         self.task_id = task_id
 
     def extract(self, response: scrapy.Selector, content_getter, search_type) -> BaseCarrierItem:
-        mbl_item = self._make_main_item(response=response, search_type=search_type)
-        vessel_items = self._make_vessel_items(response=response)
-        container_items = self._make_container_items(response=response)
+        mbl_item = self._make_main_item(response=response, search_type=search_type, task_id=self.task_id)
+        vessel_items = self._make_vessel_items(response=response, task_id=self.task_id)
+        container_items = self._make_container_items(response=response, task_id=self.task_id)
 
         for item in vessel_items + [mbl_item]:
             yield item
@@ -230,9 +230,10 @@ class ItemExtractor:
                 yield item
 
     @classmethod
-    def _make_main_item(cls, response: scrapy.Selector, search_type) -> BaseCarrierItem:
+    def _make_main_item(cls, response: scrapy.Selector, search_type, task_id) -> BaseCarrierItem:
         mbl_data = cls._extract_main_info(response=response)
         mbl_item = MblItem(
+            task_id=task_id,
             vessel=mbl_data.get('vessel', None),
             voyage=mbl_data.get('voyage', None),
             por=LocationItem(name=mbl_data.get('por_name', None)),
@@ -345,12 +346,13 @@ class ItemExtractor:
         return data
 
     @classmethod
-    def _make_vessel_items(cls, response: scrapy.Selector) -> List[BaseCarrierItem]:
+    def _make_vessel_items(cls, response: scrapy.Selector, task_id) -> List[BaseCarrierItem]:
         vessel_data = cls._extract_schedule_detail_info(response=response)
         vessels = []
         for vessel in vessel_data:
             vessels.append(
                 VesselItem(
+                    task_id=task_id,
                     vessel_key=vessel['vessel'],
                     vessel=vessel['vessel'],
                     voyage=vessel['voyage'],
@@ -411,13 +413,14 @@ class ItemExtractor:
         return vessels
 
     @classmethod
-    def _make_container_items(cls, response: scrapy.Selector) -> List[BaseCarrierItem]:
+    def _make_container_items(cls, response: scrapy.Selector, task_id) -> List[BaseCarrierItem]:
         container_infos = cls._extract_container_infos(response=response)
 
         container_items = []
         for container_info in container_infos:
             container_items.append(
                 ContainerItem(
+                    task_id=task_id,
                     container_key=container_info['container_key'],
                     container_no=container_info['container_no'],
                     last_free_day=container_info['last_free_day'],
@@ -450,8 +453,8 @@ class ItemExtractor:
                 {
                     'container_key': get_container_key(container_no=container_no),
                     'container_no': container_no,
-                    'last_free_day': lfd_related.get('LFD'),
-                    'depot_last_free_day': lfd_related.get('Depot LFD'),
+                    'last_free_day': lfd_related.get('LFD', ''),
+                    'depot_last_free_day': lfd_related.get('Depot LFD', ''),
                 }
             )
 

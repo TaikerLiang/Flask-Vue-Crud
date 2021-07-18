@@ -108,10 +108,6 @@ class ItemRecorder:
 
 class CarrierHdmuSpider(BaseMultiCarrierSpider):
     name = 'carrier_hdmu_multi'
-    custom_settings = {
-        **CARRIER_DEFAULT_SETTINGS,
-        'DOWNLOAD_TIMEOUT': 30,
-    }
     cur_search_no = ''
     cur_task_id = ''
 
@@ -119,6 +115,8 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
         super().__init__(*args, **kwargs)
         self._cookiejar_id = 0
         self._item_recorder = ItemRecorder()
+
+        self.custom_settings.update({'DOWNLOAD_TIMEOUT': 30})
 
         bill_rules = [
             CheckIpRule(),
@@ -160,7 +158,7 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
         except ProxyMaxRetryError as err:
             for item in self._item_recorder.items:
                 yield item
-            yield err.build_error_data()
+            yield err.build_error_data(task_id=self.cur_task_id)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -181,16 +179,12 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
                 rule_proxy_cookie_option = self._add_cookiejar_id_into_request_option(option=rule_proxy_option)
                 rule_request = self._build_request_by(option=rule_proxy_cookie_option)
                 self._request_queue.add(request=rule_request)
-
-                # # test
-                # request = self._build_request_by(option=result)
-                # self._request_queue.add(request=request)
             elif isinstance(result, ForceRestart):
                 try:
                     restart_request = self._prepare_restart(search_no=search_no, task_id=task_id)
                     self._request_queue.add(request=restart_request)
                 except ProxyMaxRetryError as err:
-                    error_item = err.build_error_data()
+                    error_item = err.build_error_data(task_id=task_id)
                     self._item_recorder.record_item(key=('ERROR', None), item=error_item)
             elif isinstance(result, BaseCarrierItem):
                 pass
@@ -988,10 +982,10 @@ class ContainerRoutingRule(BaseRoutingRule):
                 yield AvailabilityRoutingRule.build_request_option(
                     search_no=search_no, task_id=task_id, container_no=container_no, under_line=under_line)
             else:
-                self._item_recorder.record_item(key=(AVAILABILITY, container_no))
+                self._item_recorder.record_item(key=(AVAILABILITY, container_no), items=container_status_items)
 
         # avoid this function not yield anything
-        yield MblItem()
+        yield MblItem(task_id=task_id)
 
     @staticmethod
     def _extract_tracking_results(response):

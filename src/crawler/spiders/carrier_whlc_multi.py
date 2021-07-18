@@ -9,8 +9,7 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
-from crawler.core_carrier.base_spiders import (
-    BaseMultiCarrierSpider, CARRIER_DEFAULT_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
+from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
 from crawler.core_carrier.items import (
@@ -27,11 +26,6 @@ COOKIES_RETRY_LIMIT = 3
 
 class CarrierWhlcSpider(BaseMultiCarrierSpider):
     name = 'carrier_whlc_multi'
-
-    custom_settings = {
-        **CARRIER_DEFAULT_SETTINGS,
-        **DISABLE_DUPLICATE_REQUEST_FILTER,
-    }
 
     def __init__(self, *args, **kwargs):
         super(CarrierWhlcSpider, self).__init__(*args, **kwargs)
@@ -410,7 +404,7 @@ class BookingRoutingRule(BaseRoutingRule):
             history_selector = Selector(text=driver.get_page_source())
 
             event_list = self._extract_container_status(response=history_selector)
-            container_status_items = self._make_container_status_items(container_no, event_list)
+            container_status_items = self._make_container_status_items(task_id, container_no, event_list)
 
             yield ContainerItem(
                 task_id=task_id,
@@ -470,11 +464,12 @@ class BookingRoutingRule(BaseRoutingRule):
         return table_locator.get_container_no_list()
 
     @classmethod
-    def _make_container_status_items(cls, container_no, event_list):
+    def _make_container_status_items(cls, task_id, container_no, event_list):
         container_statuses = []
         for container_status in event_list:
             container_statuses.append(
                 ContainerStatusItem(
+                    task_id=task_id,
                     container_key=container_no,
                     local_date_time=container_status['local_date_time'],
                     description=container_status['description'],
