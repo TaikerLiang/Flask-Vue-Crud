@@ -36,15 +36,14 @@ class CarrierCosuSpider(BaseMultiCarrierSpider):
 
     def __init__(self, *args, **kwargs):
         super(CarrierCosuSpider, self).__init__(*args, **kwargs)
-        content_getter = ContentGetter()
 
         bill_rules = [
-            MainInfoRoutingRule(content_getter),
-            BookingInfoRoutingRule(content_getter, origin_search_type=SHIPMENT_TYPE_MBL),
+            MainInfoRoutingRule(),
+            BookingInfoRoutingRule(origin_search_type=SHIPMENT_TYPE_MBL),
         ]
 
         booking_rules = [
-            BookingInfoRoutingRule(content_getter, origin_search_type=SHIPMENT_TYPE_BOOKING),
+            BookingInfoRoutingRule(origin_search_type=SHIPMENT_TYPE_BOOKING),
         ]
 
         if self.search_type == SHIPMENT_TYPE_MBL:
@@ -100,8 +99,8 @@ class CarrierCosuSpider(BaseMultiCarrierSpider):
 class MainInfoRoutingRule(BaseRoutingRule):
     name = 'MAIN_INFO'
 
-    def __init__(self, content_getter):
-        self._content_getter = content_getter
+    def __init__(self):
+        pass
 
     @classmethod
     def build_request_option(cls, mbl_no, task_id) -> RequestOption:
@@ -124,7 +123,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
         mbl_no = response.meta['mbl_no']
         task_id = response.meta['task_id']
 
-        response_text = self._content_getter.search_and_return(search_no=mbl_no, is_booking=False)
+        content_getter = ContentGetter()
+        response_text = content_getter.search_and_return(search_no=mbl_no, is_booking=False)
         response_selector = scrapy.Selector(text=response_text)
 
         raw_booking_nos = response_selector.css('a.exitedBKNumber::text').getall()
@@ -136,7 +136,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         elif not self._is_mbl_no_invalid(response=response_selector):
             item_extractor = ItemExtractor(task_id=task_id)
             for item in item_extractor.extract(
-                    response=response_selector, content_getter=self._content_getter, search_type=SHIPMENT_TYPE_MBL):
+                    response=response_selector, content_getter=content_getter, search_type=SHIPMENT_TYPE_MBL):
                 yield item
 
         elif booking_nos:
@@ -155,8 +155,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 class BookingInfoRoutingRule(BaseRoutingRule):
     name = 'BOOKING_INFO'
 
-    def __init__(self, content_getter, origin_search_type):
-        self._content_getter = content_getter
+    def __init__(self, origin_search_type):
         self._origin_search_type = origin_search_type
 
     @classmethod
@@ -182,7 +181,8 @@ class BookingInfoRoutingRule(BaseRoutingRule):
 
         item_extractor = ItemExtractor(task_id=task_id)
 
-        response_text = self._content_getter.search_and_return(search_no=booking_no, is_booking=True)
+        content_getter = ContentGetter()
+        response_text = content_getter.search_and_return(search_no=booking_no, is_booking=True)
         response_selector = scrapy.Selector(text=response_text)
 
         if self._is_booking_no_invalid(response=response_selector):
@@ -190,7 +190,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
 
         for item in item_extractor.extract(
             response=response_selector,
-            content_getter=self._content_getter,
+            content_getter=content_getter,
             search_type=self._origin_search_type,
         ):
             yield item

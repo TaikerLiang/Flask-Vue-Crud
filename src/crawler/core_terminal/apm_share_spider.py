@@ -103,7 +103,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         for container in response_json['ContainerAvailabilityResults']:
             result = {
                 'container_no': container['ContainerId'],
-                'freight_release': container['Freight'],
+                'carrier_release': container['Freight'],
                 'customs_release': container['Customs'],
                 'discharge_date': container['DischargedDate'] or None,
                 'ready_for_pick_up': container['ReadyForDelivery'],

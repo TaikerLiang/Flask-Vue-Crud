@@ -200,7 +200,7 @@ class ContentGetter:
                     'gate_out_date': gate_out_date,
                     'appointment_date': appointment_date.strip(),
                     'customs_release': ''.join(tds[i * 17 + 6].xpath('.//text()').extract()).strip(),
-                    'freight_release': ''.join(tds[i * 17 + 7].xpath('.//text()').extract()).strip(),
+                    'carrier_release': ''.join(tds[i * 17 + 7].xpath('.//text()').extract()).strip(),
                     'holds': ''.join(tds[i * 17 + 9].xpath('.//text()').extract()).strip(),
                     'demurrage': ''.join(tds[i * 17 + 11].xpath('.//text()').extract()).strip(),
                     'last_free_day': ''.join(tds[i * 17 + 12].xpath('.//text()').extract()).strip(),
