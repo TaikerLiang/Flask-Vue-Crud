@@ -8,7 +8,7 @@ from scrapy.exceptions import DropItem
 
 from . import items as carrier_items
 from .base import CARRIER_RESULT_STATUS_DATA, CARRIER_RESULT_STATUS_DEBUG, CARRIER_RESULT_STATUS_FATAL, \
-    SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
+    SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL, CARRIER_RESULT_STATUS_ERROR
 from crawler.services.edi_service import EdiClientService
 
 
@@ -166,14 +166,20 @@ class CarrierMultiItemsPipeline:
     def _get_results_of_collectors(self):
         results = []
         for _, collector in self._collector_map.items():
-            results.append(collector.build_final_data())
+            if collector.is_default():
+                results.append(collector.build_final_error_data())
+            else:
+                results.append(collector.build_final_data())
 
         return results
 
     def _send_result_back_to_edi_engine(self):
         res = []
         for task_id, collector in self._collector_map.items():
-            item_result = collector.build_final_data()
+            if collector.is_default():
+                item_result = collector.build_final_error_data()
+            else:
+                item_result = collector.build_final_data()
             status_code, text = self.edi_client.send_provider_result_back(task_id=task_id,
                                                                           provider_code='scrapy_cloud_api',
                                                                           item_result=item_result)
@@ -272,6 +278,16 @@ class CarrierResultCollector:
             'basic': self._basic,
             'vessels': vessels,
             'containers': containers,
+        }
+
+    def build_final_error_data(self) -> Dict:
+        # remove task_id, task_id is just for link different items in same task
+        if 'task_id' in self._basic:
+            del self._basic['task_id']
+
+        return {
+            'status': CARRIER_RESULT_STATUS_ERROR,
+            'request_args': self._request_args,
         }
 
     def build_error_data(self, item: carrier_items.ExportErrorData) -> Dict:
