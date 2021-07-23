@@ -18,7 +18,9 @@ from crawler.core_carrier.items import (
     ContainerItem,
     MblItem,
     DebugItem,
+    ExportErrorData,
 )
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 
 
@@ -63,9 +65,6 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
         self._proxy_manager.renew_proxy()
         option = FirstTierRoutingRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids, base_url=self.base_url)
         yield self._build_request_by(option=option)
-
-        # option = FirstTierRoutingRule.build_request_option(search_no=self.search_no, base_url=self.base_url)
-        # yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -169,21 +168,31 @@ class FirstTierRoutingRule(BaseRoutingRule):
         search_nos = response.meta['search_nos']
         base_url = response.meta['base_url']
         response_dict = json.loads(response.text)
-
-        # if self._is_search_no_invalid(response_dict):
-        #     yield Restart(reason='IP block', search_no=search_nos, task_id=task_ids)
+        if self._is_search_no_invalid(response_dict):
+            yield Restart(reason='IP block', search_no=search_nos, task_id=task_ids)
+            return
 
         container_info_list = self._extract_container_info_list(response_dict=response_dict)
         booking_no_set = self._get_booking_no_set_from(container_list=container_info_list)
         mbl_no_set = self._get_mbl_no_set_from(container_list=container_info_list)
 
         for search_no, task_id in zip(search_nos, task_ids):
-            if self._search_type == SHIPMENT_TYPE_MBL and search_no in mbl_no_set:
-                yield MblItem(task_id=task_id, mbl_no=search_no)
-                yield VesselRoutingRule.build_request_option(booking_no=search_no, base_url=base_url, task_id=task_id)
-            elif self._search_type == SHIPMENT_TYPE_BOOKING and search_no in booking_no_set:
-                yield MblItem(task_id=task_id, booking_no=search_no)
-                yield VesselRoutingRule.build_request_option(booking_no=search_no, base_url=base_url, task_id=task_id)
+            if self._search_type == SHIPMENT_TYPE_MBL:
+                if search_no in mbl_no_set:
+                    yield MblItem(task_id=task_id, mbl_no=search_no)
+                    yield VesselRoutingRule.build_request_option(booking_no=search_no, base_url=base_url, task_id=task_id)
+                else:
+                    # TODO: maybe could refactor later, use DataNotFoundError or CarrierInvalidMblNoError.
+                    yield ExportErrorData(task_id=task_id, mbl_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                          detail='Data was not found')
+            elif self._search_type == SHIPMENT_TYPE_BOOKING:
+                if search_no in booking_no_set:
+                    yield MblItem(task_id=task_id, booking_no=search_no)
+                    yield VesselRoutingRule.build_request_option(booking_no=search_no, base_url=base_url, task_id=task_id)
+                else:
+                    # TODO: maybe could refactor later, use DataNotFoundError or CarrierInvalidMblNoError.
+                    yield ExportErrorData(task_id=task_id, booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                          detail='Data was not found')
 
         for container_info in container_info_list:
             container_no = container_info['container_no']
