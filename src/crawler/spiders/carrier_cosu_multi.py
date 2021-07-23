@@ -11,7 +11,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from urllib3.exceptions import ReadTimeoutError
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.exceptions import SuspiciousOperationError, LoadWebsiteTimeOutFatal, CarrierInvalidMblNoError, \
     CarrierInvalidSearchNoError
 from crawler.core_carrier.items import (
@@ -22,6 +22,7 @@ from crawler.core_carrier.items import (
     ContainerItem,
     BaseCarrierItem,
     DebugItem,
+    ExportErrorData,
 )
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
@@ -39,11 +40,10 @@ class CarrierCosuSpider(BaseMultiCarrierSpider):
 
         bill_rules = [
             MainInfoRoutingRule(),
-            BookingInfoRoutingRule(origin_search_type=SHIPMENT_TYPE_MBL),
         ]
 
         booking_rules = [
-            BookingInfoRoutingRule(origin_search_type=SHIPMENT_TYPE_BOOKING),
+            BookingInfoRoutingRule(),
         ]
 
         if self.search_type == SHIPMENT_TYPE_MBL:
@@ -53,9 +53,8 @@ class CarrierCosuSpider(BaseMultiCarrierSpider):
 
     def start(self):
         if self.search_type == SHIPMENT_TYPE_MBL:
-            for s_no, t_id in zip(self.search_nos, self.task_ids):
-                option = MainInfoRoutingRule.build_request_option(mbl_no=s_no, task_id=t_id)
-                yield self._build_request_by(option=option)
+            option = MainInfoRoutingRule.build_request_option(mbl_nos=self.search_nos, task_ids=self.task_ids)
+            yield self._build_request_by(option=option)
         else:
             for s_no, t_id in zip(self.search_nos, self.task_ids):
                 # option = BookingInfoRoutingRule.build_request_option(booking_nos=[self.booking_no], task_id=t_id)
@@ -103,7 +102,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         pass
 
     @classmethod
-    def build_request_option(cls, mbl_no, task_id) -> RequestOption:
+    def build_request_option(cls, mbl_nos, task_ids) -> RequestOption:
         url = f'https://www.google.com'
 
         return RequestOption(
@@ -111,8 +110,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=url,
             meta={
-                'mbl_no': mbl_no,
-                'task_id': task_id,
+                'mbl_nos': mbl_nos,
+                'task_ids': task_ids,
             },
         )
 
@@ -120,43 +119,61 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def handle(self, response):
-        mbl_no = response.meta['mbl_no']
-        task_id = response.meta['task_id']
-
+        mbl_nos = response.meta['mbl_nos']
+        task_ids = response.meta['task_ids']
         content_getter = ContentGetter()
-        response_text = content_getter.search_and_return(search_no=mbl_no, is_booking=False)
-        response_selector = scrapy.Selector(text=response_text)
 
-        raw_booking_nos = response_selector.css('a.exitedBKNumber::text').getall()
-        booking_nos = [raw_booking_no.strip() for raw_booking_no in raw_booking_nos]
+        for mbl_no, task_id in zip(mbl_nos, task_ids):
+            response_text = content_getter.search_and_return(search_no=mbl_no, is_booking=False)
+            response_selector = scrapy.Selector(text=response_text)
 
-        if self._is_mbl_no_invalid(response=response_selector) and not booking_nos:
-            raise CarrierInvalidSearchNoError(search_type=SHIPMENT_TYPE_MBL)
+            raw_booking_nos = response_selector.css('a.exitedBKNumber::text').getall()
+            booking_nos = [raw_booking_no.strip() for raw_booking_no in raw_booking_nos]
 
-        elif not self._is_mbl_no_invalid(response=response_selector):
-            item_extractor = ItemExtractor(task_id=task_id)
-            for item in item_extractor.extract(
-                    response=response_selector, content_getter=content_getter, search_type=SHIPMENT_TYPE_MBL):
-                yield item
+            if self._is_mbl_no_invalid(response=response_selector) and not booking_nos:
+                yield ExportErrorData(task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Data was not found')
+            elif not self._is_mbl_no_invalid(response=response_selector):
+                item_extractor = ItemExtractor(task_id=task_id)
+                for item in item_extractor.extract(
+                        response=response_selector, content_getter=content_getter, search_type=SHIPMENT_TYPE_MBL):
+                    yield item
+            elif booking_nos:
+                for booking_no in booking_nos:
+                    yield MblItem(task_id=task_id, mbl_no=mbl_no)
+                    for b_item in self.process_booking(content_getter=content_getter, booking_no=booking_no, task_id=task_id):
+                        yield b_item
 
-        elif booking_nos:
-            for booking_no in booking_nos:
-                yield MblItem(task_id=task_id, mbl_no=mbl_no)
-                yield BookingInfoRoutingRule.build_request_option(task_id=task_id, booking_no=booking_no)
+        content_getter.close()
 
     @staticmethod
     def _is_mbl_no_invalid(response: Selector) -> bool:
         return bool(response.css('div.noFoundTips'))
 
+    def process_booking(self, content_getter, booking_no: str, task_id: int):
+        item_extractor = ItemExtractor(task_id=task_id)
+        response_text = content_getter.search_and_return(search_no=booking_no, is_booking=True)
+        response_selector = scrapy.Selector(text=response_text)
+        if self._is_booking_no_invalid(response=response_selector):
+            yield ExportErrorData(task_id=task_id, booking_no=booking_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                  detail='Data was not found')
+
+        for item in item_extractor.extract(
+                response=response_selector,
+                content_getter=content_getter,
+                search_type=SHIPMENT_TYPE_BOOKING,
+        ):
+            yield item
+
+    @staticmethod
+    def _is_booking_no_invalid(response: Selector) -> bool:
+        return bool(response.css('div.noFoundTips'))
 
 # ---------------------------------------------------------------------------------------------------------
 
 
 class BookingInfoRoutingRule(BaseRoutingRule):
     name = 'BOOKING_INFO'
-
-    def __init__(self, origin_search_type):
-        self._origin_search_type = origin_search_type
 
     @classmethod
     def build_request_option(cls, task_id: str, booking_no: str) -> RequestOption:
@@ -186,12 +203,12 @@ class BookingInfoRoutingRule(BaseRoutingRule):
         response_selector = scrapy.Selector(text=response_text)
 
         if self._is_booking_no_invalid(response=response_selector):
-            raise CarrierInvalidSearchNoError(search_type=self._origin_search_type)
+            raise CarrierInvalidSearchNoError(search_type=SHIPMENT_TYPE_BOOKING)
 
         for item in item_extractor.extract(
             response=response_selector,
             content_getter=content_getter,
-            search_type=self._origin_search_type,
+            search_type=SHIPMENT_TYPE_BOOKING,
         ):
             yield item
 
@@ -626,6 +643,9 @@ class ContentGetter:
         self._driver = webdriver.Firefox(firefox_options=options, service_log_path='/dev/null')
         self._driver.get('https://elines.coscoshipping.com/ebusiness/cargoTracking')
         self._is_first = True
+
+    def close(self):
+        self._driver.close()
 
     def search_and_return(self, search_no: str, is_booking: bool = True):
 
