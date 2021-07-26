@@ -56,10 +56,9 @@ class CarrierCosuSpider(BaseMultiCarrierSpider):
             option = MainInfoRoutingRule.build_request_option(mbl_nos=self.search_nos, task_ids=self.task_ids)
             yield self._build_request_by(option=option)
         else:
-            for s_no, t_id in zip(self.search_nos, self.task_ids):
-                # option = BookingInfoRoutingRule.build_request_option(booking_nos=[self.booking_no], task_id=t_id)
-                option = BookingInfoRoutingRule.build_request_option(booking_no=s_no, task_id=t_id)
-                yield self._build_request_by(option=option)
+            # option = BookingInfoRoutingRule.build_request_option(booking_nos=[self.booking_no], task_id=t_id)
+            option = BookingInfoRoutingRule.build_request_option(booking_nos=self.booking_nos, task_ids=self.task_ids)
+            yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -176,7 +175,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
     name = 'BOOKING_INFO'
 
     @classmethod
-    def build_request_option(cls, task_id: str, booking_no: str) -> RequestOption:
+    def build_request_option(cls, task_ids: str, booking_nos: str) -> RequestOption:
         url = f'https://www.google.com'
 
         return RequestOption(
@@ -184,8 +183,8 @@ class BookingInfoRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=url,
             meta={
-                'booking_no': booking_no,
-                'task_id': task_id,
+                'booking_nos': booking_nos,
+                'task_ids': task_ids,
             },
         )
 
@@ -193,24 +192,28 @@ class BookingInfoRoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def handle(self, response):
-        task_id = response.meta['task_id']
-        booking_no = response.meta['booking_no']
-
-        item_extractor = ItemExtractor(task_id=task_id)
-
+        task_ids = response.meta['task_ids']
+        booking_nos = response.meta['booking_nos']
         content_getter = ContentGetter()
-        response_text = content_getter.search_and_return(search_no=booking_no, is_booking=True)
-        response_selector = scrapy.Selector(text=response_text)
 
-        if self._is_booking_no_invalid(response=response_selector):
-            raise CarrierInvalidSearchNoError(search_type=SHIPMENT_TYPE_BOOKING)
+        for booking_no, task_id in zip(booking_nos, task_ids):
+            response_text = content_getter.search_and_return(search_no=booking_no, is_booking=True)
+            response_selector = scrapy.Selector(text=response_text)
 
-        for item in item_extractor.extract(
-            response=response_selector,
-            content_getter=content_getter,
-            search_type=SHIPMENT_TYPE_BOOKING,
-        ):
-            yield item
+            if self._is_booking_no_invalid(response=response_selector):
+                yield ExportErrorData(task_id=task_id, booking_no=booking_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Data was not found')
+                continue
+
+            item_extractor = ItemExtractor(task_id=task_id)
+            for item in item_extractor.extract(
+                response=response_selector,
+                content_getter=content_getter,
+                search_type=SHIPMENT_TYPE_BOOKING,
+            ):
+                yield item
+
+        content_getter.close()
 
     @staticmethod
     def _is_booking_no_invalid(response: Selector) -> bool:
@@ -638,7 +641,7 @@ class OnlyContentTableCellExtractor(BaseTableCellExtractor):
 class ContentGetter:
     def __init__(self):
         options = webdriver.FirefoxOptions()
-        options.add_argument('--headless')
+        # options.add_argument('--headless')
         options.add_argument(f'user-agent={self._random_choose_user_agent()}')
         self._driver = webdriver.Firefox(firefox_options=options, service_log_path='/dev/null')
         self._driver.get('https://elines.coscoshipping.com/ebusiness/cargoTracking')
