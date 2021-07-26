@@ -641,7 +641,7 @@ class OnlyContentTableCellExtractor(BaseTableCellExtractor):
 class ContentGetter:
     def __init__(self):
         options = webdriver.FirefoxOptions()
-        # options.add_argument('--headless')
+        options.add_argument('--headless')
         options.add_argument(f'user-agent={self._random_choose_user_agent()}')
         self._driver = webdriver.Firefox(firefox_options=options, service_log_path='/dev/null')
         self._driver.get('https://elines.coscoshipping.com/ebusiness/cargoTracking')
