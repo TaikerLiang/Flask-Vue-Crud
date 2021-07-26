@@ -1002,7 +1002,7 @@ class ContainerRoutingRule(BaseRoutingRule):
                 yield AvailabilityRoutingRule.build_request_option(
                     search_no=search_no, task_id=task_id, container_no=container_no, under_line=under_line)
             else:
-                self._item_recorder.record_item(key=(AVAILABILITY, container_no), items=container_status_items)
+                self._item_recorder.record_item(key=(AVAILABILITY, container_no))
 
         # avoid this function not yield anything
         yield MblItem(task_id=task_id)
