@@ -20,7 +20,6 @@ from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
-# WHLC_BASE_URL = 'https://www.wanhai.com/views/Main.xhtml'
 WHLC_BASE_URL = 'https://www.wanhai.com/views/cargoTrack/CargoTrack.xhtml'
 COOKIES_RETRY_LIMIT = 3
 
@@ -48,7 +47,7 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
 
     def start(self):
         if self.search_type == SHIPMENT_TYPE_MBL:
-            request_option = MblRoutingRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids)
+            request_option = MblRoutingRule.build_request_option(mbl_nos=self.search_nos, task_ids=self.task_ids)
             yield self._build_request_by(option=request_option)
         else:
             request_option = BookingRoutingRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids)
@@ -121,13 +120,13 @@ class MblRoutingRule(BaseRoutingRule):
         self._search_type = SHIPMENT_TYPE_MBL
 
     @classmethod
-    def build_request_option(cls, search_nos, task_ids):
+    def build_request_option(cls, mbl_nos, task_ids):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f'https://google.com',
             meta={
-                'mbl_nos': search_nos,
+                'mbl_nos': mbl_nos,
                 'task_ids': task_ids
             },
         )
@@ -155,6 +154,7 @@ class MblRoutingRule(BaseRoutingRule):
             else:
                 yield ExportErrorData(task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR,
                                       detail='Data was not found')
+                continue
 
         for idx in range(len(container_list)):
             container_no = container_list[idx]['container_no']
@@ -392,7 +392,6 @@ class BookingRoutingRule(BaseRoutingRule):
         search_nos = response.meta['search_nos']
         driver = WhlcDriver()
         cookies = driver.get_cookies_dict_from_main_page()
-        # driver.search(search_no=search_no, search_type=self._search_type)
         driver.multi_search(search_nos=search_nos, search_type=self._search_type)
 
         response_selector = Selector(text=driver.get_page_source())
