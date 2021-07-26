@@ -6,12 +6,14 @@ from urllib.parse import urlencode
 from scrapy import Selector, Request, FormRequest
 from twisted.python.failure import Failure
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider, CARRIER_DEFAULT_SETTINGS
 from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError, SuspiciousOperationError, CarrierInvalidMblNoError,
-    CarrierInvalidSearchNoError)
+    CarrierResponseFormatError,
+    SuspiciousOperationError,
+)
 from crawler.core_carrier.items import (
+    ExportErrorData,
     MblItem,
     LocationItem,
     VesselItem,
@@ -498,8 +500,6 @@ class Cookies3RoutingRule(BaseRoutingRule):
                 search_no=search_no, task_id=task_id, search_type=self._search_type, cookies=cookies)
         else:
             yield ForceRestart()
-
-
 # -------------------------------------------------------------------------------
 
 
@@ -514,6 +514,8 @@ class SpecificThTextExistMatchRule(BaseMatchRule):
 
 class MainRoutingRule(BaseRoutingRule):
     name = 'MAIN'
+    ERROR_MSG_TEXT = 'number is invalid.  Please try it again with correct number.'
+    INVALID_PAGE_TEXT = 'This page is not valid anymore.'
 
     def __init__(self, item_recorder: ItemRecorder, search_type):
         self._item_recorder = item_recorder
@@ -565,6 +567,7 @@ class MainRoutingRule(BaseRoutingRule):
             meta={
                 'search_no': search_no,
                 'task_id': task_id,
+                'search_type': search_type,
                 'cookies': cookies,
                 'under_line': under_line,
             },
@@ -576,6 +579,7 @@ class MainRoutingRule(BaseRoutingRule):
     def handle(self, response):
         search_no = response.meta['search_no']
         task_id = response.meta['task_id']
+        search_type = response.meta['search_type']
         cookies = response.meta['cookies']
         under_line = response.meta['under_line']
 
@@ -588,7 +592,21 @@ class MainRoutingRule(BaseRoutingRule):
                     search_no=search_no, task_id=task_id, search_type=self._search_type, cookies=cookies, under_line=True)
                 return
 
-            raise CarrierInvalidSearchNoError(search_type=self._search_type)
+            if search_type == SHIPMENT_TYPE_MBL:
+                yield ExportErrorData(
+                    mbl_no=search_no,
+                    task_id=task_id,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail='Data was not found',
+                )
+            elif search_type == SHIPMENT_TYPE_BOOKING:
+                yield ExportErrorData(
+                    booking_no=search_no,
+                    task_id=task_id,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail='Data was not found',
+                )
+            return
 
         if not self._item_recorder.is_item_recorded(key=(MBL, search_no)):
             try:
@@ -690,10 +708,12 @@ class MainRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _is_search_no_invalid(response):
+        is_invalid_page = MainRoutingRule.INVALID_PAGE_TEXT in response.text
         err_message = response.css('div#trackingForm p.text_type03::text').get()
         if (
                 isinstance(err_message, str) and
-                'number is invalid.  Please try it again with correct number.' in err_message
+                MainRoutingRule.ERROR_MSG_TEXT in err_message
+                or is_invalid_page
         ):
             return True
         return False

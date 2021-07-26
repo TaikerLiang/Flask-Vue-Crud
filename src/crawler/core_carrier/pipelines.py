@@ -8,7 +8,7 @@ from scrapy.exceptions import DropItem
 
 from . import items as carrier_items
 from .base import CARRIER_RESULT_STATUS_DATA, CARRIER_RESULT_STATUS_DEBUG, CARRIER_RESULT_STATUS_FATAL, \
-    SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
+    SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL, CARRIER_RESULT_STATUS_ERROR
 from crawler.services.edi_service import EdiClientService
 
 
@@ -139,12 +139,10 @@ class CarrierMultiItemsPipeline:
                 collector.collect_container_item(item=item)
             elif isinstance(item, carrier_items.ContainerStatusItem):
                 collector.collect_container_status_item(item=item)
+            elif isinstance(item, carrier_items.ExportErrorData):
+                collector.collect_error_item(item=item)
             elif isinstance(item, carrier_items.ExportFinalData):
                 res = self._send_result_back_to_edi_engine()
-                return {'status': 'CLOSE', 'result': res}
-            elif isinstance(item, carrier_items.ExportErrorData):
-                result = default_collector.build_error_data(item)
-                res = self._send_error_msg_back_to_edi_engine(result=result)
                 return {'status': 'CLOSE', 'result': res}
             elif isinstance(item, carrier_items.DebugItem):
                 debug_data = default_collector.build_debug_data(item)
@@ -163,17 +161,13 @@ class CarrierMultiItemsPipeline:
 
         raise DropItem('item processed')
 
-    def _get_results_of_collectors(self):
-        results = []
-        for _, collector in self._collector_map.items():
-            results.append(collector.build_final_data())
-
-        return results
-
     def _send_result_back_to_edi_engine(self):
         res = []
         for task_id, collector in self._collector_map.items():
-            item_result = collector.build_final_data()
+            if collector.has_error():
+                item_result = collector.get_error_item()
+            else:
+                item_result = collector.build_final_data()
             status_code, text = self.edi_client.send_provider_result_back(task_id=task_id,
                                                                           provider_code='scrapy_cloud_api',
                                                                           item_result=item_result)
@@ -202,9 +196,14 @@ class CarrierMultiItemsPipeline:
 class CarrierResultCollector:
     def __init__(self, request_args):
         self._request_args = dict(request_args)
+        self._error = {}
         self._basic = {}
         self._vessels = OrderedDict()
         self._containers = OrderedDict()
+
+    def collect_error_item(self, item: carrier_items.ExportErrorData):
+        clean_dict = self._clean_item(item)
+        self._error.update(clean_dict)
 
     def collect_mbl_item(self, item: carrier_items.MblItem):
         clean_dict = self._clean_item(item)
@@ -309,3 +308,10 @@ class CarrierResultCollector:
 
     def is_default(self):
         return False if self._basic else True
+
+    def has_error(self):
+        return True if self._error else False
+
+    def get_error_item(self):
+        self._error.update({'request_args': self._request_args})
+        return self._error

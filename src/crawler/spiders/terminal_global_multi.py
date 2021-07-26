@@ -131,7 +131,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
             yield TerminalItem(
                 container_no=table_locator.get_cell(left=i, top="Container #"),
-                freight_release=table_locator.get_cell(left=i, top="Freight Released"),
+                carrier_release=table_locator.get_cell(left=i, top="Freight Released"),
                 customs_release=table_locator.get_cell(left=i, top="Customs Released"),
                 ready_for_pick_up=table_locator.get_cell(left=i, top="Avail for Pickup"),
                 discharge_date=table_locator.get_cell(left=i, top="Discharge Date"),
