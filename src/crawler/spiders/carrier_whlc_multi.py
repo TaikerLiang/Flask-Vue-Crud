@@ -6,7 +6,7 @@ from typing import List, Dict
 import scrapy
 from scrapy import Selector
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
@@ -15,12 +15,12 @@ from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOpti
 from crawler.core_carrier.items import (
     MblItem, BaseCarrierItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData, DebugItem)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, LoadWebsiteTimeOutError, BaseCarrierError, \
-    SuspiciousOperationError, CarrierInvalidSearchNoError
+    SuspiciousOperationError, CarrierInvalidSearchNoError, CARRIER_RESULT_STATUS_ERROR
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
-WHLC_BASE_URL = 'https://www.wanhai.com/views/Main.xhtml'
+WHLC_BASE_URL = 'https://www.wanhai.com/views/cargoTrack/CargoTrack.xhtml'
 COOKIES_RETRY_LIMIT = 3
 
 
@@ -47,13 +47,11 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
 
     def start(self):
         if self.search_type == SHIPMENT_TYPE_MBL:
-            for s_no, t_id in zip(self.search_nos, self.task_ids):
-                request_option = MblRoutingRule.build_request_option(search_no=s_no, task_id=t_id)
-                yield self._build_request_by(option=request_option)
+            request_option = MblRoutingRule.build_request_option(mbl_nos=self.search_nos, task_ids=self.task_ids)
+            yield self._build_request_by(option=request_option)
         else:
-            for s_no, t_id in zip(self.search_nos, self.task_ids):
-                request_option = BookingRoutingRule.build_request_option(search_no=s_no, task_id=t_id)
-                yield self._build_request_by(option=request_option)
+            request_option = BookingRoutingRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids)
+            yield self._build_request_by(option=request_option)
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -119,39 +117,50 @@ class MblRoutingRule(BaseRoutingRule):
     def __init__(self):
         self._container_patt = re.compile(r'^(?P<container_no>\w+)')
         self._j_idt_patt = re.compile(r"'(?P<j_idt>j_idt[^,]+)':'(?P=j_idt)'")
+        self._search_type = SHIPMENT_TYPE_MBL
 
     @classmethod
-    def build_request_option(cls, search_no, task_id):
+    def build_request_option(cls, mbl_nos, task_ids):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f'https://google.com',
             meta={
-                'mbl_no': search_no,
-                'task_id': task_id
+                'mbl_nos': mbl_nos,
+                'task_ids': task_ids
             },
         )
 
     def handle(self, response):
-        task_id = response.meta['task_id']
-        mbl_no = response.meta['mbl_no']
+        task_ids = response.meta['task_ids']
+        mbl_nos = response.meta['mbl_nos']
         driver = WhlcDriver()
         cookies = driver.get_cookies_dict_from_main_page()
         try:
-            driver.search_mbl(mbl_no)
+            driver.multi_search(search_nos=mbl_nos, search_type=self._search_type)
         except ReadTimeoutError:
             raise LoadWebsiteTimeOutError(url=WHLC_BASE_URL)
 
         response_selector = Selector(text=driver.get_page_source())
         container_list = self._extract_container_info(response_selector)
+        mbl_no_set = self._get_mbl_no_set_from(container_list=container_list)
 
-        yield MblItem(
-            task_id=task_id,
-            mbl_no=mbl_no
-        )
+        for mbl_no, task_id in zip(mbl_nos, task_ids):
+            if mbl_no in mbl_no_set:
+                yield MblItem(
+                    task_id=task_id,
+                    mbl_no=mbl_no
+                )
+            else:
+                yield ExportErrorData(task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Data was not found')
+                continue
 
         for idx in range(len(container_list)):
             container_no = container_list[idx]['container_no']
+            mbl_no = container_list[idx]['mbl_no']
+            index = mbl_nos.index(mbl_no)
+            task_id = task_ids[index]
 
             yield ContainerItem(
                 task_id=task_id,
@@ -207,6 +216,7 @@ class MblRoutingRule(BaseRoutingRule):
 
             driver.close()
             driver.switch_to_last()
+        driver.close()
 
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
@@ -221,6 +231,9 @@ class MblRoutingRule(BaseRoutingRule):
             container_no_text = table.extract_cell('Ctnr No.', left)
             container_no = self._parse_container_no_from(text=container_no_text)
 
+            mbl_no_text = table.extract_cell('BL no.', left)
+            mbl_no = self._parse_mbl_no_from(text=mbl_no_text)
+
             detail_j_idt_text = table.extract_cell('More detail', left, JidtTdExtractor())
             detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text)
 
@@ -229,6 +242,7 @@ class MblRoutingRule(BaseRoutingRule):
 
             return_list.append({
                 'container_no': container_no,
+                'mbl_no': mbl_no,
                 'detail_j_idt': detail_j_idt,
                 'history_j_idt': history_j_idt,
             })
@@ -242,6 +256,16 @@ class MblRoutingRule(BaseRoutingRule):
         m = self._container_patt.match(text)
         if not m:
             raise CarrierResponseFormatError('container_no not match')
+
+        return m.group('container_no')
+
+    def _parse_mbl_no_from(self, text):
+        if not text:
+            raise CarrierResponseFormatError('mbl_no not found')
+
+        m = self._container_patt.match(text)
+        if not m:
+            raise CarrierResponseFormatError('mbl_no not match')
 
         return m.group('container_no')
 
@@ -334,6 +358,12 @@ class MblRoutingRule(BaseRoutingRule):
 
         return return_list
 
+    @staticmethod
+    def _get_mbl_no_set_from(container_list: List):
+        mbl_no_list = [container['mbl_no'] for container in container_list]
+        mbl_no_set = set(mbl_no_list)
+
+        return mbl_no_set
 
 class BookingRoutingRule(BaseRoutingRule):
     name = 'BOOKING'
@@ -343,14 +373,14 @@ class BookingRoutingRule(BaseRoutingRule):
         self._container_patt = re.compile(r'^(?P<container_no>\w+)')
 
     @classmethod
-    def build_request_option(cls, search_no, task_id):
+    def build_request_option(cls, search_nos, task_ids):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f'https://google.com',
             meta={
-                'search_no': search_no,
-                'task_id': task_id,
+                'search_nos': search_nos,
+                'task_ids': task_ids,
             },
         )
 
@@ -358,66 +388,79 @@ class BookingRoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def handle(self, response):
-        task_id = response.meta['task_id']
-        search_no = response.meta['search_no']
+        task_ids = response.meta['task_ids']
+        search_nos = response.meta['search_nos']
         driver = WhlcDriver()
         cookies = driver.get_cookies_dict_from_main_page()
-        driver.search(search_no=search_no, search_type=self._search_type)
+        driver.multi_search(search_nos=search_nos, search_type=self._search_type)
 
         response_selector = Selector(text=driver.get_page_source())
         if self._is_search_no_invalid(response=response_selector):
             raise CarrierInvalidSearchNoError(search_type=self._search_type)
+        booking_list = self._extract_booking_list(response_selector)
+        book_no_set = self._get_book_no_set_from(booking_list=booking_list)
 
-        driver.go_detail_page(2)  # only one booking_no to click
-        basic_info = self._extract_basic_info(Selector(text=driver.get_page_source()))
-        vessel_info = self._extract_vessel_info(Selector(text=driver.get_page_source()))
+        for task_id, search_no in zip(task_ids, search_nos):
+            if search_no not in book_no_set:
+                yield ExportErrorData(task_id=task_id, booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Data was not found')
 
-        yield MblItem(
-            task_id=task_id,
-            booking_no=search_no,
-        )
+        for b_idx in range(len(booking_list)):
+            search_no = booking_list[b_idx]['booking_no']
+            index = search_nos.index(search_no)
+            task_id = task_ids[index]
+            driver.go_detail_page(b_idx + 2)  # only one booking_no to click
+            basic_info = self._extract_basic_info(Selector(text=driver.get_page_source()))
+            vessel_info = self._extract_vessel_info(Selector(text=driver.get_page_source()))
 
-        yield VesselItem(
-            task_id=task_id,
-            vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
-            vessel=basic_info['vessel'],
-            voyage=basic_info['voyage'],
-            pol=LocationItem(name=vessel_info['pol']),
-            etd=vessel_info['etd'],
-        )
-
-        yield VesselItem(
-            task_id=task_id,
-            vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
-            vessel=basic_info['vessel'],
-            voyage=basic_info['voyage'],
-            pod=LocationItem(name=vessel_info['pod']),
-            eta=vessel_info['eta'],
-        )
-
-        container_nos = self._extract_container_no_and_status_links(Selector(text=driver.get_page_source()))
-
-        for idx in range(len(container_nos)):
-            container_no = container_nos[idx]
-            # history page
-            driver.go_booking_history_page(idx+2)
-            history_selector = Selector(text=driver.get_page_source())
-
-            event_list = self._extract_container_status(response=history_selector)
-            container_status_items = self._make_container_status_items(task_id, container_no, event_list)
-
-            yield ContainerItem(
+            yield MblItem(
                 task_id=task_id,
-                container_key=container_no,
-                container_no=container_no,
+                booking_no=search_no,
             )
 
-            for item in container_status_items:
-                yield item
+            yield VesselItem(
+                task_id=task_id,
+                vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
+                vessel=basic_info['vessel'],
+                voyage=basic_info['voyage'],
+                pol=LocationItem(name=vessel_info['pol']),
+                etd=vessel_info['etd'],
+            )
+
+            yield VesselItem(
+                task_id=task_id,
+                vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
+                vessel=basic_info['vessel'],
+                voyage=basic_info['voyage'],
+                pod=LocationItem(name=vessel_info['pod']),
+                eta=vessel_info['eta'],
+            )
+
+            container_nos = self._extract_container_no_and_status_links(Selector(text=driver.get_page_source()))
+
+            for idx in range(len(container_nos)):
+                container_no = container_nos[idx]
+                # history page
+                driver.go_booking_history_page(idx+2)
+                history_selector = Selector(text=driver.get_page_source())
+
+                event_list = self._extract_container_status(response=history_selector)
+                container_status_items = self._make_container_status_items(task_id, container_no, event_list)
+
+                yield ContainerItem(
+                    task_id=task_id,
+                    container_key=container_no,
+                    container_no=container_no,
+                )
+
+                for item in container_status_items:
+                    yield item
+
+                driver.close()
+                driver.switch_to_last()
 
             driver.close()
             driver.switch_to_last()
-
         driver.quit()
 
     @staticmethod
@@ -425,6 +468,54 @@ class BookingRoutingRule(BaseRoutingRule):
         if response.css('input#q_ref_no1'):
             return True
         return False
+
+    def _extract_booking_list(self, response: scrapy.Selector) -> List:
+        table_selector = response.css('table.tbl-list')[0]
+        table_locator = ContainerListTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
+        return_list = []
+        for left in table_locator.iter_left_headers():
+            booking_no_text = table.extract_cell('Book No.', left)
+            booking_no = self._parse_booking_no_from(text=booking_no_text)
+
+            detail_j_idt_text = table.extract_cell('More detail', left, JidtTdExtractor())
+            detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text)
+
+            return_list.append({
+                'booking_no': booking_no,
+                'detail_j_idt': detail_j_idt,
+            })
+
+        return return_list
+
+    def _parse_booking_no_from(self, text):
+        if not text:
+            raise CarrierResponseFormatError('booking_no not found')
+
+        booking_patt = re.compile(r'^(?P<booking_no>\w+)')
+        m = booking_patt.match(text)
+        if not m:
+            raise CarrierResponseFormatError('booking_no not match')
+
+        return m.group('booking_no')
+
+    def _parse_detail_j_idt_from(self, text: str) -> str:
+        if not text:
+            return ''
+
+        j_idt_patt = re.compile(r"'(?P<j_idt>j_idt[^,]+)':'(?P=j_idt)'")
+        m = j_idt_patt.search(text)
+        if not m:
+            raise CarrierResponseFormatError('detail_j_idt not match')
+
+        return m.group('j_idt')
+
+    @staticmethod
+    def _get_book_no_set_from(booking_list: List):
+        book_no_list = [booking['booking_no'] for booking in booking_list]
+        book_no_set = set(book_no_list)
+        return book_no_set
 
     def _extract_basic_info(self, response: scrapy.Selector):
         tables = response.css('table.tbl-list')
@@ -567,6 +658,28 @@ class WhlcDriver:
         self._driver.find_element_by_xpath('//*[@id="quick_ctnr_query"]').click()
         time.sleep(10)
         self._driver.switch_to.window(self._driver.window_handles[-1])
+
+    def multi_search(self, search_nos, search_type):
+        select_text = self._type_select_text_map[search_type]
+
+        self._driver.find_element_by_xpath(f"//*[@id='cargoType']/option[text()='{select_text}']").click()
+        time.sleep(1)
+
+        for i, search_no in enumerate(search_nos):
+            input_ele = self._driver.find_element_by_xpath(f'//*[@id="q_ref_no{i+1}"]')
+            input_ele.send_keys(search_no)
+            time.sleep(0.5)
+        time.sleep(3)
+        self._driver.find_element_by_xpath('//*[@id="Query"]').click()
+        time.sleep(1)
+
+        self._driver.switch_to.window(self._driver.window_handles[-1])
+        try:
+            alert = self._driver.switch_to.alert
+            text = alert.text
+            raise CarrierInvalidSearchNoError(search_type=search_type)
+        except NoAlertPresentException:
+            time.sleep(10)
 
     def go_detail_page(self, idx: int):
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u').click()
