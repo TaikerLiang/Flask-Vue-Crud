@@ -17,12 +17,14 @@ from crawler.core_carrier.items import (
     ContainerStatusItem,
     DebugItem,
     ExportData,
+    ExportErrorData,
 )
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption, ProxyManager
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor, HeaderMismatchError
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 
 STATUS_ONE_CONTAINER = 'STATUS_ONE_CONTAINER'
 STATUS_MULTI_CONTAINER = 'STATUS_MULTI_CONTAINER'
@@ -225,7 +227,12 @@ class FirstTierRoutingRule(BaseRoutingRule):
             raise DataNotFoundError()
 
         else:  # STATUS_MBL_NOT_EXIST
-            raise CarrierInvalidSearchNoError(search_type=self._search_type)
+            if self._search_type == SHIPMENT_TYPE_MBL:
+                yield ExportErrorData(task_id=task_id, mbl_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Data was not found')
+            elif self._search_type == SHIPMENT_TYPE_BOOKING:
+                yield ExportErrorData(task_id=task_id, booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Data was not found')
 
     @staticmethod
     def _extract_mbl_status(response: Selector):
