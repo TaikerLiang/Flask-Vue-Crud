@@ -1,5 +1,4 @@
 import dataclasses
-from collections import defaultdict
 import io
 import re
 from typing import Union, Tuple, List
@@ -12,7 +11,6 @@ from scrapy import Selector
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
-    CarrierInvalidMblNoError,
     SuspiciousOperationError,
     AntiCaptchaError,
 )
@@ -29,7 +27,7 @@ from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
-from crawler.core_carrier.base import SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
 
 BASE_URL = 'https://www.yangming.com'
 
@@ -76,9 +74,6 @@ class CarrierYmluSpider(BaseMultiCarrierSpider):
         self._proxy_manager = ProxyManager(session='ymlu', logger=self.logger)
 
     def start(self):
-        # for s_no, t_id in zip(self.search_nos, self.task_ids):
-        #     option = self._prepare_start(search_no=s_no, task_id=t_id)
-        #     yield self._build_request_by(option)
         option = self._prepare_start(self.search_nos, self.task_ids)
         yield self._build_request_by(option)
 
@@ -305,10 +300,13 @@ class BookingInfoRoutingRule(BaseRoutingRule):
             '__PREVIOUSPAGE': hidden_form_spec.previous_page,
             'ctl00$hidButtonType': '0',
             'ctl00$ContentPlaceHolder1$rdolType': 'BK',
-            'ctl00$ContentPlaceHolder1$num1': booking_nos,
             'ctl00$ContentPlaceHolder1$txtVcode': captcha,
             'ctl00$ContentPlaceHolder1$btnTrack': 'Track',
         }
+
+        # len(booking_nos) should not exceed 12
+        for i, booking_no in enumerate(booking_nos, start=1):
+            form_data[f'ctl00$ContentPlaceHolder1$num{i}'] = booking_no
 
         return RequestOption(
             method=RequestOption.METHOD_POST_FORM,
@@ -346,6 +344,8 @@ class BookingInfoRoutingRule(BaseRoutingRule):
                 yield ExportErrorData(
                     task_id=task_ids[index],
                     booking_no=booking_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail='Data was not found',
                 )
                 table_index += 2
                 continue
@@ -641,7 +641,6 @@ class MainInfoRoutingRule(BaseRoutingRule):
             '__PREVIOUSPAGE': hidden_form_spec.previous_page,
             'ctl00$hidButtonType': '0',
             'ctl00$ContentPlaceHolder1$rdolType': 'BL',
-            # 'ctl00$ContentPlaceHolder1$num1': mbl_nos,
             'ctl00$ContentPlaceHolder1$txtVcode': captcha,
             'ctl00$ContentPlaceHolder1$btnTrack': 'Track',
         }
@@ -685,7 +684,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
             if self._is_mbl_no_invalid(response=response, index=index):
                 yield ExportErrorData(
                     task_id=task_ids[index],
-                    mbl_no=mbl_no
+                    mbl_no=mbl_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail='Data was not found',
                 )
                 table_index += 2
                 continue
