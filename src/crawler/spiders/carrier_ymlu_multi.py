@@ -11,6 +11,7 @@ from scrapy import Selector
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
+    ProxyMaxRetryError,
     SuspiciousOperationError,
     AntiCaptchaError,
 )
@@ -109,8 +110,12 @@ class CarrierYmluSpider(BaseMultiCarrierSpider):
                 self.logger.warning(f'----- {result.reason}, try new proxy and restart')
                 search_nos = response.meta['search_nos']
                 task_ids = response.meta['task_ids']
-                option = self._prepare_start(search_nos=search_nos, task_ids=task_ids, restart=True)
-                yield self._build_request_by(option)
+                try:
+                    option = self._prepare_start(search_nos=search_nos, task_ids=task_ids, restart=True)
+                    yield self._build_request_by(option)
+                except ProxyMaxRetryError:
+                    for error_data in self._build_error_data(search_nos=search_nos, task_ids=task_ids, search_type=self.search_type):
+                        yield error_data
 
             else:
                 raise RuntimeError()
@@ -138,6 +143,25 @@ class CarrierYmluSpider(BaseMultiCarrierSpider):
             )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
+
+    def _build_error_data(self, search_nos, task_ids, search_type):
+        search_nos_and_task_ids = zip(search_nos, task_ids)
+        if search_type == SHIPMENT_TYPE_MBL:
+            for (search_no, task_id) in search_nos_and_task_ids:
+                yield ExportErrorData(
+                    mbl_no=search_no,
+                    task_id=task_id,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail='proxy max retry error'
+                )
+        elif search_type == SHIPMENT_TYPE_BOOKING:
+            for (search_no, task_id) in search_nos_and_task_ids:
+                yield ExportErrorData(
+                    booking_no=search_no,
+                    task_id=task_id,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail='proxy max retry error'
+                )
 
     def __add_cookiejar_to_request_option(self, option):
         cookie_option = option.copy_and_extend_by(meta={'cookiejar': self._cookie_jar_id})
