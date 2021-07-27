@@ -146,7 +146,8 @@ class CaptchaRoutingRule(BaseRoutingRule):
         file_name = 'captcha.jpeg'
         image = Image.open(io.BytesIO(captcha_code))
         image.save(file_name)
-        api_key = 'f7dd6de6e36917b41d05505d249876c3'
+        # api_key = 'f7dd6de6e36917b41d05505d249876c3'
+        api_key='fbe73f747afc996b624e8d2a95fa0f84'
         solver = imagecaptcha()
         solver.set_verbose(1)
         solver.set_key(api_key)
