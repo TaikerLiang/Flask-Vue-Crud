@@ -1,6 +1,7 @@
 import json
 import re
 from typing import Dict, List
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 
 import scrapy
 
@@ -9,6 +10,7 @@ from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem,
+    ExportErrorData,
     MblItem,
     LocationItem,
     VesselItem,
@@ -18,12 +20,11 @@ from crawler.core_carrier.items import (
 )
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
-    CarrierInvalidMblNoError,
     SuspiciousOperationError,
 )
-from crawler.extractors.table_extractors import TableExtractor, HeaderMismatchError, BaseTableLocator
+from crawler.extractors.table_extractors import HeaderMismatchError, BaseTableLocator
 
-SITC_BASE_URL = 'http://www.sitcline.com/track/biz/trackCargoTrack.do'
+SITC_BASE_URL = 'http://api.sitcline.com/doc/cargoTrack'
 
 
 class CarrierSitcSpider(BaseCarrierSpider):
@@ -34,8 +35,6 @@ class CarrierSitcSpider(BaseCarrierSpider):
 
         rules = [
             BasicInfoRoutingRule(),
-            VesselInfoRoutingRule(),
-            ContainerInfoRoutingRule(),
             ContainerStatusRoutingRule(),
         ]
 
@@ -44,7 +43,6 @@ class CarrierSitcSpider(BaseCarrierSpider):
     def start(self):
         request_option = BasicInfoRoutingRule.build_request_option(
             mbl_no=self.mbl_no,
-            container_no_list=self.container_no_list,
         )
         yield self._build_request_by(option=request_option)
 
@@ -78,6 +76,14 @@ class CarrierSitcSpider(BaseCarrierSpider):
                 formdata=option.form_data,
                 meta=meta,
             )
+        elif option.method == RequestOption.METHOD_POST_BODY:
+            return scrapy.Request(
+                method='POST',
+                url=option.url,
+                headers=option.headers,
+                body=option.body,
+                meta=meta,
+            )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
@@ -89,21 +95,16 @@ class BasicInfoRoutingRule(BaseRoutingRule):
     name = 'BASIC_INFO'
 
     @classmethod
-    def build_request_option(cls, mbl_no, container_no_list) -> RequestOption:
-        container_no, other_container_no_list = container_no_list[0], container_no_list[1:]
-
-        form_data = {
-            'blNo': mbl_no,
-            'containerNo': container_no,
-            'queryInfo': '{"queryObjectName": "com.sitc.track.bean.BlNoBkContainer4Track"}',
-        }
+    def build_request_option(cls, mbl_no) -> RequestOption:
 
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_POST_FORM,
-            url=f'{SITC_BASE_URL}?method=billNoIndexBasicNew',
-            form_data=form_data,
-            meta={'mbl_no': mbl_no, 'container_no': container_no, 'container_no_list': other_container_no_list},
+            method=RequestOption.METHOD_POST_BODY,
+            url=f'{SITC_BASE_URL}/search?blNo={mbl_no}&containerNo=',
+            headers={'Content-Type': 'application/json'},
+            meta={
+                'mbl_no': mbl_no,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -111,82 +112,29 @@ class BasicInfoRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
-        container_no = response.meta['container_no']
-        container_no_list = response.meta['container_no_list']
+        response_dict = json.loads(response.text)['data']
 
-        response_dict = json.loads(response.text)
-        if self._check_valid_mbl(response=response_dict):
-            basic_info = self._extract_basic_info(response=response_dict)
-
+        basic_info = self._extract_basic_info(response=response_dict)
+        if basic_info:
             yield MblItem(
                 mbl_no=basic_info['mbl_no'],
                 pol=LocationItem(name=basic_info['pol_name']),
                 final_dest=LocationItem(name=basic_info['final_dest_name']),
             )
-
-            yield VesselInfoRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
-
-        elif container_no_list:
-            yield BasicInfoRoutingRule.build_request_option(mbl_no=mbl_no, container_no_list=container_no_list)
-
         else:
-            raise CarrierInvalidMblNoError()
-
-    @staticmethod
-    def _check_valid_mbl(response: Dict):
-        data_list = response['list']
-        return bool(data_list)
-
-    @staticmethod
-    def _extract_basic_info(response: Dict) -> Dict:
-        basic_list = response['list']
-
-        if len(basic_list) != 1:
-            raise CarrierResponseFormatError(reason=f'basic info length != 1 length: {len(basic_list)}')
-
-        basic_info = basic_list[0]
-
-        return {
-            'mbl_no': basic_info['blNo'],
-            'pol_name': basic_info['pol'],
-            'final_dest_name': basic_info['del'],
-        }
+            yield ExportErrorData(
+                mbl_no=mbl_no,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail='Data was not found'
+            )
 
 
-class VesselInfoRoutingRule(BaseRoutingRule):
-    name = 'VESSEL_INFO'
-
-    @classmethod
-    def build_request_option(cls, mbl_no: str, container_no: str) -> RequestOption:
-        form_data = {
-            'blNo': mbl_no,
-            'containerNo': container_no,
-            'queryInfo': '{"queryObjectName": "com.sitc.track.bean.BlNoBkContainer4Track"}',
-        }
-
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_POST_FORM,
-            url=f'{SITC_BASE_URL}?method=billNoIndexSailingNew',
-            form_data=form_data,
-            meta={'mbl_no': mbl_no, 'container_no': container_no},
-        )
-
-    def get_save_name(self, response) -> str:
-        return f'{self.name}.json'
-
-    def handle(self, response):
-        mbl_no = response.meta['mbl_no']
-        container_no = response.meta['container_no']
-
-        response_dict = json.loads(response.text)
         vessel_info_list = self._extract_vessel_info_list(response=response_dict)
-
         for vessel in vessel_info_list:
-            vessel_no = vessel['vessel']
+            vessel_name = vessel['vessel']
             yield VesselItem(
-                vessel_key=vessel_no,
-                vessel=vessel_no,
+                vessel_key=vessel_name,
+                vessel=vessel_name,
                 voyage=vessel['voyage'],
                 pol=LocationItem(name=vessel['pol_name']),
                 pod=LocationItem(name=vessel['pod_name']),
@@ -196,30 +144,52 @@ class VesselInfoRoutingRule(BaseRoutingRule):
                 ata=vessel['ata'] or None,
             )
 
-        yield ContainerInfoRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
 
-    def _extract_vessel_info_list(self, response: Dict) -> List:
-        vessel_list = response['list']
+        container_info_list = self._extract_container_info_list(response=response_dict)
+        for container in container_info_list:
+            container_no = container['container_no']
+            yield ContainerItem(
+                container_key=container_no,
+                container_no=container_no,
+            )
 
-        return_list = []
-        for vessel in vessel_list:
-            td = self._extract_estimate_and_actual_time(vessel_time=vessel['atd'])
-            ta = self._extract_estimate_and_actual_time(vessel_time=vessel['ata'])
+            yield ContainerStatusRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
 
-            return_list.append(
+
+    @staticmethod
+    def _extract_basic_info(response: Dict) -> Dict:
+        basic_list = response['list1']
+
+        if len(basic_list) != 1:
+            return {}
+
+        basic_info = basic_list[0]
+        return {
+            'mbl_no': basic_info['blNo'],
+            'pol_name': basic_info['pol'],
+            'final_dest_name': basic_info['del'],
+        }
+
+    @staticmethod
+    def _extract_vessel_info_list(response: Dict) -> List:
+        response_list = response['list2']
+
+        vessel_info_list = []
+        for vessel in response_list:
+            vessel_info_list.append(
                 {
                     'vessel': vessel['vesselName'],
-                    'voyage': vessel['voyage'],
-                    'pol_name': vessel['portFrom'],
-                    'pod_name': vessel['portTo'],
-                    'etd': td['e_time'],
-                    'atd': td['a_time'],
-                    'eta': ta['e_time'],
-                    'ata': ta['a_time'],
+                    'voyage': vessel['voyageNo'],
+                    'pol_name': vessel['portFromName'],
+                    'pod_name': vessel['portToName'],
+                    'etd': vessel['etd'],
+                    'atd': vessel['atd'],
+                    'eta': vessel['eta'],
+                    'ata': vessel['ata'],
                 }
             )
 
-        return return_list
+        return vessel_info_list
 
     @staticmethod
     def _extract_estimate_and_actual_time(vessel_time) -> Dict:
@@ -247,46 +217,9 @@ class VesselInfoRoutingRule(BaseRoutingRule):
             raise CarrierResponseFormatError(reason=f'unknown e_or_a: `{e_or_a}`')
 
 
-class ContainerInfoRoutingRule(BaseRoutingRule):
-    name = 'CONTAINER_INFO'
-
-    @classmethod
-    def build_request_option(cls, mbl_no: str, container_no: str) -> RequestOption:
-        form_data = {
-            'blNo': mbl_no,
-            'containerNo': container_no,
-            'queryInfo': '{"queryObjectName": "com.sitc.track.bean.BlNoBkContainer4Track"}',
-        }
-
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_POST_FORM,
-            url=f'{SITC_BASE_URL}?method=billNoIndexContainersNew',
-            form_data=form_data,
-            meta={'mbl_no': mbl_no},
-        )
-
-    def get_save_name(self, response) -> str:
-        return f'{self.name}.json'
-
-    def handle(self, response):
-        mbl_no = response.meta['mbl_no']
-
-        response_dict = json.loads(response.text)
-        container_info_list = self._extract_container_info_list(response=response_dict)
-
-        for container in container_info_list:
-            container_no = container['container_no']
-            yield ContainerItem(
-                container_key=container_no,
-                container_no=container_no,
-            )
-
-            yield ContainerStatusRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
-
     @staticmethod
     def _extract_container_info_list(response: Dict) -> List:
-        container_list = response['list']
+        container_list = response['list3']
 
         return_list = []
         for container in container_list:
@@ -306,8 +239,9 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     def build_request_option(cls, mbl_no: str, container_no: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=f'{SITC_BASE_URL}?method=boxNoIndex&containerNo={container_no}&blNo={mbl_no}',
+            method=RequestOption.METHOD_POST_BODY,
+            url=f'{SITC_BASE_URL}/detail?blNo={mbl_no}&containerNo={container_no}',
+            headers={'Content-Type': 'application/json'},
             meta={'container_key': container_no},
         )
 
@@ -317,8 +251,9 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_key = response.meta['container_key']
+        response_dict = json.loads(response.text)['data']
 
-        container_status_list = self._extract_container_status_list(response=response)
+        container_status_list = self._extract_container_status_list(response=response_dict)
         for container_status in container_status_list:
             yield ContainerStatusItem(
                 container_key=container_key,
@@ -328,23 +263,16 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             )
 
     @staticmethod
-    def _extract_container_status_list(response: scrapy.Selector) -> List:
-        table_selector = response.css('table#tblCargoTrackBillNo_table')
-
-        if table_selector is None:
-            raise CarrierResponseFormatError(reason='Container Status table not found')
-
-        table_locator = ContainerStatusTableLocator()
-        table_locator.parse(table=table_selector)
-        table = TableExtractor(table_locator=table_locator)
+    def _extract_container_status_list(response: dict) -> List:
+        response_list = response['list']
 
         container_status_list = []
-        for left in table_locator.iter_left_headers():
+        for item in response_list:
             container_status_list.append(
                 {
-                    'local_date_time': table.extract_cell('Occurrence Time', left),
-                    'description': table.extract_cell('Current Status', left),
-                    'location_name': table.extract_cell('Locale', left),
+                    'local_date_time': item['eventdate'], # Occurence Time
+                    'description': item['movementnameen'], # Current Status
+                    'location_name': item['portname'], # Local
                 }
             )
 

@@ -387,7 +387,8 @@ class HeadlessBrowser:
     def solve_google_recaptcha(self, location_name: str):
         solver = recaptchaV2Proxyless()
         solver.set_verbose(1)
-        solver.set_key("f7dd6de6e36917b41d05505d249876c3")
+        # solver.set_key("f7dd6de6e36917b41d05505d249876c3")
+        solver.set_key("fbe73f747afc996b624e8d2a95fa0f84")
         solver.set_website_url(f"https://{location_name}.trapac.com/")
         solver.set_website_key("6LfCy7gUAAAAAHSPtJRrJIVQKeKQt_hrYbGSIpuF")
 
