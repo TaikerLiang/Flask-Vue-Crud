@@ -140,6 +140,10 @@ class CaptchaRoutingRule(BaseRoutingRule):
             yield LoginRoutingRule.build_request_option(
                 captcha_text=captcha_text, container_no_list=container_no_list, dc=dc, verify_key=verify_key
             )
+        else:
+            yield LoginRoutingRule.build_request_option(
+                captcha_text='', container_no_list=container_no_list, dc='', verify_key=verify_key
+            )
 
     @staticmethod
     def _get_captcha_str(captcha_code):
@@ -154,7 +158,6 @@ class CaptchaRoutingRule(BaseRoutingRule):
 
         captcha_text = solver.solve_and_return_solution(file_name)
         if captcha_text != 0:
-            print("captcha text ", captcha_text)
             return captcha_text
         else:
             print("task finished with error ", solver.error_code)
@@ -229,28 +232,34 @@ class ContainerRoutingRule(BaseRoutingRule):
         container_info_list = self._extract_container_info(response=response)
 
         for container_info in container_info_list:
-            yield TerminalItem(
-                container_no=container_info['PO_CNTR_NO'],
-                ready_for_pick_up=container_info['PO_AVAILABLE_IND'],
-                customs_release=container_info['PO_USA_STATUS'],
-                appointment_date=container_info['PO_APPOINTMENT_TIME'],
-                last_free_day=container_info['PO_DM_LAST_FREE_DATE'],
-                demurrage=container_info['PO_DM_AMT_DUE'],
-                carrier=container_info['PO_CARRIER_SCAC_CODE'],
-                container_spec=(
-                    f'{container_info["PO_CNTR_TYPE_S"]}/{container_info["PO_CNTR_TYPE_T"]}/'
-                    f'{container_info["PO_CNTR_TYPE_H"]}'
-                ),
-                holds=container_info['PO_TMNL_HOLD_IND'],
-                cy_location=container_info['PO_YARD_LOC'],
-                # extra field name
-                service=container_info['PO_SVC_QFR_DESC'],
-                carrier_release=container_info['PO_CARRIER_STATUS'],
-                tmf=container_info['PO_TMF_STATUS'],
-                demurrage_status=container_info['PO_DM_STATUS'],
-                # not on html
-                freight_release=container_info['PO_FR_STATUS'],  # not sure
-            )
+            if container_info['PO_TERMINAL_NAME'] == '<i>Record was not found!</i>':
+                c_no = re.sub('<.*?>', '', container_info['PO_CNTR_NO'])
+                yield InvalidContainerNoItem(
+                    container_no=c_no,
+                )
+            else:
+                yield TerminalItem(
+                    container_no=container_info['PO_CNTR_NO'],
+                    ready_for_pick_up=container_info['PO_AVAILABLE_IND'],
+                    customs_release=container_info['PO_USA_STATUS'],
+                    appointment_date=container_info['PO_APPOINTMENT_TIME'],
+                    last_free_day=container_info['PO_DM_LAST_FREE_DATE'],
+                    demurrage=container_info['PO_DM_AMT_DUE'],
+                    carrier=container_info['PO_CARRIER_SCAC_CODE'],
+                    container_spec=(
+                        f'{container_info["PO_CNTR_TYPE_S"]}/{container_info["PO_CNTR_TYPE_T"]}/'
+                        f'{container_info["PO_CNTR_TYPE_H"]}'
+                    ),
+                    holds=container_info['PO_TMNL_HOLD_IND'],
+                    cy_location=container_info['PO_YARD_LOC'],
+                    # extra field name
+                    service=container_info['PO_SVC_QFR_DESC'],
+                    carrier_release=container_info['PO_CARRIER_STATUS'],
+                    tmf=container_info['PO_TMF_STATUS'],
+                    demurrage_status=container_info['PO_DM_STATUS'],
+                    # not on html
+                    freight_release=container_info['PO_FR_STATUS'],  # not sure
+                )
 
     @staticmethod
     def _extract_container_info(response: HtmlResponse):
@@ -258,9 +267,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         container_info_list = []
         titles = response_dict['cols']
-        print('titles', titles)
         for resp in response_dict['data']:
-            print('paul resp', resp, len(resp))
             container_info = {}
             for title_index, title in enumerate(titles):
                 data_index = title_index
