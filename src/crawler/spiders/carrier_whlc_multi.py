@@ -336,7 +336,7 @@ class MblRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_status(response) -> List:
-        time.sleep(2)
+        time.sleep(5)
         table_selector = response.css('table.tbl-list')
 
         if not table_selector:
