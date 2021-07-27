@@ -222,6 +222,7 @@ class MblRoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def _extract_container_info(self, response: scrapy.Selector) -> List:
+        time.sleep(2)
         table_selector = response.css('table.tbl-list')[0]
         table_locator = ContainerListTableLocator()
         table_locator.parse(table=table_selector)
@@ -335,6 +336,7 @@ class MblRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_status(response) -> List:
+        time.sleep(2)
         table_selector = response.css('table.tbl-list')
 
         if not table_selector:
