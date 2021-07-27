@@ -147,7 +147,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _is_mbl_no_invalid(response: Selector) -> bool:
-        return bool(response.css('div.noFoundTips'))
+        return bool(response.css('div.noFoundTips')) or response.css('div.ivu-form-item-error-tip::text').get() == 'Invalid B/L number'
 
     def process_booking(self, content_getter, booking_no: str, task_id: int):
         item_extractor = ItemExtractor(task_id=task_id)
@@ -166,7 +166,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _is_booking_no_invalid(response: Selector) -> bool:
-        return bool(response.css('div.noFoundTips'))
+        return bool(response.css('div.noFoundTips')) or response.css('div.ivu-form-item-error-tip::text').get() == 'Booking number is error'
+
 
 # ---------------------------------------------------------------------------------------------------------
 
@@ -217,7 +218,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _is_booking_no_invalid(response: Selector) -> bool:
-        return bool(response.css('div.noFoundTips'))
+        return bool(response.css('div.noFoundTips')) or response.css('div.ivu-form-item-error-tip::text').get() == 'Booking number is error'
 
 
 # ---------------------------------------------------------------------------------------------------------
