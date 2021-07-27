@@ -158,7 +158,6 @@ class CaptchaRoutingRule(BaseRoutingRule):
 
         captcha_text = solver.solve_and_return_solution(file_name)
         if captcha_text != 0:
-            print("captcha text ", captcha_text)
             return captcha_text
         else:
             print("task finished with error ", solver.error_code)
@@ -268,9 +267,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         container_info_list = []
         titles = response_dict['cols']
-        print('titles', titles)
         for resp in response_dict['data']:
-            print('paul resp', resp, len(resp))
             container_info = {}
             for title_index, title in enumerate(titles):
                 data_index = title_index
