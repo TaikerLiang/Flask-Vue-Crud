@@ -87,7 +87,9 @@ class TerminalMultiItemsPipeline:
                 collector.collect_terminal_item(item=item)
                 return collector.build_final_data()
             elif isinstance(item, terminal_items.InvalidContainerNoItem):
-                return self._default_collector.build_invalid_no_data(item=item)
+                collector = self._collector_map[item['task_id']] if item['task_id'] else self._default_collector
+                collector.collect_error_item(item=item)
+                return collector.build_invalid_no_data(item=item)
             elif isinstance(item, terminal_items.ExportFinalData):
                 return {'status': 'CLOSE'}
             elif isinstance(item, terminal_items.ExportErrorData):
@@ -117,8 +119,13 @@ class TerminalMultiItemsPipeline:
     def _get_results_of_collectors(self):
         results = []
         for _, collector in self._collector_map.items():
-            if not collector.is_item_empty():
-                results.append(collector.build_final_data())
+            # if not collector.is_item_empty():
+            #     results.append(collector.build_final_data())
+            if collector.has_error():
+                item_result = collector.get_error_item()
+            else:
+                item_result = collector.build_final_data()
+            results.append(item_result)
 
         return results
 
@@ -127,11 +134,16 @@ class TerminalResultCollector:
     def __init__(self, request_args):
         self._request_args = dict(request_args)
         self._terminal = {}
+        self._error = {}
 
     def collect_terminal_item(self, item: terminal_items.TerminalItem):
         clean_dict = self._clean_item(item)
         self._terminal.update(clean_dict)
         # return self._terminal
+
+    def collect_error_item(self, item: terminal_items.InvalidContainerNoItem):
+        clean_dict = self._clean_item(item)
+        self._error.update(clean_dict)
 
     def build_final_data(self) -> Dict:
         return {
@@ -175,3 +187,10 @@ class TerminalResultCollector:
 
     def is_item_empty(self) -> bool:
         return not bool(self._terminal)
+
+    def has_error(self):
+        return True if self._error else False
+
+    def get_error_item(self):
+        self._error.update({'request_args': self._request_args})
+        return self._error
