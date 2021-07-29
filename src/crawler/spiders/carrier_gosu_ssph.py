@@ -3,6 +3,8 @@ from typing import Dict, List
 
 import scrapy
 
+from urllib.parse import urlencode
+
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
     CarrierInvalidMblNoError,
@@ -24,8 +26,7 @@ from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
-URL = 'https://www.shipcont.com/CCM.aspx'
-
+URL = 'https://www.sethshipping.com/track_shipment_ajax'
 
 class SharedSpider(BaseCarrierSpider):
     name = None
@@ -35,7 +36,6 @@ class SharedSpider(BaseCarrierSpider):
 
         rules = [
             MainInfoRoutingRule(),
-            ContainerStatusRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -71,6 +71,15 @@ class SharedSpider(BaseCarrierSpider):
                 url=option.url,
                 meta=meta,
             )
+        elif option.method == RequestOption.METHOD_POST_BODY:
+            return scrapy.Request(
+                method='POST',
+                url=option.url,
+                headers=option.headers,
+                body=option.body,
+                meta=meta,
+                dont_filter=True,
+            )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
 
@@ -88,10 +97,25 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, mbl_no) -> RequestOption:
+        form_data = {
+            'containerid': mbl_no
+        }
+        body = urlencode(query=form_data)
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=f'{URL}?hidSearch=true&hidFromHomePage=false&hidSearchType=1&id=166&l=4&textContainerNumber={mbl_no}',
+            method=RequestOption.METHOD_POST_BODY,
+            url=URL,
+            headers={
+                'Connection': 'keep-alive',
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'Referer': 'https://www.sethshipping.com/tracking_shipment?id=SSPHAMD1234567',
+                'Accept-Language': 'en-US,en;q=0.9'
+            },
+            body=body,
+            meta={
+                'mbl_no': mbl_no,
+            }
         )
 
     def get_save_name(self, response) -> str:
@@ -105,10 +129,10 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         yield MblItem(
             mbl_no=mbl_no or None,
-            por=LocationItem(name=main_info['por_name']),
             pol=LocationItem(name=main_info['pol_name']),
             pod=LocationItem(name=main_info['pod_name']),
             final_dest=LocationItem(name=main_info['final_dest_name']),
+            eta=main_info['eta']
         )
 
         vessel_info_list = self._extract_vessel_info_list(response=response)
@@ -126,87 +150,76 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         container_info_list = self._extract_container_info(response=response)
 
-        for container_info in container_info_list:
+        for idx, container_info in enumerate(container_info_list):
             container_no = container_info['container_no']
+            container_key = container_info['container_no']
             yield ContainerItem(
-                container_key=container_no,
+                container_key=container_key,
                 container_no=container_no,
             )
 
-            eta = container_info['eta']
-            yield ContainerStatusRoutingRule.build_request_option(mbl_no=mbl_no, eta=eta, container_no=container_no)
+            container_status_list = self._extract_container_status(response=response, idx=idx)
+
+            for status in container_status_list:
+                yield ContainerStatusItem(
+                    container_key=container_key,
+                    description=status['description'],
+                    location=LocationItem(name=status['location_name']),
+                    local_date_time=status['local_date_time'],
+                )
 
     @staticmethod
     def _check_main_info(response):
-        data_found_selector = response.css('table#tbPrint')
+        data_found_selector = response.css('table')
         if not data_found_selector:
             raise CarrierInvalidMblNoError()
 
     @staticmethod
     def _extract_mbl_no(response):
-        pattern = re.compile(r'.+ Number (?P<mbl_no>\w+)$')
-
-        rule = CssQueryTextStartswithMatchRule(css_query='strong::text', startswith='B/L Number')
-        mbl_selector = find_selector_from(selectors=response.css('td.BlackText'), rule=rule)
-
-        rule = CssQueryTextStartswithMatchRule(css_query='strong::text', startswith='Booking Number')
-        booking_selector = find_selector_from(selectors=response.css('td.BlackText'), rule=rule)
-
-        if not (mbl_selector or booking_selector):
-            raise CarrierResponseFormatError(reason='mbl_no text not found')
-
-        selector = mbl_selector or booking_selector
-
-        mbl_no_text = selector.css('strong::text').get()
-        m = pattern.match(mbl_no_text)
-        if not m:
-            raise CarrierResponseFormatError('mbl_no not match')
-
-        mbl_no = m.group('mbl_no')
-        return mbl_no
+        table = response.css('table.table')
+        mbl_no = table.xpath('//thead/th/h3/text()').get()
+        return mbl_no.strip()
 
     @staticmethod
     def _extract_main_info(response) -> Dict:
-        rule = FirstTitleMatchRule(first_title='Place of Receipt')
-        table = find_selector_from(selectors=response.css('td #tbPrint'), rule=rule)
-
-        table_locator = TrDataTableLocator()
-        table_locator.parse(table=table)
+        left_table = response.css('table')[1]
+        right_table = response.css('table')[2]
+        table_locator = MainInfoTableLocator()
+        table_locator.parse(table=left_table)
+        table_locator.parse(table=right_table)
         table_extractor = TableExtractor(table_locator=table_locator)
 
         return {
-            'por_name': table_extractor.extract_cell(top='Place of Receipt', left=0) or None,
-            'pol_name': table_extractor.extract_cell(top='Port of Loading', left=0) or None,
-            'pod_name': table_extractor.extract_cell(top='Port of Destination', left=0) or None,
-            'final_dest_name': table_extractor.extract_cell(top='Final Destination', left=0) or None,
+            'por_name': table_extractor.extract_cell(left='Final Destination:', top=None) or None,
+            'pol_name': table_extractor.extract_cell(left='Port of Loading (POL)', top=None) or None,
+            'pod_name': table_extractor.extract_cell(left='Port of Discharge (POD)', top=None) or None,
+            'final_dest_name': table_extractor.extract_cell(left='Final Destination:', top=None) or None,
+            'eta': table_extractor.extract_cell(left='Estimated Time of Arrival', top=None) or None,
         }
 
     def _extract_vessel_info_list(self, response) -> List:
-        match_rule = FirstTitleMatchRule(first_title='Local Departure')
-        table = find_selector_from(selectors=response.css('td #tbPrint'), rule=match_rule)
-
-        table_locator = TrDataTableLocator()
-        table_locator.parse(table=table)
-        table_extractor = TableExtractor(table_locator=table_locator)
-
         return_list = []
-        for left in table_locator.iter_left_headers():
+        tables = response.css('div.table-responsive.p-1>table')
+        for table in tables:
+            table_locator = VesselTableLocator()
+            table_locator.parse(table=table)
+            table_extractor = TableExtractor(table_locator=table_locator)
 
-            vessel_voyage = table_extractor.extract_cell(top='Vessel & Voyage', left=left)
-
+            pol = table_extractor.extract_cell(top='Port of Loading', left=None) or None
+            pod = table_extractor.extract_cell(top='Port of Discharge', left=None) or None
+            etd = table_extractor.extract_cell(top='ETD', left=None) or None
+            eta = table_extractor.extract_cell(top='ETA', left=None) or None
+            vessel_voyage = table_extractor.extract_cell(top='Vessel / Voyage', left=None)
             vessel_voyage_pattern = re.compile(r'^(?P<vessel>.+)/(?P<voyage>.+)$')
             vessel_voyage_match = vessel_voyage_pattern.match(vessel_voyage)
-
             if vessel_voyage_match:
                 vessel = vessel_voyage_match.group('vessel')
                 voyage = vessel_voyage_match.group('voyage')
+            else:
+                vessel = None
+                voyage = None
 
-                etd_text = table_extractor.extract_cell(top='Local Departure', left=left)
-                eta_text = table_extractor.extract_cell(top='Local Arrival', left=left)
-
-                etd, pol = self._get_local_date_time_and_location(local_date_time_text=etd_text)
-                eta, pod = self._get_local_date_time_and_location(local_date_time_text=eta_text)
-
+            if pol or pod:
                 return_list.append(
                     {
                         'etd': etd,
@@ -222,26 +235,37 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_info(response) -> List:
-        match_rule = FirstTitleMatchRule(first_title='Container No.')
-        table = find_selector_from(selectors=response.css('td #tbPrint'), rule=match_rule)
 
-        table_locator = TrDataTableLocator()
-        table_locator.parse(table=table)
+        table = response.css('div.table-responsive:not(.p-1)>table')
+        table_locator = ContainerTableLocator()
+        table_locator.parse(table=table, tr_css='tbody tr.accordion-toggle.collapsed')
         table_extractor = TableExtractor(table_locator=table_locator)
 
-        first_text_td_extractor = FirstTextTdExtractor()
-        a_text_td_extractor = FirstTextTdExtractor(css_query='a::text')
-
         return_list = []
-        for left in table_locator.iter_left_headers():
+        for left in table_locator.iter_left_header():
             return_list.append(
                 {
-                    'container_no': table_extractor.extract_cell(
-                        top='Container No.', left=left, extractor=a_text_td_extractor
-                    ),
-                    'eta': table_extractor.extract_cell(
-                        top='Estimated Arrival Date', left=left, extractor=first_text_td_extractor
-                    ),
+                    'container_no': table_extractor.extract_cell(top='Container', left=left).split()[0],
+                    'eta': table_extractor.extract_cell(top='Date', left=left),
+                }
+            )
+
+        return return_list
+
+    @staticmethod
+    def _extract_container_status(response, idx) -> List:
+        table = response.css(f'div#collapse{idx+1} table')
+        table_locator = ContainerTableLocator()
+        table_locator.parse(table=table, tr_css='tbody tr')
+        table_extractor = TableExtractor(table_locator=table_locator)
+
+        return_list = []
+        for left in table_locator.iter_left_header():
+            return_list.append(
+                {
+                    'description': table_extractor.extract_cell(top='Last Activity', left=left),
+                    'location_name': table_extractor.extract_cell(top='Location', left=left),
+                    'local_date_time': table_extractor.extract_cell(top='Date', left=left),
                 }
             )
 
@@ -262,122 +286,87 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return local_date_time, location
 
 
-class ContainerStatusRoutingRule(BaseRoutingRule):
-    name = 'CONTAINER_STATUS'
-
-    @classmethod
-    def build_request_option(cls, mbl_no, eta, container_no) -> RequestOption:
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=f'{URL}?&id=166&l=4&conNum={container_no}&blNum={mbl_no}&eta={eta}&inbId=&searchType=3',
-            meta={'container_key': container_no},
-        )
-
-    def get_save_name(self, response) -> str:
-        container_no = response.meta['container_key']
-        return f'{self.name}_{container_no}.html'
-
-    def handle(self, response):
-        container_key = response.meta['container_key']
-        container_status_list = self._extract_container_status(response=response)
-
-        for status in container_status_list:
-            yield ContainerStatusItem(
-                container_key=container_key,
-                description=status['description'],
-                location=LocationItem(name=status['location_name']),
-                local_date_time=status['local_date_time'],
-            )
-
-    @staticmethod
-    def _extract_container_status(response) -> List:
-        match_rule = FirstTitleMatchRule(first_title='Activity')
-        table = find_selector_from(selectors=response.css('td #tbPrint'), rule=match_rule)
-
-        table_locator = TrDataTableLocator()
-        table_locator.parse(table=table)
-        table_extractor = TableExtractor(table_locator=table_locator)
-        td_extractor = FirstTextTdExtractor()
-
-        return_list = []
-        for left in table_locator.iter_left_headers():
-            return_list.append(
-                {
-                    'description': table_extractor.extract_cell(top='Activity', left=left, extractor=td_extractor),
-                    'location_name': table_extractor.extract_cell(top='Location', left=left, extractor=td_extractor),
-                    'local_date_time': table_extractor.extract_cell(top='Date', left=left, extractor=td_extractor),
-                }
-            )
-
-        return return_list
-
-
-class TrDataTableLocator(BaseTableLocator):
-    """
-    +---------+---------+-----+---------+
-    | Title 1 | Title 2 | ... | Title N | <tr>
-    +---------+---------+-----+---------+
-    | Data    |         |     |         | <tr>
-    +---------+---------+-----+---------+
-    | Data    |         |     |         | <tr>
-    +---------+---------+-----+---------+
-    | ...     |         |     |         | <tr>
-    +---------+---------+-----+---------+
-    | Data    |         |     |         | <tr>
-    +---------+---------+-----+---------+
-    """
-
-    TR_DATA_BEGIN = 1
-
+class MainInfoTableLocator(BaseTableLocator):
     def __init__(self):
         self._td_map = {}
-        self._data_len = 0
 
     def parse(self, table: scrapy.Selector):
-        title_td_list = table.css('tr')[0].css('td strong')
-        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN :].css('[bgcolor]')
+        for tr in table.css('tr'):
+            label = tr.css('td ::text')[0].get().strip()
+            content = tr.css('td')[1]
+            self._td_map[label] = content
 
-        for title_index, title_td in enumerate(title_td_list):
-            data_index = title_index
+    def get_cell(self, left: str, top=None) -> scrapy.Selector:
+        assert top is None
+        try:
+            return self._td_map[left]
+        except KeyError as err:
+            raise HeaderMismatchError(repr(err))
 
-            title = title_td.css('::text').get().strip()
-            self._td_map[title] = []
+    def has_header(self, left=None, top=None) -> bool:
+        assert top is None
+        return left in self._td_map
 
-            for data_tr in data_tr_list:
-                data_td = data_tr.css('td')[data_index]
+class VesselTableLocator(BaseTableLocator):
+    def __init__(self):
+        self._td_map = {}
 
-                self._td_map[title].append(data_td)
+    def parse(self, table: scrapy.Selector):
+        for tr in table.css('tr'):
+            for td in tr.css('td'):
+                if td.css('p'):
+                    label = td.css('p ::text')[0].get().strip()
+                    content = td.css('p')[1]
+                    self._td_map[label] = content
+
+    def get_cell(self, top: str, left=None) -> scrapy.Selector:
+        assert left is None
+        try:
+            if not self.has_header(top=top, left=left):
+                return scrapy.Selector(text='<td></td>')
+            return self._td_map[top]
+        except KeyError as err:
+            raise HeaderMismatchError(repr(err))
+
+    def has_header(self, left=None, top=None) -> bool:
+        assert left is None
+        return top in self._td_map
+
+class ContainerTableLocator(BaseTableLocator):
+    def __init__(self):
+        self._td_map = {}  # top_header: [td, ...]
+        self._data_len = 0
+
+    def parse(self, table: scrapy.Selector, tr_css):
+        top_header_list = []
+
+        head = table.css('thead')[0]
+        for th in head.css('th'):
+            raw_top_header = th.css('::text').get()
+            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ''
+            top_header_list.append(top_header)
+            self._td_map[top_header] = []
+
+        data_tr_list = table.css(tr_css)
+        for tr in data_tr_list:
+            for top_index, td in enumerate(tr.css('td')):
+                top = top_header_list[top_index]
+                self._td_map[top].append(td)
 
         self._data_len = len(data_tr_list)
 
     def get_cell(self, top, left) -> scrapy.Selector:
         try:
+            if not self._td_map[top]:
+                return scrapy.Selector(text='<td></td>')
+
             return self._td_map[top][left]
-        except KeyError as err:
+        except (KeyError, IndexError) as err:
             raise HeaderMismatchError(repr(err))
 
     def has_header(self, top=None, left=None) -> bool:
-        if top not in self._td_map:
-            raise HeaderMismatchError(repr(KeyError))
+        return (top in self._td_map) and (left is None)
 
-        return left is None
-
-    def iter_left_headers(self):
-        for index in range(self._data_len):
-            yield index
-
-
-class FirstTitleMatchRule(BaseMatchRule):
-    FIRST_TITLE_TEXT_QUERY = 'tr td strong::text'
-
-    def __init__(self, first_title: str):
-        self.first_title = first_title
-
-    def check(self, selector: scrapy.Selector) -> bool:
-        first_title = selector.css(self.FIRST_TITLE_TEXT_QUERY)[0].get()
-
-        if not isinstance(first_title, str):
-            return False
-
-        return first_title.strip() == self.first_title
+    def iter_left_header(self):
+        for i in range(self._data_len):
+            yield i
