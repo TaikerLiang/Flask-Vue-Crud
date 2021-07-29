@@ -303,7 +303,7 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         div_text_list = div.css('::text').getall()
         div_text_list = [r.strip() for r in div_text_list if r.strip()]
 
-        if len(div_text_list) == 2:
+        if len(div_text_list) >= 2:
             return div_text_list[0].replace(':', ''), div_text_list[1]
         elif len(div_text_list) == 1:
             tmp = div_text_list[0].split(':')

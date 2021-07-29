@@ -98,7 +98,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
             yield TerminalItem(
                 container_no=container_info['container_no'],
-                freight_release=container_info['freight_hold'],
+                carrier_release=container_info['freight_hold'],
                 customs_release=container_info['customs_hold'],
                 discharge_date=container_info['discharge_date'],
                 ready_for_pick_up=container_info['ready_for_pick_up'],
