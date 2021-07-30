@@ -335,7 +335,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         elif status.strip() == 'ETA at POD':
             pod_eta = pod_time.strip()
         elif status.strip() == 'Arrived at POD':
-            pod_eta = None
+            pod_eta = pod_time.strip()
         elif status.strip() == 'Remaining':
             pod_eta = None
         else:
