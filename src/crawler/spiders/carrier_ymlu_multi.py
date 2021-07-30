@@ -712,7 +712,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
                     status=CARRIER_RESULT_STATUS_ERROR,
                     detail='Data was not found',
                 )
-                table_index += 2
+                table_index += 1
                 continue
 
             basic_info = self._extract_basic_info(response=response, index=index)
@@ -762,7 +762,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
                     container_no=container_no,
                     headers=headers,
                 )
-            table_index += 2
+            table_index += 1
 
     @staticmethod
     def _search_success(response: Selector):
