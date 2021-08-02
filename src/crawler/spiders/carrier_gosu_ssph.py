@@ -131,6 +131,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             mbl_no=mbl_no or None,
             pol=LocationItem(name=main_info['pol_name']),
             pod=LocationItem(name=main_info['pod_name']),
+            por='',
             final_dest=LocationItem(name=main_info['final_dest_name']),
             eta=main_info['eta']
         )
