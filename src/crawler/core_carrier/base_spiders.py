@@ -146,7 +146,10 @@ class BaseMultiCarrierSpider(scrapy.Spider):
         if not to_save:
             return NullSaver()
 
-        save_folder = Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] {self.container_nos}'
+        save_folder = (
+                Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] '
+                f'{self.mbl_nos or self.booking_nos}'
+        )
 
         return FileSaver(folder_path=save_folder, logger=self.logger)
 
