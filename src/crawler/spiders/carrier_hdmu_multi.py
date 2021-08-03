@@ -159,14 +159,17 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
             self.cur_task_id = t_id
 
     def retry(self, failure: Failure):
+        search_no = failure.request.cb_kwargs['search_no']
+        task_id = failure.request.cb_kwargs['task_id']
+
         try:
-            yield self._prepare_restart(search_no=self.cur_search_no, task_id=self.cur_task_id)
+            yield self._prepare_restart(search_no=search_no, task_id=task_id)
         except ProxyMaxRetryError as err:
-            for item in self._item_recorder_map[self.cur_task_id].items:
+            for item in self._item_recorder_map[task_id].items:
                 yield item
             yield err.build_error_data()
 
-    def parse(self, response):
+    def parse(self, response, search_no, task_id):
         yield DebugItem(info={'meta': dict(response.meta)})
 
         search_no = response.meta['search_no']
@@ -250,6 +253,10 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
                 callback=self.parse,
                 errback=self.retry,
+                cb_kwargs={
+                    'search_no': meta['search_no'],
+                    'task_id': meta['task_id'],
+                },
             )
 
         elif option.method == RequestOption.METHOD_POST_FORM:
@@ -261,6 +268,10 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
                 callback=self.parse,
                 errback=self.retry,
+                cb_kwargs={
+                    'search_no': meta['search_no'],
+                    'task_id': meta['task_id'],
+                },
             )
 
         elif option.method == RequestOption.METHOD_POST_BODY:
@@ -273,6 +284,10 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
                 callback=self.parse,
                 errback=self.retry,
+                cb_kwargs={
+                    'search_no': meta['search_no'],
+                    'task_id': meta['task_id'],
+                },
             )
 
         else:
