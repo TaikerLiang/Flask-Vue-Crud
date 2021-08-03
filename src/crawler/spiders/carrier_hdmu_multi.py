@@ -116,8 +116,6 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._cookiejar_id = 0
-        self.cur_search_no = ''
-        self.cur_task_id = ''
         self._item_recorder_map = {}
         self._request_queue_map = {}
 
@@ -155,8 +153,6 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
     def start(self):
         for s_no, t_id in zip(self.search_nos, self.task_ids):
             yield self._prepare_restart(search_no=s_no, task_id=t_id)
-            self.cur_search_no = s_no
-            self.cur_task_id = t_id
 
     def retry(self, failure: Failure):
         search_no = failure.request.cb_kwargs['search_no']
