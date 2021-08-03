@@ -6,12 +6,11 @@ from urllib.parse import urlencode
 from scrapy import Selector, Request, FormRequest
 from twisted.python.failure import Failure
 
-from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider, CARRIER_DEFAULT_SETTINGS
 from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    SuspiciousOperationError,
-)
+    CarrierResponseFormatError, SuspiciousOperationError,
+    CarrierInvalidSearchNoError)
 from crawler.core_carrier.items import (
     ExportErrorData,
     MblItem,
@@ -110,24 +109,30 @@ class ItemRecorder:
 
 class CarrierHdmuSpider(BaseMultiCarrierSpider):
     name = 'carrier_hdmu_multi'
-    cur_search_no = ''
-    cur_task_id = ''
+    custom_settings = {
+        **CARRIER_DEFAULT_SETTINGS,
+        'DOWNLOAD_TIMEOUT': 30,
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._cookiejar_id = 0
-        self._item_recorder = ItemRecorder()
+        self._cookiejar_id_map = {}
+        self._item_recorder_map = {}
+        self._request_queue_map = {}
 
-        self.custom_settings.update({'DOWNLOAD_TIMEOUT': 30})
+        for t_id in self.task_ids:
+            self._cookiejar_id_map[t_id] = 0
+            self._item_recorder_map[t_id] = ItemRecorder()
+            self._request_queue_map[t_id] = RequestQueue()
 
         bill_rules = [
             CheckIpRule(),
             Cookies1RoutingRule(),
             Cookies2RoutingRule(),
             Cookies3RoutingRule(search_type=SHIPMENT_TYPE_MBL),
-            MainRoutingRule(self._item_recorder, search_type=SHIPMENT_TYPE_MBL),
-            ContainerRoutingRule(self._item_recorder),
-            AvailabilityRoutingRule(self._item_recorder),
+            MainRoutingRule(self._item_recorder_map, search_type=SHIPMENT_TYPE_MBL),
+            ContainerRoutingRule(self._item_recorder_map),
+            AvailabilityRoutingRule(self._item_recorder_map),
         ]
 
         booking_rules = [
@@ -135,12 +140,11 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
             Cookies1RoutingRule(),
             Cookies2RoutingRule(),
             Cookies3RoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
-            MainRoutingRule(self._item_recorder, search_type=SHIPMENT_TYPE_BOOKING),
-            ContainerRoutingRule(self._item_recorder),
-            AvailabilityRoutingRule(self._item_recorder),
+            MainRoutingRule(self._item_recorder_map, search_type=SHIPMENT_TYPE_BOOKING),
+            ContainerRoutingRule(self._item_recorder_map),
+            AvailabilityRoutingRule(self._item_recorder_map),
         ]
 
-        self._request_queue = RequestQueue()
         self._proxy_manager = ProxyManager(session='hdmu', logger=self.logger)
 
         if self.search_type == SHIPMENT_TYPE_MBL:
@@ -151,18 +155,34 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
     def start(self):
         for s_no, t_id in zip(self.search_nos, self.task_ids):
             yield self._prepare_restart(search_no=s_no, task_id=t_id)
-            self.cur_search_no = s_no
-            self.cur_task_id = t_id
 
     def retry(self, failure: Failure):
-        try:
-            yield self._prepare_restart(search_no=self.cur_search_no, task_id=self.cur_task_id)
-        except ProxyMaxRetryError as err:
-            for item in self._item_recorder.items:
-                yield item
-            yield err.build_error_data(task_id=self.cur_task_id)
+        search_no = failure.request.cb_kwargs['search_no']
+        task_id = failure.request.cb_kwargs['task_id']
 
-    def parse(self, response):
+        try:
+            yield self._prepare_restart(search_no=search_no, task_id=task_id)
+        except ProxyMaxRetryError:
+            for item in self._item_recorder_map[task_id].items:
+                yield item
+
+            if self.search_type == SHIPMENT_TYPE_MBL:
+                yield ExportErrorData(
+                    mbl_no=search_no,
+                    task_id=task_id,
+                    status=CARRIER_RESULT_STATUS_FATAL,
+                    detail='<proxy-max-retry-error>',
+                )
+            elif self.search_type == SHIPMENT_TYPE_BOOKING:
+                yield ExportErrorData(
+                    booking_no=search_no,
+                    task_id=task_id,
+                    status=CARRIER_RESULT_STATUS_FATAL,
+                    detail='<proxy-max-retry-error>',
+                )
+
+
+    def parse(self, response, search_no, task_id):
         yield DebugItem(info={'meta': dict(response.meta)})
 
         search_no = response.meta['search_no']
@@ -180,34 +200,38 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
                 rule_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=result)
                 rule_proxy_cookie_option = self._add_cookiejar_id_into_request_option(option=rule_proxy_option)
                 rule_request = self._build_request_by(option=rule_proxy_cookie_option)
-                self._request_queue.add(request=rule_request)
+                self._request_queue_map[task_id].add(request=rule_request)
+
+                # # test
+                # request = self._build_request_by(option=result)
+                # self._request_queue.add(request=request)
             elif isinstance(result, ForceRestart):
                 try:
                     restart_request = self._prepare_restart(search_no=search_no, task_id=task_id)
-                    self._request_queue.add(request=restart_request)
+                    self._request_queue_map[task_id].add(request=restart_request)
                 except ProxyMaxRetryError as err:
-                    error_item = err.build_error_data(task_id=task_id)
-                    self._item_recorder.record_item(key=('ERROR', None), item=error_item)
+                    error_item = err.build_error_data()
+                    self._item_recorder_map[task_id].record_item(key=('ERROR', None), item=error_item)
             elif isinstance(result, BaseCarrierItem):
                 pass
             else:
                 raise RuntimeError()
 
         # yield request / item
-        if not self._request_queue.is_empty():
-            yield self._request_queue.next()
+        if not self._request_queue_map[task_id].is_empty():
+            yield self._request_queue_map[task_id].next()
         else:
-            for item in self._item_recorder.items:
+            for item in self._item_recorder_map[task_id].items:
                 yield item
 
     def _prepare_restart(self, search_no: str, task_id: str) -> Request:
-        self._request_queue.clear()
+        self._request_queue_map[task_id].clear()
         self._proxy_manager.renew_proxy()
-        self._cookiejar_id += 1
+        self._cookiejar_id_map[task_id] += 1
 
         option = CheckIpRule.build_request_option(search_no=search_no, task_id=task_id)
         restart_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
-        restart_proxy_cookie_option = self._add_cookiejar_id_into_request_option(option=restart_proxy_option)
+        restart_proxy_cookie_option = self._add_cookiejar_id_into_request_option(option=restart_proxy_option, task_id=task_id)
         return self._build_request_by(option=restart_proxy_cookie_option)
 
         # # test
@@ -225,8 +249,8 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
             else:
                 return search_no
 
-    def _add_cookiejar_id_into_request_option(self, option) -> RequestOption:
-        return option.copy_and_extend_by(meta={'cookiejar': self._cookiejar_id})
+    def _add_cookiejar_id_into_request_option(self, option, task_id) -> RequestOption:
+        return option.copy_and_extend_by(meta={'cookiejar': self._cookiejar_id_map[task_id]})
 
     def _build_request_by(self, option: RequestOption):
         meta = {
@@ -242,6 +266,10 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
                 callback=self.parse,
                 errback=self.retry,
+                cb_kwargs={
+                    'search_no': meta['search_no'],
+                    'task_id': meta['task_id'],
+                },
             )
 
         elif option.method == RequestOption.METHOD_POST_FORM:
@@ -253,6 +281,10 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
                 callback=self.parse,
                 errback=self.retry,
+                cb_kwargs={
+                    'search_no': meta['search_no'],
+                    'task_id': meta['task_id'],
+                },
             )
 
         elif option.method == RequestOption.METHOD_POST_BODY:
@@ -265,6 +297,10 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
                 callback=self.parse,
                 errback=self.retry,
+                cb_kwargs={
+                    'search_no': meta['search_no'],
+                    'task_id': meta['task_id'],
+                },
             )
 
         else:
@@ -500,6 +536,8 @@ class Cookies3RoutingRule(BaseRoutingRule):
                 search_no=search_no, task_id=task_id, search_type=self._search_type, cookies=cookies)
         else:
             yield ForceRestart()
+
+
 # -------------------------------------------------------------------------------
 
 
@@ -514,11 +552,9 @@ class SpecificThTextExistMatchRule(BaseMatchRule):
 
 class MainRoutingRule(BaseRoutingRule):
     name = 'MAIN'
-    ERROR_MSG_TEXT = 'number is invalid.  Please try it again with correct number.'
-    INVALID_PAGE_TEXT = 'This page is not valid anymore.'
 
-    def __init__(self, item_recorder: ItemRecorder, search_type):
-        self._item_recorder = item_recorder
+    def __init__(self, item_recorder_map: Dict, search_type):
+        self._item_recorder_map = item_recorder_map
         self._search_type = search_type
 
     @classmethod
@@ -567,7 +603,6 @@ class MainRoutingRule(BaseRoutingRule):
             meta={
                 'search_no': search_no,
                 'task_id': task_id,
-                'search_type': search_type,
                 'cookies': cookies,
                 'under_line': under_line,
             },
@@ -579,7 +614,6 @@ class MainRoutingRule(BaseRoutingRule):
     def handle(self, response):
         search_no = response.meta['search_no']
         task_id = response.meta['task_id']
-        search_type = response.meta['search_type']
         cookies = response.meta['cookies']
         under_line = response.meta['under_line']
 
@@ -592,23 +626,9 @@ class MainRoutingRule(BaseRoutingRule):
                     search_no=search_no, task_id=task_id, search_type=self._search_type, cookies=cookies, under_line=True)
                 return
 
-            if search_type == SHIPMENT_TYPE_MBL:
-                yield ExportErrorData(
-                    mbl_no=search_no,
-                    task_id=task_id,
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail='Data was not found',
-                )
-            elif search_type == SHIPMENT_TYPE_BOOKING:
-                yield ExportErrorData(
-                    booking_no=search_no,
-                    task_id=task_id,
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail='Data was not found',
-                )
-            return
+            raise CarrierInvalidSearchNoError(search_type=self._search_type)
 
-        if not self._item_recorder.is_item_recorded(key=(MBL, search_no)):
+        if not self._item_recorder_map[task_id].is_item_recorded(key=(MBL, search_no)):
             try:
                 tracking_results = self._extract_tracking_results(response=response)
                 customs_status = self._extract_customs_status(response=response)
@@ -653,9 +673,9 @@ class MainRoutingRule(BaseRoutingRule):
             elif self._search_type == SHIPMENT_TYPE_BOOKING:
                 mbl_item['booking_no'] = search_no
 
-            self._item_recorder.record_item(key=(MBL, search_no), item=mbl_item)
+            self._item_recorder_map[task_id].record_item(key=(MBL, search_no), item=mbl_item)
 
-        if not self._item_recorder.is_item_recorded(key=(VESSEL, search_no)):
+        if not self._item_recorder_map[task_id].is_item_recorded(key=(VESSEL, search_no)):
             vessel = self._extract_vessel(response=response)
 
             vessel_item = VesselItem(
@@ -670,7 +690,7 @@ class MainRoutingRule(BaseRoutingRule):
                 atd=vessel['atd'],
                 etd=vessel['etd'],
             )
-            self._item_recorder.record_item(key=(VESSEL, search_no), item=vessel_item)
+            self._item_recorder_map[task_id].record_item(key=(VESSEL, search_no), item=vessel_item)
 
         # parse other containers if there are many containers
         container_contents = self._extract_container_contents(response=response)
@@ -678,8 +698,8 @@ class MainRoutingRule(BaseRoutingRule):
         for container_content in container_contents:
             if all(
                 [
-                    self._item_recorder.is_item_recorded(key=(CONTAINER, container_content.container_no)),
-                    self._item_recorder.is_item_recorded(key=(AVAILABILITY, container_content.container_no)),
+                    self._item_recorder_map[task_id].is_item_recorded(key=(CONTAINER, container_content.container_no)),
+                    self._item_recorder_map[task_id].is_item_recorded(key=(AVAILABILITY, container_content.container_no)),
                 ]
             ):
                 continue
@@ -687,7 +707,7 @@ class MainRoutingRule(BaseRoutingRule):
             elif container_content.is_current:
                 response.meta['container_index'] = container_content.index
 
-                container_routing_rule = ContainerRoutingRule(self._item_recorder)
+                container_routing_rule = ContainerRoutingRule(self._item_recorder_map)
                 for result in container_routing_rule.handle(response=response):
                     yield result
 
@@ -708,12 +728,10 @@ class MainRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _is_search_no_invalid(response):
-        is_invalid_page = MainRoutingRule.INVALID_PAGE_TEXT in response.text
         err_message = response.css('div#trackingForm p.text_type03::text').get()
         if (
                 isinstance(err_message, str) and
-                MainRoutingRule.ERROR_MSG_TEXT in err_message
-                or is_invalid_page
+                'number is invalid.  Please try it again with correct number.' in err_message
         ):
             return True
         return False
@@ -892,8 +910,8 @@ class ContainerContent:
 class ContainerRoutingRule(BaseRoutingRule):
     name = 'CONTAINER'
 
-    def __init__(self, item_recorder: ItemRecorder):
-        self._item_recorder = item_recorder
+    def __init__(self, item_recorder_map: Dict):
+        self._item_recorder_map = item_recorder_map
 
     @classmethod
     def build_request_option(cls, search_no, task_id, search_type, container_index, h_num, cookies: Dict, under_line: bool = False):
@@ -957,7 +975,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         container_info = self._extract_container_info(response=response, container_index=container_index)
         container_no = container_info['container_no']
 
-        if not self._item_recorder.is_item_recorded(key=(CONTAINER, container_no)):
+        if not self._item_recorder_map[task_id].is_item_recorded(key=(CONTAINER, container_no)):
             tracking_results = self._extract_tracking_results(response=response)
             empty_return_location = self._extract_empty_return_location(response=response)
 
@@ -973,9 +991,9 @@ class ContainerRoutingRule(BaseRoutingRule):
                 final_dest_eta=tracking_results['arrival.dest_estimate'],
                 ready_for_pick_up=None,
             )
-            self._item_recorder.record_item(key=(CONTAINER, container_no), item=container_item)
+            self._item_recorder_map[task_id].record_item(key=(CONTAINER, container_no), item=container_item)
 
-        if not self._item_recorder.is_item_recorded(key=(CONTAINER_STATUS, container_no)):
+        if not self._item_recorder_map[task_id].is_item_recorded(key=(CONTAINER_STATUS, container_no)):
             container_status = self._extract_container_status_list(response=response)
 
             container_status_items = []
@@ -993,19 +1011,19 @@ class ContainerRoutingRule(BaseRoutingRule):
                     )
                 )
 
-            self._item_recorder.record_item(key=(CONTAINER_STATUS, container_no), items=container_status_items)
+            self._item_recorder_map[task_id].record_item(key=(CONTAINER_STATUS, container_no), items=container_status_items)
 
         # catch availability
-        if not self._item_recorder.is_item_recorded(key=(AVAILABILITY, container_no)):
+        if not self._item_recorder_map[task_id].is_item_recorded(key=(AVAILABILITY, container_no)):
             ava_exist = self._extract_availability_exist(response=response)
             if ava_exist:
                 yield AvailabilityRoutingRule.build_request_option(
                     search_no=search_no, task_id=task_id, container_no=container_no, under_line=under_line)
             else:
-                self._item_recorder.record_item(key=(AVAILABILITY, container_no))
+                self._item_recorder_map[task_id].record_item(key=(AVAILABILITY, container_no))
 
         # avoid this function not yield anything
-        yield MblItem(task_id=task_id)
+        yield MblItem()
 
     @staticmethod
     def _extract_tracking_results(response):
@@ -1125,8 +1143,8 @@ class ContainerRoutingRule(BaseRoutingRule):
 class AvailabilityRoutingRule(BaseRoutingRule):
     name = 'AVAILABILITY'
 
-    def __init__(self, item_recorder: ItemRecorder):
-        self._item_recorder = item_recorder
+    def __init__(self, item_recorder_map: Dict):
+        self._item_recorder_map = item_recorder_map
 
     @classmethod
     def build_request_option(cls, search_no, task_id, container_no, under_line: bool = False):
@@ -1172,7 +1190,7 @@ class AvailabilityRoutingRule(BaseRoutingRule):
             container_key=container_no,
             ready_for_pick_up=ready_for_pick_up,
         )
-        self._item_recorder.record_item(key=(AVAILABILITY, container_no), item=ava_item)
+        self._item_recorder_map[task_id].record_item(key=(AVAILABILITY, container_no), item=ava_item)
 
         return []
 
