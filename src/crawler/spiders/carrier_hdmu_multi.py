@@ -6,12 +6,13 @@ from urllib.parse import urlencode
 from scrapy import Selector, Request, FormRequest
 from twisted.python.failure import Failure
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider, CARRIER_DEFAULT_SETTINGS
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError, SuspiciousOperationError,
     CarrierInvalidSearchNoError)
 from crawler.core_carrier.items import (
+    ExportErrorData,
     MblItem,
     LocationItem,
     VesselItem,
@@ -115,11 +116,12 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._cookiejar_id = 0
+        self._cookiejar_id_map = {}
         self._item_recorder_map = {}
         self._request_queue_map = {}
 
         for t_id in self.task_ids:
+            self._cookiejar_id_map[t_id] = 0
             self._item_recorder_map[t_id] = ItemRecorder()
             self._request_queue_map[t_id] = RequestQueue()
 
@@ -160,10 +162,25 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
 
         try:
             yield self._prepare_restart(search_no=search_no, task_id=task_id)
-        except ProxyMaxRetryError as err:
+        except ProxyMaxRetryError:
             for item in self._item_recorder_map[task_id].items:
                 yield item
-            yield err.build_error_data()
+
+            if self.search_type == SHIPMENT_TYPE_MBL:
+                yield ExportErrorData(
+                    mbl_no=search_no,
+                    task_id=task_id,
+                    status=CARRIER_RESULT_STATUS_FATAL,
+                    detail='<proxy-max-retry-error>',
+                )
+            elif self.search_type == SHIPMENT_TYPE_BOOKING:
+                yield ExportErrorData(
+                    booking_no=search_no,
+                    task_id=task_id,
+                    status=CARRIER_RESULT_STATUS_FATAL,
+                    detail='<proxy-max-retry-error>',
+                )
+
 
     def parse(self, response, search_no, task_id):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -210,11 +227,11 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
     def _prepare_restart(self, search_no: str, task_id: str) -> Request:
         self._request_queue_map[task_id].clear()
         self._proxy_manager.renew_proxy()
-        self._cookiejar_id += 1
+        self._cookiejar_id_map[task_id] += 1
 
         option = CheckIpRule.build_request_option(search_no=search_no, task_id=task_id)
         restart_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
-        restart_proxy_cookie_option = self._add_cookiejar_id_into_request_option(option=restart_proxy_option)
+        restart_proxy_cookie_option = self._add_cookiejar_id_into_request_option(option=restart_proxy_option, task_id=task_id)
         return self._build_request_by(option=restart_proxy_cookie_option)
 
         # # test
@@ -232,8 +249,8 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
             else:
                 return search_no
 
-    def _add_cookiejar_id_into_request_option(self, option) -> RequestOption:
-        return option.copy_and_extend_by(meta={'cookiejar': self._cookiejar_id})
+    def _add_cookiejar_id_into_request_option(self, option, task_id) -> RequestOption:
+        return option.copy_and_extend_by(meta={'cookiejar': self._cookiejar_id_map[task_id]})
 
     def _build_request_by(self, option: RequestOption):
         meta = {
