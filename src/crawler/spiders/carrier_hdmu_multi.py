@@ -198,7 +198,7 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, RequestOption):
                 rule_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=result)
-                rule_proxy_cookie_option = self._add_cookiejar_id_into_request_option(option=rule_proxy_option)
+                rule_proxy_cookie_option = self._add_cookiejar_id_into_request_option(option=rule_proxy_option, task_id=task_id)
                 rule_request = self._build_request_by(option=rule_proxy_cookie_option)
                 self._request_queue_map[task_id].add(request=rule_request)
 
