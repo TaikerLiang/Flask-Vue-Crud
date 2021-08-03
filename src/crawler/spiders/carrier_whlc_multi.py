@@ -6,6 +6,9 @@ from typing import List, Dict
 import scrapy
 from scrapy import Selector
 from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as ec
+from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
@@ -222,7 +225,6 @@ class MblRoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def _extract_container_info(self, response: scrapy.Selector) -> List:
-        time.sleep(2)
         table_selector = response.css('table.tbl-list')[0]
         table_locator = ContainerListTableLocator()
         table_locator.parse(table=table_selector)
@@ -336,7 +338,6 @@ class MblRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_status(response) -> List:
-        time.sleep(5)
         table_selector = response.css('table.tbl-list')
 
         if not table_selector:
@@ -681,23 +682,30 @@ class WhlcDriver:
             text = alert.text
             raise CarrierInvalidSearchNoError(search_type=search_type)
         except NoAlertPresentException:
-            time.sleep(10)
+            WebDriverWait(self._driver, 30).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "table.tbl-list")))
+            time.sleep(5)
 
     def go_detail_page(self, idx: int):
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u').click()
-        time.sleep(5)
+        time.sleep(1)
         self._driver.switch_to.window(self._driver.window_handles[-1])
+        WebDriverWait(self._driver, 15).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "table.tbl-list")))
+        time.sleep(2)
 
     def go_history_page(self, idx: int):
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[11]/u').click()
-        time.sleep(10)
+        time.sleep(2)
         self._driver.switch_to.window(self._driver.window_handles[-1])
+        WebDriverWait(self._driver, 30).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "table.tbl-list")))
+        time.sleep(3)
 
     def go_booking_history_page(self, idx: int):
         # '/html/body/div[2]/div[1]/div/form/table[5]/tbody/tr[2]/td[2]/a'
         self._driver.find_element_by_xpath(f'/html/body/div[2]/div[1]/div/form/table[5]/tbody/tr[{idx}]/td[2]/a').click()
-        time.sleep(10)
+        time.sleep(2)
         self._driver.switch_to.window(self._driver.window_handles[-1])
+        WebDriverWait(self._driver, 30).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "table.tbl-list")))
+        time.sleep(3)
 
     def switch_to_last(self):
         self._driver.switch_to.window(self._driver.window_handles[-1])
