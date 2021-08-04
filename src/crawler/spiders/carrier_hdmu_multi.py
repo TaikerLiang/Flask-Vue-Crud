@@ -729,9 +729,14 @@ class MainRoutingRule(BaseRoutingRule):
     @staticmethod
     def _is_search_no_invalid(response):
         err_message = response.css('div#trackingForm p.text_type03::text').get()
+        err_message_underline = response.text.strip()
+        print('=====================================')
+        print(err_message_underline)
+        print('=====================================')
         if (
                 isinstance(err_message, str) and
-                'number is invalid.  Please try it again with correct number.' in err_message
+                'number is invalid.  Please try it again with correct number.' in err_message or
+                err_message_underline == 'This page is not valid anymore.'
         ):
             return True
         return False
