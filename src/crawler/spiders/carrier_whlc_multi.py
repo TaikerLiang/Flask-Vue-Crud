@@ -9,7 +9,7 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException
+from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException, TimeoutException
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
@@ -199,6 +199,12 @@ class MblRoutingRule(BaseRoutingRule):
                 driver.switch_to_last()
             except NoSuchElementException:
                 pass
+            except TimeoutException:
+                yield ExportErrorData(task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Load detail page timeout')
+                driver.close()
+                driver.switch_to_last()
+                continue
 
             # history page
             try:
@@ -216,6 +222,12 @@ class MblRoutingRule(BaseRoutingRule):
                     )
             except NoSuchElementException:
                 pass
+            except TimeoutException:
+                yield ExportErrorData(task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Load status page timeout')
+                driver.close()
+                driver.switch_to_last()
+                continue
 
             driver.close()
             driver.switch_to_last()
@@ -412,7 +424,14 @@ class BookingRoutingRule(BaseRoutingRule):
             search_no = booking_list[b_idx]['booking_no']
             index = search_nos.index(search_no)
             task_id = task_ids[index]
-            driver.go_detail_page(b_idx + 2)  # only one booking_no to click
+            try:
+                driver.go_detail_page(b_idx + 2)  # only one booking_no to click
+            except TimeoutException:
+                yield ExportErrorData(task_id=task_id, booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Load detail page timeout')
+                driver.close()
+                driver.switch_to_last()
+                continue
             basic_info = self._extract_basic_info(Selector(text=driver.get_page_source()))
             vessel_info = self._extract_vessel_info(Selector(text=driver.get_page_source()))
 
@@ -444,7 +463,14 @@ class BookingRoutingRule(BaseRoutingRule):
             for idx in range(len(container_nos)):
                 container_no = container_nos[idx]
                 # history page
-                driver.go_booking_history_page(idx+2)
+                try:
+                    driver.go_booking_history_page(idx+2)
+                except TimeoutException:
+                    yield ExportErrorData(task_id=task_id, booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                          detail='Load status page timeout')
+                    driver.close()
+                    driver.switch_to_last()
+                    continue
                 history_selector = Selector(text=driver.get_page_source())
 
                 event_list = self._extract_container_status(response=history_selector)
@@ -640,16 +666,6 @@ class WhlcDriver:
     def get_page_source(self):
         return self._driver.page_source
 
-    def search_mbl(self, mbl_no):
-        self._driver.find_element_by_xpath("//*[@id='cargoType']/option[text()='BL no.']").click()
-        time.sleep(2)
-        input_ele = self._driver.find_element_by_xpath('//*[@id="q_ref_no1"]')
-        input_ele.send_keys(mbl_no)
-        time.sleep(2)
-        self._driver.find_element_by_xpath('//*[@id="quick_ctnr_query"]').click()
-        time.sleep(10)
-        self._driver.switch_to.window(self._driver.window_handles[-1])
-
     def search(self, search_no, search_type):
         select_text = self._type_select_text_map[search_type]
 
@@ -687,10 +703,10 @@ class WhlcDriver:
 
     def go_detail_page(self, idx: int):
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u').click()
-        time.sleep(1)
-        self._driver.switch_to.window(self._driver.window_handles[-1])
-        WebDriverWait(self._driver, 15).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "table.tbl-list")))
         time.sleep(2)
+        self._driver.switch_to.window(self._driver.window_handles[-1])
+        WebDriverWait(self._driver, 30).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "table.tbl-list")))
+        time.sleep(3)
 
     def go_history_page(self, idx: int):
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[11]/u').click()
