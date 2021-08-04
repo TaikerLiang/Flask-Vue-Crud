@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 from scrapy import Selector, Request, FormRequest
 from twisted.python.failure import Failure
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_FATAL
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_FATAL
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider, CARRIER_DEFAULT_SETTINGS
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError, SuspiciousOperationError,
@@ -166,21 +166,6 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
             for item in self._item_recorder_map[task_id].items:
                 yield item
 
-            if self.search_type == SHIPMENT_TYPE_MBL:
-                yield ExportErrorData(
-                    mbl_no=search_no,
-                    task_id=task_id,
-                    status=CARRIER_RESULT_STATUS_FATAL,
-                    detail='<proxy-max-retry-error>',
-                )
-            elif self.search_type == SHIPMENT_TYPE_BOOKING:
-                yield ExportErrorData(
-                    booking_no=search_no,
-                    task_id=task_id,
-                    status=CARRIER_RESULT_STATUS_FATAL,
-                    detail='<proxy-max-retry-error>',
-                )
-
 
     def parse(self, response, search_no, task_id):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -210,8 +195,23 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
                     restart_request = self._prepare_restart(search_no=search_no, task_id=task_id)
                     self._request_queue_map[task_id].add(request=restart_request)
                 except ProxyMaxRetryError as err:
-                    error_item = err.build_error_data()
-                    self._item_recorder_map[task_id].record_item(key=('ERROR', None), item=error_item)
+                    if self.search_type == SHIPMENT_TYPE_MBL:
+                        error_item = ExportErrorData(
+                            mbl_no=search_no,
+                            task_id=task_id,
+                            status=CARRIER_RESULT_STATUS_FATAL,
+                            detail='<proxy-max-retry-error>',
+                        )
+                        self._item_recorder_map[task_id].record_item(key=('ERROR', None), item=error_item)
+                    elif self.search_type == SHIPMENT_TYPE_BOOKING:
+                        error_item = ExportErrorData(
+                            booking_no=search_no,
+                            task_id=task_id,
+                            status=CARRIER_RESULT_STATUS_FATAL,
+                            detail='<proxy-max-retry-error>',
+                        )
+                        self._item_recorder_map[task_id].record_item(key=('ERROR', None), item=error_item)
+
             elif isinstance(result, BaseCarrierItem):
                 pass
             else:
@@ -603,6 +603,7 @@ class MainRoutingRule(BaseRoutingRule):
             meta={
                 'search_no': search_no,
                 'task_id': task_id,
+                'search_type': search_type,
                 'cookies': cookies,
                 'under_line': under_line,
             },
@@ -614,6 +615,7 @@ class MainRoutingRule(BaseRoutingRule):
     def handle(self, response):
         search_no = response.meta['search_no']
         task_id = response.meta['task_id']
+        search_type = response.meta['search_type']
         cookies = response.meta['cookies']
         under_line = response.meta['under_line']
 
@@ -626,7 +628,25 @@ class MainRoutingRule(BaseRoutingRule):
                     search_no=search_no, task_id=task_id, search_type=self._search_type, cookies=cookies, under_line=True)
                 return
 
-            raise CarrierInvalidSearchNoError(search_type=self._search_type)
+            if search_type == SHIPMENT_TYPE_MBL:
+                error_item = ExportErrorData(
+                    mbl_no=search_no,
+                    task_id=task_id,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail='Data was not found',
+                )
+
+                self._item_recorder_map[task_id].record_item(key=('ERROR', search_no), item=error_item)
+            elif search_type == SHIPMENT_TYPE_BOOKING:
+                error_item = ExportErrorData(
+                    booking_no=search_no,
+                    task_id=task_id,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail='Data was not found',
+                )
+                self._item_recorder_map[task_id].record_item(key=('ERROR', search_no), item=error_item)
+            return
+
 
         if not self._item_recorder_map[task_id].is_item_recorded(key=(MBL, search_no)):
             try:
@@ -729,9 +749,11 @@ class MainRoutingRule(BaseRoutingRule):
     @staticmethod
     def _is_search_no_invalid(response):
         err_message = response.css('div#trackingForm p.text_type03::text').get()
+        err_message_underline = response.text.strip()
         if (
                 isinstance(err_message, str) and
-                'number is invalid.  Please try it again with correct number.' in err_message
+                'number is invalid.  Please try it again with correct number.' in err_message or
+                err_message_underline == 'This page is not valid anymore.'
         ):
             return True
         return False
