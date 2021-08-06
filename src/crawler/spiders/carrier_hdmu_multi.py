@@ -109,13 +109,10 @@ class ItemRecorder:
 
 class CarrierHdmuSpider(BaseMultiCarrierSpider):
     name = 'carrier_hdmu_multi'
-    custom_settings = {
-        **CARRIER_DEFAULT_SETTINGS,
-        'DOWNLOAD_TIMEOUT': 30,
-    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.custom_settings.update({'DOWNLOAD_TIMEOUT': 30})
         self._cookiejar_id_map = {}
         self._item_recorder_map = {}
         self._request_queue_map = {}
