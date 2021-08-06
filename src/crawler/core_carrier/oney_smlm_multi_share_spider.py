@@ -8,7 +8,7 @@ import scrapy
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, ProxyMaxRetryError, \
     SuspiciousOperationError, CarrierInvalidSearchNoError
 from crawler.core_carrier.items import (
     BaseCarrierItem,
@@ -81,11 +81,28 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
                 yield self._build_request_by(option=proxy_option)
             elif isinstance(result, Restart):
-                self.logger.warning(f'----- {result.reason}, try new proxy and restart')
-                self._proxy_manager.renew_proxy()
-
                 search_no = result.search_no
                 task_id = result.task_id
+
+                self.logger.warning(f'----- {result.reason}, try new proxy and restart')
+                try:
+                    self._proxy_manager.renew_proxy()
+                except ProxyMaxRetryError:
+                    if self.search_type == SHIPMENT_TYPE_MBL:
+                        yield ExportErrorData(
+                            mbl_no=search_no,
+                            task_id=task_id,
+                            status=CARRIER_RESULT_STATUS_ERROR,
+                            detail='proxy max retry error'
+                        )
+                    elif self.search_type == SHIPMENT_TYPE_BOOKING:
+                        yield ExportErrorData(
+                            mbl_no=search_no,
+                            task_id=task_id,
+                            status=CARRIER_RESULT_STATUS_ERROR,
+                            detail='proxy max retry error'
+                        )
+                    return
 
                 option = FirstTierRoutingRule.build_request_option(search_nos=search_no, task_ids=task_id, base_url=self.base_url)
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(option)
