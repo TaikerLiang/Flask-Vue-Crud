@@ -1045,7 +1045,7 @@ class ContainerRoutingRule(BaseRoutingRule):
                 self._item_recorder_map[task_id].record_item(key=(AVAILABILITY, container_no))
 
         # avoid this function not yield anything
-        yield MblItem()
+        yield MblItem(task_id=task_id)
 
     @staticmethod
     def _extract_tracking_results(response):
