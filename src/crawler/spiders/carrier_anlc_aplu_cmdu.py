@@ -6,8 +6,11 @@ from scrapy import Selector
 
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.exceptions import (
-    CarrierInvalidMblNoError, CarrierResponseFormatError, SuspiciousOperationError, DataNotFoundError,
-    CarrierInvalidSearchNoError)
+    CarrierResponseFormatError,
+    SuspiciousOperationError,
+    DataNotFoundError,
+    CARRIER_RESULT_STATUS_ERROR
+)
 
 from crawler.core_carrier.items import (
     BaseCarrierItem,
@@ -16,6 +19,7 @@ from crawler.core_carrier.items import (
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
+    ExportErrorData,
 )
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption, ProxyManager
@@ -229,7 +233,12 @@ class FirstTierRoutingRule(BaseRoutingRule):
             raise DataNotFoundError()
 
         else:  # STATUS_MBL_NOT_EXIST
-            raise CarrierInvalidSearchNoError(search_type=self._search_type)
+            if self._search_type == SHIPMENT_TYPE_MBL:
+                yield ExportErrorData(mbl_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Data was not found')
+            elif self._search_type == SHIPMENT_TYPE_BOOKING:
+                yield ExportErrorData(booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Data was not found')
 
     @staticmethod
     def _extract_mbl_status(response: Selector):
