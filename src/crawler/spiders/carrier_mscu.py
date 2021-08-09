@@ -181,7 +181,8 @@ class MainRoutingRule(BaseRoutingRule):
                 )
 
             place_of_deliv = extractor.extract_place_of_deliv(container_selector_map)
-            place_of_deliv_set.add(place_of_deliv)
+            if place_of_deliv:
+                place_of_deliv_set.add(place_of_deliv)
 
         if not place_of_deliv_set:
             place_of_deliv = None
