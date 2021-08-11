@@ -13,6 +13,7 @@ from crawler.core_rail.rules import RuleManager, BaseRoutingRule
 from selenium import webdriver
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -225,6 +226,9 @@ class TableParser:
         self._items = []
 
     def parse(self):
+        # to init scroll position
+        self._content_getter.click_last_row()
+
         container_no_items = self._container_no_table_parser.parse()
         container_info_items = self._container_info_table_parser.parse()
 
@@ -237,7 +241,6 @@ class TableParser:
 
     def get(self):
         return self._items
-
 
 class ContainerNoTableParser:
     def __init__(self, content_getter, header_table: Selector, content_table: Selector):
@@ -262,7 +265,6 @@ class ContainerNoTableParser:
         container_no = td.css('a::text').get()
         if container_no:
             return {"Equipment": container_no}
-
 
 class ContainerInfoTableParser:
     def __init__(self, content_getter, header_table: Selector, content_table: Selector):
@@ -429,9 +431,14 @@ class ContentGetter:
     def get_page_source(self):
         return self._driver.page_source
 
+    def click_last_row(self):
+        last_td = self._driver.find_element_by_css_selector('div > table[id$=-table-fixed] tr.sapUiTableLastRow td')
+        last_td.click()
+
     def scroll_to_next_row(self):
-        scroll_bar = self._driver.find_element_by_id('__table0-vsb')
-        scroll_bar.send_keys(Keys.DOWN)
+        actions = ActionChains(self._driver)
+        actions.send_keys(Keys.DOWN)
+        actions.perform()
         time.sleep(3)
 
     def quit(self):
