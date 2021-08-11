@@ -13,7 +13,7 @@ from selenium import webdriver
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.support.wait import WebDriverWait
 from urllib3.exceptions import ReadTimeoutError
 from PIL import Image
@@ -278,7 +278,7 @@ class ContentGetter:
                 break
             try:
                 slider_ele = self.get_slider()
-            except:
+            except TimeoutException:
                 break
             icon_ele = self.get_slider_icon_ele()
             img_ele = self.get_bg_img_ele()
@@ -471,8 +471,6 @@ class CargoTrackingRule(BaseRoutingRule):
                 url = self._content_getter.get_current_url()
                 self._content_getter.quit()
                 raise LoadWebsiteTimeOutError(url=url)
-            except:
-                pass
 
             response = Selector(text=self._content_getter.get_page_text())
 
