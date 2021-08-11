@@ -27,7 +27,7 @@ from crawler.core_carrier.exceptions import (
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
-from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
+from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 
@@ -53,7 +53,8 @@ class CarrierPabvSpider(BaseCarrierSpider):
         while True:
             self._proxy_manager.renew_proxy()
 
-            cookies_getter = CookiesGetter(phantom_js_service_args=self._proxy_manager.get_phantom_js_service_args())
+            # cookies_getter = CookiesGetter(phantom_js_service_args=self._proxy_manager.get_phantom_js_service_args())
+            cookies_getter = CookiesGetter()
 
             try:
                 cookies = cookies_getter.get_cookies()
@@ -169,20 +170,18 @@ class TrackRoutingRule(BaseRoutingRule):
     def _extract_schedule_info(content):
         data = content['scheduleinfo']
 
-        lines = data.split('<br />')
+        schedule_info_selector = scrapy.Selector(text=data)
 
         schedule_info = {}
-        for line in lines:
-            if not line:
-                continue
+        por_value = schedule_info_selector.css('td::text')[0].get()
+        por_name = por_value.split('[')[0].strip()
+        por_un_lo_code = por_value.split(']')[0].split('[')[-1]
+        schedule_info['Place of Receipt'] = {'name': por_name, 'un_lo_code': por_un_lo_code}
 
-            values = line.strip().split('<b>')
-
-            key = values[0].strip()
-            name = values[1].split('[')[0].strip()
-            un_lo_code = values[1].split(']')[0].split('[')[-1]
-
-            schedule_info[key] = {'name': name, 'un_lo_code': un_lo_code}
+        pod_value = schedule_info_selector.css('td::text')[1].get()
+        pod_name = pod_value.split('[')[0].strip()
+        pod_un_lo_code = pod_value.split(']')[0].split('[')[-1]
+        schedule_info['Place of Delivery'] = {'name': pod_name, 'un_lo_code': pod_un_lo_code}
 
         return schedule_info
 
@@ -225,9 +224,8 @@ class TrackRoutingRule(BaseRoutingRule):
         selector = Selector(text=content['containers'])
 
         container_ids = []
-        for result_row in selector.xpath('//tr[@class="resultrow"]'):
-            container_id = result_row.xpath('./td/table/tr/td/b/text()').get()
-            container_ids.append(container_id)
+        for container_id in selector.xpath('//tbody/tr/td/b/text()'):
+            container_ids.append(container_id.get())
 
         return container_ids
 
@@ -271,7 +269,6 @@ class ContainerRoutingRule(BaseRoutingRule):
                 description=container_item['description'],
                 local_date_time=container_item['local_date_time'],
                 location=LocationItem(name=container_item['location']),
-                transport=container_item['transport'],
                 est_or_actual=container_item['est_or_actual'],
             )
 
@@ -279,19 +276,12 @@ class ContainerRoutingRule(BaseRoutingRule):
     def _extract_container_table(content) -> Dict:
         selector = Selector(text=content['data']['events_table'])
 
-        schedule_table_locator = TopHeaderStyleTableLocator(
-            header_style_map={
-                'Container #': 'container-num',
-                'Date': 'date',
-                'Latest Event': 'latest-event',
-                'Place': 'place',
-            }
-        )
+        schedule_table_locator = TopHeaderTableLocator()
         schedule_table_locator.parse(table=selector)
         schedule_table_extractor = TableExtractor(table_locator=schedule_table_locator)
 
         for left in schedule_table_locator.iter_left_headers():
-            date_str = schedule_table_extractor.extract_cell('Date', left)
+            date_str = schedule_table_extractor.extract_cell('Event Date', left)
 
             if date_str == 'Pending':
                 continue
@@ -302,10 +292,9 @@ class ContainerRoutingRule(BaseRoutingRule):
                 est_or_actual = 'A'
 
             yield {
-                'transport': schedule_table_extractor.extract_cell('Container #', left),
-                'description': schedule_table_extractor.extract_cell('Latest Event', left),
+                'description': schedule_table_extractor.extract_cell('Event Name', left),
                 'local_date_time': date_str,
-                'location': schedule_table_extractor.extract_cell('Place', left),
+                'location': schedule_table_extractor.extract_cell('Event Location', left),
                 'est_or_actual': est_or_actual,
             }
 
@@ -317,8 +306,16 @@ class CookiesGetter:
 
     TIMEOUT = 40
 
-    def __init__(self, phantom_js_service_args):
-        self._browser = webdriver.PhantomJS(service_args=phantom_js_service_args)
+    def __init__(self):
+        # self._browser = webdriver.PhantomJS(service_args=phantom_js_service_args)
+        options = webdriver.ChromeOptions()
+        options.add_argument('--disable-extensions')
+        options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--no-sandbox')
+
+        self._browser = webdriver.Chrome(chrome_options=options)
 
     def get_cookies(self):
         self._browser.get(f'{PABV_BASE_URL}/en-our-track-and-trace-pil-pacific-international-lines/120.html')
@@ -337,7 +334,7 @@ class CookiesGetter:
 
     def _is_cookies_ready(self, *_):
         cookies_str = str(self._browser.get_cookies())
-        return ('front_www_pilship_com' in cookies_str) and ('TS01a292b3' in cookies_str)
+        return ('TS018fa092' in cookies_str) and ('front_www_pilship_com' in cookies_str)
 
 
 # -------------------------------------------------------------------------------
@@ -386,6 +383,45 @@ class TopHeaderStyleTableLocator(BaseTableLocator):
     def iter_left_headers(self):
         for index in range(self._data_len):
             yield index
+
+class TopHeaderTableLocator(BaseTableLocator):
+    def __init__(self):
+        self._td_map = {}  # top_header: [td, ...]
+        self._data_len = 0
+
+    def parse(self, table: Selector):
+        top_header_list = []
+
+        head = table.css('tr.text-fw-bold')
+        for th in head.css('td'):
+            raw_top_header = th.css('::text').get()
+            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ''
+            top_header_list.append(top_header)
+            self._td_map[top_header] = []
+
+        body = table.css('tr:not(.text-fw-bold)')
+        for tr in body:
+            for top_index, td in enumerate(tr.css('td')):
+                top = top_header_list[top_index]
+                self._td_map[top].append(td)
+
+        self._data_len = len(body)
+
+    def get_cell(self, top, left) -> Selector:
+        try:
+            if not self._td_map[top]:
+                return scrapy.Selector(text='<td></td>')
+
+            return self._td_map[top][left]
+        except (KeyError, IndexError) as err:
+            raise HeaderMismatchError(repr(err))
+
+    def has_header(self, top=None, left=None) -> bool:
+        return (top in self._td_map) and (left is None)
+
+    def iter_left_headers(self):
+        for i in range(self._data_len):
+            yield i
 
 
 class ScheduleTableCellExtractor(BaseTableCellExtractor):
