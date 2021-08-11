@@ -178,10 +178,10 @@ class TrackRoutingRule(BaseRoutingRule):
         por_un_lo_code = por_value.split(']')[0].split('[')[-1]
         schedule_info['Place of Receipt'] = {'name': por_name, 'un_lo_code': por_un_lo_code}
 
-        pod_value = schedule_info_selector.css('td::text')[1].get()
-        pod_name = pod_value.split('[')[0].strip()
-        pod_un_lo_code = pod_value.split(']')[0].split('[')[-1]
-        schedule_info['Place of Delivery'] = {'name': pod_name, 'un_lo_code': pod_un_lo_code}
+        del_value = schedule_info_selector.css('td::text')[1].get()
+        del_name = del_value.split('[')[0].strip()
+        del_un_lo_code = del_value.split(']')[0].split('[')[-1]
+        schedule_info['Place of Delivery'] = {'name': del_name, 'un_lo_code': del_un_lo_code}
 
         return schedule_info
 
