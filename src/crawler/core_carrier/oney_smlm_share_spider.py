@@ -6,12 +6,13 @@ from typing import List
 import scrapy
 
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, \
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, CarrierInvalidMblNoError, ProxyMaxRetryError, \
     SuspiciousOperationError, CarrierInvalidSearchNoError
 from crawler.core_carrier.items import (
     BaseCarrierItem,
+    ExportErrorData,
     VesselItem,
     ContainerStatusItem,
     LocationItem,
@@ -80,7 +81,24 @@ class OneySmlmSharedSpider(BaseCarrierSpider):
                 yield self._build_request_by(option=proxy_option)
             elif isinstance(result, Restart):
                 self.logger.warning(f'----- {result.reason}, try new proxy and restart')
-                self._proxy_manager.renew_proxy()
+
+                try:
+                    self._proxy_manager.renew_proxy()
+                except ProxyMaxRetryError:
+                    if self.mbl_no:
+                        yield ExportErrorData(
+                            mbl_no=self.mbl_no,
+                            status=CARRIER_RESULT_STATUS_ERROR,
+                            detail='Data was not found',
+                        )
+                    else:
+                        yield ExportErrorData(
+                            booking_no=self.booking_no,
+                            status=CARRIER_RESULT_STATUS_ERROR,
+                            detail='Data was not found',
+                        )
+                    return
+
                 option = FirstTierRoutingRule.build_request_option(search_no=self.search_no, base_url=self.base_url)
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(option)
                 yield self._build_request_by(proxy_option)
@@ -159,6 +177,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
 
         if self._is_search_no_invalid(response_dict):
             yield Restart(reason='IP block')
+            return
 
         container_info_list = self._extract_container_info_list(response_dict=response_dict)
         booking_no = self._get_booking_no_from(container_list=container_info_list)
