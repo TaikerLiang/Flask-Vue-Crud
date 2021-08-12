@@ -6,9 +6,11 @@ from typing import List, Dict
 import scrapy
 from scrapy import Selector
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException
 
-from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import (
     BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS, DISABLE_DUPLICATE_REQUEST_FILTER)
 from crawler.core_carrier.request_helpers import RequestOption
@@ -140,6 +142,17 @@ class MblRoutingRule(BaseRoutingRule):
             driver.search_mbl(mbl_no)
         except ReadTimeoutError:
             raise LoadWebsiteTimeOutError(url=WHLC_BASE_URL)
+
+        try:
+            driver.check_alert()
+            yield ExportErrorData(
+                mbl_no=mbl_no,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail='Data was not found',
+            )
+            return
+        except NoAlertPresentException:
+            pass
 
         response_selector = Selector(text=driver.get_page_source())
         container_list = self._extract_container_info(response_selector)
@@ -568,6 +581,9 @@ class WhlcDriver:
     def switch_to_last(self):
         self._driver.switch_to.window(self._driver.window_handles[-1])
         time.sleep(1)
+
+    def check_alert(self):
+        self._driver.switch_to.alert
 
     @staticmethod
     def _transformat_to_dict(cookies: List[Dict]) -> Dict:
