@@ -26,9 +26,10 @@ ghostdriver.log
 # macOS
 .DS_Store
 
+# env
+.env
+
 # others
 *.releases
 *geckodriver.log
 
-# env
-.env

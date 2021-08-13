@@ -2,14 +2,9 @@ import re
 from typing import List, Dict
 
 import scrapy
-from selenium import webdriver
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.wait import WebDriverWait
 
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
-from crawler.core_carrier.base_spiders import BaseCarrierSpider
+from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import (
     LoadWebsiteTimeOutError, CarrierResponseFormatError, CarrierInvalidMblNoError, SuspiciousOperationError,
     CarrierInvalidSearchNoError)
@@ -21,7 +16,7 @@ from crawler.core_carrier.items import (
     DebugItem,
     BaseCarrierItem,
 )
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.request_helpers import RequestOption, ProxyManager
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
@@ -29,11 +24,13 @@ from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatch
 URL = 'https://www.msc.com'
 
 
-class CarrierMscuSpider(BaseCarrierSpider):
-    name = 'carrier_mscu'
+class CarrierMscuSpider(BaseMultiCarrierSpider):
+    name = 'carrier_mscu_multi'
 
     def __init__(self, *args, **kwargs):
         super(CarrierMscuSpider, self).__init__(*args, **kwargs)
+
+        self.custom_settings.update({'CONCURRENT_REQUESTS': '1'})
 
         bill_rules = [
             HomePageRoutingRule(),
@@ -45,16 +42,23 @@ class CarrierMscuSpider(BaseCarrierSpider):
             MainRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
         ]
 
-        if self.mbl_no:
+        if self.search_type == SHIPMENT_TYPE_MBL:
             self._rule_manager = RuleManager(rules=bill_rules)
-            self.search_no = self.mbl_no
-        else:
+        elif self.search_type == SHIPMENT_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
-            self.search_no = self.booking_no
+
+        self._proxy_manager = ProxyManager(session='mscu', logger=self.logger)
 
     def start(self):
-        option = HomePageRoutingRule.build_request_option(search_no=self.search_no)
-        yield self._build_request_by(option=option)
+        for s_no, t_id in zip(self.search_nos, self.task_ids):
+            option = self._prepare_start(search_no=s_no, task_id=t_id)
+            yield self._build_request_by(option=option)
+
+    def _prepare_start(self, search_no: str, task_id: str):
+        self._proxy_manager.renew_proxy()
+        option = HomePageRoutingRule.build_request_option(search_no=search_no, task_id=task_id)
+        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
+        return proxy_option
 
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
@@ -82,6 +86,7 @@ class CarrierMscuSpider(BaseCarrierSpider):
             return scrapy.Request(
                 url=option.url,
                 meta=meta,
+                dont_filter=True,
             )
 
         elif option.method == RequestOption.METHOD_POST_FORM:
@@ -89,6 +94,7 @@ class CarrierMscuSpider(BaseCarrierSpider):
                 url=option.url,
                 formdata=option.form_data,
                 meta=meta,
+                dont_filter=True,
             )
         else:
             raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
@@ -101,13 +107,14 @@ class HomePageRoutingRule(BaseRoutingRule):
     name = 'HOME_PAGE'
 
     @classmethod
-    def build_request_option(cls, search_no) -> RequestOption:
+    def build_request_option(cls, search_no, task_id) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url='https://www.msc.com/track-a-shipment?agencyPath=twn',
             meta={
                 'search_no': search_no,
+                'task_id': task_id,
             },
         )
 
@@ -115,13 +122,14 @@ class HomePageRoutingRule(BaseRoutingRule):
         return f'{self.name}.html'
 
     def handle(self, response):
+        task_id = response.meta['task_id']
         search_no = response.meta['search_no']
 
         view_state = response.css('input#__VIEWSTATE::attr(value)').get()
         validation = response.css('input#__EVENTVALIDATION::attr(value)').get()
 
         yield MainRoutingRule.build_request_option(
-            search_no=search_no, view_state=view_state, validation=validation)
+            search_no=search_no, view_state=view_state, validation=validation, task_id=task_id)
 
 
 # -------------------------------------------------------------------------------
@@ -134,7 +142,7 @@ class MainRoutingRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, search_no, view_state, validation) -> RequestOption:
+    def build_request_option(cls, search_no, view_state, validation, task_id) -> RequestOption:
         form_data = {
             '__EVENTTARGET': 'ctl00$ctl00$plcMain$plcMain$TrackSearch$hlkSearch',
             '__EVENTVALIDATION': validation,
@@ -147,6 +155,10 @@ class MainRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_POST_FORM,
             form_data=form_data,
             url='https://www.msc.com/track-a-shipment?agencyPath=twn',
+            meta={
+                'search_no': search_no,
+                'task_id': task_id,
+            }
         )
 
     def get_save_name(self, response) -> str:
@@ -156,6 +168,8 @@ class MainRoutingRule(BaseRoutingRule):
         if self._is_search_no_invalid(response=response):
             raise CarrierInvalidSearchNoError(search_type=self._search_type)
 
+        task_id = response.meta['task_id']
+        search_no = response.meta['search_no']
         extractor = Extractor()
 
         place_of_deliv_set = set()
@@ -164,6 +178,7 @@ class MainRoutingRule(BaseRoutingRule):
             container_no = extractor.extract_container_no(container_selector_map)
 
             yield ContainerItem(
+                task_id=task_id,
                 container_key=container_no,
                 container_no=container_no,
             )
@@ -171,6 +186,7 @@ class MainRoutingRule(BaseRoutingRule):
             container_status_list = extractor.extract_container_status_list(container_selector_map)
             for container_status in container_status_list:
                 yield ContainerStatusItem(
+                    task_id=task_id,
                     container_key=container_no,
                     description=container_status['description'],
                     local_date_time=container_status['local_date_time'],
@@ -195,6 +211,7 @@ class MainRoutingRule(BaseRoutingRule):
         latest_update = extractor.extract_latest_update(response=response)
 
         mbl_item = MblItem(
+            task_id=task_id,
             pol=LocationItem(name=main_info['pol']),
             pod=LocationItem(name=main_info['pod']),
             etd=main_info['etd'],
@@ -285,11 +302,12 @@ class Extractor:
             if not container_no_bar:
                 raise CarrierResponseFormatError(reason='Can not find container_no_bar !!!')
 
-            container_stats_table = container_content.css('table.singleRowTable')
+            container_stats_table = container_content.xpath('//*[@id="ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_rptContainers_ctl01_pnlContainer"]/table[1]')
+
             if not container_stats_table:
                 raise CarrierResponseFormatError(reason='Can not find container_stats_table !!!')
 
-            movements_table = container_content.css("table[class='resultTable']")
+            movements_table = container_content.xpath('//*[@id="ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_rptContainers_ctl01_pnlContainer"]/table[2]')
             if not movements_table:
                 raise CarrierResponseFormatError(reason='Can not find movements_table !!!')
 
@@ -526,72 +544,3 @@ class ContainerStatusTableLocator(BaseTableLocator):
     def iter_left_header(self):
         for i in range(self._data_len):
             yield i
-
-
-class MscuCarrierChromeDriver:
-    def __init__(self):
-        prefs = {
-            'profile.default_content_setting_values': {'images': 2},
-        }
-
-        options = webdriver.ChromeOptions()
-        options.add_experimental_option('prefs', prefs)
-        options.add_argument('--disable-plugins')
-        options.add_argument('--disable-extensions')
-        options.add_argument('--headless')
-        options.add_argument('window-size=1024x768')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-gpu')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--disable-infobars')
-
-        self._chrome_driver = webdriver.Chrome(chrome_options=options)
-
-    def search_mbl_no(self, mbl_no):
-        track_url = f'{URL}/track-a-shipment?agencyPath=twn'
-        self._chrome_driver.get(url=track_url)
-
-        search_bar_css_query = 'input#ctl00_ctl00_plcMain_plcMain_TrackSearch_txtBolSearch_TextField'
-        search_bar_locator = (By.CSS_SELECTOR, search_bar_css_query)
-
-        search_button_css_query = 'a#ctl00_ctl00_plcMain_plcMain_TrackSearch_hlkSearch'
-        search_button_locator = (By.CSS_SELECTOR, search_button_css_query)
-
-        try:
-            WebDriverWait(self._chrome_driver, 10).until(EC.presence_of_element_located(search_bar_locator))
-            WebDriverWait(self._chrome_driver, 10).until(EC.element_to_be_clickable(search_button_locator))
-        except TimeoutException:
-            raise LoadWebsiteTimeOutError(url=self._chrome_driver.current_url)
-
-        search_bar = self._chrome_driver.find_element_by_css_selector(search_bar_css_query)
-        search_button = self._chrome_driver.find_element_by_css_selector(search_button_css_query)
-        search_bar.send_keys(mbl_no)
-
-        pop_up_reject_btn_locator = (By.CSS_SELECTOR, 'a#ctl00_ctl00_ucNewsetterSignupPopup_btnReject')
-        if self._check_element_clickable(pop_up_reject_btn_locator):
-            pop_up_reject_btn = self._chrome_driver.find_element(pop_up_reject_btn_locator)
-            pop_up_reject_btn.click()
-
-        search_button.click()
-
-    def get_body_text(self):
-        mbl_no_locator = (By.CSS_SELECTOR, 'div#ctl00_ctl00_plcMain_plcMain_pnlTrackingResults')
-
-        try:
-            WebDriverWait(self._chrome_driver, 10).until(EC.presence_of_element_located(mbl_no_locator))
-        except TimeoutException:
-            raise LoadWebsiteTimeOutError(url=self._chrome_driver.current_url)
-
-        body = self._chrome_driver.find_element_by_css_selector('body')
-        body_text = body.get_attribute('outerHTML')
-
-        return body_text
-
-    def close(self):
-        self._chrome_driver.close()
-
-    def _check_element_clickable(self, locator):
-        try:
-            return bool(EC.element_to_be_clickable(locator)(self._chrome_driver))
-        except NoSuchElementException:
-            return False

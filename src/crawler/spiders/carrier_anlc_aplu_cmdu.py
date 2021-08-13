@@ -6,8 +6,11 @@ from scrapy import Selector
 
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.exceptions import (
-    CarrierInvalidMblNoError, CarrierResponseFormatError, SuspiciousOperationError, DataNotFoundError,
-    CarrierInvalidSearchNoError)
+    CarrierResponseFormatError,
+    SuspiciousOperationError,
+    DataNotFoundError,
+    CARRIER_RESULT_STATUS_ERROR
+)
 
 from crawler.core_carrier.items import (
     BaseCarrierItem,
@@ -16,6 +19,7 @@ from crawler.core_carrier.items import (
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
+    ExportErrorData,
 )
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption, ProxyManager
@@ -229,7 +233,12 @@ class FirstTierRoutingRule(BaseRoutingRule):
             raise DataNotFoundError()
 
         else:  # STATUS_MBL_NOT_EXIST
-            raise CarrierInvalidSearchNoError(search_type=self._search_type)
+            if self._search_type == SHIPMENT_TYPE_MBL:
+                yield ExportErrorData(mbl_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Data was not found')
+            elif self._search_type == SHIPMENT_TYPE_BOOKING:
+                yield ExportErrorData(booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Data was not found')
 
     @staticmethod
     def _extract_mbl_status(response: Selector):
@@ -284,6 +293,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             pod=LocationItem(name=main_info['pod']),
             final_dest=LocationItem(name=main_info['dest']),
             eta=main_info['pod_eta'],
+            ata=main_info['pod_ata'],
         )
 
         container_no = container_info['container_no']
@@ -318,12 +328,16 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
         pod_time = map_selector.css('dl.o-trackingnomap--info dd::text').get()
         status = map_selector.css('dl.o-trackingnomap--info dt::text').get()
+
+        pod_ata = None
+
         if status is None:
             pod_eta = None
         elif status.strip() == 'ETA at POD':
             pod_eta = pod_time.strip()
         elif status.strip() == 'Arrived at POD':
             pod_eta = None
+            pod_ata = pod_time.strip()
         elif status.strip() == 'Remaining':
             pod_eta = None
         else:
@@ -335,6 +349,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             'pod': map_selector.css('li#pod span.o-trackingnomap--place::text').get(),
             'dest': map_selector.css('li#postpod span.o-trackingnomap--place::text').get(),
             'pod_eta': pod_eta,
+            'pod_ata': pod_ata,
         }
 
     @staticmethod
