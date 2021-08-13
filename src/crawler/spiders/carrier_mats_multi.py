@@ -4,11 +4,12 @@ from typing import List, Dict
 
 import scrapy
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, SuspiciousOperationError
 from crawler.core_carrier.items import (
     BaseCarrierItem,
+    ExportErrorData,
     MblItem,
     ContainerItem,
     ContainerStatusItem,
@@ -101,7 +102,10 @@ class MainInfoRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
-            meta={'task_id': task_id,}
+            meta={
+                'task_id': task_id,
+                'search_no': search_no
+            }
         )
 
     def get_save_name(self, response) -> str:
@@ -109,8 +113,25 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         task_id = response.meta['task_id']
+        search_no = response.meta['search_no']
+
         container_list = json.loads(response.text)
-        self._check_mbl_no(container_list)
+        if self._is_search_no_invalid(container_list):
+            if self._search_type == SHIPMENT_TYPE_MBL:
+                yield ExportErrorData(
+                    mbl_no=search_no,
+                    task_id=task_id,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail='Data was not found',
+                )
+            elif self._search_type == SHIPMENT_TYPE_BOOKING:
+                yield ExportErrorData(
+                    booking_no=search_no,
+                    task_id=task_id,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail='Data was not found',
+                )
+            return
 
         unique_container_dict = self._extract_unique_container(container_list)
 
@@ -136,9 +157,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 yield TimeRoutingRule.build_request_option(task_id=task_id, container_status=status)
 
     @staticmethod
-    def _check_mbl_no(container_list: List):
-        if not container_list:
-            raise CarrierInvalidMblNoError()
+    def _is_search_no_invalid(container_list: List):
+        return not bool(container_list)
 
     @staticmethod
     def _extract_unique_container(container_list: List) -> Dict:
