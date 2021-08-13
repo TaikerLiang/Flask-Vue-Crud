@@ -275,12 +275,16 @@ class ContainerRoutingRule(BaseRoutingRule):
 
             class_name = table_locator.get_row_class(left=left)
 
+            transport = table.extract_cell(top='Transport', left=left, extractor=span_extractor)
+            status = table.extract_cell(top='Status', left=left, extractor=span_extractor)
+            description = f'{status} ({transport})'
+
             container_statuses.append(
                 {
-                    'description': table.extract_cell(top='Status', left=left, extractor=span_extractor),
+                    'description': description,
                     'place': table.extract_cell(top='Place of Activity', left=left, extractor=span_extractor),
                     'timestamp': timestamp,
-                    'transport': table.extract_cell(top='Transport', left=left, extractor=span_extractor),
+                    'transport': transport,
                     'voyage': table.extract_cell(top='Voyage No.', left=left, extractor=span_extractor) or None,
                     'est_or_actual': self._get_status_from(class_name),
                 }

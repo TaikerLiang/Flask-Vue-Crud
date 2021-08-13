@@ -6,8 +6,8 @@ import ujson as json
 
 
 class EdiClientService:
-    def __init__(self, edi_user: str, edi_token: str) -> List:
-        self.url = os.environ.get('EDI_ENGINE_URL')
+    def __init__(self, url: str, edi_user: str, edi_token: str) -> List:
+        self.url = url
         self.edi_user = edi_user
         self.edi_token = edi_token
 
