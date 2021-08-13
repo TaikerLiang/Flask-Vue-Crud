@@ -3,13 +3,13 @@ from typing import Dict
 
 import scrapy
 
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
-from crawler.core_carrier.items import BaseCarrierItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem
+from crawler.core_carrier.items import BaseCarrierItem, ExportErrorData, LocationItem, ContainerItem, ContainerStatusItem, DebugItem
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
-    CarrierInvalidMblNoError,
     SuspiciousOperationError,
     LoadWebsiteTimeOutError,
 )
@@ -128,7 +128,14 @@ class TracingRoutingRule(BaseRoutingRule):
         mbl_no = response.meta['mbl_no']
         task_id = response.meta['task_id']
 
-        self._check_mbl_no(response)
+        if self._is_mbl_no_invalid(response):
+            yield ExportErrorData(
+                mbl_no=mbl_no,
+                task_id=task_id,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail='Data was not found',
+            )
+            return
 
         container_nos = self._extract_container_nos(response=response)
         for container_no in container_nos:
@@ -154,14 +161,13 @@ class TracingRoutingRule(BaseRoutingRule):
             )
 
     @staticmethod
-    def _check_mbl_no(response):
+    def _is_mbl_no_invalid(response):
         error_message = response.css('span[id="tracing_by_booking_f:hl15"]::text').get()
         if not error_message:
             return
 
         error_message.strip()
-        if error_message.startswith('DOCUMENT does not exist.'):
-            raise CarrierInvalidMblNoError()
+        return error_message.startswith('DOCUMENT does not exist.')
 
     @staticmethod
     def _extract_container_nos(response):
