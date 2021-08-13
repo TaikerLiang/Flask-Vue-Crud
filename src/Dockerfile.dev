@@ -92,10 +92,10 @@ RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.28.0/geckod
 ENV OPENSSL_CONF=/etc/ssl/
 ENV TERM xterm
 ENV SCRAPY_SETTINGS_MODULE crawler.settings
-ENV EDI_ENGINE_URL http://96314789e953.ngrok.io/api/tracking-carrier/local/
+ENV EDI_ENGINE_URL http://tracking.hardcoretech.co:18110/api/tracking-carrier/local/
 ENV EDI_ENGINE_USER tracking-local
-ENV EDI_ENGINE_TOKEN LK1YG0FD70TPKCG76RMSCO9HLMK7J23R5ZEJX1VM3607
-ENV EDI_HOST 96314789e953.ngrok.io
+ENV EDI_ENGINE_TOKEN U66J8E2UJE763FG4910LV5SABERQTCAXUOO5WGH20YKB
+ENV EDI_HOST tracking.hardcoretech.co
 
 RUN mkdir -p /app
 WORKDIR /app

@@ -11,5 +11,5 @@ class TerminalWbctSpider(PortsamericaShareSpider):
         upper_short="WBCT_LA",
         site_name="WBCT Los Angeles",
         email="hc89scooter",
-        password="bd19841018",
+        password="GoFt202108",
     )

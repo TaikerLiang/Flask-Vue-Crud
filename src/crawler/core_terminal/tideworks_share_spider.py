@@ -258,7 +258,7 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         hold = None if hold == 'None' else hold
 
         return {
-            'freight_release': extra_container_info.get('Line Release Status', ''),
+            'carrier_release': extra_container_info.get('Line Release Status', ''),
             'customs_release': extra_container_info.get('Customs Release Status', ''),
             'last_free_day': extra_container_info.get('Satisfied Thru', ''),
             'demurrage': extra_container_info.get('Demurrage', ''),
@@ -303,7 +303,7 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         div_text_list = div.css('::text').getall()
         div_text_list = [r.strip() for r in div_text_list if r.strip()]
 
-        if len(div_text_list) == 2:
+        if len(div_text_list) >= 2:
             return div_text_list[0].replace(':', ''), div_text_list[1]
         elif len(div_text_list) == 1:
             tmp = div_text_list[0].split(':')

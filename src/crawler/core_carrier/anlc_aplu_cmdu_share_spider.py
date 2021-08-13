@@ -17,18 +17,19 @@ from crawler.core_carrier.items import (
     ContainerStatusItem,
     DebugItem,
     ExportData,
+    ExportErrorData,
 )
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption, ProxyManager
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor, HeaderMismatchError
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 
 STATUS_ONE_CONTAINER = 'STATUS_ONE_CONTAINER'
 STATUS_MULTI_CONTAINER = 'STATUS_MULTI_CONTAINER'
 STATUS_MBL_NOT_EXIST = 'STATUS_MBL_NOT_EXIST'
 STATUS_WEBSITE_SUSPEND = 'STATUS_WEBSITE_SUSPEND'
-
 
 class ForceRestart:
     pass
@@ -78,6 +79,9 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
         save_name = routing_rule.get_save_name(response=response)
         self._saver.save(to=save_name, text=response.text)
 
+        search_no = response.meta['search_no']
+        task_id = response.meta['task_id']
+
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
@@ -85,7 +89,7 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
                 yield self._build_request_by(option=proxy_option)
             elif isinstance(result, ForceRestart):
-                proxy_option = self._prepare_start()
+                proxy_option = self._prepare_start(search_no=search_no, task_id=task_id)
                 yield self._build_request_by(option=proxy_option)
             else:
                 # raise RuntimeError()
@@ -223,7 +227,12 @@ class FirstTierRoutingRule(BaseRoutingRule):
             raise DataNotFoundError()
 
         else:  # STATUS_MBL_NOT_EXIST
-            raise CarrierInvalidSearchNoError(search_type=self._search_type)
+            if self._search_type == SHIPMENT_TYPE_MBL:
+                yield ExportErrorData(task_id=task_id, mbl_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Data was not found')
+            elif self._search_type == SHIPMENT_TYPE_BOOKING:
+                yield ExportErrorData(task_id=task_id, booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Data was not found')
 
     @staticmethod
     def _extract_mbl_status(response: Selector):
@@ -262,6 +271,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 f'SearchByReference={search_no}'
             ),
             meta={
+                'search_no': search_no,
                 'container_no': container_no,
                 'task_id': task_id,
             },
@@ -284,6 +294,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             pod=LocationItem(name=main_info['pod']),
             final_dest=LocationItem(name=main_info['dest']),
             eta=main_info['pod_eta'],
+            ata=main_info['pod_ata'],
         )
 
         container_no = container_info['container_no']
@@ -320,12 +331,16 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
         pod_time = map_selector.css('dl.o-trackingnomap--info dd::text').get()
         status = map_selector.css('dl.o-trackingnomap--info dt::text').get()
+
+        pod_ata = None
+
         if status is None:
             pod_eta = None
         elif status.strip() == 'ETA at POD':
             pod_eta = pod_time.strip()
         elif status.strip() == 'Arrived at POD':
             pod_eta = None
+            pod_ata = pod_time.strip()
         elif status.strip() == 'Remaining':
             pod_eta = None
         else:
@@ -337,6 +352,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             'pod': map_selector.css('li#pod span.o-trackingnomap--place::text').get(),
             'dest': map_selector.css('li#postpod span.o-trackingnomap--place::text').get(),
             'pod_eta': pod_eta,
+            'pod_ata': pod_ata,
         }
 
     @staticmethod
