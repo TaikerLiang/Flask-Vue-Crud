@@ -6,6 +6,7 @@ from typing import Union, Tuple
 
 from scrapy import Selector, FormRequest, Request
 
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
@@ -21,7 +22,6 @@ from crawler.core_carrier.items import (
 )
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
-    CarrierInvalidMblNoError,
     BaseCarrierError,
     SuspiciousOperationError,
 )
@@ -286,7 +286,13 @@ class MblSearchResultRoutingRule(BaseRoutingRule):
         task_id = response.meta['task_id']
 
         if mbl_state == MblState.FIRST and self.__is_mbl_no_invalid(response):
-            raise CarrierInvalidMblNoError()
+            yield ExportErrorData(
+                task_id=task_id,
+                mbl_no=mbl_no,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail='Data was not found',
+            )
+            return
 
         basic_request_spec = prepare_request_spec(mbl_no=mbl_no, response=response)
 
