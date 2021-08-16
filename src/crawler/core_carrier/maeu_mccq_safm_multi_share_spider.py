@@ -3,13 +3,12 @@ from typing import Dict, Tuple
 import scrapy
 
 import json
-
-from crawler.core_carrier.base import SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
+from crawler.core_carrier.base import SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL, CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem)
+    BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem, ExportErrorData)
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
     SuspiciousOperationError, CarrierInvalidSearchNoError
 
@@ -86,7 +85,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
             url=url_format.format(search_no=search_no),
             meta={
                 'task_id': task_id,
-                'handle_httpstatus_list': [400],
+                'search_no': search_no,
+                'handle_httpstatus_list': [400, 404],
             }
         )
 
@@ -95,10 +95,18 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         task_id = response.meta['task_id']
+        search_no = response.meta['search_no']
         response_dict = json.loads(response.text)
 
         if self.is_search_no_invalid(response_dict):
-            raise CarrierInvalidSearchNoError(search_type=self._search_type)
+            if self._search_type == SHIPMENT_TYPE_MBL:
+                yield ExportErrorData(task_id=task_id, mbl_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Data was not found')
+                return
+            else:
+                yield ExportErrorData(task_id=task_id, booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Data was not found')
+                return
 
         search_no = self._extract_search_no(response_dict=response_dict)
         routing_info = self._extract_routing_info(response_dict=response_dict)
