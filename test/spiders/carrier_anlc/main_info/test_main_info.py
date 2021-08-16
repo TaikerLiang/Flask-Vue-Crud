@@ -7,6 +7,8 @@ from scrapy.http import TextResponse
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierInvalidSearchNoError
 from crawler.spiders.carrier_anlc_aplu_cmdu import CarrierAnlcSpider, FirstTierRoutingRule
+from crawler.core_carrier.anlc_aplu_cmdu_share_spider import FirstTierRoutingRule as MultiFirstTierRoutingRule
+from crawler.spiders.carrier_anlc_multi import CarrierAnlcSpider as MultiCarrierAnlcSpider
 from test.spiders.carrier_anlc import main_info
 
 
@@ -24,6 +26,7 @@ def sample_loader(sample_loader):
         ('02_finish', 'AWT0143291'),
         ('03_multiple_containers', 'AWT0143454'),
         ('04_pod_status_is_remaining', 'AWT0143370'),
+        ('05_data_not_found', 'CNZY305058'),
     ],
 )
 def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
@@ -49,14 +52,21 @@ def test_first_tier_routing_rule(sample_loader, sub, mbl_no):
     verify_module.verify(results=results)
 
 
-@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'AWT0143111', CarrierInvalidSearchNoError),
-])
-def test_first_tier_routing_rule_error(sample_loader, sub, mbl_no, expect_exception):
+@pytest.mark.parametrize(
+    'sub,mbl_no',
+    [
+        ('01_not_finish', 'AWT0143054'),
+        ('02_finish', 'AWT0143291'),
+        ('03_multiple_containers', 'AWT0143454'),
+        ('04_pod_status_is_remaining', 'AWT0143370'),
+        ('05_data_not_found', 'CNZY305058'),
+    ],
+)
+def test_multi_first_tier_routing_rule(sample_loader, sub, mbl_no):
     html_text = sample_loader.read_file(sub, 'main_info.html')
 
-    option = FirstTierRoutingRule.build_request_option(
-        base_url=CarrierAnlcSpider.base_url, search_no=mbl_no, search_type=SHIPMENT_TYPE_MBL)
+    option = MultiFirstTierRoutingRule.build_request_option(
+        base_url=MultiCarrierAnlcSpider.base_url, search_no=mbl_no, search_type=SHIPMENT_TYPE_MBL, task_id=1)
 
     response = TextResponse(
         url=option.url,
@@ -65,8 +75,11 @@ def test_first_tier_routing_rule_error(sample_loader, sub, mbl_no, expect_except
         request=Request(
             url=option.url,
             meta=option.meta,
-        ),
+        )
     )
-    routing_rule = FirstTierRoutingRule(search_type=SHIPMENT_TYPE_MBL)
-    with pytest.raises(expect_exception):
-        list(routing_rule.handle(response=response))
+
+    routing_rule = MultiFirstTierRoutingRule(search_type=SHIPMENT_TYPE_MBL)
+    results = list(routing_rule.handle(response=response))
+
+    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module.multi_verify(results=results)
