@@ -1,0 +1,38 @@
+{
+  "ContainerAvailabilityResults": [
+    {
+      "Appointment": "No",
+      "AppointmentDate": "No",
+      "BillOfLading": ["NBOZ33498300"],
+      "CanBeSaved": true,
+      "ContainerId": "KOCU4471983",
+      "ContainerState": null,
+      "Customs": "RELEASED",
+      "Demurrage": "",
+      "DischargedDate": "15/08/21 15:52",
+      "Freight": "RELEASED",
+      "GateOutDate": "",
+      "GrossWeight": "40682.0",
+      "HazardousClass": "",
+      "Holds": [],
+      "HoldsDescription": [],
+      "IsBillOfLading": false,
+      "IsContainer": true,
+      "IsHazardous": false,
+      "IsoCode": "45G0",
+      "IsSaved": false,
+      "LineId": "HMM",
+      "LocalDateTime": "17/08/21",
+      "ReadyForDelivery": true,
+      "ReadyForDeliveryReason": "",
+      "SizeTypeHeight": "40/GP/96",
+      "StoragePaidThroughDate": "19/08/21",
+      "StrippingDate": "",
+      "VesselEta": "15/08/21 06:00",
+      "VesselName": "ONE MAXIM",
+      "YardLocation": "Yard Grounded (21724A3)"
+    }
+  ],
+  "Filters": ["NBOZ33498300"],
+  "ResultsCount": 1
+}

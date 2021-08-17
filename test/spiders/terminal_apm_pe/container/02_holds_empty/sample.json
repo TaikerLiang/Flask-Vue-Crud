@@ -1,0 +1,38 @@
+{
+  "ContainerAvailabilityResults": [
+    {
+      "Appointment": "Yes",
+      "AppointmentDate": "02/08/21 09:00",
+      "BillOfLading": ["N1KSZ057110X"],
+      "CanBeSaved": true,
+      "ContainerId": "GCXU5805042",
+      "ContainerState": "DEPARTED",
+      "Customs": "RELEASED",
+      "Demurrage": "",
+      "DischargedDate": "30/07/21 14:17",
+      "Freight": "RELEASED",
+      "GateOutDate": "02/08/21 10:50",
+      "GrossWeight": "58257",
+      "HazardousClass": "",
+      "Holds": [],
+      "HoldsDescription": [],
+      "IsBillOfLading": false,
+      "IsContainer": true,
+      "IsHazardous": false,
+      "IsoCode": "4500",
+      "IsSaved": false,
+      "LineId": "SUD",
+      "LocalDateTime": "17/08/21",
+      "ReadyForDelivery": false,
+      "ReadyForDeliveryReason": "Container not in Yard",
+      "SizeTypeHeight": "40/GP/96",
+      "StoragePaidThroughDate": "",
+      "StrippingDate": "",
+      "VesselEta": "30/07/21 08:00",
+      "VesselName": "PAXI",
+      "YardLocation": "COMMUNITY - OUT"
+    }
+  ],
+  "Filters": ["N1KSZ057110X"],
+  "ResultsCount": 1
+}

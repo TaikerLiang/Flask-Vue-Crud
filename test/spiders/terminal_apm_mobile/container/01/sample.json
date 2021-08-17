@@ -1,0 +1,38 @@
+{
+  "ContainerAvailabilityResults": [
+    {
+      "Appointment": "Yes",
+      "AppointmentDate": "04/08/21 12:00",
+      "BillOfLading": ["CNBW909554"],
+      "CanBeSaved": true,
+      "ContainerId": "FCIU3460294",
+      "ContainerState": null,
+      "Customs": "RELEASED",
+      "Demurrage": "",
+      "DischargedDate": "03/08/21 13:21",
+      "Freight": "RELEASED",
+      "GateOutDate": "04/08/21 14:09",
+      "GrossWeight": "50750.0",
+      "HazardousClass": "",
+      "Holds": [],
+      "HoldsDescription": [],
+      "IsBillOfLading": false,
+      "IsContainer": true,
+      "IsHazardous": false,
+      "IsoCode": "22G1",
+      "IsSaved": false,
+      "LineId": "CMA",
+      "LocalDateTime": "17/08/21",
+      "ReadyForDelivery": false,
+      "ReadyForDeliveryReason": "Container not in Yard",
+      "SizeTypeHeight": "20/GP/86",
+      "StoragePaidThroughDate": "",
+      "StrippingDate": "",
+      "VesselEta": "03/08/21 06:00",
+      "VesselName": "APL DANUBE",
+      "YardLocation": "COMMUNITY - OUT"
+    }
+  ],
+  "Filters": ["CNBW909554"],
+  "ResultsCount": 1
+}

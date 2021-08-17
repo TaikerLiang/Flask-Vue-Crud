@@ -1,0 +1,38 @@
+{
+  "ContainerAvailabilityResults": [
+    {
+      "Appointment": "Yes",
+      "AppointmentDate": "04/08/21 08:00",
+      "BillOfLading": ["SHA2105BWVF9"],
+      "CanBeSaved": true,
+      "ContainerId": "UACU5946066",
+      "ContainerState": null,
+      "Customs": "RELEASED",
+      "Demurrage": "",
+      "DischargedDate": "02/08/21 16:15",
+      "Freight": "RELEASED",
+      "GateOutDate": "04/08/21 10:42",
+      "GrossWeight": "50265.0",
+      "HazardousClass": "",
+      "Holds": [],
+      "HoldsDescription": [],
+      "IsBillOfLading": false,
+      "IsContainer": true,
+      "IsHazardous": false,
+      "IsoCode": "45G1",
+      "IsSaved": false,
+      "LineId": "HLC",
+      "LocalDateTime": "17/08/21",
+      "ReadyForDelivery": false,
+      "ReadyForDeliveryReason": "Container not in Yard",
+      "SizeTypeHeight": "40/GP/96",
+      "StoragePaidThroughDate": "",
+      "StrippingDate": "",
+      "VesselEta": "02/08/21 06:00",
+      "VesselName": "ONE MANEUVER",
+      "YardLocation": "COMMUNITY - OUT"
+    }
+  ],
+  "Filters": ["SHA2105BWVF9"],
+  "ResultsCount": 1
+}

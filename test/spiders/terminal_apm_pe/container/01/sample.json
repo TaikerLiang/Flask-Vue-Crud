@@ -1,0 +1,38 @@
+{
+  "ContainerAvailabilityResults": [
+    {
+      "Appointment": "No",
+      "AppointmentDate": "No",
+      "BillOfLading": ["N1SHA053888X"],
+      "CanBeSaved": true,
+      "ContainerId": "MRKU3570818",
+      "ContainerState": "DEPARTED",
+      "Customs": "RELEASED",
+      "Demurrage": "",
+      "DischargedDate": "02/08/21 10:57",
+      "Freight": "RELEASED",
+      "GateOutDate": "03/08/21 16:04",
+      "GrossWeight": "21914",
+      "HazardousClass": "",
+      "Holds": [],
+      "HoldsDescription": [],
+      "IsBillOfLading": false,
+      "IsContainer": true,
+      "IsHazardous": false,
+      "IsoCode": "45G1",
+      "IsSaved": false,
+      "LineId": "SUD",
+      "LocalDateTime": "17/08/21",
+      "ReadyForDelivery": false,
+      "ReadyForDeliveryReason": "Container not in Yard",
+      "SizeTypeHeight": "40/GP/96",
+      "StoragePaidThroughDate": "",
+      "StrippingDate": "",
+      "VesselEta": "02/08/21 08:00",
+      "VesselName": "GUDRUN MAERSK",
+      "YardLocation": "COMMUNITY - OUT"
+    }
+  ],
+  "Filters": ["N1SHA053888X"],
+  "ResultsCount": 1
+}
