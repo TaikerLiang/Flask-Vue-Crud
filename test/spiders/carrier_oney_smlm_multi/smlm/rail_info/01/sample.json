@@ -1,0 +1,134 @@
+{
+"Exception":"",
+"TRANS_RESULT_KEY":"S",
+"count":"1",
+"list": [
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "inArrDate": "2019-09-27 01:54",
+    "pickUpAvail": "Y",
+    "inDepYardNm": "FRASER SURREY DOCKS",
+    "outDepYardNm": "",
+    "outArrYardNm": "",
+    "outArrYardResult": "",
+    "copNo": "CSHA9827358813",
+    "currLoc": "JOLYARD",
+    "inArrName": "CHICAGO,IL, UNITED STATES",
+    "inDepDate": "2019-09-21 02:54",
+    "outArrName": "",
+    "inArrYardNm": "CN RAIL JOLIET",
+    "lastStatus": "GATE DEPARTURE",
+    "eventDt": "2019-09-29 11:58",
+    "outArrNod": "",
+    "inDepNod": "CAVANMF",
+    "ibflag": "I",
+    "outDepName": "",
+    "inArrNod": "USCHIRF",
+    "outDepDate": "",
+    "outArrDate": "",
+    "inDepName": "VANCOUVER,BC, CANADA",
+    "outDepNod": "",
+    "hashColumns": [
+      [
+        "in_dep_yard_nm",
+        "FRASER SURREY DOCKS"
+      ],
+      [
+        "last_status",
+        "GATE DEPARTURE"
+      ],
+      [
+        "out_dep_nod",
+        ""
+      ],
+      [
+        "out_dep_date",
+        ""
+      ],
+      [
+        "curr_loc",
+        "JOLYARD"
+      ],
+      [
+        "out_arr_yard_nm",
+        ""
+      ],
+      [
+        "out_arr_nod",
+        ""
+      ],
+      [
+        "out_dep_name",
+        ""
+      ],
+      [
+        "in_arr_date",
+        "2019-09-27 01:54"
+      ],
+      [
+        "in_arr_name",
+        "CHICAGO,IL, UNITED STATES"
+      ],
+      [
+        "out_arr_date",
+        ""
+      ],
+      [
+        "pick_up_avail",
+        "Y"
+      ],
+      [
+        "pagerows",
+        {}
+      ],
+      [
+        "out_arr_name",
+        ""
+      ],
+      [
+        "in_arr_yard_nm",
+        "CN RAIL JOLIET"
+      ],
+      [
+        "ibflag",
+        "I"
+      ],
+      [
+        "in_dep_nod",
+        "CAVANMF"
+      ],
+      [
+        "out_dep_yard_nm",
+        ""
+      ],
+      [
+        "event_dt",
+        "2019-09-29 11:58"
+      ],
+      [
+        "in_dep_name",
+        "VANCOUVER,BC, CANADA"
+      ],
+      [
+        "in_dep_date",
+        "2019-09-21 02:54"
+      ],
+      [
+        "out_arr_yard_result",
+        ""
+      ],
+      [
+        "cop_no",
+        "CSHA9827358813"
+      ],
+      [
+        "in_arr_nod",
+        "USCHIRF"
+      ]
+    ],
+    "hashFields": [
+    ]
+  }
+]}

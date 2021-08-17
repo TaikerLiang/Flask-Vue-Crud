@@ -1,0 +1,297 @@
+{
+"TRANS_RESULT_KEY":"S",
+"Exception":"",
+"count":"5",
+"list": [
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "weight": "7,852.800 KGS",
+    "copNo": "CSZP9916113071",
+    "blNo": "SZPVF2740514",
+    "eventDt": "2019-10-13 19:50",
+    "cntrTpszCd": "D5",
+    "copStsCd": "T",
+    "sealNo": "CNAM55794",
+    "placeCd": "KRPUS10",
+    "placeNm": "PUSAN, KOREA REPUBLIC OF",
+    "yardNm": "PNC (PUSAN NEWPORT COMPANY)",
+    "statusNm": "Vessel Depature from Transhipment Port",
+    "bkgNo": "SZPVF2740514",
+    "poNo": "",
+    "yardCd": "KRPUS10",
+    "statusCd": "FTVMDO",
+    "cntrNo": "UETU5848871",
+    "cntrTpszNm": "40'DRY HC.",
+    "cntrFlg": "Y",
+    "enblFlag": "Y",
+    "dspbkgNo": "SZPVF2740514",
+    "socFlg": "N",
+    "mvmtStsCd": "VL",
+    "hashColumns": [
+      [
+        "vsl_eng_nm",
+        {}
+      ],
+      [
+        "mvmt_sts_cd",
+        "VL"
+      ],
+      [
+        "cntr_flg",
+        "Y"
+      ],
+      [
+        "weight",
+        "7,852.800 KGS"
+      ],
+      [
+        "nod_cd",
+        {}
+      ],
+      [
+        "cop_sts_cd",
+        "T"
+      ],
+      [
+        "no",
+        {}
+      ],
+      [
+        "enbl_flag",
+        "Y"
+      ],
+      [
+        "seal_no",
+        "CNAM55794"
+      ],
+      [
+        "skd_dir_cd",
+        {}
+      ],
+      [
+        "place_nm",
+        "PUSAN, KOREA REPUBLIC OF"
+      ],
+      [
+        "pagerows",
+        {}
+      ],
+      [
+        "ibflag",
+        {}
+      ],
+      [
+        "cntr_tpsz_nm",
+        "40'DRY HC."
+      ],
+      [
+        "status_cd",
+        "FTVMDO"
+      ],
+      [
+        "status_nm",
+        "Vessel Depature from Transhipment Port"
+      ],
+      [
+        "bkg_no",
+        "SZPVF2740514"
+      ],
+      [
+        "bl_no",
+        "SZPVF2740514"
+      ],
+      [
+        "cop_dtl_seq",
+        {}
+      ],
+      [
+        "piece",
+        {}
+      ],
+      [
+        "act_tp_cd",
+        {}
+      ],
+      [
+        "soc_flg",
+        "N"
+      ],
+      [
+        "cntr_tpsz_cd",
+        "D5"
+      ],
+      [
+        "yard_cd",
+        "KRPUS10"
+      ],
+      [
+        "vvd",
+        {}
+      ],
+      [
+        "place_cd",
+        "KRPUS10"
+      ],
+      [
+        "po_no",
+        ""
+      ],
+      [
+        "yard_nm",
+        "PNC (PUSAN NEWPORT COMPANY)"
+      ],
+      [
+        "event_dt",
+        "2019-10-13 19:50"
+      ],
+      [
+        "cntr_no",
+        "UETU5848871"
+      ],
+      [
+        "dsp_bkg_no",
+        "SZPVF2740514"
+      ],
+      [
+        "skd_voy_no",
+        {}
+      ],
+      [
+        "cop_no",
+        "CSZP9916113071"
+      ],
+      [
+        "vsl_cd",
+        {}
+      ]
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "weight": "7,852.800 KGS",
+    "copNo": "CSZP9916113072",
+    "blNo": "SZPVF2740514",
+    "eventDt": "2019-10-13 19:50",
+    "cntrTpszCd": "D5",
+    "copStsCd": "T",
+    "sealNo": "CNAM55793",
+    "placeCd": "KRPUS10",
+    "placeNm": "PUSAN, KOREA REPUBLIC OF",
+    "yardNm": "PNC (PUSAN NEWPORT COMPANY)",
+    "statusNm": "Vessel Depature from Transhipment Port",
+    "bkgNo": "SZPVF2740514",
+    "poNo": "",
+    "yardCd": "KRPUS10",
+    "statusCd": "FTVMDO",
+    "cntrNo": "UETU5848402",
+    "cntrTpszNm": "40'DRY HC.",
+    "cntrFlg": "Y",
+    "enblFlag": "Y",
+    "dspbkgNo": "SZPVF2740514",
+    "socFlg": "N",
+    "mvmtStsCd": "VL",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "weight": "7,852.800 KGS",
+    "copNo": "CSZP9916113075",
+    "blNo": "SZPVF2740514",
+    "eventDt": "2019-10-13 19:50",
+    "cntrTpszCd": "D5",
+    "copStsCd": "T",
+    "sealNo": "CNAM55637",
+    "placeCd": "KRPUS10",
+    "placeNm": "PUSAN, KOREA REPUBLIC OF",
+    "yardNm": "PNC (PUSAN NEWPORT COMPANY)",
+    "statusNm": "Vessel Depature from Transhipment Port",
+    "bkgNo": "SZPVF2740514",
+    "poNo": "",
+    "yardCd": "KRPUS10",
+    "statusCd": "FTVMDO",
+    "cntrNo": "UETU5831035",
+    "cntrTpszNm": "40'DRY HC.",
+    "cntrFlg": "Y",
+    "enblFlag": "Y",
+    "dspbkgNo": "SZPVF2740514",
+    "socFlg": "N",
+    "mvmtStsCd": "VL",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "weight": "7,852.800 KGS",
+    "copNo": "CSZP9916113074",
+    "blNo": "SZPVF2740514",
+    "eventDt": "2019-10-13 19:50",
+    "cntrTpszCd": "D5",
+    "copStsCd": "T",
+    "sealNo": "CNAM55722",
+    "placeCd": "KRPUS10",
+    "placeNm": "PUSAN, KOREA REPUBLIC OF",
+    "yardNm": "PNC (PUSAN NEWPORT COMPANY)",
+    "statusNm": "Vessel Depature from Transhipment Port",
+    "bkgNo": "SZPVF2740514",
+    "poNo": "",
+    "yardCd": "KRPUS10",
+    "statusCd": "FTVMDO",
+    "cntrNo": "UETU5847089",
+    "cntrTpszNm": "40'DRY HC.",
+    "cntrFlg": "Y",
+    "enblFlag": "Y",
+    "dspbkgNo": "SZPVF2740514",
+    "socFlg": "N",
+    "mvmtStsCd": "VL",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "weight": "7,852.800 KGS",
+    "copNo": "CSZP9916113073",
+    "blNo": "SZPVF2740514",
+    "eventDt": "2019-10-13 19:50",
+    "cntrTpszCd": "D5",
+    "copStsCd": "T",
+    "sealNo": "CNAM55751",
+    "placeCd": "KRPUS10",
+    "placeNm": "PUSAN, KOREA REPUBLIC OF",
+    "yardNm": "PNC (PUSAN NEWPORT COMPANY)",
+    "statusNm": "Vessel Depature from Transhipment Port",
+    "bkgNo": "SZPVF2740514",
+    "poNo": "",
+    "yardCd": "KRPUS10",
+    "statusCd": "FTVMDO",
+    "cntrNo": "UETU5848906",
+    "cntrTpszNm": "40'DRY HC.",
+    "cntrFlg": "Y",
+    "enblFlag": "Y",
+    "dspbkgNo": "SZPVF2740514",
+    "socFlg": "N",
+    "mvmtStsCd": "VL",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  }
+]}
