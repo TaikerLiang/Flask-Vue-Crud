@@ -4,7 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.spiders.carrier_oney_smlm import CarrierSmlmSpider, ReleaseStatusRoutingRule
+from crawler.spiders.carrier_smlm import CarrierSmlmSpider
+from crawler.core_carrier.oney_smlm_share_spider import ReleaseStatusRoutingRule
 from test.spiders.carrier_oney_smlm.smlm import release_status
 
 
