@@ -144,7 +144,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.html'
+        return f'{self.name}.json'
 
     def handle(self, response):
         resp = json.loads(response.body)
@@ -157,6 +157,12 @@ class ContainerRoutingRule(BaseRoutingRule):
                 carrier_release=row[7],
                 last_free_day=self._get_last_free_day(row[9], row[10]),
             )
+
+        if 'Error' in resp:
+            for container_no in resp['Error'].split(','):
+                yield InvalidContainerNoItem(
+                    container_no=container_no.strip()
+                )
 
     def _get_last_free_day(self, port_lfd, line_lfd):
         port_lfd_dt, line_lfd_dt = None, None
