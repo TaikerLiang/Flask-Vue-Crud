@@ -1,0 +1,406 @@
+<html style="" class=" js flexbox flexboxlegacy canvas canvastext webgl no-touch geolocation postmessage websqldatabase indexeddb hashchange history draganddrop websockets rgba hsla multiplebgs backgroundsize borderimage borderradius boxshadow textshadow opacity cssanimations csscolumns cssgradients cssreflections csstransforms csstransforms3d csstransitions fontface generatedcontent video audio localstorage sessionstorage webworkers no-applicationcache svg inlinesvg smil svgclippaths"><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TMS - Container Availability</title>
+    <link rel="SHORTCUT ICON" href="/tms2/favicon.ico">
+    <link rel="preload" href="/tms2/fonts/glyphicons-halflings-regular.woff2" as="font" type="font/woff2">
+    <link href="/tms2/Content/css?v=dgXgu2tzuH50mDvMIy1n_Hb_52Ci0tDTf-iuhnXQIsk1" rel="stylesheet">
+
+    <script src="/tms2/bundles/modernizr?v=wBEWDufH_8Md-Pbioxomt90vm6tJN2Pyy9u9zHtWsPo1"></script>
+
+</head>
+<body style="">
+    <div class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/tms2/">TMS</a>
+            </div>
+                <div class="navbar-collapse collapse">
+                    <ul class="nav navbar-nav">
+                        <li class="dropdown">
+                            <a class="dropdown-toggle " data-toggle="dropdown" href="#">Vessel<span class="caret "></span></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="/tms2/Vessel/VesselSchedule">Vessel Schedule</a></li>
+                            </ul>
+                        </li>
+                        <li class="dropdown">
+                            <a class="dropdown-toggle " data-toggle="dropdown" href="#">Import<span class="caret "></span></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="/tms2/Import/ContainerAvailability">Container Availability</a></li>
+                            </ul>
+                        </li>
+                        <li class="dropdown">
+                            <a class="dropdown-toggle " data-toggle="dropdown" href="#">Export<span class="caret "></span></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="/tms2/Export/BookingInquiry">Booking Inquiry</a></li>
+                            </ul>
+                        </li>
+                        <li class="dropdown">
+                            <a class="dropdown-toggle " data-toggle="dropdown" href="#">Gate<span class="caret "></span></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="/tms2/Gate/GateTransaction">Gate Transaction</a></li>
+                            </ul>
+                        </li>
+                        <li class="dropdown">
+                            <a class="dropdown-toggle " data-toggle="dropdown" href="#">Equipment<span class="caret "></span></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="/tms2/Equipment/ContainerEventHistory">Container Event History</a></li>
+                                <li><a href="/tms2/Equipment/ChassisEventHistory">Chassis Event History</a></li>
+                            </ul>
+                        </li>
+                        <form action="/tms2/Account/SetTerminal" class="navbar-form navbar-left" id="TerminalForm" method="post"><input name="__RequestVerificationToken" type="hidden" value="nDcSyoXv1dRcCmQvjtARfggcLoehqkXYsjvHPe2a6i-m1bGtvwNgeezPe41XwLNqKm18yZCSk59hm2_w_fpXdvYfHLa2nLETGD3NIxNwaM-qvr_6yeugliJi012BwUclv8kvmznBJDOJX7kqYdnUug2">        <div class="form-group">
+<select class="form-control" id="loginTerminalId" name="loginTerminalId" onchange="javascript: document.getElementById('TerminalForm').submit()"><option value="1">ITS Long Beach</option>
+<option selected="selected" value="3">Husky Tacoma</option>
+</select>        </div>
+</form>
+                    </ul>
+                    <form action="/tms2/Account/Logoff" class="navbar-right" id="logoffForm" method="post"><input name="__RequestVerificationToken" type="hidden" value="wltyXfaqV5-AjifazQdJBvzgdDnBpwhqfwTsPgvNkqdx5THBSlyl0vV0UkNsDTNDQSi4tro3t85iFRTCiX6-zKyXiujuDcTTgC0RvWCa0ss3iFQQoIUNgepcyZWw23EGqXgrLfqxiwumcDRHA_w_0A2">        <ul class="nav navbar-nav">
+
+            <li class="dropdown">
+                <a class="dropdown-toggle" data-toggle="dropdown" href="#"><span class="glyphicon glyphicon-user white"></span>&nbsp;Brian Lee<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                        <li><a href="/tms2/Account/MyAccount">My Account</a></li>
+                        <li><a href="/tms2/Account/ChangePassword">Change Password</a></li>
+                        <li><a href="/tms2/Account/AchAuthorization">ACH Authorization</a></li>
+                        <li><a href="/tms2/Account/NotificationSetting">Notification Setting</a></li>
+                        <li><a href="/tms2/Import/PaymentHistory">Payment History</a></li>
+                        <li><a href="/tms2/Account/ApiAccess">API Terms of Use</a></li>
+                </ul>
+            </li>
+            <li><a href="javascript:document.getElementById('logoffForm').submit()">Log off</a></li>
+        </ul>
+</form>
+                </div>
+
+        </div>
+    </div>
+    <div class="container body-content">
+
+
+
+<div class="form-inline">
+    <h3 style="display: inline-block">Container Availability</h3>
+    <button id="btnWatchlist" type="button" class="btn btn-info btn-watchlist">Watchlist</button>
+</div>
+
+
+
+<div class="alert hidden alert-dismissable alert-partial">
+    <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
+
+</div>
+
+<div id="divTempAlert"></div>
+
+<form action="/tms2/Import/ContainerAvailability" class="form-horizontal" id="formAvailabilityHeader" method="post"><input name="__RequestVerificationToken" type="hidden" value="itT4p9emuxd885pjYk7kpYJJ32wpUQndi1xbCR-oazZGLp7V4vRLQNbrb5ZDaRQ6exy7bod0E9qtxZzJAbhSGAz1aC-YEsO05TR6iidsl3bszC6dgi9UoVL0PJL5UEDtBkMVBZdN1YsaK6KmSZOrlQ2">    <div class="row">
+        <div class="col-md-8">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <div class="form-inline">
+                        <div class="radio" style="margin-right: 10px;">
+                            <label class="label-radio"><input checked="checked" class="radio-inline" id="refType" name="refType" type="radio" value="CN"> Container#</label>
+                            <label class="label-radio"><input class="radio-inline" id="refType" name="refType" type="radio" value="BL"> B/L#</label>
+                        </div>
+                        <div class="form-group" style="margin-left: 10px;">
+                            <label for="pickupDate" style="margin-top: 8px;">Pickup Date: </label>
+                            <div class="input-group date">
+                                <input type="text" id="pickupDate" name="pickupDate" class="form-control no-focus full-width" value="08/17/2021">
+                                <span class="btn-primary input-group-addon"><i class="glyphicon glyphicon-calendar white"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <textarea class="form-control full-width uppercase no-text-transform" rows="4" id="refNums" name="refNums" placeholder="Enter Container#(s) or B/L#(s) of your choice above - followed by comma or each in different lines.">MSMU5136043</textarea>
+                    <div class="input-group-addon">
+                        <button class="btn btn-primary" type="submit">
+                            <span class="glyphicon glyphicon-search" data-toggle="tooltip" data-placement="right" title="" data-original-title="Search"></span>
+                        </button>
+                    </div>
+                </div>
+             </div>
+        </div>
+        <div class="col-md-4"></div>
+    </div>
+</form>
+<form action="/tms2/Import/PayOnline" class="form-horizontal" id="formAvailabilityBody" method="post" novalidate="novalidate"><input name="__RequestVerificationToken" type="hidden" value="AmFGAFhNqAiVbrn4bRLwZHJUzKoxC8GKjxcu9h9RrvXuNj484McQuSX3nnkJidD9t_d1wNj1UWTH7BqnR6E2VZpgbTYF920EVcybbitcml3iD_GTPweuKwi8vbGgOCz6kmW5Mxr1-GSK-jSbPWDGmQ2">        <div class="table-responsive">
+            <table class="table table-condensed table-borderless">
+                <tbody><tr class="active">
+                    <th>
+                        <a class="link-post" href="/tms2/Import/ContainerAvailability?sort=Container_Desc">Container#</a>
+                            <span class="glyphicon glyphicon-triangle-top"></span>
+                                            </th>
+                    <th>
+                        <a class="link-post" href="/tms2/Import/ContainerAvailability?sort=Line">Line</a>
+                                            </th>
+                    <th>
+                        <a class="link-post" href="/tms2/Import/ContainerAvailability?sort=SzTpHt">SzTpHt</a>
+                                            </th>
+                    <th>
+                        <a class="link-post" href="/tms2/Import/ContainerAvailability?sort=Chassis">Chassis#</a>
+                                            </th>
+                    <th>
+                        <a class="link-post" href="/tms2/Import/ContainerAvailability?sort=Spot">Spot</a>
+                                            </th>
+                    <th>
+                        <a class="link-post" href="/tms2/Import/ContainerAvailability?sort=Dschg">Dschg Date</a>
+                                            </th>
+                    <th>
+                        <a class="link-post" href="/tms2/Import/ContainerAvailability?sort=PickUp">Pick Up</a>
+                                            </th>
+                    <th>
+                        <a class="link-post" href="/tms2/Import/ContainerAvailability?sort=LFD">LFD</a>
+                                            </th>
+                    <th>
+                        <a class="link-post" href="/tms2/Import/ContainerAvailability?sort=Due">Due</a>
+                                            </th>
+                        <th style="background:#FF0000; color:#FFFFFF; text-align: center;">
+                            Pay
+                        </th>
+                </tr>
+                <tr>
+                    <td>
+                        <a href="#MSMU5136043" data-toggle="collapse" id="6919520">
+                            <span data-toggle="tooltip" data-placement="right" title="" data-original-title="Details">
+                                MSMU5136043
+                            </span>
+                        </a>
+                    </td>
+                    <td>
+                        MSC
+                    </td>
+                    <td>
+                        40DR96
+                    </td>
+                    <td>
+
+                    </td>
+                    <td>
+                        ARRIVING
+                    </td>
+                    <td>
+                        08/18 1st shift
+                    </td>
+                    <td>
+                        Not Available
+                    </td>
+                    <td>
+
+                    </td>
+                    <td>
+
+                    </td>
+                        <td class="text-center">
+<input class="chk" data-val="true" data-val-required="The Pay field is required." disabled="disabled" id="6919520" name="item.chkPay" type="checkbox" value="true"><input name="item.chkPay" type="hidden" value="false">                        </td>
+                </tr>
+                <tr id="MSMU5136043" class="collapse">
+                    <td colspan="9">
+                        <table class="table table-condensed table-bordered" style="margin-left: 10px;">
+                            <tbody><tr class="child-table-row">
+                                <td class="col-md-1 bgactive">Vessel</td>
+                                <td class="col-md-3">MSC POH LIN</td>
+                                <td class="col-md-1 bgactive">Voyage</td>
+                                <td class="col-md-3">126N</td>
+                                <td class="col-md-1 bgactive">B/L#</td>
+                                <td class="col-md-3" colspan="2">CP182917</td>
+                            </tr>
+                            <tr class="child-table-row">
+                                <td class="col-md-1 bgactive">Customs</td>
+                                <td class="col-md-3 customs">OK</td>
+                                <td class="col-md-1 bgactive">Spot</td>
+                                <td class="col-md-3 red-alert">ARRIVING<span>&nbsp;&nbsp;08/18 1st shift</span></td>
+                                <td class="col-md-1 bgactive">Demurrage</td>
+                                <td class="col-md-1 text-right"></td>
+                                <td class="col-md-2"></td>
+
+                            </tr>
+                            <tr class="child-table-row">
+                                <td class="col-md-1 bgactive">Freight</td>
+                                <td class="col-md-3">OK</td>
+                                <td class="col-md-1 bgactive">Special</td>
+                                <td class="col-md-3">OK</td>
+                                <td class="col-md-1 bgactive">Exam Fee</td>
+                                <td class="col-md-1 text-right"></td>
+                                <td class="col-md-2"></td>
+                            </tr>
+                            <tr class="child-table-row">
+                                <td class="col-md-1 bgactive">Exam</td>
+                                <td class="col-md-3">OK</td>
+                                <td class="col-md-1 bgactive"></td>
+                                <td class="col-md-3 red-alert"></td>
+                                <td class="col-md-1 bgactive">Total Due</td>
+                                <td class="col-md-1 text-right"></td>
+                                <td class="col-md-2"></td>
+                            </tr>
+                                <tr class="child-table-row">
+                                    <td class="col-md-1 bgactive">Line Fee</td>
+                                    <td class="col-md-3">OK</td>
+                                     <td class="col-md-8 red-alert" colspan="5"></td>
+                                </tr>
+                            <tr class="child-table-row">
+                                <td class="col-md-1 bgactive">Trucker</td>
+                                <td class="col-md-11" colspan="6"></td>
+                            </tr>
+                            <tr class="child-table-row">
+                                <td class="col-md-1 bgactive">Remark</td>
+                                <td class="col-md-11" colspan="6"></td>
+                            </tr>
+                        </tbody></table>
+                    </td>
+                </tr>
+            </tbody></table>
+        </div>
+        <div class="form-group">
+            <div class="text-center">
+                <span id="tooltipMsg" data-original-title="" title="">
+                <a id="linkSave" class="btn btn-info" role="button" href="#">Save as Watchlist</a>
+                    <a id="linkPay" class="btn btn-primary disabled" role="button" href="#">Pay Online</a>
+            </span></div>
+        </div>
+</form>
+
+        <div class="modal fade" id="ajaxLoader" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-body">
+            <img src="/tms2/Images/ajax-loader.gif" style="display: block; margin-left: auto; margin-right: auto;">
+        </div>
+    </div>
+</div>
+
+        <footer>
+            <p>
+                © 2021 International Transportation Service, Inc. All Rights Reserved.&nbsp;|
+                <a href="/tms2/Home/TermsOfUse">Terms of Use</a>&nbsp;|
+                <a href="/tms2/Home/PrivacyPolicy">Privacy Policy</a>&nbsp;|
+                <a href="/tms2/Home/CAPrivacyNotice">CA Privacy Notice</a>
+            </p>
+        </footer>
+        <div class="alert alert-dismissible ccpa navbar-fixed-bottom text-center">
+    We updated our privacy policy for California residents.
+    <a class="ccpa-link" href="/tms2/Home/CAPrivacyNotice">Find out more</a>.&nbsp;&nbsp;
+    <a class="ccpa-ok" href="#" data-dismiss="alert" aria-label="close"><span class="badge">&nbsp;OK&nbsp;</span></a>
+</div>
+    </div>
+    <script src="/tms2/bundles/jquery?v=M6dmVkrHVhoZ1gfOtvVDZbgBcQTsbWxoLsRizcGkbPk1"></script>
+
+    <script src="/tms2/bundles/bootstrap?v=s-SGJG8yommez0_GLR4VlOO9C3lo_JweazcS1ckz8t01"></script>
+
+    <script src="/tms2/bundles/jqueryval?v=Zv19wK1rxyUUZKVgBHePXM-TWnCqYH9Z7bVruetA0cU1"></script>
+
+    <script src="/tms2/bundles/jscookie?v=DEJzqsWWRPncs8V-Hm3hVnNsC9ysSgI_R4Wr0PcqK9c1"></script>
+
+
+
+
+    <script src="/tms2/Scripts/Import/containeravailability.js?v=1.4"></script>
+
+
+    <script>
+        // Global Variable
+        var _showAjaxLoader = false;
+        var _isWindowSmall = false;
+        var _rootPath = '/tms2/';
+
+        $(function () {
+            // Remove Cookie
+            //Cookies.remove('TmsCcpa');
+
+            // Show CCPA Notice
+            if (Cookies.get('TmsCcpa') != 'CCPAOKay') {
+                $('.ccpa').removeClass('hidden');
+            }
+            // Create Cookie
+            $('.ccpa-ok').click(function () {
+                 Cookies.set('TmsCcpa', 'CCPAOKay', { expires: 365 });
+            });
+
+            // Place focus on the first input field
+            $('input,textarea').filter('.form-control:visible:enabled:not([readonly=readonly]):not(.no-focus):first').focus();
+
+            // Initialize Bootstrap Tooltip
+            $('[data-toggle="tooltip"]').tooltip();
+
+            // Convert input value to uppercase
+            $('input,textarea').filter('.form-control.uppercase').keyup(function () {
+                $(this).val($(this).val().toUpperCase());
+            });
+
+            // Clear search input with Close button
+            $('input.form-control.search').keyup(function () {
+                $('button.search-clear').toggle(Boolean($(this).val()));
+            });
+            $('button.search-clear').toggle(Boolean($('input.form-control.search').val()));
+            $('button.search-clear').click(function () {
+                $('input.form-control.search').val('').focus();
+                $(this).hide();
+            });
+
+            // Show collapsible element with Up arrow
+            $('.panel-collapse').on('show.bs.collapse', function () {
+                $(this).siblings('.panel-heading').addClass('active');
+            });
+            // Hide collapsible element with Down arrow
+            $('.panel-collapse').on('hide.bs.collapse', function () {
+                $(this).siblings('.panel-heading').removeClass('active');
+            });
+
+            // Show DateTime Picker
+            $('.input-group.date').datetimepicker({
+                format: 'MM/DD/YYYY'
+            });
+
+            // Show/Hide Ajax Loader Icon
+            $(document).ajaxStart(function () {
+                if (_showAjaxLoader) {
+                    $('#ajaxLoader').modal({ backdrop: 'static' });
+                }
+            });
+            $(document).ajaxStop(function () {
+                _showAjaxLoader = false;
+                $('#ajaxLoader').modal('hide');
+            });
+        });
+
+        // Generate Temp Alerts with Close Button
+        function showTempAlert(alertArray, alertClass) {
+            var alertMsg = "";
+            for (var i = 0; i < alertArray.length; i++) {
+                alertMsg += '<li>' + alertArray[i] + '</li>'
+            }
+            $('#divTempAlert').empty();
+            $('#divTempAlert').append('<div id="tempAlert"></div>');
+            $('#tempAlert').addClass('alert ' + alertClass + ' alert-dismissable alert-partial');
+            $('#tempAlert').html('<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>' +
+                '<ul>' + alertMsg + '</ul>');
+        }
+
+        // Close Temp Alerts
+        function closeTempAlert() {
+            $('#divTempAlert').empty();
+        }
+
+        // Get Domain Name
+        function getDomainName() {
+            var url = window.location.href;
+            var arr = url.split('/');
+            return arr[2];
+        }
+
+        // Get Window Width
+        $(window).on("load resize", function () {
+            if ($(window).width() >= 768) {
+                _isWindowSmall = false;
+            }
+            if ($(window).width() < 768) {
+                _isWindowSmall = true;
+            }
+        });
+    </script>
+
+
+</body></html>

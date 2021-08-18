@@ -6,8 +6,8 @@ from scrapy.http import TextResponse
 
 from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError
 from crawler.core_terminal.rules import RuleManager
-from crawler.spiders.terminal_tms import ContainerAvailabilityRoutingRule
-from test.spiders.terminal_tms.husky import container_availability
+from crawler.core_terminal.tms_share_spider import SeleniumRoutingRule
+from test.spiders.terminal_long_beach import container_availability
 
 
 @pytest.fixture
@@ -26,7 +26,7 @@ def sample_loader(sample_loader):
 def test_container_status_routing_rule(sub, container_no, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    request_option = ContainerAvailabilityRoutingRule.build_request_option(token='', container_no=container_no)
+    request_option = SeleniumRoutingRule.build_request_option(token='', container_no=container_no)
 
     response = TextResponse(
         url=request_option.url,
@@ -35,13 +35,13 @@ def test_container_status_routing_rule(sub, container_no, sample_loader):
         request=Request(
             url=request_option.url,
             meta={
-                RuleManager.META_TERMINAL_CORE_RULE_NAME: ContainerAvailabilityRoutingRule.name,
+                RuleManager.META_TERMINAL_CORE_RULE_NAME: SeleniumRoutingRule.name,
                 'container_no': container_no,
             },
         ),
     )
 
-    routing_rule = ContainerAvailabilityRoutingRule()
+    routing_rule = SeleniumRoutingRule()
     results = list(routing_rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
@@ -57,7 +57,7 @@ def test_container_status_routing_rule(sub, container_no, sample_loader):
 def test_container_availability_handler_error(sub, container_no, expected_exception, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    request_option = ContainerAvailabilityRoutingRule.build_request_option(token='', container_no=container_no)
+    request_option = SeleniumRoutingRule.build_request_option(token='', container_no=container_no)
 
     response = TextResponse(
         url=request_option.url,
@@ -69,6 +69,6 @@ def test_container_availability_handler_error(sub, container_no, expected_except
         ),
     )
 
-    routing_rule = ContainerAvailabilityRoutingRule()
+    routing_rule = SeleniumRoutingRule()
     with pytest.raises(expected_exception=expected_exception):
         list(routing_rule.handle(response=response))
