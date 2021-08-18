@@ -26,7 +26,10 @@ def sample_loader(sample_loader):
 def test_container_handle(sub, container_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
-    option = ContainerRoutingRule.build_request_option(container_no=container_no, sk='')
+    option = ContainerRoutingRule.build_request_option(
+        container_no_list=[container_no],
+        sk=''
+    )
 
     response = TextResponse(
         url=option.url,

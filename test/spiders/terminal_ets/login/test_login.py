@@ -24,7 +24,12 @@ def sample_loader(sample_loader):
 def test_login_handle(sub, container_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'sample.json')
 
-    option = LoginRoutingRule.build_request_option(captcha='', container_no=container_no, dc='', verify_key='')
+    option = LoginRoutingRule.build_request_option(
+        captcha_text='',
+        container_no_list=[container_no],
+        dc='',
+        verify_key=''
+    )
 
     response = TextResponse(
         url=option.url,
