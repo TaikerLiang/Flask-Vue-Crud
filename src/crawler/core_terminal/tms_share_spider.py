@@ -114,9 +114,6 @@ class SeleniumRoutingRule(BaseRoutingRule):
             page_source = content_getter.search(container_no)
             resp = Selector(text=page_source)
             if not resp.css('table.table-borderless'):
-                yield InvalidContainerNoItem(
-                    container_no=container_no
-                )
                 continue
             container_info = self._extract_container_info(resp)
             extra_container_info = self._extract_extra_container_info(resp)
