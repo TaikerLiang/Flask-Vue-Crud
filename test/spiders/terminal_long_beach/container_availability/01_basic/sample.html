@@ -1,18 +1,15 @@
-
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8" />
+<html style="" class=" js flexbox flexboxlegacy canvas canvastext webgl no-touch geolocation postmessage websqldatabase indexeddb hashchange history draganddrop websockets rgba hsla multiplebgs backgroundsize borderimage borderradius boxshadow textshadow opacity cssanimations csscolumns cssgradients cssreflections csstransforms csstransforms3d csstransitions fontface generatedcontent video audio localstorage sessionstorage webworkers no-applicationcache svg inlinesvg smil svgclippaths"><head>
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TMS - Container Availability</title>
     <link rel="SHORTCUT ICON" href="/tms2/favicon.ico">
     <link rel="preload" href="/tms2/fonts/glyphicons-halflings-regular.woff2" as="font" type="font/woff2">
-    <link href="/tms2/Content/css?v=vCcjz16d8HsLXxDfRIf3SfMvHPDTix7N6cYyjiwPqQM1" rel="stylesheet"/>
+    <link href="/tms2/Content/css?v=dgXgu2tzuH50mDvMIy1n_Hb_52Ci0tDTf-iuhnXQIsk1" rel="stylesheet">
 
     <script src="/tms2/bundles/modernizr?v=wBEWDufH_8Md-Pbioxomt90vm6tJN2Pyy9u9zHtWsPo1"></script>
 
 </head>
-<body>
+<body style="">
     <div class="navbar navbar-inverse navbar-fixed-top">
         <div class="container">
             <div class="navbar-header">
@@ -56,13 +53,13 @@
                                 <li><a href="/tms2/Equipment/ChassisEventHistory">Chassis Event History</a></li>
                             </ul>
                         </li>
-                        <form action="/tms2/Account/SetTerminal" class="navbar-form navbar-left" id="TerminalForm" method="post"><input name="__RequestVerificationToken" type="hidden" value="08HmaecP_MZlhu_o2XpsKxMF-b0U7aqlWaj7dBBvjzcTqBLbM5_KRadBNjTFvY9T77TlAkfuFy_uGYv2AJh_U0c3WhaixuKzIaU1BDbp2qVJtzczRM6uFZV0PyfKWQQ92uQkDC7knj9cSByMkUWnJA2" />        <div class="form-group">
-<select class="form-control" id="loginTerminalId" name="loginTerminalId" onchange="javascript: document.getElementById(&#39;TerminalForm&#39;).submit()"><option value="1">ITS Long Beach</option>
-<option selected="selected" value="3">Husky Tacoma</option>
+                        <form action="/tms2/Account/SetTerminal" class="navbar-form navbar-left" id="TerminalForm" method="post"><input name="__RequestVerificationToken" type="hidden" value="Nar1l-JKGxP9Zg4RL14veS1R4WYNnbHqm0A9umOETkiGuZc9_8Kx0IvPbmzOFnuLRd0_y29VIvpTp7XrHMFRpkNdLwhuSskQ52yWvigg5qIhZGqGYGUsQOxwKRHvZIC_JPm_iH4vUJaqJV12McoBVA2">        <div class="form-group">
+<select class="form-control" id="loginTerminalId" name="loginTerminalId" onchange="javascript: document.getElementById('TerminalForm').submit()"><option selected="selected" value="1">ITS Long Beach</option>
+<option value="3">Husky Tacoma</option>
 </select>        </div>
 </form>
                     </ul>
-                    <form action="/tms2/Account/Logoff" class="navbar-right" id="logoffForm" method="post"><input name="__RequestVerificationToken" type="hidden" value="OTGa-LWEUH3mw_eIkE5sm0tPJZeIuvVd80l5FlWh0BbiKJHhlBYkKA1qJ2bUaygllYHAO6hLMhiipCHsmRu1r6SuchEVyaivV4Okwt2DOuAnEmYOrT2vHlquiZjVRuxKl3mind7-Ze2X0C4ftbBczQ2" />        <ul class="nav navbar-nav">
+                    <form action="/tms2/Account/Logoff" class="navbar-right" id="logoffForm" method="post"><input name="__RequestVerificationToken" type="hidden" value="7VbxnRlJIN5Eg0sp9cr90_mhbQCo4G4yjyBLXgxeN9VhPWOomVAN4ONtuwycWErxbKXibeiD420pJJ-S6pWcoBvuOsKYLlbw_ftHW8coivkfP4OiTZqOruIL8Tu4RbIj6Jt6jAH0a8v4KCyUIylZ4Q2">        <ul class="nav navbar-nav">
 
             <li class="dropdown">
                 <a class="dropdown-toggle" data-toggle="dropdown" href="#"><span class="glyphicon glyphicon-user white"></span>&nbsp;Brian Lee<span class="caret"></span></a>
@@ -72,6 +69,7 @@
                         <li><a href="/tms2/Account/AchAuthorization">ACH Authorization</a></li>
                         <li><a href="/tms2/Account/NotificationSetting">Notification Setting</a></li>
                         <li><a href="/tms2/Import/PaymentHistory">Payment History</a></li>
+                        <li><a href="/tms2/Account/ApiAccess">API Terms of Use</a></li>
                 </ul>
             </li>
             <li><a href="javascript:document.getElementById('logoffForm').submit()">Log off</a></li>
@@ -93,35 +91,35 @@
 
 
 <div class="alert hidden alert-dismissable alert-partial">
-    <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+    <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
 
 </div>
 
 <div id="divTempAlert"></div>
 
-<form action="/tms2/Import/ContainerAvailability" class="form-horizontal" id="formAvailabilityHeader" method="post"><input name="__RequestVerificationToken" type="hidden" value="P37GGP0csChuBQQhuRHS4ICzfGXqKwrTfxhQbGjDrYV3sTzH8HUniRMfHqRVPAKqkYlka5FAH1dh1ea63miH-ciJ9bj-bWSkw3WJ0MygxkwFlrF5qDp_do_OK67K1Sn8ZbQcSz0Rx-NSMJpl4T7p9A2" />    <div class="row">
+<form action="/tms2/Import/ContainerAvailability" class="form-horizontal" id="formAvailabilityHeader" method="post"><input name="__RequestVerificationToken" type="hidden" value="OplYeSLVdPjB0Blu0W2YSVorfYPi7Wn5PDXmoaHjtEMwd3xn1ijwsW_YLifRtsAdvCttwUgUOm5Mgpb9rsinIgYJ67lQArn4I54IXoPqzrLK7FakJX9LNEXP9nr-tE0cfnJW2iVoheYO_6TxQ0qyZA2">    <div class="row">
         <div class="col-md-8">
             <div class="panel panel-default">
                 <div class="panel-heading">
                     <div class="form-inline">
                         <div class="radio" style="margin-right: 10px;">
-                            <label class="label-radio"><input checked="checked" class="radio-inline" id="refType" name="refType" type="radio" value="CN" /> Container#</label>
-                            <label class="label-radio"><input class="radio-inline" id="refType" name="refType" type="radio" value="BL" /> B/L#</label>
+                            <label class="label-radio"><input checked="checked" class="radio-inline" id="refType" name="refType" type="radio" value="CN"> Container#</label>
+                            <label class="label-radio"><input class="radio-inline" id="refType" name="refType" type="radio" value="BL"> B/L#</label>
                         </div>
                         <div class="form-group" style="margin-left: 10px;">
                             <label for="pickupDate" style="margin-top: 8px;">Pickup Date: </label>
                             <div class="input-group date">
-                                <input type="text" id="pickupDate" name="pickupDate" class="form-control no-focus full-width" value="05/10/2020" />
+                                <input type="text" id="pickupDate" name="pickupDate" class="form-control no-focus full-width" value="08/18/2021">
                                 <span class="btn-primary input-group-addon"><i class="glyphicon glyphicon-calendar white"></i></span>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="input-group">
-                    <textarea class="form-control full-width uppercase no-text-transform" rows="4" id="refNums" name="refNums"  placeholder="Enter Container#(s) or B/L#(s) of your choice above - followed by comma or each in different lines.">NYKU4410168</textarea>
+                    <textarea class="form-control full-width uppercase no-text-transform" rows="4" id="refNums" name="refNums" placeholder="Enter Container#(s) or B/L#(s) of your choice above - followed by comma or each in different lines.">TGHU0113128</textarea>
                     <div class="input-group-addon">
                         <button class="btn btn-primary" type="submit">
-                            <span class="glyphicon glyphicon-search" data-toggle="tooltip" data-placement="right" title="Search"></span>
+                            <span class="glyphicon glyphicon-search" data-toggle="tooltip" data-placement="right" title="" data-original-title="Search"></span>
                         </button>
                     </div>
                 </div>
@@ -130,9 +128,9 @@
         <div class="col-md-4"></div>
     </div>
 </form>
-<form action="/tms2/Import/PayOnline" class="form-horizontal" id="formAvailabilityBody" method="post"><input name="__RequestVerificationToken" type="hidden" value="yUHskBDOUd_nOn6jskZ0rHqINxKozJTur0Bq2bzoD-NVSRPzZxhgxHLmF_41cml148I1JlLtNx-V26UwQ0xEgysDdkaRKqYXcnOXFLWs5U6gJMh6RQu_pUYYWdRS7L3RoL9MFH9FWoxEhjkL5a9u_A2" />        <div class="table-responsive">
+<form action="/tms2/Import/PayOnline" class="form-horizontal" id="formAvailabilityBody" method="post" novalidate="novalidate"><input name="__RequestVerificationToken" type="hidden" value="6m4gVNAxCVzyorjMwC4X89XvRG-IdyjAJxSG2M2AMGu2qp3zuJANwHK0r1L_I8AweuLPDnBzGLW-eidtjEG22pjMlWO3GYvB3OeFMJCXp4KAhQDG01uCOGp-ol2ewsqF7eIb2KYyZKqS4TtbIVVhqA2">        <div class="table-responsive">
             <table class="table table-condensed table-borderless">
-                <tr class="active">
+                <tbody><tr class="active">
                     <th>
                         <a class="link-post" href="/tms2/Import/ContainerAvailability?sort=Container_Desc">Container#</a>
                             <span class="glyphicon glyphicon-triangle-top"></span>
@@ -167,55 +165,55 @@
                 </tr>
                 <tr>
                     <td>
-                        <a href="#NYKU4410168" data-toggle="collapse" id="5755495">
-                            <span data-toggle="tooltip" data-placement="right" title="Details">
-                                NYKU4410168
+                        <a href="#TGHU0113128" data-toggle="collapse" id="14360159">
+                            <span data-toggle="tooltip" data-placement="right" title="" data-original-title="Details">
+                                TGHU0113128
                             </span>
                         </a>
                     </td>
                     <td>
-                        ONE
+                        HAP
                     </td>
                     <td>
-                        40DR96
+                        20DR86
                     </td>
                     <td>
-                        FB
+                        CTSZ007
                     </td>
                     <td>
                         DELIVERED
                     </td>
                     <td>
-                        04/09/2020
+                        08/12/2021
                     </td>
                     <td>
                         Not Available
                     </td>
                     <td>
-                        04/15/2020
+                        08/17/2021
                     </td>
                     <td>
 
                     </td>
                         <td class="text-center">
-<input class="chk" data-val="true" data-val-required="The Pay field is required." disabled="disabled" id="5755495" name="item.chkPay" type="checkbox" value="true" /><input name="item.chkPay" type="hidden" value="false" />                        </td>
+<input class="chk" data-val="true" data-val-required="The Pay field is required." disabled="disabled" id="14360159" name="item.chkPay" type="checkbox" value="true"><input name="item.chkPay" type="hidden" value="false">                        </td>
                 </tr>
-                <tr id="NYKU4410168" class="collapse">
+                <tr id="TGHU0113128" class="collapse">
                     <td colspan="9">
                         <table class="table table-condensed table-bordered" style="margin-left: 10px;">
-                            <tr class="child-table-row">
+                            <tbody><tr class="child-table-row">
                                 <td class="col-md-1 bgactive">Vessel</td>
-                                <td class="col-md-3">MOL CELEBRATION</td>
+                                <td class="col-md-3">YM WHOLESOME</td>
                                 <td class="col-md-1 bgactive">Voyage</td>
-                                <td class="col-md-3">076E</td>
+                                <td class="col-md-3">028E</td>
                                 <td class="col-md-1 bgactive">B/L#</td>
-                                <td class="col-md-3" colspan="2">SH9ER3047500</td>
+                                <td class="col-md-3" colspan="2">CA4210570233</td>
                             </tr>
                             <tr class="child-table-row">
                                 <td class="col-md-1 bgactive">Customs</td>
-                                <td class="col-md-3 red-alert customs">OK</td>
+                                <td class="col-md-3 customs">OK</td>
                                 <td class="col-md-1 bgactive">Spot</td>
-                                <td class="col-md-3 red-alert">DELIVERED<span>&nbsp;&nbsp;04/14/2020</span></td>
+                                <td class="col-md-3 red-alert">DELIVERED<span>&nbsp;&nbsp;08/18/2021</span></td>
                                 <td class="col-md-1 bgactive">Demurrage</td>
                                 <td class="col-md-1 text-right"></td>
                                 <td class="col-md-2"></td>
@@ -223,22 +221,27 @@
                             </tr>
                             <tr class="child-table-row">
                                 <td class="col-md-1 bgactive">Freight</td>
-                                <td class="col-md-3 red-alert">OK</td>
+                                <td class="col-md-3">OK</td>
                                 <td class="col-md-1 bgactive">Special</td>
-                                <td class="col-md-3 red-alert">OK</td>
+                                <td class="col-md-3">OK</td>
                                 <td class="col-md-1 bgactive">Exam Fee</td>
                                 <td class="col-md-1 text-right"></td>
                                 <td class="col-md-2"></td>
                             </tr>
                             <tr class="child-table-row">
                                 <td class="col-md-1 bgactive">Exam</td>
-                                <td class="col-md-3 red-alert">OK</td>
-                                <td class="col-md-1 bgactive"></td>
-                                <td class="col-md-3 red-alert"></td>
+                                <td class="col-md-3">OK</td>
+                                <td class="col-md-1 bgactive">PierPass</td>
+                                <td class="col-md-3">OK</td>
                                 <td class="col-md-1 bgactive">Total Due</td>
                                 <td class="col-md-1 text-right"></td>
                                 <td class="col-md-2"></td>
                             </tr>
+                                <tr class="child-table-row">
+                                    <td class="col-md-1 bgactive">Line Fee</td>
+                                    <td class="col-md-3">OK</td>
+                                     <td class="col-md-8 red-alert" colspan="5"></td>
+                                </tr>
                             <tr class="child-table-row">
                                 <td class="col-md-1 bgactive">Trucker</td>
                                 <td class="col-md-11" colspan="6"></td>
@@ -247,17 +250,17 @@
                                 <td class="col-md-1 bgactive">Remark</td>
                                 <td class="col-md-11" colspan="6"></td>
                             </tr>
-                        </table>
+                        </tbody></table>
                     </td>
                 </tr>
-            </table>
+            </tbody></table>
         </div>
         <div class="form-group">
             <div class="text-center">
-                <span id="tooltipMsg" />
+                <span id="tooltipMsg" data-original-title="" title="">
                 <a id="linkSave" class="btn btn-info" role="button" href="#">Save as Watchlist</a>
                     <a id="linkPay" class="btn btn-primary disabled" role="button" href="#">Pay Online</a>
-            </div>
+            </span></div>
         </div>
 </form>
 
@@ -271,13 +274,13 @@
 
         <footer>
             <p>
-                &copy; 2020 International Transportation Service, Inc. All Rights Reserved.&nbsp;|
+                © 2021 International Transportation Service, Inc. All Rights Reserved.&nbsp;|
                 <a href="/tms2/Home/TermsOfUse">Terms of Use</a>&nbsp;|
                 <a href="/tms2/Home/PrivacyPolicy">Privacy Policy</a>&nbsp;|
                 <a href="/tms2/Home/CAPrivacyNotice">CA Privacy Notice</a>
             </p>
         </footer>
-        <div class="alert alert-dismissible ccpa hidden navbar-fixed-bottom text-center">
+        <div class="alert alert-dismissible ccpa navbar-fixed-bottom text-center">
     We updated our privacy policy for California residents.
     <a class="ccpa-link" href="/tms2/Home/CAPrivacyNotice">Find out more</a>.&nbsp;&nbsp;
     <a class="ccpa-ok" href="#" data-dismiss="alert" aria-label="close"><span class="badge">&nbsp;OK&nbsp;</span></a>
@@ -398,5 +401,6 @@
             }
         });
     </script>
-</body>
-</html>
+
+
+</body></html>

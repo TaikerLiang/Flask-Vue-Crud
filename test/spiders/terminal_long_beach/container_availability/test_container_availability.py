@@ -4,9 +4,10 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError
+from crawler.core_terminal.items import InvalidContainerNoItem
 from crawler.core_terminal.rules import RuleManager
 from crawler.core_terminal.tms_share_spider import SeleniumRoutingRule
+from crawler.spiders.terminal_long_beach import TerminalPctSpider
 from test.spiders.terminal_long_beach import container_availability
 
 
@@ -20,13 +21,17 @@ def sample_loader(sample_loader):
 @pytest.mark.parametrize(
     'sub,container_no',
     [
-        ('01_basic', 'NYKU5151837'),
+        ('01_basic', 'TGHU0113128'),
     ],
 )
-def test_container_status_routing_rule(sub, container_no, sample_loader):
+def test_selenium_routing_rule(sub, container_no, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    request_option = SeleniumRoutingRule.build_request_option(token='', container_no=container_no)
+    request_option = SeleniumRoutingRule.build_request_option(
+        container_nos=[container_no],
+        terminal_id=TerminalPctSpider.terminal_id,
+        company_info=TerminalPctSpider.company_info,
+    )
 
     response = TextResponse(
         url=request_option.url,
@@ -36,7 +41,9 @@ def test_container_status_routing_rule(sub, container_no, sample_loader):
             url=request_option.url,
             meta={
                 RuleManager.META_TERMINAL_CORE_RULE_NAME: SeleniumRoutingRule.name,
-                'container_no': container_no,
+                'container_nos': [container_no],
+                'terminal_id': TerminalPctSpider.terminal_id,
+                'company_info': TerminalPctSpider.company_info,
             },
         ),
     )
@@ -49,15 +56,19 @@ def test_container_status_routing_rule(sub, container_no, sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub,container_no,expected_exception',
+    'sub,container_no,invalid_no_item',
     [
-        ('e01_invalid_container_no', 'FCIU2218769', TerminalInvalidContainerNoError),
+        ('e01_invalid_container_no', 'FCIU2218769', InvalidContainerNoItem),
     ],
 )
-def test_container_availability_handler_error(sub, container_no, expected_exception, sample_loader):
+def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    request_option = SeleniumRoutingRule.build_request_option(token='', container_no=container_no)
+    request_option = SeleniumRoutingRule.build_request_option(
+        container_nos=[container_no],
+        terminal_id=TerminalPctSpider.terminal_id,
+        company_info=TerminalPctSpider.company_info,
+    )
 
     response = TextResponse(
         url=request_option.url,
@@ -70,5 +81,4 @@ def test_container_availability_handler_error(sub, container_no, expected_except
     )
 
     routing_rule = SeleniumRoutingRule()
-    with pytest.raises(expected_exception=expected_exception):
-        list(routing_rule.handle(response=response))
+    assert list(routing_rule.handle(response=response)) == [invalid_no_item(container_no=container_no)]

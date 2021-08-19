@@ -3,17 +3,18 @@ from crawler.core_terminal.items import TerminalItem
 
 def verify(results):
     assert results[0] == TerminalItem(
-        container_no='NYKU4410168',
-        freight_release='OK',
+        container_no='TGHU0113128',
+        carrier_release='OK',
         customs_release='OK',
-        discharge_date='04/09/2020',
+        appointment_date='08/12/2021',
         ready_for_pick_up='Not Available',
-        last_free_day='04/15/2020',
+        last_free_day='08/17/2021',
         demurrage='',
-        carrier='ONE',
-        container_spec='40DR96',
-        vessel='MOL CELEBRATION',
-        mbl_no='SH9ER3047500',
-        voyage='076E',
-        chassis_no='FB',
+        carrier='HAP',
+        container_spec='20DR86',
+        vessel='YM WHOLESOME',
+        mbl_no='CA4210570233',
+        voyage='028E',
+        gate_out_date='DELIVERED 08/18/2021',
+        chassis_no='CTSZ007',
     )
