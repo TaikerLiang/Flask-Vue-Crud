@@ -64,6 +64,7 @@ class CarrierYmluSpider(BaseMultiCarrierSpider):
             MainPageRoutingRule(),
             CaptchaRoutingRule(),
             BookingInfoRoutingRule(),
+            BookingMainInfoPageRoutingRule(),
             ContainerStatusRoutingRule(),
         ]
 
@@ -339,7 +340,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
             headers=headers,
             form_data=form_data,
             meta={
-                'search_nos': booking_nos,
+                'booking_nos': booking_nos,
                 'headers': headers,
                 'task_ids': task_ids,
             },
@@ -351,6 +352,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_ids = response.meta['task_ids']
         headers = response.meta['headers']
+        booking_nos = response.meta['booking_nos']
 
         if check_ip_error(response=response):
             yield Restart(reason='IP block')
@@ -360,80 +362,62 @@ class BookingInfoRoutingRule(BaseRoutingRule):
             yield Restart(reason='Search Fail')
             return
 
+        if self._search_by_booking_and_mbl_no(response=response):
+            follow_url = self._get_page_follow_url(response=response)
+            mbl_no = response.xpath('//*[@id="ContentPlaceHolder1_rptBLNo_lblBLNo_0"]/text()').get().strip()
+            yield BookingMainInfoPageRoutingRule().build_request_option(
+                task_id=task_ids[0],
+                follow_url=follow_url,
+                mbl_no=mbl_no,
+                booking_no=booking_nos[0],
+                headers=headers,
+            )
+            return
+
         booking_nos = self._extract_booking_nos(response=response)
-        table_index = 0 # for container info extraction
 
         for index, booking_no in enumerate(booking_nos):
-            if self._is_mbl_no_invalid(response=response, index=index):
+            if self._is_booking_no_invalid(response=response, index=index):
                 yield ExportErrorData(
                     task_id=task_ids[index],
                     booking_no=booking_no,
                     status=CARRIER_RESULT_STATUS_ERROR,
                     detail='Data was not found',
                 )
-                table_index += 2
                 continue
-
-            basic_info = self._extract_basic_info(response=response, index=index)
-            pol = basic_info['pol']
-            pod = basic_info['pod']
-
-            routing_schedule = self._extract_routing_schedule(response=response, index=index, pol=pol, pod=pod)
-            firms_code = self._extract_firms_code(response=response, index=index)
-            release_status = self._extract_release_status(response=response, index=index)
-
-            # loop through the result list and yield each item
-            yield MblItem(
-                task_id=task_ids[index],
-                booking_no=booking_no,
-                por=LocationItem(name=basic_info['por']),
-                pol=LocationItem(name=pol),
-                pod=LocationItem(name=pod),
-                place_of_deliv=LocationItem(name=basic_info['place_of_deliv']),
-                etd=routing_schedule['etd'],
-                atd=routing_schedule['atd'],
-                eta=routing_schedule['eta'],
-                ata=routing_schedule['ata'],
-                firms_code=firms_code,
-                carrier_status=release_status['carrier_status'],
-                carrier_release_date=release_status['carrier_release_date'],
-                customs_release_status=release_status['customs_release_status'],
-                customs_release_date=release_status['customs_release_date'],
-            )
-
-            last_free_day_dict = self._extract_last_free_day(response=response, index=index)
-            container_info_list = self._extract_container_info(response=response, table_index=table_index)
-
-            for container_info in container_info_list:
-                container_no = container_info['container_no']
-                last_free_day = last_free_day_dict.get(container_no)
-
-                yield ContainerItem(
-                    task_id=task_ids[index],
-                    container_key=container_no,
-                    container_no=container_no,
-                    last_free_day=last_free_day,
-                )
-
-                follow_url = container_info['follow_url']
-                yield ContainerStatusRoutingRule.build_request_option(
-                    task_id=task_ids[index],
-                    follow_url=follow_url,
-                    container_no=container_no,
-                    headers=headers,
-                )
-            table_index += 2
+            else:
+                mbl_nos, follow_urls = self._extract_booking_info(response=response, index=index)
+                for mbl_no, follow_url in zip(mbl_nos, follow_urls):
+                    yield BookingMainInfoPageRoutingRule().build_request_option(
+                        task_id=task_ids[index],
+                        follow_url=follow_url,
+                        mbl_no=mbl_no,
+                        booking_no=booking_no,
+                        headers=headers,
+                    )
 
     @staticmethod
     def _search_success(response: Selector):
-        if response.css('div#ContentPlaceHolder1_divResult'):
+        if response.css('h2.greent_rwd'):
             return True
         logging.warning(response.text)
         return False
 
     @staticmethod
-    def _is_mbl_no_invalid(response: Selector, index: int):
-        no_data_found_selector = response.css(f'div#ContentPlaceHolder1_rptBLNo_divNoDataFound_{index}')
+    def _search_by_booking_and_mbl_no(response: Selector):
+        title = response.css('h2.greent_rwd::text').get().strip()
+        if title == 'Result of Tracking by Booking No. and B/L no.':
+            return True
+        return False
+
+    @staticmethod
+    def _get_page_follow_url(response: Selector):
+        action = response.css('form[id=form1]::attr(action)').get()
+        return action[1:]
+
+    @staticmethod
+    def _is_booking_no_invalid(response: Selector, index: int):
+        no_data_found_selector = response.css(f'div#ContentPlaceHolder1_rptBKNo_divNoDataFound_{index}')
         style = no_data_found_selector.css('::attr(style)').get()
 
         if 'display: none' in style:
@@ -445,12 +429,116 @@ class BookingInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_booking_nos(response: Selector):
-        booking_nos = response.xpath('//*[starts-with(@id, "ContentPlaceHolder1_rptBLNo_lblBKNo_")]/text()').getall()
+        booking_nos = response.css('span[id^=ContentPlaceHolder1_rptBKNo_lblBKNo_]::text').getall()
         return [booking_no.strip() for booking_no in booking_nos]
 
     @staticmethod
-    def _extract_basic_info(response: Selector, index: int):
-        table_selector = response.css(f'table[id=ContentPlaceHolder1_rptBLNo_gvBasicInformation_{index}]')
+    def _extract_booking_info(response: Selector, index: int):
+        mbl_nos = response.css(f'a[id^=ContentPlaceHolder1_rptBKNo_rptBLNo_{index}_LinkBL_]::text').getall()
+        follow_urls = response.css(f'a[id^=ContentPlaceHolder1_rptBKNo_rptBLNo_{index}_LinkBL_]::attr(href)').getall()
+
+        return mbl_nos, follow_urls
+
+
+class BookingMainInfoPageRoutingRule(BaseRoutingRule):
+    name = 'BOOKING_MAIN_INFO'
+
+    @classmethod
+    def build_request_option(cls, task_id: str, follow_url, mbl_no, booking_no, headers) -> RequestOption:
+        return RequestOption(
+            method=RequestOption.METHOD_GET,
+            rule_name=cls.name,
+            url=f'{BASE_URL}/e-service/Track_Trace/{follow_url}',
+            headers=headers,
+            meta={
+                'follow_url': follow_url,
+                'headers': headers,
+                'mbl_no': mbl_no,
+                'booking_no': booking_no,
+                'task_id': task_id,
+            },
+        )
+
+    def get_save_name(self, response) -> str:
+        mbl_no = response.meta['mbl_no']
+        return f'{self.name}_{mbl_no}.html'
+
+    def handle(self, response):
+        task_id = response.meta['task_id']
+        booking_no = response.meta['booking_no']
+        headers = response.meta['headers']
+
+        if check_ip_error(response=response):
+            yield Restart(reason='IP blocked')
+            return
+
+        if not self._search_success(response=response):
+            yield Restart('booking main info page error')
+            return
+
+        mbl_no = self._extract_mbl_no(response=response)
+        basic_info = self._extract_basic_info(response=response)
+        pol = basic_info['pol']
+        pod = basic_info['pod']
+
+        routing_schedule = self._extract_routing_schedule(response=response, pol=pol, pod=pod)
+        firms_code = self._extract_firms_code(response=response)
+        release_status = self._extract_release_status(response=response)
+
+        yield MblItem(
+            task_id=task_id,
+            booking_no=booking_no,
+            por=LocationItem(name=basic_info['por']),
+            pol=LocationItem(name=pol),
+            pod=LocationItem(name=pod),
+            place_of_deliv=LocationItem(name=basic_info['place_of_deliv']),
+            etd=routing_schedule['etd'],
+            atd=routing_schedule['atd'],
+            eta=routing_schedule['eta'],
+            ata=routing_schedule['ata'],
+            firms_code=firms_code,
+            carrier_status=release_status['carrier_status'],
+            carrier_release_date=release_status['carrier_release_date'],
+            customs_release_status=release_status['customs_release_status'],
+            customs_release_date=release_status['customs_release_date'],
+        )
+
+        last_free_day_dict = self._extract_last_free_day(response=response)
+        container_info_list = self._extract_container_info(response=response)
+
+        for container_info in container_info_list:
+            container_no = container_info['container_no']
+            last_free_day = last_free_day_dict.get(container_no)
+
+            yield ContainerItem(
+                task_id=task_id,
+                container_key=container_no,
+                container_no=container_no,
+                last_free_day=last_free_day,
+            )
+
+            follow_url = container_info['follow_url']
+            yield ContainerStatusRoutingRule.build_request_option(
+                task_id=task_id,
+                follow_url=follow_url,
+                container_no=container_no,
+                headers=headers,
+            )
+
+    @staticmethod
+    def _search_success(response: Selector):
+        if response.css('div#ContentPlaceHolder1_divResult'):
+            return True
+        return False
+
+    @staticmethod
+    def _extract_mbl_no(response: Selector):
+        mbl_no = response.css('span#ContentPlaceHolder1_rptBLNo_lblBLNo_0::text').get()
+        return mbl_no.strip()
+
+    @staticmethod
+    def _extract_basic_info(response: Selector):
+        table_selector = response.css(f'table[id=ContentPlaceHolder1_rptBLNo_gvBasicInformation_0]')
         if not table_selector:
             CarrierResponseFormatError('Can not found basic info table !!!')
 
@@ -468,9 +556,8 @@ class BookingInfoRoutingRule(BaseRoutingRule):
         }
 
     @staticmethod
-    def _extract_routing_schedule(response: Selector, index: int, pol: str, pod: str):
-        TABLE_INDEX = 2*index + 1
-        div = response.css('div.cargo-trackbox3')[TABLE_INDEX]
+    def _extract_routing_schedule(response: Selector, pol: str, pod: str):
+        div = response.css('div.cargo-trackbox3')[0]
         parser = ScheduleParser(div)
         schedules = parser.parse()
 
@@ -513,8 +600,8 @@ class BookingInfoRoutingRule(BaseRoutingRule):
         return actual_time, estimated_time
 
     @staticmethod
-    def _extract_container_info(response: Selector, table_index: int):
-        table_selector = response.css(f'table#ContentPlaceHolder1_rptBLNo_gvLatestEvent_{table_index}')
+    def _extract_container_info(response: Selector):
+        table_selector = response.css(f'table#ContentPlaceHolder1_rptBLNo_gvLatestEvent_0')
         table_locator = TopHeaderIsTdTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
@@ -537,7 +624,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
         return container_info_list
 
     @staticmethod
-    def _extract_release_status(response: Selector, index: int):
+    def _extract_release_status(response: Selector):
         """
         case 1: 'Customs Status : (No entry filed)' or '(not yet Customs Release)' appear in page
             carrier_status_with_date = None
@@ -546,16 +633,16 @@ class BookingInfoRoutingRule(BaseRoutingRule):
             carrier_status_with_date = 'Label'
             custom_status = 'Label'
         """
-        carrier_status_with_date = response.css(f'span#ContentPlaceHolder1_rptBLNo_lblCarrierStatus_{index}::text').get()
+        carrier_status_with_date = response.css(f'span#ContentPlaceHolder1_rptBLNo_lblCarrierStatus_0::text').get()
         if carrier_status_with_date in [None, 'Label']:
             carrier_status, carrier_date = None, None
         else:
             carrier_status_with_date = carrier_status_with_date.strip()
             carrier_status, carrier_date = MainInfoRoutingRule._parse_carrier_status(carrier_status_with_date)
 
-        customs_status = response.css(f'span#ContentPlaceHolder1_rptBLNo_lblCustomsStatus_{index}::text').get()
+        customs_status = response.css(f'span#ContentPlaceHolder1_rptBLNo_lblCustomsStatus_0::text').get()
         if customs_status == 'Customs Release':
-            customs_table_selector = response.css(f'table#ContentPlaceHolder1_rptBLNo_gvCustomsStatus_{index}')
+            customs_table_selector = response.css(f'table#ContentPlaceHolder1_rptBLNo_gvCustomsStatus_0')
 
             table_locator = TopHeaderIsTdTableLocator()
             table_locator.parse(table=customs_table_selector)
@@ -599,9 +686,9 @@ class BookingInfoRoutingRule(BaseRoutingRule):
         return status, release_date
 
     @staticmethod
-    def _extract_firms_code(response: Selector, index: int):
+    def _extract_firms_code(response: Selector):
         # [0]WEST BASIN CONTAINER TERMINAL [1](Firms code:Y773)
-        discharged_port_terminal_text = response.css(f'span#ContentPlaceHolder1_rptBLNo_lblDischarged_{index} ::text').getall()
+        discharged_port_terminal_text = response.css(f'span#ContentPlaceHolder1_rptBLNo_lblDischarged_0 ::text').getall()
         if len(discharged_port_terminal_text) == 1:
             return None
         elif len(discharged_port_terminal_text) > 2:
@@ -626,8 +713,8 @@ class BookingInfoRoutingRule(BaseRoutingRule):
         return m.group('firms_code')
 
     @staticmethod
-    def _extract_last_free_day(response: Selector, index: int):
-        table_selector = response.css(f'table#ContentPlaceHolder1_rptBLNo_gvLastFreeDate_{index}')
+    def _extract_last_free_day(response: Selector):
+        table_selector = response.css(f'table#ContentPlaceHolder1_rptBLNo_gvLastFreeDate_0')
         if table_selector is None:
             return {}
 
