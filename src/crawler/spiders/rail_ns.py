@@ -258,7 +258,7 @@ class ContentGetter:
             self._is_first = False
 
         # search
-        WebDriverWait(self._driver, 40).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.x-panel-header')))
+        WebDriverWait(self._driver, 70).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.x-panel-header')))
         self._driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
         search_input = self._driver.find_element_by_css_selector('textarea[placeholder]')
         # search_btn = self._driver.find_element_by_xpath('//*[@id="button-1429-btnInnerEl"]')
