@@ -56,7 +56,7 @@ charset-normalizer==2.0.4
     # via
     #   -r src/requirements-app.txt
     #   requests
-click==8.0.1
+click==7.1.2
     # via
     #   -r src/requirements-app.txt
     #   black
@@ -316,6 +316,8 @@ service-identity==21.1.0
     # via
     #   -r src/requirements-app.txt
     #   scrapy
+shub==2.10.0
+    # via
 six==1.16.0
     # via
     #   -r src/requirements-app.txt
