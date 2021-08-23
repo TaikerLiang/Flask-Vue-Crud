@@ -4,3 +4,6 @@ pytest
 pytest-cov
 black
 pre-commit
+pip-tools
+python-dotenv
+Pillow
