@@ -17,7 +17,7 @@ class Verifier:
 
         assert isinstance(results[2], RequestOption)
         assert results[2].url == (
-            'https://www.hapag-lloyd.com/en/online-business/tracing/tracing-by-booking.html?_a=tracing_by_booking'
+            'https://www.hapag-lloyd.com/en/online-business/track/track-by-booking-solution.html?_a=tracing_by_booking'
         )
         assert results[2].meta['container_key'] == 'HLBU1598798'
 
