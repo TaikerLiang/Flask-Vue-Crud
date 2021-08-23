@@ -19,10 +19,7 @@ def sample_loader(sample_loader):
 @pytest.mark.parametrize(
     'sub,mbl_no,',
     [
-        ('01_single_container', 'GOSUNGB9490855'),
-        ('02_multiple_container', 'GOSUNGB9490903'),
-        ('03_no_atd', 'GOSUNGB9490840'),
-        ('04_booking', 'GOSUTPE007306942'),
+        ('01_basic', 'GOSUGZH0147473'),
     ],
 )
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
@@ -49,7 +46,7 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
 @pytest.mark.parametrize(
     'sub,mbl_no,expect_exception',
     [
-        ('e01_invalid_mbl_no', 'GOSUNGB949090', CarrierInvalidMblNoError),
+        ('e01_invalid_mbl_no', 'GOSUNGB9490841', CarrierInvalidMblNoError),
     ],
 )
 def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
