@@ -9,6 +9,7 @@ from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
+
 from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
@@ -19,14 +20,18 @@ from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOpti
 from crawler.core_carrier.items import (
     MblItem, BaseCarrierItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData, DebugItem)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, LoadWebsiteTimeOutError, BaseCarrierError, \
-    SuspiciousOperationError, CarrierInvalidSearchNoError
+    SuspiciousOperationError
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 WHLC_BASE_URL = 'https://www.wanhai.com/views/Main.xhtml'
 COOKIES_RETRY_LIMIT = 3
+MAX_RETRY_COUNT = 3
 
+class Restart:
+    def __init__(self, reason: str):
+        self.reason = reason
 
 class CarrierWhlcSpider(BaseCarrierSpider):
     name = 'carrier_whlc'
@@ -63,6 +68,18 @@ class CarrierWhlcSpider(BaseCarrierSpider):
             request_option = BookingRoutingRule.build_request_option(search_no=self.search_no)
         yield self._build_request_by(option=request_option)
 
+    def _prepare_restart(self, reason):
+        if self._retry_count > MAX_RETRY_COUNT:
+            raise CarrierResponseFormatError(reason=reason)
+
+        self._retry_count += 1
+        if self.mbl_no:
+            request_option = MblRoutingRule.build_request_option(search_no=self.search_no)
+        else:
+            request_option = BookingRoutingRule.build_request_option(search_no=self.search_no)
+        yield self._build_request_by(option=request_option)
+
+
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
 
@@ -76,6 +93,8 @@ class CarrierWhlcSpider(BaseCarrierSpider):
                 yield result
             elif isinstance(result, RequestOption):
                 self._request_queue.add_request(result)
+            elif isinstance(result, Restart):
+                self._prepare_restart(reason=result.reason)
             else:
                 raise RuntimeError()
 
@@ -243,11 +262,11 @@ class MblRoutingRule(BaseRoutingRule):
 
     def _parse_container_no_from(self, text):
         if not text:
-            raise CarrierResponseFormatError('container_no not found')
+            raise Restart(reason='container_no not found')
 
         m = self._container_patt.match(text)
         if not m:
-            raise CarrierResponseFormatError('container_no not match')
+            raise Restart('container_no not match')
 
         return m.group('container_no')
 
@@ -257,7 +276,7 @@ class MblRoutingRule(BaseRoutingRule):
 
         m = self._j_idt_patt.search(text)
         if not m:
-            raise CarrierResponseFormatError('detail_j_idt not match')
+            raise Restart('detail_j_idt not match')
 
         return m.group('j_idt')
 
@@ -267,7 +286,7 @@ class MblRoutingRule(BaseRoutingRule):
 
         m = self._j_idt_patt.search(text)
         if not m:
-            raise CarrierResponseFormatError('History_j_idt not match')
+            raise Restart('History_j_idt not match')
 
         return m.group('j_idt')
 
@@ -280,7 +299,7 @@ class MblRoutingRule(BaseRoutingRule):
         table_selector = find_selector_from(selectors=response.css('table.tbl-list'), rule=match_rule)
 
         if table_selector is None:
-            raise CarrierResponseFormatError(reason='data information table not found')
+            raise Restart(reason='data information table not found')
 
         location_table_locator = LocationLeftTableLocator()
         location_table_locator.parse(table=table_selector)
@@ -320,7 +339,7 @@ class MblRoutingRule(BaseRoutingRule):
         table_selector = response.css('table.tbl-list')
 
         if not table_selector:
-            raise CarrierResponseFormatError(reason='container status table not found')
+            raise Restart(reason='container status table not found')
 
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table_selector)
@@ -368,7 +387,12 @@ class BookingRoutingRule(BaseRoutingRule):
 
         response_selector = Selector(text=driver.get_page_source())
         if self._is_search_no_invalid(response=response_selector):
-            raise CarrierInvalidSearchNoError(search_type=self._search_type)
+            yield ExportErrorData(
+                booking_no=search_no,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail='Data was not found',
+            )
+            return
 
         driver.go_detail_page(2)  # only one booking_no to click
         basic_info = self._extract_basic_info(Selector(text=driver.get_page_source()))
@@ -478,7 +502,7 @@ class BookingRoutingRule(BaseRoutingRule):
         table_selector = response.css('table.tbl-list')
 
         if not table_selector:
-            raise CarrierResponseFormatError(reason='container status table not found')
+            raise Restart(reason='container status table not found')
 
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table_selector)
