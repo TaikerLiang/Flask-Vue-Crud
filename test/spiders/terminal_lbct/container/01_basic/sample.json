@@ -4,17 +4,17 @@
     "listOfFlagItem": null,
     "listOfOrderItemWithCtr": null,
     "IsLogin": false,
-    "containerId": "CSLU6209412",
+    "containerId": "TCNU3577497",
     "type": "40HQ",
-    "canDemurrage": false,
-    "available": "NO (NOT DISCHARGED)",
-    "availableDetail": "NO (NOT DISCHARGED)",
-    "line": "OOL",
-    "vessel": "OOCL TAIPEI 047",
-    "discharged": "",
+    "canDemurrage": true,
+    "available": "NO (HOLD)",
+    "availableDetail": "NO (HOLD)",
+    "line": "COS",
+    "vessel": "COSCO SHIPPING ANDES 018",
+    "discharged": "08/18/2021 01:32 (Actual)",
     "dateDeliverd": "",
-    "freeTimeExpiration": "",
-    "inboundVoyageNumber": "047",
+    "freeTimeExpiration": "8/23/2021",
+    "inboundVoyageNumber": "018",
     "examStatus": "",
     "bondStatus": "",
     "guaranteeParty": null,
@@ -22,25 +22,25 @@
     "paidthroughdate": null,
     "category": "IMPRT",
     "freightKind": "Full",
-    "transitState": "Inbound",
+    "transitState": "Yard",
     "visitState": "Active",
-    "UfvGkey": 3636734106,
+    "UfvGkey": 4919321252,
     "gateAppt": null,
     "enableMyListAppt": true,
     "listOfFlag": [
       {
         "holdName": "TMF_CONTAINER_HOLD",
-        "applyDate": "11/06/2020 05:06",
-        "type": "ACTIVE"
-      },
-      {
-        "holdName": "CUSTOMS_DEFAULT_HOLD",
-        "applyDate": "10/23/2020 04:46",
+        "applyDate": "08/04/2021 04:11",
         "type": "RELEASED"
       },
       {
+        "holdName": "CUSTOMS_DEFAULT_HOLD",
+        "applyDate": "06/24/2021 00:49",
+        "type": "ACTIVE"
+      },
+      {
         "holdName": "FREIGHT_BL_HOLD",
-        "applyDate": "10/23/2020 04:46",
+        "applyDate": "06/24/2021 00:49",
         "type": "RELEASED"
       }
     ],
@@ -70,13 +70,16 @@
     "isBooking": false,
     "isContainer": true,
     "isHazardous": null,
-    "owed": "",
+    "owed": "$0",
     "timeOut": "",
-    "timeIn": "",
+    "timeIn": "8/18/2021 1:32:11 AM",
     "isAvailableForPickup": false,
-    "location": "ON VESSEL",
+    "location": "GROUNDED",
     "isEnableMylist": true,
-    "isEnableAppointment": false
+    "isEnableAppointment": true,
+    "lineOperator1": null,
+    "equipmentTypeId1": null,
+    "containerId1": null
   },
   {
     "listOfitems": null,
@@ -139,6 +142,9 @@
     "isAvailableForPickup": false,
     "location": null,
     "isEnableMylist": false,
-    "isEnableAppointment": false
+    "isEnableAppointment": false,
+    "lineOperator1": null,
+    "equipmentTypeId1": null,
+    "containerId1": null
   }
 ]
