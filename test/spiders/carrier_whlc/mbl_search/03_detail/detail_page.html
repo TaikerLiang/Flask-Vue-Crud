@@ -1,7 +1,6 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"><head>
     <title>
-           萬海航運股份有限公司
+           WAN HAI LINES LTD.
 
     </title>
 
@@ -11,7 +10,7 @@
     j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
     })(window,document,'script','dataLayer','GTM-TCMJNBD');</script>
-    <!-- End Google Tag Manager --><link type="text/css" rel="stylesheet" href="/javax.faces.resource/style_tw.css.xhtml?ln=css"><link type="text/css" rel="stylesheet" href="/javax.faces.resource/style.css.xhtml?ln=css"><link type="text/css" rel="stylesheet" href="/javax.faces.resource/jquery-ui.css.xhtml?ln=css"><script src="chrome-extension://mooikfkahbdckldjjndioackbalphokd/assets/prompt.js"></script></head><body class="JumpMainBody" onload="try{formInit();}catch(e){}" data-new-gr-c-s-check-loaded="14.1003.0" data-gr-ext-installed="">
+    <!-- End Google Tag Manager --><link type="text/css" rel="stylesheet" href="/javax.faces.resource/style_www.css.xhtml?ln=css"><link type="text/css" rel="stylesheet" href="/javax.faces.resource/style.css.xhtml?ln=css"><link type="text/css" rel="stylesheet" href="/javax.faces.resource/jquery-ui.css.xhtml?ln=css"></head><body class="JumpMainBody" onload="try{formInit();}catch(e){}">
     <!-- Google Tag Manager (noscript) -->
     <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-TCMJNBD" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
@@ -62,7 +61,7 @@
 
               <!-- program title start -->
               <div class="MainTitleBox">
-                 <h2 class="CrumbreadTitle">貨櫃動態查詢列表
+                 <h2 class="CrumbreadTitle">Cargo Tracking Detail
                  </h2>
               </div><br class="cleaner">
               <!-- program title end -->
@@ -86,92 +85,124 @@
     //showProcessingImg(true);
   }
 
-  function locale111(password) {
-    // alert("aaaa");
-    if (password == "putP")
-       document.form1.passW.value=password;
-    else
-       document.form1.passW.value=document.form2.passW.value;
-    document.form1.submit();
-    return true;
-  }
-
 //-->
 </script>
 
 <!--
-Object : ?????????????
+Object : Cargo Tracking Detail
 -->
-<!--
- subject : display data for maintain
-  1. input condition value and query data
-  2. show  data list
-  3. call '/util/ShpPageUtil.jsp' to show page information
--->
-
-<!-- condition start -->
-<form id="cargoTrackListBean" name="cargoTrackListBean" method="post" action="/views/cargoTrack/CargoTrackList.xhtml" enctype="application/x-www-form-urlencoded">
+<form id="cargoTrackListBean" name="cargoTrackListBean" method="post" action="/views/cargoTrack/CargoTrackDetail.xhtml" enctype="application/x-www-form-urlencoded">
 <input type="hidden" name="cargoTrackListBean" value="cargoTrackListBean">
 
-<!-- body content start -->
+  <!-- body content start -->
 
 
-  <strong>貨物動態信息僅供參考，萬海有權修改相關信息。</strong>
-  <br><br>
-
-     <table width="100%" border="1" cellpadding="0" cellspacing="0" class="tbl-list">
-       <tbody><tr style="background-color: rgb(247, 247, 247);">
-         <th>明細查詢</th>
-         <th>櫃號</th>
-         <th>櫃型</th>
-         <th>提單號碼</th>
-         <th>狀態</th>
-         <th>日期</th>
-         <th>櫃場名稱</th>
-         <th>地區</th>
-         <th>航次號碼</th>
-         <th>船名</th>
-         <th>歷史動態</th>
-       </tr>
+  <!-- bl &amp; ctnr data start -->
+       <table width="100%" cellspacing="0" cellpadding="0" border="0">
+         <tbody><tr>
+           <td><strong>*Cargo tracking information is for reference only. Wan Hai reserves the right to amend the relevant information. </strong></td>
+         </tr>
          <tr>
-           <td>
-               <u>
+           <td><strong>BL no. : 031B554489 (OBL)</strong></td>
+           <td><strong>TTL / 697CTN(S)12363.96(KG)</strong></td>
+         </tr>
+         <tr>
+           <td><strong>Ctnr No. : WHSU6570305(port-port)</strong></td>
+           <td><strong>TTL / 697CTN(S)/12363.96(KG)</strong></td>
+         </tr>
+       </tbody></table>
+
+       <table class="tbl-list" width="100%" cellspacing="0" cellpadding="0" border="1">
+         <tbody><tr style="background-color: rgb(247, 247, 247);">
+           <td colspan="4"><a class="subtitle">1. Container Information</a></td>
+         </tr>
+         <tr>
+           <th><strong>Container Description</strong></th>
+           <th><strong>Max Gross Weight (KG/LB)</strong></th>
+           <th><strong>Container Weight(KG/LB)</strong></th>
+           <th><strong>Container Package/ Loadable Gross Weight </strong> </th>
+         </tr>
+         <tr style="background-color: rgb(247, 247, 247);">
+           <td>40' * 9'6'' PASSIVE VENTS AT UPPER PART OF CARGO SPACE<br>(HIGH CUBE CONTAINER)<br></td>
+           <td>32500/71650</td>
+           <td>28750/63383</td>
+           <td>697CTN(S) / 12363.96(KG)</td>
+         </tr>
+       </tbody></table>
+
+       <table class="tbl-list" width="100%" cellspacing="0" cellpadding="0" border="1">
+         <tbody><tr>
+           <td colspan="5"><a class="subtitle">2. Departure Date / Arrival Date Information   </a>
+           <br><span style="color:red;">System transhipment route data is for reference only before shipment arriving destination.</span><br><span style="color:red;">Any else, please further check with WHL PIC to receive confirmation.</span>
+           </td>
+         </tr>
+         <tr style="background-color: rgb(247, 247, 247);">
+           <th>Loading Port</th>
+           <td>CNNGB</td>
+           <td>NORTHERN VOLITION / E012</td>
+           <th>Departure Date</th>
+           <td>2021/08/02</td>
+         </tr>
+
+         <tr>
+           <th>Discharging Port</th>
+          <td>USOAK</td>
+           <td>NORTHERN VOLITION / E012</td>
+           <th>Arrival Date</th>
+           <td>2021/08/21</td>
+         </tr>
+       </tbody></table>
+
+       <table class="tbl-list" width="100%" cellspacing="0" cellpadding="0" border="1">
+         <tbody><tr style="background-color: rgb(247, 247, 247);">
+           <td colspan="6"><a class="subtitle">3. Current Movement </a>
+             <u>
 <script type="text/javascript" src="/javax.faces.resource/jsf.js.xhtml?ln=javax.faces&amp;stage=Development"></script>
-<a id="j_idt39:0:ctnr_list_more_detail" href="#" onclick="mojarra.jsfcljs(document.getElementById('cargoTrackListBean'),{'j_idt39:0:ctnr_list_more_detail':'j_idt39:0:ctnr_list_more_detail','q_ctnr_no':'WHSU9002232','q_bl_no':'027B556005'},'_blank');return false">More Detail</a>
-              </u>
-           </td>
-           <td>WHSU9002232
-           </td>
-           <td>L5G1
-           </td>
-           <td>027B556005
-           </td>
-           <td>出口重櫃進場
-           </td>
-           <td>2021/04/03 16:59
-           </td>
-           <td>SIPG尚東集裝箱碼頭分公司（洋山四期）
-          </td>
-          <td>
-           </td>
-           <td>
-           </td>
-           <td>
-           </td>
-           <td>
-             <u><a id="j_idt39:0:ctnr_list_more_history" href="#" onclick="mojarra.jsfcljs(document.getElementById('cargoTrackListBean'),{'j_idt39:0:ctnr_list_more_history':'j_idt39:0:ctnr_list_more_history','q_ctnr_no':'WHSU9002232','q_bl_no':'027B556005'},'_blank');return false">More History</a>
+<a href="#" onclick="mojarra.jsfcljs(document.getElementById('cargoTrackListBean'),{'j_idt31:0:j_idt143':'j_idt31:0:j_idt143','q_bl_no':'031B554489','q_ctnr_no':'WHSU6570305'},'');return false">Click to view cargo tracking history </a>
              </u>
            </td>
          </tr>
-     </tbody></table>
-     	 <!--
-       &lt;br/&gt;
-       &lt;h:link outcome=&quot;/views/cargoTrack/CargoTrack.xhtml&quot; class=&quot;back&quot;&gt;
-         &#19978;&#19968;&#38913;
-       &lt;/h:link&gt;
-       --><input type="hidden" name="javax.faces.ViewState" id="javax.faces.ViewState" value="2909591518489897858:-5744076142078050850" autocomplete="off">
+         <tr>
+           <th>DATE/TIME</th>
+           <th>Container Event</th>
+           <th>Ctnr Depot Name</th>
+           <th>Voyage</th>
+           <th>Vessel Name</th>
+           <th>Seal No.</th>
+         </tr>
+         <tr style="background-color: rgb(247, 247, 247);">
+           <td>2021/08/21 07:00</td>
+           <td>Full container(FCL) discharged from vessel OR GATE IN to Pier/Terminal</td>
+           <td>Oakland International Container Terminal; OICT (Berth 57-59) ; SSA Marine
+           </td>
+           <td>E012</td>
+           <td>
+                 <u><a href="#" onclick="mojarra.jsfcljs(document.getElementById('cargoTrackListBean'),{'j_idt31:0:j_idt169':'j_idt31:0:j_idt169'},'_blank');return false">NORTHERN VOLITION</a>
+                 </u>
+           </td>
+           <td>WHLP014939</td>
+         </tr>
+       </tbody></table>
+           <table width="100%" cellspacing="0" cellpadding="0" border="1">
+             <tbody><tr>
+               <td class="a02" height="21"><strong>4. PLEASE CONTACT 1866-492-6424 FOR PAYMENT DETAIL</strong></td>
+             </tr>
+           </tbody></table>
+  <!-- bl &amp; ctnr data end -->
+
+  <br>
+
+  <table>
+    <tbody><tr><td width="12%" valign="top" align="center">
+      <img src="/spacer.gif" width="1" height="10"><br>
+      <!--
+      &lt;h:commandButton id=&quot;goback&quot; value=&quot;Page Up&quot; styleClass=&quot;button&quot; action=&quot;/views/cargoTrack/CargoTrackList.xhtml&quot; &gt;
+        &lt;f:param name=&quot;skipValidate&quot; value=&quot;true&quot; /&gt;
+      &lt;/h:commandButton&gt;
+      -->
+    </td>
+  </tr></tbody></table><input type="hidden" name="javax.faces.ViewState" id="javax.faces.ViewState" value="7816153569177212744:-312360316341711423" autocomplete="off">
 </form>
-<br><br><br>
               <!-- content area end -->
 
               <br><br><br>
@@ -187,7 +218,7 @@ Object : ?????????????
              <!-- for WHL site start -->
                 <div id="index-footer" class="copy">
                    <div>
-							<a class="inconspicuous_link" href="/html/PrivacyPolicyTW.html" target="_blank">Privacy Policy</a> &nbsp;&nbsp; |
+							<a class="inconspicuous_link" href="/html/PrivacyPolicyEN.html" target="_blank">Privacy Policy</a> &nbsp;&nbsp; |
 
 						&nbsp;&nbsp; Copyright © WAN HAI LINES LTD. All rights reserved.
 					</div>
