@@ -19,11 +19,11 @@ def sample_loader(sample_loader):
 @pytest.mark.parametrize(
     'sub,mbl_no,container_no',
     [
-        ('01_basic', 'SITDNBBK351734', 'TEXU1590997'),
+        ('01_basic', 'SITDSHSGZ02389', 'TEXU1590148'),
     ],
 )
 def test_container_status_routing_rule(sub, mbl_no, container_no, sample_loader):
-    html_text = sample_loader.read_file(sub, 'sample.html')
+    html_text = sample_loader.read_file(sub, 'sample.json')
 
     option = ContainerStatusRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
 
@@ -34,9 +34,6 @@ def test_container_status_routing_rule(sub, mbl_no, container_no, sample_loader)
         request=Request(
             url=option.url,
             meta={
-                RuleManager.META_CARRIER_CORE_RULE_NAME: ContainerStatusRoutingRule.name,
-                'mbl_no': mbl_no,
-                'container_no': container_no,
                 'container_key': container_no,
             },
         ),
