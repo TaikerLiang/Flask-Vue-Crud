@@ -26,7 +26,7 @@ def sample_loader(sample_loader):
 def test_tracing_rule_handler(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
-    url = f'https://www.hapag-lloyd.com/en/online-business/tracing/tracing-by-booking.html?blno={mbl_no}'
+    url = f'https://www.hapag-lloyd.com/en/online-business/track/track-by-booking-solution.html?blno={mbl_no}'
 
     response = TextResponse(
         url=url,
@@ -58,7 +58,7 @@ def test_tracing_rule_handler(sub, mbl_no, sample_loader):
 def test_tracing_rule_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
-    url = f'https://www.hapag-lloyd.com/en/online-business/tracing/tracing-by-booking.html?blno={mbl_no}'
+    url = f'https://www.hapag-lloyd.com/en/online-business/track/track-by-booking-solution.html?blno={mbl_no}'
 
     response = TextResponse(
         url=url,
