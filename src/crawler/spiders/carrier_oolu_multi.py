@@ -899,7 +899,7 @@ class ContainerStatusRule(BaseRoutingRule):
 
         container_status_list = cls._extract_container_status_list(selectors_map)
         for container_status in container_status_list:
-            event = container_status['event']
+            event = container_status['event'].strip()
             facility = container_status['facility']
 
             if facility:
