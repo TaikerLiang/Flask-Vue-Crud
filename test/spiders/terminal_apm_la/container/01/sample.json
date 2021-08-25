@@ -1,0 +1,38 @@
+{
+  "ContainerAvailabilityResults": [
+    {
+      "Appointment": "No",
+      "AppointmentDate": "No",
+      "BillOfLading": ["143161057501"],
+      "CanBeSaved": true,
+      "ContainerId": "TCNU1654552",
+      "ContainerState": "INBOUND",
+      "Customs": "RELEASED",
+      "Demurrage": "",
+      "DischargedDate": "",
+      "Freight": "RELEASED",
+      "GateOutDate": "",
+      "GrossWeight": "33091.0",
+      "HazardousClass": "",
+      "Holds": [],
+      "HoldsDescription": [],
+      "IsBillOfLading": false,
+      "IsContainer": true,
+      "IsHazardous": false,
+      "IsoCode": "45G1",
+      "IsSaved": false,
+      "LineId": "EGL",
+      "LocalDateTime": "17/08/21",
+      "ReadyForDelivery": false,
+      "ReadyForDeliveryReason": "Container not in Yard",
+      "SizeTypeHeight": "40/GP/96",
+      "StoragePaidThroughDate": "",
+      "StrippingDate": "",
+      "VesselEta": "13/08/21 10:00",
+      "VesselName": "EVER LAMBENT",
+      "YardLocation": "V-EVEL0969W-740112"
+    }
+  ],
+  "Filters": ["143161057501"],
+  "ResultsCount": 1
+}

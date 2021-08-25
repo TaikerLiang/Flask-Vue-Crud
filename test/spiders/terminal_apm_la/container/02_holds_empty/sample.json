@@ -1,0 +1,38 @@
+{
+  "ContainerAvailabilityResults": [
+    {
+      "Appointment": "No",
+      "AppointmentDate": "No",
+      "BillOfLading": ["143165715570"],
+      "CanBeSaved": true,
+      "ContainerId": "EISU9112296",
+      "ContainerState": "YARD",
+      "Customs": "RELEASED",
+      "Demurrage": "",
+      "DischargedDate": "14/08/21 09:23",
+      "Freight": "RELEASED",
+      "GateOutDate": "",
+      "GrossWeight": "28131.0",
+      "HazardousClass": "",
+      "Holds": [],
+      "HoldsDescription": [],
+      "IsBillOfLading": false,
+      "IsContainer": true,
+      "IsHazardous": false,
+      "IsoCode": "4510",
+      "IsSaved": false,
+      "LineId": "EGL",
+      "LocalDateTime": "17/08/21",
+      "ReadyForDelivery": true,
+      "ReadyForDeliveryReason": "",
+      "SizeTypeHeight": "40/GP/96",
+      "StoragePaidThroughDate": "19/08/21",
+      "StrippingDate": "",
+      "VesselEta": "13/08/21 10:00",
+      "VesselName": "EVER LAMBENT",
+      "YardLocation": "Yard Wheeled (61737)"
+    }
+  ],
+  "Filters": ["143165715570"],
+  "ResultsCount": 1
+}
