@@ -6,7 +6,8 @@ from scrapy.http import TextResponse
 
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierInvalidSearchNoError
-from crawler.spiders.carrier_oney_smlm import FirstTierRoutingRule, CarrierOneySpider
+from crawler.spiders.carrier_oney import CarrierOneySpider
+from crawler.core_carrier.oney_smlm_share_spider import FirstTierRoutingRule
 from test.spiders.carrier_oney_smlm.oney import first_tier
 
 
@@ -22,6 +23,7 @@ def sample_loader(sample_loader):
     [
         ('01_single_container', 'SH9FSK690300', CarrierOneySpider.base_url),
         ('02_multiple_containers', 'SZPVF2740514', CarrierOneySpider.base_url),
+        ('03_data_not_found', 'DALA35925000', CarrierOneySpider.base_url),
     ],
 )
 def test_first_tier_handle(sub, mbl_no, base_url, sample_loader):
@@ -44,26 +46,3 @@ def test_first_tier_handle(sub, mbl_no, base_url, sample_loader):
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
-
-
-@pytest.mark.parametrize('sub,mbl_no,expect_exception', [
-    ('e01_invalid_mbl_no', 'SH9ACBH1540', CarrierInvalidSearchNoError),
-])
-def test_main_info_handl_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
-    jsontext = sample_loader.read_file(sub, 'sample.json')
-
-    option = FirstTierRoutingRule.build_request_option(search_no=mbl_no, base_url=CarrierOneySpider.base_url)
-
-    response = TextResponse(
-        url=option.url,
-        body=jsontext,
-        encoding='utf-8',
-        request=Request(
-            url=option.url,
-            meta=option.meta,
-        )
-    )
-
-    rule = FirstTierRoutingRule(search_type=SHIPMENT_TYPE_MBL)
-    with pytest.raises(expect_exception):
-        list(rule.handle(response=response))
