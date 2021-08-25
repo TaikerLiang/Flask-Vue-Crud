@@ -6,6 +6,10 @@ from typing import List, Dict
 import scrapy
 from scrapy import Selector
 from selenium import webdriver
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+
 from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
@@ -590,7 +594,7 @@ class WhlcDriver:
 
     def go_history_page(self, idx: int):
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[11]/u').click()
-        time.sleep(10)
+        time.sleep(15)
         self._driver.switch_to.window(self._driver.window_handles[-1])
 
     def go_booking_history_page(self, idx: int):
@@ -604,7 +608,8 @@ class WhlcDriver:
         time.sleep(1)
 
     def check_alert(self):
-        self._driver.switch_to.alert
+        alert = self._driver.switch_to.alert
+        text = alert.text
 
     @staticmethod
     def _transformat_to_dict(cookies: List[Dict]) -> Dict:

@@ -242,13 +242,13 @@ class ContentGetter:
 
     def _login(self):
         time.sleep(60)
-        username_input = self._driver.find_element_by_xpath('//*[@id="textfield-1016-inputEl"]')
-        password_input = self._driver.find_element_by_xpath('//*[@id="textfield-1017-inputEl"]')
+        username_input = self._driver.find_element_by_xpath('//*[@id="mat-input-0"]')
+        password_input = self._driver.find_element_by_xpath('//*[@id="mat-input-1"]')
         username_input.send_keys(self.USER_NAME)
         password_input.send_keys(self.PASS_WORD)
 
         time.sleep(random.randint(2, 4))
-        login_btn = self._driver.find_element_by_id('button-1019')
+        login_btn = self._driver.find_element_by_css_selector('button.mat-flat-button')
         login_btn.click()
         time.sleep(60)
 
@@ -258,7 +258,7 @@ class ContentGetter:
             self._is_first = False
 
         # search
-        WebDriverWait(self._driver, 40).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.x-panel-header')))
+        WebDriverWait(self._driver, 70).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.x-panel-header')))
         self._driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
         search_input = self._driver.find_element_by_css_selector('textarea[placeholder]')
         # search_btn = self._driver.find_element_by_xpath('//*[@id="button-1429-btnInnerEl"]')

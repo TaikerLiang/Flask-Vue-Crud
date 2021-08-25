@@ -310,10 +310,18 @@ class CookiesGetter:
         # self._browser = webdriver.PhantomJS(service_args=phantom_js_service_args)
         options = webdriver.ChromeOptions()
         options.add_argument('--disable-extensions')
+        options.add_argument('--disable-notifications')
         options.add_argument('--headless')
+        options.add_argument("--enable-javascript")
         options.add_argument('--disable-gpu')
+        options.add_argument(
+            f'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
+            f'Chrome/88.0.4324.96 Safari/537.36'
+        )
         options.add_argument('--disable-dev-shm-usage')
         options.add_argument('--no-sandbox')
+        options.add_argument('--window-size=1920,1080')
+        options.add_argument("--disable-blink-features=AutomationControlled")
 
         self._browser = webdriver.Chrome(chrome_options=options)
 

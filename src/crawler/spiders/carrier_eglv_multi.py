@@ -1152,11 +1152,17 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
             full_date_cell = table_extractor.extract_cell(top='Empty Out', left=left)
             empty_date_cell = table_extractor.extract_cell(top='Full return to', left=left)
 
+            full_pickup_date_search = date_pattern.search(full_date_cell)
+            full_pickup_date = full_pickup_date_search.group(0) if full_pickup_date_search else ''
+
+            empty_pickup_date_search = date_pattern.search(empty_date_cell)
+            empty_pickup_date = empty_pickup_date_search.group(0) if empty_pickup_date_search else ''
+
             container_infos.append({
                 'container_no': table_extractor.extract_cell(
                     top='Container No.', left=left, extractor=FirstTextTdExtractor(css_query='a::text')),
-                'full_pickup_date': date_pattern.search(full_date_cell).group(0),
-                'empty_pickup_date': date_pattern.search(empty_date_cell).group(0),
+                'full_pickup_date': full_pickup_date,
+                'empty_pickup_date': empty_pickup_date,
             })
 
         return container_infos
