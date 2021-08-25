@@ -1,0 +1,68 @@
+{
+"Exception":"",
+"TRANS_RESULT_KEY":"S",
+"count":"1",
+"list": [
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "cstmsClrDt": "2019-09-27 03:01",
+    "oblRcvDt": "2019-09-03 22:06",
+    "ocnFrtColDt": "2019-09-03 22:46",
+    "delFirmsCode": "H903",
+    "authDt": "",
+    "lastFreeDt": "2019-09-29 00:00",
+    "podFirmsCode": "",
+    "ibdNo": "",
+    "impFilDt": "",
+    "hashColumns": [
+      [
+        "ocn_frt_col_dt",
+        "2019-09-03 22:46"
+      ],
+      [
+        "cstms_clr_dt",
+        "2019-09-27 03:01"
+      ],
+      [
+        "ibflag",
+        {}
+      ],
+      [
+        "ibd_no",
+        ""
+      ],
+      [
+        "del_firms_code",
+        "H903"
+      ],
+      [
+        "pod_firms_code",
+        ""
+      ],
+      [
+        "imp_fil_dt",
+        ""
+      ],
+      [
+        "auth_dt",
+        ""
+      ],
+      [
+        "last_free_dt",
+        "2019-09-29 00:00"
+      ],
+      [
+        "pagerows",
+        {}
+      ],
+      [
+        "obl_rcv_dt",
+        "2019-09-03 22:06"
+      ]
+    ],
+    "hashFields": [
+    ]
+  }
+]}

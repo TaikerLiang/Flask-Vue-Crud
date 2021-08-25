@@ -1,0 +1,103 @@
+{
+"Exception":"",
+"TRANS_RESULT_KEY":"S",
+"count":"1",
+"list": [
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "eta": "2019-09-17 17:36",
+    "vslCd": "SCAM",
+    "podNm": "VANCOUVER,BC,CANADA",
+    "etdFlag": "A",
+    "rn": "1",
+    "etd": "2019-09-04 02:30",
+    "polNm": "SHANGHAI,CHINA",
+    "skdVoyNo": "1905",
+    "vslSeq": "0",
+    "etaFlag": "A",
+    "skdDirCd": "E",
+    "podCd": "CAVAN",
+    "bkgNo": "SHSM9C747300",
+    "polCd": "CNSHA",
+    "vslEngNm": "AS MORGANA",
+    "vslPrePstCd": "T",
+    "hashColumns": [
+      [
+        "vsl_eng_nm",
+        "AS MORGANA"
+      ],
+      [
+        "eta",
+        "2019-09-17 17:36"
+      ],
+      [
+        "rn",
+        "1"
+      ],
+      [
+        "vsl_pre_pst_cd",
+        "T"
+      ],
+      [
+        "etd",
+        "2019-09-04 02:30"
+      ],
+      [
+        "pol_cd",
+        "CNSHA"
+      ],
+      [
+        "skd_dir_cd",
+        "E"
+      ],
+      [
+        "pol_nm",
+        "SHANGHAI,CHINA"
+      ],
+      [
+        "etd_flag",
+        "A"
+      ],
+      [
+        "pod_nm",
+        "VANCOUVER,BC,CANADA"
+      ],
+      [
+        "pagerows",
+        {}
+      ],
+      [
+        "ibflag",
+        {}
+      ],
+      [
+        "eta_flag",
+        "A"
+      ],
+      [
+        "bkg_no",
+        "SHSM9C747300"
+      ],
+      [
+        "pod_cd",
+        "CAVAN"
+      ],
+      [
+        "skd_voy_no",
+        "1905"
+      ],
+      [
+        "vsl_seq",
+        "0"
+      ],
+      [
+        "vsl_cd",
+        "SCAM"
+      ]
+    ],
+    "hashFields": [
+    ]
+  }
+]}

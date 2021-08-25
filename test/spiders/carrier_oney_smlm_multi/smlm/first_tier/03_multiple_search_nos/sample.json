@@ -1,0 +1,258 @@
+{
+"Exception":"",
+"TRANS_RESULT_KEY":"S",
+"count":"4",
+"list": [
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "enblFlag": "Y",
+    "weight": "19,000.000 KGS",
+    "copNo": "CNBO1517595958",
+    "blNo": "NJBH1A243500",
+    "eventDt": "2021-06-25 20:45",
+    "cntrTpszCd": "D2",
+    "copStsCd": "F",
+    "dspBkgNo": "NJBH1A243500",
+    "sealNo": "SMC392501",
+    "placeCd": "USLAXM3",
+    "placeNm": "LOS ANGELES,CA, UNITED STATES",
+    "yardNm": "APM TERMINALS (PIER 400)",
+    "statusNm": "Empty Container Returned from Customer",
+    "bkgNo": "NJBH1A243500",
+    "poNo": "",
+    "yardCd": "USLAXM3",
+    "statusCd": "MITYAD",
+    "cntrNo": "DFSU2813575",
+    "cntrTpszNm": "20'DRY ST.",
+    "cntrFlg": "Y",
+    "hashColumns": [
+      [
+        "vsl_eng_nm",
+        {}
+      ],
+      [
+        "cntr_flg",
+        "Y"
+      ],
+      [
+        "weight",
+        "19,000.000 KGS"
+      ],
+      [
+        "nod_cd",
+        {}
+      ],
+      [
+        "vgm_wgt",
+        {}
+      ],
+      [
+        "vgm_unit",
+        {}
+      ],
+      [
+        "no",
+        {}
+      ],
+      [
+        "cop_sts_cd",
+        "F"
+      ],
+      [
+        "enbl_flag",
+        "Y"
+      ],
+      [
+        "seal_no",
+        "SMC392501"
+      ],
+      [
+        "skd_dir_cd",
+        {}
+      ],
+      [
+        "place_nm",
+        "LOS ANGELES,CA, UNITED STATES"
+      ],
+      [
+        "pagerows",
+        {}
+      ],
+      [
+        "ibflag",
+        {}
+      ],
+      [
+        "cntr_tpsz_nm",
+        "20'DRY ST."
+      ],
+      [
+        "status_cd",
+        "MITYAD"
+      ],
+      [
+        "status_nm",
+        "Empty Container Returned from Customer"
+      ],
+      [
+        "bkg_no",
+        "NJBH1A243500"
+      ],
+      [
+        "bl_no",
+        "NJBH1A243500"
+      ],
+      [
+        "cop_dtl_seq",
+        {}
+      ],
+      [
+        "piece",
+        {}
+      ],
+      [
+        "act_tp_cd",
+        {}
+      ],
+      [
+        "vgm_status",
+        {}
+      ],
+      [
+        "cntr_tpsz_cd",
+        "D2"
+      ],
+      [
+        "yard_cd",
+        "USLAXM3"
+      ],
+      [
+        "po_no",
+        ""
+      ],
+      [
+        "place_cd",
+        "USLAXM3"
+      ],
+      [
+        "yard_nm",
+        "APM TERMINALS (PIER 400)"
+      ],
+      [
+        "event_dt",
+        "2021-06-25 20:45"
+      ],
+      [
+        "cntr_no",
+        "DFSU2813575"
+      ],
+      [
+        "dsp_bkg_no",
+        "NJBH1A243500"
+      ],
+      [
+        "skd_voy_no",
+        {}
+      ],
+      [
+        "cop_no",
+        "CNBO1517595958"
+      ],
+      [
+        "vsl_cd",
+        {}
+      ]
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "enblFlag": "Y",
+    "weight": "19,000.000 KGS",
+    "copNo": "CNBO1517595961",
+    "blNo": "NJBH1A243500",
+    "eventDt": "2021-06-25 22:34",
+    "cntrTpszCd": "D2",
+    "copStsCd": "F",
+    "dspBkgNo": "NJBH1A243500",
+    "sealNo": "SMC392531",
+    "placeCd": "USLAXM3",
+    "placeNm": "LOS ANGELES,CA, UNITED STATES",
+    "yardNm": "APM TERMINALS (PIER 400)",
+    "statusNm": "Empty Container Returned from Customer",
+    "bkgNo": "NJBH1A243500",
+    "poNo": "",
+    "yardCd": "USLAXM3",
+    "statusCd": "MITYAD",
+    "cntrNo": "FCIU3274073",
+    "cntrTpszNm": "20'DRY ST.",
+    "cntrFlg": "Y",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "enblFlag": "Y",
+    "weight": "19,000.000 KGS",
+    "copNo": "CNBO1517595960",
+    "blNo": "NJBH1A243500",
+    "eventDt": "2021-07-07 18:48",
+    "cntrTpszCd": "D2",
+    "copStsCd": "F",
+    "dspBkgNo": "NJBH1A243500",
+    "sealNo": "SMC392519",
+    "placeCd": "USLAXM5",
+    "placeNm": "LOS ANGELES,CA, UNITED STATES",
+    "yardNm": "FENIX MARINE SERVICE(FMS, BIRTH 302-305)",
+    "statusNm": "Empty Container Returned from Customer",
+    "bkgNo": "NJBH1A243500",
+    "poNo": "",
+    "yardCd": "USLAXM5",
+    "statusCd": "MITYAD",
+    "cntrNo": "SMCU2003993",
+    "cntrTpszNm": "20'DRY ST.",
+    "cntrFlg": "Y",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "enblFlag": "Y",
+    "weight": "19,000.000 KGS",
+    "copNo": "CNBO1517595959",
+    "blNo": "NJBH1A243500",
+    "eventDt": "2021-06-24 18:55",
+    "cntrTpszCd": "D2",
+    "copStsCd": "F",
+    "dspBkgNo": "NJBH1A243500",
+    "sealNo": "SMC392515",
+    "placeCd": "USLAXM3",
+    "placeNm": "LOS ANGELES,CA, UNITED STATES",
+    "yardNm": "APM TERMINALS (PIER 400)",
+    "statusNm": "Empty Container Returned from Customer",
+    "bkgNo": "NJBH1A243500",
+    "poNo": "",
+    "yardCd": "USLAXM3",
+    "statusCd": "MITYAD",
+    "cntrNo": "FCIU3915217",
+    "cntrTpszNm": "20'DRY ST.",
+    "cntrFlg": "Y",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  }
+]}

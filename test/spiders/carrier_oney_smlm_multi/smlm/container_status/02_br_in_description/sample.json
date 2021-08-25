@@ -1,0 +1,349 @@
+{
+"Exception":"",
+"TRANS_RESULT_KEY":"S",
+"count":"9",
+"list": [
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "1",
+    "copNo": "CSHA9A09444599",
+    "eventDt": "2019-10-10 13:25",
+    "vslEngNm": "",
+    "placeNm": "SHANGHAI ,CHINA",
+    "skdVoyNo": "",
+    "yardNm": "SHANGHAI GREAT FORTUNE DEPOT 1",
+    "copDtlSeq": "1011",
+    "skdDirCd": "",
+    "actTpCd": "A",
+    "statusNm": "Empty Container Release to Shipper",
+    "statusCd": "MOTYDO",
+    "nodCd": "CNSHAYZ",
+    "hashColumns": [
+      [
+        "vsl_eng_nm",
+        ""
+      ],
+      [
+        "cntr_flg",
+        {}
+      ],
+      [
+        "weight",
+        {}
+      ],
+      [
+        "nod_cd",
+        "CNSHAYZ"
+      ],
+      [
+        "vgm_wgt",
+        {}
+      ],
+      [
+        "vgm_unit",
+        {}
+      ],
+      [
+        "no",
+        "1"
+      ],
+      [
+        "cop_sts_cd",
+        {}
+      ],
+      [
+        "enbl_flag",
+        {}
+      ],
+      [
+        "seal_no",
+        {}
+      ],
+      [
+        "skd_dir_cd",
+        ""
+      ],
+      [
+        "place_nm",
+        "SHANGHAI ,CHINA"
+      ],
+      [
+        "pagerows",
+        {}
+      ],
+      [
+        "ibflag",
+        {}
+      ],
+      [
+        "cntr_tpsz_nm",
+        {}
+      ],
+      [
+        "status_cd",
+        "MOTYDO"
+      ],
+      [
+        "status_nm",
+        "Empty Container Release to Shipper"
+      ],
+      [
+        "bkg_no",
+        {}
+      ],
+      [
+        "bl_no",
+        {}
+      ],
+      [
+        "cop_dtl_seq",
+        "1011"
+      ],
+      [
+        "piece",
+        {}
+      ],
+      [
+        "act_tp_cd",
+        "A"
+      ],
+      [
+        "vgm_status",
+        {}
+      ],
+      [
+        "cntr_tpsz_cd",
+        {}
+      ],
+      [
+        "yard_cd",
+        {}
+      ],
+      [
+        "po_no",
+        {}
+      ],
+      [
+        "place_cd",
+        {}
+      ],
+      [
+        "yard_nm",
+        "SHANGHAI GREAT FORTUNE DEPOT 1"
+      ],
+      [
+        "event_dt",
+        "2019-10-10 13:25"
+      ],
+      [
+        "cntr_no",
+        {}
+      ],
+      [
+        "dsp_bkg_no",
+        {}
+      ],
+      [
+        "skd_voy_no",
+        ""
+      ],
+      [
+        "cop_no",
+        "CSHA9A09444599"
+      ],
+      [
+        "vsl_cd",
+        ""
+      ]
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "2",
+    "copNo": "CSHA9A09444599",
+    "eventDt": "2019-10-12 07:58",
+    "vslEngNm": "",
+    "placeNm": "SHANGHAI ,CHINA",
+    "skdVoyNo": "",
+    "yardNm": "SHANGHAI WAIGAOQIAO INTL CONTAINER TMNL (WGQ2)",
+    "copDtlSeq": "1031",
+    "skdDirCd": "",
+    "actTpCd": "A",
+    "statusNm": "Gate In to Outbound Terminal",
+    "statusCd": "FOTMAD",
+    "nodCd": "CNSHAGQ",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "SMNB",
+    "no": "3",
+    "copNo": "CSHA9A09444599",
+    "eventDt": "2019-10-15 07:40",
+    "vslEngNm": "SM NINGBO",
+    "placeNm": "SHANGHAI ,CHINA",
+    "skdVoyNo": "1907",
+    "yardNm": "SHANGHAI WAIGAOQIAO INTL CONTAINER TMNL (WGQ2)",
+    "copDtlSeq": "1032",
+    "skdDirCd": "E",
+    "actTpCd": "A",
+    "statusNm": "Loaded on 'SM NINGBO 1907E' at Port of Loading",
+    "statusCd": "FLVMLO",
+    "nodCd": "CNSHAGQ",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "SMNB",
+    "no": "4",
+    "copNo": "CSHA9A09444599",
+    "eventDt": "2019-10-15 22:30",
+    "vslEngNm": "SM NINGBO",
+    "placeNm": "SHANGHAI ,CHINA",
+    "skdVoyNo": "1907",
+    "yardNm": "SHANGHAI WAIGAOQIAO INTL CONTAINER TMNL (WGQ2)",
+    "copDtlSeq": "4033",
+    "skdDirCd": "E",
+    "actTpCd": "A",
+    "statusNm": "'SM NINGBO 1907E' Departure from Port of Loading",
+    "statusCd": "FLVMDO",
+    "nodCd": "CNSHAGQ",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "SMNB",
+    "no": "5",
+    "copNo": "CSHA9A09444599",
+    "eventDt": "2019-10-30 05:30",
+    "vslEngNm": "SM NINGBO",
+    "placeNm": "LONG BEACH,CA ,UNITED STATES",
+    "skdVoyNo": "1907",
+    "yardNm": "SSA TERMINAL PIER A",
+    "copDtlSeq": "4051",
+    "skdDirCd": "E",
+    "actTpCd": "E",
+    "statusNm": "'SM NINGBO 1907E' Arrival at Port of Discharging",
+    "statusCd": "FUVMAD",
+    "nodCd": "USLGBM1",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "SMNB",
+    "no": "6",
+    "copNo": "CSHA9A09444599",
+    "eventDt": "2019-10-30 07:00",
+    "vslEngNm": "SM NINGBO",
+    "placeNm": "LONG BEACH,CA ,UNITED STATES",
+    "skdVoyNo": "1907",
+    "yardNm": "SSA TERMINAL PIER A",
+    "copDtlSeq": "4052",
+    "skdDirCd": "E",
+    "actTpCd": "E",
+    "statusNm": "'SM NINGBO 1907E' POD Berthing Destination",
+    "statusCd": "FUVMBD",
+    "nodCd": "USLGBM1",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "SMNB",
+    "no": "7",
+    "copNo": "CSHA9A09444599",
+    "eventDt": "2019-10-30 23:00",
+    "vslEngNm": "SM NINGBO",
+    "placeNm": "LONG BEACH,CA ,UNITED STATES",
+    "skdVoyNo": "1907",
+    "yardNm": "SSA TERMINAL PIER A",
+    "copDtlSeq": "6053",
+    "skdDirCd": "E",
+    "actTpCd": "E",
+    "statusNm": "Unloaded from 'SM NINGBO 1907E' at Port of Discharging",
+    "statusCd": "FUVMUD",
+    "nodCd": "USLGBM1",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "8",
+    "copNo": "CSHA9A09444599",
+    "eventDt": "2019-11-01 23:00",
+    "vslEngNm": "",
+    "placeNm": "LONG BEACH,CA ,UNITED STATES",
+    "skdVoyNo": "",
+    "yardNm": "SSA TERMINAL PIER A",
+    "copDtlSeq": "6054",
+    "skdDirCd": "",
+    "actTpCd": "E",
+    "statusNm": "Gate Out from Inbound Terminal<br>OR<br>Shuttled to ODCY",
+    "statusCd": "FITMDO",
+    "nodCd": "USLGBM1",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "9",
+    "copNo": "CSHA9A09444599",
+    "eventDt": "2019-11-02 05:00",
+    "vslEngNm": "",
+    "placeNm": "LONG BEACH,CA ,UNITED STATES",
+    "skdVoyNo": "",
+    "yardNm": "SSA TERMINAL PIER A",
+    "copDtlSeq": "6071",
+    "skdDirCd": "",
+    "actTpCd": "E",
+    "statusNm": "Empty Container Returned from Customer",
+    "statusCd": "MITYAD",
+    "nodCd": "USLGBM1",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  }
+]}
