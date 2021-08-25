@@ -24,7 +24,3 @@ def verify(results: List):
         # not on html
         freight_release='Release',
     )
-
-    assert isinstance(results[1], RequestOption)
-    assert results[1].rule_name == 'MBL'
-    assert results[1].form_data['PI_MFSMS_SYSNO'] == '16905717'

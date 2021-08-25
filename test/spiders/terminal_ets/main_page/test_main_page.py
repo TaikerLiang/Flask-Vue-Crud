@@ -24,7 +24,7 @@ def sample_loader(sample_loader):
 def test_main_page_handle(sub, container_no, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    option = MainPageRoutingRule.build_request_option(container_no=container_no)
+    option = MainPageRoutingRule.build_request_option(container_no_list=[container_no])
 
     response = TextResponse(
         url=option.url,
