@@ -10,15 +10,15 @@ from crawler.spiders.carrier_mscu import MainRoutingRule
 from test.spiders.carrier_mscu import main_info
 
 
-class TestDriver:
-    def __init__(self, body_text):
-        self.body_text = body_text
-
-    def search_mbl_no(self, mbl_no):
-        pass
-
-    def get_body_text(self):
-        return self.body_text
+# class TestDriver:
+#     def __init__(self, body_text):
+#         self.body_text = body_text
+#
+#     def search_mbl_no(self, mbl_no):
+#         pass
+#
+#     def get_body_text(self):
+#         return self.body_text
 
 
 @pytest.fixture

@@ -16,6 +16,7 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
+@pytest.mark.skip()
 @pytest.mark.parametrize(
     'sub,mbl_no,container_id',
     [
