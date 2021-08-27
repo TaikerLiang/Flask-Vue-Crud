@@ -17,6 +17,7 @@ from crawler.core_carrier.exceptions import (
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
+from crawler.core.selenium import ChromeContentGetter
 
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.extractors.table_extractors import (
@@ -355,34 +356,25 @@ class ContainerStatusTableLocator(BaseTableLocator):
 # -------------------------------------------------------------------------------
 
 
-class CookiesGetter:
-    def __init__(self):
-        options = webdriver.ChromeOptions()
-        options.add_argument('--disable-extensions')
-        options.add_argument('--headless')
-        options.add_argument('--disable-gpu')
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--no-sandbox')
-
-        self._browser = webdriver.Chrome(chrome_options=options)
+class CookiesGetter(ChromeContentGetter):
 
     def get_cookies(self):
-        self._browser.get(f'{BASE_URL}/online-business/tracing/tracing-by-booking.html')
+        self._driver.get(f'{BASE_URL}/online-business/tracing/tracing-by-booking.html')
 
         try:
-            WebDriverWait(self._browser, 10).until(self._is_cookies_ready)
+            WebDriverWait(self._driver, 10).until(self._is_cookies_ready)
         except TimeoutException:
-            raise LoadWebsiteTimeOutError(url=self._browser.current_url)
+            raise LoadWebsiteTimeOutError(url=self._driver.current_url)
 
         cookies = {}
-        for cookie_object in self._browser.get_cookies():
+        for cookie_object in self._driver.get_cookies():
             cookies[cookie_object['name']] = cookie_object['value']
 
-        self._browser.close()
+        self._driver.close()
         return cookies
 
     def _is_cookies_ready(self, *_):
-        cookies_str = str(self._browser.get_cookies())
+        cookies_str = str(self._driver.get_cookies())
         return (
             ('TS01a3c52a' in cookies_str)
             and ('TSa4b927ad_76' in cookies_str)

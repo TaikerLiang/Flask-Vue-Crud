@@ -10,6 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException, TimeoutException
+from crawler.core.selenium import FirefoxContentGetter
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
@@ -626,18 +627,9 @@ class BookingRoutingRule(BaseRoutingRule):
         return return_list
 
 
-class WhlcDriver:
+class WhlcDriver(FirefoxContentGetter):
     def __init__(self):
-        # Firefox
-        useragent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11.1; rv:78.0) Gecko/20100101 Firefox/78.0'
-        profile = webdriver.FirefoxProfile()
-        profile.set_preference("general.useragent.override", useragent)
-        options = webdriver.FirefoxOptions()
-        options.set_preference("dom.webnotifications.serviceworker.enabled", False)
-        options.set_preference("dom.webnotifications.enabled", False)
-        options.add_argument('--headless')
-
-        self._driver = webdriver.Firefox(firefox_profile=profile, options=options)
+        super(WhlcDriver, self).__init__()
 
         self._type_select_text_map = {
             SHIPMENT_TYPE_MBL: 'BL no.',
@@ -656,15 +648,6 @@ class WhlcDriver:
         view_state_elem = self._driver.find_element_by_css_selector('input[name="javax.faces.ViewState"]')
         view_state = view_state_elem.get_attribute('value')
         return view_state
-
-    def close(self):
-        self._driver.close()
-
-    def quit(self):
-        self._driver.quit()
-
-    def get_page_source(self):
-        return self._driver.page_source
 
     def search(self, search_no, search_type):
         select_text = self._type_select_text_map[search_type]

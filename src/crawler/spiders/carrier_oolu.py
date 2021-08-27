@@ -18,6 +18,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from urllib3.exceptions import ReadTimeoutError
 from PIL import Image
 
+from crawler.core.selenium import ChromeContentGetter
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
@@ -106,7 +107,7 @@ class CarrierOoluSpider(BaseCarrierSpider):
             raise ValueError(f'Invalid option.method [{option.method}]')
 
 
-class ContentGetter:
+class ContentGetter(ChromeContentGetter):
 
     # def __init__(self):
     #     options = webdriver.ChromeOptions()
@@ -127,32 +128,18 @@ class ContentGetter:
     #     self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': script})
 
     def __init__(self):
-        options = webdriver.ChromeOptions()
-        options.add_argument('--disable-extensions')
-        options.add_argument('--disable-notifications')
-        options.add_argument('--headless')
-        options.add_argument("--enable-javascript")
-        options.add_argument('--disable-gpu')
-        options.add_argument(
-            f'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
-            f'Chrome/88.0.4324.96 Safari/537.36'
-        )
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--window-size=1920,1080')
-        options.add_argument("--disable-blink-features=AutomationControlled")
+        super(ContentGetter, self).__init__()
 
-        self.driver = webdriver.Chrome(chrome_options=options)
-        self.driver.get('http://www.oocl.com/eng/Pages/default.aspx')
+        self._driver.get('http://www.oocl.com/eng/Pages/default.aspx')
         time.sleep(3)
         self._is_first = True
 
     def search_and_return(self, search_no, search_type):
         self._search(search_no=search_no, search_type=search_type)
         time.sleep(7)
-        windows = self.driver.window_handles
-        self.driver.switch_to.window(windows[1])  # windows[1] is new page
-        if self._is_blocked(response=Selector(text=self.driver.page_source)):
+        windows = self._driver.window_handles
+        self._driver.switch_to.window(windows[1])  # windows[1] is new page
+        if self._is_blocked(response=Selector(text=self._driver.page_source)):
             raise RuntimeError()
 
         if self._is_first:
@@ -160,50 +147,50 @@ class ContentGetter:
             self._handle_with_slide()
             time.sleep(10)
 
-        return self.driver.page_source
+        return self._driver.page_source
 
     def search_again_and_return(self, search_no, search_type):
-        self.driver.close()
+        self._driver.close()
 
         # jump back to origin window
         windows = self.driver.window_handles
         assert len(windows) == 1
-        self.driver.switch_to.window(windows[0])
+        self._driver.switch_to.window(windows[0])
 
-        self.driver.refresh()
+        self._driver.refresh()
         time.sleep(3)
         return self.search_and_return(search_no=search_no, search_type=search_type)
 
     def close_current_window_and_jump_to_origin(self):
-        self.driver.close()
+        self._driver.close()
 
         # jump back to origin window
-        windows = self.driver.window_handles
+        windows = self._driver.window_handles
         assert len(windows) == 1
-        self.driver.switch_to.window(windows[0])
+        self._driver.switch_to.window(windows[0])
 
     def _search(self, search_no, search_type):
         if self._is_first:
             # handle cookies
-            cookie_accept_btn = WebDriverWait(self.driver, 20).until(
+            cookie_accept_btn = WebDriverWait(self._driver, 20).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, 'form > button#btn_cookie_accept'))
             )
             cookie_accept_btn.click()
             time.sleep(2)
 
         if self._is_first and search_type == SHIPMENT_TYPE_MBL:
-            drop_down_btn = self.driver.find_element_by_css_selector("button[data-id='ooclCargoSelector']")
+            drop_down_btn = self._driver.find_element_by_css_selector("button[data-id='ooclCargoSelector']")
             drop_down_btn.click()
-            bl_select = self.driver.find_element_by_css_selector("a[tabindex='0']")
+            bl_select = self._driver.find_element_by_css_selector("a[tabindex='0']")
             bl_select.click()
 
         time.sleep(2)
-        search_bar = self.driver.find_element_by_css_selector('input#SEARCH_NUMBER')
+        search_bar = self._driver.find_element_by_css_selector('input#SEARCH_NUMBER')
         search_bar.clear()
         time.sleep(1)
         search_bar.send_keys(search_no)
         time.sleep(2)
-        search_btn = self.driver.find_element_by_css_selector('a#container_btn')
+        search_btn = self._driver.find_element_by_css_selector('a#container_btn')
         search_btn.click()
 
     @staticmethod
@@ -214,14 +201,8 @@ class ContentGetter:
         else:
             return False
 
-    def get_current_url(self):
-        return self.driver.current_url
-
-    def get_page_text(self):
-        return self.driver.page_source
-
     def find_container_btn_and_click(self, container_btn_css):
-        contaienr_btn = self.driver.find_element_by_css_selector(container_btn_css)
+        contaienr_btn = self._driver.find_element_by_css_selector(container_btn_css)
         contaienr_btn.click()
 
     def get_element_slide_distance(self, slider_ele, background_ele, correct=0):
@@ -277,14 +258,14 @@ class ContentGetter:
         return cv2.cvtColor(np.array(_image), cv2.COLOR_RGB2BGR)
 
     def refresh(self):
-        refresh_button = self.driver.find_element_by_xpath(
+        refresh_button = self._driver.find_element_by_xpath(
             '/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[1]/div/div/i')
         refresh_button.click()
         time.sleep(5)
 
     def pass_verification_or_not(self):
         try:
-            return self.driver.find_element_by_id('recaptcha_div')
+            return self._driver.find_element_by_id('recaptcha_div')
         except NoSuchElementException:
             return None
 
@@ -309,29 +290,29 @@ class ContentGetter:
                 break
 
     def get_slider(self):
-        WebDriverWait(self.driver, 15).until(
+        WebDriverWait(self._driver, 15).until(
             EC.presence_of_element_located(
                 (By.XPATH, '/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/i'))
         )
-        return self.driver.find_element_by_xpath('/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/i')
+        return self._driver.find_element_by_xpath('/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/i')
 
     def get_slider_icon_ele(self):
-        canvas = self.driver.find_element_by_xpath('//*[@id="bockCanvas"]')
-        canvas_base64 = self.driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
+        canvas = self._driver.find_element_by_xpath('//*[@id="bockCanvas"]')
+        canvas_base64 = self._driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
         return canvas_base64
 
     def get_bg_img_ele(self):
-        canvas = self.driver.find_element_by_xpath('//*[@id="imgCanvas"]')
-        canvas_base64 = self.driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
+        canvas = self._driver.find_element_by_xpath('//*[@id="imgCanvas"]')
+        canvas_base64 = self._driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
         return canvas_base64
 
     def move_to_gap(self, slider, track):
-        ActionChains(self.driver).click_and_hold(slider).perform()
+        ActionChains(self._driver).click_and_hold(slider).perform()
 
         for x in track:
-            ActionChains(self.driver).move_by_offset(xoffset=x, yoffset=0).perform()
+            ActionChains(self._driver).move_by_offset(xoffset=x, yoffset=0).perform()
         time.sleep(0.5)  # move to the right place and take a break
-        ActionChains(self.driver).release().perform()
+        ActionChains(self._driver).release().perform()
 
     def get_track(self, distance):
         """
@@ -366,12 +347,6 @@ class ContentGetter:
             track.append(round(move))
 
         return track
-
-    def quit(self):
-        self.driver.quit()
-
-    def page_refresh(self):
-        self.driver.refresh()
 # -------------------------------------------------------------------------------
 
 
@@ -879,7 +854,7 @@ class ContainerStatusRule(BaseRoutingRule):
             self._content_getter.quit()
             raise LoadWebsiteTimeOutError(url=url)
 
-        response = Selector(text=self._content_getter.get_page_text())
+        response = Selector(text=self._content_getter.get_page_source())
 
         for item in self._handle_response(response=response, container_no=container_no):
             yield item
