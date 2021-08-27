@@ -5,7 +5,6 @@ from typing import List, Dict
 
 import scrapy
 from scrapy import Selector
-from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
@@ -138,7 +137,7 @@ class MblRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_ids = response.meta['task_ids']
         mbl_nos = response.meta['mbl_nos']
-        driver = WhlcDriver()
+        driver = ContentGetter()
         cookies = driver.get_cookies_dict_from_main_page()
         try:
             driver.multi_search(search_nos=mbl_nos, search_type=self._search_type)
@@ -406,7 +405,7 @@ class BookingRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_ids = response.meta['task_ids']
         search_nos = response.meta['search_nos']
-        driver = WhlcDriver()
+        driver = ContentGetter()
         cookies = driver.get_cookies_dict_from_main_page()
         driver.multi_search(search_nos=search_nos, search_type=self._search_type)
 
@@ -627,9 +626,9 @@ class BookingRoutingRule(BaseRoutingRule):
         return return_list
 
 
-class WhlcDriver(FirefoxContentGetter):
+class ContentGetter(FirefoxContentGetter):
     def __init__(self):
-        super(WhlcDriver, self).__init__()
+        super().__init__()
 
         self._type_select_text_map = {
             SHIPMENT_TYPE_MBL: 'BL no.',

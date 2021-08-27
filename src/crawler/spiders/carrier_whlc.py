@@ -5,10 +5,6 @@ from typing import List, Dict
 
 import scrapy
 from scrapy import Selector
-from selenium import webdriver
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
 from crawler.core.selenium import FirefoxContentGetter
 
 from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException
@@ -157,7 +153,7 @@ class MblRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
-        driver = WhlcDriver()
+        driver = ContentGetter()
         cookies = driver.get_cookies_dict_from_main_page()
         try:
             driver.search_mbl(mbl_no)
@@ -382,7 +378,7 @@ class BookingRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         search_no = response.meta['search_no']
-        driver = WhlcDriver()
+        driver = ContentGetter()
         cookies = driver.get_cookies_dict_from_main_page()
         driver.search(search_no=search_no, search_type=self._search_type)
 
@@ -526,9 +522,9 @@ class BookingRoutingRule(BaseRoutingRule):
         return return_list
 
 
-class WhlcDriver(FirefoxContentGetter):
+class ContentGetter(FirefoxContentGetter):
     def __init__(self):
-        super(WhlcDriver, self).__init__()
+        super().__init__()
 
         self._type_select_text_map = {
             SHIPMENT_TYPE_MBL: 'BL no.',

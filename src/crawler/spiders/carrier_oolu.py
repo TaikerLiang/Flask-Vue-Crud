@@ -9,7 +9,6 @@ import scrapy
 import cv2
 import numpy as np
 from scrapy import Selector
-from selenium import webdriver
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -108,27 +107,8 @@ class CarrierOoluSpider(BaseCarrierSpider):
 
 
 class ContentGetter(ChromeContentGetter):
-
-    # def __init__(self):
-    #     options = webdriver.ChromeOptions()
-    #     options.add_argument('--disable-extensions')
-    #     options.add_argument('--disable-notifications')
-    #     options.add_argument('--headless')
-    #     options.add_argument('--disable-gpu')
-    #     options.add_argument('--disable-dev-shm-usage')
-    #     options.add_argument('--no-sandbox')
-    #     options.add_argument('--window-size=1920,1080')
-    #     options.add_experimental_option('excludeSwitches', ['enable-automation'])
-    #     options.add_experimental_option('useAutomationExtension', False)
-    #
-    #     self.driver = webdriver.Chrome(chrome_options=options)
-    #
-    #     # undefine navigator.webdriver
-    #     script = "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-    #     self.driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {'source': script})
-
     def __init__(self):
-        super(ContentGetter, self).__init__()
+        super().__init__()
 
         self._driver.get('http://www.oocl.com/eng/Pages/default.aspx')
         time.sleep(3)

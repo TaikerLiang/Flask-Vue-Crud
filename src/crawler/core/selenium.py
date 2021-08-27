@@ -31,7 +31,7 @@ class BaseContentGetter:
 
 class ChromeContentGetter(BaseContentGetter):
     def __init__(self):
-        super(ChromeContentGetter, self).__init__()
+        super().__init__()
         
         options = webdriver.ChromeOptions()
         options.add_argument('--disable-extensions')
@@ -53,8 +53,8 @@ class ChromeContentGetter(BaseContentGetter):
 
 class FirefoxContentGetter(BaseContentGetter):
     def __init__(self, service_log_path=None):
-        super(FirefoxContentGetter, self).__init__()
-        # Firefox
+        super().__init__()
+
         useragent = self._random_choose_user_agent()
         profile = webdriver.FirefoxProfile()
         profile.set_preference("general.useragent.override", useragent)

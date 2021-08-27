@@ -1,10 +1,8 @@
 import time
-import random
 from typing import List, Dict
 
 import scrapy
 from scrapy import Selector
-from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
@@ -641,7 +639,7 @@ class OnlyContentTableCellExtractor(BaseTableCellExtractor):
 
 class ContentGetter(FirefoxContentGetter):
     def __init__(self):
-        super(ContentGetter, self).__init__(service_log_path='/dev/null')
+        super().__init__(service_log_path='/dev/null')
         self._driver.get('https://elines.coscoshipping.com/ebusiness/cargoTracking')
         self._is_first = True
 

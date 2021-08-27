@@ -9,7 +9,6 @@ import scrapy
 import cv2
 import numpy as np
 from scrapy import Selector
-from selenium import webdriver
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -110,7 +109,7 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
 
 class ContentGetter(ChromeContentGetter):
     def __init__(self):
-        super(ContentGetter, self).__init__()
+        super().__init__()
 
         self._driver.get('http://www.oocl.com/eng/Pages/default.aspx')
         time.sleep(3)

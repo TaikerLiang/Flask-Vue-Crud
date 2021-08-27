@@ -14,7 +14,6 @@ from crawler.core_carrier.exceptions import (
     LoadWebsiteTimeOutError,
 )
 
-from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
 from crawler.core.selenium import ChromeContentGetter
@@ -46,7 +45,7 @@ class CarrierHlcuSpider(BaseCarrierSpider):
         self._request_queue = RequestOptionQueue()
 
     def start(self):
-        cookies_getter = CookiesGetter()
+        cookies_getter = ContentGetter()
         cookies = cookies_getter.get_cookies()
 
         request_option = TracingRoutingRule.build_request_option(mbl_no=self.mbl_no, cookies=cookies)
@@ -356,7 +355,7 @@ class ContainerStatusTableLocator(BaseTableLocator):
 # -------------------------------------------------------------------------------
 
 
-class CookiesGetter(ChromeContentGetter):
+class ContentGetter(ChromeContentGetter):
 
     def get_cookies(self):
         self._driver.get(f'{BASE_URL}/online-business/tracing/tracing-by-booking.html')
