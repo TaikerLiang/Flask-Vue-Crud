@@ -1,16 +1,14 @@
 import time
-import random
 from typing import List, Dict
 
 import scrapy
 from scrapy import Selector
-from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from urllib3.exceptions import ReadTimeoutError
-
+from crawler.core.selenium import FirefoxContentGetter
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.exceptions import SuspiciousOperationError, LoadWebsiteTimeOutFatal, CarrierInvalidMblNoError, \
     CarrierInvalidSearchNoError
@@ -601,12 +599,10 @@ class OnlyContentTableCellExtractor(BaseTableCellExtractor):
 # ---------------------------------------------------------------------------------------------------------
 
 
-class ContentGetter:
+class ContentGetter(FirefoxContentGetter):
     def __init__(self):
-        options = webdriver.FirefoxOptions()
-        options.add_argument('--headless')
-        options.add_argument(f'user-agent={self._random_choose_user_agent()}')
-        self._driver = webdriver.Firefox(firefox_options=options, service_log_path='/dev/null')
+        super().__init__(service_log_path='/dev/null')
+
         self._driver.get('https://elines.coscoshipping.com/ebusiness/cargoTracking')
         self._is_first = True
 
@@ -654,21 +650,6 @@ class ContentGetter:
         time.sleep(8)
         return self._driver.page_source
 
-    def scroll_to_bottom_of_page(self):
-        self._driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(3)
-
-    @staticmethod
-    def _random_choose_user_agent():
-        user_agents = [
-            # firefox
-            ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:80.0) ' 'Gecko/20100101 ' 'Firefox/80.0'),
-            ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) ' 'Gecko/20100101 ' 'Firefox/79.0'),
-            ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) ' 'Gecko/20100101 ' 'Firefox/78.0'),
-            ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0.1) ' 'Gecko/20100101 ' 'Firefox/78.0.1'),
-        ]
-
-        return random.choice(user_agents)
 
 
 def get_container_key(container_no: str):
