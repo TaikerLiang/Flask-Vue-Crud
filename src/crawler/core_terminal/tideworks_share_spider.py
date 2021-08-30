@@ -291,7 +291,7 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         elif len(div_text_list) >= 6:
             key = div_text_list[0].strip()
             key = key[:-1]  # delete colon
-            value = ' '.join([text.strip() for text in div_text_list[1:]])
+            value = ' '.join([text.strip() for text in div_text_list[1:] if not text.isspace()])
 
         else:
             raise TerminalResponseFormatError(reason=f'unknown container_no_div format: `{div_text_list}`')
