@@ -37,7 +37,7 @@ click==8.0.1
     #   mitmproxy
 constantly==15.1.0
     # via twisted
-cryptography==3.4.7
+cryptography==3.4.8
     # via
     #   mitmproxy
     #   pyopenssl
@@ -47,7 +47,7 @@ cssselect==1.1.0
     # via
     #   parsel
     #   scrapy
-faker==8.12.0
+faker==8.12.1
     # via -r src/requirements-app.in
 flask==2.0.1
     # via mitmproxy
@@ -74,7 +74,7 @@ idna==3.2
     #   requests
 incremental==21.3.0
     # via twisted
-itemadapter==0.3.0
+itemadapter==0.4.0
     # via
     #   itemloaders
     #   scrapy
@@ -145,14 +145,17 @@ pyperclip==1.8.2
     # via mitmproxy
 pysocks==1.7.1
     # via selenium-wire
+python-anticaptcha==0.7.1
+    # via -r src/requirements-app.in
 python-dateutil==2.8.2
     # via faker
-queuelib==1.6.1
+queuelib==1.6.2
     # via scrapy
 requests==2.26.0
     # via
     #   -r src/requirements-app.in
     #   anticaptchaofficial
+    #   python-anticaptcha
 ruamel.yaml==0.17.10
     # via mitmproxy
 ruamel.yaml.clib==0.2.6
@@ -163,7 +166,7 @@ selenium==3.141.0
     # via
     #   -r src/requirements-app.in
     #   selenium-wire
-selenium-wire==4.5.1
+selenium-wire==4.5.2
     # via -r src/requirements-app.in
 service-identity==21.1.0
     # via scrapy
@@ -174,6 +177,7 @@ six==1.16.0
     #   protego
     #   protobuf
     #   pyopenssl
+    #   python-anticaptcha
     #   python-dateutil
     #   service-identity
     #   w3lib
@@ -185,7 +189,7 @@ tornado==6.1
     # via mitmproxy
 twisted==21.7.0
     # via scrapy
-typing-extensions==3.10.0.0
+typing-extensions==3.10.0.1
     # via twisted
 ujson==4.1.0
     # via -r src/requirements-app.in

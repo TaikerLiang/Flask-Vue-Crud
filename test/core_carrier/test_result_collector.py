@@ -44,3 +44,18 @@ class TestCarrierResultCollector:
         # assert
         data = collector.build_final_data()
         assert data['containers'] == expect_containers
+
+    def test_build_final_data(self):
+        # arrange
+        request_args = {
+            "task_id": "88444",
+            "mbl_no": "123"
+
+        }
+        collector = CarrierResultCollector(request_args=request_args)
+
+        # action
+        final_data = collector.build_final_data()
+
+        # assertion
+        assert final_data is None
