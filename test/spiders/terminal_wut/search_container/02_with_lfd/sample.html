@@ -1,0 +1,146 @@
+<html><head>
+<title>Container Information</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" type="text/css" media="screen" href="/resource/css/custom/jquery-ui-1.8.5.custom.css">
+<link rel="stylesheet" type="text/css" media="screen" href="/resource/css/ustti.jqgrid.css">
+<link rel="stylesheet" type="text/css" media="screen" href="/resource/css/ustti.jquery.searchFilter.css">
+<link rel="stylesheet" type="text/css" media="screen" href="/resource/css/ustti.ui4.css">
+<style type="text/css">
+<!--
+body {
+ margin-left: 20px;
+ margin-top: 0px;
+ margin-right: 40px;
+ margin-bottom: 0px;
+ overflow-y: auto;
+ overflow-x: auto;
+}
+-->
+</style>
+<script type="text/javascript" src="/resource/js/jquery/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="/resource/js/i18n/grid.locale-en.js"></script>
+<script type="text/javascript" src="/resource/js/jquery/jquery.jqGrid.min.js"></script>
+<script type="text/javascript" src="/resource/js/jquery/jquery.bestupper.min.js"></script>
+<script type="text/javascript" src="/resource/js/jquery/jquery.validate.js"></script>
+<script type="text/javascript" src="/resource/js/jquery/jquery.json-2.2.js"></script>
+<script type="text/javascript" src="/resource/js/jquery/jquery.ui.core.js"></script>
+<script type="text/javascript" src="/resource/js/jquery/jquery.ui.widget.js"></script>
+<script type="text/javascript" src="/resource/js/jquery/jquery.ui.datepicker.js"></script>
+<script type="text/javascript" src="/resource/js/CoCommon.js"></script>
+<script type="text/javascript" src="/resource/js/CoCalendar.js"></script>
+<script type="text/javascript" src="/resource/js/CoGrid.js"></script>
+<script type="text/javascript" src="/resource/js/CoUtil.js"></script>
+<script type="text/javascript" src="/resource/js/CoPopup.js"></script>
+<script type="text/javascript" src="/resource/js/biz/arp/UI-ARP-02_1.js"></script>
+<script type="text/javascript">
+	var result  = [{"scanStatus":"SCANNED","avlbDesc":"Delivered","tmnlHoldRsn":"TERMINAL HOLD ","tmnlHold":"Released","miscHoldRsn":"RELEASE","tmlCd":"USTIW","cntrNo":"YMMU6297676","cntrSeq":"1","avlbFlg":"Delivered","prtFeeFlg":"Hold","lctnNm":"Out-Gated (08/12/2021 15:27)","custHold":"Released()","usdaHold":"Released","cusmHold":"Released","miscHold":"Released","dmgDueFlg":"Not Allowed","lstFreeDt":"08-11-2021","oprCd":"YML","scacCd":"YMLU","tmlPrivCntrTpszCdNm":"DC 40 96","custHldRsn":"RELEASED R.QTY:538","mode":0}];
+	var inputParam = {"srchTpCd":"C","tmlCd":"USTIW","cntrNo":"YMMU6297676","cntrNoList":["YMMU6297676"],"usrId":"RLTC","usrTrkrList":[],"authKey":"100111000110001101101010010100","mode":0};
+
+	var sslUrl = '';
+	var httpUrl = '';
+</script>
+</head>
+
+<body onload="Screen_OnLoad();">
+<form id="form" name="form">
+<input type="hidden" name="checkLogin" id="checkLogin" value="true">
+<input type="hidden" name="tmlCd" id="tmlCd" value="USTIW">
+<input type="hidden" name="usrId" id="usrId" value="RLTC">
+<input type="hidden" name="usrEml" id="usrEml" value="Scott.lu@gofreight.co">
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+	<tbody><tr>
+		<td valign="top">
+			<!--  Main(s)-->
+			<table class="search" border="0" style="width:100%;">
+				<tbody><tr>
+					<td>
+						<table width="100%" border="0" cellspacing="0" cellpadding="0">
+							<tbody><tr>
+								<td>
+									<table border="0" cellpadding="0" cellspacing="0">
+										<tbody><tr>
+											<td width="18"><img src="/resource/img/icon_title_dot.gif" width="13" height="14" alt="" border="0"></td>
+											<td class="title">Container Information</td>
+										</tr>
+            						</tbody></table>
+      							</td>
+      							<td style="padding-right:150px; padding-bottom:0px; vertical-align:bottom;" align="right">
+									<table border="0" cellpadding="0" cellspacing="0">
+          								<tbody><tr>
+          									<td width="">
+		   	  								<table width="100%" border="0" cellpadding="0" cellspacing="0">
+											<tbody><tr><td width="14"><img src="/resource/img/btn_tti1_left.gif" width="14" height="25" alt="" border="0"></td>
+											<td class="btn1" background="/resource/img/btn_tti1_bg.gif"><a href="javascript:onclick=Excel_OnClick();">Excel</a></td>
+											<td><img src="/resource/img/btn_tti1_right.gif" width="6" height="25" alt="" border="0"></td></tr>
+			  								</tbody></table>
+											</td>
+            								<td width="">
+		   	  								<table width="100%" border="0" cellpadding="0" cellspacing="0">
+											<tbody><tr><td width="14"><img src="/resource/img/btn_tti1_left.gif" width="14" height="25" alt="" border="0"></td>
+											<td class="btn1" background="/resource/img/btn_tti1_bg.gif"><a href="javascript:onclick=Back_OnClick();">Back</a></td>
+											<td><img src="/resource/img/btn_tti1_right.gif" width="6" height="25" alt="" border="0"></td></tr>
+			  								</tbody></table>
+											</td>
+			 							</tr>
+          							</tbody></table>
+								</td>
+    						</tr>
+   						</tbody></table>
+						<table><tbody><tr><td height="5"></td></tr></tbody></table>
+						<!-- : (Comments) (S) -->
+						<table style="width:500px;">
+							<tbody><tr>
+								<td class="btn1_bg">
+									<table border="0" cellpadding="0" cellspacing="0">
+          								<tbody><tr>
+            								<td width="">
+		   	  								<table width="100%" border="0" cellpadding="0" cellspacing="0">
+											<tbody><tr><td width="14"><img src="/resource/img/btn_tti1_left.gif" width="14" height="25" alt="" border="0"></td>
+											<td class="btn1" background="/resource/img/btn_tti1_bg.gif"><a href="#" id="gEqNo">Request</a></td>
+											<td><img src="/resource/img/btn_tti1_right.gif" width="6" height="25" alt="" border="0"></td></tr>
+			  								</tbody></table>
+											</td>
+			 							</tr>
+          							</tbody></table>
+								</td>
+								<!-- : (Button_Request) (E) -->
+							</tr>
+						</tbody></table>
+						<!-- : (Comments) (E) -->
+						<table><tbody><tr><td height="5"></td></tr></tbody></table>
+					</td>
+				</tr>
+			</tbody></table>
+<!-- 			<table align="right"><tr><td> -->
+<!-- 				<table><tr><td style="text-decoration:underline;color:blue;"> -->
+<!-- 					<a href="javascript:onclick=DemurragePayMultiplePayFuture_OnClick();">Demurrage - Pay Multiple, Pay Future Date</a> -->
+<!-- 				</td></tr> -->
+<!-- 				</table> -->
+			</td></tr></tbody></table>
+			<table><tbody><tr><td height="15"></td></tr></tbody></table>
+<!-- : ( Grid1 Main ) (S) -->
+
+
+
+<div class="ui-jqgrid ui-widget ui-widget-content ui-corner-all" id="gbox_grid1" dir="ltr" style="width: 536px;"><div class="ui-widget-overlay jqgrid-overlay" id="lui_grid1"></div><div class="loading ui-state-default ui-state-active" id="load_grid1" style="display: none;">Loading...</div><div class="ui-jqgrid-view" id="gview_grid1" style="width: 536px;"><div class="ui-jqgrid-titlebar ui-widget-header ui-corner-top ui-helper-clearfix"><a role="link" href="javascript:void(0)" class="ui-jqgrid-titlebar-close HeaderButton" style="right: 0px;"><span class="ui-icon ui-icon-circle-triangle-n"></span></a><span class="ui-jqgrid-title">Container Information.  TOTAL : 1</span></div><div class="ui-state-default ui-jqgrid-hdiv" style="width: 536px;"><div class="ui-jqgrid-hbox"><table class="ui-jqgrid-htable" style="width:1328px" role="grid" aria-labelledby="gbox_grid1" cellspacing="0" cellpadding="0" border="0"><thead><tr class="ui-jqgrid-labels" role="rowheader"><th id="grid1_cb" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 33px;"><div id="jqgh_cb"><input role="checkbox" id="cb_grid1" class="cbox" type="checkbox"><span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_cntrNo" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 80px;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_cntrNo" class="ui-jqgrid-sortable">Container<br>No<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_cntrSeq" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 150px; display: none;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_cntrSeq" class="ui-jqgrid-sortable">Container<br>Seq<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_avlbFlg" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 100px;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_avlbFlg" class="ui-jqgrid-sortable">Available<br>for Pickup<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_avlbDesc" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 100px; display: none;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_avlbDesc" class="ui-jqgrid-sortable">Description<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_tmfFlg" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 60px; display: none;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_tmfFlg" class="ui-jqgrid-sortable">TMF<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_railFlg" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 60px;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_railFlg" class="ui-jqgrid-sortable">Rail<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_lctnNm" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 100px;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_lctnNm" class="ui-jqgrid-sortable">Yard<br>Location<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_eqHoldRsn" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 100px;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_eqHoldRsn" class="ui-jqgrid-sortable">Hold<br>Reason<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_custHold" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 70px;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_custHold" class="ui-jqgrid-sortable">Customs<br>Status<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_cusmHold" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 60px;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_cusmHold" class="ui-jqgrid-sortable">Freight<br>Status<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_usdaHold" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 60px;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_usdaHold" class="ui-jqgrid-sortable">USDA<br>Status<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_miscHold" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 60px;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_miscHold" class="ui-jqgrid-sortable">Carrier<br>Status<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_tmnlHold" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 70px;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_tmnlHold" class="ui-jqgrid-sortable">Terminal<br>Status<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_dmgAmt" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 80px;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_dmgAmt" class="ui-jqgrid-sortable">Demurrage<br>Amount<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_lstFreeDt" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 85px;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_lstFreeDt" class="ui-jqgrid-sortable">Last<br>Free Day<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_paidDt" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 100px;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_paidDt" class="ui-jqgrid-sortable">Paid Through<br> Date<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_oprCd" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 60px;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_oprCd" class="ui-jqgrid-sortable">SSCO<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_scacCd" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 60px;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_scacCd" class="ui-jqgrid-sortable">SCAC<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_tmlPrivCntrTpszCdNm" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 150px;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_tmlPrivCntrTpszCdNm" class="ui-jqgrid-sortable">Container<br>Type/Length/Height<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_miscHoldRsn" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 100px; display: none;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_miscHoldRsn" class="ui-jqgrid-sortable">miscHoldRsn<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_tmnlHoldRsn" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 100px; display: none;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_tmnlHoldRsn" class="ui-jqgrid-sortable">tmnlHoldRsn<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_trkrCd" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 100px; display: none;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_trkrCd" class="ui-jqgrid-sortable">trkrCd<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th><th id="grid1_custHldRsn" role="columnheader" class="ui-state-default ui-th-column ui-th-ltr" style="width: 100px; display: none;"><span class="ui-jqgrid-resize ui-jqgrid-resize-ltr" style="cursor: col-resize;">&nbsp;</span><div id="jqgh_custHldRsn" class="ui-jqgrid-sortable">custHldRsn<span class="s-ico" style="display:none"><span sort="asc" class="ui-grid-ico-sort ui-icon-asc ui-state-disabled ui-icon ui-icon-triangle-1-n ui-sort-ltr"></span><span sort="desc" class="ui-grid-ico-sort ui-icon-desc ui-state-disabled ui-icon ui-icon-triangle-1-s ui-sort-ltr"></span></span></div></th></tr></thead></table></div></div><div class="ui-jqgrid-bdiv" style="height: 300px; width: 536px;"><div style="position:relative;"><div></div><table id="grid1" cellspacing="0" cellpadding="0" border="0" role="grid" aria-multiselectable="true" aria-labelledby="gbox_grid1" class="ui-jqgrid-btable" style="width: 1328px;"><tbody><tr class="jqgfirstrow" role="row" style="height:auto"><td role="gridcell" style="height:0px;width:33px;"></td><td role="gridcell" style="height:0px;width:80px;"></td><td role="gridcell" style="height:0px;width:150px;display:none;"></td><td role="gridcell" style="height:0px;width:100px;"></td><td role="gridcell" style="height:0px;width:100px;display:none;"></td><td role="gridcell" style="height:0px;width:60px;display:none;"></td><td role="gridcell" style="height:0px;width:60px;"></td><td role="gridcell" style="height:0px;width:100px;"></td><td role="gridcell" style="height:0px;width:100px;"></td><td role="gridcell" style="height:0px;width:70px;"></td><td role="gridcell" style="height:0px;width:60px;"></td><td role="gridcell" style="height:0px;width:60px;"></td><td role="gridcell" style="height:0px;width:60px;"></td><td role="gridcell" style="height:0px;width:70px;"></td><td role="gridcell" style="height:0px;width:80px;"></td><td role="gridcell" style="height:0px;width:85px;"></td><td role="gridcell" style="height:0px;width:100px;"></td><td role="gridcell" style="height:0px;width:60px;"></td><td role="gridcell" style="height:0px;width:60px;"></td><td role="gridcell" style="height:0px;width:150px;"></td><td role="gridcell" style="height:0px;width:100px;display:none;"></td><td role="gridcell" style="height:0px;width:100px;display:none;"></td><td role="gridcell" style="height:0px;width:100px;display:none;"></td><td role="gridcell" style="height:0px;width:100px;display:none;"></td></tr><tr id="1" role="row" class="ui-widget-content jqgrow ui-row-ltr"><td role="gridcell" aria-describedby="grid1_cb" style="text-align:center;width: 33px;"><input role="checkbox" type="checkbox" id="jqg_grid1_1" class="cbox" name="jqg_grid1_1"></td><td role="gridcell" style="text-align:center;" title="YMMU6297676" aria-describedby="grid1_cntrNo">YMMU6297676</td><td role="gridcell" style="text-align:center;display:none;" title="1" aria-describedby="grid1_cntrSeq">1</td><td role="gridcell" style="text-align:center;" title="Delivered" aria-describedby="grid1_avlbFlg">Delivered</td><td role="gridcell" style="text-align:center;display:none;" title="Delivered" aria-describedby="grid1_avlbDesc">Delivered</td><td role="gridcell" style="text-align:center;display:none;" title="" aria-describedby="grid1_tmfFlg"><a href="javascript:onclick=Link1_OnClick();">&nbsp;</a></td><td role="gridcell" style="text-align:center;" title="" aria-describedby="grid1_railFlg">&nbsp;</td><td role="gridcell" style="text-align:center;" title="Out-Gated (08/12/2021 15:27)" aria-describedby="grid1_lctnNm">Out-Gated (08/12/2021 15:27)</td><td role="gridcell" style="text-align:center;" title="" aria-describedby="grid1_eqHoldRsn">&nbsp;</td><td role="gridcell" style="text-align:center;" title="Released()" aria-describedby="grid1_custHold">Released()</td><td role="gridcell" style="text-align:center;" title="Released" aria-describedby="grid1_cusmHold">Released</td><td role="gridcell" style="text-align:center;" title="Released" aria-describedby="grid1_usdaHold">Released</td><td role="gridcell" style="text-align:center;" title="Released" aria-describedby="grid1_miscHold">Released</td><td role="gridcell" style="text-align:center;" title="Released" aria-describedby="grid1_tmnlHold">Released</td><td role="gridcell" style="text-align:right;" title="." aria-describedby="grid1_dmgAmt">.</td><td role="gridcell" style="text-align:center;" title="08-11-2021" aria-describedby="grid1_lstFreeDt">08-11-2021</td><td role="gridcell" style="text-align:center;" title="" aria-describedby="grid1_paidDt">&nbsp;</td><td role="gridcell" style="text-align:center;" title="YML" aria-describedby="grid1_oprCd">YML</td><td role="gridcell" style="text-align:center;" title="YMLU" aria-describedby="grid1_scacCd">YMLU</td><td role="gridcell" style="text-align:center;" title="DC 40 96" aria-describedby="grid1_tmlPrivCntrTpszCdNm">DC 40 96</td><td role="gridcell" style="text-align:left;display:none;" title="RELEASE" aria-describedby="grid1_miscHoldRsn">RELEASE</td><td role="gridcell" style="text-align:left;display:none;" title="TERMINAL HOLD " aria-describedby="grid1_tmnlHoldRsn">TERMINAL HOLD </td><td role="gridcell" style="text-align:left;display:none;" title="" aria-describedby="grid1_trkrCd">&nbsp;</td><td role="gridcell" style="text-align:left;display:none;" title="RELEASED R.QTY:538" aria-describedby="grid1_custHldRsn">RELEASED R.QTY:538</td></tr></tbody></table></div></div></div><div class="ui-jqgrid-resize-mark" id="rs_mgrid1">&nbsp;</div></div>
+<table><tbody><tr><td height="5"></td></tr></tbody></table>
+<div id="transApnt" style="display:block;">
+<table border="0" cellpadding="0" cellspacing="0" align="left">
+   	<tbody><tr>
+       	<td style="padding-right:0px; padding-bottom:0px; width=" "="">
+	  	  	<table width="100%" border="0" cellpadding="0" cellspacing="0">
+				<tbody><tr><td width="14"><img src="/resource/img/btn_tti1_left.gif" width="14" height="25" alt="" border="0"></td>
+				<td class="btn1" background="/resource/img/btn_tti1_bg.gif"><a href="javascript:onclick=Transfer_OnClick();">Transfer to Appt</a></td>
+				<td><img src="/resource/img/btn_tti1_right.gif" width="6" height="25" alt="" border="0">
+				</td></tr>
+  			</tbody></table>
+		</td>
+ 	</tr>
+</tbody></table>
+</div>
+<!-- : ( Grid1 Main ) (E) -->
+<table><tbody><tr><td height="10"></td></tr></tbody></table>
+</form>
+
+
+</body></html>
