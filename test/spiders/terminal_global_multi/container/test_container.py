@@ -50,7 +50,7 @@ def test_container_routing_rule(sub, container_no, sample_loader):
         ('e01_invalid_container_no', 'TGBU678745', InvalidContainerNoItem),
     ],
 )
-def test_container_detail_invalid_container_no_error(sub, container_no, invalid_no_item, sample_loader):
+def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader):
     httptext = sample_loader.read_file(sub, 'sample.html')
 
     request_option = ContainerRoutingRule.build_request_option(container_no_list=[container_no])
