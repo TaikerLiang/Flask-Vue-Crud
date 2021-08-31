@@ -4,9 +4,10 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError
-from crawler.spiders.terminal_tti import SearchContainerRoutingRule
-from test.spiders.terminal_tti import search_container
+from crawler.core_terminal.items import InvalidContainerNoItem
+from crawler.core_terminal.tti_wut_share_spider import MainRoutingRule
+from test.spiders.terminal_tti_multi import search_container
+from crawler.spiders.terminal_tti import TerminalTtiSpider
 
 
 @pytest.fixture
@@ -19,16 +20,17 @@ def sample_loader(sample_loader):
 @pytest.mark.parametrize(
     'sub, container_no',
     [
-        ('01_no_lfd', 'MSDU7965509'),
-        ('02_with_lfd', 'CAAU5077128'),
-        ('03_tmf_and_diff_freight', 'HASU4204375'),
-        ('04_demurrage_and_paid', 'MSDU1314937'),
+        ('01_no_lfd', 'FFAU1577392'),
+        ('02_with_lfd', 'MRKU7463470'),
     ],
 )
-def test_search_container_handle(sub, container_no, sample_loader):
+def test_main_handle(sub, container_no, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    option = SearchContainerRoutingRule.build_request_option(container_no=container_no)
+    option = MainRoutingRule.build_request_option(
+        container_no_list=[container_no],
+        company_info=TerminalTtiSpider.company_info,
+    )
     response = TextResponse(
         url=option.url,
         body=html_text,
@@ -39,7 +41,7 @@ def test_search_container_handle(sub, container_no, sample_loader):
         ),
     )
 
-    rule = SearchContainerRoutingRule()
+    rule = MainRoutingRule()
     results = list(rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
@@ -47,15 +49,18 @@ def test_search_container_handle(sub, container_no, sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub, container_no, expected_exception',
+    'sub, container_no, invalid_no_item',
     [
-        ('e01_invalid_container_no', 'MSDU732250', TerminalInvalidContainerNoError),
+        ('e01_invalid_container_no', 'MSDU732250', InvalidContainerNoItem),
     ],
 )
-def test_search_container_handle_error(sub, container_no, expected_exception, sample_loader):
+def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
-    option = SearchContainerRoutingRule.build_request_option(container_no=container_no)
+    option = MainRoutingRule.build_request_option(
+        container_no_list=[container_no],
+        company_info=TerminalTtiSpider.company_info,
+    )
     response = TextResponse(
         url=option.url,
         body=html_text,
@@ -66,6 +71,5 @@ def test_search_container_handle_error(sub, container_no, expected_exception, sa
         ),
     )
 
-    rule = SearchContainerRoutingRule()
-    with pytest.raises(expected_exception=expected_exception):
-        list(rule.handle(response=response))
+    rule = MainRoutingRule()
+    assert list(rule.handle(response=response)) == [invalid_no_item(container_no=container_no)]

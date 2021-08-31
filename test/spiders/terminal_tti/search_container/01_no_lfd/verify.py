@@ -5,16 +5,13 @@ from crawler.core_terminal.items import TerminalItem
 
 def verify(results: List):
     assert results[0] == TerminalItem(
-        container_no='MSDU7965509',
-        carrier='MSCU',
-        ready_for_pick_up=None,
+        container_no='FFAU1577392',
+        container_spec='Standard 40\' 9\'6"',
         customs_release='Missing',
-        freight_release='Missing',
+        cy_location='Out-Gated (08/20/2021 09:21)',
+        ready_for_pick_up='-',
         appointment_date='Not an Import Container',
-        last_free_day=None,
-        container_spec='Standard 40\' 9\'6\\',
-        cy_location='Out-Gated (10/22/2020 15:08)',
-        demurrage_due=None,
-        pay_through_date=None,
-        tmf=None,
+        carrier_release='Missing',
+        holds='',
+        last_free_day='',
     )
