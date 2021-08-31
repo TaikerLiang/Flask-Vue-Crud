@@ -5,8 +5,10 @@ from typing import List, Dict
 
 import scrapy
 from scrapy import Selector
-from crawler.core.selenium import FirefoxContentGetter
-
+from selenium import webdriver
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
@@ -17,18 +19,14 @@ from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOpti
 from crawler.core_carrier.items import (
     MblItem, BaseCarrierItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData, DebugItem)
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, LoadWebsiteTimeOutError, BaseCarrierError, \
-    SuspiciousOperationError
+    SuspiciousOperationError, CarrierInvalidSearchNoError
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 WHLC_BASE_URL = 'https://www.wanhai.com/views/Main.xhtml'
 COOKIES_RETRY_LIMIT = 3
-MAX_RETRY_COUNT = 3
 
-class Restart:
-    def __init__(self, reason: str):
-        self.reason = reason
 
 class CarrierWhlcSpider(BaseCarrierSpider):
     name = 'carrier_whlc'
@@ -65,18 +63,6 @@ class CarrierWhlcSpider(BaseCarrierSpider):
             request_option = BookingRoutingRule.build_request_option(search_no=self.search_no)
         yield self._build_request_by(option=request_option)
 
-    def _prepare_restart(self, reason):
-        if self._retry_count > MAX_RETRY_COUNT:
-            raise CarrierResponseFormatError(reason=reason)
-
-        self._retry_count += 1
-        if self.mbl_no:
-            request_option = MblRoutingRule.build_request_option(search_no=self.search_no)
-        else:
-            request_option = BookingRoutingRule.build_request_option(search_no=self.search_no)
-        yield self._build_request_by(option=request_option)
-
-
     def parse(self, response):
         yield DebugItem(info={'meta': dict(response.meta)})
 
@@ -90,8 +76,6 @@ class CarrierWhlcSpider(BaseCarrierSpider):
                 yield result
             elif isinstance(result, RequestOption):
                 self._request_queue.add_request(result)
-            elif isinstance(result, Restart):
-                self._prepare_restart(reason=result.reason)
             else:
                 raise RuntimeError()
 
@@ -153,7 +137,7 @@ class MblRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta['mbl_no']
-        driver = ContentGetter()
+        driver = WhlcDriver()
         cookies = driver.get_cookies_dict_from_main_page()
         try:
             driver.search_mbl(mbl_no)
@@ -259,11 +243,11 @@ class MblRoutingRule(BaseRoutingRule):
 
     def _parse_container_no_from(self, text):
         if not text:
-            raise Restart(reason='container_no not found')
+            raise CarrierResponseFormatError('container_no not found')
 
         m = self._container_patt.match(text)
         if not m:
-            raise Restart('container_no not match')
+            raise CarrierResponseFormatError('container_no not match')
 
         return m.group('container_no')
 
@@ -273,7 +257,7 @@ class MblRoutingRule(BaseRoutingRule):
 
         m = self._j_idt_patt.search(text)
         if not m:
-            raise Restart('detail_j_idt not match')
+            raise CarrierResponseFormatError('detail_j_idt not match')
 
         return m.group('j_idt')
 
@@ -283,7 +267,7 @@ class MblRoutingRule(BaseRoutingRule):
 
         m = self._j_idt_patt.search(text)
         if not m:
-            raise Restart('History_j_idt not match')
+            raise CarrierResponseFormatError('History_j_idt not match')
 
         return m.group('j_idt')
 
@@ -296,7 +280,7 @@ class MblRoutingRule(BaseRoutingRule):
         table_selector = find_selector_from(selectors=response.css('table.tbl-list'), rule=match_rule)
 
         if table_selector is None:
-            raise Restart(reason='data information table not found')
+            raise CarrierResponseFormatError(reason='data information table not found')
 
         location_table_locator = LocationLeftTableLocator()
         location_table_locator.parse(table=table_selector)
@@ -336,7 +320,7 @@ class MblRoutingRule(BaseRoutingRule):
         table_selector = response.css('table.tbl-list')
 
         if not table_selector:
-            raise Restart(reason='container status table not found')
+            raise CarrierResponseFormatError(reason='container status table not found')
 
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table_selector)
@@ -378,18 +362,13 @@ class BookingRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         search_no = response.meta['search_no']
-        driver = ContentGetter()
+        driver = WhlcDriver()
         cookies = driver.get_cookies_dict_from_main_page()
         driver.search(search_no=search_no, search_type=self._search_type)
 
         response_selector = Selector(text=driver.get_page_source())
         if self._is_search_no_invalid(response=response_selector):
-            yield ExportErrorData(
-                booking_no=search_no,
-                status=CARRIER_RESULT_STATUS_ERROR,
-                detail='Data was not found',
-            )
-            return
+            raise CarrierInvalidSearchNoError(search_type=self._search_type)
 
         driver.go_detail_page(2)  # only one booking_no to click
         basic_info = self._extract_basic_info(Selector(text=driver.get_page_source()))
@@ -499,7 +478,7 @@ class BookingRoutingRule(BaseRoutingRule):
         table_selector = response.css('table.tbl-list')
 
         if not table_selector:
-            raise Restart(reason='container status table not found')
+            raise CarrierResponseFormatError(reason='container status table not found')
 
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table_selector)
@@ -522,9 +501,18 @@ class BookingRoutingRule(BaseRoutingRule):
         return return_list
 
 
-class ContentGetter(FirefoxContentGetter):
+class WhlcDriver:
     def __init__(self):
-        super().__init__()
+        # Firefox
+        useragent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11.1; rv:78.0) Gecko/20100101 Firefox/78.0'
+        profile = webdriver.FirefoxProfile()
+        profile.set_preference("general.useragent.override", useragent)
+        options = webdriver.FirefoxOptions()
+        options.set_preference("dom.webnotifications.serviceworker.enabled", False)
+        options.set_preference("dom.webnotifications.enabled", False)
+        options.add_argument('--headless')
+
+        self._driver = webdriver.Firefox(firefox_profile=profile, options=options)
 
         self._type_select_text_map = {
             SHIPMENT_TYPE_MBL: 'BL no.',
@@ -543,6 +531,15 @@ class ContentGetter(FirefoxContentGetter):
         view_state_elem = self._driver.find_element_by_css_selector('input[name="javax.faces.ViewState"]')
         view_state = view_state_elem.get_attribute('value')
         return view_state
+
+    def close(self):
+        self._driver.close()
+
+    def quit(self):
+        self._driver.quit()
+
+    def get_page_source(self):
+        return self._driver.page_source
 
     def search_mbl(self, mbl_no):
         self._driver.find_element_by_xpath("//*[@id='cargoType']/option[text()='BL no.']").click()
@@ -585,6 +582,10 @@ class ContentGetter(FirefoxContentGetter):
     def switch_to_last(self):
         self._driver.switch_to.window(self._driver.window_handles[-1])
         time.sleep(1)
+
+    def check_alert(self):
+        alert = self._driver.switch_to.alert
+        text = alert.text
 
     @staticmethod
     def _transformat_to_dict(cookies: List[Dict]) -> Dict:
