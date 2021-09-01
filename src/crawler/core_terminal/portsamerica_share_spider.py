@@ -109,6 +109,9 @@ class SearchContainerRule(BaseRoutingRule):
         content_getter.login(company_info.email, company_info.password, company_info.site_name)
         resp = content_getter.search(container_no_list)
 
+        with open('sample.html', 'w', encoding='utf-8') as f:
+            f.write(resp)
+
         containers = content_getter.get_container_info(Selector(text=resp), len(container_no_list))
         content_getter.quit()
 
@@ -193,10 +196,12 @@ class ContentGetter:
                 date_split_list = gate_out_date.split('\n')
                 gate_out_date = date_split_list[-1]
 
+            gate_out_date = re.sub(r'\s{2,}', ' ', gate_out_date)
+
             res.append(
                 {
                     'container_no': ''.join(tds[i * 17 + 1].xpath('.//text()').extract()).strip().replace('-', ''),
-                    'ready_for_pick_up': ''.join(tds[i * 17 + 2].xpath('.//text()').extract()).strip(),
+                    'ready_for_pick_up': ''.join(tds[i * 17 + 2].xpath('.//text()').extract()).strip().replace('\xa0', ' '),
                     'gate_out_date': gate_out_date,
                     'appointment_date': appointment_date.strip(),
                     'customs_release': ''.join(tds[i * 17 + 6].xpath('.//text()').extract()).strip(),
