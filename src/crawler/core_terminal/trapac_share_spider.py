@@ -103,7 +103,7 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
             elif isinstance(result, SaveItem) and self._save:
                 self._saver.save(to=result.file_name, text=result.text)
             elif isinstance(result, SaveItem) and not self._save:
-                raise DataNotFoundError
+                raise DataNotFoundError()
 
     def _build_request_by(self, option: RequestOption):
         meta = {
@@ -152,6 +152,7 @@ class MainRoutingRule(BaseRoutingRule):
         is_g_captcha, res, cookies = self._build_container_response(
             company_info=company_info, container_no_list=container_no_list
         )
+        is_g_captcha = True
         if is_g_captcha:
             yield ContentRoutingRule.build_request_option(
                 container_no_list=container_no_list, company_info=company_info, g_token=res, cookies=cookies
@@ -268,7 +269,7 @@ class ContentRoutingRule(BaseRoutingRule):
         resp = json.loads(response.text)
 
         if "Please complete the reCAPTCHA check and submit your request again" in resp["html"]:
-            raise DataNotFoundError
+            raise DataNotFoundError()
 
         resp_html = Selector(text=resp["html"])
         table = resp_html.css('div[class="transaction-result availability"] table')
