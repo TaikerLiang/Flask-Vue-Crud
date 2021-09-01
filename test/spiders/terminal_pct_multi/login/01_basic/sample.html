@@ -1,0 +1,899 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+
+<!--[if lt IE 7]> <html dir="ltr" lang="en-US" class="oldie"> <![endif]-->
+<!--[if IE 7]>    <html dir="ltr" lang="en-US" class="oldie"> <![endif]-->
+<!--[if IE 8]>    <html dir="ltr" lang="en-US" class="oldie"> <![endif]-->
+<!--[if IE 9]>    <html dir="ltr" lang="en-US" class="oldie"> <![endif]-->
+<!--[if gt IE 9]><!--> <html dir="ltr" lang="en-US"> <!--<![endif]-->
+<head>
+    <meta charset="utf-8">
+    <meta name="keywords" content=""/>
+    <meta name="description" content=""/>
+    <meta name="author" content="Tideworks Technology"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+
+    <title>Pacific Container Terminal - Forecast&reg; by Tideworks</title>
+
+    <link rel="shortcut icon" href="/fc-PCT/favicon.ico">
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<link rel="stylesheet" href="/fc-PCT/css/TableTools.css">
+<link rel="stylesheet" href="/fc-PCT/css/datatable.css">
+<link rel="stylesheet" href="/fc-PCT/css/sticky-footer.css">
+<link rel="stylesheet" href="/fc-PCT/css/base.css?version=95013000042920212250" type="text/css" media="screen, projection, print">
+<link rel="stylesheet" href="/fc-PCT/css/flick/jquery-ui-1.8.6.custom.css" type="text/css">
+<link rel="stylesheet" href="/fc-PCT/css/print.css?version=95013000042920212250" type="text/css" media="print">
+<link rel="stylesheet" href="/fc-PCT/js/shadowbox-3.0.3/shadowbox.css?version=95013000042920212250" type="text/css">
+<link rel="stylesheet" href="/fc-PCT/css/font-awesome-4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="/fc-PCT/css/sweet-alert/sweetalert.css">
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,700" rel="stylesheet">
+
+
+
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" src="/fc-PCT/js/main.js?version=95013000042920212250"></script>
+<script type="text/javascript" src="/fc-PCT/js/scripts.jsp?version=95013000042920212250"></script>
+<script type="text/javascript" src="/fc-PCT/js/ajax.jsp?version=95013000042920212250"></script>
+<script type="text/javascript" src="/fc-PCT/js/EqptService.js?version=95013000042920212250"></script>
+
+<script type="text/javascript" src="/fc-PCT/js/jquery-1.9.1.min.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.alert.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.cookie.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.dropdownPlain.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.easing.1.3.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.form.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery-ui-1.10.3.custom.min.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.ui.datepicker-en-GB.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.ui.datepicker-da-DK.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.ui.datepicker-es.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.backstretch.min.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/TableTools.min.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/datatable.js"></script>
+
+<script type="text/javascript" src="/fc-PCT/js/shadowbox-3.0.3/shadowbox.js"></script>
+
+<script type="text/javascript" src="/fc-PCT/js/customFormElements.js"></script>
+
+<script type="text/javascript" src="/fc-PCT/js/typeahead.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/fc-PCT/js/moment-with-locales.js"></script>
+
+<script type="text/javascript" src="/fc-PCT/js/sweet-alert/sweetalert.min.js"></script>
+
+
+<!-- IE Fix -->
+<script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
+
+<script type="text/javascript" src="/fc-PCT/js/startswith.js"></script>
+
+
+
+
+    <script type="text/javascript">
+    $().ready(function () {
+        setNavStyle("#menu-home");
+
+        $("#close-browser-alert").click(function(){
+            $("#browser-alert").fadeOut("fast");
+            $.cookie('browser-alert', "true",{path: '/'});
+        });
+
+        $("#close-config-alert").click(function(){
+            $("#config-alert").fadeOut("fast");
+            $.cookie('config-alert', "true",{path: '/'});
+        });
+
+        if($("html").hasClass("oldie") && !$.cookie('browser-alert')) {
+            $("#browser-alert").fadeIn("fast");
+        }
+
+        if(!$.cookie('config-alert')) {
+            $("#config-alert").fadeIn("fast");
+        }
+
+        $("#close").click(function(){
+            $("#convertedUserDialog").fadeOut("fast");
+        });
+
+        $("#docked-list").hide().find("li:gt(3)").hide();
+        $("#todays-list").hide().find("li:gt(3)").hide();
+        $("#tomorrows-list").hide().find("li:gt(3)").hide();
+
+
+            $("#homepageAlert").modal("show");
+
+
+
+        $('#declineMessaging').click(function() {
+            $("#pushOptIn").slideUp("fast");
+        });
+
+    });
+
+    function moreVesselVoyages(item, list){
+        $(item).hide();
+        $("#" + list + "-list li").show();
+    }
+
+    function showVesselVoyages(list){
+        if ($("#" + list + "-list").is(":hidden")) {
+            $("#" + list + "-list").slideDown("fast");
+        } else {
+            $("#" + list + "-list").hide();
+            $("#" + list + "-list").hide().find("li:gt(3)").hide();
+            $("#more-" + list).show();
+        }
+    }
+    </script>
+
+
+
+</head>
+
+<body>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script src="/fc-PCT/js/bootstrap-hover-dropdown.js"></script>
+
+<script type="text/javascript">
+$().ready(function() {
+
+    $('.js-activated').dropdownHover().dropdown();
+
+    $('[data-toggle="tooltip"]').tooltip();
+
+    if($(window).width() <= 768) {
+        $('ul.nav li.dropdown a').removeClass("disabled");
+        //console.log("remove class " + $(window).width());
+    } else {
+        $('ul.nav li.dropdown a').addClass("disabled");
+        //console.log("add class " + $(window).width());
+    }
+
+    $(window).resize(function() {
+        if($(window).width() <= 768) {
+            $('ul.nav li.dropdown a').removeClass("disabled");
+            //console.log("remove class " + $(window).width());
+        } else {
+            $('ul.nav li.dropdown a').addClass("disabled");
+            //console.log("add class " + $(window).width());
+        }
+    });
+
+    // we need this variable to hold the value that the user selects.
+    var selectedItem = quickSearchCookie();
+
+    $(".dropdown-menu li a").click(function(){
+        var selText = $(this).text();
+
+
+        $(this).parents('.input-group-btn').find('.dropdown-toggle').html(selText+' <span class="caret"></span>');
+        quickSearchCookie(this.id);
+
+        // set the variable value to what the user selected.
+        selectedItem = this.id;
+    });
+
+    var $linkToSelect = $("#"+selectedItem);
+    //if we have such link in menu (different user roles may have different set of links)
+    if ($linkToSelect.length) {
+        $linkToSelect.parents('.input-group-btn').find('.dropdown-toggle').html($linkToSelect.text()+' <span class="caret"></span>');
+    } else {
+        //if we have have items in the list, click on the first item.
+        if ($("#quickSearchForm ul.dropdown-menu li a").length) $("#quickSearchForm ul.dropdown-menu li a").first().click();
+    }
+
+    $("#quickSearchForm").submit(function(){
+
+        // create a new array to determine which functional area to send the user to.
+        var searchTypeList = new Array();
+
+
+
+
+                searchTypeList['CONTAINER'] = '/equipment/default.do?method=equipmentSubmit&f=qs&equipClass=CTR&number=';
+                searchTypeList['CHASSIS'] = '/equipment/default.do?method=equipmentSubmit&f=qs&equipClass=CHS&number=';
+
+
+
+        // get the search criteria
+        var number = $("#quickSearch").val().toUpperCase();
+
+        // make sure we have data
+        if(hasData(number) == false ){
+            twitterAlertMessage('Please enter all search criteria before continuing.');
+            $("#quickSearch").focus();
+            return false;
+        }
+
+        // do some basic client side validation of the value entered.
+        switch(selectedItem){
+        case 'CONTAINER':
+            if(invalidChars(number) == false ) {
+                twitterAlertMessage("Invalid Container Number (it should consist of 4 alpha and 6 or 7 numeric).");
+                $("#quickSearch").focus();
+                return false;
+            }
+            break;
+        case 'CHASSIS':
+            if(invalidChars(number) == false ) {
+                $("#quickSearch").focus();
+                return false;
+            }
+            break;
+        }
+
+        // set a cookie value of what the user last searched by.
+        $.cookie('quick_search', selectedItem,{path: '/'});
+
+        // determine which item the user selected.
+        var url = searchTypeList[selectedItem];
+
+        // turn that into a url to send them to.
+        window.location = '/fc-PCT' + url + number;
+        return false;
+    });
+
+
+});
+
+</script>
+
+<div id="headerAlert"></div>
+
+<div class="navbar navbar-inverse navbar-static-top">
+
+    <div class="container hidden-xs">
+
+        <div class="nav navbar-nav navbar-left">
+
+            <a href="/fc-PCT/home/default.do" class="terminalname-responsive">
+
+                <img src="/fc-PCT/images/logo-50x50.png" class="pull-left">
+
+                <h2 class="pull-left">Pacific Container Terminal</h2>
+
+                <div class="clearfix"></div>
+
+            </a>
+
+        </div>
+
+        <div class="navbar-text navbar-right text-right">
+            <div><small>You are signed in as CHENG&#45;YU&#32;HSIEH | <a href="/fc-PCT/myaccount/default.do" class="headerlink">My Account</a> | <a href="/fc-PCT/j_spring_security_logout" class="headerlink" id="signOut" title="Click here to sign out">Sign Out</a></small></div>
+            <div><small>Broker/Freight Forwarder Company Admin (58517)</small></div>
+        </div>
+
+    </div>
+
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <i class="fa fa-bars fa-lg" aria-hidden="true" title="Toggle navigation"></i>
+            <span class="sr-only">Toggle navigation</span>
+        </button>
+        <h4><a class="navbar-brand hidden-lg hidden-md hidden-sm terminalname" href="/fc-PCT/home/default.do">Pacific Container Terminal</a></h4>
+    </div>
+
+    <div class="container navbar-collapse collapse">
+
+
+
+
+
+
+
+
+
+                <ul class="nav navbar-nav">
+
+                    <li class="dropdown" id="menu-home">
+                        <a href="/fc-PCT/home/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Home <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/fc-PCT/home/default.do?method=contacts">Contacts</a></li>
+
+                                <li><a href="/fc-PCT/home/default.do?method=directions">Directions</a></li>
+
+
+                                <li><a href="/fc-PCT/home/default.do?method=cameras">Gate Cameras</a></li>
+
+                            <li><a href="/fc-PCT/home/default.do?method=hours">Hours</a></li>
+                            <li><a href="/fc-PCT/home/default.do?method=schedule">Vessel Schedule</a></li>
+                        </ul>
+                    </li>
+
+
+
+
+
+                            <li class="dropdown" id="menu-equipment">
+                                <a href="/fc-PCT/equipment/default.do?method=equipment" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Equipment</a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="/fc-PCT/equipment/default.do?method=equipment">Search</a></li>
+
+
+                                    <li><a href="/fc-PCT/equipment/default.do?method=massUpdate">Mass Update</a></li>
+
+
+                                </ul>
+                            </li>
+
+
+
+
+
+
+
+
+
+
+
+
+                    <li class="dropdown" id="menu-import">
+                        <a href="/fc-PCT/import/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Import <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/fc-PCT/import/default.do">Availability</a></li>
+
+                        </ul>
+                    </li>
+
+
+
+
+
+
+
+                            <li class="dropdown" id="menu-export">
+                                <a href="/fc-PCT/export/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Export <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="/fc-PCT/export/default.do">Booking</a></li>
+                                    <li><a href="/fc-PCT/export/default.do?method=edo">EDO</a></li>
+                                </ul>
+                            </li>
+
+
+
+
+
+
+
+
+
+
+
+                </ul>
+
+
+
+
+                <ul class="nav navbar-nav navbar-right">
+
+
+
+
+
+
+
+
+
+
+
+
+
+                </ul>
+
+
+    </div>
+
+</div>
+
+<div class="container">
+
+    <div class="row">
+
+        <div class="col-sm-9">
+
+
+
+
+            <div class="hint-large south north text-right">Today is Sunday, August 29</div>
+
+
+
+            <div id="browser-alert" class="banner-alert bg-danger pad-10 south_20" style="display: none">
+                <h4 class="stop"><strong>Attention Internet Explorer Users</strong></h4>
+                <p>Microsoft <a href="https://blogs.msdn.microsoft.com/ie/2014/08/07/stay-up-to-date-with-internet-explorer/" target="_blank" rel="noopener">announced</a> they will be ending support for IE7, IE8 and IE9 by <strong>January 2016</strong>. With this change we recommend customers update their browsers to the latest version of Internet Explorer as soon as possible to avoid potential performance issues and a downgraded Forecast user experience.</p>
+
+                <p>Please see our <a href="/fc-PCT/footer/default.do?method=requirements">site requirements</a> for a list of supported browsers.</p>
+
+                <button type="button" class="close" aria-label="Close" id="close-browser-alert"><span aria-hidden="true">&times;</span></button>
+
+                <div class="clearfix"></div>
+            </div>
+
+
+
+            <p class="MsoNormal" style="margin: 0in 0in 0pt; text-align: center;"><span style="background-color: #ffffff;"><span style="color: #000000;"><strong>For Terminal Map click here</strong>,</span> <a href="../docs/pctyardmap.pdf">PCT Yard Map</a></span></p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt; text-align: center;">&nbsp;</p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt; text-align: center;">&nbsp;</p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt;">&nbsp;</p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt;"><strong>SHIPPERS TRANSPORT EXPRESS FORECAST WEBSITE</strong><br />If your containers have been moved to a Shippers Transport Express location or to Pier A, you can also check on the container using the below Forecast Websites.</p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt;"><a href="https://stl.tideworks.com/fc-STL/default.do">Shippers Transport Express - Carson</a></p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt;"><a href="https://sta.tideworks.com/fc-STA/default.do">Shippers Transport Express - Long Beach</a></p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt;"><a href="https://piera.tideworks.com/fc-PA/default.do" target="_blank" rel="noopener">Pier A</a></p>
+<p style="text-align: center;"><strong>PIER J WEEKLY GATE HOURS <br /></strong>Subject to change</p>
+<table style="height: 118px; width: 596px; border-style: solid; margin-left: auto; margin-right: auto;" border="2">
+<tbody>
+<tr style="height: 18px;">
+<td style="width: 89.8594px; height: 15px; text-align: center;">&nbsp;</td>
+<td style="width: 52.3906px; height: 15px; text-align: center;" bgcolor="#ccfff0">Aug-23</td>
+<td style="width: 56.5469px; height: 15px; text-align: center;" bgcolor="#ccfff0">Aug-24</td>
+<td style="width: 57.5938px; height: 15px; text-align: center;" bgcolor="#ccfff0">Aug-25</td>
+<td style="width: 61.75px; height: 15px; text-align: center;" bgcolor="#ccfff0">Aug-26</td>
+<td style="width: 73.2188px; height: 15px; text-align: center;" bgcolor="#ccfff0">Aug-27</td>
+<td style="width: 67.4531px; height: 15px; text-align: center;" bgcolor="#ccfff0">Aug-28</td>
+<td style="width: 83.1875px; height: 15px; text-align: center;" bgcolor="#ccfff0">Aug-29</td>
+</tr>
+<tr style="height: 18px;">
+<td style="width: 89.8594px; height: 18px; text-align: center;">SHIFT</td>
+<td style="width: 52.3906px; height: 18px; text-align: center;">MON</td>
+<td style="width: 56.5469px; height: 18px; text-align: center;">TUE</td>
+<td style="width: 57.5938px; height: 18px; text-align: center;">WED</td>
+<td style="width: 61.75px; height: 18px; text-align: center;">THU</td>
+<td style="width: 73.2188px; height: 18px; text-align: center;">FRI</td>
+<td style="width: 67.4531px; height: 18px; text-align: center;">SAT</td>
+<td style="width: 83.1875px; height: 18px; text-align: center;">SUN</td>
+</tr>
+<tr style="height: 18px;">
+<td style="width: 89.8594px; height: 18px; text-align: center;">0700-1700</td>
+<td style="width: 52.3906px; height: 18px; text-align: center;"><span style="color: #ff0000;"><strong><span style="background-color: #ffffff;"><span style="color: #008000;">OPEN</span></span></strong></span></td>
+<td style="width: 56.5469px; height: 18px; text-align: center;"><span style="color: #ff0000;"><strong><span style="background-color: #ffffff;"><span style="color: #008000;">OPEN</span></span></strong></span></td>
+<td style="width: 57.5938px; height: 18px; text-align: center;"><strong><span style="color: #ff0000;"><span style="background-color: #ffffff;"><span style="color: #008000;">OPEN</span></span></span></strong></td>
+<td style="width: 61.75px; height: 18px; text-align: center;"><strong><span style="color: #ff0000;"><span style="background-color: #ffffff;"><span style="color: #008000;">OPEN</span></span></span></strong></td>
+<td style="width: 73.2188px; height: 18px; text-align: center;"><strong><span style="color: #ff0000;"><span style="background-color: #ffffff;"><span style="color: #008000;">OPEN</span></span></span></strong></td>
+<td style="width: 67.4531px; height: 18px; text-align: center;"><strong><span style="color: #ff0000;">CLOSED</span></strong></td>
+<td style="width: 83.1875px; height: 18px; text-align: center;"><strong><span style="color: #ff0000;">CLOSED</span></strong></td>
+</tr>
+<tr style="height: 18px;">
+<td style="width: 89.8594px; height: 10px; text-align: center;">1800-0300</td>
+<td style="width: 52.3906px; height: 10px; text-align: center;"><strong><span style="color: #ff0000;"><span style="background-color: #ffffff;"><span style="color: #008000;">OPEN</span></span></span></strong></td>
+<td style="width: 56.5469px; height: 10px; text-align: center;"><strong><span style="color: #ff0000;"><span style="background-color: #ffffff;"><span style="color: #008000;">OPEN</span></span></span></strong></td>
+<td style="width: 57.5938px; height: 10px; text-align: center;"><span style="color: #ff0000;"><strong><span style="background-color: #ffffff;"><span style="color: #008000;">OPEN</span></span></strong></span></td>
+<td style="width: 61.75px; height: 10px; text-align: center;"><strong><span style="color: #ff0000;"><span style="background-color: #ffffff;"><span style="color: #008000;">OPEN</span></span></span></strong></td>
+<td style="width: 73.2188px; height: 10px; text-align: center;"><strong><span style="color: #ff0000;"><span style="background-color: #ffffff;"><span style="color: #008000;">OPEN</span></span></span></strong></td>
+<td style="width: 67.4531px; height: 10px; text-align: center;"><strong><span style="color: #ff0000;">CLOSED</span></strong></td>
+<td style="width: 83.1875px; height: 10px; text-align: center;"><strong><span style="color: #ff0000;">CLOSED</span></strong></td>
+</tr>
+</tbody>
+</table>
+<p style="margin: 0px 0px 10.66px;">&nbsp;</p>
+<p style="margin: 0px 0px 10.66px;"><strong><span style="background: yellow; margin: 0px;">**PLEASE BE ADVISED**</span></strong></p>
+<p style="margin: 0px 0px 10.66px;"><strong><span style="background: yellow; margin: 0px;">We have made some recent changes to our homepage.<span style="margin: 0px;">&nbsp; </span><em>Vessels Open for Receiving</em>, <em>Estimated First Receiving Dates</em> and <em>Empty Receiving</em> chart are now available by clicking the respective links in the News section on the right side of the homepage.</span></strong></p>
+<p style="margin: 0px 0px 10.66px;">&nbsp;</p>
+<p style="margin: 0px 0px 10.66px;"><strong><span style="font-size: 11.0pt; font-family: 'Calibri',sans-serif;">Please review Trucker/Visitor Safety Video: <u><span style="font-size: 10.0pt; font-family: 'Candara',sans-serif; color: #0563c1;"><a href="https://youtu.be/ocswh950Vbc">https://youtu.be/ocswh950Vbc</a></span></u></span></strong></p>
+<p>&nbsp;</p>
+<p><strong><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Exam Fees:</span></strong></p>
+<p><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Tail Gate and CET Exams are $265.00 effective 7/1/2018</span></p>
+<p><span style="background-color: #00ffff;">As of September 1, 2021 fees associated with containers that need to be inspected by a government agency will increase to $300.00 per container.</span></p>
+<p><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Delivery Orders are only required for Off Dock Exams. Fax number<br />(801) 571-2185</span></p>
+<p><strong><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Demurrage/Exam Fee Payments:</span></strong></p>
+<p><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Payments can be&nbsp;made on eModal at <a href="http://www.emodal.com/">www.emodal.com</a></span></p>
+<p><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Additionally Demurrage and Exam fee payments can be issued via <br />Company check, Cashier&rsquo;s check or Money Order and sent via Overnight Courier to<br />SSA Utah office at:</span></p>
+<p><strong><em>Pacific Maritime Services LLC</em></strong></p>
+<p><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">11814 Election Road, Suite #210</span></p>
+<p><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Draper, UT 84020</span></p>
+<p><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Fax (801)545-3117</span></p>
+<p><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">If paying same day, please fax <strong><span style="font-family: 'Helvetica','sans-serif';">Company check/Money Order</span></strong> and &ldquo;<strong><span style="font-family: 'Helvetica','sans-serif';">Overnight Night Tracking Slip</span></strong>&rdquo;<br />to (801) 545-3117. Check needs to be in the SSA Utah office the following<br />business day.</span></p>
+<p><strong><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Note:&nbsp;&nbsp; There is a $2,000.00 per Customer/per day<br />limit when paying by Company check.</span></strong></p>
+<p>&nbsp;</p>
+<p><strong>Contacts:</strong></p>
+<ul>
+<li>PCT Pier J Customer Service:&nbsp; (866) 545-3142</li>
+<li>Automated Availability: (562) 590-8728</li>
+<li>Delivery Order Fax No.(801) 571-2185</li>
+</ul>
+<p>&nbsp;</p>
+<p><span style="font-size: medium;"><strong><span style="background: white; font-family: 'Calibri','sans-serif';">TRUCK DRIVER SAFETY IN THE TERMINAL</span></strong></span></p>
+<p><span style="font-size: medium;"><em><span style="font-family: 'Calibri','sans-serif'; font-style: normal;">Pacific Container Terminal (PCT), Pier J,&nbsp;Long Beach</span></em><em><span style="font-family: 'Calibri','sans-serif';">,</span></em><span style="font-family: 'Calibri','sans-serif';"> CA,&nbsp;is committed to providing a safe working environment for all workers at our facility.&nbsp;</span></span><span style="font-size: medium;"><span style="font-family: 'Calibri','sans-serif';">As part of this effort, we would like to remind all truck drivers of the following basic safety requirements:&nbsp;</span></span></p>
+<p><span style="font-size: medium;"><strong><span style="font-family: 'Calibri','sans-serif'; font-weight: normal;">1. Upon entering the terminal, all drivers </span></strong><em><strong><span style="text-decoration: underline;"><span style="font-family: 'Calibri','sans-serif';">MUST</span></span></strong></em><strong><span style="font-family: 'Calibri','sans-serif'; font-weight: normal;">wear a high visibility Safety Vest.</span></strong></span></p>
+<p><span style="font-size: medium;"><strong><span style="font-family: 'Calibri','sans-serif'; font-weight: normal;">2.&nbsp; Truck drivers </span></strong><em><strong><span style="text-decoration: underline;"><span style="font-family: 'Calibri','sans-serif';">MUST</span></span></strong></em><strong><span style="font-family: 'Calibri','sans-serif'; font-weight: normal;"> remain in their vehicle at all times while in the container yard. (The only exception is hooking up or disconnecting a chassis).</span></strong></span></p>
+<p><span style="font-size: medium;"><strong><span style="font-family: 'Calibri','sans-serif'; font-weight: normal;">3.&nbsp; Truck drivers must </span></strong><em><strong><span style="text-decoration: underline;"><span style="font-family: 'Calibri','sans-serif';">NEVER</span></span></strong></em><strong><span style="font-family: 'Calibri','sans-serif'; font-weight: normal;"> approach operating equipment under any circumstances.</span></strong></span></p>
+<p><span style="font-size: medium;"><span style="font-family: 'Calibri','sans-serif';">Failure to follow these safety rules will result in loss of terminal access privileges.&nbsp; Please be sure to advise any/all drivers you may have working at SSA Terminals.</span></span></p>
+<p><span style="font-size: medium;"><strong><span style="font-family: 'Calibri','sans-serif';">Please remind your drivers of the following safety rule to help keep them safe.</span></strong></span></p>
+<p><span style="font-size: medium;"><strong><span style="font-family: 'Calibri','sans-serif'; font-weight: normal;">Stay back at least one container length when Toppick/Sidepick is in a stacking row retrieving your container.&nbsp; Move forward only after Toppick/Sidepick completely backs out of row.</span></strong></span></p>
+<p><span style="font-family: 'Calibri','sans-serif';"><br /><span style="font-size: medium;"> Thank you for your cooperation,</span></span></p>
+<p><span style="font-size: medium;"><span style="font-family: 'Calibri','sans-serif';">PCT Management</span></span></p>
+<p><strong><span style="color: #000000; font-family: 'Calibri','sans-serif'; font-size: 11pt;">Driver Notice</span></strong></p>
+<p style="margin: 0in 0in 0pt;"><em><span style="color: red; font-family: 'Calibri','sans-serif'; font-size: 11pt;">Access to PCT is governed by the terms and conditions set forth in PMS's Marine Terminal Operator (MTO) schedule which is available at PMS' main office or online at </span></em><em><span style="font-family: 'Calibri','sans-serif'; font-size: 11pt;"><a href="http://www.ssamarine.com">www.ssamarine.com</a></span></em></p>
+<p style="margin: 0in 0in 0pt;">&nbsp;</p>
+<p style="margin: 0in 0in 0pt;">&nbsp;</p>
+
+
+
+
+
+        </div>
+
+        <div class="col-sm-3 break-west">
+
+            <div class="pad-20">
+
+
+                    <div class="south_20"><a href="http://www.carrix.com/" target="_blank"><img src="/fc-PCT/images/logo_pct.gif" alt="Pacific Container Terminal" border="0"/></a></div>
+
+
+                <div class="terminal-address nowrap">1521 Pier J Avenue<br>Long Beach, CA 90802<br>(562) 983-1001<br>(562) 432-3834 fax<br>PCT Terminal Firm Code W182</div>
+
+
+
+            </div>
+
+
+
+                <div class="break-north pad-10">
+
+                    <h4 class="bold text-uppercase"><i class="fa fa-info-circle"></i> News</h4>
+
+                    <div class="pad-10">
+
+                            <div class="south">
+                                <h5><a href="default.do?method=page&id=0" class="normal south">EMPTY RECEIVING</a></h5>
+                            </div>
+
+                            <div class="south">
+                                <h5><a href="default.do?method=page&id=1" class="normal south">Export Receiving  </a></h5>
+                            </div>
+
+                            <div class="south">
+                                <h5><a href="default.do?method=page&id=2" class="normal south">PMS Marine Terminal Operator</a></h5>
+                            </div>
+
+                    </div>
+
+                </div>
+
+
+
+
+
+                <div class="break-north pad-10">
+
+                    <h4 class="south bold text-uppercase"><i class="fa fa-ship"></i> Vessels</h4>
+
+                    <div id="vessels" class="pad-10">
+
+                        <h5 class="pointer bold" id="docked" style="margin: 0px; padding-bottom: 5px" onclick="showVesselVoyages('docked')">Docked <span class="badge">3</span></h5>
+                        <div id="docked-list" class="south">
+
+
+
+                                    <ul class="list-nopad">
+
+                                        <li style="list-style-type: none" class="south">CMA CGM PEGASUS <span title="In">0TUIJ</span>/<span title="Out">0TUIK</span> - CMD<br>
+
+
+                                                    <small class="text-muted">
+
+
+
+                                                                <strong class="go">Arrived</strong> at 3:35 PM
+
+
+                                                    </small>
+
+
+
+                                        </li>
+
+                                        <li style="list-style-type: none" class="south">WAN HAI 621 <span title="In">002E</span>/<span title="Out">002W</span> - WHL<br>
+
+
+
+                                                    <small class="text-muted">
+
+
+                                                                Arrived at 08/25/2021 3:15 PM
+
+
+
+                                                    </small>
+
+
+                                        </li>
+
+                                        <li style="list-style-type: none" class="south">COSCO SHIPPING HIMALAYAS <span title="In">027E</span>/<span title="Out">027W</span> - COS<br>
+
+
+
+                                                    <small class="text-muted">
+
+
+                                                                Arrived at 08/25/2021 12:30 PM
+
+
+
+                                                    </small>
+
+
+                                        </li>
+
+                                    </ul>
+
+
+
+                        </div>
+
+                        <h5 class="pointer bold" id="todays" style="margin: 0px; padding-bottom: 5px" onclick="showVesselVoyages('todays')">Arriving Today <span class="badge">1</span></h5>
+                        <div id="todays-list" class="south">
+
+
+
+                                    <ul class="list-nopad">
+
+                                        <li style="list-style-type: none" class="south">CMA CGM PEGASUS <span title="In">0TUIJ</span>/<span title="Out">0TUIK</span> - CMD<br>
+
+
+
+                                                    <small class="text-muted">
+
+
+
+                                                                <strong class="go">Arrived</strong> at 3:35 PM
+
+
+                                                    </small>
+
+
+                                        </li>
+
+                                    </ul>
+
+
+
+                        </div>
+
+                        <h5 class="pointer bold" id="tomorrows" style="margin: 0px; padding-bottom: 5px" onclick="showVesselVoyages('tomorrows')">Arriving Tomorrow <span class="badge">1</span></h5>
+                        <div id="tomorrows-list" class="south">
+
+
+
+                                    <ul class="list-nopad">
+
+                                        <li style="list-style-type: none" class="south">BRIGHTON <span title="In">017E</span>/<span title="Out">017W</span> - WHL<br>
+
+
+                                                    <small class="text-muted">Arriving at 7:00 AM</small>
+
+
+
+                                        </li>
+
+                                    </ul>
+
+
+
+                        </div>
+
+                        <div class="north"><a href="/fc-PCT/home/default.do?method=schedule">Vessel Schedule</a></div>
+
+                    </div>
+
+                </div>
+
+
+
+
+
+
+                <div class="break-north pad-10">
+                    <a href="http://www.pierpass.org/" target="_blank" rel="noopener"><img src="/fc-PCT/images/PierPASSAnimatedBannerAd.gif" width="183" height="64" alt="PierPASS" border="0"/></a>
+                </div>
+
+
+        </div>
+
+    </div>
+
+</div>
+
+
+    <!-- Modal -->
+    <div class="modal fade" id="homepageAlert" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h3 class="modal-title text-danger" id="myModalLabel">
+                        <span class="fa-stack">
+                            <i class="fa fa-circle fa-stack-2x"></i>
+                            <i class="fa fa-bell fa-stack-1x fa-inverse"></i>
+                        </span>
+
+                        Pacific Container Terminal Alert
+                    </h3>
+                </div>
+                <div class="modal-body">
+                    <p>**Empty drops can be added to any valid import appointment, regardless of chassis restriction (WCCP, POP, OWN).<strong>**</strong></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<footer class="footer">
+
+    <div class="container">
+
+        <div class="col-xs-12 col-sm-9 pad-10">
+            <span class="hidden-xs">
+                <a href="/fc-PCT/footer/default.do?method=requirements">Site Requirements</a> |
+                <a href="/fc-PCT/footer/default.do?method=gdpr">General Data Protection Statement</a> |
+                <a href="/fc-PCT/footer/default.do?method=privacy">Privacy Policy</a> |
+                <a href="/fc-PCT/footer/default.do?method=terms">Terms of Service</a>
+                 | <a href="/fc-PCT/footer/default.do?method=contactUs">Contact Us</a><br>
+            </span>
+
+            &copy;2021&nbsp;Tideworks Technology. All Rights Reserved. <span class="hidden-xs">Forecast&reg; by Tideworks version 9.5.0.13000 (04292021-2250)<br>
+            Generated: 08/29/2021 8:05 PM</span>
+        </div>
+
+        <div class="col-sm-3 pad-10 hidden-xs hidden-sm">
+
+            <form name="pageFooter" id="pageFooter" action='/fc-PCT/home/default.do' method="post">
+            <input type="hidden" name="siteLanguage"/>
+
+                <div class="world">
+
+                    <select name="language" id="lang" onchange="checkSelectedLanguage();" class="form-control input-sm">
+
+                        <option value="en_US" selected>English (United States)</option>
+
+                        <option value="es_MX" >Spanish (Mexico)</option>
+
+                        <option value="es_PA" >Spanish (Panama)</option>
+
+                        <option value="vi_VN" >Vietnamese</option>
+
+                    </select>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</footer>
+
+<script type="text/javascript">
+    var msg = "Are you sure you want to switch languages?\nIf you are in the middle of a task you may have to start over.";
+
+    function checkSelectedLanguage() {
+        if (false === true) {
+            if(confirm(msg) !== true) {
+                document.all["lang"].value = 'en_US';
+                return false;
+            }
+        }
+        document.pageFooter.siteLanguage.value = document.pageFooter.lang.value;
+        document.pageFooter.submit();
+    }
+
+
+        var userType = "CO_BROKER_FORWARDING (58517)";
+        var _gaq = _gaq || [];
+        _gaq.push(
+            ['_setAccount', 'UA-11978469-1'],
+            ['_setCustomVar',1,'forecastUserType',userType.substr(3, userType.length),2],
+            ['_trackPageview'],
+            ['b._setAccount', 'UA-11978469-31'],
+            ['b._setCustomVar',1,'forecastUserType',userType.substr(3, userType.length),2],
+            ['b._trackPageview']
+        );
+
+        (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' === document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+
+</script>
+
+</body>
+</html>
