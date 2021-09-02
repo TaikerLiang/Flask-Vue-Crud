@@ -25,12 +25,12 @@ class CompanyInfo:
 
 
 class TtiWutShareSpider(BaseMultiTerminalSpider):
-    name = ''
+    name = ""
     company_info = CompanyInfo(
-        url='',
-        upper_short='',
-        email='',
-        password='',
+        url="",
+        upper_short="",
+        email="",
+        password="",
     )
 
     def __init__(self, *args, **kwargs):
@@ -50,7 +50,7 @@ class TtiWutShareSpider(BaseMultiTerminalSpider):
         yield self._build_request_by(option=option)
 
     def parse(self, response, **kwargs):
-        yield DebugItem(info={'meta': dict(response.meta)})
+        yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -59,10 +59,10 @@ class TtiWutShareSpider(BaseMultiTerminalSpider):
 
         for result in routing_rule.handle(response=response):
             if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
-                c_no = result['container_no']
+                c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
-                    result['task_id'] = t_id
+                    result["task_id"] = t_id
                     yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -93,28 +93,28 @@ class TtiWutShareSpider(BaseMultiTerminalSpider):
 
 
 class MainRoutingRule(BaseRoutingRule):
-    name = 'MAIN'
+    name = "MAIN"
 
     @classmethod
     def build_request_option(cls, container_no_list: List, company_info: CompanyInfo) -> RequestOption:
-        url = 'https://www.google.com'
+        url = "https://www.google.com"
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
             meta={
-                'container_no_list': container_no_list,
-                'company_info': company_info,
+                "container_no_list": container_no_list,
+                "company_info": company_info,
             },
         )
 
     def handle(self, response):
-        company_info = response.meta['company_info']
-        container_no_list = response.meta['container_no_list']
+        company_info = response.meta["company_info"]
+        container_no_list = response.meta["container_no_list"]
 
         content_getter = ContentGetter()
         content_getter.login(company_info.email, company_info.password, company_info.url)
-        resp = content_getter.search(container_no_list, company_info.upper_short)
+        resp = self._build_container_response(content_getter, container_no_list, company_info.upper_short)
 
         containers = content_getter.get_container_info(Selector(text=resp), len(container_no_list))
         content_getter.quit()
@@ -124,24 +124,28 @@ class MainRoutingRule(BaseRoutingRule):
                 **container,
             )
 
+    @staticmethod
+    def _build_container_response(content_getter, container_no_list: List, short_name: str):
+        return content_getter.search(container_no_list, short_name)
+
 
 class ContentGetter:
     def __init__(self):
         options = webdriver.ChromeOptions()
-        options.add_argument('--disable-extensions')
-        options.add_argument('--disable-notifications')
-        options.add_argument('--headless')
+        options.add_argument("--disable-extensions")
+        options.add_argument("--disable-notifications")
+        options.add_argument("--headless")
         options.add_argument("--enable-javascript")
-        options.add_argument('--disable-gpu')
+        options.add_argument("--disable-gpu")
         options.add_argument(
-            f'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
-            f'Chrome/88.0.4324.96 Safari/537.36'
+            f"user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
+            f"Chrome/88.0.4324.96 Safari/537.36"
         )
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-blink-features=AutomationControlled')
-        options.add_experimental_option('excludeSwitches', ['enable-automation'])
-        options.add_experimental_option('useAutomationExtension', False)
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option("useAutomationExtension", False)
 
         self._driver = webdriver.Chrome(options=options)
 
@@ -161,7 +165,7 @@ class ContentGetter:
         time.sleep(8)
 
     def search(self, container_no_list: List, short_name: str):
-        if short_name == 'TTI':
+        if short_name == "TTI":
             menu_btn = self._driver.find_element_by_xpath('//*[@id="nav"]/li[3]/a')
         else:
             menu_btn = self._driver.find_element_by_xpath('//*[@id="nav"]/li[1]/a')
@@ -173,7 +177,7 @@ class ContentGetter:
         WebDriverWait(self._driver, 30).until(EC.frame_to_be_available_and_switch_to_it((By.ID, "businessView")))
 
         container_text_area = self._driver.find_element_by_xpath('//*[@id="cntrNos"]')
-        container_text_area.send_keys('\n'.join(container_no_list))
+        container_text_area.send_keys("\n".join(container_no_list))
         time.sleep(3)
 
         search_btn = self._driver.find_element_by_xpath(
@@ -192,18 +196,18 @@ class ContentGetter:
         res = []
         for i in range(numbers):
             container = {
-                'container_no': table_locator.get_cell(left=i, top='Container No'),
-                'container_spec': table_locator.get_cell(left=i, top='Container Type/Length/Height'),
-                'customs_release': table_locator.get_cell(left=i, top='Customs Status'),
-                'cy_location': table_locator.get_cell(left=i, top='Yard Location'),
-                'ready_for_pick_up': table_locator.get_cell(left=i, top='Available for Pickup'),
-                'appointment_date': table_locator.get_cell(left=i, top='Appt Time'),
-                'carrier_release': table_locator.get_cell(left=i, top='Freight Status'),
-                'holds': table_locator.get_cell(left=i, top='Hold Reason'),
-                'last_free_day': table_locator.get_cell(left=i, top='Last Free Day'),
+                "container_no": table_locator.get_cell(left=i, top="Container No"),
+                "container_spec": table_locator.get_cell(left=i, top="Container Type/Length/Height"),
+                "customs_release": table_locator.get_cell(left=i, top="Customs Status"),
+                "cy_location": table_locator.get_cell(left=i, top="Yard Location"),
+                "ready_for_pick_up": table_locator.get_cell(left=i, top="Available for Pickup"),
+                "appointment_date": table_locator.get_cell(left=i, top="Appt Time"),
+                "carrier_release": table_locator.get_cell(left=i, top="Freight Status"),
+                "holds": table_locator.get_cell(left=i, top="Hold Reason"),
+                "last_free_day": table_locator.get_cell(left=i, top="Last Free Day"),
             }
 
-            if container['container_no']:
+            if container["container_no"]:
                 res.append(container)
 
         return res
@@ -217,19 +221,19 @@ class ContainerTableLocator(BaseTableLocator):
         self._td_map = []
 
     def parse(self, table: Selector, numbers: int = 1):
-        titles_ths = table.css('th')
+        titles_ths = table.css("th")
         title_list = []
         for title in titles_ths:
-            title_res = (' '.join(title.css('::text').extract())).strip()
+            title_res = (" ".join(title.css("::text").extract())).strip()
             title_list.append(title_res)
 
-        trs = table.css('tr')
+        trs = table.css("tr")
         for tr in trs:
-            data_tds = tr.css('td')
+            data_tds = tr.css("td")
             data_list = []
             is_append = False
             for data in data_tds:
-                data_res = (' '.join(data.css('::text').extract())).strip()
+                data_res = (" ".join(data.css("::text").extract())).strip()
                 if data_res:
                     is_append = True
                 data_list.append(data_res)
