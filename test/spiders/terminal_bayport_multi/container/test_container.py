@@ -17,14 +17,14 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub,container_no,',
+    "sub,container_no,",
     [
-        ('01_basic', 'EITU1744546'),
-        ('02_with_lfd', 'APZU3951656'),
+        ("01_basic", "EITU1744546"),
+        ("02_with_lfd", "APZU3951656"),
     ],
 )
 def test_container_routing_rule(sub, container_no, sample_loader):
-    json_text = sample_loader.read_file(sub, 'sample.json')
+    json_text = sample_loader.read_file(sub, "sample.json")
 
     request_option = ContainerRoutingRule.build_request_option(
         container_no_list=[container_no],
@@ -33,7 +33,7 @@ def test_container_routing_rule(sub, container_no, sample_loader):
     response = TextResponse(
         url=request_option.url,
         body=json_text,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=request_option.url,
             meta=request_option.meta,
@@ -43,18 +43,19 @@ def test_container_routing_rule(sub, container_no, sample_loader):
     rule = ContainerRoutingRule()
     results = list(rule.handle(response=response))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
 
 
+@pytest.mark.skip
 @pytest.mark.parametrize(
-    'sub,container_no,invalid_no_item',
+    "sub,container_no,invalid_no_item",
     [
-        ('e01_invalid_container_no', 'TCNU5087312', InvalidContainerNoItem),
+        ("e01_invalid_container_no", "TCNU5087312", InvalidContainerNoItem),
     ],
 )
 def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader):
-    json_text = sample_loader.read_file(sub, 'sample.json')
+    json_text = sample_loader.read_file(sub, "sample.json")
 
     request_option = ContainerRoutingRule.build_request_option(
         container_no_list=[container_no],
@@ -63,7 +64,7 @@ def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader)
     response = TextResponse(
         url=request_option.url,
         body=json_text,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=request_option.url,
             meta=request_option.meta,

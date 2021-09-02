@@ -17,20 +17,20 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub,container_no,',
+    "sub,container_no,",
     [
-        ('01_basic', 'KKFU7634200'),
+        ("01_basic", "KKFU7634200"),
     ],
 )
 def test_container_routing_rule(sub, container_no, sample_loader):
-    httptext = sample_loader.read_file(sub, 'sample.html')
+    httptext = sample_loader.read_file(sub, "sample.html")
 
     request_option = ContainerRoutingRule.build_request_option(container_no_list=[container_no])
 
     response = TextResponse(
         url=request_option.url,
         body=httptext,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=request_option.url,
             meta=request_option.meta,
@@ -40,25 +40,26 @@ def test_container_routing_rule(sub, container_no, sample_loader):
     rule = ContainerRoutingRule()
     results = list(rule.handle(response=response))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
 
 
+@pytest.mark.skip
 @pytest.mark.parametrize(
-    'sub,container_no,invalid_no_item',
+    "sub,container_no,invalid_no_item",
     [
-        ('e01_invalid_container_no', 'TGBU678745', InvalidContainerNoItem),
+        ("e01_invalid_container_no", "TGBU678745", InvalidContainerNoItem),
     ],
 )
 def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader):
-    httptext = sample_loader.read_file(sub, 'sample.html')
+    httptext = sample_loader.read_file(sub, "sample.html")
 
     request_option = ContainerRoutingRule.build_request_option(container_no_list=[container_no])
 
     response = TextResponse(
         url=request_option.url,
         body=httptext,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=request_option.url,
             meta=request_option.meta,

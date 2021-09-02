@@ -16,22 +16,20 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub,container_no,',
+    "sub,container_no,",
     [
-        ('01_basic', 'EITU1744546'),
+        ("01_basic", "EITU1744546"),
     ],
 )
-def test_container_routing_rule(sub, container_no, sample_loader):
-    httptext = sample_loader.read_file(sub, 'sample.html')
+def test_login_routing_rule(sub, container_no, sample_loader):
+    httptext = sample_loader.read_file(sub, "sample.html")
 
-    request_option = LoginRoutingRule.build_request_option(
-        container_no_list=[container_no]
-    )
+    request_option = LoginRoutingRule.build_request_option(container_no_list=[container_no])
 
     response = TextResponse(
         url=request_option.url,
         body=httptext,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=request_option.url,
             meta=request_option.meta,
@@ -41,5 +39,5 @@ def test_container_routing_rule(sub, container_no, sample_loader):
     rule = LoginRoutingRule()
     results = list(rule.handle(response=response))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)

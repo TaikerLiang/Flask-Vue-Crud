@@ -17,15 +17,20 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
+def monkeypatch_container_response(monkeypatch, httptext):
+    monkeypatch.setattr(MainRoutingRule, "_build_container_response", lambda *args, **kwargs: httptext)
+
+
 @pytest.mark.parametrize(
-    'sub, container_no',
+    "sub, container_no",
     [
-        ('01_no_lfd', 'TGBU4645596'),
-        ('02_with_lfd', 'YMMU6297676'),
+        ("01_no_lfd", "TGBU4645596"),
+        ("02_with_lfd", "YMMU6297676"),
     ],
 )
-def test_search_container_handle(sub, container_no, sample_loader):
-    html_text = sample_loader.read_file(sub, 'sample.html')
+def test_search_container_handle(sub, container_no, sample_loader, monkeypatch):
+    httptext = sample_loader.read_file(sub, "sample.html")
+    monkeypatch_container_response(monkeypatch=monkeypatch, httptext=httptext)
 
     option = MainRoutingRule.build_request_option(
         container_no_list=[container_no],
@@ -33,8 +38,7 @@ def test_search_container_handle(sub, container_no, sample_loader):
     )
     response = TextResponse(
         url=option.url,
-        body=html_text,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=option.url,
             meta=option.meta,
@@ -44,18 +48,20 @@ def test_search_container_handle(sub, container_no, sample_loader):
     rule = MainRoutingRule()
     results = list(rule.handle(response=response))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
 
 
+@pytest.mark.skip
 @pytest.mark.parametrize(
-    'sub, container_no, invalid_no_item',
+    "sub, container_no, invalid_no_item",
     [
-        ('e01_invalid_container_no', 'MSDU732250', InvalidContainerNoItem),
+        ("e01_invalid_container_no", "MSDU732250", InvalidContainerNoItem),
     ],
 )
-def test_search_container_handle_error(sub, container_no, invalid_no_item, sample_loader):
-    html_text = sample_loader.read_file(sub, 'sample.html')
+def test_search_container_handle_error(sub, container_no, invalid_no_item, sample_loader, monkeypatch):
+    httptext = sample_loader.read_file(sub, "sample.html")
+    monkeypatch_container_response(monkeypatch=monkeypatch, httptext=httptext)
 
     option = MainRoutingRule.build_request_option(
         container_no_list=[container_no],
@@ -63,8 +69,7 @@ def test_search_container_handle_error(sub, container_no, invalid_no_item, sampl
     )
     response = TextResponse(
         url=option.url,
-        body=html_text,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=option.url,
             meta=option.meta,
