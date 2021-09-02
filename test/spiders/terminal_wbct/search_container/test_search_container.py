@@ -17,25 +17,28 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
+def monkeypatch_container_response(monkeypatch, httptext):
+    monkeypatch.setattr(SearchContainerRule, "_build_container_response", lambda *args, **kwargs: httptext)
+
+
 @pytest.mark.parametrize(
-    'sub, container_no',
+    "sub, container_no",
     [
-        ('01_basic', 'ZCSU8739851'),
-        ('02_available', 'CCLU7014409'),
+        ("01_basic", "ZCSU8739851"),
+        ("02_available", "CCLU7014409"),
     ],
 )
-def test_container_handle(sub, container_no, sample_loader):
-    html_text = sample_loader.read_file(sub, 'sample.html')
+def test_container_handle(sub, container_no, sample_loader, monkeypatch):
+    httptext = sample_loader.read_file(sub, "sample.html")
+    monkeypatch_container_response(monkeypatch=monkeypatch, httptext=httptext)
 
     option = SearchContainerRule.build_request_option(
-        container_no_list=[container_no],
-        company_info=TerminalWbctSpider.company_info
+        container_no_list=[container_no], company_info=TerminalWbctSpider.company_info
     )
 
     response = TextResponse(
         url=option.url,
-        body=html_text,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=option.url,
             meta=option.meta,
@@ -45,29 +48,31 @@ def test_container_handle(sub, container_no, sample_loader):
     rule = SearchContainerRule()
     results = list(rule.handle(response=response))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
 
+
+@pytest.mark.skip
 @pytest.mark.parametrize(
-    'sub,container_no,invalid_no_item',
+    "sub,container_no,invalid_no_item",
     [
-        ('e01_invalid_container_no', 'CCLU7014414', InvalidContainerNoItem),
+        ("e01_invalid_container_no", "CCLU7014414", InvalidContainerNoItem),
     ],
 )
-def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader):
-    httptext = sample_loader.read_file(sub, 'sample.html')
+def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader, monkeypatch):
+    httptext = sample_loader.read_file(sub, "sample.html")
+    monkeypatch_container_response(monkeypatch=monkeypatch, httptext=httptext)
 
     request_option = SearchContainerRule.build_request_option(
-        container_no_list=[container_no],
-        company_info=TerminalWbctSpider.company_info
+        container_no_list=[container_no], company_info=TerminalWbctSpider.company_info
     )
 
     response = TextResponse(
         url=request_option.url,
-        body=httptext,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=request_option.url,
+            meta=request_option.meta,
         ),
     )
 

@@ -116,7 +116,7 @@ class MainRoutingRule(BaseRoutingRule):
 
         content_getter = ContentGetter()
         content_getter.login(company_info.email, company_info.password, company_info.url)
-        resp = content_getter.search(container_no_list, company_info.upper_short)
+        resp = self._build_container_response(content_getter, container_no_list, company_info.upper_short)
 
         containers = content_getter.get_container_info(Selector(text=resp), len(container_no_list))
         content_getter.quit()
@@ -125,6 +125,10 @@ class MainRoutingRule(BaseRoutingRule):
             yield TerminalItem(
                 **container,
             )
+
+    @staticmethod
+    def _build_container_response(content_getter, container_no_list: List, short_name: str):
+        return content_getter.search(container_no_list, short_name)
 
 
 class ContentGetter:

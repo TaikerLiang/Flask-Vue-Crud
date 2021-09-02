@@ -18,14 +18,19 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
+def monkeypatch_container_response(monkeypatch, httptext):
+    monkeypatch.setattr(SeleniumRoutingRule, "_build_container_response", lambda *args, **kwargs: httptext)
+
+
 @pytest.mark.parametrize(
-    'sub,container_no',
+    "sub,container_no",
     [
-        ('01_basic', 'TGHU0113128'),
+        ("01_basic", "TGHU0113128"),
     ],
 )
-def test_selenium_routing_rule(sub, container_no, sample_loader):
-    html_text = sample_loader.read_file(sub, 'sample.html')
+def test_selenium_routing_rule(sub, container_no, sample_loader, monkeypatch):
+    httptext = sample_loader.read_file(sub, "sample.html")
+    monkeypatch_container_response(monkeypatch=monkeypatch, httptext=httptext)
 
     request_option = SeleniumRoutingRule.build_request_option(
         container_nos=[container_no],
@@ -35,34 +40,30 @@ def test_selenium_routing_rule(sub, container_no, sample_loader):
 
     response = TextResponse(
         url=request_option.url,
-        body=html_text,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=request_option.url,
-            meta={
-                RuleManager.META_TERMINAL_CORE_RULE_NAME: SeleniumRoutingRule.name,
-                'container_nos': [container_no],
-                'terminal_id': TerminalPctSpider.terminal_id,
-                'company_info': TerminalPctSpider.company_info,
-            },
+            meta=request_option.meta,
         ),
     )
 
     routing_rule = SeleniumRoutingRule()
     results = list(routing_rule.handle(response=response))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
 
 
+@pytest.mark.skip
 @pytest.mark.parametrize(
-    'sub,container_no,invalid_no_item',
+    "sub,container_no,invalid_no_item",
     [
-        ('e01_invalid_container_no', 'FCIU2218769', InvalidContainerNoItem),
+        ("e01_invalid_container_no", "FCIU2218769", InvalidContainerNoItem),
     ],
 )
-def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader):
-    html_text = sample_loader.read_file(sub, 'sample.html')
+def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader, monkeypatch):
+    httptext = sample_loader.read_file(sub, "sample.html")
+    monkeypatch_container_response(monkeypatch=monkeypatch, httptext=httptext)
 
     request_option = SeleniumRoutingRule.build_request_option(
         container_nos=[container_no],
@@ -72,8 +73,7 @@ def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader)
 
     response = TextResponse(
         url=request_option.url,
-        body=html_text,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=request_option.url,
             meta=request_option.meta,
