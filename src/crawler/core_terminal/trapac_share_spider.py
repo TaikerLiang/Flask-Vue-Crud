@@ -7,17 +7,16 @@ from datetime import datetime, timedelta
 from urllib.parse import urlencode
 import ujson as json
 
-
 import scrapy
 from scrapy import Selector
 
-from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from anticaptchaofficial.recaptchav2proxyless import *
 from selenium.common.exceptions import NoSuchElementException
+from crawler.core.selenium import ChromeContentGetter
 
 from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError, DataNotFoundError
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
@@ -167,7 +166,7 @@ class MainRoutingRule(BaseRoutingRule):
             yield ContentRoutingRule.build_request_option(container_no_list=container_no_list, company_info=company_info, g_token=res, cookies=cookies)
         else:
             container_response = scrapy.Selector(text=res)
-            yield SaveItem(file_name='container.html', text=container_response.get())
+            # yield SaveItem(file_name='container.html', text=container_response.get())
 
             for container_info in self._extract_container_result_table(
                 response=container_response, numbers=len(container_no_list)
@@ -301,40 +300,52 @@ class ContentRoutingRule(BaseRoutingRule):
 
 
 # ------------------------------------------------------------------------
-
-
-class HeadlessBrowser:
-
+class ContentGetter(ChromeContentGetter):
     PROXY_URL = 'proxy.apify.com:8000'
     PROXY_PASSWORD = 'XZTBLpciyyTCFb3378xWJbuYY'
 
-    def __init__(self):
+    def __init__(self, company_info: CompanyInfo):
+        super().__init__()
+        self._company = company_info
 
-        options = webdriver.ChromeOptions()
-        options.add_argument('--disable-extensions')
-        options.add_argument('--disable-notifications')
-        options.add_argument('--headless')
-        options.add_argument("--enable-javascript")
-        options.add_argument("window-size=1920,1080")
-        options.add_argument(
-            f'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
-            f'Chrome/88.0.4324.96 Safari/537.36'
-        )
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-blink-features=AutomationControlled')
-        options.add_experimental_option('excludeSwitches', ['enable-automation'])
-        options.add_experimental_option('useAutomationExtension', False)
-
-        self._browser = webdriver.Chrome(chrome_options=options)
-
-    def get(self, url):
-        self._browser.get(url=url)
+    def find_ua(self):
+        self._driver.get('https://www.whatsmyua.info')
         time.sleep(15)
+
+        ua_selector = self._driver.find_element_by_css_selector(css='textarea#custom-ua-string')
+        print('find_ua:', ua_selector.text)
+
+    def find_ip(self):
+        self._driver.get('https://www.whatismyip.com.tw/')
+        time.sleep(5)
+
+        ip_selector = self._driver.find_element_by_css_selector('b span')
+        print('find_id', ip_selector.text)
+
+    def get_result_response_text(self):
+        result_table_css = 'div#transaction-detail-result table'
+
+        self.wait_for_appear(css=result_table_css, wait_sec=15)
+        return self._driver.page_source
+
+    def get_content(self, search_no):
+        self._driver.get(
+            url=f'https://{self._company.lower_short}.trapac.com/quick-check/?terminal={self._company.upper_short}&transaction=availability'
+        )
+        self.accept_cookie()
+        self.key_in_search_bar(search_no=search_no)
+        cookies = self._driver.get_cookies()
+        self.press_search_button()
+
+        if self.get_google_recaptcha():
+            g_response = self.solve_google_recaptcha(self._company.lower_short)
+            return True, g_response, cookies
+
+        return False, self.get_result_response_text(), cookies
 
     def accept_cookie(self):
         try:
-            cookie_btn = self._browser.find_element_by_xpath('//*[@id="cn-accept-cookie"]')
+            cookie_btn = self._driver.find_element_by_xpath('//*[@id="cn-accept-cookie"]')
             cookie_btn.click()
             time.sleep(3)
         except:
@@ -343,43 +354,34 @@ class HeadlessBrowser:
     def wait_for_appear(self, css: str, wait_sec: int):
         locator = (By.CSS_SELECTOR, css)
         try:
-            WebDriverWait(self._browser, wait_sec).until(EC.presence_of_element_located(locator))
+            WebDriverWait(self._driver, wait_sec).until(EC.presence_of_element_located(locator))
         except TimeoutException:
-            current_url = self._browser.current_url
-            self._browser.quit()
+            current_url = self.get_current_url()
+            self._driver.quit()
             raise LoadWebsiteTimeOutError(url=current_url)
 
     def key_in_search_bar(self, search_no: str):
-        text_area = self._browser.find_element_by_xpath('//*[@id="edit-containers"]')
+        text_area = self._driver.find_element_by_xpath('//*[@id="edit-containers"]')
         text_area.send_keys(search_no)
         time.sleep(3)
 
     def press_search_button(self):
-        search_btn = self._browser.find_element_by_xpath('//*[@id="transaction-form"]/div[3]/button')
+        search_btn = self._driver.find_element_by_xpath('//*[@id="transaction-form"]/div[3]/button')
         search_btn.click()
         time.sleep(10)
 
     def find_element_by_css_selector(self, css: str):
-        return self._browser.find_element_by_css_selector(css_selector=css)
-
-    def execute_script(self, script: str):
-        self._browser.execute_script(script=script)
-
-    def quit(self):
-        self._browser.quit()
-
-    def get_cookies(self):
-        return self._browser.get_cookies()
+        return self._driver.find_element_by_css_selector(css_selector=css)
 
     def save_screenshot(self):
-        self._browser.save_screenshot("screenshot.png")
+        self._driver.save_screenshot("screenshot.png")
 
     def get_g_token(self):
-        return self._browser.find_element_by_xpath('//*[@id="transaction-form"]/input').get_attribute('value')
+        return self._driver.find_element_by_xpath('//*[@id="transaction-form"]/input').get_attribute('value')
 
     def get_google_recaptcha(self):
         try:
-            element = self._browser.find_element_by_xpath('//*[@id="recaptcha-backup"]')
+            element = self._driver.find_element_by_xpath('//*[@id="recaptcha-backup"]')
             return element
         except NoSuchElementException:
             return None
@@ -401,58 +403,12 @@ class HeadlessBrowser:
             print("task finished with error " + solver.error_code)
             return None
 
-    @property
-    def page_source(self):
-        return self._browser.page_source
-
     def get_proxy_username(self, option: ProxyOption) -> str:
         return f'groups-{option.group},session-{option.session}'
 
     @staticmethod
     def _generate_random_string():
         return ''.join(random.choices(string.ascii_uppercase + string.digits, k=20))
-
-
-class ContentGetter:
-    def __init__(self, company_info: CompanyInfo):
-        self._company = company_info
-        self._headless_browser = HeadlessBrowser()
-
-    def find_ua(self):
-        self._headless_browser.get('https://www.whatsmyua.info')
-        ua_selector = self._headless_browser.find_element_by_css_selector(css='textarea#custom-ua-string')
-        print('find_ua:', ua_selector.text)
-
-    def find_ip(self):
-        self._headless_browser.get('https://www.whatismyip.com.tw/')
-        time.sleep(5)
-
-        ip_selector = self._headless_browser.find_element_by_css_selector('b span')
-        print('find_id', ip_selector.text)
-
-    def get_result_response_text(self):
-        result_table_css = 'div#transaction-detail-result table'
-
-        self._headless_browser.wait_for_appear(css=result_table_css, wait_sec=15)
-        return self._headless_browser.page_source
-
-    def get_content(self, search_no):
-        self._headless_browser.get(
-            url=f'https://{self._company.lower_short}.trapac.com/quick-check/?terminal={self._company.upper_short}&transaction=availability'
-        )
-        self._headless_browser.accept_cookie()
-        self._headless_browser.key_in_search_bar(search_no=search_no)
-        cookies = self._headless_browser.get_cookies()
-        self._headless_browser.press_search_button()
-
-        if self._headless_browser.get_google_recaptcha():
-            g_response = self._headless_browser.solve_google_recaptcha(self._company.lower_short)
-            return True, g_response, cookies
-
-        return False, self.get_result_response_text(), cookies
-
-    def quit(self):
-        self._headless_browser.quit()
 
 
 class VesselVoyageTdExtractor(BaseTableCellExtractor):

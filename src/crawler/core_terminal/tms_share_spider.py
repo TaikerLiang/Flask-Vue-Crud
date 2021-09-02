@@ -1,13 +1,13 @@
 import dataclasses
 from typing import Dict, List
 import time
+from crawler.core.selenium import ChromeContentGetter
 
 import scrapy
 from scrapy import Selector
-from selenium import webdriver
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.exceptions import TerminalResponseFormatError, TerminalInvalidContainerNoError
+from crawler.core_terminal.exceptions import TerminalResponseFormatError
 from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
@@ -376,59 +376,38 @@ class RightExtraContainerLocator(BaseTableLocator):
         return (top is None) and (left in self._td_map)
 
 
-class ContentGetter:
-    def __init__(self):
-        options = webdriver.ChromeOptions()
-        options.add_argument('--disable-extensions')
-        options.add_argument('--disable-notifications')
-        options.add_argument('--headless')
-        options.add_argument("--enable-javascript")
-        options.add_argument('--disable-gpu')
-        options.add_argument(
-            f'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
-            f'Chrome/88.0.4324.96 Safari/537.36'
-        )
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--window-size=1920,1080')
-        options.add_argument("--disable-blink-features=AutomationControlled")
-
-        self.driver = webdriver.Chrome(chrome_options=options)
-        self.driver.get('https://tms.itslb.com/tms2/Account/Login')
-        time.sleep(7)
-
+class ContentGetter(ChromeContentGetter):
     def login(self, username: str, password: str):
-        username_input = self.driver.find_element_by_xpath('//*[@id="UserName"]')
+        self._driver.get('https://tms.itslb.com/tms2/Account/Login')
+        time.sleep(7)
+        username_input = self._driver.find_element_by_xpath('//*[@id="UserName"]')
         username_input.send_keys(username)
         time.sleep(1)
-        password_input = self.driver.find_element_by_xpath('//*[@id="Password"]')
+        password_input = self._driver.find_element_by_xpath('//*[@id="Password"]')
         password_input.send_keys(password)
         time.sleep(1)
 
-        btn = self.driver.find_element_by_xpath('//*[@id="loginForm"]/form/div[6]/div/input')
+        btn = self._driver.find_element_by_xpath('//*[@id="loginForm"]/form/div[6]/div/input')
         btn.click()
         time.sleep(7)
 
     def select_terminal(self, terminal_id: int):
         if terminal_id == 1:
-            self.driver.find_element_by_xpath('//*[@id="loginTerminalId"]/option[1]').click()
+            self._driver.find_element_by_xpath('//*[@id="loginTerminalId"]/option[1]').click()
         elif terminal_id == 3:
-            self.driver.find_element_by_xpath('//*[@id="loginTerminalId"]/option[2]').click()
+            self._driver.find_element_by_xpath('//*[@id="loginTerminalId"]/option[2]').click()
         time.sleep(7)
 
     def search(self, container_no: str):
-        self.driver.get('https://tms.itslb.com/tms2/Import/ContainerAvailability')
+        self._driver.get('https://tms.itslb.com/tms2/Import/ContainerAvailability')
         time.sleep(3)
 
-        textarea = self.driver.find_element_by_xpath('//*[@id="refNums"]')
+        textarea = self._driver.find_element_by_xpath('//*[@id="refNums"]')
         textarea.send_keys(container_no)
         time.sleep(1)
 
-        btn = self.driver.find_element_by_xpath('//*[@id="formAvailabilityHeader"]/div/div[1]/div/div[2]/div/button')
+        btn = self._driver.find_element_by_xpath('//*[@id="formAvailabilityHeader"]/div/div[1]/div/div[2]/div/button')
         btn.click()
         time.sleep(7)
 
-        return self.driver.page_source
-
-    def close(self):
-        self.driver.close()
+        return self._driver.page_source

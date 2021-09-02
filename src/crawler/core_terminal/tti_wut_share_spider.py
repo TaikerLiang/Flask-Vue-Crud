@@ -4,16 +4,16 @@ from typing import Dict, List
 
 import scrapy
 from scrapy import Selector
-from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 
+from crawler.core.selenium import ChromeContentGetter
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError
+from crawler.extractors.table_extractors import BaseTableLocator
 
 
 @dataclasses.dataclass
@@ -125,26 +125,7 @@ class MainRoutingRule(BaseRoutingRule):
             )
 
 
-class ContentGetter:
-    def __init__(self):
-        options = webdriver.ChromeOptions()
-        options.add_argument('--disable-extensions')
-        options.add_argument('--disable-notifications')
-        options.add_argument('--headless')
-        options.add_argument("--enable-javascript")
-        options.add_argument('--disable-gpu')
-        options.add_argument(
-            f'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
-            f'Chrome/88.0.4324.96 Safari/537.36'
-        )
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-blink-features=AutomationControlled')
-        options.add_experimental_option('excludeSwitches', ['enable-automation'])
-        options.add_experimental_option('useAutomationExtension', False)
-
-        self._driver = webdriver.Chrome(options=options)
-
+class ContentGetter(ChromeContentGetter):
     def login(self, username, password, url):
         self._driver.get(url)
         time.sleep(5)
@@ -207,9 +188,6 @@ class ContentGetter:
                 res.append(container)
 
         return res
-
-    def quit(self):
-        self._driver.quit()
 
 
 class ContainerTableLocator(BaseTableLocator):
