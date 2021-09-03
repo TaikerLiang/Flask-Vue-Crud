@@ -13,8 +13,8 @@ from crawler.extractors.table_extractors import (
 
 BASE_URL = "https://payments.gcterminals.com"
 
-
 class TerminalGlobalMultiSpider(BaseMultiTerminalSpider):
+    firms_code = "Y178"
     name = "terminal_global_multi"
 
     def __init__(self, *args, **kwargs):
@@ -72,7 +72,6 @@ class TerminalGlobalMultiSpider(BaseMultiTerminalSpider):
 
 
 class ContainerRoutingRule(BaseRoutingRule):
-    code = "Y178"
     name = "CONTAINER"
 
     @classmethod
