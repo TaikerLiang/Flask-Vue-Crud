@@ -51,15 +51,15 @@ class CookieHelper:
     @staticmethod
     def get_cookies(response):
         cookies = {}
-        for cookie_byte in response.headers.getlist('Set-Cookie'):
-            kv = cookie_byte.decode('utf-8').split(';')[0].split('=')
+        for cookie_byte in response.headers.getlist("Set-Cookie"):
+            kv = cookie_byte.decode("utf-8").split(";")[0].split("=")
             cookies[kv[0]] = kv[1]
 
         return cookies
 
     @staticmethod
     def get_cookie_str(cookies: Dict):
-        cookies_str = ''
+        cookies_str = ""
         for item in cookies:
             cookies_str += f"{item['name']}={item['value']}; "
 
@@ -67,12 +67,12 @@ class CookieHelper:
 
 
 class TrapacShareSpider(BaseMultiTerminalSpider):
-    name = ''
+    name = ""
     company_info = CompanyInfo(
-        lower_short='',
-        upper_short='',
-        email='',
-        password='',
+        lower_short="",
+        upper_short="",
+        email="",
+        password="",
     )
 
     def __init__(self, *args, **kwargs):
@@ -81,7 +81,7 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
         rules = [MainRoutingRule(), ContentRoutingRule()]
 
         self._rule_manager = RuleManager(rules=rules)
-        self._save = True if 'save' in kwargs else False
+        self._save = True if "save" in kwargs else False
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
@@ -91,23 +91,23 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
         yield self._build_request_by(option=option)
 
     def parse(self, response):
-        yield DebugItem(info={'meta': dict(response.meta)})
+        yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
         for result in routing_rule.handle(response=response):
             if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
-                c_no = result['container_no']
+                c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
-                    result['task_id'] = t_id
+                    result["task_id"] = t_id
                     yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
             elif isinstance(result, SaveItem) and self._save:
                 self._saver.save(to=result.file_name, text=result.text)
             elif isinstance(result, SaveItem) and not self._save:
-                raise DataNotFoundError
+                raise DataNotFoundError()
 
     def _build_request_by(self, option: RequestOption):
         meta = {
@@ -123,7 +123,7 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
 
         elif option.method == RequestOption.METHOD_POST_BODY:
             return scrapy.Request(
-                method='POST',
+                method="POST",
                 url=option.url,
                 headers=option.headers,
                 body=option.body,
@@ -133,54 +133,57 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
             )
 
         else:
-            raise ValueError(f'Invalid option.method [{option.method}]')
+            raise ValueError(f"Invalid option.method [{option.method}]")
 
 
 class MainRoutingRule(BaseRoutingRule):
-    name = 'MAIN'
+    name = "MAIN"
 
     @classmethod
     def build_request_option(cls, container_no_list: List, company_info: CompanyInfo) -> RequestOption:
-        url = 'https://www.google.com'
+        url = "https://www.google.com"
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
             meta={
-                'container_no_list': container_no_list,
-                'company_info': company_info,
+                "container_no_list": container_no_list,
+                "company_info": company_info,
             },
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.html'
+        return f"{self.name}.html"
 
     def handle(self, response):
-        company_info = response.meta['company_info']
-        container_no_list = response.meta['container_no_list']
+        company_info = response.meta["company_info"]
+        container_no_list = response.meta["container_no_list"]
 
         is_g_captcha, res, cookies = self._build_container_response(
             company_info=company_info, container_no_list=container_no_list
         )
+        is_g_captcha = True
         if is_g_captcha:
-            yield ContentRoutingRule.build_request_option(container_no_list=container_no_list, company_info=company_info, g_token=res, cookies=cookies)
+            yield ContentRoutingRule.build_request_option(
+                container_no_list=container_no_list, company_info=company_info, g_token=res, cookies=cookies
+            )
         else:
             container_response = scrapy.Selector(text=res)
-            # yield SaveItem(file_name='container.html', text=container_response.get())
+            yield SaveItem(file_name="container.html", text=container_response.get())
 
             for container_info in self._extract_container_result_table(
                 response=container_response, numbers=len(container_no_list)
             ):
                 yield TerminalItem(  # html field
-                    container_no=container_info['container_no'],  # number
-                    last_free_day=container_info['last_free_day'],  # demurrage-lfd
-                    customs_release=container_info.get('custom_release'),  # holds-customs
-                    demurrage=container_info['demurrage'],  # demurrage-amt
-                    container_spec=container_info['container_spec'],  # dimensions
-                    holds=container_info['holds'],  # demurrage-hold
-                    cy_location=container_info['cy_location'],  # yard status
-                    vessel=container_info['vessel'],  # vsl / voy
-                    voyage=container_info['voyage'],  # vsl / voy
+                    container_no=container_info["container_no"],  # number
+                    last_free_day=container_info["last_free_day"],  # demurrage-lfd
+                    customs_release=container_info.get("custom_release"),  # holds-customs
+                    demurrage=container_info["demurrage"],  # demurrage-amt
+                    container_spec=container_info["container_spec"],  # dimensions
+                    holds=container_info["holds"],  # demurrage-hold
+                    cy_location=container_info["cy_location"],  # yard status
+                    vessel=container_info["vessel"],  # vsl / voy
+                    voyage=container_info["voyage"],  # vsl / voy
                 )
 
     @staticmethod
@@ -191,109 +194,112 @@ class MainRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table, numbers=numbers)
         table_extractor = TableExtractor(table_locator=table_locator)
 
-        vessel, voyage = table_extractor.extract_cell(top='Vsl / Voy', left=0, extractor=VesselVoyageTdExtractor())
+        vessel, voyage = table_extractor.extract_cell(top="Vsl / Voy", left=0, extractor=VesselVoyageTdExtractor())
 
         for i in range(numbers):
+            if not table_extractor.extract_cell(top="Number", left=i):
+                continue
+
             yield {
-                'container_no': table_extractor.extract_cell(top='Number', left=i),
-                'carrier': table_extractor.extract_cell(top='Holds_Line', left=i),
-                'custom_release': table_extractor.extract_cell(top='Holds_Customs', left=i),
-                'cy_location': table_extractor.extract_cell(top='Yard Status', left=i),
-                'last_free_day': table_extractor.extract_cell(top='Demurrage_LFD', left=i),
-                'holds': table_extractor.extract_cell(top='Demurrage_Hold', left=i),
-                'demurrage': table_extractor.extract_cell(top='Demurrage_Amt', left=i),
-                'container_spec': table_extractor.extract_cell(top='Dimensions', left=i),
-                'vessel': vessel,
-                'voyage': voyage,
+                "container_no": table_extractor.extract_cell(top="Number", left=i),
+                "carrier": table_extractor.extract_cell(top="Holds_Line", left=i),
+                "custom_release": table_extractor.extract_cell(top="Holds_Customs", left=i),
+                "cy_location": table_extractor.extract_cell(top="Yard Status", left=i),
+                "last_free_day": table_extractor.extract_cell(top="Demurrage_LFD", left=i),
+                "holds": table_extractor.extract_cell(top="Demurrage_Hold", left=i),
+                "demurrage": table_extractor.extract_cell(top="Demurrage_Amt", left=i),
+                "container_spec": table_extractor.extract_cell(top="Dimensions", left=i),
+                "vessel": vessel,
+                "voyage": voyage,
             }
 
     @staticmethod
     def _build_container_response(company_info: CompanyInfo, container_no_list: List):
         content_getter = ContentGetter(company_info=company_info)
-        is_g_captcha, res, cookies = content_getter.get_content(search_no=','.join(container_no_list))
+        is_g_captcha, res, cookies = content_getter.get_content(search_no=",".join(container_no_list))
         content_getter.quit()
 
         return is_g_captcha, res, cookies
 
     @staticmethod
     def _is_search_no_invalid(response: scrapy.Selector) -> bool:
-        return bool(response.css('tr.error-row'))
+        return bool(response.css("tr.error-row"))
 
 
 class ContentRoutingRule(BaseRoutingRule):
-    name = 'CONTENT'
+    name = "CONTENT"
 
     @classmethod
     def build_request_option(
         cls, container_no_list: List, company_info: CompanyInfo, g_token: str, cookies: Dict
     ) -> RequestOption:
         form_data = {
-            'action': 'trapac_transaction',
-            'recaptcha-token': g_token,
-            'terminal': company_info.upper_short,
-            'transaction': 'availability',
-            'containers': ','.join(container_no_list),
-            'booking': '',
-            'email': '',
-            'equipment_type': 'CT',
-            'history_type': 'N',
-            'services': '',
-            'from_date': str(datetime.now().date()),
-            'to_date': str((datetime.now() + timedelta(days=30)).date()),
+            "action": "trapac_transaction",
+            "recaptcha-token": g_token,
+            "terminal": company_info.upper_short,
+            "transaction": "availability",
+            "containers": ",".join(container_no_list),
+            "booking": "",
+            "email": "",
+            "equipment_type": "CT",
+            "history_type": "N",
+            "services": "",
+            "from_date": str(datetime.now().date()),
+            "to_date": str((datetime.now() + timedelta(days=30)).date()),
         }
 
         headers = {
-            'authority': f'{company_info.lower_short}.trapac.com',
-            'sec-ch-ua': '"Google Chrome";v="89", "Chromium";v="89", ";Not A Brand";v="99"',
-            'accept': 'application/json, text/javascript, */*; q=0.01',
-            'x-requested-with': 'XMLHttpRequest',
-            'sec-ch-ua-mobile': '?0',
-            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36',
-            'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'origin': f'https://{company_info.lower_short}.trapac.com',
-            'sec-fetch-site': 'same-origin',
-            'sec-fetch-mode': 'cors',
-            'sec-fetch-dest': 'empty',
-            'referer': f'https://{company_info.lower_short}.trapac.com/quick-check/?terminal={company_info.upper_short}&transaction=availability',
-            'accept-language': 'en-US,en;q=0.9',
-            'cookie': CookieHelper.get_cookie_str(cookies),
+            "authority": f"{company_info.lower_short}.trapac.com",
+            "sec-ch-ua": '"Google Chrome";v="89", "Chromium";v="89", ";Not A Brand";v="99"',
+            "accept": "application/json, text/javascript, */*; q=0.01",
+            "x-requested-with": "XMLHttpRequest",
+            "sec-ch-ua-mobile": "?0",
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36",
+            "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "origin": f"https://{company_info.lower_short}.trapac.com",
+            "sec-fetch-site": "same-origin",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-dest": "empty",
+            "referer": f"https://{company_info.lower_short}.trapac.com/quick-check/?terminal={company_info.upper_short}&transaction=availability",
+            "accept-language": "en-US,en;q=0.9",
+            "cookie": CookieHelper.get_cookie_str(cookies),
         }
 
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url=f'https://{company_info.lower_short}.trapac.com/wp-admin/admin-ajax.php',
+            url=f"https://{company_info.lower_short}.trapac.com/wp-admin/admin-ajax.php",
             headers=headers,
             body=urlencode(query=form_data),
             meta={
-                'numbers': len(container_no_list),
+                "numbers": len(container_no_list),
             },
         )
 
     def handle(self, response):
-        numbers = response.meta['numbers']
+        numbers = response.meta["numbers"]
         resp = json.loads(response.text)
 
-        if 'Please complete the reCAPTCHA check and submit your request again' in resp['html']:
-            raise DataNotFoundError
+        if "Please complete the reCAPTCHA check and submit your request again" in resp["html"]:
+            raise DataNotFoundError()
 
-        resp_html = Selector(text=resp['html'])
+        resp_html = Selector(text=resp["html"])
         table = resp_html.css('div[class="transaction-result availability"] table')
         table_locator = ContainerTableLocator()
         table_locator.parse(table=table, numbers=numbers)
         table_extractor = TableExtractor(table_locator=table_locator)
 
-        vessel, voyage = table_extractor.extract_cell(top='Vsl / Voy', left=0, extractor=VesselVoyageTdExtractor())
+        vessel, voyage = table_extractor.extract_cell(top="Vsl / Voy", left=0, extractor=VesselVoyageTdExtractor())
 
         for i in range(numbers):
             yield TerminalItem(
-                container_no=table_extractor.extract_cell(top='Number', left=i),
-                customs_release=table_extractor.extract_cell(top='Holds_Customs', left=i),
-                gate_out_date=table_extractor.extract_cell(top='Yard Status', left=i),
-                last_free_day=table_extractor.extract_cell(top='Demurrage_LFD', left=i),
-                holds=table_extractor.extract_cell(top='Demurrage_Hold', left=i),
-                demurrage=table_extractor.extract_cell(top='Demurrage_Amt', left=i),
-                container_spec=table_extractor.extract_cell(top='Dimensions', left=i),
+                container_no=table_extractor.extract_cell(top="Number", left=i),
+                customs_release=table_extractor.extract_cell(top="Holds_Customs", left=i),
+                gate_out_date=table_extractor.extract_cell(top="Yard Status", left=i),
+                last_free_day=table_extractor.extract_cell(top="Demurrage_LFD", left=i),
+                holds=table_extractor.extract_cell(top="Demurrage_Hold", left=i),
+                demurrage=table_extractor.extract_cell(top="Demurrage_Amt", left=i),
+                container_spec=table_extractor.extract_cell(top="Dimensions", left=i),
                 vessel=vessel,
                 voyage=voyage,
             )
@@ -301,36 +307,36 @@ class ContentRoutingRule(BaseRoutingRule):
 
 # ------------------------------------------------------------------------
 class ContentGetter(ChromeContentGetter):
-    PROXY_URL = 'proxy.apify.com:8000'
-    PROXY_PASSWORD = 'XZTBLpciyyTCFb3378xWJbuYY'
+    PROXY_URL = "proxy.apify.com:8000"
+    PROXY_PASSWORD = "XZTBLpciyyTCFb3378xWJbuYY"
 
     def __init__(self, company_info: CompanyInfo):
         super().__init__()
         self._company = company_info
 
     def find_ua(self):
-        self._driver.get('https://www.whatsmyua.info')
+        self._driver.get("https://www.whatsmyua.info")
         time.sleep(15)
 
-        ua_selector = self._driver.find_element_by_css_selector(css='textarea#custom-ua-string')
-        print('find_ua:', ua_selector.text)
+        ua_selector = self._driver.find_element_by_css_selector(css="textarea#custom-ua-string")
+        print("find_ua:", ua_selector.text)
 
     def find_ip(self):
-        self._driver.get('https://www.whatismyip.com.tw/')
+        self._driver.get("https://www.whatismyip.com.tw/")
         time.sleep(5)
 
-        ip_selector = self._driver.find_element_by_css_selector('b span')
-        print('find_id', ip_selector.text)
+        ip_selector = self._driver.find_element_by_css_selector("b span")
+        print("find_id", ip_selector.text)
 
     def get_result_response_text(self):
-        result_table_css = 'div#transaction-detail-result table'
+        result_table_css = "div#transaction-detail-result table"
 
         self.wait_for_appear(css=result_table_css, wait_sec=15)
         return self._driver.page_source
 
     def get_content(self, search_no):
         self._driver.get(
-            url=f'https://{self._company.lower_short}.trapac.com/quick-check/?terminal={self._company.upper_short}&transaction=availability'
+            url=f"https://{self._company.lower_short}.trapac.com/quick-check/?terminal={self._company.upper_short}&transaction=availability"
         )
         self.accept_cookie()
         self.key_in_search_bar(search_no=search_no)
@@ -377,7 +383,7 @@ class ContentGetter(ChromeContentGetter):
         self._driver.save_screenshot("screenshot.png")
 
     def get_g_token(self):
-        return self._driver.find_element_by_xpath('//*[@id="transaction-form"]/input').get_attribute('value')
+        return self._driver.find_element_by_xpath('//*[@id="transaction-form"]/input').get_attribute("value")
 
     def get_google_recaptcha(self):
         try:
@@ -404,43 +410,48 @@ class ContentGetter(ChromeContentGetter):
             return None
 
     def get_proxy_username(self, option: ProxyOption) -> str:
-        return f'groups-{option.group},session-{option.session}'
+        return f"groups-{option.group},session-{option.session}"
 
     @staticmethod
     def _generate_random_string():
-        return ''.join(random.choices(string.ascii_uppercase + string.digits, k=20))
+        return "".join(random.choices(string.ascii_uppercase + string.digits, k=20))
 
 
 class VesselVoyageTdExtractor(BaseTableCellExtractor):
     def extract(self, cell: Selector):
-        vessel_voyage = cell.css('::text').get()
-        vessel, voyage = vessel_voyage.split('/')
+        vessel_voyage = cell.css("::text").get()
+        vessel, voyage = "", ""
+        if vessel_voyage:
+            vessel, voyage = vessel_voyage.split("/")
         return vessel, voyage
 
 
 class ContainerTableLocator(BaseTableLocator):
-    TR_MAIN_TITLE_CLASS = 'th-main'
-    TR_SECOND_TITLE_CLASS = 'th-second'
+    TR_MAIN_TITLE_CLASS = "th-main"
+    TR_SECOND_TITLE_CLASS = "th-second"
 
     def __init__(self):
         self._td_map = []
 
     def parse(self, table: Selector, numbers: int = 1):
-        main_title_tr = table.css(f'tr.{self.TR_MAIN_TITLE_CLASS}')
-        second_title_tr = table.css(f'tr.{self.TR_SECOND_TITLE_CLASS}')
-        data_tr = table.css('tbody tr')
+        main_title_tr = table.css(f"tr.{self.TR_MAIN_TITLE_CLASS}")
+        second_title_tr = table.css(f"tr.{self.TR_SECOND_TITLE_CLASS}")
+        data_tr = table.css("tbody tr")
 
-        main_title_ths = main_title_tr.css('th')
-        second_title_ths = second_title_tr.css('th')
-        title_list = self.__combine_title_list(main_title_ths=main_title_ths, second_title_ths=second_title_ths)
+        main_title_ths = main_title_tr.css("th")
+        second_title_ths = second_title_tr.css("th")
+        title_list = self._combine_title_list(main_title_ths=main_title_ths, second_title_ths=second_title_ths)
 
         for i in range(len(data_tr)):
             if i >= numbers:
                 continue
-            data_tds = data_tr[i].css('td')
+            data_tds = data_tr[i].css("td")
             row = {}
             for title_index, title in enumerate(title_list):
-                row[title] = data_tds[title_index]
+                if len(data_tds) < len(title_list):
+                    row[title] = Selector(text="<p></p>")
+                else:
+                    row[title] = data_tds[title_index]
             self._td_map.append(row)
 
     def has_header(self, top=None, left=None) -> bool:
@@ -453,14 +464,14 @@ class ContainerTableLocator(BaseTableLocator):
             raise HeaderMismatchError(repr(err))
 
     @staticmethod
-    def __combine_title_list(main_title_ths: List[scrapy.Selector], second_title_ths: List[scrapy.Selector]):
+    def _combine_title_list(main_title_ths: List[scrapy.Selector], second_title_ths: List[scrapy.Selector]):
         main_title_list = []
         main_title_accumulated_col_span = []  # [(main_title, accumulated_col_span)]
 
         accumulated_col_span = 0
         for main_title_th in main_title_ths:
-            main_title = ''.join(main_title_th.css('::text').getall())
-            col_span = main_title_th.css('::attr(colspan)').get()
+            main_title = "".join(main_title_th.css("::text").getall())
+            col_span = main_title_th.css("::attr(colspan)").get()
             col_span = int(col_span) if col_span else 1
 
             accumulated_col_span += col_span
@@ -471,11 +482,11 @@ class ContainerTableLocator(BaseTableLocator):
         main_title_index = 0
         main_title, accumulated_col_span = main_title_accumulated_col_span[main_title_index]
         for second_title_index, second_title_th in enumerate(second_title_ths):
-            second_title = second_title_th.css('::text').get()
+            second_title = second_title_th.css("::text").get()
 
-            if second_title in ['Size']:
+            if second_title in ["Size"]:
                 second_title = None
-            elif second_title in ['Type', 'Height']:
+            elif second_title in ["Type", "Height"]:
                 continue
 
             if second_title_index >= accumulated_col_span:
@@ -483,7 +494,7 @@ class ContainerTableLocator(BaseTableLocator):
                 main_title, accumulated_col_span = main_title_accumulated_col_span[main_title_index]
 
             if second_title:
-                title_list.append(f'{main_title}_{second_title}')
+                title_list.append(f"{main_title}_{second_title}")
             else:
                 title_list.append(main_title)
 

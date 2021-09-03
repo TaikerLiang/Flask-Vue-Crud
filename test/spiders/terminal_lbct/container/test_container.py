@@ -17,21 +17,21 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub, container_no',
+    "sub, container_no",
     [
-        ('01_basic', 'TCNU3577497'),
-        ('02_available', 'WHLU0343058'),
+        ("01_basic", "TCNU3577497"),
+        ("02_available", "WHLU0343058"),
     ],
 )
 def test_container_handle(sub, container_no, sample_loader):
-    json_text = sample_loader.read_file(sub, 'sample.json')
+    json_text = sample_loader.read_file(sub, "sample.json")
 
     option = ContainerRoutingRule.build_request_option(container_no_list=[container_no])
 
     response = TextResponse(
         url=option.url,
         body=json_text,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=option.url,
             meta=option.meta,
@@ -41,25 +41,26 @@ def test_container_handle(sub, container_no, sample_loader):
     rule = ContainerRoutingRule()
     results = list(rule.handle(response=response))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
 
 
+@pytest.mark.skip
 @pytest.mark.parametrize(
-    'sub, container_no, invalid_no_item',
+    "sub, container_no, invalid_no_item",
     [
-        ('e01_invalid_container_no', 'WHLU7414414', InvalidContainerNoItem),
+        ("e01_invalid_container_no", "WHLU7414414", InvalidContainerNoItem),
     ],
 )
 def test_container_handle(sub, container_no, invalid_no_item, sample_loader):
-    json_text = sample_loader.read_file(sub, 'sample.json')
+    json_text = sample_loader.read_file(sub, "sample.json")
 
     option = ContainerRoutingRule.build_request_option(container_no_list=[container_no])
 
     response = TextResponse(
         url=option.url,
         body=json_text,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=option.url,
             meta=option.meta,

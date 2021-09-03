@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<link href="/Content/Css/layout.css" rel="stylesheet"/>
+<link href="/Content/Css/Index.css" rel="stylesheet"/>
+<script src="/Scripts/jquery-1.9.1.min.js" type="text/javascript"></script>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>
+    YangMing Marine Transport Corp.
+</title>
+    <script lang="JavaScript" type="text/JavaScript">
+function switching() {
+window.location.href = "/index.aspx";
+}
+function checkdata() {
+var txtVcode = $('#txtVcode').val();
+
+var CanSearch = true;
+
+if ($("#divVcode").length > 0) {
+if (txtVcode == "") {
+$('#lblVcodeErrorMsg').html(" *Please enter the verification code.");
+CanSearch = false;
+}
+else {
+$.ajax({
+type: "POST",
+url: "/e-service/schedule/PointToPoint_CheckLoc.ashx",
+data: { CheckType: "vcode", CheckValue: txtVcode },
+cache: false,
+async: false,
+processData: true,
+success: function (result) {
+if (result == "N") {
+$('#lblVcodeErrorMsg').html(" *Please check the verification code.");
+CanSearch = false;
+} else if (result == "E") {
+$('#lblVcodeErrorMsg').html(" *The verification code already expired.");
+CanSearch = false;
+}
+},
+error: function (result) {
+alert("The operation was failed!");
+return false;
+}
+});
+}
+return CanSearch;
+}
+}
+
+    </script>
+</head>
+<body style="background-image: none">
+<form method="post" action="./VerifyYourID.aspx" id="form1">
+    <div class="aspNetHidden">
+        <input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value=""/>
+        <input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value=""/>
+        <input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE"
+               value="/wEPDwUKMTQ3NzAyODM1MA9kFgICAQ9kFgQCAw8WAh4HVmlzaWJsZWhkAgUPFgIfAGcWAgIBDw8WAh4EVGV4dAUOMTM2LjI0My43NC4xNjRkZGSCzni6cGMEquINde5ElMld7OFhU99XG92pYu2C03gNFA=="/>
+    </div>
+
+    <script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['form1'];
+if (!theForm) {
+theForm = document.form1;
+}
+function __doPostBack(eventTarget, eventArgument) {
+if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+theForm.__EVENTTARGET.value = eventTarget;
+theForm.__EVENTARGUMENT.value = eventArgument;
+theForm.submit();
+}
+}
+//]]>
+
+    </script>
+
+
+    <div class="aspNetHidden">
+
+        <input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="CDBB1CF3"/>
+        <input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION"
+               value="/wEdAAJMJS0lHeZXug/mzoD7RwD94q8s12WcMm4dben72M8A3++ilbYzwSPYS0J3d4dKb1wTqX809CZ6zfxKzubXe5/4"/>
+    </div>
+    <div style="align-content: center">
+        <a onclick="switching();return false;" href="javascript:__doPostBack(&#39;ctl02&#39;,&#39;&#39;)">
+            <img src="/Content/Img/logo.png" alt="" style="width: 18%;"/>
+        </a>
+
+        <div id="divBlock" style="margin-top: 30px; font-weight:bold; font-size:18px;">
+            Sorry, your IP has been blocked due to over connecting the website.<br/><br/>
+            IP : <span id="lblBlockIP">136.243.74.164</span><br/><br/>
+            Please contact us by email to itcs@yangming.com and provid the screenshot for our checking.<br/><br/>
+            We will reply you as soon as we can.
+        </div>
+    </div>
+</form>
+</body>
+</html>

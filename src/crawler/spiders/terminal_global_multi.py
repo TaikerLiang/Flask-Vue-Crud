@@ -13,6 +13,7 @@ from crawler.extractors.table_extractors import (
 
 BASE_URL = "https://payments.gcterminals.com"
 
+
 class TerminalGlobalMultiSpider(BaseMultiTerminalSpider):
     firms_code = "Y178"
     name = "terminal_global_multi"
@@ -94,6 +95,11 @@ class ContainerRoutingRule(BaseRoutingRule):
         if len(container_no_list) == 1:
             container_no_list = container_no_list + container_no_list
 
+        # invalid container no handling
+        # if self._is_container_no_invalid(response):
+        #     yield InvalidContainerNoItem(container_no=container_no_list[0])
+        #     return
+
         url = "http://payments.gcterminals.com/GlobalTerminal/globalSearch.do"
 
         for i in range(len(set(container_no_list))):
@@ -140,7 +146,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _is_container_no_invalid(response: Selector) -> bool:
-        return bool(response.css("div.error-messages"))
+        return bool(response.css("div.not-found-text"))
 
 
 class GlobalLeftTableLocator(BaseTableLocator):
