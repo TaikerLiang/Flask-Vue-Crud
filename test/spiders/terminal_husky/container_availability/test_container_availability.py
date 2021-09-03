@@ -17,19 +17,14 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-def monkeypatch_container_response(monkeypatch, httptext):
-    monkeypatch.setattr(SeleniumRoutingRule, "_build_container_response", lambda *args, **kwargs: httptext)
-
-
 @pytest.mark.parametrize(
     "sub,container_no",
     [
         ("01_basic", "MSMU5136043"),
     ],
 )
-def test_selenium_routing_rule(sub, container_no, sample_loader, monkeypatch):
+def test_selenium_routing_rule(sub, container_no, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
-    monkeypatch_container_response(monkeypatch=monkeypatch, httptext=httptext)
 
     request_option = SeleniumRoutingRule.build_request_option(
         container_nos=[container_no],
@@ -39,6 +34,7 @@ def test_selenium_routing_rule(sub, container_no, sample_loader, monkeypatch):
 
     response = TextResponse(
         url=request_option.url,
+        body=httptext,
         encoding="utf-8",
         request=Request(
             url=request_option.url,
@@ -46,8 +42,7 @@ def test_selenium_routing_rule(sub, container_no, sample_loader, monkeypatch):
         ),
     )
 
-    routing_rule = SeleniumRoutingRule()
-    results = list(routing_rule.handle(response=response))
+    results = list(SeleniumRoutingRule._handle_response(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
@@ -60,9 +55,8 @@ def test_selenium_routing_rule(sub, container_no, sample_loader, monkeypatch):
         ("e01_invalid_container_no", "FCIU2218769", InvalidContainerNoItem),
     ],
 )
-def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader, monkeypatch):
+def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
-    monkeypatch_container_response(monkeypatch=monkeypatch, httptext=httptext)
 
     request_option = SeleniumRoutingRule.build_request_option(
         container_nos=[container_no],
@@ -72,6 +66,7 @@ def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader,
 
     response = TextResponse(
         url=request_option.url,
+        body=httptext,
         encoding="utf-8",
         request=Request(
             url=request_option.url,
@@ -79,5 +74,4 @@ def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader,
         ),
     )
 
-    routing_rule = SeleniumRoutingRule()
-    assert list(routing_rule.handle(response=response)) == [invalid_no_item(container_no=container_no)]
+    assert list(SeleniumRoutingRule._handle_response(response=response)) == [invalid_no_item(container_no=container_no)]

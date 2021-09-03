@@ -195,21 +195,18 @@ class SearchRoutingRule(BaseRoutingRule):
 
         content_getter = MaherContentGetter()
         content_getter.login()
-        response_text = self._build_container_response(content_getter, container_no_list)
+        response_text = content_getter.search(container_no_list)
         time.sleep(3)
         response = Selector(text=response_text)
-        container_info_list = self.extract_container_info(response=response, container_no_list=container_no_list)
 
+        for item in self._handle_response(response, container_no_list):
+            yield item
+
+    @classmethod
+    def _handle_response(cls, response, container_no_list):
+        container_info_list = cls.extract_container_info(response=response, container_no_list=container_no_list)
         for container_info in container_info_list:
-            ct_no = container_info["container_no"]
-            # detail_page_resp = content_getter.detail_search(ct_no)
-            # gate_out_date = detail_page_resp.xpath('/html/body/table/tbody/tr/td/div[3]/table/tbody/tr/td/table[4]/tbody/tr[4]/td/table/tbody/tr/td/table/tbody/tr[29]/td[2]/text()').get()
-            # print(ct_no, detail_page_resp, gate_out_date)
             yield TerminalItem(**container_info)
-
-    @staticmethod
-    def _build_container_response(content_getter, container_no_list: List):
-        return content_getter.search(container_no_list)
 
     @staticmethod
     def _is_container_no_invalid(response: Selector) -> bool:
