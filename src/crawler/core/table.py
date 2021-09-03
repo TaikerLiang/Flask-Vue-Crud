@@ -13,7 +13,7 @@ class HeaderMismatchError(Exception):
 
 class BaseTable:
     def __init__(self):
-        self._td_map = {}
+        self._td_map = {}       # top_header: {left_header: td, ...}
         self._left_header_set = set()
 
     @abc.abstractmethod
@@ -27,7 +27,9 @@ class BaseTable:
             raise HeaderMismatchError(repr(err))
 
     def has_header(self, top=None, left=None) -> bool:
-        if top is None:
+        if (top is not None) and (left is not None):
+            return (left in self._left_header_set) and (top in self._td_map)
+        elif top is None:
             return left in self._left_header_set
         elif left is None:
             return top in self._td_map
