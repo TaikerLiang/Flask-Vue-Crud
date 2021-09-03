@@ -255,45 +255,45 @@ class ItemExtractor:
         table_locator.parse(table=table_like_div)
         table_extractor = TableExtractor(table_locator=table_locator)
 
-        vessel_voyage = table_extractor.extract_cell(header='Vessel / Voyage')
+        vessel_voyage = table_extractor.extract_cell(left='Vessel / Voyage')
         raw_vessel, raw_voyage = vessel_voyage.split('/')
         vessel, voyage = raw_vessel.strip(), raw_voyage.strip()
 
-        raw_booking_no = table_extractor.extract_cell(header='Booking Number')
+        raw_booking_no = table_extractor.extract_cell(left='Booking Number')
         booking_no = raw_booking_no.split(' ')[0]
 
-        if table_extractor.has_header(header='POD Firms Code'):
-            pod_firms_code = table_extractor.extract_cell(header='POD Firms Code')
+        if table_extractor.has_header(left='POD Firms Code'):
+            pod_firms_code = table_extractor.extract_cell(left='POD Firms Code')
         else:
             pod_firms_code = None
 
-        if table_extractor.has_header(header='Final Destination Firms Code'):
-            final_dest_firms_code = table_extractor.extract_cell(header='Final Destination Firms Code')
+        if table_extractor.has_header(left='Final Destination Firms Code'):
+            final_dest_firms_code = table_extractor.extract_cell(left='Final Destination Firms Code')
         else:
             final_dest_firms_code = None
 
-        if table_extractor.has_header(header='BL Surrendered Status'):
-            surrendered_status = table_extractor.extract_cell(header='BL Surrendered Status')
+        if table_extractor.has_header(left='BL Surrendered Status'):
+            surrendered_status = table_extractor.extract_cell(left='BL Surrendered Status')
         else:
             surrendered_status = None
 
-        if table_extractor.has_header(header='B/L Type'):
-            bl_type = table_extractor.extract_cell(header='B/L Type')
+        if table_extractor.has_header(left='B/L Type'):
+            bl_type = table_extractor.extract_cell(left='B/L Type')
         else:
             bl_type = None
 
         data = {
-            'mbl_no': table_extractor.extract_cell(header='Bill of Lading Number'),
+            'mbl_no': table_extractor.extract_cell(left='Bill of Lading Number'),
             'booking_no': booking_no,
-            'por_name': table_extractor.extract_cell(header='Place of Receipt'),
-            'pol_name': table_extractor.extract_cell(header='POL'),
-            'pod_name': table_extractor.extract_cell(header='POD'),
-            'final_dest_name': table_extractor.extract_cell(header='Final Destination'),
+            'por_name': table_extractor.extract_cell(left='Place of Receipt'),
+            'pol_name': table_extractor.extract_cell(left='POL'),
+            'pod_name': table_extractor.extract_cell(left='POD'),
+            'final_dest_name': table_extractor.extract_cell(left='Final Destination'),
             'vessel': vessel,
             'voyage': voyage or None,
             'bl_type': bl_type,
-            'pick_up_eta': table_extractor.extract_cell(header='ETA at Place of Delivery'),
-            'cargo_cutoff': table_extractor.extract_cell(header='Cargo Cutoff'),
+            'pick_up_eta': table_extractor.extract_cell(left='ETA at Place of Delivery'),
+            'cargo_cutoff': table_extractor.extract_cell(left='Cargo Cutoff'),
             'pod_firms_code': pod_firms_code,
             'final_dest_firms_code': final_dest_firms_code,
             'surrendered_status': surrendered_status,
@@ -353,38 +353,38 @@ class ItemExtractor:
     def _extract_schedule_detail_info(response: scrapy.Selector) -> List:
         # 0 for booking info bookmark, 1 for print bookmark
         table_like_div = response.css('div.cargoTrackingSailing div.ivu-table')[0]
-        table_locator = TopHeadDivTableLocator()
+        table_locator = VesselContainerTableLocator()
         table_locator.parse(table=table_like_div)
         table_extractor = TableExtractor(table_locator=table_locator)
 
         vessels = []
-        for row in table_locator.iter_row():
+        for left in table_locator.iter_left_header():
             service_voyage = table_extractor.extract_cell(
-                header='Service / Voyage', row=row, extractor=LabelContentTableCellExtractor()
+                top='Service / Voyage', left=left, extractor=LabelContentTableCellExtractor()
             )
 
             departure_date = table_extractor.extract_cell(
-                header='Departure Date', row=row, extractor=LabelContentTableCellExtractor()
+                top='Departure Date', left=left, extractor=LabelContentTableCellExtractor()
             )
 
             arrive_date = table_extractor.extract_cell(
-                header='Arrival Date', row=row, extractor=LabelContentTableCellExtractor()
+                top='Arrival Date', left=left, extractor=LabelContentTableCellExtractor()
             )
 
             vessels.append(
                 {
                     'vessel_key': table_extractor.extract_cell(
-                        header='Vessel', row=row, extractor=FirstTextTdExtractor(css_query='a::text')
+                        top='Vessel', left=left, extractor=FirstTextTdExtractor(css_query='a::text')
                     ),
                     'vessel': table_extractor.extract_cell(
-                        header='Vessel', row=row, extractor=FirstTextTdExtractor(css_query='a::text')
+                        top='Vessel', left=left, extractor=FirstTextTdExtractor(css_query='a::text')
                     ),
                     'voyage': service_voyage['Voyage'],
                     'pol': table_extractor.extract_cell(
-                        header='POL', row=row, extractor=FirstTextTdExtractor(css_query='span::text')
+                        top='POL', left=left, extractor=FirstTextTdExtractor(css_query='span::text')
                     ),
                     'pod': table_extractor.extract_cell(
-                        header='POD', row=row, extractor=FirstTextTdExtractor(css_query='span::text')
+                        top='POD', left=left, extractor=FirstTextTdExtractor(css_query='span::text')
                     ),
                     'etd': departure_date['expected'],
                     'atd': departure_date['actual'],
@@ -414,21 +414,21 @@ class ItemExtractor:
     @staticmethod
     def _extract_container_infos(response: scrapy.Selector):
         table_like_div = response.css('div.movingList')[0]  # 0 for booking info bookmark, 1 for print bookmark
-        table_locator = TopHeadDivTableLocator()
+        table_locator = VesselContainerTableLocator()
         table_locator.parse(table=table_like_div)
         table_extractor = TableExtractor(table_locator=table_locator)
         container_infos = []
 
-        for row in table_locator.iter_row():
+        for left in table_locator.iter_left_header():
             container_no = table_extractor.extract_cell(
-                header='Container No.', row=row, extractor=OnlyContentTableCellExtractor()
+                top='Container No.', left=left, extractor=OnlyContentTableCellExtractor()
             )[
                 0
             ]  # 0 container_no, 1 container_spec
             lfd_related = {}
-            if table_extractor.has_header(header='LFD'):
+            if table_extractor.has_header(top='LFD'):
                 lfd_related = table_extractor.extract_cell(
-                    header='LFD', row=row, extractor=LabelContentTableCellExtractor()
+                    top='LFD', left=left, extractor=LabelContentTableCellExtractor()
                 )
 
             container_infos.append(
@@ -467,14 +467,14 @@ class ItemExtractor:
         container_status_div = find_selector_from(selectors=pop_up_divs, rule=rule)
 
         table_like_div = container_status_div.css('div.ivu-table')
-        table_locator = TopHeadDivTableLocator()
+        table_locator = VesselContainerTableLocator()
         table_locator.parse(table=table_like_div)
         table_extractor = TableExtractor(table_locator=table_locator)
 
         container_status_infos = []
-        for row in table_locator.iter_row():
+        for left in table_locator.iter_left_header():
             multi_status = table_extractor.extract_cell(
-                header='Latest Status', row=row, extractor=OnlyContentTableCellExtractor()
+                top='Latest Status', left=left, extractor=OnlyContentTableCellExtractor()
             )  # 0 description, 1 time, 2 transport
 
             container_status_infos.append(
@@ -483,7 +483,7 @@ class ItemExtractor:
                     'local_date_time': multi_status[1],
                     'transport': multi_status[2],
                     'location': table_extractor.extract_cell(
-                        header='Location', row=row, extractor=JoinAllWithSpaceTableCellExtractor()
+                        top='Location', left=left, extractor=JoinAllWithSpaceTableCellExtractor()
                     ),
                 }
             )
@@ -506,23 +506,23 @@ class MainInfoTableLocator(BaseTable):
 
             data_td = Selector(text=f'<td>{content}</td>')
 
-            self._header_set.add(label)
+            self._left_header_set.add(label)
             td_dict = self._td_map.setdefault(0, {})
             td_dict[label] = data_td
 
 
-class TopHeadDivTableLocator(BaseTable):
+class VesselContainerTableLocator(BaseTable):
     def parse(self, table: Selector):
         ths = table.css('div.ivu-table-header th')
         ths_span_text = [th.css('span::text').get() for th in ths]
-        self._header_set = set(ths_span_text)
         trs = table.css('tr.ivu-table-row')
 
         for index, tr in enumerate(trs):
             tds = tr.css('td')
-            td_dict = self._td_map.setdefault(index, {})
+            self._left_header_set.add(index)
             for th_span_text, td in zip(ths_span_text, tds):
-                td_dict[th_span_text] = td
+                self._td_map.setdefault(th_span_text, [])
+                self._td_map[th_span_text].append(td)
 
 
 class LabelContentTableCellExtractor(BaseTableCellExtractor):
