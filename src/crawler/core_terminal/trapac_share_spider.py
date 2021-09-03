@@ -340,7 +340,7 @@ class ContentGetter(ChromeContentGetter):
         )
         self.accept_cookie()
         self.key_in_search_bar(search_no=search_no)
-        cookies = self._driver.get_cookies()
+        cookies = self.get_cookies()
         self.press_search_button()
 
         if self.get_google_recaptcha():
@@ -375,9 +375,6 @@ class ContentGetter(ChromeContentGetter):
         search_btn = self._driver.find_element_by_xpath('//*[@id="transaction-form"]/div[3]/button')
         search_btn.click()
         time.sleep(10)
-
-    def find_element_by_css_selector(self, css: str):
-        return self._driver.find_element_by_css_selector(css_selector=css)
 
     def save_screenshot(self):
         self._driver.save_screenshot("screenshot.png")
