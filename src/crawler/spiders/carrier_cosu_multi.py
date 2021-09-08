@@ -27,7 +27,7 @@ from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.selector_finder import CssQueryExistMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor, BaseTableCellExtractor
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
+from crawler.core.table import BaseTable, TableExtractor
 
 
 class CarrierCosuSpider(BaseMultiCarrierSpider):
@@ -286,49 +286,49 @@ class ItemExtractor:
     @staticmethod
     def _extract_main_info(response: scrapy.Selector) -> Dict:
         table_like_div = response.css('div.ivu-c-detailPart')[0]  # 0 for booking info bookmark, 1 for print bookmark
-        table_locator = LeftHeadDivTableLocator()
+        table_locator = MainInfoTableLocator()
         table_locator.parse(table=table_like_div)
         table_extractor = TableExtractor(table_locator=table_locator)
 
-        vessel_voyage = table_extractor.extract_cell(left='Vessel / Voyage', top=None)
+        vessel_voyage = table_extractor.extract_cell(left='Vessel / Voyage')
         raw_vessel, raw_voyage = vessel_voyage.split('/')
         vessel, voyage = raw_vessel.strip(), raw_voyage.strip()
 
-        raw_booking_no = table_extractor.extract_cell(left='Booking Number', top=None)
+        raw_booking_no = table_extractor.extract_cell(left='Booking Number')
         booking_no = raw_booking_no.split(' ')[0]
 
         if table_extractor.has_header(left='POD Firms Code'):
-            pod_firms_code = table_extractor.extract_cell(left='POD Firms Code', top=None)
+            pod_firms_code = table_extractor.extract_cell(left='POD Firms Code')
         else:
             pod_firms_code = None
 
         if table_extractor.has_header(left='Final Destination Firms Code'):
-            final_dest_firms_code = table_extractor.extract_cell(left='Final Destination Firms Code', top=None)
+            final_dest_firms_code = table_extractor.extract_cell(left='Final Destination Firms Code')
         else:
             final_dest_firms_code = None
 
         if table_extractor.has_header(left='BL Surrendered Status'):
-            surrendered_status = table_extractor.extract_cell(left='BL Surrendered Status', top=None)
+            surrendered_status = table_extractor.extract_cell(left='BL Surrendered Status')
         else:
             surrendered_status = None
 
         if table_extractor.has_header(left='B/L Type'):
-            bl_type = table_extractor.extract_cell(left='B/L Type', top=None)
+            bl_type = table_extractor.extract_cell(left='B/L Type')
         else:
             bl_type = None
 
         data = {
-            'mbl_no': table_extractor.extract_cell(left='Bill of Lading Number', top=None),
+            'mbl_no': table_extractor.extract_cell(left='Bill of Lading Number'),
             'booking_no': booking_no,
-            'por_name': table_extractor.extract_cell(left='Place of Receipt', top=None),
-            'pol_name': table_extractor.extract_cell(left='POL', top=None),
-            'pod_name': table_extractor.extract_cell(left='POD', top=None),
-            'final_dest_name': table_extractor.extract_cell(left='Final Destination', top=None),
+            'por_name': table_extractor.extract_cell(left='Place of Receipt'),
+            'pol_name': table_extractor.extract_cell(left='POL'),
+            'pod_name': table_extractor.extract_cell(left='POD'),
+            'final_dest_name': table_extractor.extract_cell(left='Final Destination'),
             'vessel': vessel,
             'voyage': voyage or None,
             'bl_type': bl_type,
-            'pick_up_eta': table_extractor.extract_cell(left='ETA at Place of Delivery', top=None),
-            'cargo_cutoff': table_extractor.extract_cell(left='Cargo Cutoff', top=None),
+            'pick_up_eta': table_extractor.extract_cell(left='ETA at Place of Delivery'),
+            'cargo_cutoff': table_extractor.extract_cell(left='Cargo Cutoff'),
             'pod_firms_code': pod_firms_code,
             'final_dest_firms_code': final_dest_firms_code,
             'surrendered_status': surrendered_status,
@@ -389,12 +389,12 @@ class ItemExtractor:
     def _extract_schedule_detail_info(response: scrapy.Selector) -> List:
         # 0 for booking info bookmark, 1 for print bookmark
         table_like_div = response.css('div.cargoTrackingSailing div.ivu-table')[0]
-        table_locator = TopHeadDivTableLocator()
+        table_locator = VesselContainerTableLocator()
         table_locator.parse(table=table_like_div)
         table_extractor = TableExtractor(table_locator=table_locator)
 
         vessels = []
-        for left in table_locator.iter_left_index():
+        for left in table_locator.iter_left_header():
             service_voyage = table_extractor.extract_cell(
                 top='Service / Voyage', left=left, extractor=LabelContentTableCellExtractor()
             )
@@ -451,12 +451,12 @@ class ItemExtractor:
     @staticmethod
     def _extract_container_infos(response: scrapy.Selector):
         table_like_div = response.css('div.movingList')[0]  # 0 for booking info bookmark, 1 for print bookmark
-        table_locator = TopHeadDivTableLocator()
+        table_locator = VesselContainerTableLocator()
         table_locator.parse(table=table_like_div)
         table_extractor = TableExtractor(table_locator=table_locator)
         container_infos = []
 
-        for left in table_locator.iter_left_index():
+        for left in table_locator.iter_left_header():
             container_no = table_extractor.extract_cell(
                 top='Container No.', left=left, extractor=OnlyContentTableCellExtractor()
             )[
@@ -505,12 +505,12 @@ class ItemExtractor:
         container_status_div = find_selector_from(selectors=pop_up_divs, rule=rule)
 
         table_like_div = container_status_div.css('div.ivu-table')
-        table_locator = TopHeadDivTableLocator()
+        table_locator = VesselContainerTableLocator()
         table_locator.parse(table=table_like_div)
         table_extractor = TableExtractor(table_locator=table_locator)
 
         container_status_infos = []
-        for left in table_locator.iter_left_index():
+        for left in table_locator.iter_left_header():
             multi_status = table_extractor.extract_cell(
                 top='Latest Status', left=left, extractor=OnlyContentTableCellExtractor()
             )  # 0 description, 1 time, 2 transport
@@ -529,10 +529,7 @@ class ItemExtractor:
         return container_status_infos
 
 
-class LeftHeadDivTableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = {}  # title: data_td
-
+class MainInfoTableLocator(BaseTable):
     def parse(self, table: Selector):
         label_cells = table.css('div.label p.tebleCell')
         content_cells = table.css('div.content p.tebleCell')
@@ -547,53 +544,23 @@ class LeftHeadDivTableLocator(BaseTableLocator):
 
             data_td = Selector(text=f'<td>{content}</td>')
 
-            self._td_map[label] = data_td
-
-    def get_cell(self, left: str, top=None) -> Selector:
-        assert top is None
-        try:
-            return self._td_map[left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, left=None, top=None) -> bool:
-        assert top is None
-        return left in self._td_map
+            self._left_header_set.add(label)
+            td_dict = self._td_map.setdefault(0, {})
+            td_dict[label] = data_td
 
 
-class TopHeadDivTableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = {}  # title: td
-
+class VesselContainerTableLocator(BaseTable):
     def parse(self, table: Selector):
         ths = table.css('div.ivu-table-header th')
         ths_span_text = [th.css('span::text').get() for th in ths]
         trs = table.css('tr.ivu-table-row')
 
-        for tr in trs:
+        for index, tr in enumerate(trs):
             tds = tr.css('td')
+            self._left_header_set.add(index)
             for th_span_text, td in zip(ths_span_text, tds):
                 self._td_map.setdefault(th_span_text, [])
                 self._td_map[th_span_text].append(td)
-
-    def get_cell(self, top, left) -> Selector:
-        try:
-            return self._td_map[top][left]
-        except (KeyError, IndexError) as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        assert left is None
-        return bool(top in self._td_map)
-
-    def iter_left_index(self):
-        keys = list(self._td_map.keys())
-        if not keys:
-            return 0
-
-        first_tds = self._td_map[keys[0]]
-        for i in range(len(first_tds)):
-            yield i
 
 
 class LabelContentTableCellExtractor(BaseTableCellExtractor):
