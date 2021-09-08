@@ -1,0 +1,137 @@
+{
+  "tpdoc_num": "586118841",
+  "isContainerSearch": false,
+  "origin": {
+    "terminal": "YanTian Intl. Container Terminal",
+    "geo_site": "1PVA2R05ZGGHQ",
+    "city": "Yantian",
+    "state": "Guangdong",
+    "country": "China",
+    "country_code": "CN",
+    "geoid_city": "0L3DBFFJ3KZ9A",
+    "site_type": "TERMINAL"
+  },
+  "destination": {
+    "terminal": "LSA APM Terminal Pier 400( W185 )",
+    "geo_site": "3KNWBA31FUU5K",
+    "city": "Los Angeles",
+    "state": "California",
+    "country": "United States",
+    "country_code": "US",
+    "geoid_city": "2LMUYHDQXMRNJ",
+    "site_type": "TERMINAL"
+  },
+  "containers": [
+    {
+      "container_num": "TCKU6590749",
+      "container_size": "40",
+      "container_type": "Dry",
+      "iso_code": "42G0",
+      "operator": "MAEU",
+      "locations": [
+        {
+          "terminal": "YanTian Intl. Container Terminal",
+          "geo_site": "1PVA2R05ZGGHQ",
+          "city": "Yantian",
+          "state": "Guangdong",
+          "country": "China",
+          "country_code": "CN",
+          "geoid_city": "0L3DBFFJ3KZ9A",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "GATE-OUT-EMPTY",
+              "stempty": true,
+              "actfor": "EXP",
+              "vessel_name": "MAERSK EMDEN",
+              "voyage_num": "942N",
+              "vessel_num": "81A",
+              "expected_time": "2019-10-21T13:30:00.000",
+              "actual_time": "2019-10-16T19:12:00.000",
+              "rkem_move": "GATE-OUT",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "GATE-IN",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "MAERSK EMDEN",
+              "voyage_num": "942N",
+              "vessel_num": "81A",
+              "expected_time": "2019-10-21T13:30:00.000",
+              "actual_time": "2019-10-17T08:44:00.000",
+              "rkem_move": "GATE-IN",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "LOAD",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "MAERSK EMDEN",
+              "voyage_num": "942N",
+              "vessel_num": "81A",
+              "expected_time": "2019-10-21T13:30:00.000",
+              "actual_time": "2019-10-20T13:44:00.000",
+              "rkem_move": "LOAD",
+              "is_cancelled": false,
+              "is_current": false
+            }
+          ]
+        },
+        {
+          "terminal": "LSA APM Terminal Pier 400( W185 )",
+          "geo_site": "3KNWBA31FUU5K",
+          "city": "Los Angeles",
+          "state": "California",
+          "country": "United States",
+          "country_code": "US",
+          "geoid_city": "2LMUYHDQXMRNJ",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "DISCHARG",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "MAERSK EMDEN",
+              "voyage_num": "942N",
+              "vessel_num": "81A",
+              "expected_time": "2019-11-05T08:00:00.000",
+              "actual_time": "2019-11-08T23:56:00.000",
+              "rkem_move": "DISCHARG",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "GATE-OUT",
+              "stempty": false,
+              "actfor": "DEL",
+              "vessel_name": "MAERSK EMDEN",
+              "voyage_num": "942N",
+              "vessel_num": "81A",
+              "expected_time": "2019-11-05T08:00:00.000",
+              "actual_time": "2019-11-13T10:45:00.000",
+              "rkem_move": "GATE-OUT",
+              "is_cancelled": false,
+              "is_current": true
+            }
+          ]
+        }
+      ],
+      "eta_final_delivery": "2019-11-08T23:56:00.000",
+      "latest": {
+        "actual_time": "2019-11-13T10:45:00.000",
+        "activity": "GATE-OUT",
+        "stempty": false,
+        "actfor": "DEL",
+        "geo_site": "3KNWBA31FUU5K",
+        "city": "Los Angeles",
+        "state": "California",
+        "country": "United States",
+        "country_code": "US"
+      },
+      "status": "COMPLETE"
+    }
+  ]
+}
