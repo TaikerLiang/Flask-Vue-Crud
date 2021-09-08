@@ -107,19 +107,64 @@ class SearchContainerRule(BaseRoutingRule):
 
         content_getter = ContentGetter()
         content_getter.login(company_info.email, company_info.password, company_info.site_name)
-        resp = self._build_container_response(content_getter, container_no_list)
+        resp = content_getter.search(container_no_list)
 
-        containers = content_getter.get_container_info(Selector(text=resp), len(container_no_list))
         content_getter.quit()
 
+        for item in self._handle_response(Selector(text=resp), container_no_list):
+            yield item
+
+    @classmethod
+    def _handle_response(cls, response, container_no_list):
+        containers = cls._extract_container_info(response, len(container_no_list))
         for container in containers:
             yield TerminalItem(
                 **container,
             )
 
     @staticmethod
-    def _build_container_response(content_getter, container_no_list):
-        return content_getter.search(container_no_list)
+    def _extract_container_info(resp: Selector, numbers: int):
+        # table = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table')
+        # table_locator = TableLocator()
+        # table_locator.parse(table=table, numbers=numbers)
+
+        res = []
+        tds = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table/tbody/tr/td')
+        for i in range(int(len(tds) / 17)):
+            appointment_date = "".join(tds[i * 17 + 5].xpath(".//text()").extract())
+            gate_out_date = "".join(tds[i * 17 + 3].xpath(".//text()").extract()).strip()
+
+            if re.search("([0-9]+/[0-9]+/[0-9]{4}[0-9]{4}-[0-9]{4})", appointment_date):
+                date_split_list = appointment_date.split("/")
+                time_split_list = date_split_list[-1][4:].split("-")
+                date_split_list[-1] = date_split_list[-1][:4]
+                appointment_date = "/".join(date_split_list) + " " + time_split_list[0]
+
+            if re.search("([0-9]+/[0-9]+/[0-9]{4} [0-9]+:[0-9]{2})", gate_out_date):
+                date_split_list = gate_out_date.split("\n")
+                gate_out_date = date_split_list[-1]
+
+            gate_out_date = re.sub(r"\s{2,}", " ", gate_out_date)
+
+            res.append(
+                {
+                    "container_no": "".join(tds[i * 17 + 1].xpath(".//text()").extract()).strip().replace("-", ""),
+                    "ready_for_pick_up": "".join(tds[i * 17 + 2].xpath(".//text()").extract())
+                    .strip()
+                    .replace("\xa0", " "),
+                    "gate_out_date": gate_out_date,
+                    "appointment_date": appointment_date.strip(),
+                    "customs_release": "".join(tds[i * 17 + 6].xpath(".//text()").extract()).strip(),
+                    "carrier_release": "".join(tds[i * 17 + 7].xpath(".//text()").extract()).strip(),
+                    "holds": "".join(tds[i * 17 + 9].xpath(".//text()").extract()).strip(),
+                    "demurrage": "".join(tds[i * 17 + 11].xpath(".//text()").extract()).strip(),
+                    "last_free_day": "".join(tds[i * 17 + 12].xpath(".//text()").extract()).strip(),
+                    "carrier": "".join(tds[i * 17 + 13].xpath(".//text()").extract()).strip(),
+                    "container_spec": "".join(tds[i * 17 + 14].xpath(".//text()").extract()).strip(),
+                }
+            )
+
+        return res
 
 
 class ContentGetter:
@@ -175,49 +220,6 @@ class ContentGetter:
         time.sleep(8)
 
         return self._driver.page_source
-
-    def get_container_info(self, resp: Selector, numbers: int):
-        # table = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table')
-        # table_locator = TableLocator()
-        # table_locator.parse(table=table, numbers=numbers)
-
-        res = []
-        tds = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table/tbody/tr/td')
-        for i in range(int(len(tds) / 17)):
-            appointment_date = "".join(tds[i * 17 + 5].xpath(".//text()").extract())
-            gate_out_date = "".join(tds[i * 17 + 3].xpath(".//text()").extract()).strip()
-
-            if re.search("([0-9]+/[0-9]+/[0-9]{4}[0-9]{4}-[0-9]{4})", appointment_date):
-                date_split_list = appointment_date.split("/")
-                time_split_list = date_split_list[-1][4:].split("-")
-                date_split_list[-1] = date_split_list[-1][:4]
-                appointment_date = "/".join(date_split_list) + " " + time_split_list[0]
-
-            if re.search("([0-9]+/[0-9]+/[0-9]{4} [0-9]+:[0-9]{2})", gate_out_date):
-                date_split_list = gate_out_date.split("\n")
-                gate_out_date = date_split_list[-1]
-
-            gate_out_date = re.sub(r"\s{2,}", " ", gate_out_date)
-
-            res.append(
-                {
-                    "container_no": "".join(tds[i * 17 + 1].xpath(".//text()").extract()).strip().replace("-", ""),
-                    "ready_for_pick_up": "".join(tds[i * 17 + 2].xpath(".//text()").extract())
-                    .strip()
-                    .replace("\xa0", " "),
-                    "gate_out_date": gate_out_date,
-                    "appointment_date": appointment_date.strip(),
-                    "customs_release": "".join(tds[i * 17 + 6].xpath(".//text()").extract()).strip(),
-                    "carrier_release": "".join(tds[i * 17 + 7].xpath(".//text()").extract()).strip(),
-                    "holds": "".join(tds[i * 17 + 9].xpath(".//text()").extract()).strip(),
-                    "demurrage": "".join(tds[i * 17 + 11].xpath(".//text()").extract()).strip(),
-                    "last_free_day": "".join(tds[i * 17 + 12].xpath(".//text()").extract()).strip(),
-                    "carrier": "".join(tds[i * 17 + 13].xpath(".//text()").extract()).strip(),
-                    "container_spec": "".join(tds[i * 17 + 14].xpath(".//text()").extract()).strip(),
-                }
-            )
-
-        return res
 
     def quit(self):
         self._driver.quit()

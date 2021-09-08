@@ -111,35 +111,37 @@ class SeleniumRoutingRule(BaseRoutingRule):
 
         # TODO: can improve here, send request one time
         for container_no in container_nos:
-            page_source = self._build_container_response(container_no)
+            page_source = content_getter.search(container_no)
             resp = Selector(text=page_source)
             if not resp.css("table.table-borderless"):
                 continue
-            container_info = self._extract_container_info(resp)
-            extra_container_info = self._extract_extra_container_info(resp)
 
-            yield TerminalItem(
-                container_no=container_info["container_no"],
-                carrier_release=extra_container_info["freight_release"],
-                customs_release=extra_container_info["customs_release"],
-                appointment_date=container_info["appointment_date"],
-                ready_for_pick_up=container_info["ready_for_pick_up"],
-                last_free_day=container_info["last_free_day"],
-                demurrage=extra_container_info["demurrage"],
-                carrier=container_info["carrier"],
-                container_spec=container_info["container_spec"],
-                vessel=extra_container_info["vessel"],
-                mbl_no=extra_container_info["mbl_no"],
-                voyage=extra_container_info["voyage"],
-                gate_out_date=extra_container_info["gate_out_date"],
-                chassis_no=container_info["chassis_no"],
-            )
+            for item in self._handle_response(response=resp):
+                yield item
 
         content_getter.close()
 
-    @staticmethod
-    def _build_container_response(content_getter, container_no):
-        return content_getter.search(container_no)
+    @classmethod
+    def _handle_response(cls, response):
+        container_info = cls._extract_container_info(response)
+        extra_container_info = cls._extract_extra_container_info(response)
+
+        yield TerminalItem(
+            container_no=container_info["container_no"],
+            carrier_release=extra_container_info["freight_release"],
+            customs_release=extra_container_info["customs_release"],
+            appointment_date=container_info["appointment_date"],
+            ready_for_pick_up=container_info["ready_for_pick_up"],
+            last_free_day=container_info["last_free_day"],
+            demurrage=extra_container_info["demurrage"],
+            carrier=container_info["carrier"],
+            container_spec=container_info["container_spec"],
+            vessel=extra_container_info["vessel"],
+            mbl_no=extra_container_info["mbl_no"],
+            voyage=extra_container_info["voyage"],
+            gate_out_date=extra_container_info["gate_out_date"],
+            chassis_no=container_info["chassis_no"],
+        )
 
     @staticmethod
     def _extract_container_info(response: scrapy.Selector) -> Dict:
