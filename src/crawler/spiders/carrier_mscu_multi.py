@@ -302,12 +302,12 @@ class Extractor:
             if not container_no_bar:
                 raise CarrierResponseFormatError(reason='Can not find container_no_bar !!!')
 
-            container_stats_table = container_content.xpath('//*[@id="ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_rptContainers_ctl01_pnlContainer"]/table[1]')
+            container_stats_table = container_content.css('table.singleRowTable')
 
             if not container_stats_table:
                 raise CarrierResponseFormatError(reason='Can not find container_stats_table !!!')
 
-            movements_table = container_content.xpath('//*[@id="ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_rptContainers_ctl01_pnlContainer"]/table[2]')
+            movements_table = container_content.css("table[class='resultTable']")
             if not movements_table:
                 raise CarrierResponseFormatError(reason='Can not find movements_table !!!')
 
