@@ -28,8 +28,8 @@ class AirItemPipeline:
         spider.logger.info(f"item : {pprint.pformat(item)}")
 
         try:
-            if isinstance(item, air_items.TerminalItem):
-                self._collector.collect_terminal_item(item=item)
+            if isinstance(item, air_items.AirItem):
+                self._collector.collect_air_item(item=item)
             elif isinstance(item, air_items.ExportFinalData):
                 return self._collector.build_final_data()
             elif isinstance(item, air_items.ExportErrorData):
@@ -82,9 +82,9 @@ class AirMultiItemsPipeline:
         self._default_collector = AirResultCollector(request_args=spider.request_args)
 
         try:
-            if isinstance(item, air_items.TerminalItem):
+            if isinstance(item, air_items.AirItem):
                 collector = self._collector_map[item.key] if item.key else self._default_collector
-                collector.collect_terminal_item(item=item)
+                collector.collect_air_item(item=item)
                 return collector.build_final_data()
             elif isinstance(item, air_items.InvalidContainerNoItem):
                 return self._default_collector.build_invalid_no_data(item=item)
@@ -126,18 +126,18 @@ class AirMultiItemsPipeline:
 class AirResultCollector:
     def __init__(self, request_args):
         self._request_args = dict(request_args)
-        self._terminal = {}
+        self._air = {}
 
-    def collect_terminal_item(self, item: air_items.TerminalItem):
+    def collect_air_item(self, item: air_items.AirItem):
         clean_dict = self._clean_item(item)
-        self._terminal.update(clean_dict)
-        # return self._terminal
+        self._air.update(clean_dict)
+        # return self._air
 
     def build_final_data(self) -> Dict:
         return {
             "status": AIR_RESULT_STATUS_DATA,
             "request_args": self._request_args,
-            "terminal": self._terminal,
+            "air": self._air,
         }
 
     def build_error_data(self, item: air_items.ExportErrorData) -> Dict:
@@ -174,4 +174,4 @@ class AirResultCollector:
         return {k: v for k, v in item.items() if not k.startswith("_")}
 
     def is_item_empty(self) -> bool:
-        return not bool(self._terminal)
+        return not bool(self._air)
