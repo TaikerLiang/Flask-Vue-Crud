@@ -1,0 +1,2 @@
+class AirSpiderMiddleware:
+    pass
