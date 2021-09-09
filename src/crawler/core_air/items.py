@@ -17,3 +17,26 @@ class ExportErrorData(BaseAirItem):
 
 class DebugItem(BaseAirItem):
     info = scrapy.Field()
+
+
+class TerminalItem(BaseAirItem):
+    task_id = scrapy.Field()
+    mawb = scrapy.Field()
+    origin = scrapy.Field()
+    destination = scrapy.Field()
+    pieces = scrapy.Field()
+    weight = scrapy.Field()
+    atd = scrapy.Field()
+    ata = scrapy.Field()
+    current_state = scrapy.Field()
+
+
+class FlightItem(BaseAirItem):
+    task_id = scrapy.Field()
+    flight_number = scrapy.Field()
+    origin = scrapy.Field()
+    destination = scrapy.Field()
+    pieces = scrapy.Field()
+    weight = scrapy.Field()
+    atd = scrapy.Field()
+    ata = scrapy.Field()
