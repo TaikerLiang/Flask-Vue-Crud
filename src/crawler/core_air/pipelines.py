@@ -137,7 +137,7 @@ class AirResultCollector:
         return {
             "status": AIR_RESULT_STATUS_DATA,
             "request_args": self._request_args,
-            "terminal": self._terminal,
+            "air": self._air,
         }
 
     def build_error_data(self, item: air_items.ExportErrorData) -> Dict:
@@ -174,4 +174,4 @@ class AirResultCollector:
         return {k: v for k, v in item.items() if not k.startswith("_")}
 
     def is_item_empty(self) -> bool:
-        return not bool(self._terminal)
+        return not bool(self._air)
