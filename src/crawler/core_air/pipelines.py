@@ -86,8 +86,8 @@ class AirMultiItemsPipeline:
                 collector = self._collector_map[item.key] if item.key else self._default_collector
                 collector.collect_air_item(item=item)
                 return collector.build_final_data()
-            elif isinstance(item, air_items.InvalidMawbNoItem):
-                return self._default_collector.build_invalid_no_data(item=item)
+            # elif isinstance(item, air_items.InvalidMawbNoItem):
+            #     return self._default_collector.build_invalid_no_data(item=item)
             elif isinstance(item, air_items.ExportFinalData):
                 return {"status": "CLOSE"}
             elif isinstance(item, air_items.ExportErrorData):
