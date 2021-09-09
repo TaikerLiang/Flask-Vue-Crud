@@ -12,18 +12,11 @@ class BaseAirError(Exception):
         pass
 
 
-class AirInvalidMblNoError(BaseAirError):
+class AirInvalidMawbNoError(BaseAirError):
     status = AIR_RESULT_STATUS_ERROR
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail="<invalid-mbl-no>")
-
-
-class AirInvalidContainerNoError(BaseAirError):
-    status = AIR_RESULT_STATUS_ERROR
-
-    def build_error_data(self):
-        return ExportErrorData(status=self.status, detail="<invalid-container-no>")
+        return ExportErrorData(status=self.status, detail="<invalid-mawb-no>")
 
 
 class AirResponseFormatError(BaseAirError):

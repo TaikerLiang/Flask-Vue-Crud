@@ -63,13 +63,13 @@ class AirMultiItemsPipeline:
     def open_spider(self, spider):
         spider.logger.info(f"[{self.__class__.__name__}] ----- open_spider -----")
 
-        for task_id, container_no in zip(spider.task_ids, spider.container_nos):
+        for task_id, mawb_no in zip(spider.task_ids, spider.mawb_nos):
             self._collector_map.setdefault(
                 task_id,
                 AirResultCollector(
                     request_args={
                         "task_id": task_id,
-                        "container_no": container_no,
+                        "mawb_no": mawb_no,
                         "save": spider.request_args.get("save"),
                     }
                 ),
@@ -86,7 +86,7 @@ class AirMultiItemsPipeline:
                 collector = self._collector_map[item.key] if item.key else self._default_collector
                 collector.collect_air_item(item=item)
                 return collector.build_final_data()
-            elif isinstance(item, air_items.InvalidContainerNoItem):
+            elif isinstance(item, air_items.InvalidMawbNoItem):
                 return self._default_collector.build_invalid_no_data(item=item)
             elif isinstance(item, air_items.ExportFinalData):
                 return {"status": "CLOSE"}
@@ -157,12 +157,12 @@ class AirResultCollector:
             **clean_dict,
         }
 
-    def build_invalid_no_data(self, item: air_items.InvalidContainerNoItem) -> Dict:
+    def build_invalid_no_data(self, item: air_items.InvalidMawbNoItem) -> Dict:
 
         return {
             "status": AIR_RESULT_STATUS_ERROR,  # default status
             "request_args": self._request_args,
-            "invalid_container_no": item["container_no"],
+            "invalid_mawb_no": item["mawb_no"],
             "task_id": item["task_id"],
         }
 

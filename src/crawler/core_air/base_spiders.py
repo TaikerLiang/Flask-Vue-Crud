@@ -36,8 +36,7 @@ class BaseAirSpider(scrapy.Spider):
 
         self.request_args = kwargs
 
-        self.container_no = kwargs["container_no"]
-        self.mbl_no = kwargs.get("mbl_no", "")
+        self.mawb_no = kwargs["mawb_no"]
 
         to_save = "save" in kwargs
         self._saver = self._prepare_saver(to_save=to_save)
@@ -64,7 +63,7 @@ class BaseAirSpider(scrapy.Spider):
         if not to_save:
             return NullSaver()
 
-        save_folder = Path(__file__).parent.parent.parent.parent / "_save_pages" / f"[{self.name}] {self.container_no}"
+        save_folder = Path(__file__).parent.parent.parent.parent / "_save_pages" / f"[{self.name}] {self.mawb_no}"
 
         return FileSaver(folder_path=save_folder, logger=self.logger)
 
@@ -100,12 +99,11 @@ class BaseMultiAirSpider(scrapy.Spider):
         self.request_args = kwargs
 
         self.task_ids = [task_id.strip() for task_id in kwargs["task_id_list"].split(",")]
-        self.container_nos = [container_no.strip() for container_no in kwargs["container_no_list"].split(",")]
-        self.mbl_no = kwargs.get("mbl_no", "")
-        self.cno_tid_map = {}  # container_no: [task_ids]
-        for c_no, t_id in zip(self.container_nos, self.task_ids):
-            self.cno_tid_map.setdefault(c_no, [])
-            self.cno_tid_map[c_no].append(t_id)
+        self.mawb_nos = [mawb_no.strip() for mawb_no in kwargs["mawb_no_list"].split(",")]
+        self.mno_tid_map = {}  # mawb_no: [task_ids]
+        for m_no, t_id in zip(self.mawb_nos, self.task_ids):
+            self.mno_tid_map.setdefault(m_no, [])
+            self.mno_tid_map[m_no].append(t_id)
 
         to_save = "save" in kwargs
         self._saver = self._prepare_saver(to_save=to_save)
@@ -133,7 +131,7 @@ class BaseMultiAirSpider(scrapy.Spider):
         if not to_save:
             return NullSaver()
 
-        save_folder = Path(__file__).parent.parent.parent.parent / "_save_pages" / f"[{self.name}] {self.container_nos}"
+        save_folder = Path(__file__).parent.parent.parent.parent / "_save_pages" / f"[{self.name}] {self.mawb_nos}"
 
         return FileSaver(folder_path=save_folder, logger=self.logger)
 
