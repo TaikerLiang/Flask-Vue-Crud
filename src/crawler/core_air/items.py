@@ -19,7 +19,7 @@ class DebugItem(BaseAirItem):
     info = scrapy.Field()
 
 
-class AirlItem(BaseAirItem):
+class AirItem(BaseAirItem):
     task_id = scrapy.Field()
     mawb = scrapy.Field()
     origin = scrapy.Field()
