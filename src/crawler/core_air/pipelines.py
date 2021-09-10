@@ -1,6 +1,6 @@
 import pprint
 import traceback
-from typing import Dict
+from typing import Union, Dict
 
 from scrapy.exceptions import DropItem
 
@@ -28,7 +28,7 @@ class AirItemPipeline:
         spider.logger.info(f"item : {pprint.pformat(item)}")
 
         try:
-            if isinstance(item, air_items.AirItem):
+            if isinstance(item, (air_items.AirItem, air_items.FlightItem)):
                 self._collector.collect_air_item(item=item)
             elif isinstance(item, air_items.ExportFinalData):
                 return self._collector.build_final_data()
@@ -82,12 +82,10 @@ class AirMultiItemsPipeline:
         self._default_collector = AirResultCollector(request_args=spider.request_args)
 
         try:
-            if isinstance(item, air_items.AirItem):
+            if isinstance(item, (air_items.AirItem, air_items.FlightItem)):
                 collector = self._collector_map[item.key] if item.key else self._default_collector
                 collector.collect_air_item(item=item)
                 return collector.build_final_data()
-            # elif isinstance(item, air_items.InvalidMawbNoItem):
-            #     return self._default_collector.build_invalid_no_data(item=item)
             elif isinstance(item, air_items.ExportFinalData):
                 return {"status": "CLOSE"}
             elif isinstance(item, air_items.ExportErrorData):
@@ -128,7 +126,7 @@ class AirResultCollector:
         self._request_args = dict(request_args)
         self._air = {}
 
-    def collect_air_item(self, item: air_items.AirItem):
+    def collect_air_item(self, item: Union[air_items.AirItem, air_items.FlightItem]):
         clean_dict = self._clean_item(item)
         self._air.update(clean_dict)
         # return self._air
@@ -155,15 +153,6 @@ class AirResultCollector:
         return {
             "status": AIR_RESULT_STATUS_DEBUG,
             **clean_dict,
-        }
-
-    def build_invalid_no_data(self, item: air_items.InvalidMawbNoItem) -> Dict:
-
-        return {
-            "status": AIR_RESULT_STATUS_ERROR,  # default status
-            "request_args": self._request_args,
-            "invalid_mawb_no": item["mawb_no"],
-            "task_id": item["task_id"],
         }
 
     @staticmethod
