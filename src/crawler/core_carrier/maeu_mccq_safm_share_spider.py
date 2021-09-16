@@ -29,10 +29,12 @@ class MaeuMccqSafmShareSpider(BaseCarrierSpider):
             MainInfoRoutingRule(SHIPMENT_TYPE_BOOKING),
         ]
 
-        if self.search_type == SHIPMENT_TYPE_MBL:
+        if self.mbl_no:
             self._rule_manager = RuleManager(rules=bill_rules)
-        elif self.search_type == SHIPMENT_TYPE_BOOKING:
+            self.search_no = self.mbl_no
+        else:
             self._rule_manager = RuleManager(rules=booking_rules)
+            self.search_no = self.booking_no
 
     def start(self):
         option = MainInfoRoutingRule.build_request_option(search_no=self.search_no, url_format=self.base_url_format)
@@ -83,7 +85,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=url_format.format(search_no=search_no),
             meta={
-                'handle_httpstatus_list': [400],
+                'handle_httpstatus_list': [400, 404],
             }
         )
 

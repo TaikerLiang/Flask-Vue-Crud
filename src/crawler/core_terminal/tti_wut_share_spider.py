@@ -116,19 +116,46 @@ class MainRoutingRule(BaseRoutingRule):
 
         content_getter = ContentGetter()
         content_getter.login(company_info.email, company_info.password, company_info.url)
-        resp = self._build_container_response(content_getter, container_no_list, company_info.upper_short)
+        resp = content_getter.search(container_no_list, company_info.upper_short)
+        resp = Selector(text=resp)
 
-        containers = content_getter.get_container_info(Selector(text=resp), len(container_no_list))
         content_getter.quit()
 
+        for item in self._handle_response(resp):
+            yield item
+
+    @classmethod
+    def _handle_response(cls, response, container_no_list):
+        containers = cls._extract_container_info(response, len(container_no_list))
         for container in containers:
             yield TerminalItem(
                 **container,
             )
 
     @staticmethod
-    def _build_container_response(content_getter, container_no_list: List, short_name: str):
-        return content_getter.search(container_no_list, short_name)
+    def _extract_container_info(response: Selector, numbers: int):
+        table = response.xpath('//*[@id="gview_grid1"]')
+        table_locator = ContainerTableLocator()
+        table_locator.parse(table=table, numbers=numbers)
+
+        res = []
+        for i in range(numbers):
+            container = {
+                "container_no": table_locator.get_cell(left=i, top="Container No"),
+                "container_spec": table_locator.get_cell(left=i, top="Container Type/Length/Height"),
+                "customs_release": table_locator.get_cell(left=i, top="Customs Status"),
+                "cy_location": table_locator.get_cell(left=i, top="Yard Location"),
+                "ready_for_pick_up": table_locator.get_cell(left=i, top="Available for Pickup"),
+                "appointment_date": table_locator.get_cell(left=i, top="Appt Time"),
+                "carrier_release": table_locator.get_cell(left=i, top="Freight Status"),
+                "holds": table_locator.get_cell(left=i, top="Hold Reason"),
+                "last_free_day": table_locator.get_cell(left=i, top="Last Free Day"),
+            }
+
+            if container["container_no"]:
+                res.append(container)
+
+        return res
 
 
 class ContentGetter(ChromeContentGetter):
@@ -175,30 +202,6 @@ class ContentGetter(ChromeContentGetter):
             raise TerminalInvalidContainerNoError
 
         return self._driver.page_source
-
-    def get_container_info(self, response: Selector, numbers: int):
-        table = response.xpath('//*[@id="gview_grid1"]')
-        table_locator = ContainerTableLocator()
-        table_locator.parse(table=table, numbers=numbers)
-
-        res = []
-        for i in range(numbers):
-            container = {
-                "container_no": table_locator.get_cell(left=i, top="Container No"),
-                "container_spec": table_locator.get_cell(left=i, top="Container Type/Length/Height"),
-                "customs_release": table_locator.get_cell(left=i, top="Customs Status"),
-                "cy_location": table_locator.get_cell(left=i, top="Yard Location"),
-                "ready_for_pick_up": table_locator.get_cell(left=i, top="Available for Pickup"),
-                "appointment_date": table_locator.get_cell(left=i, top="Appt Time"),
-                "carrier_release": table_locator.get_cell(left=i, top="Freight Status"),
-                "holds": table_locator.get_cell(left=i, top="Hold Reason"),
-                "last_free_day": table_locator.get_cell(left=i, top="Last Free Day"),
-            }
-
-            if container["container_no"]:
-                res.append(container)
-
-        return res
 
     def is_alert_present(self):
         try:

@@ -6,7 +6,8 @@ from scrapy.http import TextResponse
 
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
 from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierInvalidSearchNoError
-from crawler.spiders.carrier_maeu_mccq_safm import MainInfoRoutingRule, CarrierMaeuSpider
+from crawler.core_carrier.maeu_mccq_safm_share_spider import MainInfoRoutingRule
+from crawler.spiders.carrier_maeu import CarrierMaeuSpider
 from test.spiders.carrier_maeu_mccq_safm.maeu import main_info
 
 

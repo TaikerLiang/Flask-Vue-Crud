@@ -107,56 +107,23 @@ class SearchContainerRule(BaseRoutingRule):
 
         content_getter = ContentGetter()
         content_getter.login(company_info.email, company_info.password, company_info.site_name)
-        resp = self._build_container_response(content_getter, container_no_list)
+        resp = content_getter.search(container_no_list)
 
-        containers = content_getter.get_container_info(Selector(text=resp), len(container_no_list))
         content_getter.quit()
 
+        for item in self._handle_response(Selector(text=resp), container_no_list):
+            yield item
+
+    @classmethod
+    def _handle_response(cls, response, container_no_list):
+        containers = cls._extract_container_info(response, len(container_no_list))
         for container in containers:
             yield TerminalItem(
                 **container,
             )
 
     @staticmethod
-    def _build_container_response(content_getter, container_no_list):
-        return content_getter.search(container_no_list)
-
-
-class ContentGetter(ChromeContentGetter):
-    def login(self, username, password, site_name):
-        url = f"{BASE_URL}/logon?siteId={site_name}"
-        self._driver.get(url)
-        time.sleep(5)
-        username_input = self._driver.find_element_by_xpath('//*[@id="UserName"]')
-        username_input.send_keys(username)
-        time.sleep(2)
-        password_input = self._driver.find_element_by_xpath('//*[@id="Password"]')
-        password_input.send_keys(password)
-        time.sleep(2)
-        login_btn = self._driver.find_element_by_xpath('//*[@id="btnLogonSubmit"]')
-        login_btn.click()
-        time.sleep(10)
-
-    def search(self, container_no_list):
-        url = f"{self._driver.current_url}#/Report/ImportContainer"
-        self._driver.get(url)
-        time.sleep(5)
-
-        multi_search_btn = self._driver.find_element_by_xpath('//*[@id="imgOpenContainerMultipleEntryDialog"]')
-        multi_search_btn.click()
-        time.sleep(3)
-
-        container_text_area = self._driver.find_element_by_xpath('//*[@id="ContainerNumbers"]')
-        container_text_area.send_keys("\n".join(container_no_list))
-
-        time.sleep(3)
-        search_btn = self._driver.find_element_by_xpath('//*[@id="btnContainerSubmitMulti"]')
-        search_btn.click()
-        time.sleep(8)
-
-        return self._driver.page_source
-
-    def get_container_info(self, resp: Selector, numbers: int):
+    def _extract_container_info(resp: Selector, numbers: int):
         # table = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table')
         # table_locator = TableLocator()
         # table_locator.parse(table=table, numbers=numbers)
@@ -198,6 +165,41 @@ class ContentGetter(ChromeContentGetter):
             )
 
         return res
+
+
+class ContentGetter(ChromeContentGetter):
+    def login(self, username, password, site_name):
+        url = f"{BASE_URL}/logon?siteId={site_name}"
+        self._driver.get(url)
+        time.sleep(5)
+        username_input = self._driver.find_element_by_xpath('//*[@id="UserName"]')
+        username_input.send_keys(username)
+        time.sleep(2)
+        password_input = self._driver.find_element_by_xpath('//*[@id="Password"]')
+        password_input.send_keys(password)
+        time.sleep(2)
+        login_btn = self._driver.find_element_by_xpath('//*[@id="btnLogonSubmit"]')
+        login_btn.click()
+        time.sleep(10)
+
+    def search(self, container_no_list):
+        url = f"{self._driver.current_url}#/Report/ImportContainer"
+        self._driver.get(url)
+        time.sleep(5)
+
+        multi_search_btn = self._driver.find_element_by_xpath('//*[@id="imgOpenContainerMultipleEntryDialog"]')
+        multi_search_btn.click()
+        time.sleep(3)
+
+        container_text_area = self._driver.find_element_by_xpath('//*[@id="ContainerNumbers"]')
+        container_text_area.send_keys("\n".join(container_no_list))
+
+        time.sleep(3)
+        search_btn = self._driver.find_element_by_xpath('//*[@id="btnContainerSubmitMulti"]')
+        search_btn.click()
+        time.sleep(8)
+
+        return self._driver.page_source
 
 
 class TableLocator(BaseTableLocator):
