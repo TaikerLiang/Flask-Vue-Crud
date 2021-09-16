@@ -5,7 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_terminal.items import InvalidContainerNoItem
-from crawler.spiders.terminal_maher_multi import SearchRoutingRule
+from crawler.spiders.terminal_maher_multi import TerminalMaherMultiSpider, SearchRoutingRule
 from test.spiders.terminal_maher_multi import container
 
 
@@ -26,7 +26,11 @@ def sample_loader(sample_loader):
 def test_search_routing_rule(sub, container_no, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
-    request_option = SearchRoutingRule.build_request_option(container_no_list=[container_no])
+    request_option = SearchRoutingRule.build_request_option(
+        container_no_list=[container_no],
+        username=TerminalMaherMultiSpider.USERNAME,
+        password=TerminalMaherMultiSpider.PASSWORD,
+    )
 
     response = TextResponse(
         url=request_option.url,
@@ -54,7 +58,11 @@ def test_search_routing_rule(sub, container_no, sample_loader):
 def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
-    request_option = SearchRoutingRule.build_request_option(container_no_list=[container_no])
+    request_option = SearchRoutingRule.build_request_option(
+        container_no_list=[container_no],
+        username=TerminalMaherMultiSpider.USERNAME,
+        password=TerminalMaherMultiSpider.PASSWORD,
+    )
 
     response = TextResponse(
         url=request_option.url,
