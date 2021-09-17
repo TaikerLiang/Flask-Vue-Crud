@@ -1,6 +1,7 @@
 import json
 import time
 from typing import List
+from crawler.core.table import BaseTable
 
 from scrapy import Request, FormRequest, Selector
 from selenium.common.exceptions import TimeoutException
@@ -14,7 +15,6 @@ from crawler.core_terminal.exceptions import LoadWebsiteTimeOutFatal
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError
 
 
 class MaherContentGetter(ChromeContentGetter):
@@ -240,15 +240,12 @@ class SpecificClassTdContainTextMatchRule(BaseMatchRule):
         return False
 
 
-class MaherLeftHeadTableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = []
-
+class MaherLeftHeadTableLocator(BaseTable):
     def parse(self, table: Selector, numbers: int = 1):
         titles = self._get_titles(table)
         trs = table.css("tbody tr")
 
-        for tr in trs:
+        for index, tr in enumerate(trs):
             data_tds = tr.css("td a::text").getall() + tr.css("td::text").getall()
             data_tds = [v.strip() for v in data_tds]
             if len(data_tds) > len(titles):
@@ -258,21 +255,12 @@ class MaherLeftHeadTableLocator(BaseTableLocator):
             else:
                 continue
 
-            row = {}
-            for title_index, title in enumerate(titles):
-                row[title] = data_tds[title_index]
-            self._td_map.append(row)
+            self._left_header_set.add(index)
+
+            for title, td in zip(titles, data_tds):
+                self._td_map.setdefault(title, [])
+                self._td_map[title].append(td)
 
     def _get_titles(self, table: Selector):
         titles = table.css("th::text").getall()
         return [title.strip() for title in titles]
-
-    def get_cell(self, left, top=None) -> Selector:
-        try:
-            return self._td_map[left][top]
-        except (KeyError, IndexError) as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        assert top is None
-        return bool(self._td_map.get(left))

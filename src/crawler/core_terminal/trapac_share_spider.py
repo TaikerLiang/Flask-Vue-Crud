@@ -14,17 +14,17 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
-from anticaptchaofficial.recaptchav2proxyless import *
 from selenium.common.exceptions import NoSuchElementException
-from crawler.core.selenium import ChromeContentGetter
+from anticaptchaofficial.recaptchav2proxyless import *
 
+from crawler.core.selenium import ChromeContentGetter
+from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError, DataNotFoundError
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 
 @dataclasses.dataclass
@@ -196,6 +196,8 @@ class MainRoutingRule(BaseRoutingRule):
 
         vessel, voyage = table_extractor.extract_cell(top="Vsl / Voy", left=0, extractor=VesselVoyageTdExtractor())
 
+        # maybe
+        # for left in table_locator.iter_left_header()
         for i in range(numbers):
             if not table_extractor.extract_cell(top="Number", left=i):
                 continue
@@ -423,42 +425,33 @@ class VesselVoyageTdExtractor(BaseTableCellExtractor):
         return vessel, voyage
 
 
-class ContainerTableLocator(BaseTableLocator):
+class ContainerTableLocator(BaseTable):
     TR_MAIN_TITLE_CLASS = "th-main"
     TR_SECOND_TITLE_CLASS = "th-second"
-
-    def __init__(self):
-        self._td_map = []
 
     def parse(self, table: Selector, numbers: int = 1):
         main_title_tr = table.css(f"tr.{self.TR_MAIN_TITLE_CLASS}")
         second_title_tr = table.css(f"tr.{self.TR_SECOND_TITLE_CLASS}")
-        data_tr = table.css("tbody tr")
+        data_trs = table.css("tbody tr.row-odd")
 
         main_title_ths = main_title_tr.css("th")
         second_title_ths = second_title_tr.css("th")
         title_list = self._combine_title_list(main_title_ths=main_title_ths, second_title_ths=second_title_ths)
 
-        for i in range(len(data_tr)):
-            if i >= numbers:
+        for index, data_tr in enumerate(data_trs):
+            data_tds = data_tr.css("td")
+
+            # not sure if this is needed
+            if len(data_tds) < len(title_list):
+                for title in title_list:
+                    self._td_map.setdefault(title, [])
+                    self._td_map[title].append(Selector(text="<p></p>"))
                 continue
-            data_tds = data_tr[i].css("td")
-            row = {}
-            for title_index, title in enumerate(title_list):
-                if len(data_tds) < len(title_list):
-                    row[title] = Selector(text="<p></p>")
-                else:
-                    row[title] = data_tds[title_index]
-            self._td_map.append(row)
 
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def get_cell(self, top, left=0) -> scrapy.Selector:
-        try:
-            return self._td_map[left][top]
-        except (KeyError, IndexError) as err:
-            raise HeaderMismatchError(repr(err))
+            self._left_header_set.add(index)
+            for title, data_td in zip(title_list, data_tds):
+                self._td_map.setdefault(title, [])
+                self._td_map[title].append(data_td)
 
     @staticmethod
     def _combine_title_list(main_title_ths: List[scrapy.Selector], second_title_ths: List[scrapy.Selector]):
