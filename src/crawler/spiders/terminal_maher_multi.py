@@ -18,6 +18,9 @@ from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 
 
 class MaherContentGetter(ChromeContentGetter):
+    USERNAME = "hard202006010"
+    PASSWORD = "hardc0re"
+
     def search(self, container_no_list: List):
         container_inquiry_text_area = self._driver.find_element_by_css_selector("textarea[name='equipment']")
         container_inquiry_text_area.clear()
@@ -41,7 +44,7 @@ class MaherContentGetter(ChromeContentGetter):
 
         return self._driver.page_source
 
-    def login(self, username, password):
+    def login(self):
         self._driver.get("https://apps.maherterminals.com/csp/loginAction.do?method=login")
 
         try:
@@ -54,8 +57,8 @@ class MaherContentGetter(ChromeContentGetter):
         username_input = self._driver.find_element_by_css_selector("input[name='userBean.username']")
         password_input = self._driver.find_element_by_css_selector("input[name='userBean.password']")
 
-        username_input.send_keys(username)
-        password_input.send_keys(password)
+        username_input.send_keys(self.USERNAME)
+        password_input.send_keys(self.PASSWORD)
 
         login_btn = self._driver.find_element_by_css_selector("input[name='cancelButton']")
         login_btn.click()
@@ -70,8 +73,6 @@ class MaherContentGetter(ChromeContentGetter):
 class TerminalMaherMultiSpider(BaseMultiTerminalSpider):
     firms_code = "E416"
     name = "terminal_maher_multi"
-    USERNAME = "hard202006010"
-    PASSWORD = "hardc0re"
 
     def __init__(self, *args, **kwargs):
         super(TerminalMaherMultiSpider, self).__init__(*args, **kwargs)
@@ -84,11 +85,7 @@ class TerminalMaherMultiSpider(BaseMultiTerminalSpider):
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
-        option = SearchRoutingRule.build_request_option(
-            container_no_list=unique_container_nos,
-            username=self.USERNAME,
-            password=self.PASSWORD,
-        )
+        option = SearchRoutingRule.build_request_option(container_no_list=unique_container_nos)
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -152,18 +149,14 @@ class SearchRoutingRule(BaseRoutingRule):
     name = "SEARCH"
 
     @classmethod
-    def build_request_option(cls, container_no_list: List[str], username: str, password: str) -> RequestOption:
+    def build_request_option(cls, container_no_list: List[str]) -> RequestOption:
         url = "https://www.google.com"
 
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
-            meta={
-                "container_no_list": container_no_list,
-                "username": username,
-                "password": password,
-            },
+            meta={"container_no_list": container_no_list},
         )
 
     def get_save_name(self, response) -> str:
@@ -171,11 +164,9 @@ class SearchRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_no_list = response.meta["container_no_list"]
-        username = response.meta["username"]
-        password = response.meta["password"]
 
         content_getter = MaherContentGetter()
-        content_getter.login(username=username, password=password)
+        content_getter.login()
         response_text = content_getter.search(container_no_list)
         time.sleep(3)
         response = Selector(text=response_text)
