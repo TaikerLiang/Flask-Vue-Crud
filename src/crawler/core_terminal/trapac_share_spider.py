@@ -161,7 +161,7 @@ class MainRoutingRule(BaseRoutingRule):
             container_response = scrapy.Selector(text=res)
             yield SaveItem(file_name="container.html", text=container_response.get())
 
-            for container_info in self._extract_container_result_table(
+            for container_info in self.extract_container_result_table(
                 response=container_response, numbers=len(container_no_list)
             ):
                 yield TerminalItem(  # html field
@@ -177,7 +177,7 @@ class MainRoutingRule(BaseRoutingRule):
                 )
 
     @staticmethod
-    def _extract_container_result_table(response: scrapy.Selector, numbers: int):
+    def extract_container_result_table(response: scrapy.Selector, numbers: int):
         table = response.css('div[class="transaction-result availability"] table')
 
         table_locator = ContainerTableLocator()
