@@ -2,21 +2,17 @@ import json
 from typing import Dict
 
 import scrapy
-
 from urllib.parse import urlencode
 
-from crawler.core_air.exceptions import (
-    AirInvalidMawbNoError,
-)
-
+from crawler.core_air.exceptions import AirInvalidMawbNoError
+from crawler.core_air.base_spiders import BaseAirSpider
+from crawler.core_air.request_helpers import RequestOption
+from crawler.core_air.rules import RuleManager, BaseRoutingRule
 from crawler.core_air.items import (
     BaseAirItem,
     AirItem,
     DebugItem,
 )
-from crawler.core_air.base_spiders import BaseAirSpider
-from crawler.core_air.request_helpers import RequestOption
-from crawler.core_air.rules import RuleManager, BaseRoutingRule
 
 URL = 'https://www.brcargo.com/NEC_WEB/Tracking/QuickTracking'
 PREFIX = '695'
