@@ -2,7 +2,6 @@ from typing import List, Dict
 import io
 
 from scrapy import Request, FormRequest, Selector
-
 from python_anticaptcha import AnticaptchaClient, ImageToTextTask, AnticaptchaException
 
 from crawler.core.table import BaseTable, TableExtractor
@@ -11,6 +10,8 @@ from crawler.core_air.items import DebugItem, BaseAirItem, AirItem, ExportErrorD
 from crawler.core_air.base import AIR_RESULT_STATUS_ERROR
 from crawler.core_air.exceptions import AntiCaptchaError
 from crawler.core_air.rules import RuleManager, BaseRoutingRule, RequestOption
+
+BASE_URL = "https://www.airchinacargo.com"
 
 
 class AirAirChinaSpider(BaseMultiAirSpider):
@@ -94,7 +95,7 @@ class HomePageRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://www.airchinacargo.com/en/index.php?section=0-0149-0154",
+            url=f"{BASE_URL}/en/index.php?section=0-0149-0154",
             meta={
                 "mawb_no": mawb_no,
                 "task_id": task_id,
@@ -109,19 +110,6 @@ class HomePageRoutingRule(BaseRoutingRule):
         task_id = response.meta["task_id"]
 
         yield CaptchaRoutingRule.build_request_option(mawb_no=mawb_no, task_id=task_id)
-
-    @staticmethod
-    def _get_captcha(captcha_code):
-        try:
-            api_key = "fbe73f747afc996b624e8d2a95fa0f84"
-            captcha_fp = io.BytesIO(captcha_code)
-            client = AnticaptchaClient(api_key)
-            task = ImageToTextTask(captcha_fp)
-            job = client.createTask(task)
-            job.join()
-            return job.get_captcha_text()
-        except AnticaptchaException:
-            raise AntiCaptchaError()
 
 
 class CaptchaRoutingRule(BaseRoutingRule):
@@ -147,7 +135,7 @@ class CaptchaRoutingRule(BaseRoutingRule):
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
-            url="https://www.airchinacargo.com/en/yz.php",
+            url=f"{BASE_URL}/en/yz.php",
             headers=headers,
             meta={
                 "mawb_no": mawb_no,
@@ -192,7 +180,7 @@ class SearchRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, mawb_no: str, task_id: str, headers, captcha) -> RequestOption:
-        url = "https://www.airchinacargo.com/en/search_order.php"
+        url = f"{BASE_URL}/en/search_order.php"
         form_data = {
             "orders0": mawb_no,
             "orders1": "Please enter the 8 digits",
@@ -231,15 +219,15 @@ class SearchRoutingRule(BaseRoutingRule):
 
         if self._is_mawb_no_invalid(response):
             yield ExportErrorData(
-                # task_id=task_id,
-                # mawb_no=mawb_no,
+                task_id=task_id,
+                mawb_no=mawb_no,
                 status=AIR_RESULT_STATUS_ERROR,
                 detail="Data was not found",
             )
             return
 
         air_info = self._extract_air_info(response)
-        flight_info_list = self._extract_flight_info(response)
+        flight_info_list = self._extract_flight_info(response, air_info=air_info)
 
         yield AirItem(task_id=task_id, mawb=mawb_no, **air_info)
 
@@ -266,37 +254,75 @@ class SearchRoutingRule(BaseRoutingRule):
         }
 
     @staticmethod
-    def _extract_flight_info(response: Selector) -> List:
-        table = response.css("table#tbcargostatus")[0]
-        table_locator = BKDDetailsTableLocator()
-        table_locator.parse(table=table)
+    def _extract_flight_info(response: Selector, air_info: Dict) -> List:
+        origin = air_info["origin"]
+        destination = air_info["destination"]
 
+        table = response.css("table#tbcargostatus")[1]
+        table_locator = CargoDetailsTableLocator()
+        table_locator.parse(table=table, origin=origin, destination=destination)
         table_extractor = TableExtractor(table_locator=table_locator)
+
         flight_info_list = []
         for left in table_locator.iter_left_header():
+            status = table_extractor.extract_cell(top="Status", left=left).strip()
+            atx = table_extractor.extract_cell(top="Operational time", left=left).strip()
+
+            atd, ata = None, None
+            if status.startswith("DEP"):
+                atd = atx
+            elif status.startswith("RCF"):
+                ata = atx
+
             flight_info_list.append(
                 {
                     "flight_number": table_extractor.extract_cell(top="Flight Info", left=left).strip(),
-                    "origin": table_extractor.extract_cell(top="Departure", left=left).strip(),
-                    "destination": table_extractor.extract_cell(top="Destination", left=left).strip(),
+                    "origin": origin,
+                    "destination": destination,
                     "pieces": table_extractor.extract_cell(top="Pieces", left=left).strip(),
                     "weight": table_extractor.extract_cell(top="Weight(kg)", left=left).strip(),
-                    # "atd": atd,
-                    # "ata": ata,
+                    "atd": atd,
+                    "ata": ata,
                 }
             )
         return flight_info_list
 
 
-class BKDDetailsTableLocator(BaseTable):
-    def parse(self, table: Selector):
+class CargoDetailsTableLocator(BaseTable):
+    def parse(self, table: Selector, origin: str, destination: str):
         header_ths = table.css("th")
         headers = [header_th.css("::text").get().strip() for header_th in header_ths]
         trs = table.css("tbody tr")
 
+        is_dep_first, is_rcf_first = True, True
+
         for index, tr in enumerate(trs):
             tds = tr.css("td")
-            self._left_header_set.add(index)
-            for header, td in zip(headers, tds):
-                self._td_map.setdefault(header, [])
-                self._td_map[header].append(td)
+            status = tds[0].css("::text").get().strip()
+            airport = tds[1].css("::text").get().strip()
+
+            # ATD
+            if self.is_departure(status, airport, origin) and is_dep_first:
+                is_dep_first = False
+                self._left_header_set.add(index)
+                for header, td in zip(headers, tds):
+                    self._td_map.setdefault(header, [])
+                    self._td_map[header].append(td)
+                continue
+
+            # ATA
+            if self.is_arrival(status, airport, destination) and is_rcf_first:
+                is_rcf_first = False
+                self._left_header_set.add(index)
+                for header, td in zip(headers, tds):
+                    self._td_map.setdefault(header, [])
+                    self._td_map[header].append(td)
+                continue
+
+    @staticmethod
+    def is_departure(status, airport, origin):
+        return status.startswith("DEP") and airport.startswith(origin)
+
+    @staticmethod
+    def is_arrival(status, airport, destination):
+        return status.startswith("RCF") and airport.startswith(destination)
