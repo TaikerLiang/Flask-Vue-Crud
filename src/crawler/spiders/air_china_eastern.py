@@ -1,15 +1,13 @@
-from python_anticaptcha import AnticaptchaClient, ImageToTextTask, AnticaptchaException
-from selenium.webdriver.common.keys import Keys
 import re
-import PIL.Image as Image
 import io
 import base64
 import json
-
 import time
-import scrapy
 
-from crawler.core.selenium import FirefoxContentGetter
+import scrapy
+import PIL.Image as Image
+from python_anticaptcha import AnticaptchaClient, ImageToTextTask, AnticaptchaException
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -20,12 +18,15 @@ from crawler.core_air.items import (
     DebugItem,
     ExportErrorData,
 )
-from crawler.core_air.base import AIR_RESULT_STATUS_ERROR
+from crawler.core_air.base import AIR_RESULT_STATUS_ERROR, AIR_RESULT_STATUS_FATAL
 from crawler.core_air.base_spiders import BaseMultiAirSpider
+from crawler.core_air.exceptions import AntiCaptchaError
 from crawler.core_air.request_helpers import RequestOption
 from crawler.core_air.rules import RuleManager, BaseRoutingRule
+from crawler.core.selenium import FirefoxContentGetter
 
 PREFIX = '112'
+CAPTCHA_RETRY_LIMIT = 5
 
 
 class AirChinaEasternSpider(BaseMultiAirSpider):
@@ -42,9 +43,14 @@ class AirChinaEasternSpider(BaseMultiAirSpider):
 
     def start(self):
         driver = ContentGetter()
-        driver.handle_cookie()
-        token = driver.handle_captcha()
-        driver.close()
+        try:
+            driver.handle_cookie()
+            token = driver.handle_captcha()
+            driver.close()
+        except AntiCaptchaError:
+            yield ExportErrorData(status=AIR_RESULT_STATUS_FATAL, detail=f'<anti-captcha-error>')
+            driver.close()
+            return
 
         for mawb_no, task_id in zip(self.mawb_nos, self.task_ids):
             option = AirInfoRoutingRule.build_request_option(mawb_no=mawb_no, task_id=task_id, token=token)
@@ -107,7 +113,6 @@ class AirInfoRoutingRule(BaseRoutingRule):
                 'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36',
                 'referer': 'https://www.skyteam.com/en/cargo/track-shipment/',
                 'accept-language': 'zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7',
-                'Cookie': 'locale=en'
             }),
             meta={
                     'mawb_no': mawb_no,
@@ -155,7 +160,7 @@ class ContentGetter(FirefoxContentGetter):
     def handle_captcha(self):
         WebDriverWait(self._driver, 30).until(
             EC.frame_to_be_available_and_switch_to_it((By.CSS_SELECTOR, "iframe#mtcaptcha-iframe-1")))
-        for i in range(5):
+        for i in range(CAPTCHA_RETRY_LIMIT):
             captcha_text = self._solve_captcha()
             search_bar = self._driver.find_element_by_css_selector('input#mtcap-inputtext-1')
             search_bar.send_keys(captcha_text)
@@ -166,8 +171,7 @@ class ContentGetter(FirefoxContentGetter):
                 token = self._driver.find_element_by_css_selector('input.mtcaptcha-verifiedtoken').get_attribute('value')
                 return token
         self._driver.switch_to.default_content()
-        # raise AntiCaptchaError()
-        return ''
+        raise AntiCaptchaError()
 
     def _solve_captcha(self):
         response = scrapy.Selector(text=self.get_page_source())
@@ -179,6 +183,8 @@ class ContentGetter(FirefoxContentGetter):
             file_name = 'captcha.png'
             image = self._readb64(base64)
             image.save(file_name)
+        else:
+            return ''
 
         try:
             api_key = 'fbe73f747afc996b624e8d2a95fa0f84'
@@ -190,8 +196,7 @@ class ContentGetter(FirefoxContentGetter):
             captcha_text = job.get_captcha_text()
             return captcha_text
         except AnticaptchaException:
-            pass
-            # raise AntiCaptchaError()
+            raise AntiCaptchaError()
 
     def _readb64(self, base64_string):
         _imgdata = base64.b64decode(base64_string)
