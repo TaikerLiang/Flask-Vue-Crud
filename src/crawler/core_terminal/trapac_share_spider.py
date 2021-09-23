@@ -196,21 +196,19 @@ class MainRoutingRule(BaseRoutingRule):
 
         vessel, voyage = table_extractor.extract_cell(top="Vsl / Voy", left=0, extractor=VesselVoyageTdExtractor())
 
-        # maybe
-        # for left in table_locator.iter_left_header()
-        for i in range(numbers):
-            if not table_extractor.extract_cell(top="Number", left=i):
+        for left in table_locator.iter_left_header():
+            if not table_extractor.extract_cell(top="Number", left=left):
                 continue
 
             yield {
-                "container_no": table_extractor.extract_cell(top="Number", left=i),
-                "carrier": table_extractor.extract_cell(top="Holds_Line", left=i),
-                "custom_release": table_extractor.extract_cell(top="Holds_Customs", left=i),
-                "cy_location": table_extractor.extract_cell(top="Yard Status", left=i),
-                "last_free_day": table_extractor.extract_cell(top="Demurrage_LFD", left=i),
-                "holds": table_extractor.extract_cell(top="Demurrage_Hold", left=i),
-                "demurrage": table_extractor.extract_cell(top="Demurrage_Amt", left=i),
-                "container_spec": table_extractor.extract_cell(top="Dimensions", left=i),
+                "container_no": table_extractor.extract_cell(top="Number", left=left),
+                "carrier": table_extractor.extract_cell(top="Holds_Line", left=left),
+                "custom_release": table_extractor.extract_cell(top="Holds_Customs", left=left),
+                "cy_location": table_extractor.extract_cell(top="Yard Status", left=left),
+                "last_free_day": table_extractor.extract_cell(top="Demurrage_LFD", left=left),
+                "holds": table_extractor.extract_cell(top="Demurrage_Hold", left=left),
+                "demurrage": table_extractor.extract_cell(top="Demurrage_Amt", left=left),
+                "container_spec": table_extractor.extract_cell(top="Dimensions", left=left),
                 "vessel": vessel,
                 "voyage": voyage,
             }
@@ -293,15 +291,15 @@ class ContentRoutingRule(BaseRoutingRule):
 
         vessel, voyage = table_extractor.extract_cell(top="Vsl / Voy", left=0, extractor=VesselVoyageTdExtractor())
 
-        for i in range(numbers):
+        for left in table_locator.iter_left_header():
             yield TerminalItem(
-                container_no=table_extractor.extract_cell(top="Number", left=i),
-                customs_release=table_extractor.extract_cell(top="Holds_Customs", left=i),
-                gate_out_date=table_extractor.extract_cell(top="Yard Status", left=i),
-                last_free_day=table_extractor.extract_cell(top="Demurrage_LFD", left=i),
-                holds=table_extractor.extract_cell(top="Demurrage_Hold", left=i),
-                demurrage=table_extractor.extract_cell(top="Demurrage_Amt", left=i),
-                container_spec=table_extractor.extract_cell(top="Dimensions", left=i),
+                container_no=table_extractor.extract_cell(top="Number", left=left),
+                customs_release=table_extractor.extract_cell(top="Holds_Customs", left=left),
+                gate_out_date=table_extractor.extract_cell(top="Yard Status", left=left),
+                last_free_day=table_extractor.extract_cell(top="Demurrage_LFD", left=left),
+                holds=table_extractor.extract_cell(top="Demurrage_Hold", left=left),
+                demurrage=table_extractor.extract_cell(top="Demurrage_Amt", left=left),
+                container_spec=table_extractor.extract_cell(top="Dimensions", left=left),
                 vessel=vessel,
                 voyage=voyage,
             )
