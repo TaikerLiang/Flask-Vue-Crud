@@ -29,7 +29,7 @@ class AirItemPipeline:
 
         try:
             if isinstance(item, air_items.AirItem):
-                self._collector.collect_air_item(item=item)
+                return self._collector.collect_air_item(item=item)
             elif isinstance(item, air_items.ExportFinalData):
                 return self._collector.build_final_data()
             elif isinstance(item, air_items.ExportErrorData):
