@@ -1,0 +1,85 @@
+{
+   "AWBNo":"695-28809955",
+   "From":"HKG",
+   "To":"LAX",
+   "FromName":"",
+   "ToName":"",
+   "TotalPieces":208,
+   "TotalWeight":2533,
+   "eAWB_MessageReceivedTime":"2021/07/24 18:22",
+   "eAWB_MessageReceivedFlag":"N",
+   "CurrentStatus":"188P delivered at 18:34 on 2021/07/28 at LAX",
+   "Status":"DLV",
+   "SendFrom":null,
+   "Subject":null,
+   "FlightInfoList":[
+      {
+         "FlightNo":"BR0828 ",
+         "DepartureDate":"2021/07/25",
+         "DepartureTime":"18:02 (Actual)",
+         "DEPTimeStatus":null,
+         "ArrivalDate":"2021/07/25 00:00",
+         "ArrivalTime":"19:44 (Actual)",
+         "ARRTimeStatus":null,
+         "Departure":"HKG",
+         "Arrival":"TPE",
+         "Pieces":208,
+         "Weight":2533,
+         "Vehicle":"Air",
+         "FlightTime":"1h42m",
+         "FlightType":null,
+         "AircraftType":null,
+         "TransportMode":null,
+         "FLRS_ID":0,
+         "DEPStatus":null,
+         "ARRStatus":null
+      },
+      {
+         "FlightNo":"BR0006 ",
+         "DepartureDate":"2021/07/26",
+         "DepartureTime":"10:04 (Actual)",
+         "DEPTimeStatus":null,
+         "ArrivalDate":"2021/07/26 00:00",
+         "ArrivalTime":"07:39 (Actual)",
+         "ARRTimeStatus":null,
+         "Departure":"TPE",
+         "Arrival":"LAX",
+         "Pieces":208,
+         "Weight":2533,
+         "Vehicle":"Air",
+         "FlightTime":"12h35m",
+         "FlightType":null,
+         "AircraftType":null,
+         "TransportMode":null,
+         "FLRS_ID":0,
+         "DEPStatus":null,
+         "ARRStatus":null
+      }
+   ],
+   "CustomStatusList":[
+      {
+         "HAWBNo":null,
+         "FlightNo":"BR0006 ",
+         "DepartureDate":"2021/07/26",
+         "CustomsClearanceDate":"2021/07/26",
+         "Pieces":208,
+         "TotalPieces":208,
+         "CustomsRemark":"2021/07/25 05:33\u003cbr\u003eACAS-SECURITY FILING RECEIVED- ASSESSMENT COMPLETE\u003cbr\u003e",
+         "eAWBDate":null,
+         "eAWBDateFlag":null
+      }
+   ],
+   "CustomStatusHAWBList":[
+      {
+         "HAWBNo":"J0723V4088",
+         "FlightNo":"BR0006 ",
+         "DepartureDate":"2021/07/26",
+         "CustomsClearanceDate":"2021/07/26",
+         "Pieces":208,
+         "TotalPieces":0,
+         "CustomsRemark":"2021/07/25 05:33\u003cbr\u003eACAS-SECURITY FILING RECEIVED- ASSESSMENT COMPLETE\u003cbr\u003e2021/07/26 18:03\u003c/br\u003eCargo Released 208 PCS",
+         "eAWBDate":"2021/07/25 17:25",
+         "eAWBDateFlag":"N"
+      }
+   ]
+}
