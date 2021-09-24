@@ -121,7 +121,7 @@ class MainRoutingRule(BaseRoutingRule):
 
         content_getter.quit()
 
-        for item in self._handle_response(resp):
+        for item in self._handle_response(resp, container_no_list):
             yield item
 
     @classmethod
