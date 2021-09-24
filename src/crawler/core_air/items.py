@@ -40,3 +40,12 @@ class FlightItem(BaseAirItem):
     weight = scrapy.Field()
     atd = scrapy.Field()
     ata = scrapy.Field()
+
+
+class HistoryItem(BaseAirItem):
+    status = scrapy.Field()
+    Pieces = scrapy.Field()
+    Weight = scrapy.Field()
+    time = scrapy.Field()
+    location = scrapy.Field()
+    flight_no = scrapy.Field()
