@@ -10,6 +10,8 @@ class ExportFinalData(BaseAirItem):
 
 
 class ExportErrorData(BaseAirItem):
+    task_id = scrapy.Field()
+    mawb_no = scrapy.Field()
     status = scrapy.Field()
     detail = scrapy.Field()
     traceback_info = scrapy.Field()

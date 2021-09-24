@@ -164,8 +164,8 @@ class SearchRoutingRule(BaseRoutingRule):
 
         if self._is_mawb_no_invalid(response):
             yield ExportErrorData(
-                # task_id=task_id,
-                # mawb_no=mawb_no,
+                task_id=task_id,
+                mawb_no=mawb_no,
                 status=AIR_RESULT_STATUS_ERROR,
                 detail="Data was not found",
             )
