@@ -27,11 +27,11 @@ from crawler.extractors.table_extractors import (
 )
 
 
-BASE_URL = 'https://www.hapag-lloyd.com/en'
+BASE_URL = "https://www.hapag-lloyd.com/en"
 
 
 class CarrierHlcuSpider(BaseCarrierSpider):
-    name = 'carrier_hlcu'
+    name = "carrier_hlcu"
 
     def __init__(self, *args, **kwargs):
         super(CarrierHlcuSpider, self).__init__(*args, **kwargs)
@@ -52,7 +52,7 @@ class CarrierHlcuSpider(BaseCarrierSpider):
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
-        yield DebugItem(info={'meta': dict(response.meta)})
+        yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -91,36 +91,36 @@ class CarrierHlcuSpider(BaseCarrierSpider):
                 meta=meta,
             )
         else:
-            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
+            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
 
 # -------------------------------------------------------------------------------
 
 
 class TracingRoutingRule(BaseRoutingRule):
-    name = 'TRACING'
+    name = "TRACING"
 
     def __init__(self):
-        self._cookies_pattern = re.compile(r'^(?P<key>[^=]+)=(?P<value>[^;]+);.+$')
+        self._cookies_pattern = re.compile(r"^(?P<key>[^=]+)=(?P<value>[^;]+);.+$")
 
     @classmethod
     def build_request_option(cls, mbl_no: str, cookies: Dict) -> RequestOption:
-        url = f'{BASE_URL}/online-business/track/track-by-booking-solution.html?blno={mbl_no}'
+        url = f"{BASE_URL}/online-business/track/track-by-booking-solution.html?blno={mbl_no}"
 
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
             cookies=cookies,
-            meta={'mbl_no': mbl_no, 'cookies': cookies},
+            meta={"mbl_no": mbl_no, "cookies": cookies},
         )
 
     def get_save_name(self, response):
-        return f'{self.name}.html'
+        return f"{self.name}.html"
 
     def handle(self, response):
-        cookies = response.meta['cookies']
-        mbl_no = response.meta['mbl_no']
+        cookies = response.meta["cookies"]
+        mbl_no = response.meta["mbl_no"]
 
         self._check_mbl_no(response)
 
@@ -152,33 +152,33 @@ class TracingRoutingRule(BaseRoutingRule):
             return
 
         error_message.strip()
-        if error_message.startswith('DOCUMENT does not exist.'):
+        if error_message.startswith("DOCUMENT does not exist."):
             raise CarrierInvalidMblNoError()
 
     @staticmethod
     def _extract_container_nos(response):
         table_selector = response.css("table[id='tracing_by_booking_f:hl27']")
         if not table_selector:
-            raise CarrierResponseFormatError(reason=f'Container list table not found !!!')
+            raise CarrierResponseFormatError(reason=f"Container list table not found !!!")
 
         table_locator = TopHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
-        span_extractor = FirstTextTdExtractor('span::text')
+        span_extractor = FirstTextTdExtractor("span::text")
 
         container_list = []
         for left in table_locator.iter_left_header():
-            container_no_text = table.extract_cell(top='Container No.', left=left, extractor=span_extractor)
+            container_no_text = table.extract_cell(top="Container No.", left=left, extractor=span_extractor)
             company, no = container_no_text.split()
             container_list.append(company + no)
 
         return container_list
 
     def _handle_cookies(self, cookies, response):
-        cookie_bytes = response.headers.getlist('Set-Cookie')
+        cookie_bytes = response.headers.getlist("Set-Cookie")
 
         for cookie_byte in cookie_bytes:
-            cookie_text = cookie_byte.decode('utf-8')
+            cookie_text = cookie_byte.decode("utf-8")
             key, value = self._parse_cookie(cookie_text=cookie_text)
             cookies[key] = value
 
@@ -193,16 +193,16 @@ class TracingRoutingRule(BaseRoutingRule):
         """
         match = self._cookies_pattern.match(cookie_text)
         if not match:
-            CarrierResponseFormatError(f'Unknown cookie format: `{cookie_text}`')
+            CarrierResponseFormatError(f"Unknown cookie format: `{cookie_text}`")
 
-        return match.group('key'), match.group('value')
+        return match.group("key"), match.group("value")
 
 
 class ContainerNoTdExtractor(BaseTableCellExtractor):
     def extract(self, cell: scrapy.Selector):
-        raw_text = cell.css('::text').get()
+        raw_text = cell.css("::text").get()
         text_list = raw_text.split()
-        text = ''.join(text_list)
+        text = "".join(text_list)
 
         return text
 
@@ -211,82 +211,82 @@ class ContainerNoTdExtractor(BaseTableCellExtractor):
 
 
 class ContainerRoutingRule(BaseRoutingRule):
-    name = 'CONTAINER'
+    name = "CONTAINER"
 
     @classmethod
     def build_request_option(
         cls, mbl_no: str, container_key, cookies: Dict, container_index, view_state
     ) -> RequestOption:
         form_data = {
-            'hl27': str(container_index),
-            'javax.faces.ViewState': view_state,
-            'tracing_by_booking_f:hl16': mbl_no,
-            'tracing_by_booking_f:hl27:hl53': 'Details',
-            'tracing_by_booking_f_SUBMIT': '1',
+            "hl27": str(container_index),
+            "javax.faces.ViewState": view_state,
+            "tracing_by_booking_f:hl16": mbl_no,
+            "tracing_by_booking_f:hl27:hl53": "Details",
+            "tracing_by_booking_f_SUBMIT": "1",
         }
 
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_FORM,
-            url=f'{BASE_URL}/online-business/track/track-by-booking-solution.html?_a=tracing_by_booking',
+            url=f"{BASE_URL}/online-business/track/track-by-booking-solution.html?_a=tracing_by_booking",
             form_data=form_data,
             cookies=cookies,
-            meta={'container_key': container_key},
+            meta={"container_key": container_key},
         )
 
     def get_save_name(self, response):
-        container_key = response.meta['container_key']
-        return f'{self.name}_{container_key}.html'
+        container_key = response.meta["container_key"]
+        return f"{self.name}_{container_key}.html"
 
     def handle(self, response):
-        container_key = response.meta['container_key']
+        container_key = response.meta["container_key"]
 
         container_statuses = self._extract_container_statuses(response=response)
         for container_status in container_statuses:
             yield ContainerStatusItem(
                 container_key=container_key,
-                description=container_status['description'],
-                local_date_time=container_status['timestamp'],
-                location=LocationItem(name=container_status['place']),
-                transport=container_status['transport'],
-                voyage=container_status['voyage'],
-                est_or_actual=container_status['est_or_actual'],
+                description=container_status["description"],
+                local_date_time=container_status["timestamp"],
+                location=LocationItem(name=container_status["place"]),
+                transport=container_status["transport"],
+                voyage=container_status["voyage"],
+                est_or_actual=container_status["est_or_actual"],
             )
 
     def _extract_container_statuses(self, response):
         table_selector = response.css("table[id='tracing_by_booking_f:hl66']")
         if not table_selector:
-            CarrierResponseFormatError(reason='Can not find container_status table !!!')
+            CarrierResponseFormatError(reason="Can not find container_status table !!!")
 
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
-        span_extractor = FirstTextTdExtractor(css_query='span::text')
+        span_extractor = FirstTextTdExtractor(css_query="span::text")
 
         container_statuses = []
         for left in table_locator.iter_left_header():
-            date = table.extract_cell(top='Date', left=left, extractor=span_extractor)
-            time = table.extract_cell(top='Time', left=left, extractor=span_extractor) or '00:00'
+            date = table.extract_cell(top="Date", left=left, extractor=span_extractor)
+            time = table.extract_cell(top="Time", left=left, extractor=span_extractor) or "00:00"
 
             if date:
-                timestamp = f'{date} {time}'
+                timestamp = f"{date} {time}"
             else:
                 timestamp = None
 
             class_name = table_locator.get_row_class(left=left)
 
-            transport = table.extract_cell(top='Transport', left=left, extractor=span_extractor)
-            status = table.extract_cell(top='Status', left=left, extractor=span_extractor)
-            description = f'{status} ({transport})'
+            transport = table.extract_cell(top="Transport", left=left, extractor=span_extractor)
+            status = table.extract_cell(top="Status", left=left, extractor=span_extractor)
+            description = f"{status} ({transport})"
 
             container_statuses.append(
                 {
-                    'description': description,
-                    'place': table.extract_cell(top='Place of Activity', left=left, extractor=span_extractor),
-                    'timestamp': timestamp,
-                    'transport': transport,
-                    'voyage': table.extract_cell(top='Voyage No.', left=left, extractor=span_extractor) or None,
-                    'est_or_actual': self._get_status_from(class_name),
+                    "description": description,
+                    "place": table.extract_cell(top="Place of Activity", left=left, extractor=span_extractor),
+                    "timestamp": timestamp,
+                    "transport": transport,
+                    "voyage": table.extract_cell(top="Voyage No.", left=left, extractor=span_extractor) or None,
+                    "est_or_actual": self._get_status_from(class_name),
                 }
             )
 
@@ -294,12 +294,12 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _get_status_from(class_name):
-        if class_name == 'strong':
-            return 'A'
+        if class_name == "strong":
+            return "A"
         elif not class_name:
-            return 'E'
+            return "E"
         else:
-            raise CarrierResponseFormatError(reason=f'Unknown status: `{class_name}`')
+            raise CarrierResponseFormatError(reason=f"Unknown status: `{class_name}`")
 
 
 class ContainerStatusTableLocator(BaseTableLocator):
@@ -312,19 +312,19 @@ class ContainerStatusTableLocator(BaseTableLocator):
         title_list = []
         tr_classes = []
 
-        th_list = table.css('thead th')
+        th_list = table.css("thead th")
         for th in th_list:
-            title = th.css('span::text').get().strip()
+            title = th.css("span::text").get().strip()
             title_list.append(title)
             self._td_map[title] = []
 
-        data_tr_list = table.css('tbody tr')
+        data_tr_list = table.css("tbody tr")
         for data_tr in data_tr_list:
 
             tr_class_set = set()
-            data_td_list = data_tr.css('td')
+            data_td_list = data_tr.css("td")
             for title_index, data_td in enumerate(data_td_list):
-                data_td_class = data_td.css('td::attr(class)').get()
+                data_td_class = data_td.css("td::attr(class)").get()
                 tr_class_set.add(data_td_class)
 
                 title = title_list[title_index]
@@ -356,9 +356,16 @@ class ContainerStatusTableLocator(BaseTableLocator):
 
 
 class ContentGetter(ChromeContentGetter):
-
     def get_cookies(self):
-        self._driver.get(f'{BASE_URL}/online-business/tracing/tracing-by-booking.html')
+        self._driver.get(f"{BASE_URL}/online-business/track/track-by-booking-solution.html")
+        self._driver.add_cookie(
+            {
+                "name": "OptanonAlertBoxClosed",
+                "value": "2021-09-23T04:18:52.430Z",
+                "domain": ".hapag-lloyd.com",
+            }
+        )
+        self.page_refresh()
 
         try:
             WebDriverWait(self._driver, 10).until(self._is_cookies_ready)
@@ -367,16 +374,11 @@ class ContentGetter(ChromeContentGetter):
 
         cookies = {}
         for cookie_object in self._driver.get_cookies():
-            cookies[cookie_object['name']] = cookie_object['value']
+            cookies[cookie_object["name"]] = cookie_object["value"]
 
         self._driver.close()
         return cookies
 
     def _is_cookies_ready(self, *_):
         cookies_str = str(self._driver.get_cookies())
-        return (
-            ('TS01a3c52a' in cookies_str)
-            and ('TSa4b927ad_76' in cookies_str)
-            and ('TSPD_101' in cookies_str)
-            and ('TSff5ac71e_27' in cookies_str)
-        )
+        return ("OptanonConsent" in cookies_str) and ("TS01a3c52a" in cookies_str) and ("TS01f2bb67" in cookies_str)
