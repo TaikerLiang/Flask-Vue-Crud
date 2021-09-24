@@ -218,8 +218,8 @@ class SearchRoutingRule(BaseRoutingRule):
                     "destination": destination,
                     "pieces": table_extractor.extract_cell(top="Pieces", left=left).strip(),
                     "weight": table_extractor.extract_cell(top="Weight", left=left).strip(),
-                    "atd": atd,
-                    "ata": ata,
+                    "atd": atd.split("(")[0],
+                    "ata": ata.split("(")[0],
                 }
             )
         return flight_info_list
