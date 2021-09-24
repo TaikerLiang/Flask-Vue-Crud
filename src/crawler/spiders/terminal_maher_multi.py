@@ -1,51 +1,28 @@
 import json
 import time
 from typing import List
+from crawler.core.table import BaseTable
 
 from scrapy import Request, FormRequest, Selector
-from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
-from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
+from crawler.core.selenium import ChromeContentGetter
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import LoadWebsiteTimeOutFatal
-from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
-
-BASE_URL = "https://apps.maherterminals.com"
 
 
-class MaherContentGetter:
-    USER_NAME = "hard202006010"
-    PASS_WORD = "hardc0re"
-
-    def __init__(self):
-        options = webdriver.ChromeOptions()
-        options.add_argument("--disable-extensions")
-        options.add_argument("--disable-notifications")
-        options.add_argument("--headless")
-        options.add_argument("--enable-javascript")
-        options.add_argument("--disable-gpu")
-        options.add_argument(
-            f"user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
-            f"Chrome/88.0.4324.96 Safari/537.36"
-        )
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-blink-features=AutomationControlled")
-        options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        options.add_experimental_option("useAutomationExtension", False)
-
-        self.driver = webdriver.Chrome(options=options)
+class MaherContentGetter(ChromeContentGetter):
+    USERNAME = "hard202006010"
+    PASSWORD = "hardc0re"
 
     def search(self, container_no_list: List):
-        container_inquiry_text_area = self.driver.find_element_by_css_selector("textarea[name='equipment']")
+        container_inquiry_text_area = self._driver.find_element_by_css_selector("textarea[name='equipment']")
         container_inquiry_text_area.clear()
 
         if len(container_no_list) == 1:
@@ -53,47 +30,44 @@ class MaherContentGetter:
 
         container_inquiry_text_area.send_keys("\n".join(container_no_list))
 
-        search_btn = self.driver.find_element_by_css_selector("input[onclick='Search();']")
+        search_btn = self._driver.find_element_by_css_selector("input[onclick='Search();']")
         search_btn.click()
         time.sleep(20)
 
-        return self.driver.page_source
+        return self._driver.page_source
 
     def detail_search(self, container_no):
-        self.driver.get(
+        self._driver.get(
             f"https://apps.maherterminals.com/csp/importContainerAction.do?container={container_no}&index=0&method=detail"
         )
         time.sleep(5)
 
-        return self.driver.page_source
+        return self._driver.page_source
 
     def login(self):
-        self.driver.get("https://apps.maherterminals.com/csp/loginAction.do?method=login")
+        self._driver.get("https://apps.maherterminals.com/csp/loginAction.do?method=login")
 
         try:
-            WebDriverWait(self.driver, 10).until(
+            WebDriverWait(self._driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "input[name='userBean.username']"))
             )
         except TimeoutException:
             raise LoadWebsiteTimeOutFatal()
 
-        user_name_input = self.driver.find_element_by_css_selector("input[name='userBean.username']")
-        pass_word_input = self.driver.find_element_by_css_selector("input[name='userBean.password']")
+        username_input = self._driver.find_element_by_css_selector("input[name='userBean.username']")
+        password_input = self._driver.find_element_by_css_selector("input[name='userBean.password']")
 
-        user_name_input.send_keys(self.USER_NAME)
-        pass_word_input.send_keys(self.PASS_WORD)
+        username_input.send_keys(self.USERNAME)
+        password_input.send_keys(self.PASSWORD)
 
-        login_btn = self.driver.find_element_by_css_selector("input[name='cancelButton']")
+        login_btn = self._driver.find_element_by_css_selector("input[name='cancelButton']")
         login_btn.click()
         time.sleep(5)
 
-        self.driver.get(
+        self._driver.get(
             "https://apps.maherterminals.com/csp/importContainerAction.do?method=initial&pageTitle=Import%20Container%20Status%20Inquiry"
         )
         time.sleep(5)
-
-    def quit(self):
-        self.driver.quit()
 
 
 class TerminalMaherMultiSpider(BaseMultiTerminalSpider):
@@ -182,9 +156,7 @@ class SearchRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
-            meta={
-                "container_no_list": container_no_list,
-            },
+            meta={"container_no_list": container_no_list},
         )
 
     def get_save_name(self, response) -> str:
@@ -259,15 +231,12 @@ class SpecificClassTdContainTextMatchRule(BaseMatchRule):
         return False
 
 
-class MaherLeftHeadTableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = []
-
+class MaherLeftHeadTableLocator(BaseTable):
     def parse(self, table: Selector, numbers: int = 1):
         titles = self._get_titles(table)
         trs = table.css("tbody tr")
 
-        for tr in trs:
+        for index, tr in enumerate(trs):
             data_tds = tr.css("td a::text").getall() + tr.css("td::text").getall()
             data_tds = [v.strip() for v in data_tds]
             if len(data_tds) > len(titles):
@@ -277,21 +246,12 @@ class MaherLeftHeadTableLocator(BaseTableLocator):
             else:
                 continue
 
-            row = {}
-            for title_index, title in enumerate(titles):
-                row[title] = data_tds[title_index]
-            self._td_map.append(row)
+            self._left_header_set.add(index)
+
+            for title, td in zip(titles, data_tds):
+                self._td_map.setdefault(title, [])
+                self._td_map[title].append(td)
 
     def _get_titles(self, table: Selector):
         titles = table.css("th::text").getall()
         return [title.strip() for title in titles]
-
-    def get_cell(self, left, top=None) -> Selector:
-        try:
-            return self._td_map[left][top]
-        except (KeyError, IndexError) as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        assert top is None
-        return bool(self._td_map.get(left))

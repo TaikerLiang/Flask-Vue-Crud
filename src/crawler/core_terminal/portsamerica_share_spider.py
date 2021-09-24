@@ -5,7 +5,7 @@ import re
 
 import scrapy
 from scrapy import Selector
-from selenium import webdriver
+from crawler.core.selenium import ChromeContentGetter
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
@@ -167,27 +167,7 @@ class SearchContainerRule(BaseRoutingRule):
         return res
 
 
-class ContentGetter:
-    def __init__(self):
-        options = webdriver.ChromeOptions()
-        options.add_argument("--disable-extensions")
-        options.add_argument("--disable-notifications")
-        options.add_argument("--headless")
-        options.add_argument("--enable-javascript")
-        options.add_argument("--disable-gpu")
-        options.add_argument(
-            f"user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
-            f"Chrome/88.0.4324.96 Safari/537.36"
-        )
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-blink-features=AutomationControlled")
-        options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        options.add_experimental_option("useAutomationExtension", False)
-
-        self._driver = webdriver.Chrome(options=options)
-
+class ContentGetter(ChromeContentGetter):
     def login(self, username, password, site_name):
         url = f"{BASE_URL}/logon?siteId={site_name}"
         self._driver.get(url)
@@ -220,9 +200,6 @@ class ContentGetter:
         time.sleep(8)
 
         return self._driver.page_source
-
-    def quit(self):
-        self._driver.quit()
 
 
 class TableLocator(BaseTableLocator):

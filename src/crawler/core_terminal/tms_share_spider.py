@@ -1,18 +1,19 @@
 import dataclasses
+import enum
 from typing import Dict, List
 import time
+from crawler.core.selenium import ChromeContentGetter
+from crawler.core.table import BaseTable, TableExtractor
 
 import scrapy
 from scrapy import Selector
-from selenium import webdriver
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.exceptions import TerminalResponseFormatError, TerminalInvalidContainerNoError
+from crawler.core_terminal.exceptions import TerminalResponseFormatError
 from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 BASE_URL = "https://tms.itslb.com"
 
@@ -154,7 +155,7 @@ class SeleniumRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
 
-        for left in table_locator.iter_left_headers():
+        for left in table_locator.iter_left_header():
             return {
                 "appointment_date": table.extract_cell("Dschg Date", left),
                 "ready_for_pick_up": table.extract_cell("Pick Up", left),
@@ -185,17 +186,17 @@ class SeleniumRoutingRule(BaseRoutingRule):
         right_table = TableExtractor(table_locator=right_table_locator)
 
         return {
-            "vessel": left_table.extract_cell(None, "Vessel"),
-            "customs_release": left_table.extract_cell(None, "Customs"),
-            "freight_release": left_table.extract_cell(None, "Freight"),
-            "voyage": middle_table.extract_cell(None, "Voyage"),
-            "gate_out_date": middle_table.extract_cell(None, "Spot"),
-            "mbl_no": right_table.extract_cell(None, "B/L#"),
-            "demurrage": right_table.extract_cell(None, "Demurrage"),
+            "vessel": left_table.extract_cell(left=0, top="Vessel"),
+            "customs_release": left_table.extract_cell(left=0, top="Customs"),
+            "freight_release": left_table.extract_cell(left=0, top="Freight"),
+            "voyage": middle_table.extract_cell(left=0, top="Voyage"),
+            "gate_out_date": middle_table.extract_cell(left=0, top="Spot"),
+            "mbl_no": right_table.extract_cell(left=0, top="B/L#"),
+            "demurrage": right_table.extract_cell(left=0, top="Demurrage"),
         }
 
 
-class TopInfoTableLocator(BaseTableLocator):
+class TopInfoTableLocator(BaseTable):
     """
     +---------+---------+-----+---------+ <table>
     | Title 1 | Title 2 | ... | Title N | <tr>
@@ -210,42 +211,18 @@ class TopInfoTableLocator(BaseTableLocator):
     TR_DATA_INDEX_BEGIN = 1
     TR_DATA_INDEX_END = 2
 
-    def __init__(self):
-        self._td_map = {}
-        self._data_len = 0
-
     def parse(self, table: Selector):
         title_tr = table.css("tr")[self.TR_TITLE_INDEX]
+        title_text_list = [title.strip() for title in title_tr.css("th a::text").getall()]
+
         data_tr_list = table.css("tr")[self.TR_DATA_INDEX_BEGIN : self.TR_DATA_INDEX_END]
 
-        title_text_list = title_tr.css("th a::text").getall()
-
-        for title_index, title_text in enumerate(title_text_list):
-            data_index = title_index
-
-            title_text = title_text.strip()
-            self._td_map[title_text] = []
-
-            for data_tr in data_tr_list:
-                data_td = data_tr.css("td")[data_index]
-
-                self._td_map[title_text].append(data_td)
-
-        first_title_text = title_text_list[0]
-        self._data_len = len(self._td_map[first_title_text])
-
-    def get_cell(self, top, left) -> Selector:
-        try:
-            return self._td_map[top][left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def iter_left_headers(self):
-        for index in range(self._data_len):
-            yield index
+        for index, tr in enumerate(data_tr_list):
+            tds = tr.css("td")
+            self._left_header_set.add(index)
+            for title, td in zip(title_text_list, tds):
+                self._td_map.setdefault(title, [])
+                self._td_map[title].append(td)
 
 
 class TdSpanExtractor(BaseTableCellExtractor):
@@ -254,7 +231,7 @@ class TdSpanExtractor(BaseTableCellExtractor):
         return td_text.strip() if td_text else ""
 
 
-class LeftExtraContainerLocator(BaseTableLocator):
+class LeftExtraContainerLocator(BaseTable):
     """
     +---------+--------+-----+-----+-----+-----+ <table>
     | Title 1 | Data 1 |     |     |     |     | <tr>
@@ -271,11 +248,9 @@ class LeftExtraContainerLocator(BaseTableLocator):
     TD_TITLE_INDEX = 0
     TD_DATA_INDEX = 1
 
-    def __init__(self):
-        self._td_map = {}
-
     def parse(self, table: scrapy.Selector):
         content_tr_list = table.css("tr")[self.TR_CONTENT_BEGIN_INDEX :]
+        self._left_header_set.add(0)  # if multi tables are to be processed in one request, refactor is required here
 
         for tr in content_tr_list:
             title_td = tr.css("td")[self.TD_TITLE_INDEX]
@@ -283,20 +258,11 @@ class LeftExtraContainerLocator(BaseTableLocator):
 
             title_text = title_td.css("::text").get().strip()
 
-            self._td_map[title_text] = data_td
-
-    def get_cell(self, top, left) -> scrapy.Selector:
-        assert top is None
-        try:
-            return self._td_map[left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top is None) and (left in self._td_map)
+            self._td_map.setdefault(title_text, [])
+            self._td_map[title_text].append(data_td)
 
 
-class MiddleExtraContainerLocator(BaseTableLocator):
+class MiddleExtraContainerLocator(BaseTable):
     """
     +-----+-----+---------+--------+-----+-----+ <table>
     |     |     | Title 1 | Data 1 |     |     | <tr>
@@ -314,11 +280,9 @@ class MiddleExtraContainerLocator(BaseTableLocator):
     TD_TITLE_INDEX = 2
     TD_DATA_INDEX = 3
 
-    def __init__(self):
-        self._td_map = {}
-
     def parse(self, table: scrapy.Selector):
         content_tr_list = table.css("tr")[self.TR_CONTENT_BEGIN_INDEX : self.TR_CONTENT_END_INDEX]
+        self._left_header_set.add(0)  # if multi tables are to be processed in one request, refactor is required here
 
         for tr in content_tr_list:
             title_td = tr.css("td")[self.TD_TITLE_INDEX]
@@ -326,20 +290,11 @@ class MiddleExtraContainerLocator(BaseTableLocator):
 
             title_text = title_td.css("::text").get().strip()
 
-            self._td_map[title_text] = data_td
-
-    def get_cell(self, top, left) -> scrapy.Selector:
-        assert top is None
-        try:
-            return self._td_map[left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top is None) and (left in self._td_map)
+            self._td_map.setdefault(title_text, [])
+            self._td_map[title_text].append(data_td)
 
 
-class RightExtraContainerLocator(BaseTableLocator):
+class RightExtraContainerLocator(BaseTable):
     """
     +-----+-----+-----+-----+---------+--------+ <table>
     |     |     |     |     | Title 1 | Data 1 | <tr>
@@ -357,11 +312,9 @@ class RightExtraContainerLocator(BaseTableLocator):
     TD_TITLE_INDEX = 4
     TD_DATA_INDEX = 5
 
-    def __init__(self):
-        self._td_map = {}
-
     def parse(self, table: scrapy.Selector):
         content_tr_list = table.css("tr")[self.TR_CONTENT_BEGIN_INDEX : self.TR_CONTENT_END_INDEX]
+        self._left_header_set.add(0)  # if multi tables are to be processed in one request, refactor is required here
 
         for tr in content_tr_list:
             title_td = tr.css("td")[self.TD_TITLE_INDEX]
@@ -369,72 +322,42 @@ class RightExtraContainerLocator(BaseTableLocator):
 
             title_text = title_td.css("::text").get().strip()
 
-            self._td_map[title_text] = data_td
-
-    def get_cell(self, top, left) -> scrapy.Selector:
-        assert top is None
-        try:
-            return self._td_map[left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top is None) and (left in self._td_map)
+            self._td_map.setdefault(title_text, [])
+            self._td_map[title_text].append(data_td)
 
 
-class ContentGetter:
-    def __init__(self):
-        options = webdriver.ChromeOptions()
-        options.add_argument("--disable-extensions")
-        options.add_argument("--disable-notifications")
-        options.add_argument("--headless")
-        options.add_argument("--enable-javascript")
-        options.add_argument("--disable-gpu")
-        options.add_argument(
-            f"user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
-            f"Chrome/88.0.4324.96 Safari/537.36"
-        )
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument("--disable-blink-features=AutomationControlled")
-
-        self.driver = webdriver.Chrome(chrome_options=options)
-        self.driver.get("https://tms.itslb.com/tms2/Account/Login")
-        time.sleep(7)
-
+class ContentGetter(ChromeContentGetter):
     def login(self, username: str, password: str):
-        username_input = self.driver.find_element_by_xpath('//*[@id="UserName"]')
+        self._driver.get("https://tms.itslb.com/tms2/Account/Login")
+        time.sleep(7)
+        username_input = self._driver.find_element_by_xpath('//*[@id="UserName"]')
         username_input.send_keys(username)
         time.sleep(1)
-        password_input = self.driver.find_element_by_xpath('//*[@id="Password"]')
+        password_input = self._driver.find_element_by_xpath('//*[@id="Password"]')
         password_input.send_keys(password)
         time.sleep(1)
 
-        btn = self.driver.find_element_by_xpath('//*[@id="loginForm"]/form/div[6]/div/input')
+        btn = self._driver.find_element_by_xpath('//*[@id="loginForm"]/form/div[6]/div/input')
         btn.click()
         time.sleep(7)
 
     def select_terminal(self, terminal_id: int):
         if terminal_id == 1:
-            self.driver.find_element_by_xpath('//*[@id="loginTerminalId"]/option[1]').click()
+            self._driver.find_element_by_xpath('//*[@id="loginTerminalId"]/option[1]').click()
         elif terminal_id == 3:
-            self.driver.find_element_by_xpath('//*[@id="loginTerminalId"]/option[2]').click()
+            self._driver.find_element_by_xpath('//*[@id="loginTerminalId"]/option[2]').click()
         time.sleep(7)
 
     def search(self, container_no: str):
-        self.driver.get("https://tms.itslb.com/tms2/Import/ContainerAvailability")
+        self._driver.get("https://tms.itslb.com/tms2/Import/ContainerAvailability")
         time.sleep(3)
 
-        textarea = self.driver.find_element_by_xpath('//*[@id="refNums"]')
+        textarea = self._driver.find_element_by_xpath('//*[@id="refNums"]')
         textarea.send_keys(container_no)
         time.sleep(1)
 
-        btn = self.driver.find_element_by_xpath('//*[@id="formAvailabilityHeader"]/div/div[1]/div/div[2]/div/button')
+        btn = self._driver.find_element_by_xpath('//*[@id="formAvailabilityHeader"]/div/div[1]/div/div[2]/div/button')
         btn.click()
         time.sleep(7)
 
-        return self.driver.page_source
-
-    def close(self):
-        self.driver.close()
+        return self._driver.page_source

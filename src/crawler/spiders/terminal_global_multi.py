@@ -2,19 +2,17 @@ import requests
 from scrapy import Request, FormRequest, Selector
 from urllib.parse import urlencode
 
+from crawler.core.table import BaseTable
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
-from crawler.extractors.table_extractors import (
-    BaseTableLocator,
-    HeaderMismatchError,
-    TableExtractor,
-)
+
 
 BASE_URL = "https://payments.gcterminals.com"
 
 
 class TerminalGlobalMultiSpider(BaseMultiTerminalSpider):
+    firms_code = "Y178"
     name = "terminal_global_multi"
 
     def __init__(self, *args, **kwargs):
@@ -72,7 +70,6 @@ class TerminalGlobalMultiSpider(BaseMultiTerminalSpider):
 
 
 class ContainerRoutingRule(BaseRoutingRule):
-    code = "Y178"
     name = "CONTAINER"
 
     @classmethod
@@ -129,7 +126,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
             # extract
             result_table = resp_selector.css("div#results-div table")
-            table_locator = GlobalLeftTableLocator()
+            table_locator = MainInfoTableLocator()
             table_locator.parse(table=result_table, numbers=len(container_no_list))
 
             last_free_day_val = resp_selector.xpath('//*[@id="results-div"]/center[3]/table/tr[12]/td[4]/text()').get()
@@ -149,10 +146,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         return bool(response.css("div.not-found-text"))
 
 
-class GlobalLeftTableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = []  # title : td
-
+class MainInfoTableLocator(BaseTable):
     def parse(self, table: Selector, numbers: int):
         titles_ths = table.css("th")
         titles = []
@@ -167,13 +161,6 @@ class GlobalLeftTableLocator(BaseTableLocator):
             if len(data_tds) < len(titles):
                 continue
 
-            row = {}
-            for title_index, title in enumerate(titles):
-                row[title] = data_tds[title_index]
-            self._td_map.append(row)
-
-    def get_cell(self, left, top=None) -> Selector:
-        try:
-            return self._td_map[left][top]
-        except (KeyError, IndexError) as err:
-            raise HeaderMismatchError(repr(err))
+            for title, td in zip(titles, data_tds):
+                self._td_map.setdefault(title, [])
+                self._td_map[title].append(td)

@@ -7,25 +7,24 @@ from datetime import datetime, timedelta
 from urllib.parse import urlencode
 import ujson as json
 
-
 import scrapy
 from scrapy import Selector
 
-from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
-from anticaptchaofficial.recaptchav2proxyless import *
 from selenium.common.exceptions import NoSuchElementException
+from anticaptchaofficial.recaptchav2proxyless import *
 
+from crawler.core.selenium import ChromeContentGetter
+from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError, DataNotFoundError
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 
 @dataclasses.dataclass
@@ -69,7 +68,12 @@ class CookieHelper:
 
 class TrapacShareSpider(BaseMultiTerminalSpider):
     name = ""
-    company_info = CompanyInfo(lower_short="", upper_short="", email="", password="",)
+    company_info = CompanyInfo(
+        lower_short="",
+        upper_short="",
+        email="",
+        password="",
+    )
 
     def __init__(self, *args, **kwargs):
         super(TrapacShareSpider, self).__init__(*args, **kwargs)
@@ -112,7 +116,10 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
         }
 
         if option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(url=option.url, meta=meta,)
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
 
         elif option.method == RequestOption.METHOD_POST_BODY:
             return scrapy.Request(
@@ -139,7 +146,10 @@ class MainRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
-            meta={"container_no_list": container_no_list, "company_info": company_info,},
+            meta={
+                "container_no_list": container_no_list,
+                "company_info": company_info,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -186,19 +196,19 @@ class MainRoutingRule(BaseRoutingRule):
 
         vessel, voyage = table_extractor.extract_cell(top="Vsl / Voy", left=0, extractor=VesselVoyageTdExtractor())
 
-        for i in range(numbers):
-            if not table_extractor.extract_cell(top="Number", left=i):
+        for left in table_locator.iter_left_header():
+            if not table_extractor.extract_cell(top="Number", left=left):
                 continue
 
             yield {
-                "container_no": table_extractor.extract_cell(top="Number", left=i),
-                "carrier": table_extractor.extract_cell(top="Holds_Line", left=i),
-                "custom_release": table_extractor.extract_cell(top="Holds_Customs", left=i),
-                "cy_location": table_extractor.extract_cell(top="Yard Status", left=i),
-                "last_free_day": table_extractor.extract_cell(top="Demurrage_LFD", left=i),
-                "holds": table_extractor.extract_cell(top="Demurrage_Hold", left=i),
-                "demurrage": table_extractor.extract_cell(top="Demurrage_Amt", left=i),
-                "container_spec": table_extractor.extract_cell(top="Dimensions", left=i),
+                "container_no": table_extractor.extract_cell(top="Number", left=left),
+                "carrier": table_extractor.extract_cell(top="Holds_Line", left=left),
+                "custom_release": table_extractor.extract_cell(top="Holds_Customs", left=left),
+                "cy_location": table_extractor.extract_cell(top="Yard Status", left=left),
+                "last_free_day": table_extractor.extract_cell(top="Demurrage_LFD", left=left),
+                "holds": table_extractor.extract_cell(top="Demurrage_Hold", left=left),
+                "demurrage": table_extractor.extract_cell(top="Demurrage_Amt", left=left),
+                "container_spec": table_extractor.extract_cell(top="Dimensions", left=left),
                 "vessel": vessel,
                 "voyage": voyage,
             }
@@ -261,7 +271,9 @@ class ContentRoutingRule(BaseRoutingRule):
             url=f"https://{company_info.lower_short}.trapac.com/wp-admin/admin-ajax.php",
             headers=headers,
             body=urlencode(query=form_data),
-            meta={"numbers": len(container_no_list),},
+            meta={
+                "numbers": len(container_no_list),
+            },
         )
 
     def handle(self, response):
@@ -279,55 +291,67 @@ class ContentRoutingRule(BaseRoutingRule):
 
         vessel, voyage = table_extractor.extract_cell(top="Vsl / Voy", left=0, extractor=VesselVoyageTdExtractor())
 
-        for i in range(numbers):
+        for left in table_locator.iter_left_header():
             yield TerminalItem(
-                container_no=table_extractor.extract_cell(top="Number", left=i),
-                customs_release=table_extractor.extract_cell(top="Holds_Customs", left=i),
-                gate_out_date=table_extractor.extract_cell(top="Yard Status", left=i),
-                last_free_day=table_extractor.extract_cell(top="Demurrage_LFD", left=i),
-                holds=table_extractor.extract_cell(top="Demurrage_Hold", left=i),
-                demurrage=table_extractor.extract_cell(top="Demurrage_Amt", left=i),
-                container_spec=table_extractor.extract_cell(top="Dimensions", left=i),
+                container_no=table_extractor.extract_cell(top="Number", left=left),
+                customs_release=table_extractor.extract_cell(top="Holds_Customs", left=left),
+                gate_out_date=table_extractor.extract_cell(top="Yard Status", left=left),
+                last_free_day=table_extractor.extract_cell(top="Demurrage_LFD", left=left),
+                holds=table_extractor.extract_cell(top="Demurrage_Hold", left=left),
+                demurrage=table_extractor.extract_cell(top="Demurrage_Amt", left=left),
+                container_spec=table_extractor.extract_cell(top="Dimensions", left=left),
                 vessel=vessel,
                 voyage=voyage,
             )
 
 
 # ------------------------------------------------------------------------
-
-
-class HeadlessBrowser:
-
+class ContentGetter(ChromeContentGetter):
     PROXY_URL = "proxy.apify.com:8000"
     PROXY_PASSWORD = "XZTBLpciyyTCFb3378xWJbuYY"
 
-    def __init__(self):
+    def __init__(self, company_info: CompanyInfo):
+        super().__init__()
+        self._company = company_info
 
-        options = webdriver.ChromeOptions()
-        options.add_argument("--disable-extensions")
-        options.add_argument("--disable-notifications")
-        options.add_argument("--headless")
-        options.add_argument("--enable-javascript")
-        options.add_argument("window-size=1920,1080")
-        options.add_argument(
-            f"user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
-            f"Chrome/88.0.4324.96 Safari/537.36"
-        )
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-blink-features=AutomationControlled")
-        options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        options.add_experimental_option("useAutomationExtension", False)
-
-        self._browser = webdriver.Chrome(chrome_options=options)
-
-    def get(self, url):
-        self._browser.get(url=url)
+    def find_ua(self):
+        self._driver.get("https://www.whatsmyua.info")
         time.sleep(15)
+
+        ua_selector = self._driver.find_element_by_css_selector(css="textarea#custom-ua-string")
+        print("find_ua:", ua_selector.text)
+
+    def find_ip(self):
+        self._driver.get("https://www.whatismyip.com.tw/")
+        time.sleep(5)
+
+        ip_selector = self._driver.find_element_by_css_selector("b span")
+        print("find_id", ip_selector.text)
+
+    def get_result_response_text(self):
+        result_table_css = "div#transaction-detail-result table"
+
+        self.wait_for_appear(css=result_table_css, wait_sec=15)
+        return self._driver.page_source
+
+    def get_content(self, search_no):
+        self._driver.get(
+            url=f"https://{self._company.lower_short}.trapac.com/quick-check/?terminal={self._company.upper_short}&transaction=availability"
+        )
+        self.accept_cookie()
+        self.key_in_search_bar(search_no=search_no)
+        cookies = self.get_cookies()
+        self.press_search_button()
+
+        if self.get_google_recaptcha():
+            g_response = self.solve_google_recaptcha(self._company.lower_short)
+            return True, g_response, cookies
+
+        return False, self.get_result_response_text(), cookies
 
     def accept_cookie(self):
         try:
-            cookie_btn = self._browser.find_element_by_xpath('//*[@id="cn-accept-cookie"]')
+            cookie_btn = self._driver.find_element_by_xpath('//*[@id="cn-accept-cookie"]')
             cookie_btn.click()
             time.sleep(3)
         except:
@@ -336,43 +360,31 @@ class HeadlessBrowser:
     def wait_for_appear(self, css: str, wait_sec: int):
         locator = (By.CSS_SELECTOR, css)
         try:
-            WebDriverWait(self._browser, wait_sec).until(EC.presence_of_element_located(locator))
+            WebDriverWait(self._driver, wait_sec).until(EC.presence_of_element_located(locator))
         except TimeoutException:
-            current_url = self._browser.current_url
-            self._browser.quit()
+            current_url = self.get_current_url()
+            self._driver.quit()
             raise LoadWebsiteTimeOutError(url=current_url)
 
     def key_in_search_bar(self, search_no: str):
-        text_area = self._browser.find_element_by_xpath('//*[@id="edit-containers"]')
+        text_area = self._driver.find_element_by_xpath('//*[@id="edit-containers"]')
         text_area.send_keys(search_no)
         time.sleep(3)
 
     def press_search_button(self):
-        search_btn = self._browser.find_element_by_xpath('//*[@id="transaction-form"]/div[3]/button')
+        search_btn = self._driver.find_element_by_xpath('//*[@id="transaction-form"]/div[3]/button')
         search_btn.click()
         time.sleep(10)
 
-    def find_element_by_css_selector(self, css: str):
-        return self._browser.find_element_by_css_selector(css_selector=css)
-
-    def execute_script(self, script: str):
-        self._browser.execute_script(script=script)
-
-    def quit(self):
-        self._browser.quit()
-
-    def get_cookies(self):
-        return self._browser.get_cookies()
-
     def save_screenshot(self):
-        self._browser.save_screenshot("screenshot.png")
+        self._driver.save_screenshot("screenshot.png")
 
     def get_g_token(self):
-        return self._browser.find_element_by_xpath('//*[@id="transaction-form"]/input').get_attribute("value")
+        return self._driver.find_element_by_xpath('//*[@id="transaction-form"]/input').get_attribute("value")
 
     def get_google_recaptcha(self):
         try:
-            element = self._browser.find_element_by_xpath('//*[@id="recaptcha-backup"]')
+            element = self._driver.find_element_by_xpath('//*[@id="recaptcha-backup"]')
             return element
         except NoSuchElementException:
             return None
@@ -394,58 +406,12 @@ class HeadlessBrowser:
             print("task finished with error " + solver.error_code)
             return None
 
-    @property
-    def page_source(self):
-        return self._browser.page_source
-
     def get_proxy_username(self, option: ProxyOption) -> str:
         return f"groups-{option.group},session-{option.session}"
 
     @staticmethod
     def _generate_random_string():
         return "".join(random.choices(string.ascii_uppercase + string.digits, k=20))
-
-
-class ContentGetter:
-    def __init__(self, company_info: CompanyInfo):
-        self._company = company_info
-        self._headless_browser = HeadlessBrowser()
-
-    def find_ua(self):
-        self._headless_browser.get("https://www.whatsmyua.info")
-        ua_selector = self._headless_browser.find_element_by_css_selector(css="textarea#custom-ua-string")
-        print("find_ua:", ua_selector.text)
-
-    def find_ip(self):
-        self._headless_browser.get("https://www.whatismyip.com.tw/")
-        time.sleep(5)
-
-        ip_selector = self._headless_browser.find_element_by_css_selector("b span")
-        print("find_id", ip_selector.text)
-
-    def get_result_response_text(self):
-        result_table_css = "div#transaction-detail-result table"
-
-        self._headless_browser.wait_for_appear(css=result_table_css, wait_sec=15)
-        return self._headless_browser.page_source
-
-    def get_content(self, search_no):
-        self._headless_browser.get(
-            url=f"https://{self._company.lower_short}.trapac.com/quick-check/?terminal={self._company.upper_short}&transaction=availability"
-        )
-        self._headless_browser.accept_cookie()
-        self._headless_browser.key_in_search_bar(search_no=search_no)
-        cookies = self._headless_browser.get_cookies()
-        self._headless_browser.press_search_button()
-
-        if self._headless_browser.get_google_recaptcha():
-            g_response = self._headless_browser.solve_google_recaptcha(self._company.lower_short)
-            return True, g_response, cookies
-
-        return False, self.get_result_response_text(), cookies
-
-    def quit(self):
-        self._headless_browser.quit()
 
 
 class VesselVoyageTdExtractor(BaseTableCellExtractor):
@@ -457,42 +423,33 @@ class VesselVoyageTdExtractor(BaseTableCellExtractor):
         return vessel, voyage
 
 
-class ContainerTableLocator(BaseTableLocator):
+class ContainerTableLocator(BaseTable):
     TR_MAIN_TITLE_CLASS = "th-main"
     TR_SECOND_TITLE_CLASS = "th-second"
-
-    def __init__(self):
-        self._td_map = []
 
     def parse(self, table: Selector, numbers: int = 1):
         main_title_tr = table.css(f"tr.{self.TR_MAIN_TITLE_CLASS}")
         second_title_tr = table.css(f"tr.{self.TR_SECOND_TITLE_CLASS}")
-        data_tr = table.css("tbody tr")
+        data_trs = table.css("tbody tr.row-odd")
 
         main_title_ths = main_title_tr.css("th")
         second_title_ths = second_title_tr.css("th")
         title_list = self._combine_title_list(main_title_ths=main_title_ths, second_title_ths=second_title_ths)
 
-        for i in range(len(data_tr)):
-            if i >= numbers:
+        for index, data_tr in enumerate(data_trs):
+            data_tds = data_tr.css("td")
+
+            # not sure if this is needed
+            if len(data_tds) < len(title_list):
+                for title in title_list:
+                    self._td_map.setdefault(title, [])
+                    self._td_map[title].append(Selector(text="<p></p>"))
                 continue
-            data_tds = data_tr[i].css("td")
-            row = {}
-            for title_index, title in enumerate(title_list):
-                if len(data_tds) < len(title_list):
-                    row[title] = Selector(text="<p></p>")
-                else:
-                    row[title] = data_tds[title_index]
-            self._td_map.append(row)
 
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def get_cell(self, top, left=0) -> scrapy.Selector:
-        try:
-            return self._td_map[left][top]
-        except (KeyError, IndexError) as err:
-            raise HeaderMismatchError(repr(err))
+            self._left_header_set.add(index)
+            for title, data_td in zip(title_list, data_tds):
+                self._td_map.setdefault(title, [])
+                self._td_map[title].append(data_td)
 
     @staticmethod
     def _combine_title_list(main_title_ths: List[scrapy.Selector], second_title_ths: List[scrapy.Selector]):
