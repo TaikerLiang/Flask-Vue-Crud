@@ -1,0 +1,62 @@
+
+
+<script>
+function amsDetail(customs,filing_pod)
+{
+    winContent = window.open("","amsDetail","left=50,top=80,width=800,height=350,toolbar=no,menubar=yes,scrollbars=yes,resizable=yes");
+    if (customs != null || customs != null){
+        document.frmAMSDetail.customs.value = customs;
+        document.frmAMSDetail.filing_pod.value = filing_pod;
+    }
+    document.frmAMSDetail.submit();
+    winContent.focus();
+}
+</script>
+
+
+
+        <br />
+        <table width="92%" cellspacing="1" cellpadding="1" border="0" bgcolor="#999999" align="center">
+            <tr>
+                <td colspan="6" class="f13tabb2" align="left">Release Status</td>
+            </tr>
+            <tr>
+                <td width="130" rowspan="2" class="f12rown2" nowrap>Carrier Status</td>
+                <td width="20%" align="center" class="f12rown2" nowrap>Status</td>
+                <td width="16%" align="center" class="f12rown2" nowrap>Freight</td>
+                <td width="16%" align="center" class="f12rown2" nowrap>Date</td>
+                <td width="16%" align="center" class="f12rown2" nowrap>Bill of Lading</td>
+                <td align="center" class="f12rown2" nowrap>Date</td>
+            </tr>
+            <tr>
+                <td align="center" class="f12rown1" nowrap>&nbsp;Released</td>
+                <td align="center" class="f12rown1" nowrap>&nbsp;Received</td>
+                <td align="center" class="f12rown1" nowrap>&nbsp;JUL-08-2019</td>
+                <td align="center" class="f12rown1" nowrap>&nbsp;Sea Waybill</td>
+                <td align="center" class="f12rown1" nowrap>&nbsp;N&#x2f;A</td>
+            </tr>
+            <tr>
+                <td width="130" rowspan="4" class="f12rown2" nowrap>Customs Status</td>
+                <td align="center" class="f12rown2" nowrap>I.T. NO.</td>
+                <td colspan="2" align="center" class="f12rown2" nowrap>Port</td>
+                <td align="center" class="f12rown2" nowrap>I.T. Destination</td>
+                <td align="center" class="f12rown2" nowrap>Date</td>
+            </tr>
+            <tr>
+                <td align="center" class="f12rown1" nowrap>&nbsp;VVS07649389</td>
+                <td align="center" class="f12rown1" nowrap colspan="2">&nbsp;CHARLESTON, SC &#x28;US&#x29;</td>
+                <td align="center" class="f12rown1" nowrap>&nbsp;ATLANTA, GA &#x28;US&#x29;</td>
+                <td align="center" class="f12rown1" nowrap>&nbsp;JUL-05-2019</td>
+            </tr>
+            <tr>
+                <td align="center" class="f12rown2" nowrap>Status</td>
+                <td align="center" class="f12rown2" nowrap colspan="3">Description</td>
+                <td align="center" class="f12rown2" nowrap>Date</td>
+            </tr>
+            <tr>
+                <td align="center" class="f12rown1" nowrap>&nbsp;RELEASED</td>
+                <td align="center" class="f12rown1" nowrap colspan="3">&nbsp;RELEASED BY US.CUSTOMS AT ATLANTA, GA</td>
+                <td align="center" class="f12rown1" nowrap>&nbsp;JUL-17-2019</td>
+            </tr>
+        </table>
+      
