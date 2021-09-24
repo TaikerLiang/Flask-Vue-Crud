@@ -358,14 +358,6 @@ class ContainerStatusTableLocator(BaseTableLocator):
 class ContentGetter(ChromeContentGetter):
     def get_cookies(self):
         self._driver.get(f"{BASE_URL}/online-business/track/track-by-booking-solution.html")
-        self._driver.add_cookie(
-            {
-                "name": "OptanonAlertBoxClosed",
-                "value": "2021-09-23T04:18:52.430Z",
-                "domain": ".hapag-lloyd.com",
-            }
-        )
-        self.page_refresh()
 
         try:
             WebDriverWait(self._driver, 10).until(self._is_cookies_ready)
