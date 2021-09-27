@@ -59,7 +59,7 @@ class LocalCrawler:
 
 def start():
     carrier_edi_client = EdiClientService(
-        url=f"{config.EDI_DOMAIN}/api/api/tracking-carrier/local/", edi_user=config.EDI_USER, edi_token=config.EDI_TOKEN
+        url=f"{config.EDI_DOMAIN}/api/tracking-carrier/local/", edi_user=config.EDI_USER, edi_token=config.EDI_TOKEN
     )
     local_tasks = carrier_edi_client.get_local_tasks()
     logger.info(f"number of tasks: {len(local_tasks)}")
