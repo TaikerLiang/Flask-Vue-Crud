@@ -1,10 +1,10 @@
 import requests
-from typing import Dict
 from urllib.parse import urlencode
 
 import scrapy
 from scrapy.http import Response
 
+from crawler.core_air.base import AIR_RESULT_STATUS_ERROR
 from crawler.core_air.base_spiders import BaseAirSpider
 from crawler.core_air.exceptions import (
     AirInvalidMawbNoError,
@@ -14,6 +14,8 @@ from crawler.core_air.items import (
     BaseAirItem,
     AirItem,
     DebugItem,
+    ExportErrorData,
+    HistoryItem,
 )
 from crawler.core_air.request_helpers import RequestOption
 from crawler.core_air.rules import RuleManager, BaseRoutingRule
@@ -77,7 +79,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, mawb_no: str) -> RequestOption:
-        response = requests.post(url=URL)
+        response = requests.post(url=URL, timeout=20)
         if response.status_code == 200:
             response_text = response.text
         else:
@@ -123,6 +125,21 @@ class AirInfoRoutingRule(BaseRoutingRule):
         return f"{self.name}.json"
 
     def handle(self, response: Response):
+        if self._is_awb_not_exist(response):
+            mawb_no = response.css("input[id='ctl00_ContentPlaceHolder1_txtNo']").attrib["value"]
+            yield ExportErrorData(
+                mawb_no=mawb_no,
+                status=AIR_RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
+        else:
+            yield self._construct_air_item(response)
+
+            for history_item in self._construct_history_item_list(response):
+                yield history_item
+
+    @staticmethod
+    def _construct_air_item(response: Response) -> AirItem:
         selector = response.css("span[id='ctl00_ContentPlaceHolder1_awbLbl'] tr td")
         basic_info = []
         for info in selector:
@@ -131,6 +148,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
         if basic_info[0] is None:
             raise AirInvalidMawbNoError()
 
+        basic_info[0] = basic_info[0].split("-")[1]
         routing_city = basic_info[2].split("--")
         basic_info[1] = routing_city[0].split("(")[0]
         basic_info[2] = routing_city[-1].split("(")[0]
@@ -156,17 +174,47 @@ class AirInfoRoutingRule(BaseRoutingRule):
                 basic_info.append(tr_selector.xpath("normalize-space(td[1]/text())").get())
                 break
 
-        air_info = self._extract_air_info(basic_info)
-        yield AirItem(**air_info)
+        return AirItem(
+            {
+                "mawb": basic_info[0],
+                "origin": basic_info[1],
+                "destination": basic_info[2],
+                "pieces": basic_info[4],
+                "weight": basic_info[5],
+                "atd": basic_info[6],
+                "ata": basic_info[7],
+            }
+        )
 
     @staticmethod
-    def _extract_air_info(basic_info: list) -> Dict:
-        return {
-            "mawb": basic_info[0].split("-")[1],
-            "origin": basic_info[1],
-            "destination": basic_info[2],
-            "pieces": basic_info[4],
-            "weight": basic_info[5],
-            "atd": basic_info[6],
-            "ata": basic_info[7],
-        }
+    def _construct_history_item_list(response: Response):
+        info_list = []
+        status_selector = response.css("table[id='ctl00_ContentPlaceHolder1_gvCargoState'] tr")
+        for tr_selector in status_selector[1:]:
+            info_list.append(
+                HistoryItem(
+                    {
+                        "status": tr_selector.xpath("normalize-space(td[4]/text())").get(),
+                        "Pieces": tr_selector.xpath("normalize-space(td[5]/text())").get(),
+                        "Weight": tr_selector.xpath("normalize-space(td[6]/text())").get(),
+                        "time": tr_selector.xpath("normalize-space(td[1]/text())").get(),
+                        "location": tr_selector.xpath("normalize-space(td[2]/text())").get(),
+                        "flight_no": tr_selector.xpath("normalize-space(td[3]/text())").get(),
+                    }
+                )
+            )
+
+        return info_list
+
+    @staticmethod
+    def _is_awb_not_exist(response: Response) -> bool:
+        error_info = response.css("span[id='ctl00_ContentPlaceHolder1_lblErrorInfo'] font::text").get()
+        print(f"error_info: *{error_info}*")
+        print(f"error_info: *Awb information does not exist*")
+        print(error_info == "Awb information does not exist")
+        if error_info == "Awb information does not exist":
+            print("return True")
+            return True
+        else:
+            print("return False")
+            return False
