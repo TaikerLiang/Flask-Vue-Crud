@@ -68,12 +68,7 @@ class CookieHelper:
 
 class TrapacShareSpider(BaseMultiTerminalSpider):
     name = ""
-    company_info = CompanyInfo(
-        lower_short="",
-        upper_short="",
-        email="",
-        password="",
-    )
+    company_info = CompanyInfo(lower_short="", upper_short="", email="", password="",)
 
     def __init__(self, *args, **kwargs):
         super(TrapacShareSpider, self).__init__(*args, **kwargs)
@@ -116,10 +111,7 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
         }
 
         if option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(
-                url=option.url,
-                meta=meta,
-            )
+            return scrapy.Request(url=option.url, meta=meta,)
 
         elif option.method == RequestOption.METHOD_POST_BODY:
             return scrapy.Request(
@@ -146,10 +138,7 @@ class MainRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
-            meta={
-                "container_no_list": container_no_list,
-                "company_info": company_info,
-            },
+            meta={"container_no_list": container_no_list, "company_info": company_info,},
         )
 
     def get_save_name(self, response) -> str:
@@ -194,12 +183,13 @@ class MainRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table, numbers=numbers)
         table_extractor = TableExtractor(table_locator=table_locator)
 
-        vessel, voyage = table_extractor.extract_cell(top="Vsl / Voy", left=0, extractor=VesselVoyageTdExtractor())
-
         for left in table_locator.iter_left_header():
             if not table_extractor.extract_cell(top="Number", left=left):
                 continue
 
+            vessel, voyage = table_extractor.extract_cell(
+                top="Vsl / Voy", left=left, extractor=VesselVoyageTdExtractor()
+            )
             yield {
                 "container_no": table_extractor.extract_cell(top="Number", left=left),
                 "carrier": table_extractor.extract_cell(top="Holds_Line", left=left),
@@ -271,9 +261,7 @@ class ContentRoutingRule(BaseRoutingRule):
             url=f"https://{company_info.lower_short}.trapac.com/wp-admin/admin-ajax.php",
             headers=headers,
             body=urlencode(query=form_data),
-            meta={
-                "numbers": len(container_no_list),
-            },
+            meta={"numbers": len(container_no_list),},
         )
 
     def handle(self, response):
@@ -289,9 +277,10 @@ class ContentRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table, numbers=numbers)
         table_extractor = TableExtractor(table_locator=table_locator)
 
-        vessel, voyage = table_extractor.extract_cell(top="Vsl / Voy", left=0, extractor=VesselVoyageTdExtractor())
-
         for left in table_locator.iter_left_header():
+            vessel, voyage = table_extractor.extract_cell(
+                top="Vsl / Voy", left=left, extractor=VesselVoyageTdExtractor()
+            )
             yield TerminalItem(
                 container_no=table_extractor.extract_cell(top="Number", left=left),
                 customs_release=table_extractor.extract_cell(top="Holds_Customs", left=left),
@@ -392,7 +381,6 @@ class ContentGetter(ChromeContentGetter):
     def solve_google_recaptcha(self, location_name: str):
         solver = recaptchaV2Proxyless()
         solver.set_verbose(1)
-        # solver.set_key("f7dd6de6e36917b41d05505d249876c3")
         solver.set_key("fbe73f747afc996b624e8d2a95fa0f84")
         solver.set_website_url(f"https://{location_name}.trapac.com/")
         solver.set_website_key("6LfCy7gUAAAAAHSPtJRrJIVQKeKQt_hrYbGSIpuF")
