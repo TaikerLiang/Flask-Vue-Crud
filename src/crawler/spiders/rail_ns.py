@@ -11,7 +11,7 @@ from crawler.core_rail.request_helpers import RequestOption
 from crawler.core_rail.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 from selenium import webdriver
-from selenium.common.exceptions import StaleElementReferenceException, NoSuchElementException
+from selenium.common.exceptions import StaleElementReferenceException, NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -256,6 +256,13 @@ class ContentGetter:
         if self._is_first:
             self._login()
             self._is_first = False
+
+        try:
+            continue_btn = WebDriverWait(self._driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'a.x-btn.OutageWindow_alertbtn.x-unselectable.x-box-item.x-btn-default-small')))
+            continue_btn.click()
+            time.sleep(10)
+        except TimeoutException:
+            pass
 
         # search
         WebDriverWait(self._driver, 70).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.x-panel-header')))
