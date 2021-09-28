@@ -10,6 +10,7 @@ class ExportFinalData(BaseAirItem):
 
 
 class ExportErrorData(BaseAirItem):
+    mawb_no = scrapy.Field()
     status = scrapy.Field()
     detail = scrapy.Field()
     traceback_info = scrapy.Field()
@@ -62,3 +63,8 @@ class HistoryItem(BaseAirItem):
     @property
     def key(self):
         return self["task_id"]
+
+
+class InvalidMawbNoItem(BaseAirItem):
+    task_id = scrapy.Field()
+    mawb = scrapy.Field()
