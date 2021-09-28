@@ -22,7 +22,7 @@ def sample_loader(sample_loader):
         ('02_data_not_found', '81375673'),
     ],
 )
-def test_container_status_handle(sub, mawb_no, sample_loader):
+def test_air_info_handle(sub, mawb_no, sample_loader):
     json_text = sample_loader.read_file(sub, 'AIR_INFO.json')
 
     option = AirInfoRoutingRule.build_request_option(mawb_no=mawb_no, task_id='1', token='')

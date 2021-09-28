@@ -17,6 +17,7 @@ from crawler.core_air.items import (
     AirItem,
     DebugItem,
     ExportErrorData,
+    HistoryItem,
 )
 from crawler.core_air.base import AIR_RESULT_STATUS_ERROR, AIR_RESULT_STATUS_FATAL
 from crawler.core_air.base_spiders import BaseMultiAirSpider
@@ -132,6 +133,9 @@ class AirInfoRoutingRule(BaseRoutingRule):
             return
         air_info = self.extract_air_info(response_dict)
         yield AirItem(task_id=task_id, mawb=mawb_no, **air_info)
+        history_list = self.extract_history_info(response_dict)
+        for history in history_list:
+            yield HistoryItem(task_id=task_id, **history)
 
     def is_mawb_no_invalid(self, response):
         if "ErrorMessage" in response:
@@ -147,6 +151,21 @@ class AirInfoRoutingRule(BaseRoutingRule):
             'destination': response["Destination"],
             'current_state': current_state,
         }
+
+    def extract_history_info(self, response):
+        history_list = []
+        for event in response['Segments']['Segment']:
+            history_list.append(
+                {
+                    'status': event['StatusDescription'],
+                    'pieces': event['NumberOfPieces'],
+                    'weight': event['Weight'],
+                    'time': f"{event['EventDate']} {event['EventTime']}",
+                    'location': event['EventLocation'],
+                    'flight_number': event['FlightNumber'],
+                }
+            )
+        return history_list
 
 
 class ContentGetter(FirefoxContentGetter):
