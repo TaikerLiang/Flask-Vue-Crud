@@ -278,17 +278,6 @@ class ContentGetter:
         # wait for result
         time.sleep(5)
 
-        # try:
-        #     result_btn = self._driver.find_element_by_xpath('//*[@id="button-1005"]')
-        #     result_btn.click()
-        # except NoSuchElementException:
-        #     pass
-        # time.sleep(10)
-        # # close result and clean search bar
-        # close_btn = self._driver.find_element_by_css_selector('div[data-qtip="Close dialog"]')
-        # close_btn.click()
-        # search_input.clear()
-
         return self._driver.page_source
 
     def quit(self):
