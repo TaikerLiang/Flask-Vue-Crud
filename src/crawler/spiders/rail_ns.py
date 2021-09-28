@@ -11,7 +11,7 @@ from crawler.core_rail.request_helpers import RequestOption
 from crawler.core_rail.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 from selenium import webdriver
-from selenium.common.exceptions import StaleElementReferenceException, NoSuchElementException
+from selenium.common.exceptions import StaleElementReferenceException, NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -257,6 +257,13 @@ class ContentGetter:
             self._login()
             self._is_first = False
 
+        try:
+            continue_btn = WebDriverWait(self._driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'a.x-btn.OutageWindow_alertbtn.x-unselectable.x-box-item.x-btn-default-small')))
+            continue_btn.click()
+            time.sleep(10)
+        except TimeoutException:
+            pass
+
         # search
         WebDriverWait(self._driver, 70).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.x-panel-header')))
         self._driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
@@ -270,17 +277,6 @@ class ContentGetter:
 
         # wait for result
         time.sleep(5)
-
-        # try:
-        #     result_btn = self._driver.find_element_by_xpath('//*[@id="button-1005"]')
-        #     result_btn.click()
-        # except NoSuchElementException:
-        #     pass
-        # time.sleep(10)
-        # # close result and clean search bar
-        # close_btn = self._driver.find_element_by_css_selector('div[data-qtip="Close dialog"]')
-        # close_btn.click()
-        # search_input.clear()
 
         return self._driver.page_source
 
