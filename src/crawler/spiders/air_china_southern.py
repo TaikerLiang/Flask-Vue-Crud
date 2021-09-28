@@ -209,12 +209,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
     @staticmethod
     def _is_awb_not_exist(response: Response) -> bool:
         error_info = response.css("span[id='ctl00_ContentPlaceHolder1_lblErrorInfo'] font::text").get()
-        print(f"error_info: *{error_info}*")
-        print(f"error_info: *Awb information does not exist*")
-        print(error_info == "Awb information does not exist")
         if error_info == "Awb information does not exist":
-            print("return True")
             return True
         else:
-            print("return False")
             return False
