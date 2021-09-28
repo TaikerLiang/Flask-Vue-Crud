@@ -48,21 +48,21 @@ class FlightItem(BaseAirItem):
 
     @property
     def key(self):
-        return self["task_id"]
+        return f"{self['origin']}-{self['destination']}"
 
 
 class HistoryItem(BaseAirItem):
     task_id = scrapy.Field()
     status = scrapy.Field()
-    Pieces = scrapy.Field()
-    Weight = scrapy.Field()
+    pieces = scrapy.Field()
+    weight = scrapy.Field()
     time = scrapy.Field()
     location = scrapy.Field()
-    flight_no = scrapy.Field()
+    flight_number = scrapy.Field()
 
     @property
     def key(self):
-        return self["task_id"]
+        return f"{self['status']}-{self['time']}"
 
 
 class InvalidMawbNoItem(BaseAirItem):
