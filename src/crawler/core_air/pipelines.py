@@ -1,9 +1,10 @@
+import os
 import pprint
 import traceback
-from typing import Dict
-
+from typing import Dict, Union
 from scrapy.exceptions import DropItem
 
+from crawler.services.edi_service import EdiClientService
 from . import items as air_items
 from .base import (
     AIR_RESULT_STATUS_DATA,
@@ -13,7 +14,28 @@ from .base import (
 )
 
 
-class AirItemPipeline:
+class BaseItemPipeline:
+    def __init__(self):
+        # edi client setting
+        user = os.environ.get("EDI_ENGINE_USER")
+        token = os.environ.get("EDI_ENGINE_TOKEN")
+        url = os.environ.get("EDI_ENGINE_URL")
+        self.edi_client = EdiClientService(url=url, edi_user=user, edi_token=token)
+
+    def handle_err_result(self, collector, task_id: int, result: Dict):
+        if collector.is_default():
+            status_code, text = self.edi_client.send_provider_result_back(
+                task_id=task_id, provider_code="scrapy_cloud_api", item_result=result
+            )
+        else:
+            item_result = collector.build_final_data()
+            status_code, text = self.edi_client.send_provider_result_back(
+                task_id=task_id, provider_code="scrapy_cloud_api", item_result=item_result
+            )
+        return status_code, text
+
+
+class AirItemPipeline(BaseItemPipeline):
     @classmethod
     def get_setting_name(cls):
         return f"{__name__}.{cls.__name__}"
@@ -29,9 +51,14 @@ class AirItemPipeline:
 
         try:
             if isinstance(item, air_items.AirItem):
-                return self._collector.collect_air_item(item=item)
+                self._collector.collect_air_item(item=item)
+            elif isinstance(item, air_items.FlightItem):
+                self._collector.collect_flight_item(item=item)
+            elif isinstance(item, air_items.HistoryItem):
+                self._collector.collect_history_item(item=item)
             elif isinstance(item, air_items.ExportFinalData):
-                return self._collector.build_final_data()
+                res = self._send_result_back_to_edi_engine()
+                return {"status": "CLOSE", "result": res}
             elif isinstance(item, air_items.ExportErrorData):
                 return self._collector.build_error_data(item)
             elif isinstance(item, air_items.DebugItem):
@@ -43,10 +70,33 @@ class AirItemPipeline:
             spider.mark_error()
             status = AIR_RESULT_STATUS_FATAL
             detail = traceback.format_exc()
+
             err_item = air_items.ExportErrorData(status=status, detail=detail)
-            return self._collector.build_error_data(err_item)
+            result = self._collector.build_error_data(err_item)
+            res = self._send_error_msg_back_to_edi_engine(result=result)
+            return {"status": "CLOSE", "result": res}
 
         raise DropItem("item processed")
+
+    def _send_result_back_to_edi_engine(self):
+        res = []
+        item_result = self._collector.build_final_data()
+        task_id = item_result.get("request_args", {}).get("task_id")
+        if task_id:
+            status_code, text = self.edi_client.send_provider_result_back(
+                task_id=task_id, provider_code="scrapy_cloud_api", item_result=item_result
+            )
+            res.append({"task_id": task_id, "status_code": status_code, "text": text})
+            return res
+        else:
+            return {"status_code": -1, "text": "no task id in request_args or empty result"}
+
+    def _send_error_msg_back_to_edi_engine(self, result: Dict):
+        res = []
+        task_id = result.get("request_args", {}).get("task_id")
+        status_code, text = self.handle_err_result(collector=self._collector, task_id=task_id, result=result)
+        res.append({"task_id": task_id, "status_code": status_code, "text": text})
+        return res
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -86,8 +136,6 @@ class AirMultiItemsPipeline:
                 collector = self._collector_map[item.key] if item.key else self._default_collector
                 collector.collect_air_item(item=item)
                 return collector.build_final_data()
-            elif isinstance(item, air_items.InvalidMawbNoItem):
-                return self._default_collector.build_invalid_no_data(item=item)
             elif isinstance(item, air_items.ExportFinalData):
                 return {"status": "CLOSE"}
             elif isinstance(item, air_items.ExportErrorData):
@@ -127,18 +175,30 @@ class AirResultCollector:
     def __init__(self, request_args):
         self._request_args = dict(request_args)
         self._air = {}
+        self._flights = []
+        self._history = []
 
     def collect_air_item(self, item: air_items.AirItem):
-        clean_dict = self._clean_item(item)
-        self._air.update(clean_dict)
-        # return self._air
+        clean_item = self._clean_item(item)
+        self._air.update(clean_item)
 
-    def build_final_data(self) -> Dict:
-        return {
-            "status": AIR_RESULT_STATUS_DATA,
-            "request_args": self._request_args,
-            "air": self._air,
-        }
+    def collect_flight_item(self, item: air_items.FlightItem):
+        clean_item = self._clean_item(item)
+        self._flights.append(clean_item)
+
+    def collect_history_item(self, item: air_items.HistoryItem):
+        clean_item = self._clean_item(item)
+        self._history.append(clean_item)
+
+    def build_final_data(self) -> Union[Dict, None]:
+        if self._air or self._flights or self._history:
+            return {
+                "status": AIR_RESULT_STATUS_DATA,
+                "request_args": self._request_args,
+                "air": self._air,
+                "flights": self._flights,
+                "history": self._history,
+            }
 
     def build_error_data(self, item: air_items.ExportErrorData) -> Dict:
         clean_dict = self._clean_item(item)
@@ -157,15 +217,6 @@ class AirResultCollector:
             **clean_dict,
         }
 
-    def build_invalid_no_data(self, item: air_items.InvalidMawbNoItem) -> Dict:
-
-        return {
-            "status": AIR_RESULT_STATUS_ERROR,  # default status
-            "request_args": self._request_args,
-            "invalid_mawb_no": item["mawb_no"],
-            "task_id": item["task_id"],
-        }
-
     @staticmethod
     def _clean_item(item):
         """
@@ -173,5 +224,14 @@ class AirResultCollector:
         """
         return {k: v for k, v in item.items() if not k.startswith("_")}
 
+    def is_default(self):
+        return False if self._air else True
+
     def is_item_empty(self) -> bool:
         return not bool(self._air)
+
+    @staticmethod
+    def _get_default(task_id: str):
+        return {
+            "task_id": task_id,
+        }
