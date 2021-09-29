@@ -4,7 +4,7 @@ from scrapy import Request, FormRequest, Selector
 
 from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_air.base_spiders import BaseMultiAirSpider
-from crawler.core_air.items import DebugItem, BaseAirItem, AirItem, ExportErrorData, FlightItem
+from crawler.core_air.items import DebugItem, BaseAirItem, AirItem, ExportErrorData, FlightItem, HistoryItem
 from crawler.core_air.base import AIR_RESULT_STATUS_ERROR
 from crawler.core_air.rules import RuleManager, BaseRoutingRule, RequestOption
 
@@ -172,12 +172,15 @@ class SearchRoutingRule(BaseRoutingRule):
             return
 
         air_info = self._extract_air_info(response)
-        flight_info_list = self._extract_flight_info(response)
-
         yield AirItem(task_id=task_id, mawb=mawb_no, **air_info)
 
+        flight_info_list = self._extract_flight_info(response)
         for flight_info in flight_info_list:
             yield FlightItem(task_id=task_id, **flight_info)
+
+        history_info_list = self._extract_history_info(response)
+        for history_info in history_info_list:
+            yield HistoryItem(task_id=task_id, **history_info)
 
     @staticmethod
     def _is_mawb_no_invalid(response: Selector) -> bool:
@@ -204,8 +207,8 @@ class SearchRoutingRule(BaseRoutingRule):
         table = response.css("div#ContentPlaceHolder1_div_FI table")
         table_locator = FlightInfoTableLocator()
         table_locator.parse(table=table)
-
         table_extractor = TableExtractor(table_locator=table_locator)
+
         flight_info_list = []
         for left in table_locator.iter_left_header():
             origin, atd = table_extractor.extract_cell(top="Departure", left=left).strip().split(maxsplit=1)
@@ -224,8 +227,45 @@ class SearchRoutingRule(BaseRoutingRule):
             )
         return flight_info_list
 
+    @staticmethod
+    def _extract_history_info(response: Selector) -> List:
+        table = response.css('table[style="align-content: unset"]')
+        table_locator = HistoryInfoTableLocator()
+        table_locator.parse(table=table)
+        table_extractor = TableExtractor(table_locator=table_locator)
+
+        history_info_list = []
+        for left in table_locator.iter_left_header():
+            event_time = table_extractor.extract_cell(top="Event Time", left=left).strip()
+
+            history_info_list.append(
+                {
+                    "status": table_extractor.extract_cell(top="Status", left=left).strip(),
+                    "flight_no": table_extractor.extract_cell(top="Flight", left=left).strip(),
+                    "pieces": table_extractor.extract_cell(top="Pieces", left=left).strip(),
+                    "weight": table_extractor.extract_cell(top="Weight", left=left).strip(),
+                    "location": table_extractor.extract_cell(top="Event Airport", left=left).strip(),
+                    "time": event_time[:11] or None,
+                }
+            )
+        return history_info_list
+
 
 class FlightInfoTableLocator(BaseTable):
+    def parse(self, table: Selector):
+        header_tds = table.css("tr")[0].css("td")
+        headers = [header_td.css("::text").get().strip() for header_td in header_tds]
+        trs = table.css("tr")[1:]
+
+        for index, tr in enumerate(trs):
+            tds = tr.css("td")
+            self._left_header_set.add(index)
+            for header, td in zip(headers, tds):
+                self._td_map.setdefault(header, [])
+                self._td_map[header].append(td)
+
+
+class HistoryInfoTableLocator(BaseTable):
     def parse(self, table: Selector):
         header_tds = table.css("tr")[0].css("td")
         headers = [header_td.css("::text").get().strip() for header_td in header_tds]
