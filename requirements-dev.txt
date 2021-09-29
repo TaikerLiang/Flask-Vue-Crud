@@ -4,14 +4,16 @@
 #
 #    pip-compile --output-file=requirements-dev.txt requirements-dev.in
 #
-ansible==4.4.0
+ansible==4.6.0
     # via -r requirements-dev.in
-ansible-core==2.11.4
+ansible-core==2.11.5
     # via ansible
 anticaptchaofficial==1.0.31
     # via -r src/requirements-app.txt
 appdirs==1.4.4
-    # via black
+    # via
+    #   -r src/requirements-app.txt
+    #   pyppeteer
 asgiref==3.4.1
     # via
     #   -r src/requirements-app.txt
@@ -29,7 +31,7 @@ automat==20.2.0
     #   twisted
 backports.entry-points-selectable==1.1.0
     # via virtualenv
-black==21.7b0
+black==21.9b0
     # via -r requirements-dev.in
 blinker==1.4
     # via
@@ -50,13 +52,13 @@ cffi==1.14.6
     # via
     #   -r src/requirements-app.txt
     #   cryptography
-cfgv==3.3.0
+cfgv==3.3.1
     # via pre-commit
-charset-normalizer==2.0.4
+charset-normalizer==2.0.6
     # via
     #   -r src/requirements-app.txt
     #   requests
-click==7.1.2
+click==8.0.1
     # via
     #   -r src/requirements-app.txt
     #   black
@@ -69,7 +71,7 @@ constantly==15.1.0
     #   twisted
 coverage==5.5
     # via pytest-cov
-cryptography==3.4.7
+cryptography==3.4.8
     # via
     #   -r src/requirements-app.txt
     #   ansible-core
@@ -82,11 +84,11 @@ cssselect==1.1.0
     #   -r src/requirements-app.txt
     #   parsel
     #   scrapy
-distlib==0.3.2
+distlib==0.3.3
     # via virtualenv
-faker==8.12.0
+faker==8.14.0
     # via -r src/requirements-app.txt
-filelock==3.0.12
+filelock==3.1.0
     # via virtualenv
 flask==2.0.1
     # via
@@ -116,20 +118,24 @@ hyperlink==21.0.0
     # via
     #   -r src/requirements-app.txt
     #   twisted
-identify==2.2.13
+identify==2.2.15
     # via pre-commit
 idna==3.2
     # via
     #   -r src/requirements-app.txt
     #   hyperlink
     #   requests
+importlib-metadata==4.8.1
+    # via
+    #   -r src/requirements-app.txt
+    #   pyppeteer
 incremental==21.3.0
     # via
     #   -r src/requirements-app.txt
     #   twisted
 iniconfig==1.1.1
     # via pytest
-itemadapter==0.3.0
+itemadapter==0.4.0
     # via
     #   -r src/requirements-app.txt
     #   itemloaders
@@ -169,7 +175,7 @@ markupsafe==2.0.1
     # via
     #   -r src/requirements-app.txt
     #   jinja2
-mitmproxy==7.0.2
+mitmproxy==7.0.3
     # via -r src/requirements-app.txt
 msgpack==1.0.2
     # via
@@ -202,21 +208,23 @@ pathspec==0.9.0
     # via black
 pep517==0.11.0
     # via pip-tools
-pillow==8.3.1
+pillow==8.3.2
     # via -r requirements-dev.in
-pip-tools==6.2.0
+pip-tools==6.3.0
     # via -r requirements-dev.in
-platformdirs==2.2.0
-    # via virtualenv
-pluggy==0.13.1
+platformdirs==2.4.0
+    # via
+    #   black
+    #   virtualenv
+pluggy==1.0.0
     # via pytest
-pre-commit==2.14.0
+pre-commit==2.15.0
     # via -r requirements-dev.in
 protego==0.1.16
     # via
     #   -r src/requirements-app.txt
     #   scrapy
-protobuf==3.17.3
+protobuf==3.18.0
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
@@ -248,6 +256,10 @@ pydispatcher==2.0.5
     # via
     #   -r src/requirements-app.txt
     #   scrapy
+pyee==8.2.2
+    # via
+    #   -r src/requirements-app.txt
+    #   pyppeteer
 pyopenssl==20.0.1
     # via
     #   -r src/requirements-app.txt
@@ -264,16 +276,20 @@ pyperclip==1.8.2
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
+pyppeteer==0.2.6
+    # via -r src/requirements-app.txt
 pysocks==1.7.1
     # via
     #   -r src/requirements-app.txt
     #   selenium-wire
-pytest==6.2.4
+pytest==6.2.5
     # via
     #   -r requirements-dev.in
     #   pytest-cov
 pytest-cov==2.12.1
     # via -r requirements-dev.in
+python-anticaptcha==0.7.1
+    # via -r src/requirements-app.txt
 python-dateutil==2.8.2
     # via
     #   -r src/requirements-app.txt
@@ -284,19 +300,20 @@ pyyaml==5.4.1
     # via
     #   ansible-core
     #   pre-commit
-queuelib==1.6.1
+queuelib==1.6.2
     # via
     #   -r src/requirements-app.txt
     #   scrapy
-regex==2021.8.21
+regex==2021.9.24
     # via black
 requests==2.26.0
     # via
     #   -r src/requirements-app.txt
     #   anticaptchaofficial
+    #   python-anticaptcha
 resolvelib==0.5.4
     # via ansible-core
-ruamel.yaml==0.17.10
+ruamel.yaml==0.17.16
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
@@ -310,22 +327,20 @@ selenium==3.141.0
     # via
     #   -r src/requirements-app.txt
     #   selenium-wire
-selenium-wire==4.5.1
+selenium-wire==4.5.2
     # via -r src/requirements-app.txt
 service-identity==21.1.0
     # via
     #   -r src/requirements-app.txt
     #   scrapy
-shub==2.10.0
-    # via
 six==1.16.0
     # via
     #   -r src/requirements-app.txt
     #   automat
     #   parsel
     #   protego
-    #   protobuf
     #   pyopenssl
+    #   python-anticaptcha
     #   python-dateutil
     #   service-identity
     #   virtualenv
@@ -351,26 +366,32 @@ tornado==6.1
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
+tqdm==4.62.3
+    # via
+    #   -r src/requirements-app.txt
+    #   pyppeteer
 twisted==21.7.0
     # via
     #   -r src/requirements-app.txt
     #   scrapy
-typing-extensions==3.10.0.0
+typing-extensions==3.10.0.2
     # via
     #   -r src/requirements-app.txt
+    #   black
     #   twisted
-ujson==4.1.0
+ujson==4.2.0
     # via -r src/requirements-app.txt
-urllib3==1.26.6
+urllib3==1.26.7
     # via
     #   -r src/requirements-app.txt
+    #   pyppeteer
     #   requests
     #   selenium
 urwid==2.1.2
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
-virtualenv==20.7.2
+virtualenv==20.8.1
     # via pre-commit
 w3lib==1.22.0
     # via
@@ -378,6 +399,10 @@ w3lib==1.22.0
     #   itemloaders
     #   parsel
     #   scrapy
+websockets==9.1
+    # via
+    #   -r src/requirements-app.txt
+    #   pyppeteer
 werkzeug==2.0.1
     # via
     #   -r src/requirements-app.txt
@@ -389,6 +414,10 @@ wsproto==1.0.0
     #   -r src/requirements-app.txt
     #   mitmproxy
     #   selenium-wire
+zipp==3.5.0
+    # via
+    #   -r src/requirements-app.txt
+    #   importlib-metadata
 zope.interface==5.4.0
     # via
     #   -r src/requirements-app.txt

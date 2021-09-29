@@ -64,3 +64,8 @@ class HistoryItem(BaseAirItem):
     @property
     def key(self):
         return self["task_id"]
+
+
+class InvalidMawbNoItem(BaseAirItem):
+    task_id = scrapy.Field()
+    mawb = scrapy.Field()

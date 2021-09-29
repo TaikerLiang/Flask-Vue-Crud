@@ -9,3 +9,4 @@ python_anticaptcha
 ujson
 mitmproxy
 Scrapy==2.4.1
+pyppeteer

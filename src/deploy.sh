@@ -8,9 +8,9 @@ do
     esac
 done
 
-
-pytest -x ../test --disable-warnings
+cd .. && python -m pytest test/ --disable-warnings
 existed=$?
+cd src
 
 if [ $existed = 1 ]
 then

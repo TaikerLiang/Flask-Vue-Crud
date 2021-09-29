@@ -39,6 +39,7 @@ class LocalCrawler:
             booking_nos=",".join(task.booking_nos),
             container_nos=",".join(task.container_nos),
         )
+        # TODO: handle data was not found here (init_items)
         for resp_data in self.handler.build_response_data(_type=self.type, items=items):
             yield self.handler.update_resp_data(data=resp_data, result=init_items[resp_data["task_id"]])
 
@@ -59,10 +60,15 @@ class LocalCrawler:
 
 def start():
     carrier_edi_client = EdiClientService(
-        url=f"{config.EDI_DOMAIN}/api/api/tracking-carrier/local/", edi_user=config.EDI_USER, edi_token=config.EDI_TOKEN
+        url=f"{config.EDI_DOMAIN}/api/tracking-carrier/local/", edi_user=config.EDI_USER, edi_token=config.EDI_TOKEN
     )
     local_tasks = carrier_edi_client.get_local_tasks()
     logger.info(f"number of tasks: {len(local_tasks)}")
+
+    # local_tasks = [
+    #     {'type': 'terminal', 'firms_code': 'Y258', 'task_id': '57143', 'container_no': 'TCNU4859108'},
+    #     {'type': 'terminal', 'firms_code': 'Y258', 'task_id': '76022', 'container_no': 'KOCU5237223'}
+    # ]
 
     if len(local_tasks) == 0:
         logger.warning(f"sleep 10 minutes")
@@ -134,4 +140,5 @@ def start():
 
 if __name__ == "__main__":
     logging.config.fileConfig(fname="log.conf", disable_existing_loggers=False)
-    start()
+    while True:
+        start()
