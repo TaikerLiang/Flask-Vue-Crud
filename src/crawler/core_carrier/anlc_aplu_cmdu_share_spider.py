@@ -144,6 +144,9 @@ class CheckIpRule(BaseRoutingRule):
 
         response_json = json.loads(response.text)
         ip = response_json["ip"]
+        print("========")
+        print("ip", ip)
+        print("========")
 
         if ip in self._sent_ips:
             yield ForceRestart()
