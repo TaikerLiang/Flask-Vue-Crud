@@ -2,7 +2,7 @@ import pytest
 from typing import Dict, List
 
 from crawler.core_air.base import AIR_RESULT_STATUS_DEBUG, AIR_RESULT_STATUS_ERROR, AIR_RESULT_STATUS_FATAL
-from crawler.core_air.items import AirItem, DebugItem, ExportErrorData, FlightItem, HistoryItem, InvalidMawbNoItem
+from crawler.core_air.items import AirItem, DebugItem, ExportErrorData, FlightItem, HistoryItem
 from crawler.core_air.pipelines import AirResultCollector
 
 
@@ -31,10 +31,6 @@ TEST_ERROR = [
 
 TEST_DEBUG = [
     dict(info="I'm a debug item"),
-]
-
-TEST_INVALID_MAWB = [
-    dict(task_id="12345", mawb="00000000")
 ]
 
 
@@ -145,27 +141,3 @@ class TestAirlineResultCollector:
 
         # assert
         test_debug.update({"status": AIR_RESULT_STATUS_DEBUG})
-
-    @pytest.mark.parametrize(
-        "test_invalid_mawb",
-        [
-            TEST_INVALID_MAWB[0],
-        ],
-    )
-    def test_build_invalid_no_data(self, test_invalid_mawb: Dict):
-        # arrange
-        request_args = {"task_id": "12345", "mawb": "00000000"}
-        collector = AirResultCollector(request_args=request_args)
-
-        # action
-        data = collector.build_invalid_no_data(item=InvalidMawbNoItem(**test_invalid_mawb))
-
-        # assert
-        test_invalid_mawb.update(
-            {
-                "status": AIR_RESULT_STATUS_ERROR,
-                "request_args": request_args,
-                "invalid_mawb_no": test_invalid_mawb.get("mawb"),
-                "task_id": test_invalid_mawb.get("task_id"),
-            }
-        )

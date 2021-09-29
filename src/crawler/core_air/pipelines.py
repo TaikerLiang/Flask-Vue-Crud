@@ -59,8 +59,6 @@ class AirItemPipeline(BaseItemPipeline):
             elif isinstance(item, air_items.ExportFinalData):
                 res = self._send_result_back_to_edi_engine()
                 return {"status": "CLOSE", "result": res}
-            elif isinstance(item, air_items.InvalidMawbNoItem):
-                return self._default_collector.build_invalid_no_data(item=item)
             elif isinstance(item, air_items.ExportErrorData):
                 return self._collector.build_error_data(item)
             elif isinstance(item, air_items.DebugItem):
@@ -138,8 +136,6 @@ class AirMultiItemsPipeline:
                 collector = self._collector_map[item.key] if item.key else self._default_collector
                 collector.collect_air_item(item=item)
                 return collector.build_final_data()
-            elif isinstance(item, air_items.InvalidMawbNoItem):
-                return self._default_collector.build_invalid_no_data(item=item)
             elif isinstance(item, air_items.ExportFinalData):
                 return {"status": "CLOSE"}
             elif isinstance(item, air_items.ExportErrorData):
@@ -179,8 +175,8 @@ class AirResultCollector:
     def __init__(self, request_args):
         self._request_args = dict(request_args)
         self._air = {}
-        self._flights = {}
-        self._history = {}
+        self._flights = []
+        self._history = []
 
     def collect_air_item(self, item: air_items.AirItem):
         clean_item = self._clean_item(item)
@@ -188,28 +184,20 @@ class AirResultCollector:
 
     def collect_flight_item(self, item: air_items.FlightItem):
         clean_item = self._clean_item(item)
-        self._flights[item.key] = clean_item
+        self._flights.append(clean_item)
 
     def collect_history_item(self, item: air_items.HistoryItem):
         clean_item = self._clean_item(item)
-        self._history[item.key] = clean_item
+        self._history.append(clean_item)
 
     def build_final_data(self) -> Union[Dict, None]:
-        flight_list = []
-        for flight in list(self._flights.values()):
-            flight_list.append(flight)
-
-        history_list = []
-        for history in list(self._history.values()):
-            history_list.append(history)
-
-        if self._air or flight_list or history_list:
+        if self._air or self._flights or self._history:
             return {
                 "status": AIR_RESULT_STATUS_DATA,
                 "request_args": self._request_args,
                 "air": self._air,
-                "flights": flight_list,
-                "history": history_list,
+                "flights": self._flights,
+                "history": self._history,
             }
 
     def build_error_data(self, item: air_items.ExportErrorData) -> Dict:
@@ -227,15 +215,6 @@ class AirResultCollector:
         return {
             "status": AIR_RESULT_STATUS_DEBUG,
             **clean_dict,
-        }
-
-    def build_invalid_no_data(self, item: air_items.InvalidMawbNoItem) -> Dict:
-
-        return {
-            "status": AIR_RESULT_STATUS_ERROR,  # default status
-            "request_args": self._request_args,
-            "invalid_mawb_no": item.get("mawb"),
-            "task_id": item.get("task_id"),
         }
 
     @staticmethod

@@ -31,10 +31,6 @@ class AirItem(BaseAirItem):
     ata = scrapy.Field()
     current_state = scrapy.Field()
 
-    @property
-    def key(self):
-        return self["task_id"]
-
 
 class FlightItem(BaseAirItem):
     task_id = scrapy.Field()
@@ -46,10 +42,6 @@ class FlightItem(BaseAirItem):
     atd = scrapy.Field()
     ata = scrapy.Field()
 
-    @property
-    def key(self):
-        return f"{self['origin']}-{self['destination']}"
-
 
 class HistoryItem(BaseAirItem):
     task_id = scrapy.Field()
@@ -59,12 +51,3 @@ class HistoryItem(BaseAirItem):
     time = scrapy.Field()
     location = scrapy.Field()
     flight_number = scrapy.Field()
-
-    @property
-    def key(self):
-        return f"{self['status']}-{self['time']}"
-
-
-class InvalidMawbNoItem(BaseAirItem):
-    task_id = scrapy.Field()
-    mawb = scrapy.Field()

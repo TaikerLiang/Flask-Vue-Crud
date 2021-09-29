@@ -133,10 +133,13 @@ class AirInfoRoutingRule(BaseRoutingRule):
                 detail="Data was not found",
             )
         else:
-            yield self._construct_air_item(response)
+            try:
+                yield self._construct_air_item(response)
 
-            for history_item in self._construct_history_item_list(response):
-                yield history_item
+                for history_item in self._construct_history_item_list(response):
+                    yield history_item
+            except AirInvalidMawbNoError as e:
+                yield e.build_error_data()
 
     @staticmethod
     def _construct_air_item(response: Response) -> AirItem:
