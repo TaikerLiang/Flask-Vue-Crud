@@ -1,6 +1,6 @@
 from typing import List
 
-from crawler.core_air.items import AirItem, FlightItem
+from crawler.core_air.items import AirItem, FlightItem, HistoryItem
 
 
 def verify(results: List):
@@ -14,7 +14,27 @@ def verify(results: List):
         current_state="Current Cargo Status:DLV(Consignment physically delivered)--TAO(Qingdao/Liuting)--2021-07-30 08:59",
     )
 
-    assert results[1] == FlightItem(
+    assert results[2] == HistoryItem(
+        task_id="1",
+        flight_no="CA600/27JUL",
+        status="MAN(Manifest)",
+        location="JFK(New York)",
+        pieces="1",
+        weight="46",
+        time="2021-07-28 01:08",
+    )
+
+    assert results[9] == HistoryItem(
+        task_id="1",
+        flight_no="",
+        status="DLV(Consignment physically delivered)",
+        location="TAO(Qingdao/Liuting)",
+        pieces="1",
+        weight="46",
+        time="2021-07-30 08:59",
+    )
+
+    assert results[-2] == FlightItem(
         task_id="1",
         flight_number="CA600/27JUL",
         origin="JFK",
@@ -25,7 +45,7 @@ def verify(results: List):
         ata=None,
     )
 
-    assert results[2] == FlightItem(
+    assert results[-1] == FlightItem(
         task_id="1",
         flight_number="CA1579",
         origin="JFK",
