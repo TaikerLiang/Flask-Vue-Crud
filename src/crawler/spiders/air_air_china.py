@@ -6,7 +6,7 @@ from python_anticaptcha import AnticaptchaClient, ImageToTextTask, AnticaptchaEx
 
 from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_air.base_spiders import BaseMultiAirSpider
-from crawler.core_air.items import DebugItem, BaseAirItem, AirItem, ExportErrorData, FlightItem
+from crawler.core_air.items import DebugItem, BaseAirItem, AirItem, ExportErrorData, FlightItem, HistoryItem
 from crawler.core_air.base import AIR_RESULT_STATUS_ERROR
 from crawler.core_air.exceptions import AntiCaptchaError
 from crawler.core_air.rules import RuleManager, BaseRoutingRule, RequestOption
@@ -227,10 +227,13 @@ class SearchRoutingRule(BaseRoutingRule):
             return
 
         air_info = self._extract_air_info(response)
-        flight_info_list = self._extract_flight_info(response, air_info=air_info)
-
         yield AirItem(task_id=task_id, mawb=mawb_no, **air_info)
 
+        history_info_list = self._extract_history_info(response)
+        for history_info in history_info_list:
+            yield HistoryItem(task_id=task_id, **history_info)
+
+        flight_info_list = self._build_flight_info_list(history_info_list, air_info)
         for flight_info in flight_info_list:
             yield FlightItem(task_id=task_id, **flight_info)
 
@@ -254,75 +257,91 @@ class SearchRoutingRule(BaseRoutingRule):
         }
 
     @staticmethod
-    def _extract_flight_info(response: Selector, air_info: Dict) -> List:
+    def _extract_history_info(response: Selector) -> List:
+        table = response.css("table#tbcargostatus")[1]
+        table_locator = CargoDetailsTableLocator()
+        table_locator.parse(table=table)
+        table_extractor = TableExtractor(table_locator=table_locator)
+
+        history_info_list = []
+        for left in table_locator.iter_left_header():
+            history_info_list.append(
+                {
+                    "status": table_extractor.extract_cell(top="Status", left=left).strip(),
+                    "flight_no": table_extractor.extract_cell(top="Flight Info", left=left).strip(),
+                    "location": table_extractor.extract_cell(top="Operation Airport", left=left).strip(),
+                    "pieces": table_extractor.extract_cell(top="Pieces", left=left).strip(),
+                    "weight": table_extractor.extract_cell(top="Weight(kg)", left=left).strip(),
+                    "time": table_extractor.extract_cell(top="Operational time", left=left).strip(),
+                }
+            )
+        return history_info_list
+
+    def _build_flight_info_list(self, history_info_list: List, air_info: Dict) -> List:
         origin = air_info["origin"]
         destination = air_info["destination"]
 
-        table = response.css("table#tbcargostatus")[1]
-        table_locator = CargoDetailsTableLocator()
-        table_locator.parse(table=table, origin=origin, destination=destination)
-        table_extractor = TableExtractor(table_locator=table_locator)
+        is_dep_first, is_rcf_first = True, True
 
         flight_info_list = []
-        for left in table_locator.iter_left_header():
-            status = table_extractor.extract_cell(top="Status", left=left).strip()
-            atx = table_extractor.extract_cell(top="Operational time", left=left).strip()
+        for history_info in history_info_list:
+            if (
+                self._is_departure(status=history_info["status"], location=history_info["location"], origin=origin)
+                and is_dep_first
+            ):
+                is_dep_first = False
+                flight_info_list.append(
+                    {
+                        "flight_number": history_info["flight_no"],
+                        "origin": origin,
+                        "destination": destination,
+                        "pieces": history_info["pieces"],
+                        "weight": history_info["weight"],
+                        "atd": history_info["time"],
+                        "ata": None,
+                    }
+                )
+                continue
 
-            atd, ata = None, None
-            if status.startswith("DEP"):
-                atd = atx
-            elif status.startswith("RCF"):
-                ata = atx
+            if (
+                self._is_arrival(
+                    status=history_info["status"], location=history_info["location"], destination=destination
+                )
+                and is_rcf_first
+            ):
+                is_rcf_first = False
+                flight_info_list.append(
+                    {
+                        "flight_number": history_info["flight_no"],
+                        "origin": origin,
+                        "destination": destination,
+                        "pieces": history_info["pieces"],
+                        "weight": history_info["weight"],
+                        "atd": None,
+                        "ata": history_info["time"],
+                    }
+                )
 
-            flight_info_list.append(
-                {
-                    "flight_number": table_extractor.extract_cell(top="Flight Info", left=left).strip(),
-                    "origin": origin,
-                    "destination": destination,
-                    "pieces": table_extractor.extract_cell(top="Pieces", left=left).strip(),
-                    "weight": table_extractor.extract_cell(top="Weight(kg)", left=left).strip(),
-                    "atd": atd,
-                    "ata": ata,
-                }
-            )
         return flight_info_list
+
+    @staticmethod
+    def _is_departure(status, location, origin):
+        return status.startswith("DEP") and location.startswith(origin)
+
+    @staticmethod
+    def _is_arrival(status, location, destination):
+        return status.startswith("RCF") and location.startswith(destination)
 
 
 class CargoDetailsTableLocator(BaseTable):
-    def parse(self, table: Selector, origin: str, destination: str):
+    def parse(self, table: Selector):
         header_ths = table.css("th")
         headers = [header_th.css("::text").get().strip() for header_th in header_ths]
         trs = table.css("tbody tr")
 
-        is_dep_first, is_rcf_first = True, True
-
         for index, tr in enumerate(trs):
             tds = tr.css("td")
-            status = tds[0].css("::text").get().strip()
-            airport = tds[1].css("::text").get().strip()
-
-            # ATD
-            if self.is_departure(status, airport, origin) and is_dep_first:
-                is_dep_first = False
-                self._left_header_set.add(index)
-                for header, td in zip(headers, tds):
-                    self._td_map.setdefault(header, [])
-                    self._td_map[header].append(td)
-                continue
-
-            # ATA
-            if self.is_arrival(status, airport, destination) and is_rcf_first:
-                is_rcf_first = False
-                self._left_header_set.add(index)
-                for header, td in zip(headers, tds):
-                    self._td_map.setdefault(header, [])
-                    self._td_map[header].append(td)
-                continue
-
-    @staticmethod
-    def is_departure(status, airport, origin):
-        return status.startswith("DEP") and airport.startswith(origin)
-
-    @staticmethod
-    def is_arrival(status, airport, destination):
-        return status.startswith("RCF") and airport.startswith(destination)
+            self._left_header_set.add(index)
+            for header, td in zip(headers, tds):
+                self._td_map.setdefault(header, [])
+                self._td_map[header].append(td)
