@@ -225,7 +225,7 @@ class AirResultCollector:
         return {k: v for k, v in item.items() if not k.startswith("_")}
 
     def is_default(self):
-        return False if self._basic else True
+        return False if self._air else True
 
     def is_item_empty(self) -> bool:
         return not bool(self._air)
