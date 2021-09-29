@@ -46,7 +46,7 @@ class FlightItem(BaseAirItem):
     weight = scrapy.Field()
     atd = scrapy.Field()
     ata = scrapy.Field()
-    
+
     @property
     def key(self):
         return self["task_id"]
@@ -55,8 +55,8 @@ class FlightItem(BaseAirItem):
 class HistoryItem(BaseAirItem):
     task_id = scrapy.Field()
     status = scrapy.Field()
-    Pieces = scrapy.Field()
-    Weight = scrapy.Field()
+    pieces = scrapy.Field()
+    weight = scrapy.Field()
     time = scrapy.Field()
     location = scrapy.Field()
     flight_no = scrapy.Field()
