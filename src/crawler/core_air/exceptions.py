@@ -12,6 +12,13 @@ class BaseAirError(Exception):
         pass
 
 
+class AntiCaptchaError(BaseAirError):
+    status = AIR_RESULT_STATUS_ERROR
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail=f"<anti-captcha-error>")
+
+
 class AirInvalidMawbNoError(BaseAirError):
     status = AIR_RESULT_STATUS_ERROR
 
