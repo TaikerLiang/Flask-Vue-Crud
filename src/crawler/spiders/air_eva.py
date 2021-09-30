@@ -12,6 +12,7 @@ from crawler.core_air.items import (
     BaseAirItem,
     AirItem,
     DebugItem,
+    HistoryItem
 )
 
 URL = 'https://www.brcargo.com/NEC_WEB/Tracking/QuickTracking'
@@ -26,6 +27,7 @@ class AirEvaSpider(BaseAirSpider):
 
         rules = [
             AirInfoRoutingRule(),
+            DetailPageRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -105,6 +107,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
 
         air_info = self._extract_air_info(response_dict)
         yield AirItem(**air_info)
+        yield DetailPageRoutingRule.build_request_option(mawb_no=response.meta['mawb_no'])
 
     @staticmethod
     def is_mawb_no_invalid(response: Dict):
@@ -133,3 +136,48 @@ class AirInfoRoutingRule(BaseRoutingRule):
             'ata': ata,
         }
 
+
+class DetailPageRoutingRule(BaseRoutingRule):
+    name = 'DETAIL_PAGE'
+
+    @classmethod
+    def build_request_option(cls, mawb_no: str) -> RequestOption:
+        form_data = {
+            'prefix': PREFIX,
+            'AWBNo': mawb_no,
+        }
+        body = urlencode(query=form_data)
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_BODY,
+            url=f'{URL}/QuickTrackingDetail',
+            headers={
+                'Connection': 'keep-alive',
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36',
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'Referer': 'https://www.brcargo.com/NEC_WEB/Tracking/QuickTracking/Index',
+                'Accept-Language': 'en-US,en;q=0.9',
+            },
+            body=body,
+            meta={
+                'mawb_no': mawb_no,
+            }
+        )
+
+    def get_save_name(self, response) -> str:
+        return f'{self.name}.html'
+
+    def handle(self, response):
+        pattern = r'\bvar\s+QUTR01DetailData\s*=\s*(\{.*?\})\s*;\s*\n'
+        json_data = response.css('script::text')[-1].re_first(pattern)
+        detail_dict = json.loads(json_data)
+        text_list = detail_dict['TextList']
+        for event in text_list:
+            yield HistoryItem(
+                    status=event["Status"],
+                    pieces=event["Pieces"],
+                    weight=event["Weight"],
+                    time=event["EventTime"],
+                    location=event["Location"],
+                    flight_number=event["FlightNo"],
+                 )

@@ -1,0 +1,621 @@
+
+<link href="/NEC_WEB/Content/EVA_Custom.css" rel="stylesheet" />
+<script src="/NEC_WEB/Scripts/plugins/dragscroll/jquery.dragscroll.js"></script>
+<div class="wrap_container" style="transform: translate(0px, 0px);">
+
+    <!-- 頁面標題 -->
+    <div class="wrap_title">
+        <div class="container">
+            Tracking
+        </div>
+    </div>
+    <!-- /頁面標題 -->
+    <!-- 中央內容區 -->
+    <div class="wrap_content wrap_content_fix">
+        <div class="container">
+
+            <!-- 資料標題 -->
+            <div class="tableHead text-center w-lg-50">
+                <div class="row">
+                    <div class="col-4 text-right">
+                        <div class="d-inline-block text-center">
+                            <p class="font-larger font-lg-huger text-green font-bold">HKG</p>
+                            <p class="text-gray font-small mb-2"></p>
+                        </div>
+                    </div>
+                    <div class="col-4 px-0">
+                        <div class="height_full d-flex align-items-center text-center">
+                            <img src="/NEC_WEB/Content/images/icon_aircraft.svg">
+                        </div>
+                    </div>
+                    <div class="col-4 text-left">
+                        <div class="d-inline-block text-center">
+                            <p class="font-larger font-lg-huger text-green font-bold">LAX</p>
+                            <p class="text-gray font-small mb-2"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="formCard mb-5">
+                <div class="card_row">
+                    <div class="flt">
+                        <label class="data_label">MAWB No. :</label>
+                        <div class="data_text" id="QUTR01MAWBNo"></div>
+                    </div>
+                    <div class="frt">
+                        <label class="data_label">Total Pieces / Weight :</label>
+                        <div class="data_text" id="QUTR01TotalPiecesWeight"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 表格切換 -->
+            <div class="tableSwitch_navtabs nav">
+                <a id="QUTR01tabFigure" class="nav-link" data-toggle="tab" role="tab" href="#QUTR01Figure">Figure</a>
+                <a id="QUTR01tabText" class="nav-link active" data-toggle="tab" role="tab" href="#QUTR01Text">Text</a>
+            </div>
+            <div class="tab-content">
+                <div class="tab-pane fade" role="tabpanel" id="QUTR01Figure">
+                    <div class="tableScrollPanel mobileScroll">
+                        <div class="dragScroller">
+                            <table class="tableList tableStyle-2">
+                                <thead>
+                                    <tr>
+                                            <th colspan="4" class="position-relative">
+                                                <a class="icon-info abs-left" href="#" data-toggle="modal" data-target="#QUTR01StatusInfo">Info</a>
+HKG                                            </th>
+                                                <th colspan="3">TPE (  )</th>
+                                                <th colspan="3">LAX (  )</th>
+
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                            <tr>
+                                                        <td>
+                                                            <div class="circle_lg full mb-3">
+                                                                <span>BKD</span>
+                                                            </div>
+                                                            <div style="height:90px" class="text-left">
+                                                                <div class="mb-2 icon-calendar">2021/07/24</div>
+                                                                <div class="mb-2 icon-time">14:33</div>
+
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div class="circle_lg full mb-3">
+                                                                <span>RCS</span>
+                                                            </div>
+                                                            <div style="height:90px" class="text-left">
+                                                                <div class="mb-2 icon-calendar">2021/07/25</div>
+                                                                <div class="mb-2 icon-time">17:17</div>
+                                                                <div class="mb-2 icon-goods">208 P</div>
+
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div class="circle_lg full mb-3">
+                                                                <span>DEP</span>
+                                                            </div>
+                                                            <div style="height:90px" class="text-left">
+                                                                <div class="mb-2 icon-calendar">2021/07/25</div>
+                                                                <div class="mb-2 icon-time">18:02<br>(Actual)</div>
+                                                                <div class="mb-2 icon-goods">208 P</div>
+
+                                                            </div>
+                                                        </td>
+                                                        <td class="bg-gray">
+                                                            <div class="text-center mb-4">
+                                                            <img src="/NEC_WEB/Content/images/icon_Shape_c.svg">
+
+                                                            </div>
+                                                            <div class="text-left">
+                                                            <div class="mb-2">BR0828 </div>
+                                                                    <div class="mb-2">789 (P)</div>
+                                                            <div class="mb-2"><a class="text-underline" href="javascript:;" onclick="QUTR01ULDDetail('BR0828 ', 'HKG', 'TPE', '2021/07/25', '9185389')">ULD</a></div>
+
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div class="circle_lg full mb-3">
+                                                                <span>ARR</span>
+                                                            </div>
+                                                            <div style="height:90px" class="text-left">
+                                                                <div class="mb-2 icon-calendar">2021/07/25</div>
+                                                                <div class="mb-2 icon-time">19:44<br>(Actual)</div>
+
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div class="circle_lg full mb-3">
+                                                                <span>DEP</span>
+                                                            </div>
+                                                            <div style="height:90px" class="text-left">
+                                                                <div class="mb-2 icon-calendar">2021/07/26</div>
+                                                                <div class="mb-2 icon-time">10:04<br>(Actual)</div>
+                                                                <div class="mb-2 icon-goods">208 P</div>
+
+                                                            </div>
+                                                        </td>
+                                                        <td class="bg-gray">
+                                                            <div class="text-center mb-4">
+                                                            <img src="/NEC_WEB/Content/images/icon_Shape_c.svg">
+
+                                                            </div>
+                                                            <div class="text-left">
+                                                            <div class="mb-2">BR0006 </div>
+                                                                    <div class="mb-2">77R (P)</div>
+                                                            <div class="mb-2"><a class="text-underline" href="javascript:;" onclick="QUTR01ULDDetail('BR0006 ', 'TPE', 'LAX', '2021/07/26', '9170731')">ULD</a></div>
+
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div class="circle_lg full mb-3">
+                                                                <span>ARR</span>
+                                                            </div>
+                                                            <div style="height:90px" class="text-left">
+                                                                <div class="mb-2 icon-calendar">2021/07/26</div>
+                                                                <div class="mb-2 icon-time">07:39<br>(Actual)</div>
+
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div class="circle_lg full mb-3">
+                                                                <span>RCF</span>
+                                                            </div>
+                                                            <div style="height:90px" class="text-left">
+                                                                <div class="mb-2 icon-goods">208 P</div>
+
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div class="circle_lg full mb-3">
+                                                                <span>DLV</span>
+                                                            </div>
+                                                            <div style="height:90px" class="text-left">
+                                                                <div class="mb-2 icon-calendar">2021/07/28</div>
+                                                                <div class="mb-2 icon-time">18:34</div>
+                                                                <div class="mb-2 icon-goods">208 P</div>
+
+                                                            </div>
+                                                        </td>
+
+                                            </tr>
+
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade show active" role="tabpanel" id="QUTR01Text">
+                    <div class="tableScrollPanel">
+                        <div class="mb-3 mb-lg-5">
+                            <select id="QUTR01Sort" class="form-control w-auto">
+                                <option value="Time">Sort by Time ( GMT )</option>
+                                <option value="Status">Sort by Status</option>
+                            </select>
+                        </div>
+                        <div>
+                            <table id="QUTR01TextTable" class="tableBlock tableStriped">
+                                <thead>
+                                    <tr>
+                                        <th><a style="color:white" class="text-underline" href="#" data-toggle="modal" data-target="#QUTR01StatusInfo">Status</a></th>
+                                        <th>Pieces / Weight</th>
+                                        <th>Time <small class="d-lg-block">( Local )</small></th>
+                                        <th>Location</th>
+                                        <th>Flight No.</th>
+                                        <th>Departure Date</th>
+                                        <th>Departure / Arrival</th>
+                                        <th>Vehicle <small class="d-lg-block">( Note 1 )</small></th>
+                                        <th>ULD Details</th>
+                                    </tr>
+                                </thead>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="remarkList">
+                <p class="title">Note :</p>
+                <ol>
+                    <li>When vehicle is a truck, the flight code is supplied by EVA Air. For reference only.</li>
+                </ol>
+            </div>
+            <!-- 按鈕 -->
+            <div class="form-buttons">
+                <a href="javascript:;" class="iBtn lg dark" onclick="QUTR01CancelMsgSetting()" id="QUTR01Back">Exit</a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade loadform md_full_screen" id="QUTR01StatusInfo" role="dialog" tabindex="-1">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="container context">
+                    <div class="form-title">Status Description</div>
+                    <table class="tableList tableStyle-5">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Status Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>DLV</td>
+                                <td>Freight Delivery to Forwarder</td>
+                            </tr>
+                            <tr>
+                                <td>AWD</td>
+                                <td>Documents Delivery to Forwarder</td>
+                            </tr>
+                            <tr>
+                                <td>NFD</td>
+                                <td>Freight & Docs ready for Forwarder Pick up</td>
+                            </tr>
+                            <tr>
+                                <td>RCF</td>
+                                <td>Consignment actual received after break down</td>
+                            </tr>
+                            <tr>
+                                <td>ARR</td>
+                                <td>Freight Arrival at Destination Airport</td>
+                            </tr>
+                            <tr>
+                                <td>DEP</td>
+                                <td>Goods Confirmed on Board Flight</td>
+                            </tr>
+                            <tr>
+                                <td>RCS</td>
+                                <td>Freight Checked in at Departure Airline</td>
+                            </tr>
+                            <tr>
+                                <td>BKD</td>
+                                <td>Booked</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade loadpage md_full_screen show" id="QUTR01ULDDetailModal" role="dialog" tabindex="-1">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="title">ULD Details</div>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div id="QUTR01ULDDetailDiv" class="modal-body">
+
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 訊息提示視窗 -->
+<div class="modal fade comfirm" id="QUTR01ExitDialogModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="text-center" id="QUTR01Exitmsg">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="iBtn white" data-dismiss="modal">No</button>
+                <button type="button" class="iBtn orange">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /訊息提示視窗 -->
+
+<script src="/NEC_WEB/Scripts/NEC.ControlHandler.js"></script>
+<script>
+    var QUTR01UrlQuickTrackingULDDetail = '/NEC_WEB/Tracking/QuickTracking/QuickTrackingULDDetail';
+    var QUTR01DetailData = {"StationList":["HKG","TPE","LAX"],"StationNameList":["","",""],"DEP":"HKG","DEPName":"","ARR":"LAX","ARRName":"","Pieces":208,"Weight":2533,"PartialFlag":"N","ConsignmentList":[{"ItineraryList":[{"FlightNo":"BR0828 ","DepartureDate":"2021/07/25","DepartureTime":"18:02","DEPTimeStatus":"Actual","ArrivalDate":"2021/07/25","ArrivalTime":"19:44","ARRTimeStatus":"Actual","Departure":"HKG","Arrival":"TPE","Pieces":208,"Weight":0,"Vehicle":null,"FlightTime":null,"FlightType":"P","AircraftType":"789","TransportMode":"A","FLRS_ID":9185389,"DEPStatus":"full","ARRStatus":"full"},{"FlightNo":"BR0006 ","DepartureDate":"2021/07/26","DepartureTime":"10:04","DEPTimeStatus":"Actual","ArrivalDate":"2021/07/26","ArrivalTime":"07:39","ARRTimeStatus":"Actual","Departure":"TPE","Arrival":"LAX","Pieces":208,"Weight":0,"Vehicle":null,"FlightTime":null,"FlightType":"P","AircraftType":"77R","TransportMode":"A","FLRS_ID":9170731,"DEPStatus":"full","ARRStatus":"full"},null],"StationEventHistoryList":[{"Station":"HKG","EventHistoryList":[{"EventCode":"BKD","EventFigure":"full","EventDate":"2021/07/24","EventTime":"14:33","Pieces":208,"EventStation":null,"GMTEventDate":"\/Date(1627079580000)\/"},{"EventCode":"RCS","EventFigure":"full","EventDate":"2021/07/25","EventTime":"17:17","Pieces":208,"EventStation":"HKG","GMTEventDate":"\/Date(-62135596800000)\/"},{"EventCode":"DEP","EventFigure":"full","EventDate":"2021/07/25","EventTime":"18:02\u003cbr\u003e(Actual)","Pieces":208,"EventStation":null,"GMTEventDate":"\/Date(-62135596800000)\/"}]},{"Station":"TPE","EventHistoryList":[{"EventCode":"ARR","EventFigure":"full","EventDate":"2021/07/25","EventTime":"19:44\u003cbr\u003e(Actual)","Pieces":208,"EventStation":null,"GMTEventDate":"\/Date(-62135596800000)\/"},{"EventCode":"DEP","EventFigure":"full","EventDate":"2021/07/26","EventTime":"10:04\u003cbr\u003e(Actual)","Pieces":208,"EventStation":null,"GMTEventDate":"\/Date(-62135596800000)\/"}]},{"Station":"LAX","EventHistoryList":[{"EventCode":"ARR","EventFigure":"full","EventDate":"2021/07/26","EventTime":"07:39\u003cbr\u003e(Actual)","Pieces":208,"EventStation":null,"GMTEventDate":"\/Date(-62135596800000)\/"},{"EventCode":"RCF","EventFigure":"full","EventDate":"","EventTime":"","Pieces":208,"EventStation":"LAX","GMTEventDate":"\/Date(-62135596800000)\/"},{"EventCode":"DLV","EventFigure":"full","EventDate":"2021/07/28","EventTime":"18:34","Pieces":208,"EventStation":"LAX","GMTEventDate":"\/Date(-62135596800000)\/"}]}]}],"TextList":[{"Status":"DLV","Pieces":188,"Weight":0,"EventTime":"2021/07/28 18:34","Location":"LAX","FlightNo":"","DepartureDate":"","Departure":"","Arrival":"","Vehicle":"","OrderBySeq":6,"GMTEventTime":"2021/07/29 01:34","FLRS_ID":9170731},{"Status":"DLV","Pieces":208,"Weight":0,"EventTime":"2021/07/28 18:34","Location":"LAX","FlightNo":"","DepartureDate":"","Departure":"","Arrival":"","Vehicle":"","OrderBySeq":6,"GMTEventTime":"2021/07/29 01:34","FLRS_ID":9170731},{"Status":"ARR","Pieces":208,"Weight":2533,"EventTime":"2021/07/26 07:39","Location":"LAX","FlightNo":"BR0006","DepartureDate":"2021/07/26","Departure":"TPE","Arrival":"LAX","Vehicle":"Air","OrderBySeq":3,"GMTEventTime":"2021/07/26 14:39","FLRS_ID":9170731},{"Status":"RCF","Pieces":208,"Weight":2533,"EventTime":"2021/07/26 07:29","Location":"LAX","FlightNo":"BR0006","DepartureDate":"2021/07/26","Departure":"TPE","Arrival":"LAX","Vehicle":"","OrderBySeq":4,"GMTEventTime":"2021/07/26 14:29","FLRS_ID":9170731},{"Status":"DEP","Pieces":208,"Weight":2533,"EventTime":"2021/07/26 10:04","Location":"TPE","FlightNo":"BR0006","DepartureDate":"2021/07/26","Departure":"TPE","Arrival":"LAX","Vehicle":"Air","OrderBySeq":3,"GMTEventTime":"2021/07/26 02:04","FLRS_ID":9170731},{"Status":"RCF","Pieces":208,"Weight":2533,"EventTime":"2021/07/25 22:00","Location":"TPE","FlightNo":"BR0828","DepartureDate":"2021/07/25","Departure":"HKG","Arrival":"TPE","Vehicle":"","OrderBySeq":4,"GMTEventTime":"2021/07/25 14:00","FLRS_ID":9185389},{"Status":"ARR","Pieces":208,"Weight":2533,"EventTime":"2021/07/25 19:44","Location":"TPE","FlightNo":"BR0828","DepartureDate":"2021/07/25","Departure":"HKG","Arrival":"TPE","Vehicle":"Air","OrderBySeq":3,"GMTEventTime":"2021/07/25 11:44","FLRS_ID":9185389},{"Status":"DEP","Pieces":208,"Weight":2533,"EventTime":"2021/07/25 18:02","Location":"HKG","FlightNo":"BR0828","DepartureDate":"2021/07/25","Departure":"HKG","Arrival":"TPE","Vehicle":"Air","OrderBySeq":3,"GMTEventTime":"2021/07/25 10:02","FLRS_ID":9185389},{"Status":"RCS","Pieces":208,"Weight":2533,"EventTime":"2021/07/25 17:17","Location":"HKG","FlightNo":"","DepartureDate":"","Departure":"","Arrival":"","Vehicle":"","OrderBySeq":2,"GMTEventTime":"2021/07/25 09:17","FLRS_ID":0},{"Status":"BKD","Pieces":208,"Weight":2533,"EventTime":"2021/07/24 14:33","Location":"HKG","FlightNo":"BR0006","DepartureDate":"2021/07/26","Departure":"TPE","Arrival":"LAX","Vehicle":"Air","OrderBySeq":1,"GMTEventTime":"2021/07/24 06:33","FLRS_ID":9170731},{"Status":"BKD","Pieces":208,"Weight":2533,"EventTime":"2021/07/24 14:33","Location":"HKG","FlightNo":"BR0828","DepartureDate":"2021/07/25","Departure":"HKG","Arrival":"TPE","Vehicle":"Air","OrderBySeq":1,"GMTEventTime":"2021/07/24 06:33","FLRS_ID":9185389}],"EventStatusInfoList":[{"EventCode":"BKD","EventFigure":"full","EventDate":"2021/07/24","EventTime":"14:33","Pieces":208,"EventStation":null,"GMTEventDate":"\/Date(1627079580000)\/"},{"EventCode":"RCS","EventFigure":"full","EventDate":"2021/07/25","EventTime":"17:17","Pieces":208,"EventStation":"HKG","GMTEventDate":"\/Date(-62135596800000)\/"},{"EventCode":"RCF","EventFigure":"full","EventDate":"","EventTime":"","Pieces":208,"EventStation":"LAX","GMTEventDate":"\/Date(-62135596800000)\/"},{"EventCode":"DLV","EventFigure":"full","EventDate":"2021/07/28","EventTime":"18:34","Pieces":208,"EventStation":"LAX","GMTEventDate":"\/Date(-62135596800000)\/"}]};
+    var QUTR01SortByStatusArray = ['DLV', 'AWD', 'RCF', 'ARR', 'DEP', 'RCS', 'BKD'];
+    var msgExit = "Are you sure you want to exit ?";
+    var QURT01Prefix = "695";
+    var QURT01AWBNo = 28809955;
+    var MSG_TRACKING_FIGURE = "Please rotate your device horizontally.";
+
+    $(function ()
+    {
+        $('#QUTR01StatusInfo').appendTo("body").modal({ show: false });
+        $('#QUTR01ULDDetailModal').appendTo("body").modal({ show: false });
+        $('#QUTR01ExitDialogModal').appendTo("body").modal({ show: false });
+        QUTR01InitTable();
+        $.LoadingHide();
+
+        $("#QUTR01MAWBNo").html(QURT01Prefix + "-" + QUTR01PadLeft(QURT01AWBNo, 8));
+        $("#QUTR01TotalPiecesWeight").html(AddCommas(QUTR01DetailData.Pieces) + " pcs / " + AddCommas(QUTR01DetailData.Weight.toFixed(1)) + " kg");
+
+        $("#QUTR01Sort").on("change", QUTR01Sort);
+    });
+
+    function QUTR01InitTable()
+    {
+        $('#QUTR01TextTable')
+            .dataTable({
+                "pageLength": 20, //每頁筆數
+                "searching": false, //顯示字串搜尋欄位
+                "lengthChange": false, //顯示每頁筆數切換
+                "ordering": false, //啟用排序
+                "order": [[1, "asc"]],
+                "info": false, //顯示當前頁數與總頁數文字
+                "paging": true, //顯示頁次
+                "autoWidth": false, //啟用寬度運算(px)
+                "oLanguage": {
+                    "oPaginate": {
+                        "sFirst": "<<",
+                        "sPrevious": "<",
+                        "sNext": ">",
+                        "sLast": ">>"
+                    }
+                },
+                "responsive": false,
+                //    "responsive": {
+                //        "details": {
+                //            "renderer": $.fn.dataTable.Responsive.renderer.tableAll(), //所有欄位以TD植入子列
+                //        },
+                //        "breakpoints": [
+                //            //至少要設2個斷點給套件運算rwd的區間
+                //{ name: 'desktop', width: 1024 },
+                //{ name: 'tablet', width: 1023 },
+                //        ]
+                //    },
+                "aoColumns": [
+                     {
+                         "sWidth": "10%", "render": function (data, type, row, meta)
+                         {
+                             return "<label><a style='color:#4A7D6B' class='text-underline' href='#' data-toggle='modal' data-target='#QUTR01StatusInfo'>Status</a></label>" + row.Status;
+                         }
+                     },
+                      {
+                          "sWidth": "15%",
+                          "render": function (data, type, row, meta)
+                          {
+                              return "<label>Pieces / Weight</label>" + AddCommas(row.Pieces) + " pcs / " + AddCommas(row.Weight.toFixed(1)) + " kg";
+                          }
+                      },
+                       {
+                           "sWidth": "10%",
+                           "render": function (data, type, row, meta)
+                           {
+                               return "<label>Time <small class='d-lg-block'>( Local )</small></label>" + row.EventTime;
+                           }
+                       },
+                        {
+                            "sWidth": "10%",
+                            "render": function (data, type, row, meta)
+                            {
+                                return "<label>Location</label>" + row.Location;
+                            }
+                        },
+                        {
+                            "sWidth": "10%",
+                            "render": function (data, type, row, meta)
+                            {
+                                return "<label>Flight No.</label>" + row.FlightNo;
+                            }
+                        },
+                        {
+                            "sWidth": "10%",
+                            "render": function (data, type, row, meta)
+                            {
+                                return "<label>Departure Date</label>" + row.DepartureDate;
+                            }
+                        },
+                        {
+                            "sWidth": "10%",
+                            "render": function (data, type, row, meta)
+                            {
+                                var str = "<label>Departure / Arrival</label>";
+                                if (row.Departure && row.Arrival)
+                                {
+                                    return str + row.Departure + " / " + row.Arrival;
+                                }
+                                else
+                                {
+                                    return str;
+                                }
+                            }
+                        },
+                        {
+                            "sWidth": "10%",
+                            "render": function (data, type, row, meta)
+                            {
+                                var str = "<label>Vehicle <small class='d-lg-block'>( Note 1 )</small></label>";
+                                if(row.Vehicle==null)
+                                {
+                                    return str;
+                                }
+                                else
+                                {
+                                    return str + row.Vehicle;
+                                }
+                            }
+                        },
+                        {
+                            "sWidth": "10%",
+                            "render": function (data, type, row, meta)
+                            {
+                                var str = "<label>ULD Details</label>";
+                                if (row.Status == "DEP")
+                                {
+                                    return str + '<a class="text-underline" href="javascript:;" onclick="QUTR01ULDDetail(\''+ row.FlightNo + '\', \''+row.Departure + '\', \''+row.Arrival +'\', \''+row.DepartureDate + '\',\''+row.FLRS_ID +'\')"><img src="../../Content/images/icon_add_orange.svg"></a>';
+                                }
+                                else
+                                {
+                                    return str;
+                                }
+                            }
+                        },
+                ]
+            });
+
+        $("#QUTR01TextTable").DataTable().rows.add(QUTR01DetailData.TextList).draw();
+    }
+
+    function QUTR01ULDDetail(FlightNo, Departure, Arrival, DepartureDate, FLRS_ID)
+    {
+        $.LoadingShow();
+        $("#QUTR01ULDDetailDiv").load(QUTR01UrlQuickTrackingULDDetail, {
+            prefix: QURT01Prefix,
+            AWBNo: QURT01AWBNo,
+            FlightNo: FlightNo,
+            Departure: Departure,
+            Arrival: Arrival,
+            DepartureDate: DepartureDate,
+            FLRS_ID: FLRS_ID
+        }, function ()
+        {
+            $('#QUTR01ULDDetailModal').modal({ show: true });
+            $.LoadingHide();
+        });
+    }
+
+    function QUTR01Sort()
+    {
+        var textDatas = $("#QUTR01TextTable").DataTable().rows().data().toArray();
+        var sortBy = $("#QUTR01Sort").val();
+        //依照case排順序
+        switch (sortBy)
+        {
+            case "Status":
+                textDatas = textDatas.sort(function(a, b)
+                {
+                    //先照狀態再照時間排序
+                    var compare = QUTR01SortByStatusArray.indexOf(a.Status) - QUTR01SortByStatusArray.indexOf(b.Status);
+                    if (compare != 0)
+                    {
+                        return compare;
+                    }
+
+                    if ( a.GMTEventTime < b.GMTEventTime )
+                    {
+                        return 1;
+                    }
+                    if ( a.GMTEventTime > b.GMTEventTime )
+                    {
+                        return -1;
+                    }
+
+                    if ( a.Location < b.Location )
+                    {
+                        return -1;
+                    }
+                    if ( a.Location > b.Location )
+                    {
+                        return 1;
+                    }
+
+                    return 0;
+                });
+                break;
+            case "Time":
+                textDatas = textDatas.sort(function(a, b)
+                {
+                    if ( a.GMTEventTime < b.GMTEventTime )
+                    {
+                        return 1;
+                    }
+                    if ( a.GMTEventTime > b.GMTEventTime )
+                    {
+                        return -1;
+                    }
+                    if ( a.FlightNo < b.FlightNo )
+                    {
+                        return -1;
+                    }
+                    if ( a.FlightNo > b.FlightNo )
+                    {
+                        return 1;
+                    }
+                    if ( a.OrderBySeq < b.OrderBySeq )
+                    {
+                        return 1;
+                    }
+                    if ( a.OrderBySeq > b.OrderBySeq )
+                    {
+                        return -1;
+                    }
+                    if ( a.Vehicle < b.Vehicle )
+                    {
+                        return -1;
+                    }
+                    if ( a.Vehicle > b.Vehicle )
+                    {
+                        return 1;
+                    }
+                    return 0;
+                });
+                break;
+        }
+
+        $('#QUTR01TextTable').DataTable().clear().draw();
+        $("#QUTR01TextTable").DataTable().rows.add(textDatas).draw();
+    }
+
+    function  QUTR01CancelMsgSetting()
+    {
+        $("#QUTR01ExitDialogModal .modal-footer").html('');
+        $("#QUTR01ExitDialogModal .modal-footer").html("<button type='button' class='iBtn md white' id='btnNo' onClick='QUTR01ExitDialog(false);'>No</button><button type='button' class='iBtn md orange' id='btnYes' onClick='QUTR01ExitDialog(true);'>Yes</button>");
+        $('#QUTR01ExitDialogModal').modal({ show: true });
+        $("#QUTR01Exitmsg").html(msgExit);
+    }
+
+    function  QUTR01ExitDialog(closeModal)
+    {
+        $("#QUTR01ExitDialogModal").modal("hide");
+
+        if (closeModal === true)
+        {
+            QUTR01Back();
+        }
+    }
+
+    //離開
+    function QUTR01Back()
+    {
+        $("#QUTR00QuickTrackingArea").show();
+        $("#QUTR00QuickTrackingDetailArea").hide().empty();
+
+        //按下離開要做的事情(寫在開Detail畫面的功能)
+        //CallAfterQuickTrackingDetailBack();
+    }
+
+    $(window).resize(function()
+    {
+        if ($("#QUTR01tabFigure").hasClass("active") && document.documentElement.clientWidth < document.documentElement.clientHeight + 80)
+        {
+            QUTR00MSGDialogOpen(MSG_TRACKING_FIGURE);
+        }
+    });
+
+    $("#QUTR01tabFigure").click(function ()
+    {
+        if (document.documentElement.clientWidth < document.documentElement.clientHeight + 80)
+        {
+            QUTR00MSGDialogOpen(MSG_TRACKING_FIGURE);
+        }
+    });
+
+    // 將數字補0
+    function QUTR01PadLeft(str, len)
+    {
+        str = '' + str;
+        if (str.length >= len)
+        {
+            return str;
+        } else
+        {
+            return QUTR01PadLeft("0" + str, len);
+        }
+    }
+</script>

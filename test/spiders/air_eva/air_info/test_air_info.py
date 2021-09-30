@@ -19,8 +19,7 @@ def sample_loader(sample_loader):
 @pytest.mark.parametrize(
     'sub,mawb_no',
     [
-        ('01_single_flight', '24413955'),
-        ('02_multiple_flight', '28809955'),
+        ('01_basic', '28809955'),
     ],
 )
 def test_air_info_handle(sub, mawb_no, sample_loader):
