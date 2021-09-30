@@ -36,7 +36,7 @@ def test_routing_rule_handle(sub, mawb_no, sample_loader):
         encoding="utf-8",
         request=Request(
             url=url,
-            meta={"mawb_no": mawb_no},
+            meta={"mawb_no": mawb_no, "task_id": "1"},
         ),
     )
 
