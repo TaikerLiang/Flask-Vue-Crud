@@ -1,5 +1,6 @@
 import io
 import random
+import dataclasses
 import re
 
 import scrapy
@@ -12,17 +13,25 @@ from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContaine
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 
-BASE_URL = 'https://www.etslink.com'
-EMAIL = 'w87818@yahoo.com.tw'
-PASSWORD = 'Bb1234567890'
+
+@dataclasses.dataclass
+class CompanyInfo:
+    email: str
+    password: str
 
 
-class TerminalEtsSpider(BaseMultiTerminalSpider):
-    firms_code = 'Y124'
-    name = 'terminal_ets'
+BASE_URL = "https://www.etslink.com"
+
+
+class EtsShareSpider(BaseMultiTerminalSpider):
+    name = ""
+    company_info = CompanyInfo(
+        email="",
+        password="",
+    )
 
     def __init__(self, *args, **kwargs):
-        super(TerminalEtsSpider, self).__init__(*args, **kwargs)
+        super(EtsShareSpider, self).__init__(*args, **kwargs)
 
         rules = [
             MainPageRoutingRule(),
@@ -35,11 +44,13 @@ class TerminalEtsSpider(BaseMultiTerminalSpider):
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
-        option = MainPageRoutingRule.build_request_option(container_no_list=unique_container_nos)
+        option = MainPageRoutingRule.build_request_option(
+            container_no_list=unique_container_nos, company_info=self.company_info
+        )
         yield self._build_request_by(option=option)
 
     def parse(self, response):
-        yield DebugItem(info={'meta': dict(response.meta)})
+        yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -48,11 +59,11 @@ class TerminalEtsSpider(BaseMultiTerminalSpider):
 
         for result in routing_rule.handle(response=response):
             if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
-                c_no = result['container_no']
+                c_no = result["container_no"]
                 if c_no:
                     t_ids = self.cno_tid_map[c_no]
                     for t_id in t_ids:
-                        result['task_id'] = t_id
+                        result["task_id"] = t_id
                         yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -83,75 +94,93 @@ class TerminalEtsSpider(BaseMultiTerminalSpider):
 
 
 class MainPageRoutingRule(BaseRoutingRule):
-    name = 'MAIN_PAGE'
+    name = "MAIN_PAGE"
 
     @classmethod
-    def build_request_option(cls, container_no_list) -> RequestOption:
+    def build_request_option(cls, container_no_list, company_info: CompanyInfo) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f'{BASE_URL}',
-            meta={'container_no_list': container_no_list},
+            url=f"{BASE_URL}",
+            meta={
+                "container_no_list": container_no_list,
+                "company_info": company_info,
+            },
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.html'
+        return f"{self.name}.html"
 
     def handle(self, response):
-        container_no_list = response.meta['container_no_list']
+        container_no_list = response.meta["container_no_list"]
+        company_info = response.meta["company_info"]
 
         verify_key = self._extract_verify_key(response=response)
 
-        yield CaptchaRoutingRule.build_request_option(verify_key, container_no_list)
+        yield CaptchaRoutingRule.build_request_option(verify_key, container_no_list, company_info)
 
     @staticmethod
     def _extract_verify_key(response: scrapy.Selector) -> str:
         pattern = re.compile(r'&verifyKey=(?P<verify_key>\d+)"')
 
-        script_text = response.css('script').getall()[3]
+        script_text = response.css("script").getall()[3]
         s = pattern.search(script_text)
-        verify_key = s.group('verify_key')
+        verify_key = s.group("verify_key")
 
         return verify_key
 
 
 class CaptchaRoutingRule(BaseRoutingRule):
-    name = 'CAPTCHA'
+    name = "CAPTCHA"
 
     @classmethod
-    def build_request_option(cls, verify_key, container_no_list) -> RequestOption:
+    def build_request_option(cls, verify_key, container_no_list, company_info: CompanyInfo) -> RequestOption:
         dc = cls._get_random_number()
 
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f'{BASE_URL}/waut/VerifyCodeImage.jsp?dc={dc}&verifyKey={verify_key}',
-            meta={'container_no_list': container_no_list, 'dc': dc, 'verify_key': verify_key},
+            url=f"{BASE_URL}/waut/VerifyCodeImage.jsp?dc={dc}&verifyKey={verify_key}",
+            meta={
+                "container_no_list": container_no_list,
+                "dc": dc,
+                "verify_key": verify_key,
+                "company_info": company_info,
+            },
         )
 
     def handle(self, response):
-        container_no_list = response.meta['container_no_list']
-        dc = response.meta['dc']
-        verify_key = response.meta['verify_key']
+        container_no_list = response.meta["container_no_list"]
+        dc = response.meta["dc"]
+        verify_key = response.meta["verify_key"]
+        company_info = response.meta["company_info"]
 
         captcha_text = self._get_captcha_str(response.body)
 
         if captcha_text:
             yield LoginRoutingRule.build_request_option(
-                captcha_text=captcha_text, container_no_list=container_no_list, dc=dc, verify_key=verify_key
+                company_info=company_info,
+                captcha_text=captcha_text,
+                container_no_list=container_no_list,
+                dc=dc,
+                verify_key=verify_key,
             )
         else:
             yield LoginRoutingRule.build_request_option(
-                captcha_text='', container_no_list=container_no_list, dc='', verify_key=verify_key
+                company_info=company_info,
+                captcha_text="",
+                container_no_list=container_no_list,
+                dc="",
+                verify_key=verify_key,
             )
 
     @staticmethod
     def _get_captcha_str(captcha_code):
-        file_name = 'captcha.jpeg'
+        file_name = "captcha.jpeg"
         image = Image.open(io.BytesIO(captcha_code))
         image.save(file_name)
         # api_key = 'f7dd6de6e36917b41d05505d249876c3'
-        api_key='fbe73f747afc996b624e8d2a95fa0f84'
+        api_key = "fbe73f747afc996b624e8d2a95fa0f84"
         solver = imagecaptcha()
         solver.set_verbose(1)
         solver.set_key(api_key)
@@ -161,7 +190,7 @@ class CaptchaRoutingRule(BaseRoutingRule):
             return captcha_text
         else:
             print("task finished with error ", solver.error_code)
-            return ''
+            return ""
 
     @staticmethod
     def _get_random_number():
@@ -169,96 +198,98 @@ class CaptchaRoutingRule(BaseRoutingRule):
 
 
 class LoginRoutingRule(BaseRoutingRule):
-    name = 'LOGIN'
+    name = "LOGIN"
 
     @classmethod
-    def build_request_option(cls, container_no_list, captcha_text, dc, verify_key) -> RequestOption:
+    def build_request_option(
+        cls, container_no_list, company_info: CompanyInfo, captcha_text, dc, verify_key
+    ) -> RequestOption:
         form_data = {
-            'PI_LOGIN_ID': EMAIL,
-            'PI_PASSWORD': PASSWORD,
-            'PI_VERIFY_CODE': captcha_text,
-            'PI_VERIFY_DC': dc,
-            'PI_VERIFY_KEY': verify_key,
+            "PI_LOGIN_ID": company_info.email,
+            "PI_PASSWORD": company_info.password,
+            "PI_VERIFY_CODE": captcha_text,
+            "PI_VERIFY_DC": dc,
+            "PI_VERIFY_KEY": verify_key,
         }
 
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_FORM,
-            url=f'{BASE_URL}/login',
+            url=f"{BASE_URL}/login",
             form_data=form_data,
-            meta={'container_no_list': container_no_list},
+            meta={"container_no_list": container_no_list},
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.json'
+        return f"{self.name}.json"
 
     def handle(self, response):
-        container_no_list = response.meta['container_no_list']
+        container_no_list = response.meta["container_no_list"]
 
         response_dict = json.loads(response.text)
-        sk = response_dict['_sk']
+        sk = response_dict["_sk"]
 
         yield ContainerRoutingRule.build_request_option(container_no_list=container_no_list, sk=sk)
 
 
 class ContainerRoutingRule(BaseRoutingRule):
-    name = 'CONTAINER'
+    name = "CONTAINER"
 
     @classmethod
     def build_request_option(cls, container_no_list, sk) -> RequestOption:
         form_data = {
-            'PI_BUS_ID': '?cma_bus_id',
-            'PI_TMNL_ID': '?cma_env_loc',
-            'PI_CTRY_CODE': '?cma_env_ctry',
-            'PI_STATE_CODE': '?cma_env_state',
-            'PI_CNTR_NO': '\n'.join(container_no_list),
-            '_sk': sk,
-            'page': '1',
-            'start': '0',
-            'limit': '-1',
+            "PI_BUS_ID": "?cma_bus_id",
+            "PI_TMNL_ID": "?cma_env_loc",
+            "PI_CTRY_CODE": "?cma_env_ctry",
+            "PI_STATE_CODE": "?cma_env_state",
+            "PI_CNTR_NO": "\n".join(container_no_list),
+            "_sk": sk,
+            "page": "1",
+            "start": "0",
+            "limit": "-1",
         }
 
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_FORM,
-            url=f'{BASE_URL}/data/WIMPP003.queryByCntr.data.json?',
+            url=f"{BASE_URL}/data/WIMPP003.queryByCntr.data.json?",
             form_data=form_data,
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.json'
+        return f"{self.name}.json"
 
     def handle(self, response):
         container_info_list = self._extract_container_info(response=response)
 
         for container_info in container_info_list:
-            if container_info['PO_TERMINAL_NAME'] == '<i>Record was not found!</i>':
-                c_no = re.sub('<.*?>', '', container_info['PO_CNTR_NO'])
+            if container_info["PO_TERMINAL_NAME"] == "<i>Record was not found!</i>":
+                c_no = re.sub("<.*?>", "", container_info["PO_CNTR_NO"])
                 yield InvalidContainerNoItem(
                     container_no=c_no,
                 )
             else:
                 yield TerminalItem(
-                    container_no=container_info['PO_CNTR_NO'],
-                    ready_for_pick_up=container_info['PO_AVAILABLE_IND'],
-                    customs_release=container_info['PO_USA_STATUS'],
-                    appointment_date=container_info['PO_APPOINTMENT_TIME'],
-                    last_free_day=container_info['PO_DM_LAST_FREE_DATE'],
-                    demurrage=container_info['PO_DM_AMT_DUE'],
-                    carrier=container_info['PO_CARRIER_SCAC_CODE'],
+                    container_no=container_info["PO_CNTR_NO"],
+                    ready_for_pick_up=container_info["PO_AVAILABLE_IND"],
+                    customs_release=container_info["PO_USA_STATUS"],
+                    appointment_date=container_info["PO_APPOINTMENT_TIME"],
+                    last_free_day=container_info["PO_DM_LAST_FREE_DATE"],
+                    demurrage=container_info["PO_DM_AMT_DUE"],
+                    carrier=container_info["PO_CARRIER_SCAC_CODE"],
                     container_spec=(
                         f'{container_info["PO_CNTR_TYPE_S"]}/{container_info["PO_CNTR_TYPE_T"]}/'
                         f'{container_info["PO_CNTR_TYPE_H"]}'
                     ),
-                    holds=container_info['PO_TMNL_HOLD_IND'],
-                    cy_location=container_info['PO_YARD_LOC'],
+                    holds=container_info["PO_TMNL_HOLD_IND"],
+                    cy_location=container_info["PO_YARD_LOC"],
                     # extra field name
-                    service=container_info['PO_SVC_QFR_DESC'],
-                    carrier_release=container_info['PO_CARRIER_STATUS'],
-                    tmf=container_info['PO_TMF_STATUS'],
-                    demurrage_status=container_info['PO_DM_STATUS'],
+                    service=container_info["PO_SVC_QFR_DESC"],
+                    carrier_release=container_info["PO_CARRIER_STATUS"],
+                    tmf=container_info["PO_TMF_STATUS"],
+                    demurrage_status=container_info["PO_DM_STATUS"],
                     # not on html
-                    freight_release=container_info['PO_FR_STATUS'],  # not sure
+                    freight_release=container_info["PO_FR_STATUS"],  # not sure
                 )
 
     @staticmethod
@@ -266,13 +297,13 @@ class ContainerRoutingRule(BaseRoutingRule):
         response_dict = json.loads(response.text)
 
         container_info_list = []
-        titles = response_dict['cols']
-        for resp in response_dict['data']:
+        titles = response_dict["cols"]
+        for resp in response_dict["data"]:
             container_info = {}
             for title_index, title in enumerate(titles):
                 data_index = title_index
 
-                title_name = title['name']
+                title_name = title["name"]
                 container_info[title_name] = resp[data_index]
             container_info_list.append(container_info)
 
