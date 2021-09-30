@@ -129,7 +129,12 @@ class AirInfoRoutingRule(BaseRoutingRule):
         task_id = response.meta['task_id']
         response_dict = json.loads(response.text)
         if self.is_mawb_no_invalid(response_dict):
-            yield ExportErrorData(status=AIR_RESULT_STATUS_ERROR, detail="Data was not found")
+            yield ExportErrorData(
+                status=AIR_RESULT_STATUS_ERROR,
+                detail="Data was not found",
+                task_id=task_id,
+                mawb_no=mawb_no
+            )
             return
         air_info = self.extract_air_info(response_dict)
         yield AirItem(task_id=task_id, mawb=mawb_no, **air_info)
