@@ -241,7 +241,7 @@ class SearchRoutingRule(BaseRoutingRule):
             history_info_list.append(
                 {
                     "status": table_extractor.extract_cell(top="Status", left=left).strip(),
-                    "flight_no": table_extractor.extract_cell(top="Flight", left=left).strip(),
+                    "flight_number": table_extractor.extract_cell(top="Flight", left=left).strip(),
                     "pieces": table_extractor.extract_cell(top="Pieces", left=left).strip(),
                     "weight": table_extractor.extract_cell(top="Weight", left=left).strip(),
                     "location": table_extractor.extract_cell(top="Event Airport", left=left).strip(),
