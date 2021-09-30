@@ -132,9 +132,17 @@ class AirMultiItemsPipeline:
         self._default_collector = AirResultCollector(request_args=spider.request_args)
 
         try:
-            if isinstance(item, (air_items.AirItem, air_items.FlightItem)):
+            if isinstance(item, air_items.AirItem):
                 collector = self._collector_map[item.key] if item.key else self._default_collector
                 collector.collect_air_item(item=item)
+                return collector.build_final_data()
+            elif isinstance(item, air_items.FlightItem):
+                collector = self._collector_map[item.key] if item.key else self._default_collector
+                collector.collect_flight_item(item=item)
+                return collector.build_final_data()
+            elif isinstance(item, air_items.HistoryItem):
+                collector = self._collector_map[item.key] if item.key else self._default_collector
+                collector.collect_history_item(item=item)
                 return collector.build_final_data()
             elif isinstance(item, air_items.ExportFinalData):
                 return {"status": "CLOSE"}
