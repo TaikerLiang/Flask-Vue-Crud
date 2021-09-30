@@ -133,10 +133,13 @@ class AirInfoRoutingRule(BaseRoutingRule):
                 detail="Data was not found",
             )
         else:
-            yield self._construct_air_item(response)
+            try:
+                yield self._construct_air_item(response)
 
-            for history_item in self._construct_history_item_list(response):
-                yield history_item
+                for history_item in self._construct_history_item_list(response):
+                    yield history_item
+            except AirInvalidMawbNoError as e:
+                yield e.build_error_data()
 
     @staticmethod
     def _construct_air_item(response: Response) -> AirItem:
@@ -195,11 +198,11 @@ class AirInfoRoutingRule(BaseRoutingRule):
                 HistoryItem(
                     {
                         "status": tr_selector.xpath("normalize-space(td[4]/text())").get(),
-                        "Pieces": tr_selector.xpath("normalize-space(td[5]/text())").get(),
-                        "Weight": tr_selector.xpath("normalize-space(td[6]/text())").get(),
+                        "pieces": tr_selector.xpath("normalize-space(td[5]/text())").get(),
+                        "weight": tr_selector.xpath("normalize-space(td[6]/text())").get(),
                         "time": tr_selector.xpath("normalize-space(td[1]/text())").get(),
                         "location": tr_selector.xpath("normalize-space(td[2]/text())").get(),
-                        "flight_no": tr_selector.xpath("normalize-space(td[3]/text())").get(),
+                        "flight_number": tr_selector.xpath("normalize-space(td[3]/text())").get(),
                     }
                 )
             )
