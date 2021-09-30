@@ -38,13 +38,13 @@ class AirChinaSouthernSpider(BaseAirSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        request_option = AirInfoRoutingRule.build_request_option(mawb_no=self.mawb_no)
+        request_option = AirInfoRoutingRule.build_request_option(task_id=self.task_id, mawb_no=self.mawb_no)
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
-        save_name = routing_rule.get_save_name(response=response)
+        save_name = routing_rule.get_save_name()
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
@@ -78,7 +78,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
     name = "AIR_INFO"
 
     @classmethod
-    def build_request_option(cls, mawb_no: str) -> RequestOption:
+    def build_request_option(cls, task_id: str, mawb_no: str) -> RequestOption:
         response = requests.post(url=URL, timeout=20)
         if response.status_code == 200:
             response_text = response.text
@@ -117,16 +117,17 @@ class AirInfoRoutingRule(BaseRoutingRule):
                 "Accept-Language": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7,zh-CN;q=0.6",
             },
             meta={
+                "task_id": task_id,
                 "mawb_no": mawb_no,
             },
         )
 
-    def get_save_name(self, response) -> str:
+    def get_save_name(self) -> str:
         return f"{self.name}.json"
 
     def handle(self, response: Response):
         if self._is_awb_not_exist(response):
-            mawb_no = response.css("input[id='ctl00_ContentPlaceHolder1_txtNo']").attrib["value"]
+            mawb_no = response.meta["mawb_no"]
             yield ExportErrorData(
                 mawb_no=mawb_no,
                 status=AIR_RESULT_STATUS_ERROR,
@@ -142,7 +143,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
                 yield e.build_error_data()
 
     @staticmethod
-    def _construct_air_item(response: Response) -> AirItem:
+    def _construct_air_item(response) -> AirItem:
         selector = response.css("span[id='ctl00_ContentPlaceHolder1_awbLbl'] tr td")
         basic_info = []
         for info in selector:
@@ -152,6 +153,9 @@ class AirInfoRoutingRule(BaseRoutingRule):
             raise AirInvalidMawbNoError()
 
         basic_info[0] = basic_info[0].split("-")[1]
+        if basic_info[0] != response.meta["mawb_no"]:
+            raise AirInvalidMawbNoError()
+
         routing_city = basic_info[2].split("--")
         basic_info[1] = routing_city[0].split("(")[0]
         basic_info[2] = routing_city[-1].split("(")[0]
@@ -179,7 +183,8 @@ class AirInfoRoutingRule(BaseRoutingRule):
 
         return AirItem(
             {
-                "mawb": basic_info[0],
+                "task_id": response.meta["task_id"],
+                "mawb": response.meta["mawb_no"],
                 "origin": basic_info[1],
                 "destination": basic_info[2],
                 "pieces": basic_info[4],
@@ -190,13 +195,14 @@ class AirInfoRoutingRule(BaseRoutingRule):
         )
 
     @staticmethod
-    def _construct_history_item_list(response: Response):
+    def _construct_history_item_list(response):
         info_list = []
         status_selector = response.css("table[id='ctl00_ContentPlaceHolder1_gvCargoState'] tr")
         for tr_selector in status_selector[1:]:
             info_list.append(
                 HistoryItem(
                     {
+                        "task_id": response.meta["task_id"],
                         "status": tr_selector.xpath("normalize-space(td[4]/text())").get(),
                         "pieces": tr_selector.xpath("normalize-space(td[5]/text())").get(),
                         "weight": tr_selector.xpath("normalize-space(td[6]/text())").get(),
@@ -210,7 +216,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
         return info_list
 
     @staticmethod
-    def _is_awb_not_exist(response: Response) -> bool:
+    def _is_awb_not_exist(response) -> bool:
         error_info = response.css("span[id='ctl00_ContentPlaceHolder1_lblErrorInfo'] font::text").get()
         if error_info == "Awb information does not exist":
             return True
