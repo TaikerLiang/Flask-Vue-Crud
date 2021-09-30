@@ -239,7 +239,7 @@ class SearchRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _is_mawb_no_invalid(response: Selector) -> bool:
-        return not bool(response.css("#tbtrackingmaintitle"))
+        return len(response.css("#tbtrackingmaintitle td")) < 4
 
     @staticmethod
     def _extract_air_info(response: Selector) -> Dict:
