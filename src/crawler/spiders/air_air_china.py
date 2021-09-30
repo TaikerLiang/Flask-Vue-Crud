@@ -268,7 +268,7 @@ class SearchRoutingRule(BaseRoutingRule):
             history_info_list.append(
                 {
                     "status": table_extractor.extract_cell(top="Status", left=left).strip(),
-                    "flight_no": table_extractor.extract_cell(top="Flight Info", left=left).strip(),
+                    "flight_number": table_extractor.extract_cell(top="Flight Info", left=left).strip(),
                     "location": table_extractor.extract_cell(top="Operation Airport", left=left).strip(),
                     "pieces": table_extractor.extract_cell(top="Pieces", left=left).strip(),
                     "weight": table_extractor.extract_cell(top="Weight(kg)", left=left).strip(),
@@ -292,7 +292,7 @@ class SearchRoutingRule(BaseRoutingRule):
                 is_dep_first = False
                 flight_info_list.append(
                     {
-                        "flight_number": history_info["flight_no"],
+                        "flight_number": history_info["flight_number"],
                         "origin": origin,
                         "destination": destination,
                         "pieces": history_info["pieces"],
@@ -312,7 +312,7 @@ class SearchRoutingRule(BaseRoutingRule):
                 is_rcf_first = False
                 flight_info_list.append(
                     {
-                        "flight_number": history_info["flight_no"],
+                        "flight_number": history_info["flight_number"],
                         "origin": origin,
                         "destination": destination,
                         "pieces": history_info["pieces"],
