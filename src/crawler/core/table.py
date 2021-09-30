@@ -27,7 +27,7 @@ class BaseTable:
             raise HeaderMismatchError(repr(err))
 
     def has_header(self, top=None, left=None) -> bool:
-        if (top is not None) and (left is not None):
+        if top and left:
             return (left in self._left_header_set) and (top in self._td_map)
         elif top is None:
             return left in self._left_header_set
