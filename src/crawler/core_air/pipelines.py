@@ -1,7 +1,7 @@
 import os
 import pprint
 import traceback
-from typing import Dict, Union
+from typing import Union, Dict
 from scrapy.exceptions import DropItem
 
 from crawler.services.edi_service import EdiClientService
@@ -135,6 +135,14 @@ class AirMultiItemsPipeline:
             if isinstance(item, air_items.AirItem):
                 collector = self._collector_map[item.key] if item.key else self._default_collector
                 collector.collect_air_item(item=item)
+                return collector.build_final_data()
+            elif isinstance(item, air_items.FlightItem):
+                collector = self._collector_map[item.key] if item.key else self._default_collector
+                collector.collect_flight_item(item=item)
+                return collector.build_final_data()
+            elif isinstance(item, air_items.HistoryItem):
+                collector = self._collector_map[item.key] if item.key else self._default_collector
+                collector.collect_history_item(item=item)
                 return collector.build_final_data()
             elif isinstance(item, air_items.ExportFinalData):
                 return {"status": "CLOSE"}
