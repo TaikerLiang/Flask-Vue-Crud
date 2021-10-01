@@ -1,8 +1,6 @@
 projects:
-  default:
-    id: 413409
-  try-2:
-    id: 414060
+  dev:
+    id: 544508
   stage:
     id: 407696
   production:

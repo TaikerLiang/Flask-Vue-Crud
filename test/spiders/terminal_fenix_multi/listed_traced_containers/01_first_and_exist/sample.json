@@ -1,0 +1,203 @@
+{
+  "headers": {},
+  "rows": [
+    {
+      "columns": {},
+      "status": {},
+      "advanced": null,
+      "containerStatus": {
+        "name": "CONTAINER_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "containerAAStatus": {
+        "name": "CONTAINER_AA_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "watchlistStatusEx": { "name": "", "internalName": "blank" },
+      "id": 56661037,
+      "createdAt": "2021-08-27T08:52:16.000Z",
+      "updatedAt": "2021-08-27T08:52:16.000Z",
+      "userId": 55581,
+      "venue": "fenixmarine",
+      "containerId": "CAIU7086501",
+      "watchlistStatus": "",
+      "bookingId": null,
+      "bookingRef": null,
+      "archive": false,
+      "watchUsers": []
+    },
+    {
+      "columns": {},
+      "status": {},
+      "advanced": null,
+      "containerStatus": {
+        "name": "CONTAINER_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "containerAAStatus": {
+        "name": "CONTAINER_AA_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "watchlistStatusEx": { "name": "", "internalName": "blank" },
+      "id": 56661169,
+      "createdAt": "2021-08-27T08:53:24.000Z",
+      "updatedAt": "2021-08-27T08:53:24.000Z",
+      "userId": 55581,
+      "venue": "fenixmarine",
+      "containerId": "HAMU1174866",
+      "watchlistStatus": "",
+      "bookingId": null,
+      "bookingRef": null,
+      "archive": false,
+      "watchUsers": []
+    },
+    {
+      "columns": {},
+      "status": {
+        "CUSTOMS": "HOLD",
+        "LINE_OP": "COS",
+        "T_STATE": "Yard",
+        "APPT_NBR": null,
+        "LOCATION": "YARD-FMS-FF17",
+        "PORT_LFD": "2021-Sep-01",
+        "POSITION": "Y-FMS-FF17",
+        "UNIT_NBR": "TCNU1794174",
+        "APPT_TIME": null,
+        "DEMURRAGE": "0.0",
+        "GATE_HOLD": "",
+        "HOLD_INFO": "CUSTOMS",
+        "LAST_MOVE": "21-Aug-26 2005",
+        "STOP_ROAD": "true",
+        "EQUIPMENTNBR": "TCNU1794174",
+        "LAST_FREE_DAY": "2021-Sep-01",
+        "STATE_(MASTER)": "Active",
+        "LOCATIONDETAILS": "FF17",
+        "STORAGE_CHARGES": "0.0",
+        "APPOINTMENT_HOLD": "CUSTOMS",
+        "IMPEDIMENTS:ROAD": "CUSTOMS",
+        "UNIT_IMPEDIMENTS": "CUSTOMS",
+        "LINE_LAST_FREE_DAY": "2021-Sep-01",
+        "LINE_GUARANTEE_THROUGH_DAY": null
+      },
+      "advanced": null,
+      "containerStatus": {
+        "name": "CONTAINER_STATUS_OnHold",
+        "isAvailableToBook": false
+      },
+      "containerAAStatus": {
+        "name": "CONTAINER_AA_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "watchlistStatusEx": { "name": "", "internalName": "blank" },
+      "id": 56661253,
+      "createdAt": "2021-08-27T08:54:14.000Z",
+      "updatedAt": "2021-08-27T08:54:14.000Z",
+      "userId": 55581,
+      "venue": "fenixmarine",
+      "containerId": "TCNU1794174",
+      "watchlistStatus": "",
+      "bookingId": null,
+      "bookingRef": null,
+      "archive": false,
+      "watchUsers": []
+    },
+    {
+      "columns": {},
+      "status": {
+        "CUSTOMS": "HOLD",
+        "LINE_OP": "COS",
+        "T_STATE": "Yard",
+        "APPT_NBR": null,
+        "LOCATION": "YARD-FMS-DD11",
+        "PORT_LFD": "8/31/2020 12:00:00 AM",
+        "POSITION": "Y-FMS-DD11",
+        "UNIT_NBR": "TGHU6651727",
+        "APPT_TIME": null,
+        "DEMURRAGE": "0.0",
+        "GATE_HOLD": "",
+        "HOLD_INFO": "CUSTOMS",
+        "LAST_MOVE": "21-Aug-26 0858",
+        "STOP_ROAD": "true",
+        "EQUIPMENTNBR": "TGHU6651727",
+        "LAST_FREE_DAY": "2021-Aug-31",
+        "STATE_(MASTER)": "Active",
+        "LOCATIONDETAILS": "DD11",
+        "STORAGE_CHARGES": "0.0",
+        "APPOINTMENT_HOLD": "CUSTOMS",
+        "IMPEDIMENTS:ROAD": "CUSTOMS",
+        "UNIT_IMPEDIMENTS": "CUSTOMS",
+        "LINE_LAST_FREE_DAY": "2021-Aug-31",
+        "LINE_GUARANTEE_THROUGH_DAY": null
+      },
+      "advanced": null,
+      "containerStatus": {
+        "name": "CONTAINER_STATUS_OnHold",
+        "isAvailableToBook": false
+      },
+      "containerAAStatus": {
+        "name": "CONTAINER_AA_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "watchlistStatusEx": { "name": "", "internalName": "blank" },
+      "id": 56661251,
+      "createdAt": "2021-08-27T08:54:14.000Z",
+      "updatedAt": "2021-08-27T08:54:14.000Z",
+      "userId": 55581,
+      "venue": "fenixmarine",
+      "containerId": "TGHU6651727",
+      "watchlistStatus": "",
+      "bookingId": null,
+      "bookingRef": null,
+      "archive": false,
+      "watchUsers": []
+    },
+    {
+      "columns": {},
+      "status": {
+        "LINE_OP": "COS",
+        "T_STATE": "Inbound",
+        "APPT_NBR": null,
+        "PORT_LFD": "--no time",
+        "POSITION": "VESSEL",
+        "UNIT_NBR": "TRHU4822709",
+        "APPT_TIME": null,
+        "DEMURRAGE": null,
+        "GATE_HOLD": "",
+        "HOLD_INFO": "",
+        "LAST_MOVE": "21-Aug-17 1328",
+        "STOP_ROAD": "true",
+        "EQUIPMENTNBR": "TRHU4822709",
+        "LAST_FREE_DAY": "--no time",
+        "STATE_(MASTER)": "Active",
+        "LOCATIONDETAILS": "Unavailable",
+        "STORAGE_CHARGES": null,
+        "APPOINTMENT_HOLD": "",
+        "IMPEDIMENTS:ROAD": "CUSTOMS",
+        "UNIT_IMPEDIMENTS": "CUSTOMS",
+        "LINE_LAST_FREE_DAY": "--no time",
+        "LINE_GUARANTEE_THROUGH_DAY": null
+      },
+      "advanced": null,
+      "containerStatus": {
+        "name": "CONTAINER_STATUS_Unavailable",
+        "isAvailableToBook": false
+      },
+      "containerAAStatus": {
+        "name": "CONTAINER_AA_STATUS_NoStatus",
+        "isAvailableToBook": false
+      },
+      "watchlistStatusEx": { "name": "", "internalName": "blank" },
+      "id": 56661252,
+      "createdAt": "2021-08-27T08:54:14.000Z",
+      "updatedAt": "2021-08-27T08:54:14.000Z",
+      "userId": 55581,
+      "venue": "fenixmarine",
+      "containerId": "TRHU4822709",
+      "watchlistStatus": "",
+      "bookingId": null,
+      "bookingRef": null,
+      "archive": false,
+      "watchUsers": []
+    }
+  ]
+}

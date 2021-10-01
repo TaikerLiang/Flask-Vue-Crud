@@ -1,0 +1,494 @@
+{
+  "tpdoc_num": "606809323",
+  "isContainerSearch": false,
+  "origin": {
+    "terminal": "Shanghai Wai Gao Qiao Terminal",
+    "geo_site": "3EWOQ4EWXDF26",
+    "city": "Shanghai",
+    "state": "Shanghai",
+    "country": "China",
+    "country_code": "CN",
+    "geoid_city": "2IW9P6J7XAW72",
+    "site_type": "TERMINAL"
+  },
+  "destination": {
+    "terminal": "Cin-Csx",
+    "geo_site": "1J19M1FBJZTDR",
+    "city": "Cincinnati",
+    "state": "Ohio",
+    "country": "United States",
+    "country_code": "US",
+    "geoid_city": "09BTB47FS01A7",
+    "site_type": "RAIL TERMINAL"
+  },
+  "containers": [
+    {
+      "container_num": "FXLU1794508",
+      "container_size": "20",
+      "container_type": "Dry",
+      "iso_code": "22G1",
+      "operator": "MAEU",
+      "locations": [
+        {
+          "terminal": "Shanghai Wai Gao Qiao Terminal",
+          "geo_site": "3EWOQ4EWXDF26",
+          "city": "Shanghai",
+          "state": "Shanghai",
+          "country": "China",
+          "country_code": "CN",
+          "geoid_city": "2IW9P6J7XAW72",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "GATE-IN",
+              "stempty": false,
+              "actfor": "SO",
+              "vessel_name": "HYUNDAI TOKYO",
+              "voyage_num": "121E",
+              "vessel_num": "F8V",
+              "expected_time": "2019-11-20T05:27:00.000",
+              "actual_time": "2019-11-15T21:38:00.000",
+              "rkem_move": "GATE-IN",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "LOAD",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "HYUNDAI TOKYO",
+              "voyage_num": "121E",
+              "vessel_num": "F8V",
+              "expected_time": "2019-11-20T05:27:00.000",
+              "actual_time": "2019-11-20T02:59:00.000",
+              "rkem_move": "LOAD",
+              "is_cancelled": false,
+              "is_current": true
+            }
+          ]
+        },
+        {
+          "terminal": "LSA APM Terminal Pier 400( W185 )",
+          "geo_site": "3KNWBA31FUU5K",
+          "city": "Los Angeles",
+          "state": "California",
+          "country": "United States",
+          "country_code": "US",
+          "geoid_city": "2LMUYHDQXMRNJ",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "DISCHARG",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "HYUNDAI TOKYO",
+              "voyage_num": "121E",
+              "vessel_num": "F8V",
+              "expected_time": "2019-12-04T17:00:00.000",
+              "is_current": false
+            },
+            {
+              "activity": "ON-RAIL",
+              "stempty": false,
+              "actfor": "IMP",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-12-09T17:00:00.000",
+              "is_current": false
+            }
+          ]
+        },
+        {
+          "terminal": "Chicago CSX Interchange Lane",
+          "geo_site": "1VMEDSOQI1U2U",
+          "city": "Chicago",
+          "state": "Illinois",
+          "country": "United States",
+          "country_code": "US",
+          "geoid_city": "0CVV4E476Q8AN",
+          "site_type": "RAIL TERMINAL",
+          "events": [
+            {
+              "activity": "OFF-RAIL",
+              "stempty": false,
+              "actfor": "IMP",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-12-14T07:00:00.000",
+              "is_current": false
+            },
+            {
+              "activity": "ON-RAIL",
+              "stempty": false,
+              "actfor": "IMP",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-12-15T07:00:00.000",
+              "is_current": false
+            }
+          ]
+        },
+        {
+          "terminal": "Cin-Csx",
+          "geo_site": "1J19M1FBJZTDR",
+          "city": "Cincinnati",
+          "state": "Ohio",
+          "country": "United States",
+          "country_code": "US",
+          "geoid_city": "09BTB47FS01A7",
+          "site_type": "RAIL TERMINAL",
+          "events": [
+            {
+              "activity": "OFF-RAIL",
+              "stempty": false,
+              "actfor": "IMP",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-12-17T08:00:00.000",
+              "is_current": false
+            },
+            {
+              "activity": "GATE-OUT",
+              "stempty": false,
+              "actfor": "DEL",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-12-17T08:00:00.000",
+              "is_current": false
+            }
+          ]
+        }
+      ],
+      "eta_final_delivery": "2019-12-17T08:00:00.000",
+      "latest": {
+        "actual_time": "2019-11-20T02:59:00.000",
+        "activity": "LOAD",
+        "stempty": false,
+        "actfor": "",
+        "geo_site": "3EWOQ4EWXDF26",
+        "city": "Shanghai",
+        "state": "Shanghai",
+        "country": "China",
+        "country_code": "CN"
+      },
+      "status": "IN-PROGRESS"
+    },
+    {
+      "container_num": "FXLU1795947",
+      "container_size": "20",
+      "container_type": "Dry",
+      "iso_code": "22G1",
+      "operator": "MAEU",
+      "locations": [
+        {
+          "terminal": "Shanghai Wai Gao Qiao Terminal",
+          "geo_site": "3EWOQ4EWXDF26",
+          "city": "Shanghai",
+          "state": "Shanghai",
+          "country": "China",
+          "country_code": "CN",
+          "geoid_city": "2IW9P6J7XAW72",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "GATE-IN",
+              "stempty": false,
+              "actfor": "SO",
+              "vessel_name": "HYUNDAI TOKYO",
+              "voyage_num": "121E",
+              "vessel_num": "F8V",
+              "expected_time": "2019-11-20T05:27:00.000",
+              "actual_time": "2019-11-16T23:53:00.000",
+              "rkem_move": "GATE-IN",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "LOAD",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "HYUNDAI TOKYO",
+              "voyage_num": "121E",
+              "vessel_num": "F8V",
+              "expected_time": "2019-11-20T05:27:00.000",
+              "actual_time": "2019-11-20T02:59:00.000",
+              "rkem_move": "LOAD",
+              "is_cancelled": false,
+              "is_current": true
+            }
+          ]
+        },
+        {
+          "terminal": "LSA APM Terminal Pier 400( W185 )",
+          "geo_site": "3KNWBA31FUU5K",
+          "city": "Los Angeles",
+          "state": "California",
+          "country": "United States",
+          "country_code": "US",
+          "geoid_city": "2LMUYHDQXMRNJ",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "DISCHARG",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "HYUNDAI TOKYO",
+              "voyage_num": "121E",
+              "vessel_num": "F8V",
+              "expected_time": "2019-12-04T17:00:00.000",
+              "is_current": false
+            },
+            {
+              "activity": "ON-RAIL",
+              "stempty": false,
+              "actfor": "IMP",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-12-09T17:00:00.000",
+              "is_current": false
+            }
+          ]
+        },
+        {
+          "terminal": "Chicago CSX Interchange Lane",
+          "geo_site": "1VMEDSOQI1U2U",
+          "city": "Chicago",
+          "state": "Illinois",
+          "country": "United States",
+          "country_code": "US",
+          "geoid_city": "0CVV4E476Q8AN",
+          "site_type": "RAIL TERMINAL",
+          "events": [
+            {
+              "activity": "OFF-RAIL",
+              "stempty": false,
+              "actfor": "IMP",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-12-14T07:00:00.000",
+              "is_current": false
+            },
+            {
+              "activity": "ON-RAIL",
+              "stempty": false,
+              "actfor": "IMP",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-12-15T07:00:00.000",
+              "is_current": false
+            }
+          ]
+        },
+        {
+          "terminal": "Cin-Csx",
+          "geo_site": "1J19M1FBJZTDR",
+          "city": "Cincinnati",
+          "state": "Ohio",
+          "country": "United States",
+          "country_code": "US",
+          "geoid_city": "09BTB47FS01A7",
+          "site_type": "RAIL TERMINAL",
+          "events": [
+            {
+              "activity": "OFF-RAIL",
+              "stempty": false,
+              "actfor": "IMP",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-12-17T08:00:00.000",
+              "is_current": false
+            },
+            {
+              "activity": "GATE-OUT",
+              "stempty": false,
+              "actfor": "DEL",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-12-17T08:00:00.000",
+              "is_current": false
+            }
+          ]
+        }
+      ],
+      "eta_final_delivery": "2019-12-17T08:00:00.000",
+      "latest": {
+        "actual_time": "2019-11-20T02:59:00.000",
+        "activity": "LOAD",
+        "stempty": false,
+        "actfor": "",
+        "geo_site": "3EWOQ4EWXDF26",
+        "city": "Shanghai",
+        "state": "Shanghai",
+        "country": "China",
+        "country_code": "CN"
+      },
+      "status": "IN-PROGRESS"
+    },
+    {
+      "container_num": "FXLU1795973",
+      "container_size": "20",
+      "container_type": "Dry",
+      "iso_code": "22G1",
+      "operator": "MAEU",
+      "locations": [
+        {
+          "terminal": "Shanghai Wai Gao Qiao Terminal",
+          "geo_site": "3EWOQ4EWXDF26",
+          "city": "Shanghai",
+          "state": "Shanghai",
+          "country": "China",
+          "country_code": "CN",
+          "geoid_city": "2IW9P6J7XAW72",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "GATE-IN",
+              "stempty": false,
+              "actfor": "SO",
+              "vessel_name": "HYUNDAI TOKYO",
+              "voyage_num": "121E",
+              "vessel_num": "F8V",
+              "expected_time": "2019-11-20T05:27:00.000",
+              "actual_time": "2019-11-15T21:37:00.000",
+              "rkem_move": "GATE-IN",
+              "is_cancelled": false,
+              "is_current": false
+            },
+            {
+              "activity": "LOAD",
+              "stempty": false,
+              "actfor": "",
+              "vessel_name": "HYUNDAI TOKYO",
+              "voyage_num": "121E",
+              "vessel_num": "F8V",
+              "expected_time": "2019-11-20T05:27:00.000",
+              "actual_time": "2019-11-20T03:01:00.000",
+              "rkem_move": "LOAD",
+              "is_cancelled": false,
+              "is_current": true
+            }
+          ]
+        },
+        {
+          "terminal": "LSA APM Terminal Pier 400( W185 )",
+          "geo_site": "3KNWBA31FUU5K",
+          "city": "Los Angeles",
+          "state": "California",
+          "country": "United States",
+          "country_code": "US",
+          "geoid_city": "2LMUYHDQXMRNJ",
+          "site_type": "TERMINAL",
+          "events": [
+            {
+              "activity": "DISCHARG",
+              "stempty": false,
+              "actfor": "EXP",
+              "vessel_name": "HYUNDAI TOKYO",
+              "voyage_num": "121E",
+              "vessel_num": "F8V",
+              "expected_time": "2019-12-04T17:00:00.000",
+              "is_current": false
+            },
+            {
+              "activity": "ON-RAIL",
+              "stempty": false,
+              "actfor": "IMP",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-12-09T17:00:00.000",
+              "is_current": false
+            }
+          ]
+        },
+        {
+          "terminal": "Chicago CSX Interchange Lane",
+          "geo_site": "1VMEDSOQI1U2U",
+          "city": "Chicago",
+          "state": "Illinois",
+          "country": "United States",
+          "country_code": "US",
+          "geoid_city": "0CVV4E476Q8AN",
+          "site_type": "RAIL TERMINAL",
+          "events": [
+            {
+              "activity": "OFF-RAIL",
+              "stempty": false,
+              "actfor": "IMP",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-12-14T07:00:00.000",
+              "is_current": false
+            },
+            {
+              "activity": "ON-RAIL",
+              "stempty": false,
+              "actfor": "IMP",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-12-15T07:00:00.000",
+              "is_current": false
+            }
+          ]
+        },
+        {
+          "terminal": "Cin-Csx",
+          "geo_site": "1J19M1FBJZTDR",
+          "city": "Cincinnati",
+          "state": "Ohio",
+          "country": "United States",
+          "country_code": "US",
+          "geoid_city": "09BTB47FS01A7",
+          "site_type": "RAIL TERMINAL",
+          "events": [
+            {
+              "activity": "OFF-RAIL",
+              "stempty": false,
+              "actfor": "IMP",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-12-17T08:00:00.000",
+              "is_current": false
+            },
+            {
+              "activity": "GATE-OUT",
+              "stempty": false,
+              "actfor": "DEL",
+              "vessel_name": "",
+              "voyage_num": "",
+              "vessel_num": "",
+              "expected_time": "2019-12-17T08:00:00.000",
+              "is_current": false
+            }
+          ]
+        }
+      ],
+      "eta_final_delivery": "2019-12-17T08:00:00.000",
+      "latest": {
+        "actual_time": "2019-11-20T03:01:00.000",
+        "activity": "LOAD",
+        "stempty": false,
+        "actfor": "",
+        "geo_site": "3EWOQ4EWXDF26",
+        "city": "Shanghai",
+        "state": "Shanghai",
+        "country": "China",
+        "country_code": "CN"
+      },
+      "status": "IN-PROGRESS"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo1NTU4MSwidXNlcm5hbWUiOiJoYXJkMjAyMDA2MDEwQGdtYWlsLmNvbSIsImV4cCI6MTYzMDA0NzYwNywiZW1haWwiOiJoYXJkMjAyMDA2MDEwQGdtYWlsLmNvbSJ9.LGxtdSAwiR0e3ykqwWezxjHCll250cg13ikf-_s4iGQ",
+  "isVenueAdmin": false,
+  "sections": [
+    "list",
+    "day",
+    "month",
+    "settings",
+    "calendar",
+    "container-tracking",
+    "empties",
+    "empties-booking"
+  ]
+}

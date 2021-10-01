@@ -1,0 +1,1329 @@
+
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><meta http-equiv="X-UA-Compatible" content="IE=edge" /><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta name="Description" content="China Airlines Cargo Services" /><meta name="Keywords" content="China Airlines Cargo Services" /><title>
+	China Airlines Cargo Services | Shipment Tracking
+</title><link href="../design/imgs/icon.png" type="image/x-icon" rel="shortcut icon" /><link href="../design/imgs/icon.png" rel="apple-touch-icon" /><link href="../design/css/tooltipster.css" rel="stylesheet" type="text/css" /><link rel="stylesheet" href="../design/css/shared.css" type="text/css" /><link rel="stylesheet" href="../design/css/animate.css" type="text/css" /><link id="jquery_ui" rel="stylesheet" href="../design/css/jquery-ui.min.css" type="text/css" /><link id="jquery_ui_theme" rel="stylesheet" href="../design/css/jquery-ui.theme.min.css" type="text/css" /><link rel="stylesheet" type="text/css" href="../design/js/source/jquery.fancybox.css" media="screen" />
+
+    <script src="../design/js/jquery.min.js" type="text/javascript"></script>
+    <script src="../design/js/jquery.kinMaxShow-1.1.min.js" type="text/javascript"></script>
+    <script src="../design/js/jquery.smoove.min.js" type="text/javascript"></script>
+    <script src="../design/js/jquery.textOverflowEllipsis.js" type="text/javascript"></script>
+    <script src="../design/js/source/jquery.fancybox.pack.js" type="text/javascript"></script>
+    <script src="../design/js/jquery.tooltipster.min.js" type="text/javascript"></script>
+    <script src="../design/js/jquery-ui.min.js" type="text/javascript"></script>
+    <script src="../design/js/custom.js?ver=20" type="text/javascript"></script>
+    <script src="../design/js/share-js.js" type="text/javascript"></script>
+    <script src="../design/js/jquery.blockUI.js" type="text/javascript"></script>
+
+
+
+
+    <!--[if lt IE 9]>
+	<script src="../design/js/respond.min.js"></script>
+<![endif]-->
+
+    <style type="text/css">
+        .NS_Statu {
+            color: #90867c;
+            height: 30px;
+            margin: 12px 0;
+        }
+
+            .NS_Statu img {
+                margin-right: 8px;
+                vertical-align: middle;
+            }
+
+        .McSpan {
+            color: #4b4b4b;
+            font-size: 14px;
+        }
+
+        .auto-style1 {
+            width: 200px;
+        }
+
+        /* 機場的 autocomplete css */
+        .ui-autocomplete {
+            max-height: 200px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+    </style>
+
+
+
+
+    <link rel="stylesheet" href="../design/css/Shipment_Tracking_FWB.css" type="text/css" />
+    <link rel="stylesheet" href="../design/css/ECC_Profile.css" type="text/css" />
+
+    <style type="text/css">
+        .smaller {
+            font-size: small;
+        }
+
+        hr {
+            border-width: 4px;
+        }
+
+        .myMargin {
+            margin-bottom: unset;
+        }
+
+        .Env_info {
+            width: 100%;
+        }
+
+            .Env_info th {
+                border-bottom: 1px solid #999999;
+                color: #0d1060;
+            }
+            /*.Env_info th:nth-child(6), .Env_info td:nth-child(6) {
+                    text-align: left;
+                }*/
+            .Env_info td {
+                padding-top: 10px;
+                padding-bottom: 10px;
+                text-align: center;
+            }
+
+                .Env_info td:nth-child(6), .Env_info td:nth-child(7) {
+                    width: 100px;
+                }
+
+                .Env_info td:last-child {
+                    text-align: center;
+                    width: 109px;
+                    padding-right: 0px;
+                }
+
+        .Cus_info td {
+            border-bottom: none !important;
+            padding: unset;
+            vertical-align: top;
+        }
+
+        .Cus_info tr:first-child td {
+            border-bottom: none !important;
+            color: #0D1060;
+        }
+
+        .abcdef {
+            text-indent: -4em;
+        }
+    </style>
+</head>
+<body onselectstart="event.returnValue=true" style="margin: 0">
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-79359813-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+    <form method="post" action="./ShipmentTracking.aspx" id="form1">
+<div class="aspNetHidden">
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="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" />
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['form1'];
+if (!theForm) {
+    theForm = document.form1;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<script src="/CCNetv2/WebResource.axd?d=WK9RrXcZudzMxF8EfbM-RKiMHv7GLwa9EyDBZwbKAlCQsPz4T4bfZW1XKI6fKaP9RgHpE3EAINHnApJDkvJn4PVfT6k1&amp;t=637454358340000000" type="text/javascript"></script>
+
+
+<script src="/CCNetv2/ScriptResource.axd?d=2IwFu-dIQzYMh4nCrpLvjXk1tSJiZRAfk2YvfyPV_V-CArScMWk13AbwTi_M89QLLBGFekYf3Pu9lI7PvtoxJPVuKHVGi-2HAcPB-RB3EQiqKSy-G1djvAseIFE2GJ8LboR_C5pxMFODzjl9wBM_1JKvYbY1&amp;t=363be08" type="text/javascript"></script>
+<script src="/CCNetv2/ScriptResource.axd?d=0ndJDsOwXMHJDMspX6py4aoOxLLnlLtesoXQpUeUyNco2ny2lOu_Dr8Wc7EVOD0KOFyJSUKJtC8s52ONAzhOyNgDQ6PJ3S4sGVT5aMocHcWWS3sbEHXXZC2_fjzjQxqPIzOWFmbuCtX08vhg3ZbXIPO3491NK2NNRGClztZ4WiAv6nJg0&amp;t=363be08" type="text/javascript"></script>
+<div class="aspNetHidden">
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="50BBE393" />
+	<input type="hidden" name="__SCROLLPOSITIONX" id="__SCROLLPOSITIONX" value="0" />
+	<input type="hidden" name="__SCROLLPOSITIONY" id="__SCROLLPOSITIONY" value="307" />
+</div>
+        <script type="text/javascript">
+//<![CDATA[
+Sys.WebForms.PageRequestManager._initialize('ctl00$ScriptManager1', 'form1', ['tctl00$ContentPlaceHolder1$UpdatePanel1','ContentPlaceHolder1_UpdatePanel1'], [], ['ctl00$ContentPlaceHolder1$btnSearch','ContentPlaceHolder1_btnSearch','ctl00$ContentPlaceHolder1$btnFWBFHLQuery','ContentPlaceHolder1_btnFWBFHLQuery'], 90, 'ctl00');
+//]]>
+</script>
+
+
+        <div id="content" class="animated fadeIn">
+
+            <div id="alertdiv" class="alert" style="text-align:center">
+                We use cookies to understand how you use our site and to improve your experience. By continuing to use our site, you accept our use of cookies, <a href="https://www.china-airlines.com/sea/en/terms-and-conditions/privacy-protection" style="text-decoration: underline">Privacy Protection Policy</a> and <a href="../home/Legal.aspx" style="text-decoration: underline">Terms of Use</a>
+.
+                <input type="submit" name="ctl00$btnAccept" value="I accept" id="btnAccept" class="button_accept" />
+                <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>
+            </div>
+            <input id="hdnMap" type="hidden" />
+
+            <div id="header_top">
+                <div class="in_header">
+                    <a id="HyperLink2" href="../../"> <div id="logo"></div></a>
+                    <div id="Panel1" onkeypress="javascript:return WebForm_FireDefaultButton(event, &#39;btnSearch&#39;)">
+
+                        <div id="search">
+
+                            <img src="../design/imgs/search.png" alt="Search" />
+                            <input id="sWord" name="sWord" type="search" placeholder="Search">
+                            <div Style="display: none;">
+                                <input type="submit" name="ctl00$btnSearch" value="Button" id="btnSearch" />
+                            </div>
+                        </div>
+
+</div>
+                    <ul id="header_top_menu">
+                        <li class="header_menu_group Login"><span>
+                            <a id="hlogin" href="javascript:myFuc();">Login</a>
+
+
+
+                            &#9660;</span>
+
+                            <div id="Panel2" onkeypress="javascript:return WebForm_FireDefaultButton(event, &#39;lkbtn&#39;)">
+
+                                <div id="loginMenu" class="Login_menu">
+                                    <div class="Login_top">
+                                        <img src="../design/imgs/login_top.png" height="17" width="300">
+                                    </div>
+                                    <div id="member_login_form">
+                                        <div class="Indexin_form ms_inform">
+                                            Company ID
+                                            &#12288;
+                                <input name="ctl00$txtCompanyId" type="text" maxlength="10" id="txtCompanyId" class="textfield textfield_member" />
+                                        </div>
+                                        <div class="Indexin_form ms_inform">
+                                            User ID
+                                            <input name="ctl00$txtUserId" type="text" maxlength="20" id="txtUserId" class="textfield textfield_member ID" />
+                                        </div>
+                                        <div class="Indexin_form ms_inform">
+                                            Password
+                                            <input name="ctl00$txtPassword" type="password" maxlength="20" id="txtPassword" class="textfield textfield_member PW" autocomplete="off" />
+                                        </div>
+                                        <!-- <input type="submit" value="Login" class="button_go button_ms member_login"> -->
+                                        <!-- 下面demo用link -->
+
+
+
+                                        <a id="lkbtn" class="member_login" href="javascript:__doPostBack(&#39;ctl00$lkbtn&#39;,&#39;&#39;)">
+                                            <div>
+                                                Login
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <div class="Indexin_form ms_inform login">
+                                        <a href="../home/registration.aspx">
+                                            Register</a>｜<a href="../home/reset_password.aspx">Forget Password
+                                            </a>
+                                    </div>
+                                </div>
+
+</div>
+
+                        </li>
+                        <li class="header_menu_group Language">
+                            Language&#9660;
+					<div class="Language_menu">
+                        <div>
+                            <img src="../design/imgs/language_top.png" height="17" width="127">
+                        </div>
+                        <a id="lbtnLanEng" href="javascript:__doPostBack(&#39;ctl00$lbtnLanEng&#39;,&#39;&#39;)"> <div class="Language_block">ENGLISH</div></a>
+                        <a id="lbtnLanCht" href="javascript:__doPostBack(&#39;ctl00$lbtnLanCht&#39;,&#39;&#39;)"> <div class="Language_block">繁體中文</div></a>
+                        <a id="lbtnLanCn" href="javascript:__doPostBack(&#39;ctl00$lbtnLanCn&#39;,&#39;&#39;)"> <div class="Language_block">简体中文</div></a>
+                    </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div id="header_down">
+                <div class="in_header dropdown">
+                    <ul>
+                        <li>
+                            <a href="javascript:void(0)">
+
+                                <div class="header_downmenu_group" id="Manage_menu">
+                                    Search
+                                </div>
+                            </a>
+                            <div class="header_dropdown" id="Manage_down">
+                                <ul>
+
+                                            <a id="rpterMenuManage_HyperLink1_0" href="ShipmentTracking.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterMenuManage_lblMenuName_0">Shipment Tracking</span></li>
+                                            </a>
+
+                                            <a id="rpterMenuManage_HyperLink1_1" href="PCI_Information.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterMenuManage_lblMenuName_1">PCI MailTracking</span></li>
+                                            </a>
+
+                                            <a id="rpterMenuManage_HyperLink1_2" href="FlightStatus.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterMenuManage_lblMenuName_2">Flight Status</span></li>
+                                            </a>
+
+                                            <a id="rpterMenuManage_HyperLink1_3" href="ScheduleDisplay.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterMenuManage_lblMenuName_3">Schedule Display</span></li>
+                                            </a>
+
+
+
+                                </ul>
+                            </div>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0)">
+                                <div class="header_downmenu_group" id="e_Booking_menu">
+                                    e-Booking
+                                </div>
+                            </a>
+                            <div class="header_dropdown" id="e_Booking_down">
+                                <ul>
+
+                                            <a id="rpterEBooking_hkLink_0" href="../e-booking/IntroductioneBooking.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterEBooking_lblMenuName_0">Introduction</span></li>
+                                            </a>
+
+
+
+                                </ul>
+                            </div>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0)">
+                                <div class="header_downmenu_group" id="e_AWB_menu">
+                                    e-AWB
+                                </div>
+                            </a>
+                            <div class="header_dropdown" id="e_AWB_down">
+                                <ul>
+
+
+                                            <a id="rpterEAWB_HyperLink1_0" href="../e-awb/IntroductioneAWB.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterEAWB_lblMenuName_0">Introduction</span></li>
+                                            </a>
+
+                                            <a id="rpterEAWB_HyperLink1_1" href="../e-awb/FWBFHLQuery.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterEAWB_lblMenuName_1">FWB/FHL Query</span></li>
+                                            </a>
+
+
+
+                                </ul>
+                            </div>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0)">
+                                <div class="header_downmenu_group" id="Product_menu">
+                                    Product
+                                </div>
+                            </a>
+                            <div class="header_dropdown" id="Product_down">
+                                <ul>
+
+
+                                            <a id="rpterProduct_HyperLink1_0" href="../product/Equation.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterProduct_lblMenuName_0">Express</span></li>
+                                            </a>
+
+                                            <a id="rpterProduct_HyperLink1_1" href="../product/Cohesion.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterProduct_lblMenuName_1">Customized</span></li>
+                                            </a>
+
+                                            <a id="rpterProduct_HyperLink1_2" href="../product/Variation.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterProduct_lblMenuName_2">Specialized</span></li>
+                                            </a>
+
+                                            <a id="rpterProduct_HyperLink1_3" href="../product/Dimension.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterProduct_lblMenuName_3">General</span></li>
+                                            </a>
+
+
+
+                                </ul>
+                            </div>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0)">
+                                <div class="header_downmenu_group" id="Tools_menu">
+                                    Tools
+                                </div>
+                            </a>
+                            <div class="header_dropdown" id="Tools_down">
+                                <ul>
+
+
+                                            <a id="rpterTools_HyperLink1_0" href="../tools/Loadability.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterTools_lblMenuName_0">Loadability</span></li>
+                                            </a>
+
+                                            <a id="rpterTools_HyperLink1_1" href="../tools/Print_Barcode_Label.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterTools_lblMenuName_1">Print Barcode Label</span></li>
+                                            </a>
+
+                                            <a id="rpterTools_HyperLink1_2" href="../tools/ShoringCalculation.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterTools_lblMenuName_2">Shoring Calculation</span></li>
+                                            </a>
+
+                                            <a id="rpterTools_HyperLink1_3" href="../tools/AWBDuplicateChecker.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterTools_lblMenuName_3">AWB Duplicated CHK for China</span></li>
+                                            </a>
+
+
+
+                                </ul>
+                            </div>
+                        </li>
+                        <li>
+                            <a href="javascript:void(0)">
+                                <div class="header_downmenu_group" id="About_menu">
+                                    About
+                                </div>
+                            </a>
+                            <div class="header_dropdown" id="About_down">
+                                <ul>
+
+                                            <a id="rpterAbout_hkLink_0" href="../about/News.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterAbout_lblMenuName_0">News</span></li>
+                                            </a>
+
+                                            <a id="rpterAbout_hkLink_1" href="../about/FuelSurcharge.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterAbout_lblMenuName_1">Fuel Surcharge</span></li>
+                                            </a>
+
+                                            <a id="rpterAbout_hkLink_2" href="../about/OurCompany.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterAbout_lblMenuName_2">Our Company</span></li>
+                                            </a>
+
+                                            <a id="rpterAbout_hkLink_3" href="../about/OurFleet.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterAbout_lblMenuName_3">Our Fleet</span></li>
+                                            </a>
+
+                                            <a id="rpterAbout_hkLink_4" href="../about/OurNetwork.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterAbout_lblMenuName_4">Our Network</span></li>
+                                            </a>
+
+                                            <a id="rpterAbout_hkLink_5" href="../about/OurOffice.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterAbout_lblMenuName_5">Our Office</span></li>
+                                            </a>
+
+                                            <a id="rpterAbout_hkLink_6" href="../about/UnitLoadDevices.aspx">
+                                                <li class="header_dropmenu_group">
+                                                    <span id="rpterAbout_lblMenuName_6">Unit Load Devices</span></li>
+                                            </a>
+
+
+
+                                </ul>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div >
+
+    <div id="index_banner_cycle">
+        <div class="white_top"></div>
+        <div class="banner_block" id="banner_Notification_Setting"></div>
+    </div>
+
+    <div id="main" class="in_main_style">
+
+        <div id="ContentPlaceHolder1_UpdatePanel1">
+
+
+                <div class="in_main pagemain_style">
+                    <div class="in_main in_pagemain_style">
+                        <div class="breadcrumbs">
+                            <div class="breadcrumbs_in">
+                                <a id="ContentPlaceHolder1_UCBreadcrumbs_hkHome" class="section" href="../../">Home</a>
+
+<div class="breadcrumbs_arrow"></div>
+
+<a id="ContentPlaceHolder1_UCBreadcrumbs_hkBreadcrumb1" class="section nolink">Search</a>
+<div class="breadcrumbs_arrow"></div>
+<a id="hkBreadcrumb2" class="active section ">Shipment Tracking</a>
+
+
+                            </div>
+                        </div>
+                        <div class="in_right_block">
+                            <div class="top_time_bar">
+                                <h1>
+                                    Shipment Tracking</h1>
+                                <h2>
+                                    Server :<div>L2&nbsp;&nbsp;<span id='_cost_time'></span></div>
+                                </h2>
+                            </div>
+                            <div class="top_txt">
+
+<span>
+    <span id="ContentPlaceHolder1_CommonMsg_lblUTC">24Sep 07:42:02(z)</span></span><br>
+<div class="NS_Statu">
+    <div id="ltlResponseType" style="display: inline"></div>
+    <img id="responseImg" src="../design/imgs/NS_Statusimg01.png" />
+    <span id="lblResponseMsg">1 records are found.</span>
+</div>
+
+                            </div>
+                            <div id="ContentPlaceHolder1_Panel1" onkeypress="javascript:return WebForm_FireDefaultButton(event, &#39;ContentPlaceHolder1_btnSearch&#39;)">
+
+                                <div class="search_block">
+                                    <img src="../design/imgs/ST_img.jpg"><br>
+                                    <span>
+                                        Air Waybill Number</span><br>
+                                    <label for="textfield">
+                                        <input name="ctl00$ContentPlaceHolder1$txtAwbPfx" type="text" value="297" maxlength="3" id="ContentPlaceHolder1_txtAwbPfx" class="textfield st1 NumText" />－
+                                    <input name="ctl00$ContentPlaceHolder1$txtAwbNum" type="text" value="14527634" maxlength="8" id="ContentPlaceHolder1_txtAwbNum" class="textfield st2 NumText" placeholder="Enter 8 digit AWB" />
+                                    </label>
+                                    <br>
+                                    <br>
+                                    <input type="submit" name="ctl00$ContentPlaceHolder1$btnSearch" value="Search" id="ContentPlaceHolder1_btnSearch" class="button_go" />
+                                </div>
+
+                                <div id="ContentPlaceHolder1_div_AW_detail" class="AW_detail">
+                                    <span class="AWd_black">
+                                        Air Waybill Detail</span><span class="AWd_blue Large">
+                                            <span id="ContentPlaceHolder1_lblAwbPfx">297</span>-<span id="ContentPlaceHolder1_lblAwbNum">14527634</span></span><br>
+                                    <br>
+                                    <span class="AWd_black">
+                                        Origin
+                                        <span id="ContentPlaceHolder1_lblOrg">CAN</span></span>
+                                    <img src="../design/imgs/ST_detail.jpg"><span class="AWd_black">Destination
+                                        <span id="ContentPlaceHolder1_lblDes">LAX</span></span><br>
+                                    <br>
+                                    <table class="info_block">
+                                        <tr>
+                                            <td class="AWd_black">
+                                                Pieces</td>
+                                            <td class="AWd_blue Small">
+                                                <span id="ContentPlaceHolder1_lblPcs">5</span></td>
+                                            <td class="AWd_black">
+                                                Weight</td>
+                                            <td class="AWd_blue Small">
+                                                <span id="ContentPlaceHolder1_lblWgt">1088 KG</span></td>
+                                        </tr>
+                                    </table>
+                                    <div class="info_bottom AWd_black Small14">
+                                        Current Status
+                                        &nbsp;<span id="ContentPlaceHolder1_lblLatestFreightStatus">5pc(s)delivered to the consignee in LAX</span>
+                                    </div>
+                                </div>
+                                <div id="ContentPlaceHolder1_divFI_form" class="FI_form">
+                                    <a id="ContentPlaceHolder1_btnFWBFHLQuery" href="javascript:__doPostBack(&#39;ctl00$ContentPlaceHolder1$btnFWBFHLQuery&#39;,&#39;&#39;)">
+                                        <div id="e-Freight">
+                                            e-Freight Information
+                                        </div>
+                                    </a></div><div id="ContentPlaceHolder1_div_FI" class="FI_form FI">
+                                    <h3 class="AES_formTitle">
+                                        Flight Information</h3>
+                                    <div class="title_arrow">&#9650;</div><table>
+                                        <tr>
+                                            <td width="100px">
+                                                Status</td>
+                                            <td>
+                                                Flight</td>
+                                            <td>
+                                                Departure</td>
+                                            <td>
+                                                Arrival</td>
+                                            <td>
+                                                Pieces</td>
+                                            <td>
+                                                Weight</td>
+                                            <td>
+                                                ULD information</td>
+                                        </tr>
+
+                                                <tr>
+                                                    <td>
+                                                        <span id="ContentPlaceHolder1_rpFlightEvent_lblStatus_0">Arrived</span></td><td>
+                                                        <span id="ContentPlaceHolder1_rpFlightEvent_lblCcd_0">CI</span><span id="ContentPlaceHolder1_rpFlightEvent_lblFltNum_0">5118</span></td><td>
+                                                        <span id="ContentPlaceHolder1_rpFlightEvent_lblBrd_0">TPE</span>&nbsp;<span class="Small13"><span id="ContentPlaceHolder1_rpFlightEvent_lblDepTime_0">03Aug 06:49(ATDL)</span></span></td><td>
+                                                        <span id="ContentPlaceHolder1_rpFlightEvent_lblOff_0">LAX</span>&nbsp;<span class="Small13"><span id="ContentPlaceHolder1_rpFlightEvent_lblArrTime_0">03Aug 04:11(ATAL)</span></span></td><td>
+                                                        <span id="ContentPlaceHolder1_rpFlightEvent_lblPcs_0">5</span></td><td>
+                                                        <span id="ContentPlaceHolder1_rpFlightEvent_lblWgt_0">1088 KG</span></td><td>
+                                                        <span id="ContentPlaceHolder1_rpFlightEvent_lblUnitLoadDevices_0">PMC97451CI/5/Mix</span></td></tr>
+                                                <tr>
+                                                    <td>
+                                                        <span id="ContentPlaceHolder1_rpFlightEvent_lblStatus_1">Arrived</span></td><td>
+                                                        <span id="ContentPlaceHolder1_rpFlightEvent_lblCcd_1">CI</span><span id="ContentPlaceHolder1_rpFlightEvent_lblFltNum_1">5896</span></td><td>
+                                                        <span id="ContentPlaceHolder1_rpFlightEvent_lblBrd_1">CAN</span>&nbsp;<span class="Small13"><span id="ContentPlaceHolder1_rpFlightEvent_lblDepTime_1">01Aug 02:22(ATDL)</span></span></td><td>
+                                                        <span id="ContentPlaceHolder1_rpFlightEvent_lblOff_1">TPE</span>&nbsp;<span class="Small13"><span id="ContentPlaceHolder1_rpFlightEvent_lblArrTime_1">01Aug 04:22(ATAL)</span></span></td><td>
+                                                        <span id="ContentPlaceHolder1_rpFlightEvent_lblPcs_1">5</span></td><td>
+                                                        <span id="ContentPlaceHolder1_rpFlightEvent_lblWgt_1">1088 KG</span></td><td>
+                                                        <span id="ContentPlaceHolder1_rpFlightEvent_lblUnitLoadDevices_1">PMC97451CI/5/Mix</span></td></tr></table></div><div id="ContentPlaceHolder1_div_SH" class="FI_form SH">
+                                    <h3 class="AES_formTitle">
+                                        Shipping History</h3>
+                                    <div class="title_arrow">&#9650;</div><table style="align-content: unset">
+                                        <tr>
+                                            <td width="100px" class="abcdef">
+                                                Status</td>
+                                            <td>
+                                                Flight</td>
+                                            <td>
+                                                Pieces</td>
+                                            <td>
+                                                Weight</td>
+                                            <td>
+                                                Event Airport</td>
+                                            <td>
+                                                Event Time</td>
+                                        </tr>
+
+                                                <tr id="ContentPlaceHolder1_rpFreightStatus_trRow_0">
+			<td width="100px" class="abcdef">
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblCode_0">Delivered</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblFlight_0"></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnPcs_0">5</span></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnWgt_0"></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnApt_0">LAX</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnTime_0">09Aug 20:08</span></td>
+		</tr>
+
+                                                <tr id="ContentPlaceHolder1_rpFreightStatus_trRow_1" class="row">
+			<td width="100px" class="abcdef">
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblCode_1">Notified</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblFlight_1">CI 5118</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnPcs_1">5</span></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnWgt_1"></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnApt_1">LAX</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnTime_1">03Aug 11:11</span></td>
+		</tr>
+
+                                                <tr id="ContentPlaceHolder1_rpFreightStatus_trRow_2" class="row">
+			<td width="100px" class="abcdef">
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblCode_2">Air Waybill Delivered</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblFlight_2">CI 5118</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnPcs_2">5</span></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnWgt_2"></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnApt_2">LAX</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnTime_2">03Aug 11:11</span></td>
+		</tr>
+
+                                                <tr id="ContentPlaceHolder1_rpFreightStatus_trRow_3" class="row">
+			<td width="100px" class="abcdef">
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblCode_3">Received</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblFlight_3">CI 5118/03Aug</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnPcs_3">5</span></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnWgt_3"></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnApt_3">LAX</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnTime_3">03Aug 08:11</span></td>
+		</tr>
+
+                                                <tr id="ContentPlaceHolder1_rpFreightStatus_trRow_4" class="row">
+			<td width="100px" class="abcdef">
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblCode_4">Departed</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblFlight_4">CI 5118/03Aug</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnPcs_4">5</span></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnWgt_4">1088kg</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnApt_4">TPE</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnTime_4">03Aug 06:49(ATDL)</span></td>
+		</tr>
+
+                                                <tr id="ContentPlaceHolder1_rpFreightStatus_trRow_5" class="row">
+			<td width="100px" class="abcdef">
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblCode_5">Arrived</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblFlight_5">CI 5118/03Aug</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnPcs_5">5</span></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnWgt_5">1088kg</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnApt_5">LAX</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnTime_5">03Aug 04:11(ATAL)</span></td>
+		</tr>
+
+                                                <tr id="ContentPlaceHolder1_rpFreightStatus_trRow_6">
+			<td width="100px" class="abcdef">
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblCode_6">Received</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblFlight_6">CI 5896/01Aug</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnPcs_6">5</span></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnWgt_6">1088kg</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnApt_6">TPE</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnTime_6">01Aug 05:22</span></td>
+		</tr>
+
+                                                <tr id="ContentPlaceHolder1_rpFreightStatus_trRow_7">
+			<td width="100px" class="abcdef">
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblCode_7">Arrived</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblFlight_7">CI 5896/01Aug</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnPcs_7">5</span></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnWgt_7">1088kg</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnApt_7">TPE</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnTime_7">01Aug 04:22(ATAL)</span></td>
+		</tr>
+
+                                                <tr id="ContentPlaceHolder1_rpFreightStatus_trRow_8">
+			<td width="100px" class="abcdef">
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblCode_8">Departed</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblFlight_8">CI 5896/01Aug</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnPcs_8">5</span></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnWgt_8">1088kg</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnApt_8">CAN</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnTime_8">01Aug 02:22(ATDL)</span></td>
+		</tr>
+
+                                                <tr id="ContentPlaceHolder1_rpFreightStatus_trRow_9" class="row">
+			<td width="100px" class="abcdef">
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblCode_9">Received</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblFlight_9"></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnPcs_9">5</span></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnWgt_9">1088kg</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnApt_9">CAN</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnTime_9">31Jul 16:05</span></td>
+		</tr>
+
+                                                <tr id="ContentPlaceHolder1_rpFreightStatus_trRow_10">
+			<td width="100px" class="abcdef">
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblCode_10">Booked</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblFlight_10">CI 5118/03Aug</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnPcs_10">5</span></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnWgt_10">1088kg</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnApt_10">TPE</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnTime_10">29Jul 07:53</span></td>
+		</tr>
+
+                                                <tr id="ContentPlaceHolder1_rpFreightStatus_trRow_11">
+			<td width="100px" class="abcdef">
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblCode_11">Booked</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblFlight_11">CI 5896/01Aug</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnPcs_11">5</span></span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnWgt_11">1088kg</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnApt_11">CAN</span></td>
+			<td>
+                                                        <span id="ContentPlaceHolder1_rpFreightStatus_lblEvnTime_11">29Jul 07:53</span></td>
+		</tr>
+		</table></div><div id="ContentPlaceHolder1_div_EI" class="FI_form EI">
+                                    <div id="ContentPlaceHolder1_panelEI">
+
+
+
+
+
+
+                                        <h3 class="AES_formTitle">
+                                            AMS Information</h3>
+                                        <div class="title_arrow">&#9660;</div><table style="border-bottom: none; margin-bottom: 0px;">
+                                            <tr>
+                                                <td style="border-bottom: none; margin-bottom: 0px;">
+                                                    <h1>AMS Info</h1></td></tr></table><table style="margin-top:0px;">
+                                            <tr>
+                                                <td>
+                                                    Flight</td>
+                                                <td>
+                                                    HAWB</td>
+                                                <td>
+                                                    Report Pieces</td>
+                                                <td>
+                                                    Receive Time
+                                                    <span class="Small12">(GMT)</span></td><td>
+                                                    SMI</td>
+                                                <td>
+                                                    Code</td>
+                                                <td>
+                                                    Customs Pieces</td>
+                                                <td>
+                                                    Transaction Time
+                                                    <span class="Small12">(EST)</span></td><td>
+                                                    Code Description</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="3" class="left right">
+                                                    Carrier Information</td>
+                                                <td colspan="6" class="right">
+                                                    Customs Information</td>
+                                            </tr>
+
+                                                    <tr>
+                                                        <td class="left">
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblFlight_0">CI5118/03Aug</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblHwb_0"></span></td><td class="right">
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblPcs_0">5</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblReceiveTime_0"></span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblSmi_0"></span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblCode_0"></span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblCustomPcs_0"></span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblTransactionTime_0"></span></td><td class="right txtLeft">
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblCodeDesc_0"></span></td></tr>
+                                                    <tr>
+                                                        <td class="left">
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblFlight_1">CI5118/03Aug</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblHwb_1">YYFSZ2107048</span></td><td class="right">
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblPcs_1">5</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblReceiveTime_1">03Aug 03:51</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblSmi_1">FSN</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblCode_1">1C</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblCustomPcs_1">5</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblTransactionTime_1">02AUG  2350</span></td><td class="right txtLeft">
+                                                            <span id="ContentPlaceHolder1_rpUsCusInfo_lblCodeDesc_1">Entry processed: CBP general examination.</span></td></tr></table><table style="border-bottom: none; margin-bottom: 0px;">
+                                            <tr>
+                                                <td style="border-bottom: none; margin-bottom: 0px;">
+                                                    <h1>ACAS Info</h1></td></tr></table><table style="margin-top:0px;">
+                                            <tr>
+                                                <td>
+                                                    Air Waybill Number</td>
+                                                <td>
+                                                    HAWB</td>
+
+                                                <td>
+                                                    Receive Time
+                                                    <span class="Small12">(GMT)</span></td><td>
+                                                    SMI</td>
+                                                <td>
+                                                    Code</td>
+                                                <td>
+                                                    Customs Pieces</td>
+                                                <td>
+                                                    Code Description</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="3" class="left right">
+                                                    Carrier Information</td>
+                                                <td colspan="6" class="right">
+                                                    Customs Information</td>
+                                            </tr>
+
+                                                    <tr>
+                                                        <td class="left">
+                                                            <span id="ContentPlaceHolder1_rpACASInfo_lblFlight_0">297-14527634</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpACASInfo_lblHwb_0"></span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpACASInfo_lblReceiveTime_0">31Jul 08:10</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpACASInfo_lblSmi_0">PSN</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpACASInfo_lblCode_0">SF</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpACASInfo_lblCustomPcs_0">5</span></td><td class="right txtLeft">
+                                                            <span id="ContentPlaceHolder1_rpACASInfo_lblCodeDesc_0">Security Filing Received-Assessment Complete</span></td></tr>
+                                                    <tr>
+                                                        <td class="left">
+                                                            <span id="ContentPlaceHolder1_rpACASInfo_lblFlight_1">297-14527634</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpACASInfo_lblHwb_1">YYFSZ2107048</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpACASInfo_lblReceiveTime_1">31Jul 08:10</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpACASInfo_lblSmi_1">PSN</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpACASInfo_lblCode_1">SF</span></td><td>
+                                                            <span id="ContentPlaceHolder1_rpACASInfo_lblCustomPcs_1">5</span></td><td class="right txtLeft">
+                                                            <span id="ContentPlaceHolder1_rpACASInfo_lblCodeDesc_1">Security Filing Received-Assessment Complete</span></td></tr></table>
+		</div></div><div>
+                                    <table class="Env_info">
+                                        <tr>
+                                            <td></td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <span class="Small12 note">
+                                    *All times shown are local time.</span>
+
+	</div>
+                        </div>
+                    </div>
+                </div>
+
+</div>
+        <div id="gotop">
+            <div id="in_gotop">
+                <div class="btn_gotop"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="text/javascript">
+
+        function _init() {
+            //預設不展開
+            $('.EI table').fadeToggle();
+            //$('.EI_ACAS table').fadeToggle();
+
+
+            $('.FI h3,.FI .title_arrow').click(function () {
+                $('.FI table').fadeToggle();
+                $('.FI .title_arrow').toggleClass('rotate');
+            });
+
+            // SH
+            $('.SH h3,.SH .title_arrow').click(function () {
+                $('.SH table').fadeToggle();
+                $('.SH .title_arrow').toggleClass('rotate');
+            });
+
+            // EI
+            $('.EI h3,.EI .title_arrow').click(function () {
+                $('.EI table').fadeToggle();
+                $('.EI .title_arrow').toggleClass('rotate');
+            });
+
+            //// EI_ACAS
+            //$('.EI_ACAS h3,.EI_ACAS .title_arrow').click(function () {
+            //    $('.EI_ACAS table').fadeToggle();
+            //    $('.EI_ACAS .title_arrow').toggleClass('rotate');
+            //});
+
+            // EI2
+            $('.EI2 h3,.EI2 .title_arrow').click(function () {
+                $('.EI2 table:not(#CC_all)').fadeToggle();
+                $('.EI2 .CC').fadeToggle();
+                $('.EI2 .title_arrow').toggleClass('rotate');
+            });
+
+            // EI2 complete check
+            $('#CC_show').click(function () {
+                $("#CC_all").toggle();
+                $('#CC_show').toggleClass('hide_btn');
+            });
+
+            // E122
+            $('.E122 h3, .E122 .title_arrow').click(function () {
+                $('.env_20180905').fadeToggle();
+                $('.E122 table').fadeToggle();
+                $('.E122 .title_arrow').toggleClass('rotate');
+                //$('.E122 + .title_arrow').toggleClass('rotate');
+            });
+
+            //限制輸入格式
+            $(".NumText").keyup(function () {
+                $(this).val($(this).val().replace(/\D/g, ''));
+            }).bind("paste", function () {  //CTR+V事件處理
+                $(this).val($(this).val().replace(/\D/g, ''));
+            }).css("ime-mode", "disabled"); //CSS設置輸入法不可用
+        }
+
+        Sys.WebForms.PageRequestManager.getInstance().add_endRequest(_init);
+
+        $(document).ready(function () {
+            _init();
+        });
+
+        function showHide(cc_show, cc_all, gvNewestRecord) {
+
+            $('#' + cc_show).toggleClass('hide_btn');
+            $("#" + cc_all).toggle();
+            $("#" + gvNewestRecord).toggle();
+
+        }
+
+    </script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('.tooltip').tooltipster({
+                // theme: 'tooltipster-light'
+                position: 'bottom'
+            });
+        });
+    </script>
+
+            </div>
+
+            <div id="footer">
+                <div id="in_footer">
+                    <ul>
+                        <li class="auto-style1">
+                            <h1>
+                                Shipping Tools & Information</h1>
+                            <a href="../home/registration.aspx">
+                                <h2>
+                                    Registration</h2>
+                            </a>
+                            <a href="../manage/ShipmentTracking.aspx">
+                                <h2>
+                                    Shipment Tracking</h2>
+                            </a>
+                            <a href="../manage/FlightStatus.aspx">
+                                <h2>
+                                    Flight Status</h2>
+                            </a>
+                            <a href="../manage/ScheduleDisplay.aspx">
+                                <h2>
+                                    Schedule Display</h2>
+                            </a>
+                            <a href="../manage/MailTracking.aspx">
+                                <h2>
+                                    </h2>
+                            </a>
+
+                            <a href="../e-awb/CreateFWB.aspx">
+                                <h2>
+                                    </h2>
+                            </a>
+                            <a href="../tools/Loadability.aspx">
+                                <h2>
+                                    Loadability
+                                </h2>
+                            </a>
+                            <a href="../tools/ShoringCalculation.aspx">
+                                <h2>
+                                    Shoring Calculation</h2>
+                            </a>
+                        </li>
+                        <li>
+                            <h1>
+                                Products</h1>
+                            <a href="../product/Equation.aspx">
+                                <h2>
+                                    Express</h2>
+                            </a>
+                            <a href="../product/Cohesion.aspx">
+                                <h2>
+                                    Customized</h2>
+                            </a>
+                            <a href="../product/Variation.aspx">
+                                <h2>
+                                    Specialized</h2>
+                            </a>
+                            <a href="../product/Dimension.aspx">
+                                <h2>
+                                    General</h2>
+                            </a>
+                        </li>
+                        <li>
+                            <h1>
+                                Services</h1>
+                            <a href="../services/DangerousGoods.aspx">
+                                <h2>
+                                    Dangerous Goods</h2>
+                            </a>
+
+                            <a href="../services/LiveAnimals.aspx">
+                                <h2>
+                                    Live Animals</h2>
+                            </a>
+                            <a href="../services/CoolChain.aspx">
+                                <h2>
+                                    Cool Chain</h2>
+                            </a>
+                            <a href="../services/ContractOfCarriage.aspx">
+                                <h2>
+                                    Contract of Carriage</h2>
+                            </a>
+                            <a href="../services/AdvanceCargoInformation.aspx">
+                                <h2>
+                                    Advance?Cargo?Information</h2>
+                            </a>
+                            <a href="../home/MobileService.aspx">
+                                <h2>
+                                    Mobile Service</h2>
+                            </a>
+                        </li>
+                        <li>
+                            <h1>
+                                About CAL Cargo</h1>
+                            <a href="../about/News.aspx">
+                                <h2>
+                                    News</h2>
+                            </a>
+                            <a href="../about/FuelSurcharge.aspx">
+                                <h2>
+                                    Fuel Surcharge</h2>
+                            </a>
+                            <a href="../about/OurCompany.aspx">
+                                <h2>
+                                    Our Company</h2>
+                            </a>
+                            <a href="../about/OurFleet.aspx">
+                                <h2>
+                                    Our Fleet</h2>
+                            </a>
+                            <a href="../about/OurNetwork.aspx">
+                                <h2>
+                                    Our Network</h2>
+                            </a>
+                            <a href="../about/OurOffice.aspx">
+                                <h2>
+                                    Our Office</h2>
+                            </a>
+                            <a href="../about/UnitLoadDevices.aspx">
+                                <h2>
+                                    Unit Load Devices</h2>
+                            </a>
+                            <a>
+                                <h2>
+                                    <a href="https://www.china-airlines.com/sea/en/terms-and-conditions/privacy-protection">Privacy Protection Policy</a></h2>
+                            </a>
+                        </li>
+                        <li>
+                            <h1>
+                                Customer Support</h1>
+                            <a href="../customer/FAQs.aspx">
+                                <h2>
+                                    FAQs</h2>
+                            </a>
+                            <a id="hylnkPreClaim" href="https://calec.china-airlines.com/preclaim1/LoginPreClaim.aspx?lang=en-US" target="_blank">
+                                <h2>Pre-claim</h2>
+                            </a>
+
+
+
+
+                            <a id="hylnkFASS" href="https://CIRAS.china-airlines.com/FASS/SignIn" target="_blank">
+                                <h2>FASS Service</h2>
+                            </a>
+                        </li>
+                    </ul>
+                    <div id="foot_left_text">© 2016 China Airlines</div>
+                    <div id="footer_bottom">
+                        <a id="lbtnChangeView" href="javascript:__doPostBack(&#39;ctl00$lbtnChangeView&#39;,&#39;&#39;)">
+                            <span>
+                                Mobile Site</span>
+                        </a>
+                        <a href="../home/SiteMap.aspx"><span>
+                            Site Map</span></a>
+                        <a href="../home/Legal.aspx"><span>
+                            Legal</span></a>
+                        <a href="http://www.china-airlines.com/" target="_blank" class="outLink"><span>China Airlines<img src="../design/imgs/footer_link.png"></span></a>
+                        <a href="http://www.skyteamcargo.com" target="_blank" class="outLink"><span>SkyTeam Cargo<img src="../design/imgs/footer_link.png"></span></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <input type="hidden" name="ctl00$hdnLogPath" id="hdnLogPath" value="/ccnetv2/content/home/addLog.ashx" />
+        <input type="hidden" name="ctl00$hdnProgName" id="hdnProgName" value="/ccnetv2/content/manage/shipmenttracking.aspx" />
+        <div>
+            <div id="loading" style="display: none">
+                <div>
+                    <img id="imgLoading" src="../design/imgs/loading.gif" />
+                </div>
+                <br />
+                <div>
+                    Data Loading ,Please Wait...
+                </div>
+            </div>
+        </div>
+
+
+<script type="text/javascript">
+//<![CDATA[
+setTimeout(function(){$('#sWord').val('');},1000);
+theForm.oldSubmit = theForm.submit;
+theForm.submit = WebForm_SaveScrollPositionSubmit;
+
+theForm.oldOnSubmit = theForm.onsubmit;
+theForm.onsubmit = WebForm_SaveScrollPositionOnSubmit;
+
+theForm.oldOnLoad = window.onload;
+window.onload = WebForm_RestoreScrollPosition;
+//]]>
+</script>
+</form>
+
+    <script language="javascript" type="text/javascript">
+
+        function fillDataFromMap(data) {
+            document.getElementById(document.getElementById("hdnMap").value).value = data;
+            jQuery.fancybox.close();
+        }
+
+        function openMap(data) {
+            document.getElementById("hdnMap").value = data;
+            $.fancybox.open({
+                href: '../map/map.aspx',
+                type: 'iframe',
+                padding: 0,
+                margin: 0,
+                width: 953,
+                height: 557,
+                wrapCSS: 'fancybox-custom',
+                fitToView: false,
+                autoSize: false
+            });
+        }
+
+        function postLog(sender, spentTime) {
+            var url = $("#hdnLogPath").val();
+            var progName = $("#hdnProgName").val();
+
+            var data = {};
+            data.progName = progName;
+            data.spentTime = spentTime
+            data.senderName = sender;
+            $.post(url, data, function (result) {
+
+                if (sender != "PageLoad") {
+                    showResponseResult(result.ResponseMsg, result.ResponseType);
+                }
+            });
+        }
+
+        var _countSepntTime = new Date();
+
+        if (!Sys.WebForms.PageRequestManager.getInstance().get_isInAsyncPostBack()) {
+            Sys.WebForms.PageRequestManager.getInstance().add_beginRequest(BeginRequestHandler);
+            Sys.WebForms.PageRequestManager.getInstance().add_endRequest(EndRequestHandler);
+        }
+
+
+        function showResponseResult(ResponseMsg, ResponseType) {
+            if ($("#lblResponseMsg") && ResponseMsg != null) {
+                $("#lblResponseMsg").text(ResponseMsg);
+            }
+            if ($("#ltlResponseType") && ResponseType != null) {
+
+                $("#responseImg").hide();
+                if ("OK" == ResponseType) {
+                    $("#responseImg").show();
+                    $("#responseImg").attr("src", "../design/imgs/NS_Statusimg01.png");
+
+                } else if ("Warning" == ResponseType) {
+                    $("#responseImg").show();
+                    $("#responseImg").attr("src", "../design/imgs/NS_Statusimg02_03.gif");
+
+                } else if ("Error" == ResponseType) {
+                    $("#responseImg").show();
+                    $("#responseImg").attr("src", "../design/imgs/NS_Statusimg02_03.gif");
+
+                } else {
+                    console.error("not determinie" + ResponseType);
+                }
+            }
+        }
+
+        function BeginRequestHandler(sender, args) {
+            _countSepntTime = new Date();
+            $.blockUI({
+                message: $('#loading'), css: {
+                    border: 'none',
+                    padding: '15px',
+                    backgroundColor: '#000',
+                    '-webkit-border-radius': '10px',
+                    '-moz-border-radius': '10px',
+                    opacity: .5,
+                    color: '#fff'
+                }
+            });
+        }
+
+        function EndRequestHandler(sender, args) {
+            $.unblockUI();
+            if (args.get_error() != undefined) {
+                var errorMessage = args.get_error().message;
+
+                showResponseResult(errorMessage, "Error");
+                //alert(errorMessage);
+                args.set_errorHandled(true);
+                //$('body').replaceWith(errorMessage);
+            }
+
+
+            var senderName = sender._postBackSettings.asyncTarget;
+            //console.log(JSON.stringify(sender));
+            var diff = (new Date() - _countSepntTime) / 1000;//秒
+            postLog(senderName, diff);
+            //顯示在畫面上
+            showSpentTime(diff);
+        }
+
+        function showSpentTime(t) {
+            if ($("#_cost_time")) {
+                $("#_cost_time").text(t + "s");
+            }
+        }
+
+        $(function () {
+            var spentime = (new Date() - _countSepntTime) / 1000
+            //顯示在畫面上
+            showSpentTime(spentime);
+            postLog("PageLoad", spentime);
+        });
+    </script>
+
+
+</body>
+</html>

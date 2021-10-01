@@ -2,7 +2,7 @@ import pprint
 import os
 import traceback
 from collections import OrderedDict
-from typing import Dict
+from typing import Dict, Union
 
 from scrapy.exceptions import DropItem
 
@@ -12,13 +12,30 @@ from .base import CARRIER_RESULT_STATUS_DATA, CARRIER_RESULT_STATUS_DEBUG, CARRI
 from crawler.services.edi_service import EdiClientService
 
 
-class CarrierItemPipeline:
+class BaseItemPipeline:
     def __init__(self):
         # edi client setting
         user = os.environ.get('EDI_ENGINE_USER')
         token = os.environ.get('EDI_ENGINE_TOKEN')
         url = os.environ.get('EDI_ENGINE_URL')
         self.edi_client = EdiClientService(url=url, edi_user=user, edi_token=token)
+
+    def handle_err_result(self, collector, task_id: int, result: Dict):
+        if collector.is_default():
+            status_code, text = self.edi_client.send_provider_result_back(task_id=task_id,
+                                                                          provider_code='scrapy_cloud_api',
+                                                                          item_result=result)
+        else:
+            item_result = collector.build_final_data()
+            status_code, text = self.edi_client.send_provider_result_back(task_id=task_id,
+                                                                          provider_code='scrapy_cloud_api',
+                                                                          item_result=item_result)
+        return status_code, text
+
+
+class CarrierItemPipeline(BaseItemPipeline):
+    def __init__(self):
+        super().__init__()
 
     @classmethod
     def get_setting_name(cls):
@@ -75,34 +92,20 @@ class CarrierItemPipeline:
             res.append({'task_id': task_id, 'status_code': status_code, 'text': text})
             return res
         else:
-            return {'status_code': -1, 'text': 'no task id in request_args'}
+            return {'status_code': -1, 'text': 'no task id in request_args or empty result'}
 
     def _send_error_msg_back_to_edi_engine(self, result: Dict):
-        task_id = result.get('request_args', {}).get('task_id')
-
         res = []
-        if self._collector.is_default():
-            status_code, text = self.edi_client.send_provider_result_back(task_id=task_id,
-                                                                          provider_code='scrapy_cloud_api',
-                                                                          item_result=result)
-        else:
-            item_result = self._collector.build_final_data()
-            status_code, text = self.edi_client.send_provider_result_back(task_id=task_id,
-                                                                          provider_code='scrapy_cloud_api',
-                                                                          item_result=item_result)
-
+        task_id = result.get('request_args', {}).get('task_id')
+        status_code, text = self.handle_err_result(collector=self._collector, task_id=task_id, result=result)
         res.append({'task_id': task_id, 'status_code': status_code, 'text': text})
         return res
 
 
-class CarrierMultiItemsPipeline:
+class CarrierMultiItemsPipeline(BaseItemPipeline):
     def __init__(self):
+        super().__init__()
         self._collector_map = {}
-        # edi client setting
-        user = os.environ.get('EDI_ENGINE_USER')
-        token = os.environ.get('EDI_ENGINE_TOKEN')
-        url = os.environ.get('EDI_ENGINE_URL')
-        self.edi_client = EdiClientService(url=url, edi_user=user, edi_token=token)
 
     @classmethod
     def get_setting_name(cls):
@@ -168,26 +171,18 @@ class CarrierMultiItemsPipeline:
                 item_result = collector.get_error_item()
             else:
                 item_result = collector.build_final_data()
-            status_code, text = self.edi_client.send_provider_result_back(task_id=task_id,
-                                                                          provider_code='scrapy_cloud_api',
-                                                                          item_result=item_result)
-            res.append({'task_id': task_id, 'status_code': status_code, 'text': text})
+            if item_result:
+                status_code, text = self.edi_client.send_provider_result_back(task_id=task_id,
+                                                                              provider_code='scrapy_cloud_api',
+                                                                              item_result=item_result)
+                res.append({'task_id': task_id, 'status_code': status_code, 'text': text})
 
         return res
 
     def _send_error_msg_back_to_edi_engine(self, result: Dict):
         res = []
         for task_id, collector in self._collector_map.items():
-            if collector.is_default():
-                status_code, text = self.edi_client.send_provider_result_back(task_id=task_id,
-                                                                              provider_code='scrapy_cloud_api',
-                                                                              item_result=result)
-            else:
-                item_result = collector.build_final_data()
-                status_code, text = self.edi_client.send_provider_result_back(task_id=task_id,
-                                                                              provider_code='scrapy_cloud_api',
-                                                                              item_result=item_result)
-
+            status_code, text = self.handle_err_result(collector=collector, task_id=task_id, result=result)
             res.append({'task_id': task_id, 'status_code': status_code, 'text': text})
 
         return res
@@ -247,7 +242,7 @@ class CarrierResultCollector:
             'status': [],
         }
 
-    def build_final_data(self) -> Dict:
+    def build_final_data(self) -> Union[Dict, None]:
         # remove task_id, task_id is just for link different items in same task
         if 'task_id' in self._basic:
             del self._basic['task_id']
@@ -265,13 +260,14 @@ class CarrierResultCollector:
                     del status['task_id']
             containers.append(container)
 
-        return {
-            'status': CARRIER_RESULT_STATUS_DATA,
-            'request_args': self._request_args,
-            'basic': self._basic,
-            'vessels': vessels,
-            'containers': containers,
-        }
+        if self._basic or vessels or containers:
+            return {
+                'status': CARRIER_RESULT_STATUS_DATA,
+                'request_args': self._request_args,
+                'basic': self._basic,
+                'vessels': vessels,
+                'containers': containers,
+            }
 
     def build_error_data(self, item: carrier_items.ExportErrorData) -> Dict:
         clean_dict = self._clean_item(item)

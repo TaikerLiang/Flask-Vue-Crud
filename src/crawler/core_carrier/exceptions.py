@@ -19,21 +19,21 @@ class CarrierInvalidSearchNoError(BaseCarrierError):
         self._search_type = search_type
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail=f'<invalid-search-no> search type: `{self._search_type}`')
+        return ExportErrorData(status=self.status, detail=f"<invalid-search-no> search type: `{self._search_type}`")
 
 
 class CarrierInvalidMblNoError(BaseCarrierError):
     status = CARRIER_RESULT_STATUS_ERROR
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail='<invalid-mbl-no>')
+        return ExportErrorData(status=self.status, detail="<invalid-mbl-no>")
 
 
 class CarrierMblNotReady(BaseCarrierError):
     status = CARRIER_RESULT_STATUS_ERROR
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail='<mbl-not-ready>')
+        return ExportErrorData(status=self.status, detail="<mbl-not-ready>")
 
 
 class CarrierResponseFormatError(BaseCarrierError):
@@ -43,14 +43,14 @@ class CarrierResponseFormatError(BaseCarrierError):
         self.reason = reason
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail=f'<format-error> {self.reason}')
+        return ExportErrorData(status=self.status, detail=f"<format-error> {self.reason}")
 
 
 class LoadWebsiteTimeOutFatal(BaseCarrierError):
     status = CARRIER_RESULT_STATUS_FATAL
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail='<load-website-timeout-fatal>')
+        return ExportErrorData(status=self.status, detail="<load-website-timeout-fatal>")
 
 
 class LoadWebsiteTimeOutError(BaseCarrierError):
@@ -60,14 +60,14 @@ class LoadWebsiteTimeOutError(BaseCarrierError):
         self.url = url
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail=f'<load-website-timeout-error> on {self.url}')
+        return ExportErrorData(status=self.status, detail=f"<load-website-timeout-error> on {self.url}")
 
 
 class ProxyMaxRetryError(BaseCarrierError):
     status = CARRIER_RESULT_STATUS_FATAL
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail='<proxy-max-retry-error>')
+        return ExportErrorData(status=self.status, detail="<proxy-max-retry-error>")
 
 
 class SuspiciousOperationError(BaseCarrierError):
@@ -77,18 +77,25 @@ class SuspiciousOperationError(BaseCarrierError):
         self.msg = msg
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail=f'<suspicious-operation> {self.msg}')
+        return ExportErrorData(status=self.status, detail=f"<suspicious-operation> {self.msg}")
 
 
 class AntiCaptchaError(BaseCarrierError):
     status = CARRIER_RESULT_STATUS_ERROR
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail=f'<anti-captcha-error>')
+        return ExportErrorData(status=self.status, detail=f"<anti-captcha-error>")
 
 
 class DataNotFoundError(BaseCarrierError):
     status = CARRIER_RESULT_STATUS_ERROR
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail='<data-not-found>')
+        return ExportErrorData(status=self.status, detail="<data-not-found>")
+
+
+class AccessDeniedError(BaseCarrierError):
+    status = CARRIER_RESULT_STATUS_ERROR
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail="<access-denied>")

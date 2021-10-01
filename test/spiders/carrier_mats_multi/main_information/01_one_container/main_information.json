@@ -1,0 +1,145 @@
+[
+    {
+        "bookingNumber": "9271590",
+        "bookedDate": 1569135600000,
+        "containerNumber": "MATU233203",
+        "checkDigit": "6",
+        "consigneeName": "STRAIGHT FORWARDING INC.",
+        "shipperName": "T.H.I. GROUP LTD.",
+        "shipperContact": "OP PERSON",
+        "shipperPhone": "57487286777",
+        "originPort": "NINGBO",
+        "destPort": "LONG BEACH",
+        "originCode": "NGB",
+        "destCode": "KMH",
+        "loadPort": "NINGBO",
+        "dischargePort": "LONG BEACH",
+        "blOrigin": "",
+        "blDest": "",
+        "oversizeLeft": "0",
+        "oversizeRight": "0",
+        "oversizeFront": "0",
+        "oversizeRear": "0",
+        "oversizeHeight": "0",
+        "oversizeFlag": false,
+        "equipmentType": "Dry Container 40'",
+        "temperature": null,
+        "temperatureScale": null,
+        "releaseToParty": null,
+        "sealNumber": "770104",
+        "physicalLocation": null,
+        "stopInTransit": "N",
+        "availableDate": null,
+        "returnDate": null,
+        "storageDate": null,
+        "military": false,
+        "militaryTcn": null,
+        "militaryPort": null,
+        "militaryConsignor": null,
+        "militaryConsignee": null,
+        "militaryVoyDoc": null,
+        "gblNumber": null,
+        "emptyFull": null,
+        "trucker": null,
+        "locationCode": null,
+        "railSighting": null,
+        "eventCode": null,
+        "eventDetailCode": null,
+        "eventDate": null,
+        "bookingId": 3393376,
+        "containerId": 348393,
+        "netWeight": 23388.0,
+        "events": [
+            {
+                "date": 1571260260000,
+                "location": "LONG BEACH (CA)",
+                "status": "RETURNED FROM CONSIGNEE            ",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571236320000,
+                "location": "SHIPPERS TRANSPORT (CA)",
+                "status": "OUTGATE                             to LAND SHARK DISTRIBUTION, INC.",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571200440000,
+                "location": "SHIPPERS TRANSPORT (CA)",
+                "status": "AVAILABLE                          ",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571200440000,
+                "location": "SHIPPERS TRANSPORT (CA)",
+                "status": "INGATE                              Full by SHIPPERS TRANSPORT EXPRESS",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571199540000,
+                "location": "LONG BEACH (CA)",
+                "status": "OUTGATE                             to SHIPPERS TRANSPORT EXPRESS",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1571184480000,
+                "location": "LONG BEACH (CA)",
+                "status": "DISCHARGE FROM VESSEL               KAIMANA HILA 009",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570744560000,
+                "location": "",
+                "status": "HOLD RELEASED                       - Customs Clearance",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570653480000,
+                "location": "",
+                "status": "HOLD RELEASED                       - Hold for Payment",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570510260000,
+                "location": "",
+                "status": "CONTAINER ON HOLD                   - Hold for Payment",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570291680000,
+                "location": "",
+                "status": "CONTAINER ON HOLD                   - Customs Clearance",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1570140120000,
+                "location": "NINGBO",
+                "status": "LOAD TO VESSEL                      KAIMANA HILA 009",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            },
+            {
+                "date": 1569714540000,
+                "location": "NINGBO",
+                "status": "INGATE                              Full by NINGBO                                   ",
+                "loadPort": "NINGBO",
+                "dischargePort": "LONG BEACH"
+            }
+        ],
+        "shipperRefs": [],
+        "consigneePOs": [],
+        "commodities": [
+            "FREIGHT-ALL-KINDS OR CONSOLIDA"
+        ],
+        "containerOnly": false
+    }
+]

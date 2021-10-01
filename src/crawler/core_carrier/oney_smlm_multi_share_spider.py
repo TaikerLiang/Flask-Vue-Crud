@@ -26,9 +26,9 @@ from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 
 @dataclasses.dataclass
 class Restart:
+    search_nos: list
+    task_ids: list
     reason: str = ''
-    search_no: str = ''
-    task_id: str = ''
 
 
 class OneySmlmSharedSpider(BaseMultiCarrierSpider):
@@ -81,30 +81,32 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
                 yield self._build_request_by(option=proxy_option)
             elif isinstance(result, Restart):
-                search_no = result.search_no
-                task_id = result.task_id
-
+                print('taiker result.task_id, result.search_no', result.search_nos, result.task_ids)
+                search_nos = result.search_nos
+                task_ids = result.task_ids
                 self.logger.warning(f'----- {result.reason}, try new proxy and restart')
+
                 try:
                     self._proxy_manager.renew_proxy()
                 except ProxyMaxRetryError:
-                    if self.search_type == SHIPMENT_TYPE_MBL:
-                        yield ExportErrorData(
-                            mbl_no=search_no,
-                            task_id=task_id,
-                            status=CARRIER_RESULT_STATUS_ERROR,
-                            detail='proxy max retry error'
-                        )
-                    elif self.search_type == SHIPMENT_TYPE_BOOKING:
-                        yield ExportErrorData(
-                            mbl_no=search_no,
-                            task_id=task_id,
-                            status=CARRIER_RESULT_STATUS_ERROR,
-                            detail='proxy max retry error'
-                        )
+                    for search_no, task_id in zip(search_nos, task_ids):
+                        if self.search_type == SHIPMENT_TYPE_MBL:
+                            yield ExportErrorData(
+                                mbl_no=search_no,
+                                task_id=task_id,
+                                status=CARRIER_RESULT_STATUS_ERROR,
+                                detail='proxy max retry error'
+                            )
+                        elif self.search_type == SHIPMENT_TYPE_BOOKING:
+                            yield ExportErrorData(
+                                mbl_no=search_no,
+                                task_id=task_id,
+                                status=CARRIER_RESULT_STATUS_ERROR,
+                                detail='proxy max retry error'
+                            )
                     return
 
-                option = FirstTierRoutingRule.build_request_option(search_nos=search_no, task_ids=task_id, base_url=self.base_url)
+                option = FirstTierRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, base_url=self.base_url)
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(option)
                 yield self._build_request_by(proxy_option)
             else:
@@ -186,7 +188,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
         base_url = response.meta['base_url']
         response_dict = json.loads(response.text)
         if self._is_search_no_invalid(response_dict):
-            yield Restart(reason='IP block', search_no=search_nos, task_id=task_ids)
+            yield Restart(reason='IP block', search_nos=search_nos, task_ids=task_ids)
             return
 
         container_info_list = self._extract_container_info_list(response_dict=response_dict)
