@@ -227,9 +227,3 @@ class ContentGetter(FirefoxContentGetter):
         image = Image.open(io.BytesIO(_imgdata))
 
         return image
-
-    def scroll_page_down(self):
-        body = self._driver.find_element_by_xpath('/html/body')
-        body.send_keys(Keys.PAGE_DOWN)
-        time.sleep(0.5)
-

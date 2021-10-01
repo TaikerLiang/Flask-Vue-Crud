@@ -58,10 +58,3 @@ class LoginNotSuccessFatal(BaseAirError):
 
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail=f"<login-not-success-fatal> status: `{self.status}`")
-
-
-class AntiCaptchaError(BaseAirError):
-    status = AIR_RESULT_STATUS_FATAL
-
-    def build_error_data(self):
-        return ExportErrorData(status=self.status, detail=f'<anti-captcha-error>')
