@@ -40,6 +40,14 @@ class BaseTable:
         for i in range(len(self._left_header_set)):
             yield i
 
+    def add_left_header_set(self, left_header: Union[str, int]):
+        self._left_header_set.add(left_header)
+
+    def add_td_map(self, td: str, top: Union[str, int], left: Union[str, int]):
+        td_dict = self._td_map.setdefault(top, {})
+        td_dict[left] = td
+
+
 
 class TableExtractor:
     def __init__(self, table_locator: BaseTable):
