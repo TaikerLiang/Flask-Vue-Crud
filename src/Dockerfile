@@ -89,6 +89,14 @@ RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.28.0/geckod
     && sudo chmod +x /usr/bin/geckodriver \
     && rm geckodriver-v0.28.0-linux64.tar.gz
 
+#============================================
+# chromium
+#============================================
+apt-get install libxss1
+wget -O /tmp/chrome-linux.zip https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/588429/chrome-linux.zip
+mkdir -p ~/.local/share/pyppeteer/local-chromium/588429/
+unzip /tmp/chrome-linux.zip -d ~/.local/share/pyppeteer/local-chromium/588429/
+
 ENV OPENSSL_CONF=/etc/ssl/
 ENV TERM xterm
 ENV SCRAPY_SETTINGS_MODULE crawler.settings
