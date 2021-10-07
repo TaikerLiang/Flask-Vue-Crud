@@ -28,7 +28,7 @@ def verify(results: List):
     assert results[6] == HistoryItem(
         task_id="1",
         status="Received",
-        flight_no="CI 5118/03Aug",
+        flight_number="CI 5118/03Aug",
         pieces="5",
         weight="",
         location="LAX",
@@ -38,7 +38,7 @@ def verify(results: List):
     assert results[11] == HistoryItem(
         task_id="1",
         status="Departed",
-        flight_no="CI 5896/01Aug",
+        flight_number="CI 5896/01Aug",
         pieces="5",
         weight="1088kg",
         location="CAN",
