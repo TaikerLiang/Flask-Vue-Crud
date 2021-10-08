@@ -90,19 +90,10 @@ class RailNSSpider(BaseMultiRailSpider):
         }
 
         if option.method == RequestOption.METHOD_POST_BODY:
-            return scrapy.Request(
-                method="POST",
-                url=option.url,
-                headers=option.headers,
-                body=option.body,
-                meta=meta,
-            )
+            return scrapy.Request(method="POST", url=option.url, headers=option.headers, body=option.body, meta=meta,)
 
         elif option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(
-                url=option.url,
-                meta=meta,
-            )
+            return scrapy.Request(url=option.url, meta=meta,)
 
         else:
             raise KeyError()
@@ -120,10 +111,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         cls._proxy_manager = proxy_manager
         return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=url,
-            meta={"container_nos": container_nos},
+            rule_name=cls.name, method=RequestOption.METHOD_GET, url=url, meta={"container_nos": container_nos},
         )
 
     def get_save_name(self, response) -> str:
@@ -224,7 +212,7 @@ class ContentGetter:
         self._proxy_manager = proxy_manager
 
     async def _login(self):
-        self._proxy_manager.renew_proxy()
+        # self._proxy_manager.renew_proxy()
 
         browser_args = [
             "--no-sandbox",
@@ -232,17 +220,17 @@ class ContentGetter:
             "--disable-blink-features",
             "--disable-infobars",
             "--window-size=1920,1080",
-            f"--proxy-server={self._proxy_manager.PROXY_DOMAIN}",
+            # f"--proxy-server={self._proxy_manager.PROXY_DOMAIN}",
         ]
 
         self._browser = await launch(headless=True, dumpio=True, slowMo=20, defaultViewport=None, args=browser_args)
         page = await self._browser.newPage()
 
-        auth = {
-            "username": self._proxy_manager._proxy_username,
-            "password": self._proxy_manager.PROXY_PASSWORD,
-        }
-        await page.authenticate(auth)
+        # auth = {
+        #     "username": self._proxy_manager._proxy_username,
+        #     "password": self._proxy_manager.PROXY_PASSWORD,
+        # }
+        # await page.authenticate(auth)
 
         await page.setUserAgent(
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
