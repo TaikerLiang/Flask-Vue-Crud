@@ -18,7 +18,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-BASE_URL = 'https://www8.cpr.ca'
+BASE_URL = "https://www8.cpr.ca"
 MAX_RETRY_COUNT = 3
 
 
@@ -27,7 +27,7 @@ class Restart:
 
 
 class RailCPSpider(BaseMultiRailSpider):
-    name = 'rail_cacpr'
+    name = "rail_cacpr"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -52,7 +52,7 @@ class RailCPSpider(BaseMultiRailSpider):
         return self._build_request_by(option=option)
 
     def parse(self, response):
-        yield DebugItem(info={'meta': dict(response.meta)})
+        yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -61,10 +61,10 @@ class RailCPSpider(BaseMultiRailSpider):
 
         for result in routing_rule.handle(response=response):
             if isinstance(result, RailItem) or isinstance(result, InvalidContainerNoItem):
-                c_no = result['container_no']
+                c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
-                    result['task_id'] = t_id
+                    result["task_id"] = t_id
                     yield result
             elif isinstance(result, BaseRailItem):
                 yield result
@@ -83,47 +83,35 @@ class RailCPSpider(BaseMultiRailSpider):
 
         if option.method == RequestOption.METHOD_POST_BODY:
             return scrapy.Request(
-                method='POST',
-                url=option.url,
-                headers=option.headers,
-                body=option.body,
-                meta=meta,
-                dont_filter=True,
+                method="POST", url=option.url, headers=option.headers, body=option.body, meta=meta, dont_filter=True,
             )
 
         elif option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(
-                url=option.url,
-                meta=meta,
-                dont_filter=True,
-            )
+            return scrapy.Request(url=option.url, meta=meta, dont_filter=True,)
 
         else:
             raise KeyError()
 
 
 class ContainerRoutingRule(BaseRoutingRule):
-    name = 'CONTAINER'
+    name = "CONTAINER"
 
     def __init__(self):
         self._retry_count = 0
 
     @classmethod
     def build_request_option(cls, container_nos) -> RequestOption:
-        url = 'https://www.google.com'
+        url = "https://www.google.com"
 
         return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=url,
-            meta={'container_nos': container_nos},
+            rule_name=cls.name, method=RequestOption.METHOD_GET, url=url, meta={"container_nos": container_nos},
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.json'
+        return f"{self.name}.json"
 
     def handle(self, response):
-        container_nos = response.meta['container_nos']
+        container_nos = response.meta["container_nos"]
 
         content_getter = ContentGetter()
         try:
@@ -135,45 +123,55 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         response = scrapy.Selector(text=response_text)
 
-        container_infos = self._extract_container_infos(response=response, container_nos=container_nos, content_getter=content_getter)
+        container_infos = self._extract_container_infos(
+            response=response, container_nos=container_nos, content_getter=content_getter
+        )
 
         for c_no in container_nos:
             info = container_infos[c_no]
 
-            if info['load_empty'] == '':
+            if info["load_empty"] == "":
                 yield InvalidContainerNoItem(container_no=c_no)
                 continue
 
             yield RailItem(
                 container_no=c_no,
-                last_event=info['last_event'],
-                last_event_location=info['last_event_location'],
-                last_event_time=info['last_event_time'],
-                eta=info['eta'],
-                ata=info['ata'],
-                last_free_day=info['last_free_day'],
+                last_event=info["last_event"],
+                last_event_location=info["last_event_location"],
+                last_event_time=info["last_event_time"],
+                eta=info["eta"],
+                ata=info["ata"],
+                last_free_day=info["last_free_day"],
             )
 
     @staticmethod
     def _extract_container_infos(response: scrapy.Selector, container_nos: List, content_getter):
-        container_no_header_table = response.css('table[id$=header-fixed-fixrow]') # header table (container_no)
-        container_no_content_table = response.css('div > table[id$=-table-fixed]') # content table (container_no)
-        container_info_header_table = response.css('div.sapUiTableCtrlScr > table') # header table (container_info)
-        container_info_content_table = response.css('div.sapUiTableCtrlCnt > table[id$=-table]') # content table (container_info)
+        container_no_header_table = response.css("table[id$=header-fixed-fixrow]")  # header table (container_no)
+        container_no_content_table = response.css("div > table[id$=-table-fixed]")  # content table (container_no)
+        container_info_header_table = response.css("div.sapUiTableCtrlScr > table")  # header table (container_info)
+        container_info_content_table = response.css(
+            "div.sapUiTableCtrlCnt > table[id$=-table]"
+        )  # content table (container_info)
 
         cno_map = {cno[:-1]: cno for cno in container_nos}
         n_queries = len(container_nos)
 
-        container_no_table_parser = ContainerNoTableParser(content_getter=content_getter,
-                                                           header_table=container_no_header_table,
-                                                           content_table=container_no_content_table)
-        container_info_table_parser = ContainerInfoTableParser(content_getter=content_getter,
-                                                               header_table=container_info_header_table,
-                                                               content_table=container_info_content_table)
-        table_parser = TableParser(content_getter=content_getter,
-                                   container_no_table_parser=container_no_table_parser,
-                                   container_info_table_parser=container_info_table_parser,
-                                   n_queries=n_queries)
+        container_no_table_parser = ContainerNoTableParser(
+            content_getter=content_getter,
+            header_table=container_no_header_table,
+            content_table=container_no_content_table,
+        )
+        container_info_table_parser = ContainerInfoTableParser(
+            content_getter=content_getter,
+            header_table=container_info_header_table,
+            content_table=container_info_content_table,
+        )
+        table_parser = TableParser(
+            content_getter=content_getter,
+            container_no_table_parser=container_no_table_parser,
+            container_info_table_parser=container_info_table_parser,
+            n_queries=n_queries,
+        )
 
         table_parser.parse()
 
@@ -181,37 +179,37 @@ class ContainerRoutingRule(BaseRoutingRule):
         for container_info in table_parser.get():
             container_info = dict(container_info[0], **container_info[1])
 
-            container_no = cno_map[container_info['Equipment']] # map to original input container_no
-            load_empty = container_info['Load/Empty'] # check this for invalid container_no
+            container_no = cno_map[container_info["Equipment"]]  # map to original input container_no
+            load_empty = container_info["Load/Empty"]  # check this for invalid container_no
 
-            last_reported = container_info['Last Reported Station']
-            last_event_location, last_event_time = '', ''
+            last_reported = container_info["Last Reported Station"]
+            last_event_location, last_event_time = "", ""
 
             if last_reported:
                 last_reported = last_reported.split()[1:]
-                last_event_location = ' '.join(last_reported[:-1])
+                last_event_location = " ".join(last_reported[:-1])
                 last_event_time = last_reported[-1]
 
-            last_event = container_info['Equipment Status'] + ', ' + container_info['Load Status']
+            last_event = container_info["Equipment Status"] + ", " + container_info["Load Status"]
 
-            xta = container_info['ETA'].split('\n')
-            head, value, eta, ata = '', '', '', ''
+            xta = container_info["ETA"].split("\n")
+            head, value, eta, ata = "", "", "", ""
             if len(xta) > 1:
                 head, value = xta[0], xta[1]
 
-            if head == 'ETA':
+            if head == "ETA":
                 eta = value
-            else: # 'Arrived on'
+            else:  # 'Arrived on'
                 ata = value
 
             container_infos[container_no] = {
-                'load_empty': load_empty,
-                'last_event_location': last_event_location,
-                'last_event_time': last_event_time,
-                'last_event': last_event,
-                'eta': eta,
-                'ata': ata,
-                'last_free_day': container_info['Last Free Day'],
+                "load_empty": load_empty,
+                "last_event_location": last_event_location,
+                "last_event_time": last_event_time,
+                "last_event": last_event,
+                "eta": eta,
+                "ata": ata,
+                "last_free_day": container_info["Last Free Day"],
             }
 
         return container_infos
@@ -242,6 +240,7 @@ class TableParser:
     def get(self):
         return self._items
 
+
 class ContainerNoTableParser:
     def __init__(self, content_getter, header_table: Selector, content_table: Selector):
         self._content_getter = content_getter
@@ -250,21 +249,22 @@ class ContainerNoTableParser:
 
     def parse(self):
         items = []
-        for tr in self._content_table.css('tbody tr'):
-            td = tr.css('td')[1]
-            container_no = td.css('a::text').get()
+        for tr in self._content_table.css("tbody tr"):
+            td = tr.css("td")[1]
+            container_no = td.css("a::text").get()
             if container_no:
                 items.append({"Equipment": container_no})
         return items
 
     def parse_last_row(self):
         new_page = Selector(text=self._content_getter.get_page_source())
-        table = new_page.css('div > table[id$=-table-fixed]')
-        tr = table.css('tr.sapUiTableLastRow')
-        td = tr.css('td')[1]
-        container_no = td.css('a::text').get()
+        table = new_page.css("div > table[id$=-table-fixed]")
+        tr = table.css("tr.sapUiTableLastRow")
+        td = tr.css("td")[1]
+        container_no = td.css("a::text").get()
         if container_no:
             return {"Equipment": container_no}
+
 
 class ContainerInfoTableParser:
     def __init__(self, content_getter, header_table: Selector, content_table: Selector):
@@ -274,26 +274,26 @@ class ContainerInfoTableParser:
 
         self._content_table = content_table
         self._header_set = {
-            'Load/Empty',
-            'Last Reported Station',
-            'Equipment Status',
-            'Load Status',
-            'ETA',
-            'Last Free Day',
+            "Load/Empty",
+            "Last Reported Station",
+            "Equipment Status",
+            "Load Status",
+            "ETA",
+            "Last Free Day",
         }
 
     def parse(self):
-        self._headers = self._header_table.css('tbody > tr > td span::text').getall()
+        self._headers = self._header_table.css("tbody > tr > td span::text").getall()
 
         items = []
-        for tr in self._content_table.css('tbody > tr'):
+        for tr in self._content_table.css("tbody > tr"):
             content_list = self.get_content_list(tr=tr)
 
             info_dict = {}
             for i, content in enumerate(content_list):
                 header = self._headers[i]
                 if header in self._header_set:
-                    info_dict[header] = content if content else ''
+                    info_dict[header] = content if content else ""
 
             items.append(info_dict)
 
@@ -301,59 +301,59 @@ class ContainerInfoTableParser:
 
     def parse_last_row(self):
         new_page = Selector(text=self._content_getter.get_page_source())
-        table = new_page.css('div.sapUiTableCtrlCnt > table[id$=-table]')
-        last_row = table.css('tr.sapUiTableLastRow')
+        table = new_page.css("div.sapUiTableCtrlCnt > table[id$=-table]")
+        last_row = table.css("tr.sapUiTableLastRow")
 
         content_list = self.get_content_list(last_row)
         info_dict = {}
         for i, content in enumerate(content_list):
             header = self._headers[i]
             if header in self._header_set:
-                info_dict[header] = content if content else ''
+                info_dict[header] = content if content else ""
         return info_dict
 
     def get_content_list(self, tr: Selector):
         content_list = []
-        for td in tr.css('td')[:-1]:
-            content = td.css('div>span::text').get()
+        for td in tr.css("td")[:-1]:
+            content = td.css("div>span::text").get()
             content_list.append(content)
 
         return content_list
 
 
 class ContentGetter:
-    USER_NAME = 'gftracking'
-    PASS_WORD = 'GoFt2021'
+    USER_NAME = "gftracking"
+    PASS_WORD = "Hardcore2021"
 
     def __init__(self):
         options = webdriver.ChromeOptions()
-        options.add_argument('--disable-extensions')
-        options.add_argument('--disable-notifications')
-        options.add_argument('--headless')
+        options.add_argument("--disable-extensions")
+        options.add_argument("--disable-notifications")
+        options.add_argument("--headless")
         options.add_argument("--enable-javascript")
-        options.add_argument('--disable-gpu')
+        options.add_argument("--disable-gpu")
         options.add_argument(
-            f'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
-            f'Chrome/88.0.4324.96 Safari/537.36'
+            f"user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
+            f"Chrome/88.0.4324.96 Safari/537.36"
         )
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--no-sandbox')
-        options.add_argument('window-size=1200x600')
-        options.add_argument('--disable-blink-features=AutomationControlled')
-        options.add_experimental_option('excludeSwitches', ['enable-automation'])
-        options.add_experimental_option('useAutomationExtension', False)
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--no-sandbox")
+        options.add_argument("window-size=1200x600")
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option("useAutomationExtension", False)
 
         self._driver = webdriver.Chrome(options=options)
         # self._driver.get('https://www8.cpr.ca/f5idp/saml/idp/profile/redirectorpost/sso')
-        self._driver.get('https://www8.cpr.ca/cx/sap/bc/ui5_ui5/ui2/ushell/shells/abap/Fiorilaunchpad.html?#Shell-home')
+        self._driver.get("https://www8.cpr.ca/cx/sap/bc/ui5_ui5/ui2/ushell/shells/abap/Fiorilaunchpad.html?#Shell-home")
         self._is_first = True
 
     def _login(self):
         # login
         username_input = WebDriverWait(self._driver, 20).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'input#username'))
+            EC.presence_of_element_located((By.CSS_SELECTOR, "input#username"))
         )
-        password_input = self._driver.find_element_by_id('password')
+        password_input = self._driver.find_element_by_id("password")
 
         time.sleep(random.randint(1, 3))
         username_input.send_keys(self.USER_NAME)
@@ -361,7 +361,7 @@ class ContentGetter:
 
         time.sleep(random.randint(1, 3))
         login_btn = WebDriverWait(self._driver, 20).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, 'button.login_button'))
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button.login_button"))
         )
         login_btn.click()
 
@@ -373,7 +373,7 @@ class ContentGetter:
             self._is_first = False
 
         # find iframe to check page is done
-        WebDriverWait(self._driver, 60).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'iframe')))
+        WebDriverWait(self._driver, 60).until(EC.presence_of_element_located((By.CSS_SELECTOR, "iframe")))
         self._driver.execute_script('document.getElementById("sapUshellDashboardPage-cont").scrollTo({top: 1200});')
         track_a = WebDriverWait(self._driver, 10).until(
             EC.element_to_be_clickable(
@@ -393,13 +393,13 @@ class ContentGetter:
             EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="search"]'))
         )
         time.sleep(5)
-        search_input.send_keys(','.join(container_nos))
+        search_input.send_keys(",".join(container_nos))
 
         # view settings button
         view_settings_btn = WebDriverWait(self._driver, 30).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[title="Settings"]'))
         )
-        WebDriverWait(self._driver, 10).until(EC.invisibility_of_element((By.CSS_SELECTOR, 'div[id$=-busyIndicator]')))
+        WebDriverWait(self._driver, 10).until(EC.invisibility_of_element((By.CSS_SELECTOR, "div[id$=-busyIndicator]")))
         view_settings_btn.click()
         time.sleep(3)
         self._driver.execute_script('document.getElementsByClassName("sapMScrollContScroll")[0].scrollTo(0, 200);')
@@ -407,16 +407,16 @@ class ContentGetter:
         # lfd checkbox
         lfd_xpath = '//td[@class="sapMListTblCell"][span[text()="Last Free Day"]]/\
                     ../td[@class="sapMListTblSelCol"]/div/div'
-        WebDriverWait(self._driver, 10).until(EC.invisibility_of_element((By.CSS_SELECTOR, 'div[id$=-busyIndicator]')))
+        WebDriverWait(self._driver, 10).until(EC.invisibility_of_element((By.CSS_SELECTOR, "div[id$=-busyIndicator]")))
 
-        lfd_checkbox = WebDriverWait(self._driver, 120).until( EC.presence_of_element_located((By.XPATH, lfd_xpath)) )
+        lfd_checkbox = WebDriverWait(self._driver, 120).until(EC.presence_of_element_located((By.XPATH, lfd_xpath)))
         try:
             lfd_checkbox.click()
         except:
             time.sleep(10)
-            lfd_checkbox.click() # attempt to click again
+            lfd_checkbox.click()  # attempt to click again
 
-        time.sleep(random.randint(1,3))
+        time.sleep(random.randint(1, 3))
 
         ok_btn = self._driver.find_element_by_xpath('//bdi[text()="OK"]')
         ok_btn.click()
@@ -432,7 +432,7 @@ class ContentGetter:
         return self._driver.page_source
 
     def click_last_row(self):
-        last_td = self._driver.find_element_by_css_selector('div > table[id$=-table-fixed] tr.sapUiTableLastRow td')
+        last_td = self._driver.find_element_by_css_selector("div > table[id$=-table-fixed] tr.sapUiTableLastRow td")
         last_td.click()
 
     def scroll_to_next_row(self):
@@ -443,4 +443,3 @@ class ContentGetter:
 
     def quit(self):
         self._driver.quit()
-
