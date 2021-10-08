@@ -7,6 +7,7 @@ import scrapy
 from pyppeteer import launch, logging
 from pyppeteer.errors import PageError
 
+from crawler.core.proxy import ApifyProxyManager, ProxyManager
 from crawler.core_rail.base_spiders import BaseMultiRailSpider
 from crawler.core_rail.exceptions import RailResponseFormatError, DriverMaxRetryError
 from crawler.core_rail.items import BaseRailItem, RailItem, DebugItem, InvalidContainerNoItem
@@ -41,6 +42,8 @@ class RailNSSpider(BaseMultiRailSpider):
         self._rule_manager = RuleManager(rules=rules)
         self._retry_count = 0
 
+        self._proxy_manager = ApifyProxyManager(session="railns", logger=self.logger)
+
     def start(self):
         yield self._prepare_restart()
 
@@ -51,7 +54,9 @@ class RailNSSpider(BaseMultiRailSpider):
         self._retry_count += 1
 
         uni_container_nos = list(self.cno_tid_map.keys())
-        option = ContainerRoutingRule.build_request_option(container_nos=uni_container_nos)
+        option = ContainerRoutingRule.build_request_option(
+            container_nos=uni_container_nos, proxy_manager=self._proxy_manager
+        )
         return self._build_request_by(option=option)
 
     def parse(self, response):
@@ -110,9 +115,10 @@ class ContainerRoutingRule(BaseRoutingRule):
     ERROR_P_XPATH = "/html/body/div[16]/div[2]/div[1]/div/div/div[1]/div/div/div[2]/div/div/div[1]/p"
 
     @classmethod
-    def build_request_option(cls, container_nos) -> RequestOption:
+    def build_request_option(cls, container_nos, proxy_manager) -> RequestOption:
         url = "https://www.google.com"
 
+        cls._proxy_manager = proxy_manager
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
@@ -126,7 +132,7 @@ class ContainerRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_nos = response.meta["container_nos"]
         event_code_mapper = EventCodeMapper()
-        content_getter = ContentGetter()
+        content_getter = ContentGetter(proxy_manager=self._proxy_manager)
         try:
             response_text = asyncio.get_event_loop().run_until_complete(
                 content_getter.search(container_nos=container_nos)
@@ -209,25 +215,34 @@ class ContainerRoutingRule(BaseRoutingRule):
 
 class ContentGetter:
     USER_NAME = "hvv26"
-    PASS_WORD = "GoFt2021"
+    PASS_WORD = "Goft1008"
 
-    def __init__(self):
+    def __init__(self, proxy_manager: ProxyManager):
         logging.disable(logging.DEBUG)
 
         self._is_first = True
+        self._proxy_manager = proxy_manager
 
     async def _login(self):
+        self._proxy_manager.renew_proxy()
+
         browser_args = [
             "--no-sandbox",
             "--disable-gpu",
             "--disable-blink-features",
             "--disable-infobars",
             "--window-size=1920,1080",
-            # '--proxy-server=',
+            f"--proxy-server={self._proxy_manager.PROXY_DOMAIN}",
         ]
 
         self._browser = await launch(headless=True, dumpio=True, slowMo=20, defaultViewport=None, args=browser_args)
         page = await self._browser.newPage()
+
+        auth = {
+            "username": self._proxy_manager._proxy_username,
+            "password": self._proxy_manager.PROXY_PASSWORD,
+        }
+        await page.authenticate(auth)
 
         expire_time = int(1000 * time.time())
         cookie = {
