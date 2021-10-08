@@ -109,6 +109,7 @@ def start():
                 logger.warning(f"Browser Closed")
                 local_crawler.quit()
                 time.sleep(5 * 60)
+                local_crawler = LocalCrawler(_type=_type, crawler=crawler)
             except (NoSuchElementException, StaleElementReferenceException):
                 logger.warning(
                     f"{ScreenColor.WARNING} (NoSuchElementException, StaleElementReferenceException), time consuming: {(time.time() - start_time):.2f}, code: {task.code} task_ids: {task.task_ids}"
@@ -121,6 +122,7 @@ def start():
                 logger.warning(f"Browser Closed")
                 local_crawler.quit()
                 time.sleep(5 * 60)
+                local_crawler = LocalCrawler(_type=_type, crawler=crawler)
             except DataNotFoundError as e:
                 logger.warning(
                     f"{ScreenColor.WARNING} (DataNotFoundError), time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"
