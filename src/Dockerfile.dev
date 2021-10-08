@@ -92,10 +92,10 @@ RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.28.0/geckod
 #============================================
 # chromium
 #============================================
-apt-get install libxss1
-wget -O /tmp/chrome-linux.zip https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/588429/chrome-linux.zip
-mkdir -p ~/.local/share/pyppeteer/local-chromium/588429/
-unzip /tmp/chrome-linux.zip -d ~/.local/share/pyppeteer/local-chromium/588429/
+RUN apt-get install libxss1
+RUN wget -O /tmp/chrome-linux.zip https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/588429/chrome-linux.zip
+RUN mkdir -p ~/.local/share/pyppeteer/local-chromium/588429/
+RUN unzip /tmp/chrome-linux.zip -d ~/.local/share/pyppeteer/local-chromium/588429/
 
 ENV OPENSSL_CONF=/etc/ssl/
 ENV TERM xterm
