@@ -41,7 +41,7 @@ class WhlcContentGetter:
             "--disable-infobars",
             "--window-size=1920,1080",
         ]
-        self._browser = await launch(headless=False, args=browser_args)
+        self._browser = await launch(headless=True, args=browser_args)
         await self.switch_to_last()
         await self._page.goto(WHLC_BASE_URL, options={"timeout": 60000})
         await asyncio.sleep(3)
@@ -132,6 +132,7 @@ class WhlcLocalCrawler(BaseLocalCrawler):
         super().__init__()
         self.content_getter = WhlcContentGetter()
         self._search_type = ""
+        self.driver = WhlcContentGetter()
 
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):
         task_ids = task_ids.split(",")
@@ -147,13 +148,12 @@ class WhlcLocalCrawler(BaseLocalCrawler):
                 yield item
 
     def handle_mbl(self, mbl_nos, task_ids):
-        driver = WhlcContentGetter()
-        asyncio.get_event_loop().run_until_complete(driver.launch_and_go())
+        asyncio.get_event_loop().run_until_complete(self.driver.launch_and_go())
         rule = MblRoutingRule()
 
         try:
             page_source = asyncio.get_event_loop().run_until_complete(
-                driver.multi_search(search_nos=mbl_nos, search_type=self._search_type))
+                self.driver.multi_search(search_nos=mbl_nos, search_type=self._search_type))
             response_selector = Selector(text=page_source)
             container_list = rule.extract_container_info(response_selector)
             mbl_no_set = rule.get_mbl_no_set_from(container_list=container_list)
@@ -185,61 +185,69 @@ class WhlcLocalCrawler(BaseLocalCrawler):
 
             # detail page
             try:
-                page_source = asyncio.get_event_loop().run_until_complete(driver.go_detail_page(idx + 2))
-                detail_selector = Selector(text=page_source)
-                date_information = rule.extract_date_information(detail_selector)
-
-                yield VesselItem(
-                    task_id=task_id,
-                    vessel_key=f"{date_information['pol_vessel']} / {date_information['pol_voyage']}",
-                    vessel=date_information['pol_vessel'],
-                    voyage=date_information['pol_voyage'],
-                    pol=LocationItem(un_lo_code=date_information['pol_un_lo_code']),
-                    etd=date_information['pol_etd'],
-                )
-
-                yield VesselItem(
-                    task_id=task_id,
-                    vessel_key=f"{date_information['pod_vessel']} / {date_information['pod_voyage']}",
-                    vessel=date_information['pod_vessel'],
-                    voyage=date_information['pod_voyage'],
-                    pod=LocationItem(un_lo_code=date_information['pod_un_lo_code']),
-                    eta=date_information['pod_eta'],
-                )
-
-                driver.close_page_and_switch_last()
+                for item in self.handle_detail_page(task_id, idx):
+                    yield item
             except ElementHandleError:
                 pass
             except TimeoutError:
                 yield ExportErrorData(task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR,
                                       detail='Load detail page timeout')
-                driver.close_page_and_switch_last()
+                self.driver.close_page_and_switch_last()
                 continue
 
             # history page
             try:
-                page_source = asyncio.get_event_loop().run_until_complete(driver.go_history_page(idx + 2))
-                history_selector = Selector(text=page_source)
-                container_status_list = rule.extract_container_status(history_selector)
-
-                for container_status in container_status_list:
-                    yield ContainerStatusItem(
-                        task_id=task_id,
-                        container_key=container_no,
-                        local_date_time=container_status['local_date_time'],
-                        description=container_status['description'],
-                        location=LocationItem(name=container_status['location_name']),
-                    )
+                for item in self.handle_history_page(task_id, container_no, idx):
+                    yield item
             except ElementHandleError:
                 pass
             except TimeoutError:
                 yield ExportErrorData(task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR,
                                       detail='Load status page timeout')
-                driver.close_page_and_switch_last()
+                self.driver.close_page_and_switch_last()
                 continue
 
-            driver.close_page_and_switch_last()
-        asyncio.get_event_loop().run_until_complete(driver.close())
+            self.driver.close_page_and_switch_last()
+        asyncio.get_event_loop().run_until_complete(self.driver.close())
+
+    def handle_detail_page(self, task_id, idx):
+        page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(idx + 2))
+        detail_selector = Selector(text=page_source)
+        date_information = MblRoutingRule.extract_date_information(detail_selector)
+
+        yield VesselItem(
+            task_id=task_id,
+            vessel_key=f"{date_information['pol_vessel']} / {date_information['pol_voyage']}",
+            vessel=date_information['pol_vessel'],
+            voyage=date_information['pol_voyage'],
+            pol=LocationItem(un_lo_code=date_information['pol_un_lo_code']),
+            etd=date_information['pol_etd'],
+        )
+
+        yield VesselItem(
+            task_id=task_id,
+            vessel_key=f"{date_information['pod_vessel']} / {date_information['pod_voyage']}",
+            vessel=date_information['pod_vessel'],
+            voyage=date_information['pod_voyage'],
+            pod=LocationItem(un_lo_code=date_information['pod_un_lo_code']),
+            eta=date_information['pod_eta'],
+        )
+
+        self.driver.close_page_and_switch_last()
+
+    def handle_history_page(self, task_id, container_no, idx):
+        page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_history_page(idx + 2))
+        history_selector = Selector(text=page_source)
+        container_status_list = MblRoutingRule.extract_container_status(history_selector)
+
+        for container_status in container_status_list:
+            yield ContainerStatusItem(
+                task_id=task_id,
+                container_key=container_no,
+                local_date_time=container_status['local_date_time'],
+                description=container_status['description'],
+                location=LocationItem(name=container_status['location_name']),
+            )
 
     def handle_booking(self, booking_nos, task_ids):
         rule = BookingRoutingRule
@@ -273,61 +281,69 @@ class WhlcLocalCrawler(BaseLocalCrawler):
                                       detail='Load detail page timeout')
                 driver.close_page_and_switch_last()
                 continue
-            basic_info = rule.extract_basic_info(Selector(text=page_source))
-            vessel_info = rule.extract_vessel_info(Selector(text=page_source))
+            for item in self.handle_booking_detail_page(response=page_source, task_id=task_id, search_no=search_no):
+                yield item
 
-            yield MblItem(
-                task_id=task_id,
-                booking_no=search_no,
-            )
-
-            yield VesselItem(
-                task_id=task_id,
-                vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
-                vessel=basic_info['vessel'],
-                voyage=basic_info['voyage'],
-                pol=LocationItem(name=vessel_info['pol']),
-                etd=vessel_info['etd'],
-            )
-
-            yield VesselItem(
-                task_id=task_id,
-                vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
-                vessel=basic_info['vessel'],
-                voyage=basic_info['voyage'],
-                pod=LocationItem(name=vessel_info['pod']),
-                eta=vessel_info['eta'],
-            )
-
-            container_nos = rule.extract_container_no_and_status_links(Selector(text=page_source))
-
-            for idx in range(len(container_nos)):
-                container_no = container_nos[idx]
-                # history page
-                try:
-                    page_source = asyncio.get_event_loop().run_until_complete(
-                        driver.go_booking_history_page(idx+2)
-                    )
-                except TimeoutError:
-                    yield ExportErrorData(task_id=task_id, booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
-                                          detail='Load status page timeout')
-                    driver.close_page_and_switch_last()
-                    continue
-                history_selector = Selector(text=page_source)
-
-                event_list = rule.extract_container_status(response=history_selector)
-                container_status_items = rule.make_container_status_items(task_id, container_no, event_list)
-
-                yield ContainerItem(
-                    task_id=task_id,
-                    container_key=container_no,
-                    container_no=container_no,
-                )
-
-                for item in container_status_items:
-                    yield item
-
-                driver.close_page_and_switch_last()
+            for item in self.handle_booking_history_page(response=page_source, task_id=task_id, search_no=search_no):
+                yield item
 
             driver.close_page_and_switch_last()
         driver.close()
+
+    def handle_booking_detail_page(self, response, task_id, search_no):
+        basic_info = BookingRoutingRule.extract_basic_info(Selector(text=response))
+        vessel_info = BookingRoutingRule.extract_vessel_info(Selector(text=response))
+
+        yield MblItem(
+            task_id=task_id,
+            booking_no=search_no,
+        )
+
+        yield VesselItem(
+            task_id=task_id,
+            vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
+            vessel=basic_info['vessel'],
+            voyage=basic_info['voyage'],
+            pol=LocationItem(name=vessel_info['pol']),
+            etd=vessel_info['etd'],
+        )
+
+        yield VesselItem(
+            task_id=task_id,
+            vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
+            vessel=basic_info['vessel'],
+            voyage=basic_info['voyage'],
+            pod=LocationItem(name=vessel_info['pod']),
+            eta=vessel_info['eta'],
+        )
+
+    def handle_booking_history_page(self, response, task_id, search_no):
+        container_nos = BookingRoutingRule.extract_container_no_and_status_links(Selector(text=response))
+
+        for idx in range(len(container_nos)):
+            container_no = container_nos[idx]
+            # history page
+            try:
+                page_source = asyncio.get_event_loop().run_until_complete(
+                    self.driver.go_booking_history_page(idx + 2)
+                )
+            except TimeoutError:
+                yield ExportErrorData(task_id=task_id, booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
+                                      detail='Load status page timeout')
+                self.driver.close_page_and_switch_last()
+                continue
+            history_selector = Selector(text=page_source)
+
+            event_list = BookingRoutingRule.extract_container_status(response=history_selector)
+            container_status_items = BookingRoutingRule.make_container_status_items(task_id, container_no, event_list)
+
+            yield ContainerItem(
+                task_id=task_id,
+                container_key=container_no,
+                container_no=container_no,
+            )
+
+            for item in container_status_items:
+                yield item
+
+            self.driver.close_page_and_switch_last()
