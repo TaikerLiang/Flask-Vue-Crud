@@ -1,9 +1,10 @@
-from carriers import zimu
+from carriers import zimu, whlc
 from terminals import trapac_la, trapac_oak
 
 
 CARRIERS = [
     zimu.ZimuLocalCrawler,
+    whlc.WhlcLocalCrawler,
 ]
 
 CARRIER_CLASS_MAP = {c.code: c for c in CARRIERS}
