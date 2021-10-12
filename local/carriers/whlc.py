@@ -155,8 +155,8 @@ class WhlcLocalCrawler(BaseLocalCrawler):
             page_source = asyncio.get_event_loop().run_until_complete(
                 driver.multi_search(search_nos=mbl_nos, search_type=self._search_type))
             response_selector = Selector(text=page_source)
-            container_list = rule._extract_container_info(response_selector)
-            mbl_no_set = rule._get_mbl_no_set_from(container_list=container_list)
+            container_list = rule.extract_container_info(response_selector)
+            mbl_no_set = rule.get_mbl_no_set_from(container_list=container_list)
         except ReadTimeoutError:
             raise LoadWebsiteTimeOutError(url=WHLC_BASE_URL)
 
@@ -187,7 +187,7 @@ class WhlcLocalCrawler(BaseLocalCrawler):
             try:
                 page_source = asyncio.get_event_loop().run_until_complete(driver.go_detail_page(idx + 2))
                 detail_selector = Selector(text=page_source)
-                date_information = rule._extract_date_information(detail_selector)
+                date_information = rule.extract_date_information(detail_selector)
 
                 yield VesselItem(
                     task_id=task_id,
@@ -220,7 +220,7 @@ class WhlcLocalCrawler(BaseLocalCrawler):
             try:
                 page_source = asyncio.get_event_loop().run_until_complete(driver.go_history_page(idx + 2))
                 history_selector = Selector(text=page_source)
-                container_status_list = rule._extract_container_status(history_selector)
+                container_status_list = rule.extract_container_status(history_selector)
 
                 for container_status in container_status_list:
                     yield ContainerStatusItem(
@@ -250,10 +250,10 @@ class WhlcLocalCrawler(BaseLocalCrawler):
         )
 
         response_selector = Selector(text=page_source)
-        if rule._is_search_no_invalid(response=response_selector):
+        if rule.is_search_no_invalid(response=response_selector):
             raise CarrierInvalidSearchNoError(search_type=self._search_type)
-        booking_list = rule._extract_booking_list(response_selector)
-        book_no_set = rule._get_book_no_set_from(booking_list=booking_list)
+        booking_list = rule.extract_booking_list(response_selector)
+        book_no_set = rule.get_book_no_set_from(booking_list=booking_list)
 
         for task_id, search_no in zip(task_ids, booking_nos):
             if search_no not in book_no_set:
@@ -273,8 +273,8 @@ class WhlcLocalCrawler(BaseLocalCrawler):
                                       detail='Load detail page timeout')
                 driver.close_page_and_switch_last()
                 continue
-            basic_info = rule._extract_basic_info(Selector(text=page_source))
-            vessel_info = rule._extract_vessel_info(Selector(text=page_source))
+            basic_info = rule.extract_basic_info(Selector(text=page_source))
+            vessel_info = rule.extract_vessel_info(Selector(text=page_source))
 
             yield MblItem(
                 task_id=task_id,
@@ -299,7 +299,7 @@ class WhlcLocalCrawler(BaseLocalCrawler):
                 eta=vessel_info['eta'],
             )
 
-            container_nos = rule._extract_container_no_and_status_links(Selector(text=page_source))
+            container_nos = rule.extract_container_no_and_status_links(Selector(text=page_source))
 
             for idx in range(len(container_nos)):
                 container_no = container_nos[idx]
@@ -315,8 +315,8 @@ class WhlcLocalCrawler(BaseLocalCrawler):
                     continue
                 history_selector = Selector(text=page_source)
 
-                event_list = rule._extract_container_status(response=history_selector)
-                container_status_items = rule._make_container_status_items(task_id, container_no, event_list)
+                event_list = rule.extract_container_status(response=history_selector)
+                container_status_items = rule.make_container_status_items(task_id, container_no, event_list)
 
                 yield ContainerItem(
                     task_id=task_id,
