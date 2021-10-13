@@ -225,7 +225,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             yield TerminalItem(
                 container_no=content["ContainerNumber"],
                 available=content["AvailableStatus"],
-                last_free_day=content["LastFreeDate"],
+                last_free_day=content["LastFreeDay"],
                 gate_out_date=container_info["outgate-dt"],
                 customs_release=container_info["custm-status"],
                 demurrage=container_info["demurrage-status"],
