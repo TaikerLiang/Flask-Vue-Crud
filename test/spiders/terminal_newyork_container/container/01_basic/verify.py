@@ -11,7 +11,7 @@ def verify(results: List):
         demurrage="",
         gate_out_date="",
         holds=[],
-        last_free_day="2021-09-24T00:00:00",
+        last_free_day="24 Sep 2021",
         vessel="MSC TIANJIN",
         voyage="131A",
     )
@@ -22,7 +22,7 @@ def verify(results: List):
         demurrage="",
         gate_out_date="",
         holds=[],
-        last_free_day="2021-09-22T00:00:00",
+        last_free_day="22 Sep 2021",
         vessel="ONE HOUSTON",
         voyage="046E",
     )
@@ -33,7 +33,7 @@ def verify(results: List):
         demurrage="",
         gate_out_date="",
         holds=[],
-        last_free_day="0001-01-01T00:00:00",
+        last_free_day=None,
         vessel="ONE HAWK",
         voyage="020E",
     )
