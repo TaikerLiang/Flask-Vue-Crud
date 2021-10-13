@@ -5,8 +5,8 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError
-from crawler.spiders.terminal_nyct import ContainerRoutingRule
-from test.spiders.terminal_nyct import container
+from crawler.spiders.terminal_newyork_container import ContainerRoutingRule
+from test.spiders.terminal_newyork_container import container
 
 
 @pytest.fixture
