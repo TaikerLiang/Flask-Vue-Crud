@@ -48,52 +48,45 @@ class WhlcContentGetter:
 
     async def multi_search(self, search_nos, search_type):
         select_num = self._type_select_num_map[search_type]
-        await asyncio.gather(
-            self._page.waitForSelector(f"#cargoType > option:nth-child({select_num})"),
-            self._page.select("#cargoType", select_num),
-            asyncio.sleep(1),
-        )
+        await self._page.waitForSelector("#cargoType")
+        await self._page.select("#cargoType", select_num)
+        await asyncio.sleep(1)
         for i, search_no in enumerate(search_nos, start=1):
             await self._page.type(f"#q_ref_no{i}", search_no)
             await asyncio.sleep(0.5)
         await asyncio.sleep(3)
         await self._page.click('#Query')
         await asyncio.sleep(3)
-        pages = await self._browser.pages()
-        self._page = pages[-1]
+        await self.switch_to_last()
         await self._page.waitForSelector("table.tbl-list")
         await asyncio.sleep(5)
         return await self._page.content()
 
     async def go_detail_page(self, idx: int):
-        await asyncio.gather(
-            self._page.waitForSelector(f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u'),
-            self._page.click(f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u'),
-            asyncio.sleep(3),
-        )
+        await self._page.waitForSelector(
+            f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u')
+        await self._page.click(f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u')
+        await asyncio.sleep(3)
         await self.switch_to_last()
         await self._page.waitForSelector("table.tbl-list")
         await asyncio.sleep(3)
         return await self._page.content()
 
     async def go_history_page(self, idx: int):
-        await asyncio.gather(
-            self._page.waitForSelector(f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u'),
-            self._page.click(f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u'),
-            asyncio.sleep(3),
-        )
+        await self._page.waitForSelector(
+            f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u'),
+        await self._page.click(f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u'),
+        await asyncio.sleep(3),
         await self.switch_to_last()
         await self._page.waitForSelector("table.tbl-list")
         await asyncio.sleep(3)
         return await self._page.content()
 
     async def go_booking_history_page(self, idx: int):
-        await asyncio.gather(
-            self._page.waitForSelector(
-                f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"),
-            self._page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"),
-            asyncio.sleep(3),
-        )
+        await self._page.waitForSelector(
+            f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"),
+        await self._page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"),
+        await asyncio.sleep(3),
         await self.switch_to_last()
         await self._page.waitForSelector("table.tbl-list")
         await asyncio.sleep(3)
@@ -102,6 +95,7 @@ class WhlcContentGetter:
     async def switch_to_last(self):
         pages = await self._browser.pages()
         self._page = pages[-1]
+        await self._page.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
         await self._page.setViewport(
             {
                 'width': 1920,
@@ -109,6 +103,7 @@ class WhlcContentGetter:
                 'deviceScaleFactor': 1,
             }
         )
+        await asyncio.sleep(3)
 
     async def get_page_source(self):
         return await self._page.content()
@@ -250,11 +245,10 @@ class WhlcLocalCrawler(BaseLocalCrawler):
             )
 
     def handle_booking(self, booking_nos, task_ids):
-        rule = BookingRoutingRule
-        driver = WhlcContentGetter()
-        asyncio.get_event_loop().run_until_complete(driver.launch_and_go())
+        rule = BookingRoutingRule()
+        asyncio.get_event_loop().run_until_complete(self.driver.launch_and_go())
         page_source = asyncio.get_event_loop().run_until_complete(
-            driver.multi_search(search_nos=booking_nos, search_type=self._search_type)
+            self.driver.multi_search(search_nos=booking_nos, search_type=self._search_type)
         )
 
         response_selector = Selector(text=page_source)
@@ -274,12 +268,12 @@ class WhlcLocalCrawler(BaseLocalCrawler):
             task_id = task_ids[index]
             try:
                 page_source = asyncio.get_event_loop().run_until_complete(
-                    driver.go_detail_page(b_idx + 2)
+                    self.driver.go_detail_page(b_idx + 2)
                 )
             except TimeoutError:
                 yield ExportErrorData(task_id=task_id, booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
                                       detail='Load detail page timeout')
-                driver.close_page_and_switch_last()
+                self.driver.close_page_and_switch_last()
                 continue
             for item in self.handle_booking_detail_page(response=page_source, task_id=task_id, search_no=search_no):
                 yield item
@@ -287,8 +281,8 @@ class WhlcLocalCrawler(BaseLocalCrawler):
             for item in self.handle_booking_history_page(response=page_source, task_id=task_id, search_no=search_no):
                 yield item
 
-            driver.close_page_and_switch_last()
-        driver.close()
+            self.driver.close_page_and_switch_last()
+        self.driver.close()
 
     def handle_booking_detail_page(self, response, task_id, search_no):
         basic_info = BookingRoutingRule.extract_basic_info(Selector(text=response))
