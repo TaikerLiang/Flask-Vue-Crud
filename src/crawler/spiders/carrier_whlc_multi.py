@@ -145,8 +145,8 @@ class MblRoutingRule(BaseRoutingRule):
             raise LoadWebsiteTimeOutError(url=WHLC_BASE_URL)
 
         response_selector = Selector(text=driver.get_page_source())
-        container_list = self._extract_container_info(response_selector)
-        mbl_no_set = self._get_mbl_no_set_from(container_list=container_list)
+        container_list = self.extract_container_info(response_selector)
+        mbl_no_set = self.get_mbl_no_set_from(container_list=container_list)
 
         for mbl_no, task_id in zip(mbl_nos, task_ids):
             if mbl_no in mbl_no_set:
@@ -175,7 +175,7 @@ class MblRoutingRule(BaseRoutingRule):
             try:
                 driver.go_detail_page(idx + 2)
                 detail_selector = Selector(text=driver.get_page_source())
-                date_information = self._extract_date_information(detail_selector)
+                date_information = self.extract_date_information(detail_selector)
 
                 yield VesselItem(
                     task_id=task_id,
@@ -210,7 +210,7 @@ class MblRoutingRule(BaseRoutingRule):
             try:
                 driver.go_history_page(idx + 2)
                 history_selector = Selector(text=driver.get_page_source())
-                container_status_list = self._extract_container_status(history_selector)
+                container_status_list = self.extract_container_status(history_selector)
 
                 for container_status in container_status_list:
                     yield ContainerStatusItem(
@@ -236,7 +236,7 @@ class MblRoutingRule(BaseRoutingRule):
     def get_save_name(self, response) -> str:
         return f'{self.name}.html'
 
-    def _extract_container_info(self, response: scrapy.Selector) -> List:
+    def extract_container_info(self, response: scrapy.Selector) -> List:
         table_selector = response.css('table.tbl-list')[0]
         table_locator = ContainerListTableLocator()
         table_locator.parse(table=table_selector)
@@ -305,7 +305,7 @@ class MblRoutingRule(BaseRoutingRule):
         return m.group('j_idt')
 
     @staticmethod
-    def _extract_date_information(response) -> Dict:
+    def extract_date_information(response) -> Dict:
         pattern = re.compile(r'^(?P<vessel>[^/]+) / (?P<voyage>[^/]+)$')
 
         match_rule = NameOnTableMatchRule(name='2. Departure Date / Arrival Date Information')
@@ -349,7 +349,7 @@ class MblRoutingRule(BaseRoutingRule):
         }
 
     @staticmethod
-    def _extract_container_status(response) -> List:
+    def extract_container_status(response) -> List:
         table_selector = response.css('table.tbl-list')
 
         if not table_selector:
@@ -374,7 +374,7 @@ class MblRoutingRule(BaseRoutingRule):
         return return_list
 
     @staticmethod
-    def _get_mbl_no_set_from(container_list: List):
+    def get_mbl_no_set_from(container_list: List):
         mbl_no_list = [container['mbl_no'] for container in container_list]
         mbl_no_set = set(mbl_no_list)
 
@@ -410,10 +410,10 @@ class BookingRoutingRule(BaseRoutingRule):
         driver.multi_search(search_nos=search_nos, search_type=self._search_type)
 
         response_selector = Selector(text=driver.get_page_source())
-        if self._is_search_no_invalid(response=response_selector):
+        if self.is_search_no_invalid(response=response_selector):
             raise CarrierInvalidSearchNoError(search_type=self._search_type)
-        booking_list = self._extract_booking_list(response_selector)
-        book_no_set = self._get_book_no_set_from(booking_list=booking_list)
+        booking_list = self.extract_booking_list(response_selector)
+        book_no_set = self.get_book_no_set_from(booking_list=booking_list)
 
         for task_id, search_no in zip(task_ids, search_nos):
             if search_no not in book_no_set:
@@ -432,8 +432,8 @@ class BookingRoutingRule(BaseRoutingRule):
                 driver.close()
                 driver.switch_to_last()
                 continue
-            basic_info = self._extract_basic_info(Selector(text=driver.get_page_source()))
-            vessel_info = self._extract_vessel_info(Selector(text=driver.get_page_source()))
+            basic_info = self.extract_basic_info(Selector(text=driver.get_page_source()))
+            vessel_info = self.extract_vessel_info(Selector(text=driver.get_page_source()))
 
             yield MblItem(
                 task_id=task_id,
@@ -458,7 +458,7 @@ class BookingRoutingRule(BaseRoutingRule):
                 eta=vessel_info['eta'],
             )
 
-            container_nos = self._extract_container_no_and_status_links(Selector(text=driver.get_page_source()))
+            container_nos = self.extract_container_no_and_status_links(Selector(text=driver.get_page_source()))
 
             for idx in range(len(container_nos)):
                 container_no = container_nos[idx]
@@ -473,8 +473,8 @@ class BookingRoutingRule(BaseRoutingRule):
                     continue
                 history_selector = Selector(text=driver.get_page_source())
 
-                event_list = self._extract_container_status(response=history_selector)
-                container_status_items = self._make_container_status_items(task_id, container_no, event_list)
+                event_list = self.extract_container_status(response=history_selector)
+                container_status_items = self.make_container_status_items(task_id, container_no, event_list)
 
                 yield ContainerItem(
                     task_id=task_id,
@@ -493,12 +493,12 @@ class BookingRoutingRule(BaseRoutingRule):
         driver.quit()
 
     @staticmethod
-    def _is_search_no_invalid(response):
+    def is_search_no_invalid(response):
         if response.css('input#q_ref_no1'):
             return True
         return False
 
-    def _extract_booking_list(self, response: scrapy.Selector) -> List:
+    def extract_booking_list(self, response: scrapy.Selector) -> List:
         table_selector = response.css('table.tbl-list')[0]
         table_locator = ContainerListTableLocator()
         table_locator.parse(table=table_selector)
@@ -541,12 +541,13 @@ class BookingRoutingRule(BaseRoutingRule):
         return m.group('j_idt')
 
     @staticmethod
-    def _get_book_no_set_from(booking_list: List):
+    def get_book_no_set_from(booking_list: List):
         book_no_list = [booking['booking_no'] for booking in booking_list]
         book_no_set = set(book_no_list)
         return book_no_set
 
-    def _extract_basic_info(self, response: scrapy.Selector):
+    @staticmethod
+    def extract_basic_info(response: scrapy.Selector):
         tables = response.css('table.tbl-list')
         table = tables[0]
 
@@ -558,7 +559,8 @@ class BookingRoutingRule(BaseRoutingRule):
             'voyage': table_locator.get_cell('Voyage'),
         }
 
-    def _extract_vessel_info(self, response: scrapy.Selector):
+    @staticmethod
+    def extract_vessel_info(response: scrapy.Selector):
         tables = response.css('table.tbl-list')
         table = tables[1]
 
@@ -574,7 +576,8 @@ class BookingRoutingRule(BaseRoutingRule):
             'etd': table_locator.get_cell('Estimated Arrival Date'),
         }
 
-    def _extract_container_no_and_status_links(self, response: scrapy.Selector) -> List:
+    @staticmethod
+    def extract_container_no_and_status_links(response: scrapy.Selector) -> List:
         tables = response.css('table.tbl-list')
         table = tables[-1]
 
@@ -584,7 +587,7 @@ class BookingRoutingRule(BaseRoutingRule):
         return table_locator.get_container_no_list()
 
     @classmethod
-    def _make_container_status_items(cls, task_id, container_no, event_list):
+    def make_container_status_items(cls, task_id, container_no, event_list):
         container_statuses = []
         for container_status in event_list:
             container_statuses.append(
@@ -599,7 +602,7 @@ class BookingRoutingRule(BaseRoutingRule):
         return container_statuses
 
     @staticmethod
-    def _extract_container_status(response) -> List:
+    def extract_container_status(response) -> List:
         table_selector = response.css('table.tbl-list')
 
         if not table_selector:
