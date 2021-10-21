@@ -13,3 +13,7 @@ class DataNotFoundError(Exception):
 
 class AccessDeniedError(Exception):
     pass
+
+
+class ProxyMaxRetryError(Exception):
+    pass

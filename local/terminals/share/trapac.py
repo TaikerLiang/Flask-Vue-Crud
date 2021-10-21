@@ -6,10 +6,10 @@ import random
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
-from local.core import BaseContentGetter, BaseLocalCrawler
+from local.core import BaseSeleniumContentGetter
 
 
-class TrapacContentGetter(BaseContentGetter):
+class TrapacContentGetter(BaseSeleniumContentGetter):
     UPPER_SHORT = ""
     LOWER_SHORT = ""
     EMAIL = ""

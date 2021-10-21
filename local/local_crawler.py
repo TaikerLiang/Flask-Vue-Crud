@@ -66,8 +66,8 @@ def start():
     logger.info(f"number of tasks: {len(local_tasks)}")
 
     # local_tasks = [
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '57143', 'mbl_no': 'TCNU4859108'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '76022', 'mbl_no': 'KOCU5237223'},
+    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '128063', 'mbl_no': 'ZIMUSHH30668677'},
+    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '128051', 'mbl_no': 'ZIMUNGB9880133'},
     # ]
 
     if len(local_tasks) == 0:
@@ -134,6 +134,8 @@ def start():
                 logger.error(
                     f"{ScreenColor.ERROR} Unknown Exception: {str(e)}, time consuming: {(time.time() - start_time):.2f}, code: {task.code} task_ids: {task.task_ids}"
                 )
+                local_crawler.quit()
+                local_crawler = LocalCrawler(_type=_type, crawler=helper.get_crawler(code=_code))
             finally:
                 start_time = time.time()
                 print()
