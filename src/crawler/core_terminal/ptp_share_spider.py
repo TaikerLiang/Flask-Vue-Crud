@@ -17,9 +17,9 @@ from crawler.core.selenium import ChromeContentGetter
 BASE_URL = "https://www.porttruckpass.com"
 
 
-class TerminalNewYorkContainerSpider(BaseMultiTerminalSpider):
-    firms_code = "E364"
-    name = "terminal_newyork_container"
+class PtpShareSpider(BaseMultiTerminalSpider):
+    firms_code = ""
+    name = ""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
