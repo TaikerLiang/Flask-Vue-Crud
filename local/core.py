@@ -28,7 +28,7 @@ class ProxyOption:
     session: str
 
 
-class BaseContentGetter:
+class BaseSeleniumContentGetter:
     PROXY_URL = PROXY_URL
     PROXY_PASSWORD = PROXY_PASSWORD
 

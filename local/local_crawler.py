@@ -134,6 +134,8 @@ def start():
                 logger.error(
                     f"{ScreenColor.ERROR} Unknown Exception: {str(e)}, time consuming: {(time.time() - start_time):.2f}, code: {task.code} task_ids: {task.task_ids}"
                 )
+                local_crawler.quit()
+                local_crawler = LocalCrawler(_type=_type, crawler=helper.get_crawler(code=_code))
             finally:
                 start_time = time.time()
                 print()

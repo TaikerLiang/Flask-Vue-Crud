@@ -3,6 +3,7 @@ from logging import Logger
 import random
 import string
 import dataclasses
+import abc
 
 from .exceptions import ProxyMaxRetryError
 
@@ -16,8 +17,8 @@ class ProxyOption:
 
 
 class ProxyManager:
-    PROXY_URL = "proxy.apify.com:8000"
-    PROXY_PASSWORD = "XZTBLpciyyTCFb3378xWJbuYY"
+    PROXY_DOMAIN = ""
+    PROXY_PASSWORD = ""
 
     def __init__(self, logger: Logger):
         if logger:
@@ -32,6 +33,22 @@ class ProxyManager:
     @staticmethod
     def _generate_random_string():
         return "".join(random.choices(string.ascii_uppercase + string.digits, k=20))
+
+    @abc.abstractmethod
+    def renew_proxy(self):
+        pass
+
+    @property
+    def proxy_domain(self):
+        return self.PROXY_DOMAIN
+
+    @property
+    def proxy_username(self):
+        return self._proxy_username
+
+    @property
+    def proxy_password(self):
+        return self._proxy_password
 
 
 class ApifyProxyManager(ProxyManager):
@@ -71,12 +88,13 @@ class ApifyProxyManager(ProxyManager):
         self._logger.warning(f"----- renew proxy ({len(self._proxy_options)}) {option}")
 
         self._proxy_username = f"groups-{option.group},session-{option.session}"
+        self._proxy_password = self.PROXY_PASSWORD
 
 
 class HydraproxyProxyManager(ProxyManager):
     PROXY_DOMAIN = "isp2.hydraproxy.com:9989"
 
-    def __init__(self, session: str, logger: Logger):
+    def __init__(self, logger: Logger):
         super().__init__(logger)
         self._proxy_options = [
             ProxyOption(group="gofr13759lcdh32673", session="17r6FJjK3x8IQKP3"),
