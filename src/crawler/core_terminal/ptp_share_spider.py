@@ -49,10 +49,11 @@ class PtpShareSpider(BaseMultiTerminalSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
                 c_no = result["container_no"]
-                t_ids = self.cno_tid_map[c_no]
-                for t_id in t_ids:
-                    result["task_id"] = t_id
-                    yield result
+                t_ids = self.cno_tid_map.get(c_no)
+                if t_ids != None:
+                    for t_id in t_ids:
+                        result["task_id"] = t_id
+                        yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
             else:
