@@ -6,6 +6,8 @@ from pyppeteer import launch, logging
 from urllib3.exceptions import ReadTimeoutError
 
 from local.core import BaseLocalCrawler
+from local.proxy import ProxyManager
+from src.crawler.core.pyppeteer import PyppeteerContentGetter
 from src.crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
 from src.crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from src.crawler.core_carrier.exceptions import (
@@ -25,31 +27,17 @@ class ProxyOption:
     session: str
 
 
-class MscuContentGetter:
-    def __init__(self):
+class MscuContentGetter(PyppeteerContentGetter):
+    def __init__(self, proxy_manager: ProxyManager = None):
+        super().__init__(proxy_manager)
         logging.disable(logging.DEBUG)
         self._search_type = None
-        self._browser = None
-        self._page = None
 
-    async def launch_and_go(self):
-        browser_args = [
-            "--no-sandbox",
-            "--disable-gpu",
-            "--disable-blink-features",
-            "--disable-infobars",
-            "--window-size=1920,1080",
-        ]
-        self._browser = await launch(headless=True, slowMo=20, args=browser_args)
-        self._page = await self._browser.newPage()
-        await self._page.setViewport({"width": 1920, "height": 1080})
-        await self._page.setUserAgent(
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
-        )
-        await self._page.setCookie(
+    async def set_cookies(self):
+        await self.page.setCookie(
             {"url": MSCU_URL, "name": "newsletter-signup-cookie", "value": "temp-hidden", "domain": "www.msc.com"}
         )
-        await self._page.setCookie(
+        await self.page.setCookie(
             {
                 "url": MSCU_URL,
                 "name": "OptanonAlertBoxClosed",
@@ -58,25 +46,23 @@ class MscuContentGetter:
             }
         )
 
-        await self._page.goto(MSCU_URL, options={"timeout": 60000})
+    async def search(self, search_no, search_type):
+        await self.set_cookies()
+        await self.page.goto(MSCU_URL, options={"timeout": 60000})
         await asyncio.sleep(1)
 
-    async def search(self, search_no, search_type):
         type_dropdown = "#ctl00_ctl00_plcMain_plcMain_TrackSearch_fldTrackingType_DropDownField"
-        await self._page.waitForSelector(type_dropdown)
+        await self.page.waitForSelector(type_dropdown)
         if search_type == SHIPMENT_TYPE_MBL:
-            await self._page.select(type_dropdown, "containerbilloflading")
+            await self.page.select(type_dropdown, "containerbilloflading")
         elif search_type == SHIPMENT_TYPE_BOOKING:
-            await self._page.select(type_dropdown, "bookingnumber")
+            await self.page.select(type_dropdown, "bookingnumber")
 
-        await self._page.type("#ctl00_ctl00_plcMain_plcMain_TrackSearch_txtBolSearch_TextField", text=search_no)
+        await self.page.type("#ctl00_ctl00_plcMain_plcMain_TrackSearch_txtBolSearch_TextField", text=search_no)
         await asyncio.sleep(0.5)
-        await self._page.click("#ctl00_ctl00_plcMain_plcMain_TrackSearch_hlkSearch")
+        await self.page.click("#ctl00_ctl00_plcMain_plcMain_TrackSearch_hlkSearch")
 
-        return await self._page.content()
-
-    def quit(self):
-        asyncio.get_event_loop().run_until_complete(self._browser.close())
+        return await self.page.content()
 
 
 class MscuLocalCrawler(BaseLocalCrawler):
@@ -89,8 +75,6 @@ class MscuLocalCrawler(BaseLocalCrawler):
         self.content_getter = MscuContentGetter()
 
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):
-        asyncio.get_event_loop().run_until_complete(self.content_getter.launch_and_go())
-
         task_ids = task_ids.split(",")
         if mbl_nos:
             self._search_nos = mbl_nos.split(",")
