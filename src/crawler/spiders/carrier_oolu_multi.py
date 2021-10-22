@@ -365,7 +365,6 @@ class CargoTrackingRule(BaseRoutingRule):
 
     def handle(self, response):
         search_no = response.meta["search_no"]
-        task_id = response.meta["task_id"]
 
         try:
             windows = self._content_getter.get_window_handles()
@@ -390,7 +389,7 @@ class CargoTrackingRule(BaseRoutingRule):
         if os.path.exists("./slider01.jpg"):
             os.remove("./slider01.jpg")
 
-        for item in self._handle_response(task_id=task_id, response=response, search_type=self._search_type):
+        for item in self._handle_response(response=response, search_type=self._search_type):
             yield item
 
     @staticmethod
@@ -398,8 +397,9 @@ class CargoTrackingRule(BaseRoutingRule):
         return not bool(response.css("td.pageTitle"))
 
     @classmethod
-    def _handle_response(cls, task_id, response, search_type):
+    def _handle_response(cls, response, search_type):
         search_no = response.meta["search_no"]
+        task_id = response.meta["task_id"]
 
         if cls.is_search_no_invalid(response):
             if search_type == SHIPMENT_TYPE_MBL:
