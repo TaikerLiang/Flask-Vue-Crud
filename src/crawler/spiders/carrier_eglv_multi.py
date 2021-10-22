@@ -1276,7 +1276,7 @@ class NameOnTopHeaderTableLocator(BaseTableLocator):
     def parse(self, table: scrapy.Selector):
         title_tr = table.css('tr')[self.TR_TITLE_INDEX]
 
-        data_tr_list = table.xpath('./tr')[self.TR_DATA_BEGIN_INDEX:]
+        data_tr_list = table.css('tr')[self.TR_DATA_BEGIN_INDEX:]
 
         title_text_list = title_tr.css('td::text').getall()
 
