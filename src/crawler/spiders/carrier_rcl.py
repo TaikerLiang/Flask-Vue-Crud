@@ -160,7 +160,14 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        self._check_mbl_no(response=response)
+        mbl_no = response.meta["mbl_no"]
+        if self._is_mbl_no_invalid(response=response):
+            yield ExportErrorData(
+                mbl_no=mbl_no,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
+            return
 
         main_info = self._extract_main_info(response=response)
         yield MblItem(
@@ -187,16 +194,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 )
 
     @staticmethod
-    def _check_mbl_no(response: scrapy.Selector):
-        mbl_no = response.meta["mbl_no"]
-        no_result_div = response.css("div#ContentPlaceHolder1_noresults")
-
-        if no_result_div:
-            yield ExportErrorData(
-                mbl_no=mbl_no,
-                status=CARRIER_RESULT_STATUS_ERROR,
-                detail="Data was not found",
-            )
+    def _is_mbl_no_invalid(response: scrapy.Selector):
+        return bool(response.css("div#ContentPlaceHolder1_noresults"))
 
     @staticmethod
     def _extract_main_info(response: scrapy.Selector) -> Dict:

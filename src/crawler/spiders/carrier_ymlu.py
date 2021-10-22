@@ -662,7 +662,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
             if self._is_mbl_no_invalid(response=response):
                 yield ExportErrorData(
-                    booking_no=mbl_no,
+                    mbl_no=mbl_no,
                     status=CARRIER_RESULT_STATUS_ERROR,
                     detail="Data was not found",
                 )

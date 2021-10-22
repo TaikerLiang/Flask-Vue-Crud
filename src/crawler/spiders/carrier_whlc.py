@@ -388,18 +388,12 @@ class BookingRoutingRule(BaseRoutingRule):
 
         response_selector = Selector(text=driver.get_page_source())
         if self._is_search_no_invalid(response=response_selector):
-            if self._search_type == SHIPMENT_TYPE_MBL:
-                yield ExportErrorData(
-                    mbl_no=search_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail="Data was not found",
-                )
-            else:
-                yield ExportErrorData(
-                    booking_no=search_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail="Data was not found",
-                )
+            yield ExportErrorData(
+                booking_no=search_no,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
+            driver.quit()
             return
 
         driver.go_detail_page(2)  # only one booking_no to click
