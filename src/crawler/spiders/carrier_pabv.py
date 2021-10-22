@@ -8,9 +8,11 @@ from urllib3.exceptions import ReadTimeoutError
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem,
+    ExportErrorData,
     MblItem,
     LocationItem,
     VesselItem,
@@ -20,7 +22,6 @@ from crawler.core_carrier.items import (
 )
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
-    CarrierInvalidMblNoError,
     SuspiciousOperationError,
     LoadWebsiteTimeOutError,
 )
@@ -28,7 +29,7 @@ from crawler.core_carrier.exceptions import (
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
-from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
+from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 
@@ -118,6 +119,7 @@ class TrackRoutingRule(BaseRoutingRule):
             cookies=cookies,
             meta={
                 "cookies": cookies,
+                "mbl_no": mbl_no,
             },
         )
 
@@ -126,6 +128,7 @@ class TrackRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         cookies = response.meta["cookies"]
+        mbl_no = response.meta["mbl_no"]
 
         try:
             response_dict = json.loads(response.text)
@@ -134,7 +137,12 @@ class TrackRoutingRule(BaseRoutingRule):
 
         content = response_dict["data"]
         if content["err"] != 0:
-            raise CarrierInvalidMblNoError()
+            yield ExportErrorData(
+                mbl_no=mbl_no,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
+            return
 
         mbl_no = content["refnum"]["0"]
         schedule_info = self._extract_schedule_info(content=content)

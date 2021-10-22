@@ -18,7 +18,7 @@ from urllib3.exceptions import ReadTimeoutError
 from PIL import Image
 
 from crawler.core.selenium import ChromeContentGetter
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.request_helpers import RequestOption
@@ -29,14 +29,10 @@ from crawler.core_carrier.items import (
     LocationItem,
     ContainerItem,
     ContainerStatusItem,
+    ExportErrorData,
     DebugItem,
 )
-from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    CarrierInvalidMblNoError,
-    LoadWebsiteTimeOutError,
-    CarrierInvalidSearchNoError,
-)
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, LoadWebsiteTimeOutError
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
@@ -403,8 +399,24 @@ class CargoTrackingRule(BaseRoutingRule):
 
     @classmethod
     def _handle_response(cls, task_id, response, search_type):
+        search_no = response.meta["search_no"]
+
         if cls.is_search_no_invalid(response):
-            raise CarrierInvalidSearchNoError(search_type=search_type)
+            if search_type == SHIPMENT_TYPE_MBL:
+                yield ExportErrorData(
+                    task_id=task_id,
+                    mbl_no=search_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+            else:
+                yield ExportErrorData(
+                    task_id=task_id,
+                    booking_no=search_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+            return
 
         locator = _PageLocator()
         selector_map = locator.locate_selectors(response=response)
