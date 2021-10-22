@@ -1,16 +1,20 @@
 import dataclasses
 import asyncio
+import logging
 
 from scrapy import Request
 from scrapy.http import TextResponse
-from pyppeteer import launch, logging
 from pyppeteer.errors import TimeoutError, ElementHandleError
+from pyppeteer_stealth import stealth
 
 from local.core import BaseLocalCrawler
+from local.proxy import HydraproxyProxyManager, ProxyManager
+from local.exceptions import DataNotFoundError
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.items import BaseCarrierItem
 from src.crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
-from src.crawler.core_carrier.exceptions import LoadWebsiteTimeOutError, AntiCaptchaError, CarrierInvalidSearchNoError
+from src.crawler.core_carrier.exceptions import LoadWebsiteTimeOutError, AntiCaptchaError
+from src.crawler.core.pyppeteer import PyppeteerContentGetter
 from src.crawler.spiders.carrier_eglv_multi import (
     CaptchaAnalyzer,
     BillMainInfoRoutingRule,
@@ -29,61 +33,44 @@ class ProxyOption:
     session: str
 
 
-class EglvContentGetter:
+logger = logging.getLogger("local-crawler-eglv")
+
+
+class EglvContentGetter(PyppeteerContentGetter):
     MAX_CAPTCHA_RETRY = 3
 
-    def __init__(self):
-        logging.disable(logging.DEBUG)
-        self._browser = None
-        self._page = None
-        self._captcha_analyzer = CaptchaAnalyzer()
+    def __init__(self, proxy_manager: ProxyManager = None):
+        super().__init__(proxy_manager)
 
-    async def launch_browser(self):
-        browser_args = [
-            "--no-sandbox",
-            "--disable-gpu",
-            "--disable-blink-features",
-            "--disable-infobars",
-            "--window-size=1920,1080",
-        ]
-        default_viewport = {
-            "width": 1920,
-            "height": 1080,
-        }
-        self._browser = await launch(headless=True, dumpio=True, slowMo=20, defaultViewport=default_viewport,
-                                     args=browser_args)
-
-    async def search_and_return(self, search_no, search_type):
-        self._page = await self._browser.newPage()
-        await self._page.setUserAgent(
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
-        )
+    async def search_and_return(self, search_no, search_type, task_id):
         btn_value = "s_bl" if search_type == SHIPMENT_TYPE_MBL else "s_bk"
 
         try:
-            await self._page.goto(EGLV_INFO_URL)
-            await self._page.waitForSelector(f"input[value={btn_value}]")
-            await self._page.waitForSelector("input#NO")
+            await self.page.goto(EGLV_INFO_URL)
+            await self.page.waitForSelector(f"input[value={btn_value}]")
+            await self.page.waitForSelector("input#NO")
         except TimeoutError:
             raise LoadWebsiteTimeOutError(url=EGLV_INFO_URL)
 
-        await self._page.click(f"input[value={btn_value}]")
-        await self._page.type("input#NO", search_no)
+        await self.page.click(f"input[value={btn_value}]")
+        await self.page.type("input#NO", search_no)
 
         for _ in range(self.MAX_CAPTCHA_RETRY):
             await self.handle_captcha()
-            self._page.on('dialog', lambda dialog: asyncio.ensure_future(self.close_dialog(dialog)))
-            await self._page.click("#quick input[type=button]")
+            self.page.on('dialog', lambda dialog: asyncio.ensure_future(self.close_dialog(dialog, task_id)))
+            await self.page.click("#quick input[type=button]")
             try:
-                await self._page.waitForSelector("table[cellpadding=\"2\"]", {"timeout": 10000})
-                content = await self._page.content()
+                await self.page.waitForSelector("table[cellpadding=\"2\"]", {"timeout": 10000})
+                await asyncio.sleep(1)
+                content = await self.page.content()
                 return content
             except TimeoutError:
                 continue
         raise AntiCaptchaError
 
     async def handle_captcha(self):
-        element = await self._page.querySelector("div#captcha_div > img#captchaImg")
+        captcha_analyzer = CaptchaAnalyzer()
+        element = await self.page.querySelector("div#captcha_div > img#captchaImg")
         get_base64_func = """(img) => {
                         var canvas = document.createElement("canvas");
                         canvas.width = 150;
@@ -94,42 +81,46 @@ class EglvContentGetter:
                         return dataURL.replace(/^data:image\/(png|jpg);base64,/, "");
                     }
                     """
-        captcha_base64 = await self._page.evaluate(get_base64_func, element)
-        verification_code = self._captcha_analyzer.analyze_captcha(captcha_base64=captcha_base64).decode("utf-8")
-        await self._page.type("div#captcha_div > input#captcha_input", verification_code)
+        captcha_base64 = await self.page.evaluate(get_base64_func, element)
+        verification_code = captcha_analyzer.analyze_captcha(captcha_base64=captcha_base64).decode("utf-8")
+        await self.page.type("div#captcha_div > input#captcha_input", verification_code)
+        await asyncio.sleep(2)
 
     @staticmethod
-    async def close_dialog(dialog):
-        if dialog.message == "B/L No. is not valid, please check again, thank you.":
-            raise CarrierInvalidSearchNoError
+    async def close_dialog(dialog, task_id):
+        mbl_not_valid_msg = "B/L No. is not valid, please check again, thank you."
+        booking_not_valid_msg = "Booking No. is not valid, please check again, thank you."
+        if dialog.message == mbl_not_valid_msg or dialog.message == booking_not_valid_msg:
+            raise DataNotFoundError(task_id)
         await dialog.accept()
 
     async def custom_info_page(self):
-        await self._page.click("a[href=\"JavaScript:toggle(\'CustomsInfo\');\"]")
+        await self.page.click("a[href=\"JavaScript:toggle(\'CustomsInfo\');\"]")
         await asyncio.sleep(1)
-        await self._page.click("a[href=\"JavaScript:getDispInfo(\'AMTitle\',\'AMInfo\');\"]")
-        await asyncio.sleep(1)
-        div_ele = await self._page.querySelector("div#AMInfo")
-        return await self._page.evaluate("(element) => element.outerHTML", div_ele)
+        await self.page.click("a[href=\"JavaScript:getDispInfo(\'AMTitle\',\'AMInfo\');\"]")
+        await self.page.waitForSelector("div#AMInfo table")
+        await asyncio.sleep(2)
+        div_ele = await self.page.querySelector("div#AMInfo")
+        return await self.page.evaluate("(element) => element.outerHTML", div_ele)
 
     async def release_status_page(self):
-        await self._page.click("a[href=\"JavaScript:getDispInfo(\'RlsStatusTitle\',\'RlsStatusInfo\');\"]")
-        await asyncio.sleep(1)
-        div_ele = await self._page.querySelector("div#RlsStatusInfo")
-        return await self._page.evaluate("(element) => element.outerHTML", div_ele)
+        await self.page.click("a[href=\"JavaScript:getDispInfo(\'RlsStatusTitle\',\'RlsStatusInfo\');\"]")
+        await self.page.waitForSelector("div#RlsStatusInfo table")
+        await asyncio.sleep(2)
+        div_ele = await self.page.querySelector("div#RlsStatusInfo")
+        return await self.page.evaluate("(element) => element.outerHTML", div_ele)
 
     async def container_page(self, container_no):
-        await self._page.click(f"a[href^=\"javascript:frmCntrMoveDetail(\'{container_no}\')\"]")
-        await asyncio.sleep(1)
-        container_page = (await self._browser.pages())[-1]
+        await self.page.click(f"a[href^=\"javascript:frmCntrMoveDetail(\'{container_no}\')\"]")
+        await asyncio.sleep(3)
+        container_page = (await self.browser.pages())[-1]
+        await stealth(container_page)
         await container_page.waitForSelector("table table")
+        await asyncio.sleep(2)
         content = await container_page.content()
         await container_page.close()
 
         return content
-
-    async def close(self):
-        await self._browser.close()
 
 
 class EglvLocalCrawler(BaseLocalCrawler):
@@ -137,12 +128,10 @@ class EglvLocalCrawler(BaseLocalCrawler):
 
     def __init__(self):
         super().__init__()
-        self.content_getter = EglvContentGetter()
+        self.content_getter = EglvContentGetter(proxy_manager=HydraproxyProxyManager(logger=logger))
         self._search_type = ""
 
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):
-        asyncio.get_event_loop().run_until_complete(self.content_getter.launch_browser())
-
         task_ids = task_ids.split(",")
         if mbl_nos:
             search_nos = mbl_nos.split(",")
@@ -157,12 +146,13 @@ class EglvLocalCrawler(BaseLocalCrawler):
                 for item in self.handle_booking(search_no, task_id):
                     yield item
 
-        asyncio.get_event_loop().run_until_complete(self.content_getter.close())
-
     def handle_mbl(self, mbl_no, task_id):
         httptext = asyncio.get_event_loop().run_until_complete(
-            self.content_getter.search_and_return(mbl_no, self._search_type))
+            self.content_getter.search_and_return(mbl_no, self._search_type, task_id))
         response = self.get_response_selector(httptext, meta={"mbl_no": mbl_no, "task_id": task_id})
+        if self._is_search_no_invalid(response=response):
+            raise DataNotFoundError(task_id=task_id)
+
         main_rule = BillMainInfoRoutingRule()
 
         for result in main_rule.handle(response):
@@ -183,8 +173,11 @@ class EglvLocalCrawler(BaseLocalCrawler):
 
     def handle_booking(self, search_no, task_id):
         httptext = asyncio.get_event_loop().run_until_complete(
-            self.content_getter.search_and_return(search_no, self._search_type))
+            self.content_getter.search_and_return(search_no, self._search_type, task_id))
         response = self.get_response_selector(httptext, meta={"booking_no": search_no, "task_id": task_id})
+        if self._is_search_no_invalid(response=response):
+            raise DataNotFoundError(task_id=task_id)
+
         rule = BookingMainInfoRoutingRule()
 
         for result in rule.handle(response):
@@ -219,6 +212,23 @@ class EglvLocalCrawler(BaseLocalCrawler):
 
         for item in rule.handle(response):
             yield item
+
+    @staticmethod
+    def _is_search_no_invalid(response):
+        message_under_search_table = response.css('table table tr td.f12wrdb1::text').get()
+        if isinstance(message_under_search_table, str):
+            message_under_search_table = message_under_search_table.strip()
+        mbl_invalid_message = (
+            'No information on B/L No., please enter a valid B/L No. or contact our offices for assistance.'
+        )
+        boooking_invalid_message = (
+            'No information on Booking No., please enter a valid Booking No. or contact our offices for assistance.'
+        )
+
+        if message_under_search_table == mbl_invalid_message or message_under_search_table == boooking_invalid_message:
+            return True
+
+        return False
 
     @staticmethod
     def get_response_selector(httptext, meta):
