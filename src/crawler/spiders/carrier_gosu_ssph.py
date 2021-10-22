@@ -116,7 +116,10 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        self._check_main_info(response=response)
+        mbl_no = response.meta["mbl_no"]
+        if self._is_mbl_no_invalid(response=response):
+            yield ExportErrorData(mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found")
+            return
 
         mbl_no = self._extract_mbl_no(response=response)
         main_info = self._extract_main_info(response=response)
@@ -164,12 +167,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 )
 
     @staticmethod
-    def _check_main_info(response):
-        mbl_no = response.meta["mbl_no"]
+    def _is_mbl_no_invalid(response):
         data_found_selector = response.css("table")
-        if not data_found_selector:
-            yield ExportErrorData(mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found")
-            return
+        return not bool(data_found_selector)
 
     @staticmethod
     def _extract_mbl_no(response):
