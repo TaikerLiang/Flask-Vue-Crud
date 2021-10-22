@@ -4,7 +4,6 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
 from crawler.spiders.carrier_aclu import TrackRoutingRule
 from test.spiders.carrier_aclu import track
 
@@ -17,21 +16,23 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub,mbl_no,',
+    "sub,mbl_no,",
     [
-        ('01_single_container', 'CRSU9164589'),
-        ('02_multi_containers', 'S317458555'),
+        ("01_single_container", "CRSU9164589"),
+        ("02_multi_containers", "S317458555"),
+        ("03_invalid_mbl_no", "CRSU9164588"),
+        ("04_mbl_no_not_activate", "GCNU4723103"),
     ],
 )
 def test_track_routing_rule(sub, mbl_no, sample_loader):
-    httptext = sample_loader.read_file(sub, 'sample.html')
+    httptext = sample_loader.read_file(sub, "sample.html")
 
     option = TrackRoutingRule.build_request_option(mbl_no=mbl_no)
 
     response = TextResponse(
         url=option.url,
         body=httptext,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=option.url,
             meta=option.meta,
@@ -41,26 +42,5 @@ def test_track_routing_rule(sub, mbl_no, sample_loader):
     rule = TrackRoutingRule()
     results = list(rule.handle(response=response))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
-
-
-@pytest.mark.parametrize(
-    'sub,mbl_no,expect_exception',
-    [
-        ('e01_invalid_mbl_no', 'CRSU9164588', CarrierInvalidMblNoError),
-        ('e02_mbl_no_not_activate', 'GCNU4723103', CarrierInvalidMblNoError),
-    ],
-)
-def test_main_info_handler_mbl_no_error(sub, mbl_no, expect_exception, sample_loader):
-    httptext = sample_loader.read_file(sub, 'sample.html')
-
-    option = TrackRoutingRule.build_request_option(mbl_no=mbl_no)
-
-    response = TextResponse(
-        url=option.url, body=httptext, encoding='utf-8', request=Request(url=option.url, meta=option.meta)
-    )
-
-    rule = TrackRoutingRule()
-    with pytest.raises(expect_exception):
-        list(rule.handle(response=response))

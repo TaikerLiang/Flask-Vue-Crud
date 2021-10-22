@@ -93,7 +93,10 @@ class TrackRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        self._check_mbl_no(response)
+        mbl_no = response.meta["mbl_no"]
+        if self._is_mbl_no_invalid(response):
+            yield ExportErrorData(mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found")
+            return
 
         container_infos = self._extract_container_infos(response=response)
         for container_info in container_infos:
@@ -102,13 +105,10 @@ class TrackRoutingRule(BaseRoutingRule):
             )
 
     @staticmethod
-    def _check_mbl_no(response):
-        mbl_no = response.meta["mbl_no"]
-
+    def _is_mbl_no_invalid(response):
         first_header_text = response.css("span.subheader::text").get()
         if first_header_text == "An Error Occured:":
-            yield ExportErrorData(mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found")
-            return
+            return True
 
         # container no invalid
         h1_selectors = response.css("h1")
@@ -124,9 +124,7 @@ class TrackRoutingRule(BaseRoutingRule):
             css_query="::text", startswith="Unit is no longer active, please contact ACL for additional information"
         )
         mbl_not_active_td = find_selector_from(selectors=tds, rule=mbl_not_active_rule)
-        if mbl_not_active_td:
-            yield ExportErrorData(mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found")
-            return
+        return bool(mbl_not_active_td)
 
     def _extract_container_infos(self, response: scrapy.Selector):
         detail_track_texts = response.css("input#DetailedTrack::attr(onclick)").getall()

@@ -44,17 +44,17 @@ function initPopup (url)
 	{ document.popupform.popupurl.value = url; }
 
 function opensmallPopup ()
-	{ var smallPopupWindow = window.open("popup.php", "smallPopup", "height=500,width=350,resizable=no,menubar=no,status=no"); 
+	{ var smallPopupWindow = window.open("popup.php", "smallPopup", "height=500,width=350,resizable=no,menubar=no,status=no");
 	smallPopupWindow.focus(); }
 
 function openbigPopup ()
-	{ var bigPopupWindow = window.open("popup.php", "bigPopup", "height=600,width=770,resizable=yes,menubar=yes,status=no,scrollbars"); 
+	{ var bigPopupWindow = window.open("popup.php", "bigPopup", "height=600,width=770,resizable=yes,menubar=yes,status=no,scrollbars");
 	//if (itm.substring(0,4)=="http") {
 	//	alert("ACL assumes no responsibility for the accuracy or the contents of information at other sites."); }
 	bigPopupWindow.focus(); }
 
 function openTour ()
-	{ var tourWindow = window.open("images/tour/tour.htm", "virtualTour", "height=500,width=600,resizable=no,menubar=no,status=no"); 
+	{ var tourWindow = window.open("images/tour/tour.htm", "virtualTour", "height=500,width=600,resizable=no,menubar=no,status=no");
 	tourWindow.focus(); }
 
 //function class () {
@@ -247,12 +247,12 @@ function openTour ()
 				C154.578,141.394,141.077,154.847,124.423,154.847z M172.334,66.072c-5.432,0-9.834,4.403-9.834,9.833s4.402,9.833,9.834,9.833
 				c5.43,0,9.833-4.403,9.833-9.833S177.764,66.072,172.334,66.072z"/></svg>
                       </span>                  </a>              </li>
-           </ul>			  	
+           </ul>
         </div>
     </nav>
- 
- 
- 
+
+
+
      <div role='main' style='background-color:#EEEEEE'>
         <div class='container-fluid max-width-lg p-y-2'>
            <div class='row' style='background-color:#FFFFFF'>
@@ -262,11 +262,11 @@ function openTour ()
 
 <p>
 <script>
-	function formatShipNo(  ){		
-		var shipNo = document.track_cargo.search_for.value;		
+	function formatShipNo(  ){
+		var shipNo = document.track_cargo.search_for.value;
 		var formattedVal = shipNo;
 		if (shipNo.indexOf("SA") == 0 || shipNo.indexOf("sa") == 0 || /^\d+$/.test(shipNo) )
-			 formattedVal =	formatNo( shipNo );	
+			 formattedVal =	formatNo( shipNo );
 		document.track_cargo.search_for.value = formattedVal;
 	}
 
@@ -276,12 +276,12 @@ function openTour ()
 			   inputStr =  inputStr.toUpperCase();
 			//a=b
 			if ( inputStr != null && inputStr.substring(0, 2) == "SA" ) {
-				var shipmentNoArr = inputStr.split("-");            
+				var shipmentNoArr = inputStr.split("-");
 				 if ( shipmentNoArr.length == 1 )
-					 inputStr= inputStr.slice(0, 2)+"-"+inputStr.slice(2, 10);   
+					 inputStr= inputStr.slice(0, 2)+"-"+inputStr.slice(2, 10);
 				// alert("inputStr "+inputStr)
-				shipmentNoArr = inputStr.split("-");    
-				
+				shipmentNoArr = inputStr.split("-");
+
 				if (shipmentNoArr[1].length < 8) {
 					formattedShipNo = shipmentNoArr[0] +"-"+ appendZero(shipmentNoArr[1]);
 				}
@@ -296,7 +296,7 @@ function openTour ()
 			return formattedShipNo;
 		}
 
-		 function  appendZero( inputStr) {       
+		 function  appendZero( inputStr) {
 			inputStr = inputStr.trim();
 			var formattedStr = inputStr;
 			if (inputStr.length == 7) {
@@ -317,7 +317,7 @@ function openTour ()
 			return formattedStr;
 		}
 </script>
- 
+
 <table><tr><td valign=top>
 
 <?
@@ -330,7 +330,7 @@ $scriptPath = $dirs[count($dirs)-1];
 
 <form action="trackCargo.php" method="get" name="track_cargo">
 	  <textarea wrap="physical" name="search_for" cols=13 rows=15 placeholder="Enter Your Shipment Number" onchange='formatShipNo(this)'>CRSU9164588</textarea><br>
-	  <input type="Submit" value="Track it">   
+	  <input type="Submit" value="Track it">
 	  <input type="Button" value="Clear" name="clear_form" onClick="document.track_cargo.search_for.focus();document.track_cargo.search_for.value='';">
  </form>
 </td><td valign=top>
@@ -347,10 +347,10 @@ $scriptPath = $dirs[count($dirs)-1];
 <html>
 <head>
 	<title>Untitled</title>
-	
--->	
+
+-->
 <style type="text/css">
-.Bsbttn 
+.Bsbttn
 {
 	font-family:tahoma,sans-serif;
 	font-size:13px;
@@ -374,10 +374,10 @@ $scriptPath = $dirs[count($dirs)-1];
 
 </style>
 	<script language="JavaScript1.2">
-	  	 
+
 	 function getHistory(nextURL)
-	{	
-		
+	{
+
 //		var nextURL = "/servlet/ActionMultiplexer?the_action=trackcontainerhistory";
 		window.open(nextURL,"_self");
 	}
@@ -387,11 +387,11 @@ $scriptPath = $dirs[count($dirs)-1];
 
 <body>
 -->
-	
-	
+
+
 	<span class="subheader">An Error Occured:</span>
 	<span class="bodytext">
-	Sorry! The query returned an error. Please check the accuracy of your tracking numbers, and re-enter them again. If you have entered a <b>valid container number</b> or a <b>valid Booking number</b>, and are still seeing this message, then we may be experiencing technical difficulties, and are unable to establish a connection with our tracking database.	
+	Sorry! The query returned an error. Please check the accuracy of your tracking numbers, and re-enter them again. If you have entered a <b>valid container number</b> or a <b>valid Booking number</b>, and are still seeing this message, then we may be experiencing technical difficulties, and are unable to establish a connection with our tracking database.
 	<p>
         Please visit us later, or <a href="/contact.php">contact ACL</a>.
 	<p>
@@ -403,29 +403,29 @@ Instructions on how to use the track and trace:</span><br>
   <li><span class="bodytext">Enter one container or shipment number per line.</span></li>
   <li><span class="bodytext">When entering a Shipment Number:</span><br>
     <table border="0" cellspacing="0" cellpadding="1">
-      <tr bgcolor="#000066"> 
-        <td class="bodytext"> 
+      <tr bgcolor="#000066">
+        <td class="bodytext">
           <table border="0" cellspacing="1" cellpadding="2">
-            <tr bgcolor="#FFFFFF">              
-              <td class="bodytext" nowrap><span class="subheader"><font size="3"></font></span> 
-                The simplest way is to enter just the digits of the shipment number, so for :<br>SA-00123456, you can use just 123456			
+            <tr bgcolor="#FFFFFF">
+              <td class="bodytext" nowrap><span class="subheader"><font size="3"></font></span>
+                The simplest way is to enter just the digits of the shipment number, so for :<br>SA-00123456, you can use just 123456
 				</td>
-            </tr>   
-			<tr bgcolor="#FFFFFF">              
+            </tr>
+			<tr bgcolor="#FFFFFF">
               <td class="bodytext" nowrap>
                 SA-123456, SA123456 will work.
 				</td>
-            </tr>  
-			<tr bgcolor="#FFFFFF">              
+            </tr>
+			<tr bgcolor="#FFFFFF">
               <td class="bodytext" nowrap>
                 SA-12345678, SA12345678 will work.
 				</td>
-            </tr> 
-			<tr bgcolor="#FFFFFF">              
+            </tr>
+			<tr bgcolor="#FFFFFF">
               <td class="bodytext" nowrap>
                 It is not case sensitive
 				</td>
-            </tr>              
+            </tr>
           </table>
         </td>
       </tr>
@@ -433,34 +433,34 @@ Instructions on how to use the track and trace:</span><br>
   </li>
   <li><span class="bodytext">When entering a container number:</span><br>
     <table border="0" cellspacing="0" cellpadding="1">
-      <tr bgcolor="#000066"> 
-        <td class="bodytext"> 
+      <tr bgcolor="#000066">
+        <td class="bodytext">
           <table border="0" cellspacing="1" cellpadding="2">
-            <tr bgcolor="#FFFFFF">              
+            <tr bgcolor="#FFFFFF">
               <td class="bodytext" nowrap>
                ACLU123456, ACLU1234567 with or without the check digit will work
 				</td>
-            </tr>   			             
+            </tr>
           </table>
         </td>
       </tr>
     </table>
-  </li> 
+  </li>
 </ul>
 
 
-<script language="JavaScript1.2">	
+<script language="JavaScript1.2">
 	 var equipNo = ''
 	 if ( equipNo == null ||  equipNo == '')
-		document.getElementById("DetailedTrack").style.visibility = "hidden";	
-	
+		document.getElementById("DetailedTrack").style.visibility = "hidden";
+
 	</script>
 <!--
 </body>
 </html>
 -->
 </td>
-</tr> 
+</tr>
 </table>
 
 
@@ -470,7 +470,7 @@ Instructions on how to use the track and trace:</span><br>
         </div>
     </div>
 
- 
+
 
     <div class="site-footer">
         <div class="container-fluid max-width-lg">
@@ -497,12 +497,12 @@ Instructions on how to use the track and trace:</span><br>
 					<br /><sup>A Grimaldi Group Company</sup-->
 					<p><img src="images/general/ACL_grimaldilogo.png" height="69"></p>
                     <p class="small">Copyright &copy; 2019 ACL Cargo. All Rights Reserved.</p><br>
-					
+
                 </div>
                 <div class="col-xs-12 col-md-5 col-md-offset-1">
-				
-				<a href="cookiePolicy.php">Cookie Policy</a> 
-					<br><a href="privacyPolicy.php">Privacy Policy</a> 
+
+				<a href="cookiePolicy.php">Cookie Policy</a>
+					<br><a href="privacyPolicy.php">Privacy Policy</a>
 		            <br><a href="linkPolicy.php">Web Linkage Policy</a>
 					<br><a href="pdfs/BCPDisclosure.pdf" target="_blank">BCP Disclosure</a>
 					<br><a href="code_of_conduct.php">Code of Conduct</a></p>
@@ -582,7 +582,7 @@ Instructions on how to use the track and trace:</span><br>
 				c5.43,0,9.833-4.403,9.833-9.833S177.764,66.072,172.334,66.072z"/></svg>
                       </span>                  </a>              </li>
                    </ul>
-				
+
                     <!--div class="newsletter-signup card"-->
                         <!--p>Subscribe to our email list for breaking news bulletins providing up-to-date information on service exceptions. </p>
 
@@ -599,7 +599,7 @@ Instructions on how to use the track and trace:</span><br>
 			document.Newsletter_Subscriber.submit();
 			}
 		}
-		
+
 	//-->
 	<!--/script>
 
@@ -623,7 +623,7 @@ Instructions on how to use the track and trace:</span><br>
 						</div>
       <!--/span-->
                         <!--/form-->
-						
+
                     <!--/div-->
                 </div>
             </div>
@@ -640,7 +640,7 @@ Instructions on how to use the track and trace:</span><br>
 	window.dataLayer = window.dataLayer || [];
 	function gtag(){dataLayer.push(arguments);}
 	gtag('js', new Date());
-	
+
 	gtag('config', 'UA-115789866-1');
 </script>
 
