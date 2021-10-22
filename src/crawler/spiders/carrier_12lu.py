@@ -4,24 +4,26 @@ from typing import Dict
 
 import scrapy
 
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, SuspiciousOperationError
+from crawler.core_carrier.exceptions import SuspiciousOperationError
 from crawler.core_carrier.items import (
     BaseCarrierItem,
     MblItem,
     ContainerItem,
     ContainerStatusItem,
     LocationItem,
+    ExportErrorData,
     DebugItem,
 )
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 
-URL = 'http://www.nbosco.com/sebusiness/ecm/ContainerMovement/selectCmContainerCurrent'
+URL = "http://www.nbosco.com/sebusiness/ecm/ContainerMovement/selectCmContainerCurrent"
 
 
 class Carrier12luSpider(BaseCarrierSpider):
-    name = 'carrier_12lu'
+    name = "carrier_12lu"
 
     def __init__(self, *args, **kwargs):
         super(Carrier12luSpider, self).__init__(*args, **kwargs)
@@ -37,7 +39,7 @@ class Carrier12luSpider(BaseCarrierSpider):
         yield self._build_request_by(option=option)
 
     def parse(self, response):
-        yield DebugItem(info={'meta': dict(response.meta)})
+        yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -62,11 +64,11 @@ class Carrier12luSpider(BaseCarrierSpider):
                 meta=meta,
             )
         else:
-            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
+            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
 
 class ContainerStatusRoutingRule(BaseRoutingRule):
-    name = 'CONTAINER_STATUS'
+    name = "CONTAINER_STATUS"
 
     @classmethod
     def build_request_option(cls, mbl_no: str, page_no: int) -> RequestOption:
@@ -75,29 +77,37 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f'{URL}?t={timestamp}&blNo={mbl_no}&pageNum={page_no}&pageSize=20',
-            meta={'mbl_no': mbl_no, 'page_no': page_no},
+            url=f"{URL}?t={timestamp}&blNo={mbl_no}&pageNum={page_no}&pageSize=20",
+            meta={"mbl_no": mbl_no, "page_no": page_no},
         )
 
     def get_save_name(self, response) -> str:
-        mbl_no = response.meta['mbl_no']
-        return f'{self.name}_{mbl_no}.json'
+        mbl_no = response.meta["mbl_no"]
+        return f"{self.name}_{mbl_no}.json"
 
     def handle(self, response):
-        page_no = response.meta['page_no']
+        mbl_no = response.meta["mbl_no"]
+        page_no = response.meta["page_no"]
 
         response_dict = json.loads(response.text)
 
-        data = response_dict['data']
-        self._check_mbl_no(data=data)
-        records = response_dict['data']['records']
+        data = response_dict["data"]
+        if self._is_mbl_no_invalid(data=data):
+            yield ExportErrorData(
+                mbl_no=mbl_no,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
+            return
+
+        records = response_dict["data"]["records"]
 
         mbl_no = self._extract_mbl_no(records=records)
         yield MblItem(mbl_no=mbl_no)
 
         container_status_list = self._extract_container_status_list(records=records)
         for container_status in container_status_list:
-            container_no = container_status['container_no']
+            container_no = container_status["container_no"]
 
             yield ContainerItem(
                 container_key=container_no,
@@ -106,25 +116,24 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
             yield ContainerStatusItem(
                 container_key=container_no,
-                description=container_status['description'],
-                local_date_time=container_status['local_date_time'],
-                location=LocationItem(name=container_status['location_name']),
-                vessel=container_status['vessel'],
-                voyage=container_status['voyage'],
+                description=container_status["description"],
+                local_date_time=container_status["local_date_time"],
+                location=LocationItem(name=container_status["location_name"]),
+                vessel=container_status["vessel"],
+                voyage=container_status["voyage"],
             )
 
-        total_page_no = data['totalPage']
+        total_page_no = data["totalPage"]
         if page_no < total_page_no:
             yield self.build_request_option(mbl_no=mbl_no, page_no=page_no + 1)
 
     @staticmethod
-    def _check_mbl_no(data: Dict):
-        if 'records' not in data:
-            raise CarrierInvalidMblNoError()
+    def _is_mbl_no_invalid(data: Dict):
+        return "records" not in data
 
     @staticmethod
     def _extract_mbl_no(records: Dict) -> str:
-        mbl_no = records[0]['blNo']
+        mbl_no = records[0]["blNo"]
         return mbl_no
 
     @staticmethod
@@ -133,12 +142,12 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         for record in records:
             container_status_list.append(
                 {
-                    'container_no': record['containerNo'],
-                    'description': record['movementCode'],
-                    'local_date_time': record['eventDate'],
-                    'location_name': record['eventPort'],
-                    'vessel': record['vesselCode'],
-                    'voyage': record['voyageNo'],
+                    "container_no": record["containerNo"],
+                    "description": record["movementCode"],
+                    "local_date_time": record["eventDate"],
+                    "location_name": record["eventPort"],
+                    "vessel": record["vesselCode"],
+                    "voyage": record["voyageNo"],
                 }
             )
 
