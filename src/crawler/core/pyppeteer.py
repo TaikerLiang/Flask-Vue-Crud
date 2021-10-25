@@ -20,9 +20,13 @@ class PyppeteerContentGetter:
             "--disable-dev-shm-usage",
             "--disable-blink-features",
             "--enable-javascript",
-            # "--window-size=1920,1080",
+            "--window-size=1920,1080",
             # "--start-maximized",
         ]
+        default_viewport = {
+            "width": 1920,
+            "height": 1080,
+        }
 
         auth = {}
         if self.proxy_manager:
@@ -33,7 +37,7 @@ class PyppeteerContentGetter:
                 "password": self.proxy_manager.proxy_password,
             }
 
-        self.browser = await launch(headless=is_headless, args=browser_args)
+        self.browser = await launch(headless=is_headless, args=browser_args, defaultViewport=default_viewport)
         self.page = await self.browser.newPage()
 
         await stealth(self.page)
