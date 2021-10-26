@@ -175,7 +175,6 @@ class ContainerRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_no_list = response.meta.get("container_no_list")
         table = self._get_table_list(response)
-        print(f"table: {table}")
         info_list = self._extract_info_list(table)
         for info in info_list:
             yield TerminalItem(
@@ -210,10 +209,6 @@ class ContainerRoutingRule(BaseRoutingRule):
 
             info = {}
 
-            print(f"available: {available}")
-            print(f"container_no: {container_no}")
-            print(f"line_status: {line_status}")
-            print(f"custom_status: {custom_status}")
             info["container_no"] = container_no
 
             if available == "Yes":
