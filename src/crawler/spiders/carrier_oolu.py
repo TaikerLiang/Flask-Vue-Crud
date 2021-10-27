@@ -20,7 +20,6 @@ from PIL import Image
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
@@ -69,8 +68,6 @@ class CarrierOoluSpider(BaseCarrierSpider):
             self._rule_manager = RuleManager(rules=booking_rules)
             self.search_no = self.booking_no
 
-        self._proxy_manager = HydraproxyProxyManager(session="oolu", logger=self.logger)
-
     def start(self):
         option = CargoTrackingRule.build_request_option(search_no=self.search_no)
         yield self._build_request_by(option=option)
@@ -99,11 +96,7 @@ class CarrierOoluSpider(BaseCarrierSpider):
 
         if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
-                url=option.url,
-                headers=option.headers,
-                meta=meta,
-                dont_filter=True,
-                callback=self.parse,
+                url=option.url, headers=option.headers, meta=meta, dont_filter=True, callback=self.parse,
             )
 
         else:
@@ -351,9 +344,7 @@ class CargoTrackingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://www.google.com",
-            meta={
-                "search_no": search_no,
-            },
+            meta={"search_no": search_no,},
         )
 
     def get_save_name(self, response) -> str:
@@ -426,8 +417,7 @@ class CargoTrackingRule(BaseRoutingRule):
         container_list = cls._extract_container_list(selector_map=selector_map)
         for i, container in enumerate(container_list):
             yield ContainerStatusRule.build_request_option(
-                container_no=container["container_no"].strip(),
-                click_element_css=f"a[id='form:link{i}']",
+                container_no=container["container_no"].strip(), click_element_css=f"a[id='form:link{i}']",
             )
 
     @staticmethod
@@ -582,10 +572,7 @@ class CargoTrackingRule(BaseRoutingRule):
             # container_no_text: OOLU843521-8
             container_id, check_no = container_no_text.split("-")
             container_no_list.append(
-                {
-                    "container_id": container_id,
-                    "container_no": f"{container_id}{check_no}",
-                }
+                {"container_id": container_id, "container_no": f"{container_id}{check_no}",}
             )
         return container_no_list
 
@@ -813,10 +800,7 @@ class ContainerStatusRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://www.google.com",
-            meta={
-                "container_no": container_no,
-                "click_element_css": click_element_css,
-            },
+            meta={"container_no": container_no, "click_element_css": click_element_css,},
         )
 
     @staticmethod
