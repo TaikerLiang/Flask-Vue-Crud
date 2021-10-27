@@ -214,13 +214,17 @@ class ContainerRoutingRule(BaseRoutingRule):
             if available == "Yes":
                 info["available"] = True
             elif available == "No":
-                info["available"] = True if location == "C" else False
+                info["available"] = False
 
-            info["line_release"] = True if info.get("available") else False
+            if line_status == "RELEASED":
+                info["line_release"] = True
+            else:
+                info["line_release"] = False
 
-            info["customs_release"] = False
-            if info.get("available") or (line_status == "HOLD" and custom_status == "RELEASED"):
+            if custom_status == "RELEASED":
                 info["customs_release"] = True
+            else:
+                info["customs_release"] = False
 
             info_list.append(info)
 

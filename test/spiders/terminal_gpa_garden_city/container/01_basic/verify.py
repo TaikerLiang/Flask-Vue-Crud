@@ -19,8 +19,8 @@ def verify(results: Dict):
     assert results["TRLU8224030"] == TerminalItem(
         container_no="TRLU8224030",
         available=False,
-        carrier_release=False,
-        customs_release=False,
+        carrier_release=True,
+        customs_release=True,
     )
     assert results["CAIU3803055"] == TerminalItem(
         container_no="CAIU3803055",
@@ -30,7 +30,7 @@ def verify(results: Dict):
     )
     assert results["CMAU0101886"] == TerminalItem(
         container_no="CMAU0101886",
-        available=True,
+        available=False,
         carrier_release=True,
         customs_release=True,
     )
