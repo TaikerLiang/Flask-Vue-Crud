@@ -1,17 +1,19 @@
 import dataclasses
 import asyncio
+import logging
 
-from scrapy import Selector, Request
+from scrapy import Request
 from scrapy.http import TextResponse
-from pyppeteer import launch, logging
 from pyppeteer.errors import TimeoutError, ElementHandleError
 
 from local.core import BaseLocalCrawler
+from local.proxy import HydraproxyProxyManager, ProxyManager
+from crawler.core.pyppeteer import PyppeteerContentGetter
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.items import BaseCarrierItem
-from src.crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
-from src.crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
-from src.crawler.core_carrier.anlc_aplu_cmdu_share_spider import FirstTierRoutingRule, ContainerStatusRoutingRule
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
+from crawler.core_carrier.anlc_aplu_cmdu_share_spider import FirstTierRoutingRule, ContainerStatusRoutingRule
 
 CMDU_BASE_URL = 'https://www.cma-cgm.com/ebusiness/tracking'
 
@@ -22,45 +24,28 @@ class ProxyOption:
     session: str
 
 
-class ContentGetter:
-    def __init__(self):
-        logging.disable(logging.DEBUG)
-        self._browser = None
+logger = logging.getLogger("local-crawler-cmdu")
 
-    async def launch_browser(self):
-        browser_args = [
-            "--no-sandbox",
-            "--disable-gpu",
-            "--disable-blink-features",
-            "--disable-infobars",
-            "--window-size=1920,1080",
-        ]
-        self._browser = await launch(headless=True, dumpio=True, slowMo=20, defaultViewport=None, args=browser_args)
+
+class ContentGetter(PyppeteerContentGetter):
+    def __init__(self, proxy_manager: ProxyManager = None):
+        super().__init__(proxy_manager)
 
     async def search(self, search_no):
-        page = await self._browser.newPage()
-        await page.setUserAgent(
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
-        )
         try:
-            await asyncio.gather(
-                page.waitForSelector("#Reference"),
-                page.goto(CMDU_BASE_URL),
-            )
-            await page.type('#Reference', search_no)
-            await asyncio.gather(
-                page.waitForSelector("div > h1"),
-                page.click('#btnTracking')
-            )
+            await asyncio.sleep(3)
+            await self.page.goto(CMDU_BASE_URL, {"timeout": 60000})
         except TimeoutError:
-            raise LoadWebsiteTimeOutError
+            raise LoadWebsiteTimeOutError(url=CMDU_BASE_URL)
+        await self.page.type('#Reference', search_no)
+        await asyncio.sleep(3)
+        await self.page.click('#btnTracking')
+        await asyncio.sleep(3)
+        await self.page.waitForSelector("div > h1"),
+        await asyncio.sleep(3)
 
-        content = await page.content()
-        await page.close()
+        content = await self.page.content()
         return content
-
-    async def close(self):
-        await self._browser.close()
 
 
 class CmduLocalCrawler(BaseLocalCrawler):
@@ -70,7 +55,6 @@ class CmduLocalCrawler(BaseLocalCrawler):
         super().__init__()
         self.content_getter = ContentGetter()
         self._search_type = ""
-        self.driver = ContentGetter()
 
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):
         task_ids = task_ids.split(",")
@@ -88,8 +72,7 @@ class CmduLocalCrawler(BaseLocalCrawler):
                 yield item
 
     def handle(self, search_no, task_id):
-        asyncio.get_event_loop().run_until_complete(self.driver.launch_browser())
-        httptext = asyncio.get_event_loop().run_until_complete(self.driver.search(search_no=search_no))
+        httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.search(search_no=search_no))
         response = TextResponse(
             url=CMDU_BASE_URL,
             encoding='utf-8',
@@ -110,7 +93,7 @@ class CmduLocalCrawler(BaseLocalCrawler):
                 yield result
             elif isinstance(result, RequestOption):
                 container_no = result.meta['container_no']
-                httptext = asyncio.get_event_loop().run_until_complete(self.driver.search(search_no=container_no))
+                httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.search(search_no=container_no))
                 response = TextResponse(
                     url=CMDU_BASE_URL,
                     encoding='utf-8',
@@ -126,4 +109,3 @@ class CmduLocalCrawler(BaseLocalCrawler):
                 )
                 for container_item in container_rule.handle(response):
                     yield container_item
-        asyncio.get_event_loop().run_until_complete(self.driver.close())
