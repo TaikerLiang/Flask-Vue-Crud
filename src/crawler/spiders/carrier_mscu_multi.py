@@ -3,21 +3,16 @@ from typing import List, Dict
 
 import scrapy
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.exceptions import (
-    LoadWebsiteTimeOutError,
-    CarrierResponseFormatError,
-    CarrierInvalidMblNoError,
-    SuspiciousOperationError,
-    CarrierInvalidSearchNoError,
-)
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, SuspiciousOperationError
 from crawler.core_carrier.items import (
     ContainerItem,
     ContainerStatusItem,
     LocationItem,
     MblItem,
     DebugItem,
+    ExportErrorData,
     BaseCarrierItem,
 )
 from crawler.core.proxy import HydraproxyProxyManager
@@ -171,13 +166,27 @@ class MainRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        if self._is_search_no_invalid(response=response):
-            raise CarrierInvalidSearchNoError(search_type=self._search_type)
-
         task_id = response.meta["task_id"]
         search_no = response.meta["search_no"]
-        extractor = Extractor()
 
+        if self._is_search_no_invalid(response=response):
+            if self._search_type == SHIPMENT_TYPE_MBL:
+                yield ExportErrorData(
+                    task_id=task_id,
+                    mbl_no=search_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+            else:
+                yield ExportErrorData(
+                    task_id=task_id,
+                    booking_no=search_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+            return
+
+        extractor = Extractor()
         place_of_deliv_set = set()
         container_selector_map_list = extractor.locate_container_selector(response=response)
         for container_selector_map in container_selector_map_list:
@@ -234,7 +243,7 @@ class MainRoutingRule(BaseRoutingRule):
     @staticmethod
     def _is_search_no_invalid(response: scrapy.Selector):
         error_message = response.css("div#ctl00_ctl00_plcMain_plcMain_pnlTrackingResults > h3::text").get()
-        if error_message == "Your reference number was not found, please review and try again":
+        if error_message == "No matching tracking information. Please try again.":
             return True
         return False
 

@@ -6,14 +6,9 @@ from urllib.parse import urlencode
 from scrapy import Selector, Request, FormRequest
 from twisted.python.failure import Failure
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS
-from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    SuspiciousOperationError,
-    CarrierInvalidMblNoError,
-    CarrierInvalidSearchNoError,
-)
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, SuspiciousOperationError
 from crawler.core_carrier.items import (
     MblItem,
     LocationItem,
@@ -21,6 +16,7 @@ from crawler.core_carrier.items import (
     ContainerItem,
     ContainerStatusItem,
     BaseCarrierItem,
+    ExportErrorData,
     DebugItem,
 )
 from crawler.core.proxy import HydraproxyProxyManager
@@ -560,6 +556,7 @@ class MainRoutingRule(BaseRoutingRule):
             body=body,
             meta={
                 "search_no": search_no,
+                "search_type": search_type,
                 "cookies": cookies,
                 "under_line": under_line,
             },
@@ -570,6 +567,7 @@ class MainRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         search_no = response.meta["search_no"]
+        search_type = response.meta["search_type"]
         cookies = response.meta["cookies"]
         under_line = response.meta["under_line"]
 
@@ -583,7 +581,22 @@ class MainRoutingRule(BaseRoutingRule):
                 )
                 return
 
-            raise CarrierInvalidSearchNoError(search_type=self._search_type)
+            if search_type == SHIPMENT_TYPE_MBL:
+                error_item = ExportErrorData(
+                    mbl_no=search_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+
+                self._item_recorder.record_item(key=("ERROR", search_no), item=error_item)
+            elif search_type == SHIPMENT_TYPE_BOOKING:
+                error_item = ExportErrorData(
+                    booking_no=search_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+                self._item_recorder.record_item(key=("ERROR", search_no), item=error_item)
+            return
 
         if not self._item_recorder.is_item_recorded(key=(MBL, search_no)):
             try:

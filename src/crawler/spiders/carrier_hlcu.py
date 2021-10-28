@@ -3,13 +3,20 @@ from typing import Dict
 
 import scrapy
 
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
-from crawler.core_carrier.items import BaseCarrierItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem
+from crawler.core_carrier.items import (
+    BaseCarrierItem,
+    ExportErrorData,
+    LocationItem,
+    ContainerItem,
+    ContainerStatusItem,
+    DebugItem,
+)
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
-    CarrierInvalidMblNoError,
     SuspiciousOperationError,
     LoadWebsiteTimeOutError,
 )
@@ -152,8 +159,14 @@ class TracingRoutingRule(BaseRoutingRule):
             return
 
         error_message.strip()
+        mbl_no = response.meta["mbl_no"]
         if error_message.startswith("DOCUMENT does not exist."):
-            raise CarrierInvalidMblNoError()
+            yield ExportErrorData(
+                mbl_no=mbl_no,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
+            return
 
     @staticmethod
     def _extract_container_nos(response):

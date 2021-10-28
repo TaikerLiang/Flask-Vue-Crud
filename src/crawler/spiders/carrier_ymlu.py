@@ -8,10 +8,10 @@ import scrapy
 from python_anticaptcha import AnticaptchaClient, ImageToTextTask, AnticaptchaException
 from scrapy import Selector
 
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
-    CarrierInvalidMblNoError,
     SuspiciousOperationError,
     AntiCaptchaError,
 )
@@ -21,6 +21,7 @@ from crawler.core_carrier.items import (
     LocationItem,
     MblItem,
     ContainerItem,
+    ExportErrorData,
     DebugItem,
 )
 from crawler.core.proxy import HydraproxyProxyManager
@@ -312,6 +313,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
             form_data=form_data,
             meta={
                 "headers": headers,
+                "booking_no": booking_no,
             },
         )
 
@@ -320,6 +322,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         headers = response.meta["headers"]
+        booking_no = response.meta["booking_no"]
 
         if check_ip_error(response=response):
             yield Restart(reason="IP block")
@@ -330,7 +333,12 @@ class BookingInfoRoutingRule(BaseRoutingRule):
                 return
 
             if self._is_mbl_no_invalid(response=response):
-                raise CarrierInvalidMblNoError()
+                yield ExportErrorData(
+                    booking_no=booking_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+                return
 
             booking_no = self._extract_booking_no(response=response)
             basic_info = self._extract_basic_info(response=response)
@@ -633,6 +641,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             form_data=form_data,
             meta={
                 "headers": headers,
+                "mbl_no": mbl_no,
             },
         )
 
@@ -641,6 +650,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         headers = response.meta["headers"]
+        mbl_no = response.meta["mbl_no"]
 
         if check_ip_error(response=response):
             yield Restart(reason="IP block")
@@ -651,7 +661,12 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 return
 
             if self._is_mbl_no_invalid(response=response):
-                raise CarrierInvalidMblNoError()
+                yield ExportErrorData(
+                    mbl_no=mbl_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+                return
 
             mbl_no = self._extract_mbl_no(response=response)
             basic_info = self._extract_basic_info(response=response)
