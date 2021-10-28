@@ -2,12 +2,14 @@ import re
 import asyncio
 from urllib3.exceptions import ReadTimeoutError
 from typing import List, Dict
+import logging
 
 import scrapy
 from scrapy import Selector
-from pyppeteer import launch, logging
 from pyppeteer.errors import TimeoutError, ElementHandleError
 
+from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
+from crawler.core.pyppeteer import PyppeteerContentGetter
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
@@ -409,7 +411,6 @@ class BookingRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_ids = response.meta['task_ids']
         search_nos = response.meta['search_nos']
-        asyncio.get_event_loop().run_until_complete(self.driver.launch_and_go())
         page_source = asyncio.get_event_loop().run_until_complete(
             self.driver.multi_search(search_nos=search_nos, search_type=self._search_type)
         )
@@ -445,7 +446,6 @@ class BookingRoutingRule(BaseRoutingRule):
                 yield item
 
             self.driver.close_page_and_switch_last()
-        self.driver.close()
 
     def handle_booking_detail_page(self, response, task_id, search_no):
         basic_info = self.extract_basic_info(Selector(text=response))
@@ -642,98 +642,72 @@ class BookingRoutingRule(BaseRoutingRule):
         return return_list
 
 
-class WhlcContentGetter:
-    def __init__(self):
-        logging.disable(logging.DEBUG)
+class WhlcContentGetter(PyppeteerContentGetter):
+    def __init__(self, proxy_manager: ProxyManager = None):
+        super().__init__(proxy_manager, is_headless=True)
+        pyppeteer_logger = logging.getLogger('pyppeteer')
+        pyppeteer_logger.setLevel(logging.WARNING)
         self._type_select_num_map = {
             SHIPMENT_TYPE_MBL: "2",
             SHIPMENT_TYPE_BOOKING: "4",
         }
-        self._browser = None
-        self._page = None
-
-    async def launch_and_go(self):
-        browser_args = [
-            "--no-sandbox",
-            "--disable-gpu",
-            "--disable-blink-features",
-            "--disable-infobars",
-            "--window-size=1920,1080",
-        ]
-        self._browser = await launch(headless=True, args=browser_args)
-        await self.switch_to_last()
-        await self._page.goto(WHLC_BASE_URL, options={"timeout": 60000})
-        await asyncio.sleep(3)
-        await self._page.screenshot({'path': 'out.png'})
-        print('_page: ', await self._page.content())
 
     async def multi_search(self, search_nos, search_type):
+        await self.page.goto(WHLC_BASE_URL, options={"timeout": 60000})
+        await asyncio.sleep(3)
         select_num = self._type_select_num_map[search_type]
-        await self._page.waitForSelector("#cargoType")
-        await self._page.select("#cargoType", select_num)
+        await self.page.waitForSelector("#cargoType")
+        await self.page.select("#cargoType", select_num)
         await asyncio.sleep(1)
         for i, search_no in enumerate(search_nos, start=1):
-            await self._page.type(f"#q_ref_no{i}", search_no)
+            await self.page.type(f"#q_ref_no{i}", search_no)
             await asyncio.sleep(0.5)
         await asyncio.sleep(3)
-        await self._page.click('#Query')
-        await asyncio.sleep(3)
+        await self.page.click('#Query')
+        await asyncio.sleep(10)
         await self.switch_to_last()
-        await self._page.waitForSelector("table.tbl-list")
+        await self.page.waitForSelector("table.tbl-list")
         await asyncio.sleep(5)
-        return await self._page.content()
+        return await self.page.content()
 
     async def go_detail_page(self, idx: int):
-        await self._page.waitForSelector(f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u')
-        await self._page.click(f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u')
-        await asyncio.sleep(3)
+        await self.page.waitForSelector(
+            f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u')
+        await self.page.click(f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u')
+        await asyncio.sleep(10)
         await self.switch_to_last()
-        await self._page.waitForSelector("table.tbl-list")
+        await self.page.waitForSelector("table.tbl-list")
         await asyncio.sleep(3)
-        return await self._page.content()
+        return await self.page.content()
 
     async def go_history_page(self, idx: int):
-        await self._page.waitForSelector(f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u'),
-        await self._page.click(f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u'),
-        await asyncio.sleep(3),
+        await self.page.waitForSelector(
+            f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u'),
+        await self.page.click(f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u'),
+        await asyncio.sleep(10)
         await self.switch_to_last()
-        await self._page.waitForSelector("table.tbl-list")
+        await self.page.waitForSelector("table.tbl-list")
         await asyncio.sleep(3)
-        return await self._page.content()
+        return await self.page.content()
 
     async def go_booking_history_page(self, idx: int):
-        await self._page.waitForSelector(
-                f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"),
-        await self._page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"),
-        await asyncio.sleep(3),
+        await self.page.waitForSelector(
+            f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"),
+        await self.page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"),
+        await asyncio.sleep(10),
         await self.switch_to_last()
-        await self._page.waitForSelector("table.tbl-list")
+        await self.page.waitForSelector("table.tbl-list")
         await asyncio.sleep(3)
-        return await self._page.content()
+        return await self.page.content()
 
     async def switch_to_last(self):
-        pages = await self._browser.pages()
-        self._page = pages[-1]
-        await self._page.setUserAgent(
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
-        await self._page.setViewport(
-            {
-                'width': 1920,
-                'height': 1080,
-                'deviceScaleFactor': 1,
-            }
-        )
-        await asyncio.sleep(1)
-
-    async def get_page_source(self):
-        return await self._page.content()
+        pages = await self.browser.pages()
+        self.page = pages[-1]
+        await asyncio.sleep(3)
 
     async def close_page(self):
-        await self._page.close()
+        await self.page.close()
         await asyncio.sleep(1)
-
-    async def close(self):
-        await self._browser.close()
 
     def close_page_and_switch_last(self):
         asyncio.get_event_loop().run_until_complete(self.close_page())
