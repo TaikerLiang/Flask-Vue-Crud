@@ -15,7 +15,7 @@
 
 
 
-   
+
 
 
 
@@ -28,7 +28,7 @@
 <link href="/cms/business/ebiz/resource/css/content.css" rel="stylesheet" type="text/css" />
 <script type="text/javascript" src="/ebiz/js/new_common.js"></script>
 <script type="text/javascript" src="/ebiz/js/common.js"></script>
-<script type="text/javascript" src="/ebiz/js/QuickMenu.js"></script>	
+<script type="text/javascript" src="/ebiz/js/QuickMenu.js"></script>
 <script type="text/javascript" src="/ebiz/js/print.js"></script>
 <script type="text/javascript" src="/ebiz/js/search/jquery.js"></script>
 <script type='text/javascript' src="/ebiz/js/search/jquery.autocomplete.js"></script>
@@ -51,16 +51,16 @@
 
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <title>Hyundai Merchant Marine</title>
-  
 
- 
+
+
 
 <script>bazadebezolkohpepadr="461373707"</script><script type="text/javascript" src="https://www.hmm21.com/akam/11/1b800275" defer></script></head>
 
 <body style="overflow-x:hidden;overflow-y:hidden;">
 
 <!-- 팝업 -->
-<div id="popup" class="layers_W" style="display:none;position: relative;z-index:999;position:absolute;left:0;top:0;"> 
+<div id="popup" class="layers_W" style="display:none;position: relative;z-index:999;position:absolute;left:0;top:0;">
 	<div class="layers_W_in" style="background: none;" id="popupDiv">
 		<div class="layer_popup01" style="width:720px;">
 			<div class="pop_border">
@@ -79,13 +79,13 @@
 		</div>
 	</div>
 </div>
-	
+
 <!-- Loading Image START -->
 <div id="loadingBar" >
 	<table border="0" width="100%">
 		<tr>
 			<td align="center">
-				<img src='/ebiz/images/common/loading.gif'/>			
+				<img src='/ebiz/images/common/loading.gif'/>
 			</td>
 		</tr>
 	</table>
@@ -124,8 +124,8 @@
 	<input type="hidden" name="tempBLOrBKG"/>
 </form>
 
-<script type="text/javascript">	
-	function showtip(e,name) {		
+<script type="text/javascript">
+	function showtip(e,name) {
 		if(name=='Surrendered') {
      		tooltip.innerText="Pick up is available \n without O B/L submission";
 		}else if(name=='No O B/L issued yet') {
@@ -138,16 +138,16 @@
      		tooltip.innerText="O B/L submission Required \n for cargo pick up";
 		}else{
 			tooltip.innerText="";
-		}     
+		}
 		tooltip.style.display="block";
-		tooltip.style.pixelLeft=e.clientX - 200;     
-		tooltip.style.pixelTop= e.clientY-10;     
+		tooltip.style.pixelLeft=e.clientX - 200;
+		tooltip.style.pixelTop= e.clientY-10;
 	}
-	
+
 	function hidetip() {
 	     tooltip.style.display="none";
 	}
-	
+
 	function vesseldlyInfoshowtip(ve, main_s, roc_c, loc_c) {
 		if(main_s != "N") {
 	     	tooltip.innerText= main_s;
@@ -158,16 +158,16 @@
 		if(loc_c != "N") {
 	     	tooltip.innerText += " \n"+loc_c;
 		}
-						
+
 	     tooltip.style.display="block";
-	     tooltip.style.pixelLeft=ve.clientX - 200;     
-	     tooltip.style.pixelTop= ve.clientY+20;     
+	     tooltip.style.pixelLeft=ve.clientX - 200;
+	     tooltip.style.pixelTop= ve.clientY+20;
 	}
-	
+
 	function vesseldlyInfohidetip() {
 	     tooltip.style.display="none";
-	}	
-	
+	}
+
 	function track(i) {
 		if (i == "null" || i < 0) {
 			alert("Container number is invalid.  Please try it again with correct number.");
@@ -178,10 +178,10 @@
 			document.listForm.submit();
 		}
 	}
-	
+
 	function trackCNTRBL(i,bl) {
 		if (i == "null" || i < 0) {
-			alert("B/L number is invalid.  Please try it again with correct number.");	
+			alert("B/L number is invalid.  Please try it again with correct number.");
 		} else {
 			document.listForm.selectedContainerIndex.value = i;
 			document.listForm.tempBLOrBKG.value =bl;
@@ -190,7 +190,7 @@
 			document.listForm.submit();
 		}
 	}
-	
+
 	function trackCNTRBKG(i,bk) {
 		if (i == "null") {
 			alert("Booking number is invalid.  Please try it again with correct number.");
@@ -202,13 +202,13 @@
 			document.listForm.submit();
 		}
 	}
-	
+
 	function trim(str) {
 		while(str.substring(0, 1)==' ') str = str.substring(1, str.length);
 		while(str.substring(str.length-1, str.length)==' ') str = str.substring(0, str.length-1);
 		return str;
 	}
-	
+
 	function clearText() {
 		// 2017-10-12 윤영길 수정 - 사용하는 곳 없어서 주석처리함.
 		/*
@@ -217,7 +217,7 @@
 		}
 		*/
 	}
-	
+
 	function showMsg() {
 		// 2017-10-12 윤영길 수정 - 사용하는 곳 없어서 주석처리함.
 		/*
@@ -226,7 +226,7 @@
 		}
 		*/
 	}
-	
+
 	function viewBL_BAK() {
 
 
@@ -257,9 +257,9 @@
 
 	function viewBL() {
 		// BL No. 입력 팝업창을 띄운다.
-	
+
 		viewBLMain();
-	
+
 	}
 
 	// 2017-10-12 윤영길 추가
@@ -281,10 +281,10 @@
 			error: function() {		alert("Failed!");	 }
 		});
 	}
-	
+
 	function viewBLPDF(searchKind, bllist) {
 		var objFrm = $("#fmBL");
-		
+
 		var selectedNumber = bllist[0];
 
 		if ($.trim(document.viewForm.BLNumber.value) == '')
@@ -294,9 +294,9 @@
 		document.viewForm.action = "../bill_of_lading/print/PrintingBL.jsp";
 		document.viewForm.submit();
 	}
-	
+
 	function viewAN_BAK() {
-		
+
 
 		if (""=="") {
 			alert("Login required to see B/L or Arrival Notice or DEM/DET");
@@ -315,9 +315,9 @@
 
 	function viewAN() {
 		// BL No. 입력 팝업창을 띄운다.
-	
+
 			viewANMain();
-	
+
 	}
 
 	// 2017-10-12 윤영길 추가
@@ -329,7 +329,7 @@
 		document.viewForm.action = "../arrival/ArrivalfromTracing.jsp?BLNO=" + document.viewForm.BLNumber.value;
 		document.viewForm.submit();
 	}
-	
+
 	function viewDEMDET_BAK() {
 
 
@@ -344,16 +344,16 @@
 //			document.viewForm.target = "_new";
 //			document.viewForm.action = "/ebiz/import_service/dem_det_sch/dem_det_global.jsp?mode=2&isFirstAccess=&isFirstView=";
 //			document.viewForm.submit();
-			
-				window.open('/ebiz/import_service/dem_det_sch/dem_det_global.jsp?mode=2&BNO='+document.viewForm.BLNumber.value+'&isFirstAccess=&isFirstView=', '', 'width=800,height=560,scrollbars=yes');			
+
+				window.open('/ebiz/import_service/dem_det_sch/dem_det_global.jsp?mode=2&BNO='+document.viewForm.BLNumber.value+'&isFirstAccess=&isFirstView=', '', 'width=800,height=560,scrollbars=yes');
 		}
 	}
 
 	function viewDEMDET() {
 		// BL No. 입력 팝업창을 띄운다.
-	
+
 		viewDEMDETMain();
-	
+
 	}
 
 	// 2017-10-12 윤영길 추가
@@ -362,7 +362,7 @@
 		goDEMDETInquiry_Pop(document.viewForm.BLNumber.value, 'I');
 		//window.open('/ebiz/import_service/dem_det_sch/dem_det_global.jsp?mode=2&BNO='+document.viewForm.BLNumber.value+'&isFirstAccess=&isFirstView=', '', 'width=850,height=560,scrollbars=yes');
 	}
-	
+
 	function clearText2() {
 		// 2017-10-12 윤영길 수정 - 사용하는 곳 없어서 주석처리함.
 		/*
@@ -371,7 +371,7 @@
 		}
 		*/
 	}
-	
+
 	function showMsg2() {
 		// 2017-10-12 윤영길 수정 - 사용하는 곳 없어서 주석처리함.
 		/*
@@ -380,7 +380,7 @@
 		}
 		*/
 	}
-	
+
 	function viewCargoDelivery_BAK() {
 		if (""=="") {
 			alert("Login required to get Cargo Delivery Information");
@@ -392,52 +392,52 @@
 			window.open("viewCargoDeliveryInformation.jsp?BLNumber="+viewForm2.BLNumber.value+"&CONNO="+viewForm2.CONNO.value, "popwin", "width=240,height=210");
 		}
 	}
-	
+
 	function viewCargoDelivery() {
 		// 2017-10-12 윤영길 수정 - 호출되는 곳이 없음. if를 제거하고 else절을 실행하도록 수정함.
 		viewForm2.BLNumber.value = trim(viewForm2.BLNumber.value).toUpperCase();
 		window.open("viewCargoDeliveryInformation.jsp?BLNumber="+viewForm2.BLNumber.value+"&CONNO="+viewForm2.CONNO.value, "popwin", "width=240,height=210");
 	}
-	
+
 	function viewCLM(cntr,date) {
 		window.open("showCLM.jsp?cntrNo="+cntr+"&startDate="+date, "popclm", "width=800,height=600,scrollbars=yes");
 	}
-	
+
 	function viewExcel(BL,CNTR,BKG) {
 		window.open("track_excel.jsp?blFields=1&cnFields=1&numbers="+BL+"&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers="+CNTR+"&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers="+BKG+"&numbers=&numbers=&numbers=&numbers=&numbers=", "excel", "width=800,height=600,scrollbars=yes");
 	}
-	
+
 	function NOTICE(notice) {
 		if ( notice == "true" ) {
 			alert("For more informatin, please contact sales representatives at your side");
 		}
 	}
-	
-	function feederDetail(obj1,obj2,obj3,obj4,obj5,obj6) {				
+
+	function feederDetail(obj1,obj2,obj3,obj4,obj5,obj6) {
 		window.open("FeederDetail.jsp?fromLocation="+obj1+"&toLocation="+obj2+"&feederDate="+obj3+"&arrivalPlace="+obj4+"&podDate="+obj5+"&pvyDate="+obj6, "feederDetail", "width=600,height=400,scrollbars=yes");
 	}
-	
+
 	function goRollOver () {
 		location.href = "./TSRollOverByShipment.jsp?mode=1";
 	}
-	
+
 	function showRestriction(display) {
 		if (display=='hidden' ) {
 			document.getElementById('cutInfo').style.visibility = "hidden";
 		} else {
-			document.getElementById('cutInfo').style.backgroundColor = "#FAFAFA";		
+			document.getElementById('cutInfo').style.backgroundColor = "#FAFAFA";
 			document.getElementById('cutInfo').style.visibility = "visible";
 		}
 	}
-	
+
 	function searchCUTWUTInfo(request) {
-		document.getElementById("cutInfo").align = "left"; 
+		document.getElementById("cutInfo").align = "left";
 		document.getElementById("cutInfo").innerHTML = request.responseText;
-		
+
 		/* Container List 가 길 경우 List 짤리는 현상 때문에 iFrame Resize (2012/12/18) - 유수연 GJ */
 		var frameHeight = parseInt(parent.document.getElementById("_frame1").height);
 		var divTotalHeight = parseInt(document.getElementById('cutInfo').offsetHeight) + parseInt(document.getElementById('cutInfo').style.top.replace('px', ''));
-    	
+
 		if (divTotalHeight > frameHeight) {
 			parent.document.getElementById('_frame1').height = divTotalHeight + 10;
 		}
@@ -446,38 +446,38 @@
 	function viewCUTWUTInfo(bno, kind, obj, cntr, event)  {
 
 		var connectURL = '';
-		
+
 		if (kind == 'CUT') {
 			connectURL = 'CUTInfo.jsp';
 		} else {
 			connectURL = 'WUTInfo.jsp';
 		}
-		
+
 		var topY = (document.layers) ? obj.pageY : event.clientY;
 		document.getElementById('cutInfo').style.left=20+'px';
 		document.getElementById('cutInfo').style.top=topY+'px';
-		document.getElementById('cutInfo').style.width='95%';	
+		document.getElementById('cutInfo').style.width='95%';
 
-		showRestriction('display'); 
+		showRestriction('display');
 		document.getElementById("cutInfo").innerHTML = "<img src='/ebiz/images/common/loading.gif'/>";
-		document.getElementById("cutInfo").align = "center"; 
+		document.getElementById("cutInfo").align = "center";
 
 		var params = '';
-		
-		params += encodeURIComponent('bno');      
-		params += '='; 
+
+		params += encodeURIComponent('bno');
+		params += '=';
 		params += encodeURIComponent(bno);
-		     
-		params += '&'; 
-		
-		params += encodeURIComponent('cntrNo');      
-		params += '='; 
+
+		params += '&';
+
+		params += encodeURIComponent('cntrNo');
+		params += '=';
 		params += encodeURIComponent(cntr);
-		
+
 		Ajax.connect({
 			url: connectURL,
 			data: params,
-			type: 'post', 
+			type: 'post',
 			success: searchCUTWUTInfo
 		});
 	}
@@ -485,57 +485,57 @@
 	/* CRR Inquiry 적용 (2015/11/30) */
 	function viewCRRInquiry(bno, obj, event)  {
 		var connectURL = 'waybillCRR.jsp';
-		
+
 		var topY = (document.layers) ? obj.pageY : event.clientY;
 		document.getElementById('cutInfo').style.left=20+'px';
 		document.getElementById('cutInfo').style.top=topY+'px';
-		document.getElementById('cutInfo').style.width='95%';	
+		document.getElementById('cutInfo').style.width='95%';
 
-		showRestriction('display'); 
+		showRestriction('display');
 		document.getElementById("cutInfo").innerHTML = "<img src='/ebiz/images/common/loading.gif'/>";
-		document.getElementById("cutInfo").align = "center"; 
+		document.getElementById("cutInfo").align = "center";
 
 		var params = '';
-		
-		params += encodeURIComponent('bno');      
-		params += '='; 
+
+		params += encodeURIComponent('bno');
+		params += '=';
 		params += encodeURIComponent(bno);
-		
+
 		Ajax.connect({
 			url: connectURL,
 			data: params,
-			type: 'post', 
+			type: 'post',
 			success: searchCUTWUTInfo
 		});
 	}
-	
+
 	/* Bing Map 적용 (2012/12/17) */
 	function showMap(searchCTPCondition, selectedTag, selectedNo, selectedCNTRNo) {
-		
+
 		var mapURL = "http://icc.hmm21.com:80/utility/hmmctp.aspx?view=external2&";
 		var mapParameter = "ctp=";
-		
+
 		if (selectedTag == 'BL')
 			mapParameter += "&bno=" + selectedNo;
 		else if (selectedTag == 'BKG')
 			mapParameter += "&bkg=" + selectedNo;
-			
+
 		mapParameter += "&cno=" + selectedCNTRNo;
-		
+
 		writeLogFile("TrackMap", mapParameter, searchCTPCondition);
 
 		window.open(mapURL+mapParameter, "popMap", "scrollbars=no, toolbar=no, resizable=yes");
 	}
-	
+
 	/* Download Silverlight (2013/01/11) */
 	function downloadSilverlight() {
 		window.open("http://www.microsoft.com/silverlight/", "downloadSilverlight", "width=1100, status=yes, resizable=yes");
 	}
-		
+
 	/** 접속 Log File Write (2013/01/14) **/
 	function writeLogFile(fromMenu, parameters, searchCTPCondition) {
 		var callPage = "/ebiz/common/writeLogFile.jsp?parameters=" + parameters.replaceAll('&', '>') + "&fromMenu=" + fromMenu + "&condition=" + searchCTPCondition;
-		
+
 		f = document.viewForm;
 		f.method = "post";
 		f.action = callPage;
@@ -545,21 +545,21 @@
 
 	function railPop(railCntrNo, railBLBKNo){
 		window.open("./trackCTPrailPop.jsp?railCntrNo="+railCntrNo+"&railBLBKNo="+railBLBKNo, 'railpop', 'toolbar=no, status=yes, height=500, width=700, resizable=no, left=300, top=300');
-	}			
+	}
 
 	// 2017-10-12 윤영길 추가
 	var blNoPopAfterFunc = "";
 	function ff_openBLNoPop( execFunc ) {
-		
+
 		blNoPopAfterFunc = execFunc;
 
 		$('#bl_layer_popup').hide();
 		$('#bl_layer_popup').css('top', '240px'); // 290
 
 		if( execFunc == "viewBLMain" ) {
-			$('#bl_layer_popup').css('left', '440px'); // 390		
+			$('#bl_layer_popup').css('left', '440px'); // 390
 		} else if( execFunc == "viewANMain" ) {
-			$('#bl_layer_popup').css('left', '529px'); // 508		
+			$('#bl_layer_popup').css('left', '529px'); // 508
 		} else if( execFunc == "viewDEMDETMain" ) {
 			$('#bl_layer_popup').css('left', '598px');
 		}
@@ -569,7 +569,7 @@
 		$('#bl_layer_popup').show();
 	}
 
-	function ff_openBLNoPopView() {		
+	function ff_openBLNoPopView() {
 
     	if( $('#popBlno').val().trim() == "" ) {
     		alert( 'Please input B/L No.' );
@@ -583,7 +583,7 @@
 		eval(blNoPopAfterFunc + "()");
 
 	}
-	
+
 	// 2017-10-12 윤영길 추가
 	$(document).ready(function(){
 		// B/L No. 팝업창 이외를 클릭하면 팝업창을 닫는다.
@@ -619,21 +619,21 @@
 		}
 
 	}
-	
+
 </script>
 
 <script type='text/javascript'>
 	var img_L = 0;
 	var img_T = 0;
 	var targetObj;
-	
+
 	function getLeft(o){
 	     return parseInt(o.style.left.replace('px', ''));
 	}
 	function getTop(o){
 	     return parseInt(o.style.top.replace('px', ''));
 	}
-	
+
 	// 이미지 움직이기
 	function moveDrag(e){
 	     var e_obj = window.event? window.event : e;
@@ -643,41 +643,41 @@
 	     targetObj.style.top = dmvy +"px";
 	     return false;
 	}
-	
+
 	// 드래그 시작
 	function startDrag(e, obj){
 	     targetObj = obj;
 	     var e_obj = window.event? window.event : e;
 	     img_L = getLeft(obj) - e_obj.clientX;
 	     img_T = getTop(obj) - e_obj.clientY;
-	
+
 	     document.onmousemove = moveDrag;
 	     document.onmouseup = stopDrag;
-	     if(e_obj.preventDefault)e_obj.preventDefault(); 
+	     if(e_obj.preventDefault)e_obj.preventDefault();
 	}
-	
+
 	// 드래그 멈추기
 	function stopDrag(){
 	     document.onmousemove = null;
 	     document.onmouseup = null;
 	}
-	
+
 	//로그인필요할때 alert
 	function loginNeed(){
 		var text = "Login is required.";
 		alert(text);
 	}
-	
+
 	//Rail ETD/ETA, Veiw Rail Move 비활성 alert
 	function notUSRail(mode){
 		var text;
 		if(mode == 'e'){
 			text = "This button is available only for U.S rail cargo.";
-						
+
 			alert(text);
 		} else if(mode == 'm'){
 			text = "This button is available only for the cargo via U.S rail ramp.";
-					
+
 			alert(text);
 		}
 	}
@@ -699,7 +699,7 @@
 		</p>
 
 		<h4>Click to View</h4>
-		
+
 		<div class="left_table01 Booking_T">
 		<table>
 			<colgroup>
@@ -771,7 +771,7 @@
 		</div>
 	</div>
 
-	<script language="JavaScript"> 
+	<script language="JavaScript">
 		showRestriction('hidden') ;
 	</script>
 
@@ -790,7 +790,7 @@
 	}
 </script>
 
-<script type="text/javascript">	
+<script type="text/javascript">
 	document.getElementById("loadingBar").style.display = "none";
 	document.getElementById("trackingForm").style.display = "";
 </script>
