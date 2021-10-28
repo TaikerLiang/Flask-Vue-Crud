@@ -9,7 +9,7 @@ do
 done
 
 cd .. && python -m pytest test/ --disable-warnings
-existed=$?
+#existed=$?
 cd src
 
 if [ $existed = 1 ]
