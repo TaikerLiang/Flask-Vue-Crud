@@ -186,8 +186,6 @@ class MainRoutingRule(BaseRoutingRule):
                 )
             return
 
-        task_id = response.meta["task_id"]
-        search_no = response.meta["search_no"]
         extractor = Extractor()
         place_of_deliv_set = set()
         container_selector_map_list = extractor.locate_container_selector(response=response)
