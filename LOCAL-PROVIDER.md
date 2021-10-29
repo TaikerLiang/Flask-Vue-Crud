@@ -58,13 +58,14 @@ path: `~/.config/autostart/local-provider.desktop`
 
 ```
 [Desktop Entry]
-Name=Local Provider
-Comment=Local Provider for ep-sc
-Exec=gnome-terminal --working-directory=/home/ubuntu/dev/ep-sc/local/ -- python local_crawler.py
-Icon=/home/ubuntu/Pictures/python_icon.png
-MultipleArgs=false
 Type=Application
-Categories=Application;Development;
-StartupNotify=true
+Exec=gnome-terminal --working-directory=/home/ubuntu/dev/ep-sc/local/ -- sh local-provider.sh
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Name[C]=local-provider
+Name=local-provider
+Comment[C]=
+Comment=
 ```
 
