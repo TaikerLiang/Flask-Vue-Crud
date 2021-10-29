@@ -5,8 +5,8 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_terminal.tideworks_share_spider import LoginRoutingRule
-from crawler.spiders.terminal_conley_multi import TerminalConleySpider
-from test.spiders.terminal_conley_multi import login
+from crawler.spiders.terminal_tideworks_conley_multi import TerminalTideworksConleySpider
+from test.spiders.terminal_tideworks_conley_multi import login
 
 
 @pytest.fixture
@@ -27,7 +27,7 @@ def test_login_handle(sub, container_nos, sample_loader):
 
     option = LoginRoutingRule.build_request_option(
         container_nos=container_nos,
-        company_info=TerminalConleySpider.company_info,
+        company_info=TerminalTideworksConleySpider.company_info,
     )
 
     response = TextResponse(

@@ -5,8 +5,8 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_terminal.tideworks_share_spider import ContainerDetailRoutingRule
-from test.spiders.terminal_conley_multi import container_detail
-from crawler.spiders.terminal_conley_multi import TerminalConleySpider
+from test.spiders.terminal_tideworks_conley_multi import container_detail
+from crawler.spiders.terminal_tideworks_conley_multi import TerminalTideworksConleySpider
 
 @pytest.fixture
 def sample_loader(sample_loader):
@@ -27,7 +27,7 @@ def test_container_detail_routing_rule(sub, container_no, sample_loader):
     container_url = f'/fc-MCT/import/default.do?method=container&eqptNbr={container_no}&gkey=20913717'
     request_option = ContainerDetailRoutingRule.build_request_option(
         container_url=container_url,
-        company_info=TerminalConleySpider.company_info
+        company_info=TerminalTideworksConleySpider.company_info
     )
 
     response = TextResponse(

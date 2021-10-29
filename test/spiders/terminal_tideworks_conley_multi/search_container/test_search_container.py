@@ -6,8 +6,8 @@ from scrapy.http import TextResponse
 
 from crawler.core_terminal.items import InvalidContainerNoItem
 from crawler.core_terminal.tideworks_share_spider import SearchContainerRoutingRule
-from crawler.spiders.terminal_conley_multi import TerminalConleySpider
-from test.spiders.terminal_conley_multi import search_container
+from crawler.spiders.terminal_tideworks_conley_multi import TerminalTideworksConleySpider
+from test.spiders.terminal_tideworks_conley_multi import search_container
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def test_search_container(sub, container_no, sample_loader):
 
     option = SearchContainerRoutingRule.build_request_option(
         container_no=container_no,
-        company_info=TerminalConleySpider.company_info,
+        company_info=TerminalTideworksConleySpider.company_info,
     )
 
     response = TextResponse(
@@ -58,7 +58,7 @@ def test_search_container_invalid_container_no_error(sub, container_no, invalid_
 
     option = SearchContainerRoutingRule.build_request_option(
         container_no=container_no,
-        company_info=TerminalConleySpider.company_info,
+        company_info=TerminalTideworksConleySpider.company_info,
     )
 
     response = TextResponse(
