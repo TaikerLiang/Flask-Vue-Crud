@@ -26,12 +26,7 @@ from selenium.common.exceptions import TimeoutException
 from crawler.core.selenium import ChromeContentGetter
 
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
-from crawler.extractors.table_extractors import (
-    BaseTableLocator,
-    HeaderMismatchError,
-    TableExtractor,
-    TopHeaderTableLocator,
-)
+from crawler.core.table import TableExtractor, BaseTable
 
 
 BASE_URL = "https://www.hapag-lloyd.com/en"
@@ -173,7 +168,7 @@ class TracingRoutingRule(BaseRoutingRule):
         if not table_selector:
             raise CarrierResponseFormatError(reason=f"Container list table not found !!!")
 
-        table_locator = TopHeaderTableLocator()
+        table_locator = ContainerInfoTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
         span_extractor = FirstTextTdExtractor("span::text")
@@ -314,11 +309,41 @@ class ContainerRoutingRule(BaseRoutingRule):
             raise CarrierResponseFormatError(reason=f"Unknown status: `{class_name}`")
 
 
-class ContainerStatusTableLocator(BaseTableLocator):
+class ContainerInfoTableLocator(BaseTable):
+    """
+    +---------+---------+-----+---------+ <thead>
+    | Title 1 | Title 2 | ... | Title N |     <th>
+    +---------+---------+-----+---------+ </thead>
+    +---------+---------+-----+---------+ <tbody>
+    | Data    |         |     |         | <tr><td>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr><td>
+    +---------+---------+-----+---------+
+    | ...     |         |     |         | <tr><td>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr><td>
+    +---------+---------+-----+---------+ </tbody>
+    """
+    def parse(self, table: scrapy.Selector):
+        top_header_list = []
+
+        for th in table.css('thead th'):
+            raw_top_header = th.css('::text').get()
+            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ''
+            top_header_list.append(top_header)
+            self._td_map[top_header] = []
+
+        data_tr_list = table.css('tbody tr')
+        for index, tr in enumerate(data_tr_list):
+            self._left_header_set.add(index)
+            for top, td in zip(top_header_list, tr.css('td')):
+                self._td_map[top].append(td)
+
+
+class ContainerStatusTableLocator(BaseTable):
     def __init__(self):
-        self._td_map = {}  # title: [td, ...]
+        super().__init__()
         self._tr_classes = []
-        self._data_len = 0
 
     def parse(self, table: scrapy.Selector):
         title_list = []
@@ -330,35 +355,20 @@ class ContainerStatusTableLocator(BaseTableLocator):
             title_list.append(title)
             self._td_map[title] = []
 
-        data_tr_list = table.css("tbody tr")
-        for data_tr in data_tr_list:
-
+        data_tr_list = table.css('tbody tr')
+        for index, data_tr in enumerate(data_tr_list):
+            self._left_header_set.add(index)
             tr_class_set = set()
-            data_td_list = data_tr.css("td")
-            for title_index, data_td in enumerate(data_td_list):
-                data_td_class = data_td.css("td::attr(class)").get()
+            data_td_list = data_tr.css('td')
+            for title, data_td in zip(title_list, data_td_list):
+                data_td_class = data_td.css('td::attr(class)').get()
                 tr_class_set.add(data_td_class)
 
-                title = title_list[title_index]
                 self._td_map[title].append(data_td)
 
             tr_classes.append(list(tr_class_set)[0])
 
         self._tr_classes = tr_classes
-        self._data_len = len(data_tr_list)
-
-    def get_cell(self, top, left) -> scrapy.Selector:
-        try:
-            return self._td_map[top][left]
-        except (KeyError, IndexError) as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def iter_left_header(self):
-        for i in range(self._data_len):
-            yield i
 
     def get_row_class(self, left):
         return self._tr_classes[left]
