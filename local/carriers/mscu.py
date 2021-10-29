@@ -10,12 +10,7 @@ from local.proxy import ProxyManager
 from src.crawler.core.pyppeteer import PyppeteerContentGetter
 from src.crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
 from src.crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
-from src.crawler.core_carrier.exceptions import (
-    LoadWebsiteTimeOutError,
-    CarrierInvalidSearchNoError,
-    CARRIER_RESULT_STATUS_ERROR,
-)
-from src.crawler.core_carrier.items import ExportErrorData
+from src.crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
 from src.crawler.spiders.carrier_mscu import MainRoutingRule
 
 MSCU_URL = "https://www.msc.com/track-a-shipment?agencyPath=twn"
@@ -34,17 +29,16 @@ class MscuContentGetter(PyppeteerContentGetter):
         self._search_type = None
 
     async def set_cookies(self):
-        await self.page.setCookie(
-            {"url": MSCU_URL, "name": "newsletter-signup-cookie", "value": "temp-hidden", "domain": "www.msc.com"}
-        )
-        await self.page.setCookie(
+        cookies = [
+            {"url": MSCU_URL, "name": "newsletter-signup-cookie", "value": "temp-hidden", "domain": "www.msc.com"},
             {
                 "url": MSCU_URL,
                 "name": "OptanonAlertBoxClosed",
                 "value": "2021-10-21T03:04:49.663Z",
                 "domain": ".msc.com",
-            }
-        )
+            },
+        ]
+        await self.page.setCookie(*cookies)
 
     async def search(self, search_no, search_type):
         await self.set_cookies()
@@ -96,19 +90,3 @@ class MscuLocalCrawler(BaseLocalCrawler):
                     yield item
             except ReadTimeoutError:
                 raise LoadWebsiteTimeOutError(url=MSCU_URL)
-            except CarrierInvalidSearchNoError:
-                if self._search_type == SHIPMENT_TYPE_MBL:
-                    yield ExportErrorData(
-                        task_id=task_id,
-                        mbl_no=search_no,
-                        status=CARRIER_RESULT_STATUS_ERROR,
-                        detail="Data was not found",
-                    )
-                elif self._search_type == SHIPMENT_TYPE_BOOKING:
-                    ExportErrorData(
-                        task_id=task_id,
-                        booking_no=search_no,
-                        status=CARRIER_RESULT_STATUS_ERROR,
-                        detail="Data was not found",
-                    )
-                continue
