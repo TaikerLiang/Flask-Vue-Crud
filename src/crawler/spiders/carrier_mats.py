@@ -92,7 +92,14 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_no = response.meta["mbl_no"]
         container_list = json.loads(response.text)
-        self._check_mbl_no(mbl_no, container_list)
+
+        if self._is_mbl_no_invalid(container_list):
+            yield ExportErrorData(
+                mbl_no=mbl_no,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
+            return
 
         unique_container_dict = self._extract_unique_container(container_list)
 
@@ -116,14 +123,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 yield TimeRoutingRule.build_request_option(status)
 
     @staticmethod
-    def _check_mbl_no(mbl_no: str, container_list: List):
-        if not container_list:
-            yield ExportErrorData(
-                mbl_no=mbl_no,
-                status=CARRIER_RESULT_STATUS_ERROR,
-                detail="Data was not found",
-            )
-            return
+    def _is_mbl_no_invalid(container_list: List):
+        return not container_list
 
     @staticmethod
     def _extract_unique_container(container_list: List) -> Dict:

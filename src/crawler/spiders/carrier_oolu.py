@@ -397,6 +397,7 @@ class CargoTrackingRule(BaseRoutingRule):
                     status=CARRIER_RESULT_STATUS_ERROR,
                     detail="Data was not found",
                 )
+            return
 
         locator = _PageLocator()
         selector_map = locator.locate_selectors(response=response)
