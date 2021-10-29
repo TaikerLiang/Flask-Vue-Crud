@@ -1,0 +1,255 @@
+
+
+
+    <html>
+    <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>ShipmentLink - Cargo Tracking</title>
+	<link rel="stylesheet" href="/tuf1/html/TUF1_Main.css" type="text/css">
+	<script language="JavaScript" src="/tuf1/js/TUF1_Captcha.js?d=1567755640596"></script>
+    <script language="JavaScript" src="/tdb1/html/TDB1_CargoTracking_090205.js?d=1567755640596"></script>
+	<script language="JavaScript" src="/tuf1/js/TUF1_ToolTip.js"></script>
+	<script language="JavaScript" src="/tuf1/js/TUF1_DynamicReqV2.js"></script>
+	<style type="text/css">
+	<!--
+	.style1 {color: #FF0000}
+	-->
+	</style>
+	</head>
+    <body bgcolor="#FFFFFF" text="#000000" leftmargin="0" topmargin="0" marginwidth="0" marginheight="0" oncontextmenu="window.event.returnValue=false" onLoad="javascript:setDefault();">
+
+<STYLE TYPE="text/css">
+<!--
+.DEK {POSITION:absolute;VISIBILITY:hidden;Z-INDEX:200;}
+.Title {font-family: "Verdana", "Arial", "Helvetica", "sans-serif"; font-size: 18px;}
+-->
+</STYLE>
+<a name="top"></a>
+<div ID="dek" CLASS="dek"></div>
+<script language="JavaScript" src="/tdb1/html/TDB1_PopText.js"></script>
+
+
+
+
+
+
+
+<!-- ShipmentLink UI Library -->
+<link rel="stylesheet" href="/tuf1/html/TUF1_Main.css" type="text/css">
+
+<script>
+if ("www.shipmentlink.com".indexOf(location.hostname)==-1) {
+	location.href="http://www.shipmentlink.com";
+}
+
+function showLangLayerMsg() {
+
+}
+
+function saveLangSetting(lang,controller,check) {
+	//set cookie
+	var date = new Date((new Date()).getTime() + 2592000000);
+	document.cookie = "WEB_CTRY_LANG=TW_"+lang+";path=/;expires=" + date.toGMTString();
+	// reload page
+	location.reload();
+}
+</script>
+
+<script language="JavaScript" src="/tuf1/html/TUF1_DynamicReq.js"></script>
+<script language="JavaScript" src="/tuf1/html/TUF1_CacheData.js"></script>
+<script language="JavaScript" src="/tuf1/js/TUF1_MainMenu.js"></script>
+<link rel="stylesheet" href="/tuf1/css/TUF1_MainMenu.css" type="text/css" />
+
+<script>
+function setMenubyLang() {
+	var str = "<div id=\"Global_EC_Menu_Div\"><ul id=\"navigation\" class=\"horizontal\" style=\"top:61px;\"><li style=\"width:141px;\"><a hideFocus onclick=\"javascript:return false;\" href=\"#\">Sailing Schedules<\/a><ul><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tvs2\/jsp\/TVS2_LongTermMenu.jsp?type=L\" >Search by Area<\/a><\/li><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tvs2\/jsp\/TVS2_InteractiveSchedule.jsp\" >Search by Point<\/a><\/li><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tvs2\/jsp\/TVS2_VesselSchedule.jsp\" >Search by Vessel<\/a><\/li><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tvs2\/jsp\/TVS2_VesselArrivalTime.jsp\" >Vessel Arrival Time<\/a><\/li><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tvs2\/jsp\/TVS2_TerminalProspect.jsp\" >Terminal Prospect<\/a><\/li><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tvs3\/jsp\/TVS3_SchedulesMail.jsp\" >Schedules Email<\/a><\/li><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tvs2\/jsp\/TVS2_LongTermMenu.jsp?type=S\" >Routing Network<\/a><\/li><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tvi1\/jsp\/TVI1_VesselParticulars.jsp\" >Vessel Particulars<\/a><\/li><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/eqc1\/jsp\/EQC1_Container_Tare_Weight_Search.jsp\" >Container Tare Weight<\/a><\/li><\/ul><\/li><li style=\"width:141px;\"><a hideFocus onclick=\"javascript:return false;\" href=\"#\">B\/L Process<\/a><ul><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com#\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> All-in-One Service<\/a><ul style=\"margin-left:165px; \"><li style=\"width:190px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TUF1_ControllerServlet.do?action=allInOne&lang=en\" >e-Booking<\/a><li style=\"width:190px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/EVG1_ReportVGMController.do?action=vgmIndex\" >Submitting VGM<\/a><li style=\"width:190px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TUF1_ControllerServlet.do?action=allInOne&lang=en\" >B\/L Instruction<\/a><li style=\"width:190px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TUF1_ControllerServlet.do?action=allInOne&lang=en\" >Internet B\/L<\/a><li style=\"width:190px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TUF1_ControllerServlet.do?action=allInOne&lang=en\" >Arrival Notice<\/a><li style=\"width:190px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TUF1_ControllerServlet.do?action=allInOne&lang=en\" >US Importer Security Filing(ISF)<\/a><\/ul><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com#\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> Intelligent Services<\/a><ul style=\"margin-left:165px; \"><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TUF1_ControllerServlet.do?action=allInOne&lang=en\" >i-B\/L&nbsp<img src=\"\/tuf1\/images\/ico_New2.gif\" border=\"0\" alt=\"i-B\/L\"><\/a><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TUF1_ControllerServlet.do?action=allInOne&lang=en\" >i-Dispatch&nbsp<img src=\"\/tuf1\/images\/ico_New2.gif\" border=\"0\" alt=\"i-Dispatch\"><\/a><\/ul><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com#\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> Import Door Delivery<\/a><ul style=\"margin-left:165px; \"><li style=\"width:255px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/mdb1\/jsp\/MDB1_NewOrder.jsp\" >Create Delivery Order<\/a><li style=\"width:255px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/mdb1\/jsp\/MDB1_QueryOrder.jsp\" >Door Delivery Process &amp; Status Review<\/a><\/ul><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tdb2\/jsp\/TDB2_Blclause.jsp\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> B\/L Clauses<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/msq1\/jsp\/MSQ1_Index.jsp\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> Tariff &amp; Rates<\/a><\/li><\/ul><\/li><li style=\"width:141px;\"><a hideFocus onclick=\"javascript:return false;\" href=\"#\">Cargo Tracking<\/a><ul><li style=\"width:220px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TDB1_CargoTracking.do\" >Cargo Tracking<\/a><\/li><li style=\"width:220px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tdb1\/jsp\/TDB1_UsaItLocation.jsp\" >U.S.A. IT Location<\/a><\/li><li style=\"width:220px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/ena1\/jsp\/ENA1_RailStatus.jsp\" >North America Traffic Information<\/a><\/li><\/ul><\/li><li style=\"width:152px;\"><a hideFocus onclick=\"javascript:return false;\" href=\"#\">Customer Services<\/a><ul><li style=\"width:152px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TAM1_ShipmentReportController.do\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> Shipment Statistics<\/a><\/li><li style=\"width:152px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TDB1_TRController.do\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> Tracking Reports<\/a><\/li><li style=\"width:152px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tdb1\/jsp\/en\/TDB1_EventNotification.jsp\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> Event Notification<\/a><\/li><li style=\"width:152px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TDB1_MemberTracking.do\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> Member Tracking<\/a><\/li><li style=\"width:152px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tam1\/jsp\/TAM1_EdiRegisterNotice.jsp\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> EDI Services<\/a><\/li><li style=\"width:152px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tam1\/jsp\/TAM1_RegisterDispatcher.jsp\" >Register<\/a><\/li><li style=\"width:152px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com#\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> My Profile<\/a><ul style=\"margin-left:152px; \"><li style=\"width:220px;\">\t\t<a hideFocus href=\"https:\/\/www.shipmentlink.com\/servlet\/TAM1_SpMaintainController.do\" >Update My Password or Profile<\/a><li style=\"width:220px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tam1\/jsp\/TAM1_UsrUpdateService.jsp\" >Apply E-Commerce Services<\/a><\/ul><\/li><\/ul><\/li><li style=\"width:168px;\"><a hideFocus onclick=\"javascript:return false;\" href=\"#\">Regional Information<\/a><ul><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/cl\/\" >Chile<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/cn\/\" >China \u4E2D\u56FD<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/co\/\" >Colombia<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/de\/\" >Germany Deutschland<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/hk\/\" >Hong Kong \u9999\u6E2F<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/in\/\" >India Bharat<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/it\/\" >Italy Italia<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/jp\/\" >Japan \u65E5\u672C<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/my\/\" >Malaysia<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/nl\/\" >Netherlands Holland<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/pe\/\" >Peru Per\u00FA<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/es\/\" >Spain Espa\u00F1a<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tw\/\" >Taiwan \u53F0\u7063<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/gb\/\" >United Kingdom<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/vn\/\" >Vietnam<\/a><\/li><\/ul><\/li><li style=\"width:130px;\"><a hideFocus onclick=\"javascript:return false;\" href=\"#\">Carriers<\/a><ul><li style=\"width:200px;\">\t\t<a hideFocus href=\"http:\/\/www.evergreen-line.com\" target=\"_blank\">Evergreen Line<\/a><\/li><li style=\"width:200px;\">\t\t<a hideFocus href=\"http:\/\/www.evergreen-marine.com\" target=\"_blank\">Evergreen Marine<\/a><\/li><li style=\"width:200px;\">\t\t<a hideFocus href=\"http:\/\/www.evergreen-marine.co.uk\" target=\"_blank\">Evergreen Marine (UK)<\/a><\/li><li style=\"width:200px;\">\t\t<a hideFocus href=\"http:\/\/www.italiamarittima.it\" target=\"_blank\">Italia Marittima<\/a><\/li><li style=\"width:200px;\">\t\t<a hideFocus href=\"http:\/\/www.evergreen-marine.com.hk\" target=\"_blank\">Evergreen Marine (Hong Kong)<\/a><\/li><li style=\"width:200px;\">\t\t<a hideFocus href=\"http:\/\/www.evergreen-marine.com.sg\" target=\"_blank\">Evergreen Marine (Singapore)<\/a><\/li><\/ul><\/li><li isLast=\"true\" style=\"width:132px;\"><a hideFocus href=\"\/tam1\/jsp\/TAM1_Login.jsp\">Login<\/a><\/li><\/ul><\/div>";
+
+	if("en"=="zh-TW"){
+		str = str.replace("http://www.evergreen-marine.com","http://www.evergreen-marine.com/tw");
+	}
+	document.getElementById("Global_EC_Menu").innerHTML = str;
+}
+</script>
+
+<style type="text/css">
+<!--
+body {
+	margin-left: 0px;
+	margin-top: 0px;
+	margin-right: 0px;
+	margin-bottom: 0px;
+}
+-->
+</style>
+
+<!-- Language Check Layer-->
+<div id="shipmentlink_lang_layer" style="width:300px;height:200px;position:absolute;top:20%;left:50%;margin-left:-150px;z-index:99999;display:none;">
+    <div style="position:absolute;width:300px;height:200px;left:0px;top:150px;background-image:url('/tuf1/images/ec_lang_check.gif');background-repeat:no-repeat;"></div>
+    <!-- div style="position:absolute; left:273px; top:155px"><a href="javascript:closeLangSettingLayer();"><img name="img_news_close" src="/tuf1/images/ico_close.gif" border="0" alt=""></a></div-->
+    <div style="position:absolute;width:280px;heigh:10px;left:15px;top:200px;" align="center">
+        <font class="f16tilb2">Would you use language: <b>Español</b> ?</font>
+    </div>
+    <div style="position:absolute;width:400px;left:23px;top:270px;">
+		<button type="button" style="width:250px;" onclick="javascript:saveLangSetting('es','Y','Y');">Yes, please continue.</button><br>
+        <button type="button" style="width:250px;" onclick="javascript:saveLangSetting('en','Y','Y');">No, use English.</button><br>
+    </div>
+</div>
+<script>showLangLayerMsg();</script>
+
+
+<div style="width:320px; height:15px; position:absolute; right:50%; top:40px; margin-right:-490px; z-index:1; visibility:visible" align="right">
+	<div class="f10hadln">
+
+
+		<a href="/tcc1/jsp/TCC1_Contact.jsp">Contact Us</a>&nbsp;|&nbsp;<!-- Contact Us -->
+		<a href="/tam1/jsp/TAM1_RegisterDispatcher.jsp">Register</a><!-- Register -->
+
+	    &nbsp;|&nbsp;<a href="javascript:chgList('/')"><img name="img_home" border="0" src="/tuf1/images/Home.gif"></a>
+
+	</div>
+</div>
+
+<div style="width:1000px;position:absolute;top:0px;left:50%;margin-left:-500px;">
+	<div style="height:60px;">
+  		<img src="/tuf1/images/ec_title.jpg" usemap="#Map" border="0" width="999" height="60">
+  		<map name="Map">
+		    <area shape="rect" coords="27,8,240,43" href="/">
+		</map>
+  	</div>
+
+  	<div style="background-color:#21337f; height:22">
+  		<span id="Global_EC_Menu"></span><script>setMenubyLang();dropdownMenu("navigation");linkBlur();</script>
+  	</div>
+
+  	<div style="bgcolor:#21337f; height:22">
+  		<img src="/tuf1/images/shadow.gif" width="999" height="13">
+  	</div>
+    <div>
+
+
+
+
+		<table width="999" border="0">
+		    <tr>
+		        <td align="center">
+		            <table width="100%" border="0">
+		                <tr>
+		                    <td align="left" width="50%" class="f16tilb3">&nbsp;&nbsp;Cargo Tracking</td>
+		                    <td align="right" width="50%" class="f13tabn4">
+
+		                        <form name="frmPrint" action="/servlet/TDB1_CargoTracking.do" method="post" target="TrackingPrintWin">
+		                            <input type="hidden" name="TYPE" value="BL">
+		                            <input type="hidden" name="BL" value="003901796617">
+		                            <input type="hidden" name="CNTR" value="">
+		                            <input type="hidden" name="PRINT" value="YES">
+		                        </form>
+
+		                    </td>
+		                </tr>
+		            </table>
+                    <form name="frmCargo" action="/servlet/TDB1_CargoTracking.do" method="post" onkeypress="return frmSubmit(event,1)">
+				        <input type="hidden" name="TYPE">
+				        <input type="hidden" name="BL">
+				        <input type="hidden" name="CNTR">
+				        <input type="hidden" name="bkno">
+				        <input type="hidden" name="query_bkno">
+				        <input type="hidden" name="query_rvs">
+				        <input type="hidden" name="query_docno">
+				        <input type="hidden" name="query_seq">
+				        <input type="hidden" name="PRINT">
+				        <table width="100%">
+				            <tr>
+				                <td align="center">
+				                    <table id="quick2" width="760" cellpadding="5" cellspacing="1" border="0" class="f12rown3">
+				                        <tr>
+				                            <td class="f12rown5" align="center">
+				                                <table border="0" >
+				                                    <tr>
+				                                        <td class="f12rown5" align="right" nowrap><font class="f12wrdb2">Trace shipments by</font></td>
+				                                        <td class="f12rown5" align="left" nowrap>&nbsp;<input type="radio" value="s_bl" name="SEL"  checked >Bill of Lading No.&nbsp;(e.g., 012345678900)
+														</td>
+				                                    </tr>
+													<tr>
+				                                        <td class="f12rown5" align="right" nowrap rowspan="2">&nbsp;</td>
+				                                        <td class="f12rown5" align="left" nowrap>&nbsp;<input type="radio" value="s_cntr" name="SEL"  >Container No.&nbsp;(e.g., EISU1234567)
+				                                        </td>
+				                                    </tr>
+				                                    <tr>
+				                                        <td class="f12rown5" align="left" >&nbsp;<input type="radio" value="bk" name="SEL"  >Booking No.&nbsp;(e.g., 012345678900)</td>
+				                                    </tr>
+				                                </table>
+				                            </td>
+				                            <td align="left" class="f12rown1">
+				                                <input type="text" name="NO" maxlength="12" style="width:220px;margin-bottom:5px;" value="003901796617" onkeypress="IsEngorInt(event)" onkeyup="this.value = this.value.toUpperCase();">&nbsp;&nbsp;
+
+				                            	<div id="captcha_div_s"></div><br>
+
+												<input type="button" align="absmiddle" value="Submit" onClick="javascript:frmSubmit(13,2);" />
+				                            </td>
+				                        </tr>
+				                    </table>
+				                </td>
+				            </tr>
+	                    </table>
+                    </form>
+	            </td>
+	        </tr>
+       </table>
+
+
+<script>
+
+	var captchaContent = getCaptchaDiv();
+	document.getElementById("captcha_div_s").innerHTML = captchaContent;
+
+</script>
+
+		<table width="999" border="0">
+
+		<tr><td align="center">
+
+        <br><br>
+        <table width="95%" align="center">
+            <tr>
+                <td class="f12wrdb1" align="center">
+                    No information on B/L No., please enter a valid B/L No. or contact our offices for assistance.<br><br>
+                </td>
+            </tr>
+        </table>
+        <br><br>
+
+</td></tr>
+</table>
+
+        <br>
+		<table width="95%" align="center">
+			<tr>
+				<td align="center">
+					<a href="javascript:backForBL();"><img src="/tuf1/images/btn_Back.gif" alt="" border="0"></a>
+				</td>
+			</tr>
+        </table>
+        <table width="100%" border="0" align="center">
+			<tr>
+				<td align="right"><a href="#top"><img src="/tuf1/images/ico_Top.gif" border="0" alt=""></a>&nbsp;&nbsp;</td>
+			</tr>
+        </table>
+
+
+
+
+
+    </div><!-- <div> -->
+  	<div>
+  		<hr size="1">
+
+    	<div align="center" class="f12wrdn1">
+        	<a href="/tuf1/jsp/TUF1_DisclaimerClause.jsp?clause=terms">Legal Terms of Use</a>, <a href="/tuf1/jsp/TUF1_DisclaimerClause.jsp?clause=copyright">Copyright</a>, and <a href="/tuf1/jsp/TUF1_DisclaimerClause.jsp?clause=privacy">Privacy and Security Statement</a> for ShipmentLink Shipping & Transport Website.
+            <br>
+            Copyright&copy; 2001-2019 , All Rights Reserved by Evergreen International Corp.
+        </div>
+  	</div>
+</div> <!-- <div class="container"> -->
+
+</body>
+</html>

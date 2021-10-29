@@ -1,16 +1,12 @@
 import re
 from typing import Dict, List
+from urllib.parse import urlencode
 
 import scrapy
 
-from urllib.parse import urlencode
-
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import (
-    CarrierInvalidMblNoError,
-    CarrierResponseFormatError,
-    SuspiciousOperationError,
-)
+from crawler.core_carrier.exceptions import SuspiciousOperationError
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.items import (
     BaseCarrierItem,
     MblItem,
@@ -18,13 +14,15 @@ from crawler.core_carrier.items import (
     ContainerStatusItem,
     LocationItem,
     VesselItem,
+    ExportErrorData,
     DebugItem,
 )
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core.table import BaseTable, TableExtractor
 
-URL = 'https://www.sethshipping.com/track_shipment_ajax'
+URL = "https://www.sethshipping.com/track_shipment_ajax"
+
 
 class SharedSpider(BaseCarrierSpider):
     name = None
@@ -43,7 +41,7 @@ class SharedSpider(BaseCarrierSpider):
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
-        yield DebugItem(info={'meta': dict(response.meta)})
+        yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -71,7 +69,7 @@ class SharedSpider(BaseCarrierSpider):
             )
         elif option.method == RequestOption.METHOD_POST_BODY:
             return scrapy.Request(
-                method='POST',
+                method="POST",
                 url=option.url,
                 headers=option.headers,
                 body=option.body,
@@ -79,79 +77,80 @@ class SharedSpider(BaseCarrierSpider):
                 dont_filter=True,
             )
         else:
-            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
+            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
 
 class CarrierSsphSpider(SharedSpider):
-    name = 'carrier_ssph'
+    name = "carrier_ssph"
 
 
 class CarrierGosuSpider(SharedSpider):
-    name = 'carrier_gosu'
+    name = "carrier_gosu"
 
 
 class MainInfoRoutingRule(BaseRoutingRule):
-    name = 'MAIN_INFO'
+    name = "MAIN_INFO"
 
     @classmethod
     def build_request_option(cls, mbl_no) -> RequestOption:
-        form_data = {
-            'containerid': mbl_no
-        }
+        form_data = {"containerid": mbl_no}
         body = urlencode(query=form_data)
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
             url=URL,
             headers={
-                'Connection': 'keep-alive',
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36',
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                'Referer': 'https://www.sethshipping.com/tracking_shipment?id=SSPHAMD1234567',
-                'Accept-Language': 'en-US,en;q=0.9'
+                "Connection": "keep-alive",
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "Referer": "https://www.sethshipping.com/tracking_shipment?id=SSPHAMD1234567",
+                "Accept-Language": "en-US,en;q=0.9",
             },
             body=body,
             meta={
-                'mbl_no': mbl_no,
-            }
+                "mbl_no": mbl_no,
+            },
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.html'
+        return f"{self.name}.html"
 
     def handle(self, response):
-        self._check_main_info(response=response)
+        mbl_no = response.meta["mbl_no"]
+        if self._is_mbl_no_invalid(response=response):
+            yield ExportErrorData(mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found")
+            return
 
         mbl_no = self._extract_mbl_no(response=response)
         main_info = self._extract_main_info(response=response)
 
         yield MblItem(
             mbl_no=mbl_no or None,
-            pol=LocationItem(name=main_info['pol_name']),
-            pod=LocationItem(name=main_info['pod_name']),
-            por='',
-            final_dest=LocationItem(name=main_info['final_dest_name']),
-            eta=main_info['eta']
+            pol=LocationItem(name=main_info["pol_name"]),
+            pod=LocationItem(name=main_info["pod_name"]),
+            por="",
+            final_dest=LocationItem(name=main_info["final_dest_name"]),
+            eta=main_info["eta"],
         )
 
         vessel_info_list = self._extract_vessel_info_list(response=response)
 
         for vessel_info in vessel_info_list:
             yield VesselItem(
-                vessel_key=vessel_info['vessel'],
-                vessel=vessel_info['vessel'],
-                voyage=vessel_info['voyage'],
-                eta=vessel_info['eta'],
-                etd=vessel_info['etd'],
-                pol=LocationItem(name=vessel_info['pol_name']),
-                pod=LocationItem(name=vessel_info['pod_name']),
+                vessel_key=vessel_info["vessel"],
+                vessel=vessel_info["vessel"],
+                voyage=vessel_info["voyage"],
+                eta=vessel_info["eta"],
+                etd=vessel_info["etd"],
+                pol=LocationItem(name=vessel_info["pol_name"]),
+                pod=LocationItem(name=vessel_info["pod_name"]),
             )
 
         container_info_list = self._extract_container_info(response=response)
 
         for idx, container_info in enumerate(container_info_list):
-            container_no = container_info['container_no']
-            container_key = container_info['container_no']
+            container_no = container_info["container_no"]
+            container_key = container_info["container_no"]
             yield ContainerItem(
                 container_key=container_key,
                 container_no=container_no,
@@ -162,27 +161,26 @@ class MainInfoRoutingRule(BaseRoutingRule):
             for status in container_status_list:
                 yield ContainerStatusItem(
                     container_key=container_key,
-                    description=status['description'],
-                    location=LocationItem(name=status['location_name']),
-                    local_date_time=status['local_date_time'],
+                    description=status["description"],
+                    location=LocationItem(name=status["location_name"]),
+                    local_date_time=status["local_date_time"],
                 )
 
     @staticmethod
-    def _check_main_info(response):
-        data_found_selector = response.css('table')
-        if not data_found_selector:
-            raise CarrierInvalidMblNoError()
+    def _is_mbl_no_invalid(response):
+        data_found_selector = response.css("table")
+        return not bool(data_found_selector)
 
     @staticmethod
     def _extract_mbl_no(response):
-        table = response.css('table.table')
-        mbl_no = table.xpath('//thead/th/h3/text()').get()
+        table = response.css("table.table")
+        mbl_no = table.xpath("//thead/th/h3/text()").get()
         return mbl_no.strip()
 
     @staticmethod
     def _extract_main_info(response) -> Dict:
-        left_table = response.css('table')[1]
-        right_table = response.css('table')[2]
+        left_table = response.css("table")[1]
+        right_table = response.css("table")[2]
         table_locator = MainInfoTableLocator()
         table_locator.parse(table=left_table)
         table_locator.parse(table=right_table)
@@ -199,7 +197,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
     @staticmethod
     def _extract_vessel_info_list(response) -> List:
         return_list = []
-        tables = response.css('div.table-responsive.p-1>table')
+        tables = response.css("div.table-responsive.p-1>table")
         for table in tables:
             table_locator = VesselTableLocator()
             table_locator.parse(table=table)
@@ -220,8 +218,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
             vessel_voyage_pattern = re.compile(r'^(?P<vessel>.+)/(?P<voyage>.+)$')
             vessel_voyage_match = vessel_voyage_pattern.match(vessel_voyage)
             if vessel_voyage_match:
-                vessel = vessel_voyage_match.group('vessel')
-                voyage = vessel_voyage_match.group('voyage')
+                vessel = vessel_voyage_match.group("vessel")
+                voyage = vessel_voyage_match.group("voyage")
             else:
                 vessel = None
                 voyage = None
@@ -229,12 +227,12 @@ class MainInfoRoutingRule(BaseRoutingRule):
             if pol or pod:
                 return_list.append(
                     {
-                        'etd': etd,
-                        'eta': eta,
-                        'vessel': vessel,
-                        'voyage': voyage,
-                        'pol_name': pol,
-                        'pod_name': pod,
+                        "etd": etd,
+                        "eta": eta,
+                        "vessel": vessel,
+                        "voyage": voyage,
+                        "pol_name": pol,
+                        "pod_name": pod,
                     }
                 )
 
@@ -243,7 +241,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
     @staticmethod
     def _extract_container_info(response) -> List:
 
-        table = response.css('div.table-responsive:not(.p-1)>table')
+        table = response.css("div.table-responsive:not(.p-1)>table")
         table_locator = ContainerTableLocator()
         table_locator.parse(table=table)
         table_extractor = TableExtractor(table_locator=table_locator)
@@ -252,8 +250,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
         for left in table_locator.iter_left_header():
             return_list.append(
                 {
-                    'container_no': table_extractor.extract_cell(top='Container', left=left).split()[0],
-                    'eta': table_extractor.extract_cell(top='Date', left=left),
+                    "container_no": table_extractor.extract_cell(top="Container", left=left).split()[0],
+                    "eta": table_extractor.extract_cell(top="Date", left=left),
                 }
             )
 
@@ -270,9 +268,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
         for left in table_locator.iter_left_header():
             return_list.append(
                 {
-                    'description': table_extractor.extract_cell(top='Last Activity', left=left),
-                    'location_name': table_extractor.extract_cell(top='Location', left=left),
-                    'local_date_time': table_extractor.extract_cell(top='Date', left=left),
+                    "description": table_extractor.extract_cell(top="Last Activity", left=left),
+                    "location_name": table_extractor.extract_cell(top="Location", left=left),
+                    "local_date_time": table_extractor.extract_cell(top="Date", left=left),
                 }
             )
 
@@ -280,12 +278,12 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _get_local_date_time_and_location(local_date_time_text: str):
-        pattern = re.compile(r'^(?P<local_date_time>\d{2}-\w{3}-\d{4}), (?P<location>.+)$')
+        pattern = re.compile(r"^(?P<local_date_time>\d{2}-\w{3}-\d{4}), (?P<location>.+)$")
 
         m = pattern.match(local_date_time_text)
         if m:
-            local_date_time = m.group('local_date_time')
-            location = m.group('location')
+            local_date_time = m.group("local_date_time")
+            location = m.group("location")
         else:
             local_date_time = None
             location = local_date_time_text
@@ -302,7 +300,6 @@ class MainInfoTableLocator(BaseTable):
             content = tr.css('td')[1]
             td_dict[label] = content
 
-
 class VesselTableLocator(BaseTable):
     def parse(self, table: scrapy.Selector):
         self._left_header_set.add(0)
@@ -318,10 +315,10 @@ class ContainerTableLocator(BaseTable):
     def parse(self, table: scrapy.Selector):
         top_header_list = []
 
-        head = table.css('thead')[0]
-        for th in head.css('th'):
-            raw_top_header = th.css('::text').get()
-            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ''
+        head = table.css("thead")[0]
+        for th in head.css("th"):
+            raw_top_header = th.css("::text").get()
+            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ""
             top_header_list.append(top_header)
             self._td_map[top_header] = []
 

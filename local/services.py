@@ -96,7 +96,7 @@ class DataHandler:
     def update_error_message(result: Dict, err_msg: str) -> Dict:
         tmp_result = result.copy()
         tmp_result["close_reason"] = "ERROR"
-        tmp_result["items"][0].update(
+        tmp_result.update(
             {"status": "ERROR", "detail": err_msg,}
         )
 

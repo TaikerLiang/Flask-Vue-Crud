@@ -1,15 +1,11 @@
 import dataclasses
 import random
-import time
 from typing import List, Dict, Tuple, Union
+import asyncio
 
 import scrapy
-from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from urllib3.exceptions import ReadTimeoutError
+from pyppeteer import launch, logging
+from pyppeteer.errors import TimeoutError
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
@@ -82,48 +78,63 @@ class CarrierZimuSpider(BaseCarrierSpider):
 
 class ContentGetter:
     def __init__(self):
-        options = webdriver.FirefoxOptions()
-        options.add_argument("--headless")
-        options.add_argument(f"user-agent={self._random_choose_user_agent()}")
-        self._driver = webdriver.Firefox(firefox_options=options)
+        logging.disable(logging.DEBUG)
 
-    def search_and_return(self, mbl_no: str):
-        self._driver.get("https://www.zim.com/tools/track-a-shipment")
+    async def launch_browser(self):
+        browser_args = [
+            "--no-sandbox",
+            "--disable-gpu",
+            "--disable-blink-features",
+            "--disable-infobars",
+            "--window-size=1920,1080",
+        ]
 
+        self._browser = await launch(headless=True, slowMo=20, args=browser_args)
+        page = await self._browser.newPage()
+
+        await page.setUserAgent(self._random_choose_user_agent())
+
+        return page
+
+    async def search(self, mbl_no: str):
+        page = await self.launch_browser()
+        await page.goto("https://www.zim.com/tools/track-a-shipment")
+
+        accept_btn = "button#onetrust-accept-btn-handler"
         try:
-            accept_btn = WebDriverWait(self._driver, 10).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, "button[title='I Agree']"))
-            )
-        except (TimeoutException, ReadTimeoutError):
+            await page.waitForSelector(accept_btn, timeout=10000)
+            await asyncio.sleep(1)
+        except TimeoutError:
             raise LoadWebsiteTimeOutFatal()
 
-        time.sleep(1)
-        accept_btn.click()
+        await page.click(accept_btn)
 
-        search_bar = self._driver.find_elements_by_css_selector("input[name='consnumber']")[0]
-        search_btn = self._driver.find_elements_by_css_selector("input[value='Track Shipment']")[0]
-
-        time.sleep(1)
-        search_bar.send_keys(mbl_no)
-        search_btn.click()
+        await asyncio.sleep(1)
+        await page.type("input[name='consnumber']", text=mbl_no)
+        await page.click("input[value='Track Shipment']")
 
         try:
-            WebDriverWait(self._driver, 20).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "div[class='bottom row']"))
-            )
-        except TimeoutException:
+            await page.waitForSelector("div[class='bottom row']", timeout=20000)
+        except TimeoutError:
             raise LoadWebsiteTimeOutFatal()
 
-        return self._driver.page_source
+        page_source = await page.content()
+        await self._browser.close()
+
+        return page_source
 
     @staticmethod
     def _random_choose_user_agent():
         user_agents = [
-            # firefox
-            ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:80.0) " "Gecko/20100101 " "Firefox/80.0"),
-            ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) " "Gecko/20100101 " "Firefox/79.0"),
-            ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) " "Gecko/20100101 " "Firefox/78.0"),
-            ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0.1) " "Gecko/20100101 " "Firefox/78.0.1"),
+            (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
+            ),
+            (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
+            ),
+            (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
+            ),
         ]
 
         return random.choice(user_agents)
@@ -161,7 +172,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         self._check_mbl_no(response=response)
 
         content_getter = ContentGetter()
-        response_text = content_getter.search_and_return(mbl_no=mbl_no)
+        response_text = asyncio.get_event_loop().run_until_complete(content_getter.search(mbl_no=mbl_no))
         response_selector = scrapy.Selector(text=response_text)
 
         for item in self.handle_item(response=response_selector):
@@ -268,7 +279,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         if "Final Destination:" in routing_schedule:
             final_dest = routing_schedule["Final Destination:"].strip()
             deliv_eta = response.css("dt#etaDate::text").get() or ""
-            eta = pod_info["Arrival Date"]
+            eta = pod_info.get("Arrival Date", "")
         else:
             final_dest = ""
             deliv_eta = ""
@@ -350,7 +361,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
             elif "POD" in schedule:
                 result.append(
-                    ScheduleInfo(port_type="POD", port_name=schedule["POD"], eta=schedule["Arrival Date"], etd="",)
+                    ScheduleInfo(
+                        port_type="POD", port_name=schedule["POD"], eta=schedule.get("Arrival Date", ""), etd="",
+                    )
                 )
 
             elif "POL" in schedule:

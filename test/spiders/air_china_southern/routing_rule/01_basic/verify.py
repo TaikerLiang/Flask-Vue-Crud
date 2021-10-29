@@ -5,6 +5,7 @@ from crawler.core_air.items import AirItem, HistoryItem
 
 def verify(results: List):
     assert results[0] == AirItem(
+        task_id="1",
         mawb="66323191",
         origin="GUANGZHOU",
         destination="NASHVILLE",
@@ -15,6 +16,7 @@ def verify(results: List):
     )
 
     assert results[1] == HistoryItem(
+        task_id="1",
         status="Air Waybill has been received.",
         pieces="",
         weight="",
@@ -24,6 +26,7 @@ def verify(results: List):
     )
 
     assert results[2] == HistoryItem(
+        task_id="1",
         status="Cargo has been received.",
         pieces="6",
         weight="1935",
@@ -33,6 +36,7 @@ def verify(results: List):
     )
 
     assert results[3] == HistoryItem(
+        task_id="1",
         status="Cargo has been loaded.",
         pieces="6",
         weight="1935",
@@ -42,6 +46,7 @@ def verify(results: List):
     )
 
     assert results[4] == HistoryItem(
+        task_id="1",
         status="Flight has taken off.",
         pieces="",
         weight="",
@@ -51,6 +56,7 @@ def verify(results: List):
     )
 
     assert results[5] == HistoryItem(
+        task_id="1",
         status="Cargo has been received.",
         pieces="6",
         weight="1935",
@@ -60,6 +66,7 @@ def verify(results: List):
     )
 
     assert results[6] == HistoryItem(
+        task_id="1",
         status="Air Waybill has been received.",
         pieces="",
         weight="",
@@ -69,6 +76,7 @@ def verify(results: List):
     )
 
     assert results[7] == HistoryItem(
+        task_id="1",
         status="Cargo has been loaded.",
         pieces="6",
         weight="1935",
@@ -78,6 +86,7 @@ def verify(results: List):
     )
 
     assert results[8] == HistoryItem(
+        task_id="1",
         status="Flight has taken off.",
         pieces="",
         weight="",
@@ -87,6 +96,7 @@ def verify(results: List):
     )
 
     assert results[9] == HistoryItem(
+        task_id="1",
         status="Cargo has been received.",
         pieces="6",
         weight="1935",
@@ -96,6 +106,7 @@ def verify(results: List):
     )
 
     assert results[10] == HistoryItem(
+        task_id="1",
         status="Delivery notification has been issued.",
         pieces="",
         weight="",
@@ -105,6 +116,7 @@ def verify(results: List):
     )
 
     assert results[11] == HistoryItem(
+        task_id="1",
         status="Air Waybill has been received.",
         pieces="",
         weight="",
@@ -114,6 +126,7 @@ def verify(results: List):
     )
 
     assert results[12] == HistoryItem(
+        task_id="1",
         status="Cargo has been picked up by BNA",
         pieces="6",
         weight="1935",

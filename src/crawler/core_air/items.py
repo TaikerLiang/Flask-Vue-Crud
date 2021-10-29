@@ -34,7 +34,7 @@ class AirItem(BaseAirItem):
 
     @property
     def key(self):
-        return self.task_id
+        return self['task_id']
 
 
 class FlightItem(BaseAirItem):
@@ -49,7 +49,7 @@ class FlightItem(BaseAirItem):
 
     @property
     def key(self):
-        return self.task_id
+        return self['task_id']
 
 
 class HistoryItem(BaseAirItem):
@@ -63,4 +63,4 @@ class HistoryItem(BaseAirItem):
 
     @property
     def key(self):
-        return self.task_id
+        return self['task_id']

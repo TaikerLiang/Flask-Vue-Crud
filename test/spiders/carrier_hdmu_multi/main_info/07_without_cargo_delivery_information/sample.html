@@ -16,7 +16,7 @@
 
 
 
-   
+
 
 
 
@@ -29,7 +29,7 @@
 <link href="/cms/business/ebiz/resource/css/content.css" rel="stylesheet" type="text/css" />
 <script type="text/javascript" src="/ebiz/js/new_common.js"></script>
 <script type="text/javascript" src="/ebiz/js/common.js"></script>
-<script type="text/javascript" src="/ebiz/js/QuickMenu.js"></script>	
+<script type="text/javascript" src="/ebiz/js/QuickMenu.js"></script>
 <script type="text/javascript" src="/ebiz/js/print.js"></script>
 <script type="text/javascript" src="/ebiz/js/search/jquery.js"></script>
 <script type='text/javascript' src="/ebiz/js/search/jquery.autocomplete.js"></script>
@@ -52,16 +52,16 @@
 
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <title>Hyundai Merchant Marine</title>
-  
 
- 
+
+
 
 <script>bazadebezolkohpepadr="298803706"</script><script type="text/javascript" src="https://www.hmm21.com/akam/11/11cf602c" defer></script></head>
 
 <body style="overflow-x:hidden;overflow-y:hidden;">
 
 <!-- 팝업 -->
-<div id="popup" class="layers_W" style="display:none;position: relative;z-index:999;position:absolute;left:0;top:0;"> 
+<div id="popup" class="layers_W" style="display:none;position: relative;z-index:999;position:absolute;left:0;top:0;">
 	<div class="layers_W_in" style="background: none;" id="popupDiv">
 		<div class="layer_popup01" style="width:720px;">
 			<div class="pop_border">
@@ -80,13 +80,13 @@
 		</div>
 	</div>
 </div>
-	
+
 <!-- Loading Image START -->
 <div id="loadingBar" >
 	<table border="0" width="100%">
 		<tr>
 			<td align="center">
-				<img src='/ebiz/images/common/loading.gif'/>			
+				<img src='/ebiz/images/common/loading.gif'/>
 			</td>
 		</tr>
 	</table>
@@ -125,8 +125,8 @@
 	<input type="hidden" name="tempBLOrBKG"/>
 </form>
 
-<script type="text/javascript">	
-	function showtip(e,name) {		
+<script type="text/javascript">
+	function showtip(e,name) {
 		if(name=='Surrendered') {
      		tooltip.innerText="Pick up is available \n without O B/L submission";
 		}else if(name=='No O B/L issued yet') {
@@ -139,16 +139,16 @@
      		tooltip.innerText="O B/L submission Required \n for cargo pick up";
 		}else{
 			tooltip.innerText="";
-		}     
+		}
 		tooltip.style.display="block";
-		tooltip.style.pixelLeft=e.clientX - 200;     
-		tooltip.style.pixelTop= e.clientY-10;     
+		tooltip.style.pixelLeft=e.clientX - 200;
+		tooltip.style.pixelTop= e.clientY-10;
 	}
-	
+
 	function hidetip() {
 	     tooltip.style.display="none";
 	}
-	
+
 	function vesseldlyInfoshowtip(ve, main_s, roc_c, loc_c) {
 		if(main_s != "N") {
 	     	tooltip.innerText= main_s;
@@ -159,16 +159,16 @@
 		if(loc_c != "N") {
 	     	tooltip.innerText += " \n"+loc_c;
 		}
-						
+
 	     tooltip.style.display="block";
-	     tooltip.style.pixelLeft=ve.clientX - 200;     
-	     tooltip.style.pixelTop= ve.clientY+20;     
+	     tooltip.style.pixelLeft=ve.clientX - 200;
+	     tooltip.style.pixelTop= ve.clientY+20;
 	}
-	
+
 	function vesseldlyInfohidetip() {
 	     tooltip.style.display="none";
-	}	
-	
+	}
+
 	function track(i) {
 		if (i == "null" || i < 0) {
 			alert("Container number is invalid.  Please try it again with correct number.");
@@ -179,10 +179,10 @@
 			document.listForm.submit();
 		}
 	}
-	
+
 	function trackCNTRBL(i,bl) {
 		if (i == "null" || i < 0) {
-			alert("B/L number is invalid.  Please try it again with correct number.");	
+			alert("B/L number is invalid.  Please try it again with correct number.");
 		} else {
 			document.listForm.selectedContainerIndex.value = i;
 			document.listForm.tempBLOrBKG.value =bl;
@@ -191,7 +191,7 @@
 			document.listForm.submit();
 		}
 	}
-	
+
 	function trackCNTRBKG(i,bk) {
 		if (i == "null") {
 			alert("Booking number is invalid.  Please try it again with correct number.");
@@ -203,13 +203,13 @@
 			document.listForm.submit();
 		}
 	}
-	
+
 	function trim(str) {
 		while(str.substring(0, 1)==' ') str = str.substring(1, str.length);
 		while(str.substring(str.length-1, str.length)==' ') str = str.substring(0, str.length-1);
 		return str;
 	}
-	
+
 	function clearText() {
 		// 2017-10-12 윤영길 수정 - 사용하는 곳 없어서 주석처리함.
 		/*
@@ -218,7 +218,7 @@
 		}
 		*/
 	}
-	
+
 	function showMsg() {
 		// 2017-10-12 윤영길 수정 - 사용하는 곳 없어서 주석처리함.
 		/*
@@ -227,7 +227,7 @@
 		}
 		*/
 	}
-	
+
 	function viewBL_BAK() {
 
 
@@ -258,9 +258,9 @@
 
 	function viewBL() {
 		// BL No. 입력 팝업창을 띄운다.
-	
+
 		viewBLMain();
-	
+
 	}
 
 	// 2017-10-12 윤영길 추가
@@ -282,10 +282,10 @@
 			error: function() {		alert("Failed!");	 }
 		});
 	}
-	
+
 	function viewBLPDF(searchKind, bllist) {
 		var objFrm = $("#fmBL");
-		
+
 		var selectedNumber = bllist[0];
 
 		if ($.trim(document.viewForm.BLNumber.value) == '')
@@ -295,9 +295,9 @@
 		document.viewForm.action = "../bill_of_lading/print/PrintingBL.jsp";
 		document.viewForm.submit();
 	}
-	
+
 	function viewAN_BAK() {
-		
+
 
 		if (""=="") {
 			alert("Login required to see B/L or Arrival Notice or DEM/DET");
@@ -316,9 +316,9 @@
 
 	function viewAN() {
 		// BL No. 입력 팝업창을 띄운다.
-	
+
 			viewANMain();
-	
+
 	}
 
 	// 2017-10-12 윤영길 추가
@@ -330,7 +330,7 @@
 		document.viewForm.action = "../arrival/ArrivalfromTracing.jsp?BLNO=" + document.viewForm.BLNumber.value;
 		document.viewForm.submit();
 	}
-	
+
 	function viewDEMDET_BAK() {
 
 
@@ -345,16 +345,16 @@
 //			document.viewForm.target = "_new";
 //			document.viewForm.action = "/ebiz/import_service/dem_det_sch/dem_det_global.jsp?mode=2&isFirstAccess=&isFirstView=";
 //			document.viewForm.submit();
-			
-				window.open('/ebiz/import_service/dem_det_sch/dem_det_global.jsp?mode=2&BNO='+document.viewForm.BLNumber.value+'&isFirstAccess=&isFirstView=', '', 'width=800,height=560,scrollbars=yes');			
+
+				window.open('/ebiz/import_service/dem_det_sch/dem_det_global.jsp?mode=2&BNO='+document.viewForm.BLNumber.value+'&isFirstAccess=&isFirstView=', '', 'width=800,height=560,scrollbars=yes');
 		}
 	}
 
 	function viewDEMDET() {
 		// BL No. 입력 팝업창을 띄운다.
-	
+
 		viewDEMDETMain();
-	
+
 	}
 
 	// 2017-10-12 윤영길 추가
@@ -363,7 +363,7 @@
 		goDEMDETInquiry_Pop(document.viewForm.BLNumber.value, 'I');
 		//window.open('/ebiz/import_service/dem_det_sch/dem_det_global.jsp?mode=2&BNO='+document.viewForm.BLNumber.value+'&isFirstAccess=&isFirstView=', '', 'width=850,height=560,scrollbars=yes');
 	}
-	
+
 	function clearText2() {
 		// 2017-10-12 윤영길 수정 - 사용하는 곳 없어서 주석처리함.
 		/*
@@ -372,7 +372,7 @@
 		}
 		*/
 	}
-	
+
 	function showMsg2() {
 		// 2017-10-12 윤영길 수정 - 사용하는 곳 없어서 주석처리함.
 		/*
@@ -381,7 +381,7 @@
 		}
 		*/
 	}
-	
+
 	function viewCargoDelivery_BAK() {
 		if (""=="") {
 			alert("Login required to get Cargo Delivery Information");
@@ -393,52 +393,52 @@
 			window.open("viewCargoDeliveryInformation.jsp?BLNumber="+viewForm2.BLNumber.value+"&CONNO="+viewForm2.CONNO.value, "popwin", "width=240,height=210");
 		}
 	}
-	
+
 	function viewCargoDelivery() {
 		// 2017-10-12 윤영길 수정 - 호출되는 곳이 없음. if를 제거하고 else절을 실행하도록 수정함.
 		viewForm2.BLNumber.value = trim(viewForm2.BLNumber.value).toUpperCase();
 		window.open("viewCargoDeliveryInformation.jsp?BLNumber="+viewForm2.BLNumber.value+"&CONNO="+viewForm2.CONNO.value, "popwin", "width=240,height=210");
 	}
-	
+
 	function viewCLM(cntr,date) {
 		window.open("showCLM.jsp?cntrNo="+cntr+"&startDate="+date, "popclm", "width=800,height=600,scrollbars=yes");
 	}
-	
+
 	function viewExcel(BL,CNTR,BKG) {
 		window.open("track_excel.jsp?blFields=1&cnFields=1&numbers="+BL+"&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers="+CNTR+"&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers="+BKG+"&numbers=&numbers=&numbers=&numbers=&numbers=", "excel", "width=800,height=600,scrollbars=yes");
 	}
-	
+
 	function NOTICE(notice) {
 		if ( notice == "true" ) {
 			alert("For more informatin, please contact sales representatives at your side");
 		}
 	}
-	
-	function feederDetail(obj1,obj2,obj3,obj4,obj5,obj6) {				
+
+	function feederDetail(obj1,obj2,obj3,obj4,obj5,obj6) {
 		window.open("FeederDetail.jsp?fromLocation="+obj1+"&toLocation="+obj2+"&feederDate="+obj3+"&arrivalPlace="+obj4+"&podDate="+obj5+"&pvyDate="+obj6, "feederDetail", "width=600,height=400,scrollbars=yes");
 	}
-	
+
 	function goRollOver () {
 		location.href = "./TSRollOverByShipment.jsp?mode=1";
 	}
-	
+
 	function showRestriction(display) {
 		if (display=='hidden' ) {
 			document.getElementById('cutInfo').style.visibility = "hidden";
 		} else {
-			document.getElementById('cutInfo').style.backgroundColor = "#FAFAFA";		
+			document.getElementById('cutInfo').style.backgroundColor = "#FAFAFA";
 			document.getElementById('cutInfo').style.visibility = "visible";
 		}
 	}
-	
+
 	function searchCUTWUTInfo(request) {
-		document.getElementById("cutInfo").align = "left"; 
+		document.getElementById("cutInfo").align = "left";
 		document.getElementById("cutInfo").innerHTML = request.responseText;
-		
+
 		/* Container List 가 길 경우 List 짤리는 현상 때문에 iFrame Resize (2012/12/18) - 유수연 GJ */
 		var frameHeight = parseInt(parent.document.getElementById("_frame1").height);
 		var divTotalHeight = parseInt(document.getElementById('cutInfo').offsetHeight) + parseInt(document.getElementById('cutInfo').style.top.replace('px', ''));
-    	
+
 		if (divTotalHeight > frameHeight) {
 			parent.document.getElementById('_frame1').height = divTotalHeight + 10;
 		}
@@ -447,38 +447,38 @@
 	function viewCUTWUTInfo(bno, kind, obj, cntr, event)  {
 
 		var connectURL = '';
-		
+
 		if (kind == 'CUT') {
 			connectURL = 'CUTInfo.jsp';
 		} else {
 			connectURL = 'WUTInfo.jsp';
 		}
-		
+
 		var topY = (document.layers) ? obj.pageY : event.clientY;
 		document.getElementById('cutInfo').style.left=20+'px';
 		document.getElementById('cutInfo').style.top=topY+'px';
-		document.getElementById('cutInfo').style.width='95%';	
+		document.getElementById('cutInfo').style.width='95%';
 
-		showRestriction('display'); 
+		showRestriction('display');
 		document.getElementById("cutInfo").innerHTML = "<img src='/ebiz/images/common/loading.gif'/>";
-		document.getElementById("cutInfo").align = "center"; 
+		document.getElementById("cutInfo").align = "center";
 
 		var params = '';
-		
-		params += encodeURIComponent('bno');      
-		params += '='; 
+
+		params += encodeURIComponent('bno');
+		params += '=';
 		params += encodeURIComponent(bno);
-		     
-		params += '&'; 
-		
-		params += encodeURIComponent('cntrNo');      
-		params += '='; 
+
+		params += '&';
+
+		params += encodeURIComponent('cntrNo');
+		params += '=';
 		params += encodeURIComponent(cntr);
-		
+
 		Ajax.connect({
 			url: connectURL,
 			data: params,
-			type: 'post', 
+			type: 'post',
 			success: searchCUTWUTInfo
 		});
 	}
@@ -486,57 +486,57 @@
 	/* CRR Inquiry 적용 (2015/11/30) */
 	function viewCRRInquiry(bno, obj, event)  {
 		var connectURL = 'waybillCRR.jsp';
-		
+
 		var topY = (document.layers) ? obj.pageY : event.clientY;
 		document.getElementById('cutInfo').style.left=20+'px';
 		document.getElementById('cutInfo').style.top=topY+'px';
-		document.getElementById('cutInfo').style.width='95%';	
+		document.getElementById('cutInfo').style.width='95%';
 
-		showRestriction('display'); 
+		showRestriction('display');
 		document.getElementById("cutInfo").innerHTML = "<img src='/ebiz/images/common/loading.gif'/>";
-		document.getElementById("cutInfo").align = "center"; 
+		document.getElementById("cutInfo").align = "center";
 
 		var params = '';
-		
-		params += encodeURIComponent('bno');      
-		params += '='; 
+
+		params += encodeURIComponent('bno');
+		params += '=';
 		params += encodeURIComponent(bno);
-		
+
 		Ajax.connect({
 			url: connectURL,
 			data: params,
-			type: 'post', 
+			type: 'post',
 			success: searchCUTWUTInfo
 		});
 	}
-	
+
 	/* Bing Map 적용 (2012/12/17) */
 	function showMap(searchCTPCondition, selectedTag, selectedNo, selectedCNTRNo) {
-		
+
 		var mapURL = "http://icc.hmm21.com:80/utility/hmmctp.aspx?view=external2&";
 		var mapParameter = "ctp=";
-		
+
 		if (selectedTag == 'BL')
 			mapParameter += "&bno=" + selectedNo;
 		else if (selectedTag == 'BKG')
 			mapParameter += "&bkg=" + selectedNo;
-			
+
 		mapParameter += "&cno=" + selectedCNTRNo;
-		
+
 		writeLogFile("TrackMap", mapParameter, searchCTPCondition);
 
 		window.open(mapURL+mapParameter, "popMap", "scrollbars=no, toolbar=no, resizable=yes");
 	}
-	
+
 	/* Download Silverlight (2013/01/11) */
 	function downloadSilverlight() {
 		window.open("http://www.microsoft.com/silverlight/", "downloadSilverlight", "width=1100, status=yes, resizable=yes");
 	}
-		
+
 	/** 접속 Log File Write (2013/01/14) **/
 	function writeLogFile(fromMenu, parameters, searchCTPCondition) {
 		var callPage = "/ebiz/common/writeLogFile.jsp?parameters=" + parameters.replaceAll('&', '>') + "&fromMenu=" + fromMenu + "&condition=" + searchCTPCondition;
-		
+
 		f = document.viewForm;
 		f.method = "post";
 		f.action = callPage;
@@ -546,21 +546,21 @@
 
 	function railPop(railCntrNo, railBLBKNo){
 		window.open("./trackCTPrailPop.jsp?railCntrNo="+railCntrNo+"&railBLBKNo="+railBLBKNo, 'railpop', 'toolbar=no, status=yes, height=500, width=700, resizable=no, left=300, top=300');
-	}			
+	}
 
 	// 2017-10-12 윤영길 추가
 	var blNoPopAfterFunc = "";
 	function ff_openBLNoPop( execFunc ) {
-		
+
 		blNoPopAfterFunc = execFunc;
 
 		$('#bl_layer_popup').hide();
 		$('#bl_layer_popup').css('top', '240px'); // 290
 
 		if( execFunc == "viewBLMain" ) {
-			$('#bl_layer_popup').css('left', '440px'); // 390		
+			$('#bl_layer_popup').css('left', '440px'); // 390
 		} else if( execFunc == "viewANMain" ) {
-			$('#bl_layer_popup').css('left', '529px'); // 508		
+			$('#bl_layer_popup').css('left', '529px'); // 508
 		} else if( execFunc == "viewDEMDETMain" ) {
 			$('#bl_layer_popup').css('left', '598px');
 		}
@@ -570,7 +570,7 @@
 		$('#bl_layer_popup').show();
 	}
 
-	function ff_openBLNoPopView() {		
+	function ff_openBLNoPopView() {
 
     	if( $('#popBlno').val().trim() == "" ) {
     		alert( 'Please input B/L No.' );
@@ -584,7 +584,7 @@
 		eval(blNoPopAfterFunc + "()");
 
 	}
-	
+
 	// 2017-10-12 윤영길 추가
 	$(document).ready(function(){
 		// B/L No. 팝업창 이외를 클릭하면 팝업창을 닫는다.
@@ -620,21 +620,21 @@
 		}
 
 	}
-	
+
 </script>
 
 <script type='text/javascript'>
 	var img_L = 0;
 	var img_T = 0;
 	var targetObj;
-	
+
 	function getLeft(o){
 	     return parseInt(o.style.left.replace('px', ''));
 	}
 	function getTop(o){
 	     return parseInt(o.style.top.replace('px', ''));
 	}
-	
+
 	// 이미지 움직이기
 	function moveDrag(e){
 	     var e_obj = window.event? window.event : e;
@@ -644,41 +644,41 @@
 	     targetObj.style.top = dmvy +"px";
 	     return false;
 	}
-	
+
 	// 드래그 시작
 	function startDrag(e, obj){
 	     targetObj = obj;
 	     var e_obj = window.event? window.event : e;
 	     img_L = getLeft(obj) - e_obj.clientX;
 	     img_T = getTop(obj) - e_obj.clientY;
-	
+
 	     document.onmousemove = moveDrag;
 	     document.onmouseup = stopDrag;
-	     if(e_obj.preventDefault)e_obj.preventDefault(); 
+	     if(e_obj.preventDefault)e_obj.preventDefault();
 	}
-	
+
 	// 드래그 멈추기
 	function stopDrag(){
 	     document.onmousemove = null;
 	     document.onmouseup = null;
 	}
-	
+
 	//로그인필요할때 alert
 	function loginNeed(){
 		var text = "Login is required.";
 		alert(text);
 	}
-	
+
 	//Rail ETD/ETA, Veiw Rail Move 비활성 alert
 	function notUSRail(mode){
 		var text;
 		if(mode == 'e'){
 			text = "This button is available only for U.S rail cargo.";
-						
+
 			alert(text);
 		} else if(mode == 'm'){
 			text = "This button is available only for the cargo via U.S rail ramp.";
-					
+
 			alert(text);
 		}
 	}
@@ -698,7 +698,7 @@
 		</p>
 
 		<h4>Click to View</h4>
-		
+
 		<div class="left_table01 Booking_T">
 		<table>
 			<colgroup>
@@ -739,7 +739,7 @@
 		<!--
 		<div class="btnRight"><a href="javascript:pagePrinting();"><img src="/ebiz/images/btn/btn_print.gif" alt="print"   name="Print" /></a></div>
 		-->
-		
+
 		<!-- Tracking Results -->
 		<h4>Tracking Results</h4>
 		<!-- BEGINNING OF SCHEDULE -->
@@ -750,7 +750,7 @@
 			<a href="#" class="new_btn16" onClick="javascript:loginNeed();">Rollover alert</a>
 			<a href="#" class="new_btn16" onClick="javascript:loginNeed();">B/L Copy</a>
 			<a href="#" class="new_btn16" onClick="javascript:loginNeed();">Arrival Notice</a>
-			<a href="#" class="new_btn16" onClick="javascript:loginNeed();">DEM/DET</a>			
+			<a href="#" class="new_btn16" onClick="javascript:loginNeed();">DEM/DET</a>
 
 			<br><br>
 			<p class="popup_text_type01 text_R">* To view Map, please install Microsoft Silverlight. Click <a href="javascript:downloadSilverlight();">here</a> to download.</p>
@@ -775,18 +775,18 @@
 			<!--Current Status 문구 Start -->
 			<div id="boxInfo" align="right" style="margin-right:45px;margin-top:5px;" >
 				<font color="#4f4f4f">
-					
+
 				</font>
-			</div>		
-			<!--Current Status 문구 End -->					
+			</div>
+			<!--Current Status 문구 End -->
 
 			<ul>
 				<!--진행 Vessel Image Start -->
 				<li style="margin-left:675px;">
 					<p class="iconClass"><img src="/ebiz/images/tracktrace/icn_ship.gif" alt="ship" /></p>
-				</li>	
+				</li>
 				<!--진행 Vessel Image End -->
-			</ul>	
+			</ul>
 
 			<!--파란색 바는 동일하게,div level의 style="width:%값"과 div chartbl의 style="margin-left:%값"으로 조정-->
 			<!--level_bar : 전체 654px-->
@@ -794,67 +794,67 @@
 				<div class="bar"><img src="/ebiz/images/tracktrace/level_bar_v8.gif" alt="" /></div>
 				<div class="level"><img src="/ebiz/images/tracktrace/chart_bar.gif" alt="" style="width:100%" /></div>
 				<div class="chartbl" style="width:100%;">
-					<img class="png24" src="/ebiz/images/tracktrace/bl_spot.png" alt="" style="margin-left:0px" />   
-
-    
-					<img class="png24" src="/ebiz/images/tracktrace/bl_spot.png" alt="" style="position:absolute;left:126px;" />   
-	
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
+					<img class="png24" src="/ebiz/images/tracktrace/bl_spot.png" alt="" style="margin-left:0px" />
 
 
-
-	
+					<img class="png24" src="/ebiz/images/tracktrace/bl_spot.png" alt="" style="position:absolute;left:126px;" />
 
 
 
 
-				<img class="png24" src="/ebiz/images/tracktrace/red_spot.png" alt="" style="position:absolute;left:606px;" >  
 
 
-				<!--img class="png24" src="/ebiz/images/tracktrace/red_spot.png" alt="" style="margin-left:615px;" --> 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				<img class="png24" src="/ebiz/images/tracktrace/red_spot.png" alt="" style="position:absolute;left:606px;" >
+
+
+				<!--img class="png24" src="/ebiz/images/tracktrace/red_spot.png" alt="" style="margin-left:615px;" -->
 				<!--/a-->
-				<!--img class="png24" src="/ebiz/images/tracktrace/red_spot.png" alt="" style="margin-left:27px" /-->  
+				<!--img class="png24" src="/ebiz/images/tracktrace/red_spot.png" alt="" style="margin-left:27px" /-->
 
-				<!--img class="png24" src="/ebiz/images/tracktrace/red_spot.png" alt="" style="margin-left:160px" />  
+				<!--img class="png24" src="/ebiz/images/tracktrace/red_spot.png" alt="" style="margin-left:160px" />
 				<img class="last  png24" src="/ebiz/images/tracktrace/red_spot.png" style="margin-left:150px" alt=""  /-->
 				</div>
 			</div> <!-- //<div class="chart"> -->
 			<!-- Progress bar Image END -->
-	
+
 			<!-- Progress bar TEXT START -->
 			<div id="PORlocation" class="PORlocationText" style="width:85px;height:50px;top:310px;"><p>TAOYUAN,<br> TAIWAN</p></div>
 			<div id="PVYlocation" class="PVYlocationText" style="width:90px;height:50px;top:310px;"><p>VANCOUVER,<br> BC,<br> CANADA</p></div>
 			<!--div class="PORlocationText"><font color='black'> TAOYUAN,<br> TAIWAN  </font></div>
 			<div class="PVYlocationText"><font color='black'> VANCOUVER,<br> BC,<br> CANADA  </font></div-->
-	
+
 			<ul class="textClass">
 				<li>&nbsp;<br>&nbsp;
-					
+
 				</li>
-				
+
 				<li  style="position:absolute;left:180px;">
 					KAOHSIUNG,<br> TAIWAN
 				</li>
-		
 
-		
+
+
 				<li  style= "position:absolute;left:690px;">
 					&nbsp;
 				</li>
-			
+
 				<li class="last">
-					 
+
 				</li>
 			</ul>
 			<!-- Progress bar TEXT END -->
@@ -865,12 +865,12 @@
 			<br>
 			<!-- Carbon Calculator START -->
 			<div id="co2div" class="btnRight">
-				
+
 				-
 				<br>
 			</div>
 			<!-- Carbon Calculator END -->
-	
+
 			<div class="base_table01">
 			<table>
 				<colgroup>
@@ -897,21 +897,21 @@
 						<td>TAOYUAN, TAIWAN</td>
 						<td>KAOHSIUNG, TAIWAN</td>
 
-				
+
 						<td>VANCOUVER, BC, CANADA</td>
 						<td>VANCOUVER, BC, CANADA</td>
 					</tr>
-					
-						
+
+
 					<tr>
-						<td class="bor_L_none">Arrival</td>
+						<td class="bor_L_none">Arrival(ETB)</td>
 						<td></td>
 						<td><span class="font_blue">13-Dec-2019<br/>7:31 PM&nbsp;</span></td>
-							
+
 							<td>
 								<span class="font_blue">04-Jan-2020<br/>11:12 PM&nbsp;</span>
 							</td>
-												
+
 							<td>
 								<span class="font_blue">04-Jan-2020<br/>11:12 PM&nbsp;</span>
 							</td>
@@ -922,10 +922,10 @@
 						<td><span class="font_blue">09-Dec-2019&nbsp;</span><br><span class="font_blue">3:51 PM&nbsp;</span></td>
 						<td><span class="font_blue">16-Dec-2019&nbsp;</span><br><span class="font_blue">4:36 AM&nbsp;</span></td>
 
-							
+
 							<td>
 								&nbsp;
-								
+
 							</td>
 
 						<td></td>
@@ -934,7 +934,7 @@
 			</table>
 			</div>
 		</div><!-- //progressChart div END -->
- 
+
 		<p class="text_type02 font_red">&nbsp;&nbsp;&nbsp;* Red :  Estimated Date & Time</p>
 		<p class="text_type02 font_blue">&nbsp;&nbsp;&nbsp;* Blue :  Actual Date & Time</p>
 		<p class="text_type02">&nbsp;&nbsp;&nbsp;* All dates and times are local dates and times.</p>
@@ -942,7 +942,7 @@
 		<p class="text_type02">&nbsp;&nbsp;&nbsp;* If your shipment is blank now, please contact with HMM for more details.</p>
 		</form><!-- viewForm END -->
 		<!-- END OF SCHEDULE -->
-		
+
 		<!---------------------------------------------- CNTR TYPE/SIZE/QTY------------------->
 
 				<br/>
@@ -966,12 +966,12 @@
 						<th class="first bor_L_none" >Container No.</th>
 						<th>Cntr Type/Size</th>
 						<th>Weight</th>
-						<th>B/L no.</th>					
-						<th>Cell no.</th>					
+						<th>B/L no.</th>
+						<th>Cell no.</th>
 						<th>Service Term</th>
 						<th>B/L Status</th>
 						<th>Seal no.</th>
-						
+
 					</tr>
 				</thead>
 				<tbody>
@@ -988,14 +988,14 @@
 						<td> 28/03/10 </td>
 						<td>CY-CY</td>
 						<td onMouseOver="javascript:showtip(event,'Waybill');" onMouseOut="javascript:hidetip()" >
-							<!-- Waybill 일 경우, CRR Inquiry 팝업 연결 (2015/11/30 - 김준석 BJ) --> 
+							<!-- Waybill 일 경우, CRR Inquiry 팝업 연결 (2015/11/30 - 김준석 BJ) -->
 							<a href="#" onClick="javascript:viewCRRInquiry('TYWB0924004', this, event);" class="blueLink">
-							Waybill 
+							Waybill
 							</a>
 						</td>
 						<td>B908671 </td>
-						
-						
+
+
 					</tr>
 
 			</tbody>
@@ -1004,7 +1004,7 @@
 
 					<br/>
 					<p class="text_type02">* You can view Track&Trace results when clicking Container number.</p>
-					
+
 
 
 
@@ -1015,7 +1015,7 @@
 			<input type="hidden" name="selectedCNTRNo" id="selectedCNTRNo" value="GAOU6191712"/>
 			<!-- Bing Map 호출을 위한 Hidden Value 추가 - B/L No, BKG No., CNTR No. (2012/12/17) END -->
 		</form>
-		
+
 		<!-- Current Location START -->
 
 		<h4>Current Location</h4>
@@ -1053,7 +1053,7 @@
 							<a href="http://icc.hmm21.com:80/utility/hmmctp.aspx?view=external2&ctp=&bno=TYWB0924004&cno=GAOU6191712" target="_blank">
 								<img src="/ebiz/images/btn/TTmap.gif" alt="View" />
 							</a>
-						</td> 
+						</td>
 					</tr>
 
 
@@ -1063,20 +1063,20 @@
 		</form>
 
 		<!-- Current Location END -->
-		
+
 		<!-- Haz-mat Approval Status (US Export Only) START -->
-		
+
 		<!-- Haz-mat Approval Status (US Export Only) END -->
-		
+
 		<!-- Vessel Movement START -->
 
-		
-		
-		
+
+
+
 		<h4>Vessel Movement</h4>
-		
+
 		<div class="base_table01">
-		
+
 		<table>
 			<colgroup>
 				<col style="width:150px" />
@@ -1102,10 +1102,10 @@
 
 
 
-	
+
 					<td>PN2</td>
-	
-	
+
+
 
 					<td>KAOHSIUNG, TAIWAN</td>
 
@@ -1113,18 +1113,18 @@
 					<td>
 						<span class="font_blue">16-Dec-2019<br/>4:36 AM&nbsp;</span>
 					</td>
-					
-					
-					
-					
-					
-					
+
+
+
+
+
+
 
 							<td>VANCOUVER, BC, CANADA</td>
-						
+
 							<td>
 								<span class="font_blue">04-Jan-2020<br/>11:12 PM&nbsp;</span>
-							</td>					
+							</td>
 
 
 
@@ -1135,7 +1135,7 @@
 		</table>
 		</div>
 		<br/><p class="text_type02">* If your T/S vessel movement is not reflected on HMM website, please contact HMM.</p>
- 
+
 
 		<!-- Vessel Movement END -->
 
@@ -1191,7 +1191,7 @@
 						<th class="text_L bor_L_none">Detention Freetime Expiry Date</th>
 						<td>-</td>
 					</tr>
-					
+
 				</table>
 				</div>
 
@@ -1205,36 +1205,36 @@
 			<!--
 			<div class="btnRight ty2" style="margin-top:-35px;">
 			-->
-			<p class="text_R" style="margin-top:-30px;margin-bottom:10px;">		
+			<p class="text_R" style="margin-top:-30px;margin-bottom:10px;">
 
 				<a href="#" class="new_btn15" onClick="javascript:viewExcel('TYWB0924004','GAOU6191712','');">Excel</a>
-	
+
 
 
 				<a href="#" class="new_btn16" onClick="javascript:notUSRail('e');">Rail ETD/ETA</a>
-	
+
 
 
 				<a href="#" class="new_btn16" onClick="javascript:notUSRail('m');">View Rail Move</a>
-	
+
 			</p>
-			
+
 			<div class="base_table01">
 			<table>
 				<colgroup>
 					<col style="width:100px" />
 					<col style="width:85px" />
-					<col style="width:135px" />			
-					<col style="width:290px" />		
+					<col style="width:135px" />
+					<col style="width:290px" />
 					<col />
 				</colgroup>
 				<thead>
 					<tr>
 						<th class="first bor_L_none">Date</th>
-						<th>Time</th>				
-						<th>Location</th>				
-						<th>Status Description</th>				
-						<th>Mode</th>					
+						<th>Time</th>
+						<th>Location</th>
+						<th>Status Description</th>
+						<th>Mode</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -1244,8 +1244,8 @@
 							<td bgcolor="#F7F7F7">7:31 AM</td>
 							<td bgcolor="#F7F7F7"> VANCOUVER, BC, CANADA                              </td>
 							<td bgcolor="#F7F7F7" class="text_L">
-            
-								&nbsp;Discharged                                        
+
+								&nbsp;Discharged
 
 							</td>
 							<td bgcolor="#F7F7F7"> HYUNDAI INTEGRAL V 089E                            </td>
@@ -1256,8 +1256,8 @@
 							<td bgcolor="#FFFFFF">11:12 PM</td>
 							<td bgcolor="#FFFFFF"> VANCOUVER, BC, CANADA                              </td>
 							<td bgcolor="#FFFFFF" class="text_L">
-            
-								&nbsp;Vessel Arrived                                    
+
+								&nbsp;Vessel Arrived
 
 							</td>
 							<td bgcolor="#FFFFFF"> HYUNDAI INTEGRAL V 089E                            </td>
@@ -1268,8 +1268,8 @@
 							<td bgcolor="#F7F7F7">4:36 AM</td>
 							<td bgcolor="#F7F7F7"> KAOHSIUNG, TAIWAN                                  </td>
 							<td bgcolor="#F7F7F7" class="text_L">
-            
-								&nbsp;Vessel Departed                                   
+
+								&nbsp;Vessel Departed
 
 							</td>
 							<td bgcolor="#F7F7F7"> HYUNDAI INTEGRAL V 089E                            </td>
@@ -1280,8 +1280,8 @@
 							<td bgcolor="#FFFFFF">1:28 AM</td>
 							<td bgcolor="#FFFFFF"> KAOHSIUNG, TAIWAN                                  </td>
 							<td bgcolor="#FFFFFF" class="text_L">
-            
-								&nbsp;Shipped on                                        
+
+								&nbsp;Shipped on
 
 							</td>
 							<td bgcolor="#FFFFFF"> HYUNDAI INTEGRAL V 089E                            </td>
@@ -1292,8 +1292,8 @@
 							<td bgcolor="#F7F7F7">7:31 PM</td>
 							<td bgcolor="#F7F7F7"> KAOHSIUNG, TAIWAN                                  </td>
 							<td bgcolor="#F7F7F7" class="text_L">
-            
-								&nbsp;Gate In loading port                              
+
+								&nbsp;Gate In loading port
 
 							</td>
 							<td bgcolor="#F7F7F7"> Truck                                              </td>
@@ -1304,8 +1304,8 @@
 							<td bgcolor="#FFFFFF">2:07 PM</td>
 							<td bgcolor="#FFFFFF"> TAOYUAN, TAIWAN                                    </td>
 							<td bgcolor="#FFFFFF" class="text_L">
-            
-								&nbsp;Inland transportation started                     
+
+								&nbsp;Inland transportation started
 
 							</td>
 							<td bgcolor="#FFFFFF"> Truck                                              </td>
@@ -1316,8 +1316,8 @@
 							<td bgcolor="#F7F7F7">5:27 PM</td>
 							<td bgcolor="#F7F7F7"> TAOYUAN, TAIWAN                                    </td>
 							<td bgcolor="#F7F7F7" class="text_L">
-            
-								&nbsp;Gate in                                           
+
+								&nbsp;Gate in
 
 							</td>
 							<td bgcolor="#F7F7F7"> Truck                                              </td>
@@ -1328,8 +1328,8 @@
 							<td bgcolor="#FFFFFF">3:51 PM</td>
 							<td bgcolor="#FFFFFF"> TAOYUAN, TAIWAN                                    </td>
 							<td bgcolor="#FFFFFF" class="text_L">
-            
-								&nbsp;Released to the shipper for stuffing              
+
+								&nbsp;Released to the shipper for stuffing
 
 							</td>
 							<td bgcolor="#FFFFFF"> Truck                                              </td>
@@ -1338,18 +1338,18 @@
 				</tbody>
 			</table>
 			</div>
-	
+
 			<br/><p class="text_type02">* Tracking results are provided by Hyundai Merchant Marine Co.,Ltd : Monday, January 6, 2020 8:45 AM</p>
 			<!--print/email end-->
-		
+
 			<p class="text_R">
-				
+
 				<a href="#" class="new_btn08" style="width:40px;" onclick="javascipt:parent.document.documentElement.scrollTop = 0;">Top</a>
 				<a href="#" class="new_btn03" style="width:140px;" onclick="javascript:location.href='main_new.jsp';">Go Back to Mainpage</a>
-				
+
 			</p>
 			<!-- Shipment Progress END -->
-			
+
 
 	</div>	<!-- trackingForm END -->
 
@@ -1380,7 +1380,7 @@
 		</div>
 	</div>
 
-	<script language="JavaScript"> 
+	<script language="JavaScript">
 		showRestriction('hidden') ;
 	</script>
 
@@ -1399,7 +1399,7 @@
 	}
 </script>
 
-<script type="text/javascript">	
+<script type="text/javascript">
 	document.getElementById("loadingBar").style.display = "none";
 	document.getElementById("trackingForm").style.display = "";
 </script>

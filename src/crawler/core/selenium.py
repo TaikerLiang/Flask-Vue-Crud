@@ -55,6 +55,10 @@ class ChromeContentGetter(BaseContentGetter):
         options.add_argument("--disable-blink-features=AutomationControlled")
 
         self._driver = webdriver.Chrome(chrome_options=options)
+        self._driver.execute_cdp_cmd(
+            "Network.setBlockedURLs", {"urls": ["facebook.net/*", "www.google-analytics.com/*"]}
+        )
+        self._driver.execute_cdp_cmd("Network.enable", {})
 
 
 class FirefoxContentGetter(BaseContentGetter):

@@ -36,6 +36,7 @@ class BaseAirSpider(scrapy.Spider):
 
         self.request_args = kwargs
 
+        self.task_id = kwargs["task_id"]
         self.mawb_no = kwargs["mawb_no"]
 
         to_save = "save" in kwargs
