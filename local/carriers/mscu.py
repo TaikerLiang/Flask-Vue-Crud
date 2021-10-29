@@ -1,8 +1,9 @@
 import dataclasses
 import asyncio
 
-import scrapy
-from pyppeteer import launch, logging
+from scrapy import Request
+from scrapy.http import TextResponse
+from pyppeteer import logging
 from urllib3.exceptions import ReadTimeoutError
 
 from local.core import BaseLocalCrawler
@@ -55,7 +56,7 @@ class MscuContentGetter(PyppeteerContentGetter):
         await self.page.type("#ctl00_ctl00_plcMain_plcMain_TrackSearch_txtBolSearch_TextField", text=search_no)
         await asyncio.sleep(0.5)
         await self.page.click("#ctl00_ctl00_plcMain_plcMain_TrackSearch_hlkSearch")
-
+        await self.page.waitForNavigation()
         return await self.page.content()
 
 
@@ -83,10 +84,23 @@ class MscuLocalCrawler(BaseLocalCrawler):
                 res = asyncio.get_event_loop().run_until_complete(
                     self.content_getter.search(search_no=search_no, search_type=self._search_type)
                 )
-                response = scrapy.Selector(text=res)
+
+                response = self.get_response_selector(httptext=res, meta={"search_no": search_no})
                 main_rule = MainRoutingRule(search_type=self._search_type)
                 for item in main_rule.handle(response=response):
                     item["task_id"] = task_id
                     yield item
             except ReadTimeoutError:
                 raise LoadWebsiteTimeOutError(url=MSCU_URL)
+
+    @staticmethod
+    def get_response_selector(httptext, meta):
+        return TextResponse(
+            url=MSCU_URL,
+            body=httptext,
+            encoding="utf-8",
+            request=Request(
+                url=MSCU_URL,
+                meta=meta,
+            ),
+        )

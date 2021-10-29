@@ -59,16 +59,16 @@ class LocalCrawler:
 
 
 def start():
-    carrier_edi_client = EdiClientService(
-        url=f"{config.EDI_DOMAIN}/api/tracking-carrier/local/", edi_user=config.EDI_USER, edi_token=config.EDI_TOKEN
-    )
-    local_tasks = carrier_edi_client.get_local_tasks()
-    logger.info(f"number of tasks: {len(local_tasks)}")
+    # carrier_edi_client = EdiClientService(
+    #     url=f"{config.EDI_DOMAIN}/api/tracking-carrier/local/", edi_user=config.EDI_USER, edi_token=config.EDI_TOKEN
+    # )
+    # local_tasks = carrier_edi_client.get_local_tasks()
+    # logger.info(f"number of tasks: {len(local_tasks)}")
 
-    # local_tasks = [
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '128063', 'mbl_no': 'ZIMUSHH30668677'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '128051', 'mbl_no': 'ZIMUNGB9880133'},
-    # ]
+    local_tasks = [
+        {"type": "carrier", "scac_code": "MSCU", "task_id": "135434", "mbl_no": "MEDUT8157140"},
+        {"type": "carrier", "scac_code": "MSCU", "task_id": "135405", "mbl_no": "MEDUQ5828072"},
+    ]
 
     if len(local_tasks) == 0:
         logger.warning(f"sleep 10 minutes")
