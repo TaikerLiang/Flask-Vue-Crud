@@ -1,4 +1,4 @@
-class LoadWebsiteTimeOut(Exception):
+class TimeoutError(Exception):
     pass
 
 
