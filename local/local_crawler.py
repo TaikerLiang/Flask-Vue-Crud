@@ -152,6 +152,5 @@ def start():
 
 if __name__ == "__main__":
     logging.config.fileConfig(fname="log.conf", disable_existing_loggers=False)
-    start()
-    # while True:
-    #     start()
+    while True:
+        start()
