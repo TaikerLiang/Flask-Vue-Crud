@@ -1,3 +1,4 @@
 #!/bin/bash
-git pull
+git fetch
+git reset --hard origin/master
 python3 local_crawler.py
