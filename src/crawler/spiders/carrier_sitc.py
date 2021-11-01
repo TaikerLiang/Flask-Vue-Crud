@@ -27,7 +27,7 @@ from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.extractors.table_extractors import HeaderMismatchError, BaseTableLocator
 from crawler.services.captcha_service import CaptchaSolverService
 
-SITC_BASE_URL = "https://api.sitcline.com/"
+SITC_BASE_URL = "https://api.sitcline.com"
 
 
 class CarrierSitcSpider(BaseCarrierSpider):
