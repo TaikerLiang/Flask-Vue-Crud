@@ -1,10 +1,15 @@
+import time
 from typing import List
 
+import scrapy
+from scrapy.http import TextResponse
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 
-from selenium import webdriver
-
-from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
+from crawler.core.selenium import ChromeContentGetter
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.ptp_share_spider import ContainerRoutingRule
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
@@ -44,8 +49,27 @@ class ScspaShareSpider(BaseMultiTerminalSpider):
                     for t_id in t_ids:
                         result["task_id"] = t_id
                         yield result
+            elif isinstance(result, RequestOption):
+                yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
+
+    def _build_request_by(self, option: RequestOption):
+        meta = {
+            RuleManager.META_TERMINAL_CORE_RULE_NAME: option.rule_name,
+            **option.meta,
+        }
+
+        if option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                method=RequestOption.METHOD_GET,
+                url=option.url,
+                headers=option.headers,
+                meta=meta,
+                cookies=option.cookies,
+            )
+        else:
+            raise RuntimeError()
 
 
 class ContainerRoutingRule(BaseRoutingRule):
@@ -66,38 +90,94 @@ class ContainerRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        driver = webdriver.Chrome("chromedriver")
-        driver.get("https://goport.scspa.com/scspa/index")
-        name_area = driver.find_element_by_id("loginId-inputEl")
-        name_area.send_keys("tk@hardcoretech.co")
-        passwd_area = driver.find_element_by_id("passwordId-inputEl")
-        passwd_area.send_keys("Hardc0re")
-        button = driver.find_element_by_xpath("//div[contains(@class, 'x-btn-default-large-icon')]")
+        getter = ContentGetter()
+        content_table = getter.get(response.meta.get("container_no_list"))
+
+        for content in content_table:
+            yield TerminalItem(
+                container_no=content[0],
+                available=content[8],
+                holds=[ele.strip() for ele in content[9].split("\\")],
+                vessel=content[2],
+            )
+
+
+class ContentGetter(ChromeContentGetter):
+    USERNAME = "tk@hardcoretech.co"
+    PASSWORD = "Hardc0re"
+    URL = "https://goport.scspa.com/scspa/index"
+
+    def get(self, container_no_list):
+        self.login()
+        self.search(container_no_list)
+        return self.extract(self._driver.page_source)
+
+    def login(self):
+        self._driver.get(self.URL)
+
+        # login
+        name_area = self._driver.find_element_by_id("loginId-inputEl")
+        name_area.send_keys(self.USERNAME)
+        passwd_area = self._driver.find_element_by_id("passwordId-inputEl")
+        passwd_area.send_keys(self.PASSWORD)
+        button = self._driver.find_element_by_xpath("//div[contains(@class, 'x-btn-default-large-icon')]")
         button = button.find_element_by_css_selector("button")
         button.click()
 
-        reports = driver.find_element_by_xpath("//a[@class='x-menu-item-link']")
-        reports.click()
+    def search(self, container_no_list):
+        self._to_search_page()
+        self._input_search_target(container_no_list)
+        WebDriverWait(self._driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, "//div[@id='quickInptPtrWinPnlWinId']"))
+        )
 
-        list_tree = driver.find_element_by_xpath("//div[@id='queryListingeTreeGridId-body']")
+    def extract(self, page_source):
+        content_table = []
+        response = TextResponse(
+            url=self._driver.current_url,
+            body=page_source,
+            encoding="utf-8",
+        )
+
+        table = response.xpath("(//table[contains(@class, 'x-grid-table')])[2]")
+        tr_list = table.xpath("./tbody/tr")[1:]
+        for tr in tr_list:
+            content = [ele.strip() for ele in tr.xpath("./td/div/text()").getall()]
+            content_table.append(tr.xpath("./td/div/text()").getall())
+
+        # table = self._driver.find_element_by_xpath("(//table[contains(@class, 'x-grid-table')])[2]")
+        # tr_list = table.find_elements_by_xpath("./tbody/tr")[1:]
+        # for tr in tr_list:
+        #     content_table.append([td_div.text for td_div in tr.find_elements_by_xpath("./td/div")])
+
+        return content_table
+
+    def _to_search_page(self):
+        WebDriverWait(self._driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, "//a[@class='x-menu-item-link']"))
+        )
+        reports = self._driver.find_element_by_xpath("//a[text()='REPORTS']")
+        reports.click()
+        time.sleep(1)  # wait for website
+        quick_reports = self._driver.find_element_by_xpath("//a[@class='x-menu-item-link']")
+        quick_reports.click()
+
+        # toggle folders and finally click 'Track Imports by Container WT NC'
+        list_tree = self._driver.find_element_by_xpath("//div[@id='queryListingeTreeGridId-body']")
+        time.sleep(1)  # wait for website
         folder_toggler = list_tree.find_element_by_xpath("//tr[2]/td/div/img[contains(@class, 'x-tree-expander')]")
         folder_toggler.click()
+        time.sleep(1)  # wait for website
         folder_toggler = list_tree.find_element_by_xpath("//tr[3]/td/div/img[contains(@class, 'x-tree-expander')]")
         folder_toggler.click()
+        time.sleep(1)  # wait for website
         leaf = list_tree.find_element_by_xpath("//div[text()='Track Imports by Container WT NC']")
         leaf.click()
+        time.sleep(1)  # wait for website
 
-        textarea = driver.find_element_by_xpath("//textarea")
-        textarea.send_keys("HAMU1028917")
-
-        button = driver.find_element_by_xpath("//button[@id='scspabutton-1178-btnEl']")
+    def _input_search_target(self, container_no_list):
+        textarea = self._driver.find_element_by_xpath("//textarea")
+        textarea.send_keys("\n".join(container_no_list))
+        button = self._driver.find_element_by_xpath("//button[contains(@id, 'scspabutton-')]")
         button.click()
-
-        table = driver.find_element_by_xpath("(//table[contains(@class, 'x-grid-table')])[2]")
-        tr_list = table.find_elements_by_xpath("./tbody/tr")[1:]
-        for tr in tr_list:
-            td_list = tr.find_elements_by_xpath("./td/div")
-            for td in td_list:
-                print(td.text)
-
-        yield ToContainerPageRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
+        time.sleep(1)  # wait for website
