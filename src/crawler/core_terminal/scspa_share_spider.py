@@ -116,12 +116,12 @@ class ContentGetter(ChromeContentGetter):
         self._driver.get(self.URL)
 
         # login
-        name_area = self._driver.find_element_by_id("loginId-inputEl")
+        name_area = self._driver.find_element(By.ID, "loginId-inputEl")
         name_area.send_keys(self.USERNAME)
-        passwd_area = self._driver.find_element_by_id("passwordId-inputEl")
+        passwd_area = self._driver.find_element(By.ID, "passwordId-inputEl")
         passwd_area.send_keys(self.PASSWORD)
-        button = self._driver.find_element_by_xpath("//div[contains(@class, 'x-btn-default-large-icon')]")
-        button = button.find_element_by_css_selector("button")
+        button = self._driver.find_element(By.XPATH, "//div[contains(@class, 'x-btn-default-large-icon')]")
+        button = button.find_element(By.CSS_SELECTOR, "button")
         button.click()
 
     def search(self, container_no_list):
@@ -145,39 +145,34 @@ class ContentGetter(ChromeContentGetter):
             content = [ele.strip() for ele in tr.xpath("./td/div/text()").getall()]
             content_table.append(tr.xpath("./td/div/text()").getall())
 
-        # table = self._driver.find_element_by_xpath("(//table[contains(@class, 'x-grid-table')])[2]")
-        # tr_list = table.find_elements_by_xpath("./tbody/tr")[1:]
-        # for tr in tr_list:
-        #     content_table.append([td_div.text for td_div in tr.find_elements_by_xpath("./td/div")])
-
         return content_table
 
     def _to_search_page(self):
         WebDriverWait(self._driver, 20).until(
             EC.presence_of_element_located((By.XPATH, "//a[@class='x-menu-item-link']"))
         )
-        reports = self._driver.find_element_by_xpath("//a[text()='REPORTS']")
+        reports = self._driver.find_element(By.XPATH, "//a[text()='REPORTS']")
         reports.click()
         time.sleep(1)  # wait for website
-        quick_reports = self._driver.find_element_by_xpath("//a[@class='x-menu-item-link']")
+        quick_reports = self._driver.find_element(By.XPATH, "//a[@class='x-menu-item-link']")
         quick_reports.click()
 
         # toggle folders and finally click 'Track Imports by Container WT NC'
-        list_tree = self._driver.find_element_by_xpath("//div[@id='queryListingeTreeGridId-body']")
+        list_tree = self._driver.find_element(By.XPATH, "//div[@id='queryListingeTreeGridId-body']")
         time.sleep(1)  # wait for website
-        folder_toggler = list_tree.find_element_by_xpath("//tr[2]/td/div/img[contains(@class, 'x-tree-expander')]")
+        folder_toggler = list_tree.find_element(By.XPATH, "//tr[2]/td/div/img[contains(@class, 'x-tree-expander')]")
         folder_toggler.click()
         time.sleep(1)  # wait for website
-        folder_toggler = list_tree.find_element_by_xpath("//tr[3]/td/div/img[contains(@class, 'x-tree-expander')]")
+        folder_toggler = list_tree.find_element(By.XPATH, "//tr[3]/td/div/img[contains(@class, 'x-tree-expander')]")
         folder_toggler.click()
         time.sleep(1)  # wait for website
-        leaf = list_tree.find_element_by_xpath("//div[text()='Track Imports by Container WT NC']")
+        leaf = list_tree.find_element(By.XPATH, "//div[text()='Track Imports by Container WT NC']")
         leaf.click()
         time.sleep(1)  # wait for website
 
     def _input_search_target(self, container_no_list):
-        textarea = self._driver.find_element_by_xpath("//textarea")
+        textarea = self._driver.find_element(By.XPATH, "//textarea")
         textarea.send_keys("\n".join(container_no_list))
-        button = self._driver.find_element_by_xpath("//button[contains(@id, 'scspabutton-')]")
+        button = self._driver.find_element(By.XPATH, "//button[contains(@id, 'scspabutton-')]")
         button.click()
         time.sleep(1)  # wait for website

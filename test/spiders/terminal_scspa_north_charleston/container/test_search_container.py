@@ -16,19 +16,14 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    "sub, container_no_list",
+    "sub",
     [
-        ("01_basic", ["FCIU9155148", "FSCU8053140", "HDMU4748456", "TCNU7907787"]),
+        ("01_basic"),
     ],
 )
-def test_content_getter_extract(sub, container_no_list, sample_loader):
+def test_content_getter_extract(sub, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
-    response = TextResponse(
-        url="www.google.com",
-        body=httptext,
-        encoding="utf-8",
-    )
     getter = ContentGetter()
     results = getter.extract(page_source=httptext)
 
