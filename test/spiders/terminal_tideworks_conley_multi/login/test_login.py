@@ -17,16 +17,16 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub,container_nos',
+    'sub,container_no',
     [
-        ('01_basic', ['MEDU7322906', 'DFSU7128363', 'TCNU7329755']),
+        ('01_basic', 'MEDU7322906'),
     ],
 )
-def test_login_handle(sub, container_nos, sample_loader):
+def test_login_handle(sub, container_no, sample_loader):
     html_text = sample_loader.read_file(sub, 'sample.html')
 
     option = LoginRoutingRule.build_request_option(
-        container_nos=container_nos,
+        container_nos=[container_no],
         company_info=TerminalTideworksConleySpider.company_info,
     )
 
