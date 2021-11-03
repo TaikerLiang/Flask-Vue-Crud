@@ -110,6 +110,10 @@ class ContentGetter(ChromeContentGetter):
     def get(self, container_no_list):
         self.login()
         self.search(container_no_list)
+        # check the result popup is appeared
+        WebDriverWait(self._driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, "//div[@id='quickInptPtrWinPnlWinId']"))
+        )
         return self.extract(self._driver.page_source)
 
     def login(self):
@@ -125,11 +129,9 @@ class ContentGetter(ChromeContentGetter):
         button.click()
 
     def search(self, container_no_list):
+        self._close_popup()
         self._to_search_page()
         self._input_search_target(container_no_list)
-        WebDriverWait(self._driver, 20).until(
-            EC.presence_of_element_located((By.XPATH, "//div[@id='quickInptPtrWinPnlWinId']"))
-        )
 
     def extract(self, page_source):
         content_table = []
@@ -147,6 +149,18 @@ class ContentGetter(ChromeContentGetter):
 
         return content_table
 
+    def _close_popup(self):
+        while True:
+            try:
+                self._driver.find_element(By.XPATH, "//div[id='tosModelPopUpWinId']")
+            except:
+                break
+            else:
+                close_button = self._driver.find_element(
+                    By.XPATH, "//button[id='agreeTermsAndServiceOKButtonId-btnEl']"
+                )
+                close_button.click()
+
     def _to_search_page(self):
         WebDriverWait(self._driver, 20).until(
             EC.presence_of_element_located((By.XPATH, "//a[@class='x-menu-item-link']"))
@@ -156,21 +170,36 @@ class ContentGetter(ChromeContentGetter):
         time.sleep(1)  # wait for website
         quick_reports = self._driver.find_element(By.XPATH, "//a[@class='x-menu-item-link']")
         quick_reports.click()
+        time.sleep(1)  # wait for website
 
         # toggle folders and finally click 'Track Imports by Container WT NC'
+        WebDriverWait(self._driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, "//div[@id='queryListingeTreeGridId-body']"))
+        )
         list_tree = self._driver.find_element(By.XPATH, "//div[@id='queryListingeTreeGridId-body']")
-        time.sleep(1)  # wait for website
+        WebDriverWait(self._driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, "//tr[2]/td/div/img[contains(@class, 'x-tree-expander')]"))
+        )
         folder_toggler = list_tree.find_element(By.XPATH, "//tr[2]/td/div/img[contains(@class, 'x-tree-expander')]")
         folder_toggler.click()
         time.sleep(1)  # wait for website
-        folder_toggler = list_tree.find_element(By.XPATH, "//tr[3]/td/div/img[contains(@class, 'x-tree-expander')]")
+        WebDriverWait(self._driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, "//img[@class='x-tree-elbow-line']"))
+        )
+        folder_toggler = list_tree.find_element(
+            By.XPATH, "//img[@class='x-tree-elbow-line']/following-sibling::img[contains(@class, 'x-tree-expander')]"
+        )
         folder_toggler.click()
         time.sleep(1)  # wait for website
+        WebDriverWait(self._driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, "//div[text()='Track Imports by Container WT NC']"))
+        )
         leaf = list_tree.find_element(By.XPATH, "//div[text()='Track Imports by Container WT NC']")
         leaf.click()
         time.sleep(1)  # wait for website
 
     def _input_search_target(self, container_no_list):
+        WebDriverWait(self._driver, 20).until(EC.presence_of_element_located((By.XPATH, "//textarea")))
         textarea = self._driver.find_element(By.XPATH, "//textarea")
         textarea.send_keys("\n".join(container_no_list))
         button = self._driver.find_element(By.XPATH, "//button[contains(@id, 'scspabutton-')]")
