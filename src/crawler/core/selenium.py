@@ -1,5 +1,6 @@
-from selenium import webdriver
 import random
+from selenium import webdriver
+from typing import Dict
 
 
 class BaseContentGetter:
@@ -17,6 +18,9 @@ class BaseContentGetter:
 
     def get_cookies(self):
         return self._driver.get_cookies()
+
+    def get_cookies_dict(self) -> Dict:
+        return {cookie_obj.get("name"): cookie_obj.get("value") for cookie_obj in self._driver.get_cookies()}
 
     def execute_script(self, script: str):
         self._driver.execute_script(script)

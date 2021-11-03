@@ -100,7 +100,7 @@ class LoginRoutingRule(BaseRoutingRule):
         container_no_list = response.meta["container_no_list"]
         browser = ContentGetter()
         browser.login()
-        cookies = browser.get_cookie_dict()
+        cookies = browser.get_cookies_dict()
         browser.close()
 
         yield GetContainerNoRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
@@ -259,9 +259,3 @@ class ContentGetter(ChromeContentGetter):
             EC.element_to_be_clickable((By.CSS_SELECTOR, "input#btnLogin"))
         )
         login_btn.click()
-
-    def get_cookie_dict(self):
-        cookies = {}
-        for cookie_object in self._driver.get_cookies():
-            cookies[cookie_object["name"]] = cookie_object["value"]
-        return cookies
