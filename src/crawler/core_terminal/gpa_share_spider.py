@@ -110,7 +110,7 @@ class LoginRoutingRule(BaseRoutingRule):
         container_no_list = response.meta.get("container_no_list")
         browser = ContentGetter()
         browser.login()
-        cookies = browser.get_cookie_dict()
+        cookies = browser.get_cookies_dict()
         browser.close()
 
         yield ToContainerPageRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
@@ -275,10 +275,3 @@ class ContentGetter(ChromeContentGetter):
         )
         login_btn.click()
         time.sleep(10)
-
-    def get_cookie_dict(self):
-        cookies = {}
-        for cookie_object in self._driver.get_cookies():
-            cookies[cookie_object.get("name")] = cookie_object.get("value")
-
-        return cookies
