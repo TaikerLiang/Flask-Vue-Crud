@@ -85,22 +85,10 @@ class MscuLocalCrawler(BaseLocalCrawler):
                     self.content_getter.search(search_no=search_no, search_type=self._search_type)
                 )
 
-                response = self.get_response_selector(httptext=res, meta={"search_no": search_no})
+                response = self.get_response_selector(url=MSCU_URL, httptext=res, meta={"search_no": search_no})
                 main_rule = MainRoutingRule(search_type=self._search_type)
                 for item in main_rule.handle(response=response):
                     item["task_id"] = task_id
                     yield item
             except ReadTimeoutError:
                 raise LoadWebsiteTimeOutError(url=MSCU_URL)
-
-    @staticmethod
-    def get_response_selector(httptext, meta):
-        return TextResponse(
-            url=MSCU_URL,
-            body=httptext,
-            encoding="utf-8",
-            request=Request(
-                url=MSCU_URL,
-                meta=meta,
-            ),
-        )
