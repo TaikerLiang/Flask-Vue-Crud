@@ -243,8 +243,10 @@ class MainRoutingRule(BaseRoutingRule):
     @staticmethod
     def _is_search_no_invalid(response: scrapy.Selector):
         error_message = response.css("div#ctl00_ctl00_plcMain_plcMain_pnlTrackingResults > h3::text").get()
-        if error_message == "No matching tracking information. Please try again.":
-            return True
+        possible_prefix = ["Your reference number was not found", "We are unable to"]
+        for prefix in possible_prefix:
+            if error_message and prefix in error_message:
+                return True
         return False
 
 

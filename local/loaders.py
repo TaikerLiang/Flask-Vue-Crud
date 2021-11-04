@@ -1,10 +1,11 @@
-from carriers import zimu, whlc, cmdu
+from carriers import zimu, whlc, mscu, cmdu
 from terminals import trapac_la, trapac_oak, trapac_jax
 
 
 CARRIERS = [
     zimu.ZimuLocalCrawler,
     whlc.WhlcLocalCrawler,
+    mscu.MscuLocalCrawler,
     cmdu.CmduLocalCrawler,
 ]
 
