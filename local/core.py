@@ -4,6 +4,8 @@ import time
 import string
 import abc
 
+from scrapy import Request
+from scrapy.http import TextResponse
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -98,6 +100,18 @@ class BaseLocalCrawler:
     @abc.abstractmethod
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):
         pass
+
+    @staticmethod
+    def get_response_selector(url, httptext, meta):
+        return TextResponse(
+            url=url,
+            body=httptext,
+            encoding="utf-8",
+            request=Request(
+                url=url,
+                meta=meta,
+            ),
+        )
 
     def quit(self):
         self.content_getter.quit()

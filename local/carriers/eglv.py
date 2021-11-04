@@ -2,9 +2,7 @@ import dataclasses
 import asyncio
 import logging
 
-from scrapy import Request
-from scrapy.http import TextResponse
-from pyppeteer.errors import TimeoutError, ElementHandleError
+from pyppeteer.errors import TimeoutError
 from pyppeteer_stealth import stealth
 
 from local.core import BaseLocalCrawler
@@ -24,7 +22,7 @@ from src.crawler.spiders.carrier_eglv_multi import (
     BookingMainInfoRoutingRule,
 )
 
-EGLV_INFO_URL = 'https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do'
+EGLV_INFO_URL = "https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do"
 
 
 @dataclasses.dataclass
@@ -57,10 +55,10 @@ class EglvContentGetter(PyppeteerContentGetter):
 
         for _ in range(self.MAX_CAPTCHA_RETRY):
             await self.handle_captcha()
-            self.page.on('dialog', lambda dialog: asyncio.ensure_future(self.close_dialog(dialog, task_id)))
+            self.page.on("dialog", lambda dialog: asyncio.ensure_future(self.close_dialog(dialog, task_id)))
             await self.page.click("#quick input[type=button]")
             try:
-                await self.page.waitForSelector("table[cellpadding=\"2\"]", {"timeout": 10000})
+                await self.page.waitForSelector('table[cellpadding="2"]', {"timeout": 10000})
                 await asyncio.sleep(1)
                 content = await self.page.content()
                 return content
@@ -95,23 +93,23 @@ class EglvContentGetter(PyppeteerContentGetter):
         await dialog.accept()
 
     async def custom_info_page(self):
-        await self.page.click("a[href=\"JavaScript:toggle(\'CustomsInfo\');\"]")
+        await self.page.click("a[href=\"JavaScript:toggle('CustomsInfo');\"]")
         await asyncio.sleep(1)
-        await self.page.click("a[href=\"JavaScript:getDispInfo(\'AMTitle\',\'AMInfo\');\"]")
+        await self.page.click("a[href=\"JavaScript:getDispInfo('AMTitle','AMInfo');\"]")
         await self.page.waitForSelector("div#AMInfo table")
         await asyncio.sleep(2)
         div_ele = await self.page.querySelector("div#AMInfo")
         return await self.page.evaluate("(element) => element.outerHTML", div_ele)
 
     async def release_status_page(self):
-        await self.page.click("a[href=\"JavaScript:getDispInfo(\'RlsStatusTitle\',\'RlsStatusInfo\');\"]")
+        await self.page.click("a[href=\"JavaScript:getDispInfo('RlsStatusTitle','RlsStatusInfo');\"]")
         await self.page.waitForSelector("div#RlsStatusInfo table")
         await asyncio.sleep(2)
         div_ele = await self.page.querySelector("div#RlsStatusInfo")
         return await self.page.evaluate("(element) => element.outerHTML", div_ele)
 
     async def container_page(self, container_no):
-        await self.page.click(f"a[href^=\"javascript:frmCntrMoveDetail(\'{container_no}\')\"]")
+        await self.page.click(f"a[href^=\"javascript:frmCntrMoveDetail('{container_no}')\"]")
         await asyncio.sleep(3)
         container_page = (await self.browser.pages())[-1]
         await stealth(container_page)
@@ -148,8 +146,11 @@ class EglvLocalCrawler(BaseLocalCrawler):
 
     def handle_mbl(self, mbl_no, task_id):
         httptext = asyncio.get_event_loop().run_until_complete(
-            self.content_getter.search_and_return(mbl_no, self._search_type, task_id))
-        response = self.get_response_selector(httptext, meta={"mbl_no": mbl_no, "task_id": task_id})
+            self.content_getter.search_and_return(mbl_no, self._search_type, task_id)
+        )
+        response = self.get_response_selector(
+            url=EGLV_INFO_URL, httptext=httptext, meta={"mbl_no": mbl_no, "task_id": task_id}
+        )
         if self._is_search_no_invalid(response=response):
             raise DataNotFoundError(task_id=task_id)
 
@@ -168,13 +169,16 @@ class EglvLocalCrawler(BaseLocalCrawler):
                         yield release_item
 
                 elif result.rule_name == ContainerStatusRoutingRule.name:
-                    for container_item in self.handle_container_status(result.meta['container_no'], task_id):
+                    for container_item in self.handle_container_status(result.meta["container_no"], task_id):
                         yield container_item
 
     def handle_booking(self, search_no, task_id):
         httptext = asyncio.get_event_loop().run_until_complete(
-            self.content_getter.search_and_return(search_no, self._search_type, task_id))
-        response = self.get_response_selector(httptext, meta={"booking_no": search_no, "task_id": task_id})
+            self.content_getter.search_and_return(search_no, self._search_type, task_id)
+        )
+        response = self.get_response_selector(
+            url=EGLV_INFO_URL, httptext=httptext, meta={"booking_no": search_no, "task_id": task_id}
+        )
         if self._is_search_no_invalid(response=response):
             raise DataNotFoundError(task_id=task_id)
 
@@ -184,22 +188,22 @@ class EglvLocalCrawler(BaseLocalCrawler):
             if isinstance(result, BaseCarrierItem):
                 yield result
             elif isinstance(result, RequestOption) and result.rule_name == ContainerStatusRoutingRule.name:
-                for container_item in self.handle_container_status(result.meta['container_no'], task_id):
+                for container_item in self.handle_container_status(result.meta["container_no"], task_id):
                     yield container_item
 
     def handle_filing_status(self, mbl_no, task_id):
-        httptext = asyncio.get_event_loop().run_until_complete(
-            self.content_getter.custom_info_page())
-        response = self.get_response_selector(httptext, meta={"mbl_no": mbl_no, "task_id": task_id})
+        httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.custom_info_page())
+        response = self.get_response_selector(
+            url=EGLV_INFO_URL, httptext=httptext, meta={"mbl_no": mbl_no, "task_id": task_id}
+        )
         rule = FilingStatusRoutingRule()
 
         for item in rule.handle(response):
             yield item
 
     def handle_release_status(self, task_id):
-        httptext = asyncio.get_event_loop().run_until_complete(
-            self.content_getter.release_status_page())
-        response = self.get_response_selector(httptext, meta={"task_id": task_id})
+        httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.release_status_page())
+        response = self.get_response_selector(url=EGLV_INFO_URL, httptext=httptext, meta={"task_id": task_id})
         rule = ReleaseStatusRoutingRule()
 
         for item in rule.handle(response):
@@ -207,7 +211,9 @@ class EglvLocalCrawler(BaseLocalCrawler):
 
     def handle_container_status(self, container_no, task_id):
         httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.container_page(container_no))
-        response = self.get_response_selector(httptext, meta={"container_no": container_no, "task_id": task_id})
+        response = self.get_response_selector(
+            url=EGLV_INFO_URL, httptext=httptext, meta={"container_no": container_no, "task_id": task_id}
+        )
         rule = ContainerStatusRoutingRule()
 
         for item in rule.handle(response):
@@ -215,29 +221,17 @@ class EglvLocalCrawler(BaseLocalCrawler):
 
     @staticmethod
     def _is_search_no_invalid(response):
-        message_under_search_table = response.css('table table tr td.f12wrdb1::text').get()
+        message_under_search_table = response.css("table table tr td.f12wrdb1::text").get()
         if isinstance(message_under_search_table, str):
             message_under_search_table = message_under_search_table.strip()
         mbl_invalid_message = (
-            'No information on B/L No., please enter a valid B/L No. or contact our offices for assistance.'
+            "No information on B/L No., please enter a valid B/L No. or contact our offices for assistance."
         )
         boooking_invalid_message = (
-            'No information on Booking No., please enter a valid Booking No. or contact our offices for assistance.'
+            "No information on Booking No., please enter a valid Booking No. or contact our offices for assistance."
         )
 
         if message_under_search_table == mbl_invalid_message or message_under_search_table == boooking_invalid_message:
             return True
 
         return False
-
-    @staticmethod
-    def get_response_selector(httptext, meta):
-        return TextResponse(
-            url=EGLV_INFO_URL,
-            body=httptext,
-            encoding='utf-8',
-            request=Request(
-                url=EGLV_INFO_URL,
-                meta=meta,
-            )
-        )
