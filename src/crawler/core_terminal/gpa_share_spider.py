@@ -11,8 +11,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.exceptions import TerminalResponseFormatError
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError
+from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem, InvalidDataFieldItem
 from crawler.core_terminal.ptp_share_spider import ContainerRoutingRule
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
@@ -50,13 +50,16 @@ class GpaShareSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if True in [isinstance(result, item) for item in [TerminalItem, InvalidDataFieldItem]]:
                 c_no = result.get("container_no")
                 t_ids = self.cno_tid_map.get(c_no)
                 if t_ids != None:
                     for t_id in t_ids:
                         result["task_id"] = t_id
                         yield result
+            elif isinstance(result, InvalidContainerNoItem):
+                result["task_id"] = self.task_ids
+                yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
             else:
@@ -174,18 +177,28 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_no_list = response.meta.get("container_no_list")
-        table = self._get_table_list(response)
-        info_list = self._extract_info_list(table)
-        for info in info_list:
-            yield TerminalItem(
-                container_no=info.get("container_no"),
-                available=info.get("available"),
-                carrier_release=info.get("line_release"),
-                customs_release=info.get("customs_release"),
-            )
+        try:
+            table = self._get_table_list(response)
+        except TerminalInvalidContainerNoError:
+            yield InvalidContainerNoItem(container_no=container_no_list)
+        else:
+            info_list = self._extract_info_list(table)
+            for info in info_list:
+                if info.get("invalid"):
+                    yield info.get("invalid")
+                else:
+                    yield TerminalItem(
+                        container_no=info.get("container_no"),
+                        available=info.get("available"),
+                        carrier_release=info.get("line_release"),
+                        customs_release=info.get("customs_release"),
+                    )
 
     def _get_table_list(self, response: Response) -> List[List]:
         tr_selector = response.css("tbody[class='tablebody1'] tr")
+        if len(tr_selector) == 1 and tr_selector[0].css("td::text").get() == "No items found for this table.":
+            raise TerminalInvalidContainerNoError
+
         table = []
         for tr in tr_selector:
             data = []
@@ -203,9 +216,12 @@ class ContainerRoutingRule(BaseRoutingRule):
             container_no = row[1]
             location = row[5]
             line_status = row[7]
-            custom_status = row[8]
+            customs_status = row[8]
 
-            self._check_data_validability(available, container_no, location, line_status, custom_status)
+            invalid_item = self._check_data_validability(available, container_no, location, line_status, customs_status)
+            if invalid_item:
+                info_list.append({"invalid": invalid_item})
+                continue
 
             info = {}
 
@@ -221,7 +237,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             else:
                 info["line_release"] = False
 
-            if custom_status == "RELEASED":
+            if customs_status == "RELEASED":
                 info["customs_release"] = True
             else:
                 info["customs_release"] = False
@@ -230,30 +246,31 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         return info_list
 
-    def _check_data_validability(self, available, container_no, location, line_status, custom_status):
+    def _check_data_validability(self, available, container_no, location, line_status, customs_status):
+        invalid_data_field_item = InvalidDataFieldItem(
+            container_no=container_no, valid_data_dict={}, invalid_data_dict={}
+        )
+
         if available != "Yes" and available != "No":
-            raise TerminalResponseFormatError(
-                f"Field 'available' is 'Yes' or 'No' only, "
-                f"but '{available}' appeared while container_no == {container_no}."
-            )
+            invalid_data_field_item["valid_data_dict"].update({"available": ["Yes", "No"]})
+            invalid_data_field_item["invalid_data_dict"].update({"available": available})
 
         if location != "C" and location != "V" and location != "Y":
-            raise TerminalResponseFormatError(
-                f"Field 'location' is 'C' or 'V' or 'Y' only, "
-                f"but '{location}' appeared while container_no == {container_no}."
-            )
+            invalid_data_field_item["valid_data_dict"].update({"location": ["C", "V", "Y"]})
+            invalid_data_field_item["invalid_data_dict"].update({"location": location})
 
         if line_status != "RELEASED" and line_status != "HOLD":
-            raise TerminalResponseFormatError(
-                f"Field 'line_status' is 'RELEASED' or 'HOLD' only, "
-                f"but '{line_status}' appeared while container_no == {container_no}."
-            )
+            invalid_data_field_item["valid_data_dict"].update({"line_status": ["RELEASE", "HOLD"]})
+            invalid_data_field_item["invalid_data_dict"].update({"line_status": line_status})
 
-        if custom_status != "RELEASED" and custom_status != "HOLD":
-            raise TerminalResponseFormatError(
-                f"Field 'custom_status' is 'RELEASED' or 'HOLD' only, "
-                f"but '{custom_status}' appeared while container_no == {container_no}."
-            )
+        if customs_status != "RELEASED" and customs_status != "HOLD":
+            invalid_data_field_item["valid_data_dict"].update({"customs_status": ["RELEASE", "HOLD"]})
+            invalid_data_field_item["invalid_data_dict"].update({"customs_status": customs_status})
+
+        if invalid_data_field_item["valid_data_dict"]:
+            return invalid_data_field_item
+        else:
+            return None
 
 
 class ContentGetter(ChromeContentGetter):
