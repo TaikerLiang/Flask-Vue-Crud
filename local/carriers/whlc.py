@@ -1,17 +1,18 @@
 import dataclasses
 import asyncio
+import logging
 
-import scrapy
 from scrapy import Selector
-from pyppeteer import launch, logging
 from pyppeteer.errors import TimeoutError, ElementHandleError
 from urllib3.exceptions import ReadTimeoutError
 
 from local.core import BaseLocalCrawler
+from local.proxy import HydraproxyProxyManager, ProxyManager
 from src.crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
 from src.crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from src.crawler.core_carrier.exceptions import LoadWebsiteTimeOutError, CarrierInvalidSearchNoError, CARRIER_RESULT_STATUS_ERROR
 from src.crawler.core_carrier.items import (MblItem, LocationItem, VesselItem, ContainerItem, ContainerStatusItem, ExportErrorData)
+from src.crawler.core.pyppeteer import PyppeteerContentGetter
 from src.crawler.spiders.carrier_whlc_multi import BookingRoutingRule, MblRoutingRule
 
 WHLC_BASE_URL = 'https://www.wanhai.com/views/cargoTrack/CargoTrack.xhtml'
@@ -23,97 +24,73 @@ class ProxyOption:
     session: str
 
 
-class WhlcContentGetter:
-    def __init__(self):
-        logging.disable(logging.DEBUG)
+logger = logging.getLogger("local-crawler-whlc")
+
+
+class WhlcContentGetter(PyppeteerContentGetter):
+    def __init__(self, proxy_manager: ProxyManager = None):
+        super().__init__(proxy_manager)
         self._type_select_num_map = {
             SHIPMENT_TYPE_MBL: "2",
             SHIPMENT_TYPE_BOOKING: "4",
         }
-        self._browser = None
-        self._page = None
-
-    async def launch_and_go(self):
-        browser_args = [
-            "--no-sandbox",
-            "--disable-gpu",
-            "--disable-blink-features",
-            "--disable-infobars",
-            "--window-size=1920,1080",
-        ]
-        self._browser = await launch(headless=True, args=browser_args)
-        await self.switch_to_last()
-        await self._page.goto(WHLC_BASE_URL, options={"timeout": 60000})
-        await asyncio.sleep(3)
 
     async def multi_search(self, search_nos, search_type):
+        await self.page.goto(WHLC_BASE_URL, options={"timeout": 60000})
+        await asyncio.sleep(3)
         select_num = self._type_select_num_map[search_type]
-        await self._page.waitForSelector("#cargoType")
-        await self._page.select("#cargoType", select_num)
+        await self.page.waitForSelector("#cargoType")
+        await self.page.select("#cargoType", select_num)
         await asyncio.sleep(1)
         for i, search_no in enumerate(search_nos, start=1):
-            await self._page.type(f"#q_ref_no{i}", search_no)
+            await self.page.type(f"#q_ref_no{i}", search_no)
             await asyncio.sleep(0.5)
         await asyncio.sleep(3)
-        await self._page.click('#Query')
-        await asyncio.sleep(3)
+        await self.page.click('#Query')
+        await asyncio.sleep(10)
         await self.switch_to_last()
-        await self._page.waitForSelector("table.tbl-list")
+        await self.page.waitForSelector("table.tbl-list")
         await asyncio.sleep(5)
-        return await self._page.content()
+        return await self.page.content()
 
     async def go_detail_page(self, idx: int):
-        await self._page.waitForSelector(
+        await self.page.waitForSelector(
             f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u')
-        await self._page.click(f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u')
-        await asyncio.sleep(3)
+        await self.page.click(f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u')
+        await asyncio.sleep(10)
         await self.switch_to_last()
-        await self._page.waitForSelector("table.tbl-list")
+        await self.page.waitForSelector("table.tbl-list")
         await asyncio.sleep(3)
-        return await self._page.content()
+        return await self.page.content()
 
     async def go_history_page(self, idx: int):
-        await self._page.waitForSelector(
+        await self.page.waitForSelector(
             f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u'),
-        await self._page.click(f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u'),
-        await asyncio.sleep(3),
+        await self.page.click(f'#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u'),
+        await asyncio.sleep(10)
         await self.switch_to_last()
-        await self._page.waitForSelector("table.tbl-list")
+        await self.page.waitForSelector("table.tbl-list")
         await asyncio.sleep(3)
-        return await self._page.content()
+        return await self.page.content()
 
     async def go_booking_history_page(self, idx: int):
-        await self._page.waitForSelector(
+        await self.page.waitForSelector(
             f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"),
-        await self._page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"),
-        await asyncio.sleep(3),
+        await self.page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"),
+        await asyncio.sleep(10),
         await self.switch_to_last()
-        await self._page.waitForSelector("table.tbl-list")
+        await self.page.waitForSelector("table.tbl-list")
         await asyncio.sleep(3)
-        return await self._page.content()
+        return await self.page.content()
 
     async def switch_to_last(self):
-        pages = await self._browser.pages()
-        self._page = pages[-1]
-        await self._page.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36")
-        await self._page.setViewport(
-            {
-                'width': 1920,
-                'height': 1080,
-                'deviceScaleFactor': 1,
-            }
-        )
+        pages = await self.browser.pages()
+        self.page = pages[-1]
         await asyncio.sleep(3)
 
-    async def get_page_source(self):
-        return await self._page.content()
-
     async def close_page(self):
-        await self._page.close()
+        await self.page.close()
         await asyncio.sleep(1)
-
-    async def close(self):
-        await self._browser.close()
 
     def close_page_and_switch_last(self):
         asyncio.get_event_loop().run_until_complete(self.close_page())
@@ -125,9 +102,8 @@ class WhlcLocalCrawler(BaseLocalCrawler):
 
     def __init__(self):
         super().__init__()
-        self.content_getter = WhlcContentGetter()
+        self.content_getter = WhlcContentGetter(proxy_manager=HydraproxyProxyManager(logger=logger))
         self._search_type = ""
-        self.driver = WhlcContentGetter()
 
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):
         task_ids = task_ids.split(",")
@@ -143,12 +119,11 @@ class WhlcLocalCrawler(BaseLocalCrawler):
                 yield item
 
     def handle_mbl(self, mbl_nos, task_ids):
-        asyncio.get_event_loop().run_until_complete(self.driver.launch_and_go())
         rule = MblRoutingRule()
 
         try:
             page_source = asyncio.get_event_loop().run_until_complete(
-                self.driver.multi_search(search_nos=mbl_nos, search_type=self._search_type))
+                self.content_getter.multi_search(search_nos=mbl_nos, search_type=self._search_type))
             response_selector = Selector(text=page_source)
             container_list = rule.extract_container_info(response_selector)
             mbl_no_set = rule.get_mbl_no_set_from(container_list=container_list)
@@ -187,7 +162,7 @@ class WhlcLocalCrawler(BaseLocalCrawler):
             except TimeoutError:
                 yield ExportErrorData(task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR,
                                       detail='Load detail page timeout')
-                self.driver.close_page_and_switch_last()
+                self.content_getter.close_page_and_switch_last()
                 continue
 
             # history page
@@ -199,14 +174,13 @@ class WhlcLocalCrawler(BaseLocalCrawler):
             except TimeoutError:
                 yield ExportErrorData(task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR,
                                       detail='Load status page timeout')
-                self.driver.close_page_and_switch_last()
+                self.content_getter.close_page_and_switch_last()
                 continue
 
-            self.driver.close_page_and_switch_last()
-        asyncio.get_event_loop().run_until_complete(self.driver.close())
+            self.content_getter.close_page_and_switch_last()
 
     def handle_detail_page(self, task_id, idx):
-        page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(idx + 2))
+        page_source = asyncio.get_event_loop().run_until_complete(self.content_getter.go_detail_page(idx + 2))
         detail_selector = Selector(text=page_source)
         date_information = MblRoutingRule.extract_date_information(detail_selector)
 
@@ -228,10 +202,10 @@ class WhlcLocalCrawler(BaseLocalCrawler):
             eta=date_information['pod_eta'],
         )
 
-        self.driver.close_page_and_switch_last()
+        self.content_getter.close_page_and_switch_last()
 
     def handle_history_page(self, task_id, container_no, idx):
-        page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_history_page(idx + 2))
+        page_source = asyncio.get_event_loop().run_until_complete(self.content_getter.go_history_page(idx + 2))
         history_selector = Selector(text=page_source)
         container_status_list = MblRoutingRule.extract_container_status(history_selector)
 
@@ -246,9 +220,8 @@ class WhlcLocalCrawler(BaseLocalCrawler):
 
     def handle_booking(self, booking_nos, task_ids):
         rule = BookingRoutingRule()
-        asyncio.get_event_loop().run_until_complete(self.driver.launch_and_go())
         page_source = asyncio.get_event_loop().run_until_complete(
-            self.driver.multi_search(search_nos=booking_nos, search_type=self._search_type)
+            self.content_getter.multi_search(search_nos=booking_nos, search_type=self._search_type)
         )
 
         response_selector = Selector(text=page_source)
@@ -268,12 +241,12 @@ class WhlcLocalCrawler(BaseLocalCrawler):
             task_id = task_ids[index]
             try:
                 page_source = asyncio.get_event_loop().run_until_complete(
-                    self.driver.go_detail_page(b_idx + 2)
+                    self.content_getter.go_detail_page(b_idx + 2)
                 )
             except TimeoutError:
                 yield ExportErrorData(task_id=task_id, booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
                                       detail='Load detail page timeout')
-                self.driver.close_page_and_switch_last()
+                self.content_getter.close_page_and_switch_last()
                 continue
             for item in self.handle_booking_detail_page(response=page_source, task_id=task_id, search_no=search_no):
                 yield item
@@ -281,8 +254,7 @@ class WhlcLocalCrawler(BaseLocalCrawler):
             for item in self.handle_booking_history_page(response=page_source, task_id=task_id, search_no=search_no):
                 yield item
 
-            self.driver.close_page_and_switch_last()
-        self.driver.close()
+            self.content_getter.close_page_and_switch_last()
 
     def handle_booking_detail_page(self, response, task_id, search_no):
         basic_info = BookingRoutingRule.extract_basic_info(Selector(text=response))
@@ -319,12 +291,12 @@ class WhlcLocalCrawler(BaseLocalCrawler):
             # history page
             try:
                 page_source = asyncio.get_event_loop().run_until_complete(
-                    self.driver.go_booking_history_page(idx + 2)
+                    self.content_getter.go_booking_history_page(idx + 2)
                 )
             except TimeoutError:
                 yield ExportErrorData(task_id=task_id, booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
                                       detail='Load status page timeout')
-                self.driver.close_page_and_switch_last()
+                self.content_getter.close_page_and_switch_last()
                 continue
             history_selector = Selector(text=page_source)
 
@@ -340,4 +312,4 @@ class WhlcLocalCrawler(BaseLocalCrawler):
             for item in container_status_items:
                 yield item
 
-            self.driver.close_page_and_switch_last()
+            self.content_getter.close_page_and_switch_last()

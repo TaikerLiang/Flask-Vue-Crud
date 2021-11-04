@@ -6,13 +6,13 @@ from pyppeteer_stealth import stealth
 
 
 class PyppeteerContentGetter:
-    def __init__(self, proxy_manager: None):
+    def __init__(self, proxy_manager: None, is_headless: bool = False):
         self._is_first = True
         self.proxy_manager = proxy_manager
         self.browser = None
         self.page = None
 
-        asyncio.get_event_loop().run_until_complete(self.launch_browser(is_headless=False))
+        asyncio.get_event_loop().run_until_complete(self.launch_browser(is_headless=is_headless))
 
     async def launch_browser(self, is_headless: bool):
         browser_args = [

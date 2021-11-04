@@ -18,9 +18,9 @@ from urllib3.exceptions import ReadTimeoutError
 from PIL import Image
 
 from crawler.core.selenium import ChromeContentGetter
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.request_helpers import ProxyManager, RequestOption
+from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem,
@@ -28,14 +28,10 @@ from crawler.core_carrier.items import (
     LocationItem,
     ContainerItem,
     ContainerStatusItem,
+    ExportErrorData,
     DebugItem,
 )
-from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    CarrierInvalidMblNoError,
-    LoadWebsiteTimeOutError,
-    CarrierInvalidSearchNoError,
-)
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, LoadWebsiteTimeOutError
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
@@ -67,8 +63,6 @@ class CarrierOoluSpider(BaseCarrierSpider):
         else:
             self._rule_manager = RuleManager(rules=booking_rules)
             self.search_no = self.booking_no
-
-        self._proxy_manager = ProxyManager(session="oolu", logger=self.logger)
 
     def start(self):
         option = CargoTrackingRule.build_request_option(search_no=self.search_no)
@@ -373,7 +367,7 @@ class CargoTrackingRule(BaseRoutingRule):
         if os.path.exists("./slider01.jpg"):
             os.remove("./slider01.jpg")
 
-        for item in self._handle_response(response=response, search_type=self._search_type):
+        for item in self._handle_response(response=response, search_type=self._search_type, search_no=search_no):
             yield item
 
     @staticmethod
@@ -381,9 +375,17 @@ class CargoTrackingRule(BaseRoutingRule):
         return not bool(response.css("td.pageTitle"))
 
     @classmethod
-    def _handle_response(cls, response, search_type):
+    def _handle_response(cls, response, search_type, search_no):
         if cls.is_search_no_invalid(response):
-            raise CarrierInvalidSearchNoError(search_type=search_type)
+            if search_type == SHIPMENT_TYPE_MBL:
+                yield ExportErrorData(
+                    mbl_no=search_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found",
+                )
+            else:
+                yield ExportErrorData(
+                    booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found",
+                )
+            return
 
         locator = _PageLocator()
         selector_map = locator.locate_selectors(response=response)
