@@ -73,18 +73,10 @@ class CmduLocalCrawler(BaseLocalCrawler):
 
     def handle(self, search_no, task_id):
         httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.search(search_no=search_no))
-        response = TextResponse(
+        response = self.get_response_selector(
             url=CMDU_BASE_URL,
-            encoding='utf-8',
-            body=httptext,
-            request=Request(
-                url=CMDU_BASE_URL,
-                meta={
-                    "search_no": search_no,
-                    "base_url": CMDU_BASE_URL,
-                    "task_id": task_id,
-                },
-            )
+            httptext=httptext,
+            meta={"search_no": search_no, "base_url": CMDU_BASE_URL, "task_id": task_id}
         )
         first_tier_rule = FirstTierRoutingRule(search_type=self._search_type)
         container_rule = ContainerStatusRoutingRule()
@@ -94,18 +86,10 @@ class CmduLocalCrawler(BaseLocalCrawler):
             elif isinstance(result, RequestOption):
                 container_no = result.meta['container_no']
                 httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.search(search_no=container_no))
-                response = TextResponse(
+                response = self.get_response_selector(
                     url=CMDU_BASE_URL,
-                    encoding='utf-8',
-                    body=httptext,
-                    request=Request(
-                        url=CMDU_BASE_URL,
-                        meta={
-                            "search_no": search_no,
-                            "container_no": container_no,
-                            "task_id": task_id,
-                        },
-                    )
+                    httptext=httptext,
+                    meta={"search_no": search_no, "container_no": container_no, "task_id": task_id}
                 )
                 for container_item in container_rule.handle(response):
                     yield container_item
