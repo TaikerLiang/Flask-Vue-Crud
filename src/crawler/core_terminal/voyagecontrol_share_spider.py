@@ -277,7 +277,8 @@ class ContainerInquiryRoutingRule(BaseRoutingRule):
         else:
             row = data["query-response"]["data-table"]["rows"]["row"]["field"]
 
-        container_data["last_free_day"] = row[23]
+        if not row[23].strip():
+            container_data["last_free_day"] = row[23].strip()
 
         yield TerminalItem(**container_data)
 

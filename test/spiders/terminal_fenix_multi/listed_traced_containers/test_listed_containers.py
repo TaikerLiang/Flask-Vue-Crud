@@ -17,19 +17,15 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub,container_no,is_first',
-    [
-        ('01_first_and_exist', 'TGHU6651727', True),
-        ('02_first_and_not_exist', 'FBLU0255200', True),
-        ('03_not_first_and_exist', 'TCNU1794174', False),
-    ],
+    "sub,container_no,is_first",
+    [("01_first_and_exist", "TGHU6651727", True), ("02_first_and_not_exist", "FBLU0255200", True),],
 )
 def test_container_handle(sub, container_no, is_first, sample_loader):
-    json_text = sample_loader.read_file(sub, 'sample.json')
+    json_text = sample_loader.read_file(sub, "sample.json")
 
     option = ListTracedContainerRoutingRule.build_request_option(
         container_no=container_no,
-        authorization_token='',
+        authorization_token="",
         company_info=TerminalFenixSpider.company_info,
         is_first=is_first,
     )
@@ -37,14 +33,14 @@ def test_container_handle(sub, container_no, is_first, sample_loader):
     response = TextResponse(
         url=option.url,
         body=json_text,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=option.url,
             meta={
-                'is_first': is_first,
-                'container_no': container_no,
-                'authorization_token': '',
-                'company_info': TerminalFenixSpider.company_info,
+                "is_first": is_first,
+                "container_no": container_no,
+                "authorization_token": "",
+                "company_info": TerminalFenixSpider.company_info,
             },
         ),
     )
@@ -52,5 +48,5 @@ def test_container_handle(sub, container_no, is_first, sample_loader):
     rule = ListTracedContainerRoutingRule()
     results = list(rule.handle(response=response))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
