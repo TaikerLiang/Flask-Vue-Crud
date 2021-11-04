@@ -124,6 +124,15 @@ class HydraproxyProxyManager(ProxyManager):
             ProxyOption(group="gofr13759xsfv32656", session="IRESQtdTKshvmQUU"),
             ProxyOption(group="gofr13759arzb32655", session="9jx9Els7Ea8YvFCy"),
             ProxyOption(group="gofr13759drdq32360", session="ZOU1a2G3ccUG7rId"),
+            ProxyOption(group="gofr13759yvdl36220", session="GaBpxGf6g7Z7E66B"),
+            ProxyOption(group="gofr13759vvqe36219", session="Y99mI2aYysg9z7V3"),
+            ProxyOption(group="gofr13759ogik36218", session="kTA62vzds7Q6OKyC"),
+            ProxyOption(group="gofr13759eoay36217", session="u7mcvxFArKdlUL8G"),
+            ProxyOption(group="gofr13759xoqu36225", session="pucO3Ieel00WE7Ip_country-UnitedStates"),
+            ProxyOption(group="gofr13759kwam36224", session="O3WIQz1KdWh8kv4W_country-UnitedStates"),
+            ProxyOption(group="gofr13759cijc36223", session="sdrBBKFJbffKT5RW_country-UnitedStates"),
+            ProxyOption(group="gofr13759awmw36222", session="bwZVktukWSEeb7Lt_country-UnitedStates"),
+            ProxyOption(group="gofr13759hvzv36221", session="BW0RajxUJdLB1dA6_country-UnitedStates"),
         ]
 
     def renew_proxy(self):

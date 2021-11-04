@@ -1,0 +1,39 @@
+#<type>(<scope>): <subject>
+
+[why]
+[how]
+
+[JIRA_TICKET]
+
+# See doc/README.commit.md for more information
+
+# <type> must be one of the following:
+#
+#   build: Changes that affect the build system or external dependencies (example scopes: webpack, npm, grunt)
+#   ci: Changes to our CI configuration files and scripts (example scopes: ansible, jenkins)
+#   docs: Documentation only changes
+#   feat: A new feature
+#   fix: A bug fix
+#   patch: A patch which is used to modify all production database
+#   perf: A code change that improves performance
+#   refactor: A code change that neither fixes a bug nor adds a feature
+#   style: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+#   test: Adding missing tests or correcting existing tests
+#   design: Adding / Editing static page, css for design purpose
+#   chore: Updating grunt tasks etc; no production code change
+#   migration: A code change that has database migration (example subject: migration(mbl): add direct master related fields)
+
+# <scope> should follow these rules:
+#
+#   all lower case
+#   use `-` to separate words
+#   use `/` to show nested scope
+#   use `|` to show different scope
+
+# common scopes
+#
+#   carrier/<carrier_name>
+#   terminal/<terminal_name>
+#   rail/<rail_name>
+#   local
+#   internal
