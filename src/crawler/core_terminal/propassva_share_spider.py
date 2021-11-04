@@ -225,7 +225,6 @@ class ContainerRoutingRule(BaseRoutingRule):
         container_no_list = response.meta["container_no_list"]
         response_dict = json.loads(response.text)
         for content in response_dict["Content"]:
-            print(f"content: {json.dumps(content)}")
             if content["ContainerInfo"] == "":
                 raise TerminalInvalidContainerNoError
             container_info = json.loads(content["ContainerInfo"])
