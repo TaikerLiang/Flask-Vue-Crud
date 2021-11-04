@@ -2,9 +2,7 @@ import dataclasses
 import asyncio
 import logging
 
-from scrapy import Request
-from scrapy.http import TextResponse
-from pyppeteer.errors import TimeoutError, ElementHandleError
+from pyppeteer.errors import TimeoutError
 from pyppeteer_stealth import stealth
 
 from local.core import BaseLocalCrawler

@@ -1,8 +1,6 @@
 import dataclasses
 import asyncio
 
-from scrapy import Request
-from scrapy.http import TextResponse
 from pyppeteer import logging
 from urllib3.exceptions import ReadTimeoutError
 
