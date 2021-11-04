@@ -33,16 +33,12 @@ def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
 
     option = CargoTrackingRule.build_request_option(search_no=mbl_no)
     response = TextResponse(
-        url=option.url,
-        body=html_file,
-        encoding="utf-8",
-        request=Request(
-            url=option.url,
-            meta=option.meta,
-        ),
+        url=option.url, body=html_file, encoding="utf-8", request=Request(url=option.url, meta=option.meta,),
     )
 
-    results = list(CargoTrackingRule._handle_response(response=response, search_type=SHIPMENT_TYPE_MBL))
+    results = list(
+        CargoTrackingRule._handle_response(response=response, search_type=SHIPMENT_TYPE_MBL, search_no=mbl_no)
+    )
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)

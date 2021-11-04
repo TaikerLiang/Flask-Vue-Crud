@@ -28,12 +28,7 @@ class CompanyInfo:
 
 class TtiWutShareSpider(BaseMultiTerminalSpider):
     name = ""
-    company_info = CompanyInfo(
-        url="",
-        upper_short="",
-        email="",
-        password="",
-    )
+    company_info = CompanyInfo(url="", upper_short="", email="", password="",)
 
     def __init__(self, *args, **kwargs):
         super(TtiWutShareSpider, self).__init__(*args, **kwargs)
@@ -78,17 +73,10 @@ class TtiWutShareSpider(BaseMultiTerminalSpider):
         }
 
         if option.method == RequestOption.METHOD_POST_FORM:
-            return scrapy.FormRequest(
-                url=option.url,
-                formdata=option.form_data,
-                meta=meta,
-            )
+            return scrapy.FormRequest(url=option.url, formdata=option.form_data, meta=meta,)
 
         elif option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(
-                url=option.url,
-                meta=meta,
-            )
+            return scrapy.Request(url=option.url, meta=meta,)
 
         else:
             raise RuntimeError()
@@ -104,10 +92,7 @@ class MainRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
-            meta={
-                "container_no_list": container_no_list,
-                "company_info": company_info,
-            },
+            meta={"container_no_list": container_no_list, "company_info": company_info,},
         )
 
     def handle(self, response):
@@ -128,9 +113,7 @@ class MainRoutingRule(BaseRoutingRule):
     def _handle_response(cls, response, container_no_list):
         containers = cls._extract_container_info(response, len(container_no_list))
         for container in containers:
-            yield TerminalItem(
-                **container,
-            )
+            yield TerminalItem(**container,)
 
     @staticmethod
     def _extract_container_info(response: Selector, numbers: int):
@@ -205,7 +188,7 @@ class ContentGetter(ChromeContentGetter):
 
     def is_alert_present(self):
         try:
-            self._driver.switch_to_alert()
+            self._driver.switch_to.alert.accept()
             return True
         except NoAlertPresentException:
             return False

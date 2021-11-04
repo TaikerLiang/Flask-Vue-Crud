@@ -1,17 +1,22 @@
-from carriers import zimu, whlc, mscu
-from terminals import trapac_la, trapac_oak
+from carriers import zimu, whlc, mscu, cmdu
+from terminals import trapac_la, trapac_oak, trapac_jax
 
 
 CARRIERS = [
     zimu.ZimuLocalCrawler,
     whlc.WhlcLocalCrawler,
     mscu.MscuLocalCrawler,
+    cmdu.CmduLocalCrawler,
 ]
 
 CARRIER_CLASS_MAP = {c.code: c for c in CARRIERS}
 
 
-TERMINALS = [trapac_la.LaTrapacLocalCrawler, trapac_oak.OakTrapacLocalCrawler]
+TERMINALS = [
+    trapac_la.LaTrapacLocalCrawler,
+    trapac_oak.OakTrapacLocalCrawler,
+    trapac_jax.JaxTrapacLocalCrawler,
+]
 
 TERMINALS_CLASS_MAP = {t.code: t for t in TERMINALS}
 

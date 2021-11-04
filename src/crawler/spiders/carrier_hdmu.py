@@ -24,11 +24,9 @@ from crawler.core_carrier.request_helpers import RequestOption, ProxyMaxRetryErr
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from, BaseMatchRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
-from crawler.extractors.table_extractors import (
+from crawler.core.table import (
     TableExtractor,
-    TopHeaderTableLocator,
-    TopLeftHeaderTableLocator,
-    LeftHeaderTableLocator,
+    BaseTable,
 )
 
 BASE_URL = "http://www.hmm21.com"
@@ -695,10 +693,12 @@ class MainRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _is_search_no_invalid(response):
-        err_message = response.css("div#trackingForm p.text_type03::text").get()
+        err_message = response.css('div#trackingForm p.text_type03::text').get()
+        err_message_underline = response.text.strip()
         if (
-            isinstance(err_message, str)
-            and "number is invalid.  Please try it again with correct number." in err_message
+                isinstance(err_message, str) and
+                'number is invalid.  Please try it again with correct number.' in err_message or
+                err_message_underline == 'This page is not valid anymore.'
         ):
             return True
         return False
@@ -1048,11 +1048,11 @@ class ContainerRoutingRule(BaseRoutingRule):
         table = TableExtractor(table_locator=table_locator)
 
         container_status_list = []
-        for index, tr in enumerate(table_selector.css("tbody tr")):
-            date = table.extract_cell("Date", index)
-            time = table.extract_cell("Time", index)
-            location = table.extract_cell("Location", index, extractor=IgnoreDashTdExtractor())
-            mode = table.extract_cell("Mode", index, extractor=IgnoreDashTdExtractor())
+        for index in table_locator.iter_left_header():
+            date = table.extract_cell('Date', index)
+            time = table.extract_cell('Time', index)
+            location = table.extract_cell('Location', index, extractor=IgnoreDashTdExtractor())
+            mode = table.extract_cell('Mode', index, extractor=IgnoreDashTdExtractor())
 
             container_status_list.append(
                 {
@@ -1163,7 +1163,9 @@ class AvailabilityRoutingRule(BaseRoutingRule):
         table_locator = TopHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
-        return table.extract_cell("STATUS", 0) or None
+        if table.has_header('STATUS', 0):
+            return table.extract_cell('STATUS', 0)
+        return None
 
 
 class RedBlueTdExtractor(BaseTableCellExtractor):
@@ -1178,6 +1180,71 @@ class RedBlueTdExtractor(BaseTableCellExtractor):
 
 class IgnoreDashTdExtractor(BaseTableCellExtractor):
     def extract(self, cell: Selector):
-        td_text = cell.css("::text").get()
-        text = td_text.strip() if td_text else ""
-        return text if text != "-" else None
+        td_text = cell.css('::text').get()
+        text = td_text.strip() if td_text else ''
+        return text if text != '-' else None
+
+
+class TopHeaderTableLocator(BaseTable):
+    """
+    +---------+---------+-----+---------+ <thead>
+    | Title 1 | Title 2 | ... | Title N |     <th>
+    +---------+---------+-----+---------+ </thead>
+    +---------+---------+-----+---------+ <tbody>
+    | Data    |         |     |         | <tr><td>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr><td>
+    +---------+---------+-----+---------+
+    | ...     |         |     |         | <tr><td>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr><td>
+    +---------+---------+-----+---------+ </tbody>
+    """
+    def parse(self, table: Selector):
+        top_header_list = []
+
+        for th in table.css('thead th'):
+            raw_top_header = th.css('::text').get()
+            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ''
+            top_header_list.append(top_header)
+            self._td_map[top_header] = []
+
+        data_tr_list = table.css('tbody tr')
+        for index, tr in enumerate(data_tr_list):
+            self._left_header_set.add(index)
+            for top, td in zip(top_header_list, tr.css('td')):
+                self._td_map[top].append(td)
+
+
+class TopLeftHeaderTableLocator(BaseTable):
+    def parse(self, table: Selector):
+        top_header_map = {}  # top_index: top_header
+
+        for index, th in enumerate(table.css('thead th')):
+            if index == 0:
+                continue  # ignore top-left header
+
+            top_header = th.css('::text').get().strip()
+            top_header_map[index] = top_header
+            self._td_map[top_header] = {}
+
+        for tr in table.css('tbody tr'):
+            td_list = list(tr.css('td'))
+
+            left_header = td_list[0].css('::text').get().strip()
+            self._left_header_set.add(left_header)
+
+            for top_index, td in enumerate(td_list[1:], start=1):
+                top = top_header_map[top_index]
+                self._td_map[top][left_header] = td
+
+
+class LeftHeaderTableLocator(BaseTable):
+    def parse(self, table: Selector):
+        for tr in table.css('tr'):
+            left_header = tr.css('th ::text').get().strip()
+            self._left_header_set.add(left_header)
+
+            for top_index, td in enumerate(tr.css('td')):
+                td_dict = self._td_map.setdefault(top_index, {})
+                td_dict[left_header] = td

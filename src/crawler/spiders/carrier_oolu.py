@@ -92,11 +92,7 @@ class CarrierOoluSpider(BaseCarrierSpider):
 
         if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
-                url=option.url,
-                headers=option.headers,
-                meta=meta,
-                dont_filter=True,
-                callback=self.parse,
+                url=option.url, headers=option.headers, meta=meta, dont_filter=True, callback=self.parse,
             )
 
         else:
@@ -344,9 +340,7 @@ class CargoTrackingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://www.google.com",
-            meta={
-                "search_no": search_no,
-            },
+            meta={"search_no": search_no,},
         )
 
     def get_save_name(self, response) -> str:
@@ -373,7 +367,7 @@ class CargoTrackingRule(BaseRoutingRule):
         if os.path.exists("./slider01.jpg"):
             os.remove("./slider01.jpg")
 
-        for item in self._handle_response(response=response, search_type=self._search_type):
+        for item in self._handle_response(response=response, search_type=self._search_type, search_no=search_no):
             yield item
 
     @staticmethod
@@ -381,22 +375,17 @@ class CargoTrackingRule(BaseRoutingRule):
         return not bool(response.css("td.pageTitle"))
 
     @classmethod
-    def _handle_response(cls, response, search_type):
-        search_no = response.meta["search_no"]
-
+    def _handle_response(cls, response, search_type, search_no):
         if cls.is_search_no_invalid(response):
             if search_type == SHIPMENT_TYPE_MBL:
                 yield ExportErrorData(
-                    mbl_no=search_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail="Data was not found",
+                    mbl_no=search_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found",
                 )
             else:
                 yield ExportErrorData(
-                    booking_no=search_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail="Data was not found",
+                    booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found",
                 )
+            return
 
         locator = _PageLocator()
         selector_map = locator.locate_selectors(response=response)
@@ -432,8 +421,7 @@ class CargoTrackingRule(BaseRoutingRule):
         container_list = cls._extract_container_list(selector_map=selector_map)
         for i, container in enumerate(container_list):
             yield ContainerStatusRule.build_request_option(
-                container_no=container["container_no"].strip(),
-                click_element_css=f"a[id='form:link{i}']",
+                container_no=container["container_no"].strip(), click_element_css=f"a[id='form:link{i}']",
             )
 
     @staticmethod
@@ -588,10 +576,7 @@ class CargoTrackingRule(BaseRoutingRule):
             # container_no_text: OOLU843521-8
             container_id, check_no = container_no_text.split("-")
             container_no_list.append(
-                {
-                    "container_id": container_id,
-                    "container_no": f"{container_id}{check_no}",
-                }
+                {"container_id": container_id, "container_no": f"{container_id}{check_no}",}
             )
         return container_no_list
 
@@ -819,10 +804,7 @@ class ContainerStatusRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://www.google.com",
-            meta={
-                "container_no": container_no,
-                "click_element_css": click_element_css,
-            },
+            meta={"container_no": container_no, "click_element_css": click_element_css,},
         )
 
     @staticmethod

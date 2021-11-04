@@ -10,7 +10,8 @@ from local.helpers import CrawlerHelper
 from local.defines import LocalTask
 from local.core import BaseLocalCrawler
 from local.services import DataHandler, TaskAggregator
-from local.exceptions import AccessDeniedError, DataNotFoundError
+from local.exceptions import AccessDeniedError, DataNotFoundError, TimeoutError
+from local.utility import timeout
 
 logger = logging.getLogger("local-crawler")
 
@@ -58,21 +59,35 @@ class LocalCrawler:
         self.crawler.quit()
 
 
-def start():
-    # carrier_edi_client = EdiClientService(
-    #     url=f"{config.EDI_DOMAIN}/api/tracking-carrier/local/", edi_user=config.EDI_USER, edi_token=config.EDI_TOKEN
-    # )
-    # local_tasks = carrier_edi_client.get_local_tasks()
-    # logger.info(f"number of tasks: {len(local_tasks)}")
+@timeout(130, "Function slow; aborted")
+def run_spider(local_crawler, edi_client, task, start_time):
+    for result in local_crawler.run(task=task):
+        code, resp = edi_client.send_provider_result_back(
+            task_id=result["task_id"], provider_code="local", item_result=result
+        )
+        logger.info(
+            f"{ScreenColor.SUCCESS} SUCCESS, time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids} {code}"
+        )
 
-    local_tasks = [
-        {"type": "carrier", "scac_code": "MSCU", "task_id": "135434", "mbl_no": "MEDUT8157140"},
-        {"type": "carrier", "scac_code": "MSCU", "task_id": "135405", "mbl_no": "MEDUQ5828072"},
-    ]
+
+def start():
+    carrier_edi_client = EdiClientService(
+        url=f"{config.EDI_DOMAIN}/api/tracking-carrier/local/", edi_user=config.EDI_USER, edi_token=config.EDI_TOKEN
+    )
+    local_tasks = carrier_edi_client.get_local_tasks()
+    logger.info(f"number of tasks: {len(local_tasks)}")
+
+    # local_tasks = [
+    #     {'type': 'terminal', 'firms_code': 'M029', 'task_id': '128063', 'container_no': 'SEGU6740600'},
+    #     {'type': 'terminal', 'firms_code': 'M029', 'task_id': '128051', 'container_no': 'TCNU3065021'},
+    #     {'type': 'terminal', 'firms_code': 'M029', 'task_id': '128051', 'container_no': 'TLLU5288386'},
+    #     {'type': 'terminal', 'firms_code': 'M029', 'task_id': '128051', 'container_no': 'BMOU4142155'},
+    # ]
 
     if len(local_tasks) == 0:
         logger.warning(f"sleep 10 minutes")
         time.sleep(10 * 60)
+
     task_aggregator = TaskAggregator()
     _map = task_aggregator.aggregate_tasks(tasks=local_tasks)
     helper = CrawlerHelper()
@@ -95,21 +110,14 @@ def start():
 
         for task in local_tasks:
             try:
-                for result in local_crawler.run(task=task):
-                    code, resp = edi_client.send_provider_result_back(
-                        task_id=result["task_id"], provider_code="local", item_result=result
-                    )
-                    logger.info(
-                        f"{ScreenColor.SUCCESS} SUCCESS, time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids} {code}"
-                    )
-            except TimeoutException:
+                run_spider(local_crawler=local_crawler, edi_client=edi_client, task=task, start_time=start_time)
+            except (TimeoutException, TimeoutError):
                 logger.warning(
                     f"{ScreenColor.WARNING} (TimeoutException), time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"
                 )
                 logger.warning(f"Browser Closed")
                 local_crawler.quit()
-                print(f"sleeping 5 mins")
-                time.sleep(5 * 60)
+                time.sleep(1)
                 local_crawler = LocalCrawler(_type=_type, crawler=helper.get_crawler(code=_code))
             except (NoSuchElementException, StaleElementReferenceException):
                 logger.warning(
@@ -122,8 +130,7 @@ def start():
                 )
                 logger.warning(f"Browser Closed")
                 local_crawler.quit()
-                print(f"sleeping 5 mins")
-                time.sleep(5 * 60)
+                time.sleep(1)
                 local_crawler = LocalCrawler(_type=_type, crawler=helper.get_crawler(code=_code))
             except DataNotFoundError as e:
                 logger.warning(
@@ -135,6 +142,7 @@ def start():
                     f"{ScreenColor.ERROR} Unknown Exception: {str(e)}, time consuming: {(time.time() - start_time):.2f}, code: {task.code} task_ids: {task.task_ids}"
                 )
                 local_crawler.quit()
+                time.sleep(1)
                 local_crawler = LocalCrawler(_type=_type, crawler=helper.get_crawler(code=_code))
             finally:
                 start_time = time.time()

@@ -32,19 +32,8 @@
 
 # common scopes
 #
-#   shipment
-#   shipment/oi
-#   shipment/oe
-#   shipment/ai
-#   shipment/ae
-#   shipment/tk
-#   shipment/ms
-#   accounting
-#   accounting/invoice
-#   accounting/freight
-#   trade-partner
-#   importer
-#   security-filing
-#   tracking
-#   warehouse
-#   edi
+#   carrier/<carrier_name>
+#   terminal/<terminal_name>
+#   rail/<rail_name>
+#   local
+#   internal

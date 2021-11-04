@@ -19,7 +19,7 @@ from crawler.core_carrier.items import (
 )
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
+from crawler.core.table import BaseTable, TableExtractor
 
 URL = "https://www.sethshipping.com/track_shipment_ajax"
 
@@ -187,27 +187,35 @@ class MainInfoRoutingRule(BaseRoutingRule):
         table_extractor = TableExtractor(table_locator=table_locator)
 
         return {
-            "por_name": table_extractor.extract_cell(left="Final Destination:", top=None) or None,
-            "pol_name": table_extractor.extract_cell(left="Port of Loading (POL)", top=None) or None,
-            "pod_name": table_extractor.extract_cell(left="Port of Discharge (POD)", top=None) or None,
-            "final_dest_name": table_extractor.extract_cell(left="Final Destination:", top=None) or None,
-            "eta": table_extractor.extract_cell(left="Estimated Time of Arrival", top=None) or None,
+            'por_name': table_extractor.extract_cell(left='Final Destination:') or None,
+            'pol_name': table_extractor.extract_cell(left='Port of Loading (POL)') or None,
+            'pod_name': table_extractor.extract_cell(left='Port of Discharge (POD)') or None,
+            'final_dest_name': table_extractor.extract_cell(left='Final Destination:') or None,
+            'eta': table_extractor.extract_cell(left='Estimated Time of Arrival') or None,
         }
 
-    def _extract_vessel_info_list(self, response) -> List:
+    @staticmethod
+    def _extract_vessel_info_list(response) -> List:
         return_list = []
         tables = response.css("div.table-responsive.p-1>table")
         for table in tables:
             table_locator = VesselTableLocator()
             table_locator.parse(table=table)
             table_extractor = TableExtractor(table_locator=table_locator)
-
-            pol = table_extractor.extract_cell(top="Port of Loading", left=None) or None
-            pod = table_extractor.extract_cell(top="Port of Discharge", left=None) or None
-            etd = table_extractor.extract_cell(top="ETD", left=None) or None
-            eta = table_extractor.extract_cell(top="ETA", left=None) or None
-            vessel_voyage = table_extractor.extract_cell(top="Vessel / Voyage", left=None)
-            vessel_voyage_pattern = re.compile(r"^(?P<vessel>.+)/(?P<voyage>.+)$")
+            pol = pod = etd = eta = None
+            if table_extractor.has_header(top='Port of Loading'):
+                pol = table_extractor.extract_cell(top='Port of Loading')
+            if table_extractor.has_header(top='Port of Discharge'):
+                pod = table_extractor.extract_cell(top='Port of Discharge')
+            if table_extractor.has_header(top='ETD'):
+                etd = table_extractor.extract_cell(top='ETD')
+            if table_extractor.has_header(top='ETA'):
+                eta = table_extractor.extract_cell(top='ETA')
+            if table_extractor.has_header(top='Vessel / Voyage'):
+                vessel_voyage = table_extractor.extract_cell(top='Vessel / Voyage')
+            else:
+                vessel_voyage = ''
+            vessel_voyage_pattern = re.compile(r'^(?P<vessel>.+)/(?P<voyage>.+)$')
             vessel_voyage_match = vessel_voyage_pattern.match(vessel_voyage)
             if vessel_voyage_match:
                 vessel = vessel_voyage_match.group("vessel")
@@ -235,7 +243,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         table = response.css("div.table-responsive:not(.p-1)>table")
         table_locator = ContainerTableLocator()
-        table_locator.parse(table=table, tr_css="tbody tr.accordion-toggle.collapsed")
+        table_locator.parse(table=table)
         table_extractor = TableExtractor(table_locator=table_locator)
 
         return_list = []
@@ -251,9 +259,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_status(response, idx) -> List:
-        table = response.css(f"div#collapse{idx+1} table")
-        table_locator = ContainerTableLocator()
-        table_locator.parse(table=table, tr_css="tbody tr")
+        table = response.css(f'div#collapse{idx+1} table')
+        table_locator = ContainerStatusTableLocator()
+        table_locator.parse(table=table)
         table_extractor = TableExtractor(table_locator=table_locator)
 
         return_list = []
@@ -283,60 +291,28 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return local_date_time, location
 
 
-class MainInfoTableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = {}
-
+class MainInfoTableLocator(BaseTable):
     def parse(self, table: scrapy.Selector):
-        for tr in table.css("tr"):
-            label = tr.css("td ::text")[0].get().strip()
-            content = tr.css("td")[1]
-            self._td_map[label] = content
+        td_dict = self._td_map.setdefault(0, {})
+        for tr in table.css('tr'):
+            label = tr.css('td ::text')[0].get().strip()
+            self._left_header_set.add(label)
+            content = tr.css('td')[1]
+            td_dict[label] = content
 
-    def get_cell(self, left: str, top=None) -> scrapy.Selector:
-        assert top is None
-        try:
-            return self._td_map[left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, left=None, top=None) -> bool:
-        assert top is None
-        return left in self._td_map
-
-
-class VesselTableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = {}
-
+class VesselTableLocator(BaseTable):
     def parse(self, table: scrapy.Selector):
-        for tr in table.css("tr"):
-            for td in tr.css("td"):
-                if td.css("p"):
-                    label = td.css("p ::text")[0].get().strip()
-                    content = td.css("p")[1]
-                    self._td_map[label] = content
-
-    def get_cell(self, top: str, left=None) -> scrapy.Selector:
-        assert left is None
-        try:
-            if not self.has_header(top=top, left=left):
-                return scrapy.Selector(text="<td></td>")
-            return self._td_map[top]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, left=None, top=None) -> bool:
-        assert left is None
-        return top in self._td_map
+        self._left_header_set.add(0)
+        for tr in table.css('tr'):
+            for td in tr.css('td'):
+                if td.css('p'):
+                    label = td.css('p ::text')[0].get().strip()
+                    content = td.css('p')[1]
+                    self._td_map[label] = [content]
 
 
-class ContainerTableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = {}  # top_header: [td, ...]
-        self._data_len = 0
-
-    def parse(self, table: scrapy.Selector, tr_css):
+class ContainerTableLocator(BaseTable):
+    def parse(self, table: scrapy.Selector):
         top_header_list = []
 
         head = table.css("thead")[0]
@@ -346,26 +322,26 @@ class ContainerTableLocator(BaseTableLocator):
             top_header_list.append(top_header)
             self._td_map[top_header] = []
 
-        data_tr_list = table.css(tr_css)
-        for tr in data_tr_list:
-            for top_index, td in enumerate(tr.css("td")):
-                top = top_header_list[top_index]
+        data_tr_list = table.css('tbody tr.accordion-toggle.collapsed')
+        for index, tr in enumerate(data_tr_list):
+            self._left_header_set.add(index)
+            for top, td in zip(top_header_list, tr.css('td')):
                 self._td_map[top].append(td)
 
-        self._data_len = len(data_tr_list)
 
-    def get_cell(self, top, left) -> scrapy.Selector:
-        try:
-            if not self._td_map[top]:
-                return scrapy.Selector(text="<td></td>")
+class ContainerStatusTableLocator(BaseTable):
+    def parse(self, table: scrapy.Selector):
+        top_header_list = []
 
-            return self._td_map[top][left]
-        except (KeyError, IndexError) as err:
-            raise HeaderMismatchError(repr(err))
+        head = table.css('thead')[0]
+        for th in head.css('th'):
+            raw_top_header = th.css('::text').get()
+            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ''
+            top_header_list.append(top_header)
+            self._td_map[top_header] = []
 
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def iter_left_header(self):
-        for i in range(self._data_len):
-            yield i
+        data_tr_list = table.css('tbody tr')
+        for index, tr in enumerate(data_tr_list):
+            self._left_header_set.add(index)
+            for top, td in zip(top_header_list, tr.css('td')):
+                self._td_map[top].append(td)
