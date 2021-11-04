@@ -1,0 +1,38 @@
+{
+  "ContainerAvailabilityResults": [
+    {
+      "Appointment": "No",
+      "AppointmentDate": "No",
+      "BillOfLading": ["143155243314"],
+      "CanBeSaved": true,
+      "ContainerId": "SEGU5842736",
+      "ContainerState": "YARD",
+      "Customs": "RELEASED",
+      "Demurrage": "",
+      "DischargedDate": "15/08/21 15:59",
+      "Freight": "RELEASED",
+      "GateOutDate": "",
+      "GrossWeight": "26015.0",
+      "HazardousClass": "",
+      "Holds": ["TMF"],
+      "HoldsDescription": ["TMF Hold - Call Dispatcher"],
+      "IsBillOfLading": false,
+      "IsContainer": true,
+      "IsHazardous": false,
+      "IsoCode": "45G1",
+      "IsSaved": false,
+      "LineId": "EGL",
+      "LocalDateTime": "17/08/21",
+      "ReadyForDelivery": false,
+      "ReadyForDeliveryReason": "Container has impediments",
+      "SizeTypeHeight": "40/GP/96",
+      "StoragePaidThroughDate": "19/08/21",
+      "StrippingDate": "",
+      "VesselEta": "13/08/21 10:00",
+      "VesselName": "EVER LAMBENT",
+      "YardLocation": "Yard Grounded (H0784A2)"
+    }
+  ],
+  "Filters": ["143155243314"],
+  "ResultsCount": 1
+}

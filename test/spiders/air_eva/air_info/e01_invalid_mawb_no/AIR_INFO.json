@@ -1,0 +1,24 @@
+{
+   "AWBNo":null,
+   "From":null,
+   "To":null,
+   "FromName":null,
+   "ToName":null,
+   "TotalPieces":0,
+   "TotalWeight":0,
+   "eAWB_MessageReceivedTime":null,
+   "eAWB_MessageReceivedFlag":null,
+   "CurrentStatus":null,
+   "Status":null,
+   "SendFrom":null,
+   "Subject":null,
+   "FlightInfoList":[
+
+   ],
+   "CustomStatusList":[
+
+   ],
+   "CustomStatusHAWBList":[
+
+   ]
+}

@@ -1,0 +1,835 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en-US">
+<head>
+    <meta charset="utf-8">
+    <meta name="keywords" content=""/>
+    <meta name="description" content=""/>
+    <meta name="author" content="Tideworks Technology"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+
+    <title>Pacific Container Terminal - Forecast&reg; by Tideworks</title>
+
+    <link rel="shortcut icon" href="/fc-PCT/favicon.ico">
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<link rel="stylesheet" href="/fc-PCT/css/TableTools.css">
+<link rel="stylesheet" href="/fc-PCT/css/datatable.css">
+<link rel="stylesheet" href="/fc-PCT/css/sticky-footer.css">
+<link rel="stylesheet" href="/fc-PCT/css/base.css?version=95012641041020201635" type="text/css" media="screen, projection, print">
+<link rel="stylesheet" href="/fc-PCT/css/flick/jquery-ui-1.8.6.custom.css" type="text/css">
+<link rel="stylesheet" href="/fc-PCT/css/print.css?version=95012641041020201635" type="text/css" media="print">
+<link rel="stylesheet" href="/fc-PCT/js/shadowbox-3.0.3/shadowbox.css?version=95012641041020201635" type="text/css">
+<link rel="stylesheet" href="/fc-PCT/css/font-awesome-4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="/fc-PCT/css/sweet-alert/sweetalert.css">
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,700" rel="stylesheet">
+
+
+
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" src="/fc-PCT/js/main.js?version=95012641041020201635"></script>
+<script type="text/javascript" src="/fc-PCT/js/scripts.jsp?version=95012641041020201635"></script>
+<script type="text/javascript" src="/fc-PCT/js/ajax.jsp?version=95012641041020201635"></script>
+<script type="text/javascript" src="/fc-PCT/js/EqptService.js?version=95012641041020201635"></script>
+
+<script type="text/javascript" src="/fc-PCT/js/jquery-1.9.1.min.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.alert.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.cookie.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.dropdownPlain.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.easing.1.3.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.form.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery-ui-1.10.3.custom.min.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.ui.datepicker-en-GB.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.ui.datepicker-da-DK.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.ui.datepicker-es.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.backstretch.min.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/TableTools.min.js"></script>
+<script type="text/javascript" src="/fc-PCT/js/datatable.js"></script>
+
+<script type="text/javascript" src="/fc-PCT/js/shadowbox-3.0.3/shadowbox.js"></script>
+
+<script type="text/javascript" src="/fc-PCT/js/customFormElements.js"></script>
+
+<script type="text/javascript" src="/fc-PCT/js/typeahead.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/fc-PCT/js/moment-with-locales.js"></script>
+
+<script type="text/javascript" src="/fc-PCT/js/sweet-alert/sweetalert.min.js"></script>
+
+
+<!-- IE Fix -->
+<script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
+
+<script type="text/javascript" src="/fc-PCT/js/startswith.js"></script>
+
+
+
+
+
+
+    <script type="text/javascript">
+    var changedNotifications = Array();
+
+    $().ready(function () {
+        setNavStyle("#menu-import");
+        Shadowbox.init({modal: false, onClose: clearAlert});
+
+        $('[data-toggle="tooltip"]').tooltip();
+        $("#searchTable").hide();
+
+        $("#numbers").val("EMCU608509");
+
+
+            showSearchTypeAvail("CTR");
+
+            $("#searchBy").change(function(){
+                showSearchTypeAvail(this.value);
+            });
+
+            $("#searchBy option[value='CTR']").prop('selected','selected');
+            $("#searchBy").change();
+
+
+        $("#search").click(function() {
+            if(!validateImportData()){
+                return false;
+            } else {
+                $(this).button("loading");
+                $("#result").empty();
+                $("#savedListBtn").prop("disabled", true);
+                $("#mainForm").submit();
+            }
+        });
+
+        $("#clear").click(function() {
+            $("#numbers").val("");
+
+                if($("#searchBy").val() == "BOL") {
+                    $("#scac").val("");
+                }
+
+            return;
+        });
+
+        $("#payment").click(function(){
+            var queryParams = $.param({
+                'numbers': $("#numbers").val(),
+                'scac': $("#scac").val(),
+                'searchBy': $("#searchBy").val(),
+                'feeAction': "GUARANTEE"
+            });
+            window.location = '/fc-PCT/fees/default.do?method=defaultSearch&changedDate=&' + queryParams;
+        });
+
+        $("input:checkbox[id$='-notify']").click(function(){
+            var eqNbr = $(this).val().split("|")[0];
+            var eqUseGkey = $(this).val().split("|")[1];
+
+            $("#status-" + eqUseGkey).empty();
+            $("#status-" + eqUseGkey).append("<i class=\"fa fa-circle-o-notch fa-spin\"></i>");
+            $("#"+ eqUseGkey + "-notify").prop("disabled", true);
+
+            if($(this).prop("checked")) {
+                $.get(
+                    '/fc-PCT/myaccount/default.do?method=createNotification',
+                    {
+                        eqNbr: eqNbr,
+                        eqUseGkey: eqUseGkey,
+                        timestamp: new Date().getTime()
+                    },
+                    function (notificationData, status, jqXHR) {
+                        createNotificationHandler(notificationData, status, jqXHR, eqUseGkey);
+                    }
+                ).fail(function(jqXHR, textStatus, errorThrown){
+                    alert(errorThrown);
+                });
+            } else {
+                $.get(
+                    '/fc-PCT/myaccount/default.do?method=deleteNotification',
+                    {
+                        eqNbr: eqNbr,
+                        eqUseGkey: eqUseGkey,
+                        timestamp: new Date().getTime()
+                    },
+                    function (notificationData, status, jqXHR) {
+                        deleteNotificationHandler(notificationData, status, jqXHR, eqUseGkey);
+                    }
+                ).fail(function(jqXHR, textStatus, errorThrown){
+                    alert(errorThrown);
+                });
+            }
+        });
+
+        $("#truckerAssignment").click(function(){
+            Shadowbox.open({
+                content: "/fc-PCT/equipment/default.do?method=truckerEdit&searchBy=CTR&scac=&equipmentNumbers=EMCU608509",
+                player: "iframe",
+                title:  "Trucker Assignment Request",
+                width:  600,
+                height: 400
+            });
+        });
+    });
+
+    function createNotificationHandler(notificationData, status, jqXHR, eqUseGkey) {
+        if(status == "success") {
+            if(notificationData.success) {
+                $("#status-" + eqUseGkey).html("<span class='go'>Notification successfully created!</span>").fadeIn().delay(2000).fadeOut();
+                $("#status-" + eqUseGkey).delay(2000).fadeOut();
+            } else {
+                //console.log(notificationData.errorMessage);
+            }
+        }
+        $("#"+ eqUseGkey + "-notify").prop("disabled", false);
+    }
+
+    function deleteNotificationHandler(notificationData, status, jqXHR, eqUseGkey) {
+        if(status == "success") {
+            if(notificationData.success) {
+                $("#status-" + eqUseGkey).html("<span class='go'>Notification successfully deleted!</span>").fadeIn().delay(2000).fadeOut();
+                $("#status-" + eqUseGkey).delay(2000).fadeOut();
+            } else {
+                console.log(notificationData.errorMessage);
+            }
+        }
+        $("#"+ eqUseGkey + "-notify").prop("disabled", false);
+    }
+    </script>
+
+</head>
+
+<body>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script src="/fc-PCT/js/bootstrap-hover-dropdown.js"></script>
+
+<script type="text/javascript">
+$().ready(function() {
+
+    $('.js-activated').dropdownHover().dropdown();
+
+    $('[data-toggle="tooltip"]').tooltip();
+
+    if($(window).width() <= 768) {
+        $('ul.nav li.dropdown a').removeClass("disabled");
+        //console.log("remove class " + $(window).width());
+    } else {
+        $('ul.nav li.dropdown a').addClass("disabled");
+        //console.log("add class " + $(window).width());
+    }
+
+    $(window).resize(function() {
+        if($(window).width() <= 768) {
+            $('ul.nav li.dropdown a').removeClass("disabled");
+            //console.log("remove class " + $(window).width());
+        } else {
+            $('ul.nav li.dropdown a').addClass("disabled");
+            //console.log("add class " + $(window).width());
+        }
+    });
+
+    // we need this variable to hold the value that the user selects.
+    var selectedItem = quickSearchCookie();
+
+    $(".dropdown-menu li a").click(function(){
+        var selText = $(this).text();
+
+
+        $(this).parents('.input-group-btn').find('.dropdown-toggle').html(selText+' <span class="caret"></span>');
+        quickSearchCookie(this.id);
+
+        // set the variable value to what the user selected.
+        selectedItem = this.id;
+    });
+
+    var $linkToSelect = $("#"+selectedItem);
+    //if we have such link in menu (different user roles may have different set of links)
+    if ($linkToSelect.length) {
+        $linkToSelect.parents('.input-group-btn').find('.dropdown-toggle').html($linkToSelect.text()+' <span class="caret"></span>');
+    } else {
+        //if we have have items in the list, click on the first item.
+        if ($("#quickSearchForm ul.dropdown-menu li a").length) $("#quickSearchForm ul.dropdown-menu li a").first().click();
+    }
+
+    $("#quickSearchForm").submit(function(){
+
+        // create a new array to determine which functional area to send the user to.
+        var searchTypeList = new Array();
+
+
+
+
+                searchTypeList['CONTAINER'] = '/equipment/default.do?method=equipmentSubmit&f=qs&equipClass=CTR&number=';
+                searchTypeList['CHASSIS'] = '/equipment/default.do?method=equipmentSubmit&f=qs&equipClass=CHS&number=';
+
+
+
+        // get the search criteria
+        var number = $("#quickSearch").val().toUpperCase();
+
+        // make sure we have data
+        if(hasData(number) == false ){
+            twitterAlertMessage('Please enter all search criteria before continuing.');
+            $("#quickSearch").focus();
+            return false;
+        }
+
+        // do some basic client side validation of the value entered.
+        switch(selectedItem){
+        case 'CONTAINER':
+            if(invalidChars(number) == false ) {
+                twitterAlertMessage("Invalid Container Number (it should consist of 4 alpha and 6 or 7 numeric).");
+                $("#quickSearch").focus();
+                return false;
+            }
+            break;
+        case 'CHASSIS':
+            if(invalidChars(number) == false ) {
+                $("#quickSearch").focus();
+                return false;
+            }
+            break;
+        }
+
+        // set a cookie value of what the user last searched by.
+        $.cookie('quick_search', selectedItem,{path: '/'});
+
+        // determine which item the user selected.
+        var url = searchTypeList[selectedItem];
+
+        // turn that into a url to send them to.
+        window.location = '/fc-PCT' + url + number;
+        return false;
+    });
+
+
+});
+
+</script>
+
+<div id="headerAlert"></div>
+
+<div class="navbar navbar-inverse navbar-static-top">
+
+    <div class="container hidden-xs">
+
+        <div class="nav navbar-nav navbar-left">
+
+            <a href="/fc-PCT/home/default.do" class="terminalname-responsive">
+
+                <img src="/fc-PCT/images/logo-50x50.png" class="pull-left">
+
+                <h2 class="pull-left">Pacific Container Terminal</h2>
+
+                <div class="clearfix"></div>
+
+            </a>
+
+        </div>
+
+        <div class="navbar-text navbar-right text-right">
+            <div><small>You are signed in as CHENG&#45;YU&#32;HSIEH | <a href="/fc-PCT/myaccount/default.do" class="headerlink">My Account</a> | <a href="/fc-PCT/j_spring_security_logout" class="headerlink" id="signOut" title="Click here to sign out">Sign Out</a></small></div>
+            <div><small>Broker/Freight Forwarder Company Admin (58517)</small></div>
+        </div>
+
+    </div>
+
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <i class="fa fa-bars fa-lg" aria-hidden="true" title="Toggle navigation"></i>
+            <span class="sr-only">Toggle navigation</span>
+        </button>
+        <h4><a class="navbar-brand hidden-lg hidden-md hidden-sm terminalname" href="/fc-PCT/home/default.do">Pacific Container Terminal</a></h4>
+    </div>
+
+    <div class="container navbar-collapse collapse">
+
+
+
+
+
+
+
+
+
+                <ul class="nav navbar-nav">
+
+                    <li class="dropdown" id="menu-home">
+                        <a href="/fc-PCT/home/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Home <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/fc-PCT/home/default.do?method=contacts">Contacts</a></li>
+
+                                <li><a href="/fc-PCT/home/default.do?method=directions">Directions</a></li>
+
+
+                                <li><a href="/fc-PCT/home/default.do?method=cameras">Gate Cameras</a></li>
+
+                            <li><a href="/fc-PCT/home/default.do?method=hours">Hours</a></li>
+                            <li><a href="/fc-PCT/home/default.do?method=schedule">Vessel Schedule</a></li>
+                        </ul>
+                    </li>
+
+
+
+
+
+                            <li class="dropdown" id="menu-equipment">
+                                <a href="/fc-PCT/equipment/default.do?method=equipment" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Equipment</a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="/fc-PCT/equipment/default.do?method=equipment">Search</a></li>
+
+
+                                    <li><a href="/fc-PCT/equipment/default.do?method=massUpdate">Mass Update</a></li>
+
+
+                                </ul>
+                            </li>
+
+
+
+
+
+
+
+
+
+
+
+
+                    <li class="dropdown" id="menu-import">
+                        <a href="/fc-PCT/import/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Import <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/fc-PCT/import/default.do">Availability</a></li>
+
+                        </ul>
+                    </li>
+
+
+
+
+
+
+
+                            <li class="dropdown" id="menu-export">
+                                <a href="/fc-PCT/export/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Export <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="/fc-PCT/export/default.do">Booking</a></li>
+                                    <li><a href="/fc-PCT/export/default.do?method=edo">EDO</a></li>
+                                </ul>
+                            </li>
+
+
+
+
+
+
+
+
+
+
+
+                </ul>
+
+
+
+
+                <ul class="nav navbar-nav navbar-right">
+
+
+
+
+
+
+
+
+
+
+
+
+
+                </ul>
+
+
+    </div>
+
+</div>
+
+<div class="container">
+
+    <div class="page-header">
+        <h2>Availability</h2>
+
+
+                View availability details by entering up to 50 container numbers or search by bill of lading.
+
+
+
+    </div>
+
+
+
+    <form action="/fc-PCT/import/default.do?method=defaultSearch" method="post" id="mainForm">
+
+        <div class="row south_20">
+
+            <div class="col-sm-6 col-md-4 col-lg-4">
+
+                <div class="search-form pad-10">
+
+                    <div class="row">
+
+
+
+                                <div class="col-sm-4 col-md-4 col-lg-4">
+                                    <div class="form-group">
+                                        <label>Search By</label>
+                                        <select name="searchBy" id="searchBy" class="form-control input-sm">
+                                            <option value="CTR">Container</option>
+
+                                                <option value="BOL">Bill of Lading</option>
+
+                                        </select>
+                                    </div>
+                                </div>
+
+
+
+
+                        <div class="col-sm-8 col-md-8 col-lg-8">
+
+                            <div class="form-group" id="containers">
+
+                                <div class="pull-left">
+                                    <label for="numbers">Number</label>
+                                </div>
+
+                                <div class="pull-right">
+
+
+
+
+
+
+
+
+<div class="btn-group" id="savedListBtnDropdown">
+    <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown" title="Show List" style="padding:0px">
+        <i class="fa fa-list" id="savedListBtn"></i>
+    </button>
+    <ul class="dropdown-menu pull-right" role="menu" id="savedList">
+
+
+
+        <li><a href="#" id="new">Create List</a></li>
+    </ul>
+</div>
+
+<script>
+    $("#savedList a").click(function () {
+        loadSavedList(this.id, "#numbers");
+    });
+
+    function refreshSavedLists(id) {
+        var url = "../ajax/default.do?method=getSavedLists";
+        if (!id) {
+            id = "savedList";
+        }
+        $.getJSON(url, function (data) {
+            var $savedList = $("#" + id);
+            $("li:not(:last)", $savedList).remove();
+            if (data.length) {
+                var $newLink = $("li:last-child", $savedList);
+                for (var i = 0; i < data.length; i++) {
+                    var $item = $('<li><a href="#" id="' + data[i].gkey + '">' + data[i].name + '</a></li>');
+                    $item.insertBefore($newLink);
+                }
+                $('<li class="divider"></li>').insertBefore($newLink);
+                $("li a[id!='new']", $savedList).on('click', function () {
+                    loadSavedList(this.id, '#numbers');
+                });
+            }
+        });
+    }
+</script>
+                                </div>
+
+                                <div class="clearfix"></div>
+
+                                <textarea name="numbers" id="numbers" class="form-control input-sm text-uppercase multi"></textarea>
+
+                                <div class="hint" id="containerHint">50 containers max</div>
+
+
+                                    <div class="hint" id="bolHint">50 BOLs max</div>
+                                    <div class="north" id="scacArea">
+                                        <label for="scac">SCAC Code</label>
+                                        <input type="text" name="scac" id="scac" maxlength="4" class="form-control input-sm text-uppercase" value=""/>
+                                    </div>
+
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-xs-12 north text-right">
+                            <button type="button" id="clear" class="btn btn-link btn-sm">Clear</button>
+                            <button type="button" id="search" class="btn btn-primary btn-sm" data-loading-text="Searching..." autocomplete="off">Search</button>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </form>
+
+    <div id="result">
+
+
+
+
+
+
+
+
+
+                    <table class="table table-condensed table-hover north_20">
+                    <thead>
+                    <tr>
+                    <th>Container</th>
+                    <th class="text-center"><span class="hidden-md hidden-lg">Available?</span><span class="hidden-xs hidden-sm">Available for pickup?</span></th>
+                    <th class="text-center">Size/Type</th>
+                    <th>Holds/Fees</th>
+                    <th>Additional Information</th>
+                    </tr>
+                    </thead>
+
+
+
+
+
+
+
+                        <tr>
+
+
+
+
+
+                                    <td colspan="5">
+                                        <strong>EMCU608509</strong> could not be found
+
+
+                                            <br><a rel="shadowbox;height=600" href="/fc-PCT/import/default.do?method=nearbyAvailability&number=EMCU608509">Check nearby locations</a>
+
+                                    </td>
+
+
+
+
+
+
+
+
+
+                        </tr>
+
+
+
+                    </table>
+
+
+
+
+
+
+
+
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<footer class="footer">
+
+    <div class="container">
+
+        <div class="col-xs-12 col-sm-9 pad-10">
+            <span class="hidden-xs">
+                <a href="/fc-PCT/footer/default.do?method=requirements">Site Requirements</a> |
+                <a href="/fc-PCT/footer/default.do?method=gdpr">General Data Protection Statement</a> |
+                <a href="/fc-PCT/footer/default.do?method=privacy">Privacy Policy</a> |
+                <a href="/fc-PCT/footer/default.do?method=terms">Terms of Service</a>
+                 | <a href="/fc-PCT/footer/default.do?method=contactUs">Contact Us</a><br>
+            </span>
+
+            &copy;2020&nbsp;Tideworks Technology. All Rights Reserved. <span class="hidden-xs">Forecast&reg; by Tideworks version 9.5.0.12641 (04102020-1635)<br>
+            Generated: 05/29/2020 12:22 AM</span>
+        </div>
+
+        <div class="col-sm-3 pad-10 hidden-xs hidden-sm">
+
+            <form name="pageFooter" id="pageFooter" action='/fc-PCT/import/default.do?method=defaultSearch' method="post">
+            <input type="hidden" name="siteLanguage"/>
+
+                <div class="world">
+
+                    <select name="language" id="lang" onchange="checkSelectedLanguage();" class="form-control input-sm">
+
+                        <option value="en_US" selected>English (United States)</option>
+
+                        <option value="es_MX" >Spanish (Mexico)</option>
+
+                        <option value="es_PA" >Spanish (Panama)</option>
+
+                        <option value="vi_VN" >Vietnamese</option>
+
+                    </select>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</footer>
+
+<script type="text/javascript">
+    var msg = "Are you sure you want to switch languages?\nIf you are in the middle of a task you may have to start over.";
+
+    function checkSelectedLanguage() {
+        if (false === true) {
+            if(confirm(msg) !== true) {
+                document.all["lang"].value = 'en_US';
+                return false;
+            }
+        }
+        document.pageFooter.siteLanguage.value = document.pageFooter.lang.value;
+        document.pageFooter.submit();
+    }
+
+
+        var userType = "CO_BROKER_FORWARDING (58517)";
+        var _gaq = _gaq || [];
+        _gaq.push(
+            ['_setAccount', 'UA-11978469-1'],
+            ['_setCustomVar',1,'forecastUserType',userType.substr(3, userType.length),2],
+            ['_trackPageview'],
+            ['b._setAccount', 'UA-11978469-31'],
+            ['b._setCustomVar',1,'forecastUserType',userType.substr(3, userType.length),2],
+            ['b._trackPageview']
+        );
+
+        (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' === document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+
+</script>
+
+</body>
+</html>

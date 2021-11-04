@@ -1,5 +1,4 @@
 
-
 ## Environment for Develop
 
 ### System Requirements
@@ -127,3 +126,12 @@ pip install -e '.[dev]'
 ```
 $ pre-commit install
 ```
+
+## Commit template
+
+Add commit message template:
+
+```bash
+git config commit.template .git-commit-template
+```
+

@@ -6,6 +6,8 @@ from scrapy.http import TextResponse
 
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
 from crawler.spiders.carrier_anlc_aplu_cmdu import ContainerStatusRoutingRule, CarrierApluSpider
+from crawler.core_carrier.anlc_aplu_cmdu_share_spider import ContainerStatusRoutingRule as MultiContainerStatusRoutingRule
+from crawler.spiders.carrier_aplu_multi import CarrierApluSpider as MultiCarrierApluSpider
 from test.spiders.carrier_aplu import container
 
 
@@ -44,3 +46,38 @@ def test_container_status_routing_rule(sample_loader, sub, mbl_no, container_no)
 
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(results=results)
+
+
+@pytest.mark.parametrize(
+    'sub,mbl_no,container_no',
+    [
+        ('01_basic', 'SHSE015942', 'SHSE015942'),
+        ('02_no_pod_time_and_status', 'AYU0320031', 'AYU0320031'),
+    ],
+)
+def test_multi_container_status_routing_rule(sample_loader, sub, mbl_no, container_no):
+    html_text = sample_loader.read_file(sub, 'container.html')
+
+    option = MultiContainerStatusRoutingRule.build_request_option(
+        container_no=container_no,
+        search_no=mbl_no,
+        search_type=SHIPMENT_TYPE_MBL,
+        base_url=CarrierApluSpider.base_url,
+        task_id=1,
+    )
+
+    response = TextResponse(
+        url=option.url,
+        encoding='utf-8',
+        body=html_text,
+        request=Request(
+            url=option.url,
+            meta=option.meta,
+        ),
+    )
+
+    routing_rule = MultiContainerStatusRoutingRule()
+    results = list(routing_rule.handle(response=response))
+
+    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module.multi_verify(results=results)

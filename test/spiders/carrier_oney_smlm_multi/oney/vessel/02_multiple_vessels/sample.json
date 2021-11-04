@@ -1,0 +1,134 @@
+{
+"TRANS_RESULT_KEY":"S",
+"Exception":"",
+"count":"2",
+"list": [
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "eta": "2019-10-11 18:00",
+    "vslCd": "BUXT",
+    "podNm": "PUSAN,KOREA REPUBLIC OF",
+    "etdFlag": "A",
+    "rn": "1",
+    "etd": "2019-10-03 20:35",
+    "polNm": "YANTIAN, GUANGDONG,CHINA",
+    "skdVoyNo": "0056",
+    "vslSeq": "1",
+    "etaFlag": "A",
+    "skdDirCd": "E",
+    "podCd": "KRPUS",
+    "bkgNo": "SZPVF2740514",
+    "polCd": "CNYTN",
+    "vslEngNm": "BUDAPEST EXPRESS",
+    "vslPrePstCd": "S",
+    "vvd": "BUDAPEST EXPRESS 056E",
+    "hashColumns": [
+      [
+        "vsl_eng_nm",
+        "BUDAPEST EXPRESS"
+      ],
+      [
+        "eta",
+        "2019-10-11 18:00"
+      ],
+      [
+        "rn",
+        "1"
+      ],
+      [
+        "vsl_pre_pst_cd",
+        "S"
+      ],
+      [
+        "etd",
+        "2019-10-03 20:35"
+      ],
+      [
+        "pol_cd",
+        "CNYTN"
+      ],
+      [
+        "skd_dir_cd",
+        "E"
+      ],
+      [
+        "pol_nm",
+        "YANTIAN, GUANGDONG,CHINA"
+      ],
+      [
+        "etd_flag",
+        "A"
+      ],
+      [
+        "pod_nm",
+        "PUSAN,KOREA REPUBLIC OF"
+      ],
+      [
+        "pagerows",
+        {}
+      ],
+      [
+        "vvd",
+        "BUDAPEST EXPRESS 056E"
+      ],
+      [
+        "ibflag",
+        {}
+      ],
+      [
+        "eta_flag",
+        "A"
+      ],
+      [
+        "bkg_no",
+        "SZPVF2740514"
+      ],
+      [
+        "pod_cd",
+        "KRPUS"
+      ],
+      [
+        "skd_voy_no",
+        "0056"
+      ],
+      [
+        "vsl_seq",
+        "1"
+      ],
+      [
+        "vsl_cd",
+        "BUXT"
+      ]
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "eta": "2019-10-24 14:00",
+    "vslCd": "YUPT",
+    "podNm": "LOS ANGELES, CA,UNITED STATES",
+    "etdFlag": "A",
+    "rn": "1",
+    "etd": "2019-10-13 19:50",
+    "polNm": "PUSAN,KOREA REPUBLIC OF",
+    "skdVoyNo": "0062",
+    "vslSeq": "0",
+    "etaFlag": "C",
+    "skdDirCd": "E",
+    "podCd": "USLAX",
+    "bkgNo": "SZPVF2740514",
+    "polCd": "KRPUS",
+    "vslEngNm": "YM UPWARD",
+    "vslPrePstCd": "T",
+    "vvd": "YM UPWARD 062E",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  }
+]}

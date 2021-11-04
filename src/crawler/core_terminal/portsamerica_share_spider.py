@@ -5,7 +5,7 @@ import re
 
 import scrapy
 from scrapy import Selector
-from selenium import webdriver
+from crawler.core.selenium import ChromeContentGetter
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
@@ -13,7 +13,7 @@ from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError
 
-BASE_URL = 'https://voyagertrack.portsamerica.com'
+BASE_URL = "https://voyagertrack.portsamerica.com"
 
 
 @dataclasses.dataclass
@@ -30,12 +30,12 @@ class WarningMessage:
 
 
 class PortsamericaShareSpider(BaseMultiTerminalSpider):
-    name = ''
+    name = ""
     company_info = CompanyInfo(
-        site_name='',
-        upper_short='',
-        email='',
-        password='',
+        site_name="",
+        upper_short="",
+        email="",
+        password="",
     )
 
     def __init__(self, *args, **kwargs):
@@ -53,7 +53,7 @@ class PortsamericaShareSpider(BaseMultiTerminalSpider):
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
-        yield DebugItem(info={'meta': dict(response.meta)})
+        yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -62,10 +62,10 @@ class PortsamericaShareSpider(BaseMultiTerminalSpider):
 
         for result in routing_rule.handle(response=response):
             if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
-                c_no = result['container_no']
+                c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
-                    result['task_id'] = t_id
+                    result["task_id"] = t_id
                     yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -89,58 +89,87 @@ class PortsamericaShareSpider(BaseMultiTerminalSpider):
 
 
 class SearchContainerRule(BaseRoutingRule):
-    name = 'SEARCH'
+    name = "SEARCH"
 
     @classmethod
     def build_request_option(cls, container_no_list: List, company_info: CompanyInfo) -> RequestOption:
-        url = 'https://google.com'
+        url = "https://google.com"
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=url,
-            meta={'container_no_list': container_no_list, 'company_info': company_info},
+            meta={"container_no_list": container_no_list, "company_info": company_info},
         )
 
     def handle(self, response):
-        company_info = response.meta['company_info']
-        container_no_list = response.meta['container_no_list']
+        company_info = response.meta["company_info"]
+        container_no_list = response.meta["container_no_list"]
 
         content_getter = ContentGetter()
         content_getter.login(company_info.email, company_info.password, company_info.site_name)
         resp = content_getter.search(container_no_list)
 
-        containers = content_getter.get_container_info(Selector(text=resp), len(container_no_list))
         content_getter.quit()
 
+        for item in self._handle_response(Selector(text=resp), container_no_list):
+            yield item
+
+    @classmethod
+    def _handle_response(cls, response, container_no_list):
+        containers = cls._extract_container_info(response, len(container_no_list))
         for container in containers:
             yield TerminalItem(
                 **container,
             )
 
+    @staticmethod
+    def _extract_container_info(resp: Selector, numbers: int):
+        # table = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table')
+        # table_locator = TableLocator()
+        # table_locator.parse(table=table, numbers=numbers)
 
-class ContentGetter:
-    def __init__(self):
-        options = webdriver.ChromeOptions()
-        options.add_argument('--disable-extensions')
-        options.add_argument('--disable-notifications')
-        options.add_argument('--headless')
-        options.add_argument("--enable-javascript")
-        options.add_argument('--disable-gpu')
-        options.add_argument(
-            f'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
-            f'Chrome/88.0.4324.96 Safari/537.36'
-        )
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--window-size=1920,1080')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-blink-features=AutomationControlled')
-        options.add_experimental_option('excludeSwitches', ['enable-automation'])
-        options.add_experimental_option('useAutomationExtension', False)
+        res = []
+        tds = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table/tbody/tr/td')
+        for i in range(int(len(tds) / 17)):
+            appointment_date = "".join(tds[i * 17 + 5].xpath(".//text()").extract())
+            gate_out_date = "".join(tds[i * 17 + 3].xpath(".//text()").extract()).strip()
 
-        self._driver = webdriver.Chrome(options=options)
+            if re.search("([0-9]+/[0-9]+/[0-9]{4}[0-9]{4}-[0-9]{4})", appointment_date):
+                date_split_list = appointment_date.split("/")
+                time_split_list = date_split_list[-1][4:].split("-")
+                date_split_list[-1] = date_split_list[-1][:4]
+                appointment_date = "/".join(date_split_list) + " " + time_split_list[0]
 
+            if re.search("([0-9]+/[0-9]+/[0-9]{4} [0-9]+:[0-9]{2})", gate_out_date):
+                date_split_list = gate_out_date.split("\n")
+                gate_out_date = date_split_list[-1]
+
+            gate_out_date = re.sub(r"\s{2,}", " ", gate_out_date)
+
+            res.append(
+                {
+                    "container_no": "".join(tds[i * 17 + 1].xpath(".//text()").extract()).strip().replace("-", ""),
+                    "ready_for_pick_up": "".join(tds[i * 17 + 2].xpath(".//text()").extract())
+                    .strip()
+                    .replace("\xa0", " "),
+                    "gate_out_date": gate_out_date,
+                    "appointment_date": appointment_date.strip(),
+                    "customs_release": "".join(tds[i * 17 + 6].xpath(".//text()").extract()).strip(),
+                    "carrier_release": "".join(tds[i * 17 + 7].xpath(".//text()").extract()).strip(),
+                    "holds": "".join(tds[i * 17 + 9].xpath(".//text()").extract()).strip(),
+                    "demurrage": "".join(tds[i * 17 + 11].xpath(".//text()").extract()).strip(),
+                    "last_free_day": "".join(tds[i * 17 + 12].xpath(".//text()").extract()).strip(),
+                    "carrier": "".join(tds[i * 17 + 13].xpath(".//text()").extract()).strip(),
+                    "container_spec": "".join(tds[i * 17 + 14].xpath(".//text()").extract()).strip(),
+                }
+            )
+
+        return res
+
+
+class ContentGetter(ChromeContentGetter):
     def login(self, username, password, site_name):
-        url = f'{BASE_URL}/logon?siteId={site_name}'
+        url = f"{BASE_URL}/logon?siteId={site_name}"
         self._driver.get(url)
         time.sleep(5)
         username_input = self._driver.find_element_by_xpath('//*[@id="UserName"]')
@@ -154,7 +183,7 @@ class ContentGetter:
         time.sleep(10)
 
     def search(self, container_no_list):
-        url = f'{self._driver.current_url}#/Report/ImportContainer'
+        url = f"{self._driver.current_url}#/Report/ImportContainer"
         self._driver.get(url)
         time.sleep(5)
 
@@ -163,7 +192,7 @@ class ContentGetter:
         time.sleep(3)
 
         container_text_area = self._driver.find_element_by_xpath('//*[@id="ContainerNumbers"]')
-        container_text_area.send_keys('\n'.join(container_no_list))
+        container_text_area.send_keys("\n".join(container_no_list))
 
         time.sleep(3)
         search_btn = self._driver.find_element_by_xpath('//*[@id="btnContainerSubmitMulti"]')
@@ -171,48 +200,6 @@ class ContentGetter:
         time.sleep(8)
 
         return self._driver.page_source
-
-    def get_container_info(self, resp: Selector, numbers: int):
-        # table = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table')
-        # table_locator = TableLocator()
-        # table_locator.parse(table=table, numbers=numbers)
-
-        res = []
-        tds = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table/tbody/tr/td')
-        for i in range(int(len(tds) / 17)):
-            appointment_date = ''.join(tds[i * 17 + 5].xpath('.//text()').extract())
-            gate_out_date = ''.join(tds[i * 17 + 3].xpath('.//text()').extract()).strip()
-
-            if re.search('([0-9]+/[0-9]+/[0-9]{4}[0-9]{4}-[0-9]{4})', appointment_date):
-                date_split_list = appointment_date.split('/')
-                time_split_list = date_split_list[-1][4:].split('-')
-                date_split_list[-1] = date_split_list[-1][:4]
-                appointment_date = '/'.join(date_split_list) + ' ' + time_split_list[0]
-
-            if re.search('([0-9]+/[0-9]+/[0-9]{4} [0-9]+:[0-9]{2})', gate_out_date):
-                date_split_list = gate_out_date.split('\n')
-                gate_out_date = date_split_list[-1]
-
-            res.append(
-                {
-                    'container_no': ''.join(tds[i * 17 + 1].xpath('.//text()').extract()).strip().replace('-', ''),
-                    'ready_for_pick_up': ''.join(tds[i * 17 + 2].xpath('.//text()').extract()).strip(),
-                    'gate_out_date': gate_out_date,
-                    'appointment_date': appointment_date.strip(),
-                    'customs_release': ''.join(tds[i * 17 + 6].xpath('.//text()').extract()).strip(),
-                    'carrier_release': ''.join(tds[i * 17 + 7].xpath('.//text()').extract()).strip(),
-                    'holds': ''.join(tds[i * 17 + 9].xpath('.//text()').extract()).strip(),
-                    'demurrage': ''.join(tds[i * 17 + 11].xpath('.//text()').extract()).strip(),
-                    'last_free_day': ''.join(tds[i * 17 + 12].xpath('.//text()').extract()).strip(),
-                    'carrier': ''.join(tds[i * 17 + 13].xpath('.//text()').extract()).strip(),
-                    'container_spec': ''.join(tds[i * 17 + 14].xpath('.//text()').extract()).strip(),
-                }
-            )
-
-        return res
-
-    def quit(self):
-        self._driver.quit()
 
 
 class TableLocator(BaseTableLocator):
@@ -223,7 +210,7 @@ class TableLocator(BaseTableLocator):
         titles = self._get_titles(table)
 
     def _get_titles(self, table: Selector):
-        titles = table.css('th::text').getall()
+        titles = table.css("th::text").getall()
         return [title.strip() for title in titles]
 
     def get_cell(self, left, top=None) -> Selector:

@@ -1,19 +1,21 @@
 import time
 import dataclasses
 from typing import Dict, List
+from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError, TerminalInvalidMblNoError
 
 import scrapy
 from scrapy import Selector
-from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoAlertPresentException
 
+from crawler.core.selenium import ChromeContentGetter
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError
+from crawler.extractors.table_extractors import BaseTableLocator
 
 
 @dataclasses.dataclass
@@ -25,13 +27,8 @@ class CompanyInfo:
 
 
 class TtiWutShareSpider(BaseMultiTerminalSpider):
-    name = ''
-    company_info = CompanyInfo(
-        url='',
-        upper_short='',
-        email='',
-        password='',
-    )
+    name = ""
+    company_info = CompanyInfo(url="", upper_short="", email="", password="",)
 
     def __init__(self, *args, **kwargs):
         super(TtiWutShareSpider, self).__init__(*args, **kwargs)
@@ -50,7 +47,7 @@ class TtiWutShareSpider(BaseMultiTerminalSpider):
         yield self._build_request_by(option=option)
 
     def parse(self, response, **kwargs):
-        yield DebugItem(info={'meta': dict(response.meta)})
+        yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -59,10 +56,10 @@ class TtiWutShareSpider(BaseMultiTerminalSpider):
 
         for result in routing_rule.handle(response=response):
             if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
-                c_no = result['container_no']
+                c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
-                    result['task_id'] = t_id
+                    result["task_id"] = t_id
                     yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -76,78 +73,78 @@ class TtiWutShareSpider(BaseMultiTerminalSpider):
         }
 
         if option.method == RequestOption.METHOD_POST_FORM:
-            return scrapy.FormRequest(
-                url=option.url,
-                formdata=option.form_data,
-                meta=meta,
-            )
+            return scrapy.FormRequest(url=option.url, formdata=option.form_data, meta=meta,)
 
         elif option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(
-                url=option.url,
-                meta=meta,
-            )
+            return scrapy.Request(url=option.url, meta=meta,)
 
         else:
             raise RuntimeError()
 
 
 class MainRoutingRule(BaseRoutingRule):
-    name = 'MAIN'
+    name = "MAIN"
 
     @classmethod
     def build_request_option(cls, container_no_list: List, company_info: CompanyInfo) -> RequestOption:
-        url = 'https://www.google.com'
+        url = "https://www.google.com"
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
-            meta={
-                'container_no_list': container_no_list,
-                'company_info': company_info,
-            },
+            meta={"container_no_list": container_no_list, "company_info": company_info,},
         )
 
     def handle(self, response):
-        company_info = response.meta['company_info']
-        container_no_list = response.meta['container_no_list']
+        company_info = response.meta["company_info"]
+        container_no_list = response.meta["container_no_list"]
 
         content_getter = ContentGetter()
         content_getter.login(company_info.email, company_info.password, company_info.url)
         resp = content_getter.search(container_no_list, company_info.upper_short)
+        resp = Selector(text=resp)
 
-        containers = content_getter.get_container_info(Selector(text=resp), len(container_no_list))
         content_getter.quit()
 
+        for item in self._handle_response(resp, container_no_list):
+            yield item
+
+    @classmethod
+    def _handle_response(cls, response, container_no_list):
+        containers = cls._extract_container_info(response, len(container_no_list))
         for container in containers:
-            yield TerminalItem(
-                **container,
-            )
+            yield TerminalItem(**container,)
+
+    @staticmethod
+    def _extract_container_info(response: Selector, numbers: int):
+        table = response.xpath('//*[@id="gview_grid1"]')
+        table_locator = ContainerTableLocator()
+        table_locator.parse(table=table, numbers=numbers)
+
+        res = []
+        for i in range(numbers):
+            container = {
+                "container_no": table_locator.get_cell(left=i, top="Container No"),
+                "container_spec": table_locator.get_cell(left=i, top="Container Type/Length/Height"),
+                "customs_release": table_locator.get_cell(left=i, top="Customs Status"),
+                "cy_location": table_locator.get_cell(left=i, top="Yard Location"),
+                "ready_for_pick_up": table_locator.get_cell(left=i, top="Available for Pickup"),
+                "appointment_date": table_locator.get_cell(left=i, top="Appt Time"),
+                "carrier_release": table_locator.get_cell(left=i, top="Freight Status"),
+                "holds": table_locator.get_cell(left=i, top="Hold Reason"),
+                "last_free_day": table_locator.get_cell(left=i, top="Last Free Day"),
+            }
+
+            if container["container_no"]:
+                res.append(container)
+
+        return res
 
 
-class ContentGetter:
-    def __init__(self):
-        options = webdriver.ChromeOptions()
-        options.add_argument('--disable-extensions')
-        options.add_argument('--disable-notifications')
-        options.add_argument('--headless')
-        options.add_argument("--enable-javascript")
-        options.add_argument('--disable-gpu')
-        options.add_argument(
-            f'user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) '
-            f'Chrome/88.0.4324.96 Safari/537.36'
-        )
-        options.add_argument('--disable-dev-shm-usage')
-        options.add_argument('--no-sandbox')
-        options.add_argument('--disable-blink-features=AutomationControlled')
-        options.add_experimental_option('excludeSwitches', ['enable-automation'])
-        options.add_experimental_option('useAutomationExtension', False)
-
-        self._driver = webdriver.Chrome(options=options)
-
+class ContentGetter(ChromeContentGetter):
     def login(self, username, password, url):
         self._driver.get(url)
-        time.sleep(5)
+        time.sleep(8)
         username_input = self._driver.find_element_by_xpath('//*[@id="pUsrId"]')
         username_input.send_keys(username)
         time.sleep(2)
@@ -161,7 +158,7 @@ class ContentGetter:
         time.sleep(8)
 
     def search(self, container_no_list: List, short_name: str):
-        if short_name == 'TTI':
+        if short_name == "TTI":
             menu_btn = self._driver.find_element_by_xpath('//*[@id="nav"]/li[3]/a')
         else:
             menu_btn = self._driver.find_element_by_xpath('//*[@id="nav"]/li[1]/a')
@@ -173,7 +170,7 @@ class ContentGetter:
         WebDriverWait(self._driver, 30).until(EC.frame_to_be_available_and_switch_to_it((By.ID, "businessView")))
 
         container_text_area = self._driver.find_element_by_xpath('//*[@id="cntrNos"]')
-        container_text_area.send_keys('\n'.join(container_no_list))
+        container_text_area.send_keys("\n".join(container_no_list))
         time.sleep(3)
 
         search_btn = self._driver.find_element_by_xpath(
@@ -182,31 +179,19 @@ class ContentGetter:
         search_btn.click()
         time.sleep(8)
 
+        # handle alert if there is any
+        if self.is_alert_present():
+            # yield InvalidContainerNoItem(container_no=container_no_list[0])
+            raise TerminalInvalidContainerNoError
+
         return self._driver.page_source
 
-    def get_container_info(self, response: Selector, numbers: int):
-        table = response.xpath('//*[@id="gview_grid1"]')
-        table_locator = ContainerTableLocator()
-        table_locator.parse(table=table, numbers=numbers)
-
-        res = []
-        for i in range(numbers):
-            container = {
-                'container_no': table_locator.get_cell(left=i, top='Container No'),
-                'container_spec': table_locator.get_cell(left=i, top='Container Type/Length/Height'),
-                'customs_release': table_locator.get_cell(left=i, top='Customs Status'),
-                'cy_location': table_locator.get_cell(left=i, top='Yard Location'),
-                'ready_for_pick_up': table_locator.get_cell(left=i, top='Available for Pickup'),
-                'appointment_date': table_locator.get_cell(left=i, top='Appt Time'),
-                'carrier_release': table_locator.get_cell(left=i, top='Freight Status'),
-                'holds': table_locator.get_cell(left=i, top='Hold Reason'),
-                'last_free_day': table_locator.get_cell(left=i, top='Last Free Day'),
-            }
-
-            if container['container_no']:
-                res.append(container)
-
-        return res
+    def is_alert_present(self):
+        try:
+            self._driver.switch_to.alert.accept()
+            return True
+        except NoAlertPresentException:
+            return False
 
     def quit(self):
         self._driver.quit()
@@ -217,19 +202,19 @@ class ContainerTableLocator(BaseTableLocator):
         self._td_map = []
 
     def parse(self, table: Selector, numbers: int = 1):
-        titles_ths = table.css('th')
+        titles_ths = table.css("th")
         title_list = []
         for title in titles_ths:
-            title_res = (' '.join(title.css('::text').extract())).strip()
+            title_res = (" ".join(title.css("::text").extract())).strip()
             title_list.append(title_res)
 
-        trs = table.css('tr')
+        trs = table.css("tr")
         for tr in trs:
-            data_tds = tr.css('td')
+            data_tds = tr.css("td")
             data_list = []
             is_append = False
             for data in data_tds:
-                data_res = (' '.join(data.css('::text').extract())).strip()
+                data_res = (" ".join(data.css("::text").extract())).strip()
                 if data_res:
                     is_append = True
                 data_list.append(data_res)

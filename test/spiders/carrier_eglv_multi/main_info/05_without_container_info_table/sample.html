@@ -1,0 +1,779 @@
+
+
+
+    <html>
+    <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>ShipmentLink - Cargo Tracking</title>
+	<link rel="stylesheet" href="/tuf1/html/TUF1_Main.css" type="text/css">
+	<script language="JavaScript" src="/tuf1/js/TUF1_Captcha.js?d=1577772177794"></script>
+    <script language="JavaScript" src="/tdb1/html/TDB1_CargoTracking_090205.js?d=1577772177794"></script>
+	<script language="JavaScript" src="/tuf1/js/TUF1_ToolTip.js"></script>
+	<script language="JavaScript" src="/tuf1/js/TUF1_DynamicReqV2.js"></script>
+	<style type="text/css">
+	<!--
+	.style1 {color: #FF0000}
+	-->
+	</style>
+	</head>
+    <body bgcolor="#FFFFFF" text="#000000" leftmargin="0" topmargin="0" marginwidth="0" marginheight="0" oncontextmenu="window.event.returnValue=false" onLoad="javascript:setDefault();">
+    
+<STYLE TYPE="text/css">
+<!--
+.DEK {POSITION:absolute;VISIBILITY:hidden;Z-INDEX:200;}
+.Title {font-family: "Verdana", "Arial", "Helvetica", "sans-serif"; font-size: 18px;}
+-->
+</STYLE>
+<a name="top"></a>
+<div ID="dek" CLASS="dek"></div>
+<script language="JavaScript" src="/tdb1/html/TDB1_PopText.js"></script>
+
+        
+
+
+
+
+
+<!-- ShipmentLink UI Library -->
+<link rel="stylesheet" type="text/css" href="/tuf1/html/TUF1_Main.css" >
+<link rel="stylesheet" type="text/css" href="/tuf1/css/TUF1_PopupCalendar.css"/>
+<link rel="stylesheet" type="text/css" href="/tuf1/css/TUF1_RightBox.css"  />
+<link rel="stylesheet" type="text/css" href="/tuf1/css/TUF1_LocalIndex.css"  />
+<script type="text/javascript" src="/tuf1/js/TUF1_DynamicReqV2.js"></script>
+<script type="text/javascript" src="/tuf1/js/TUF1_AllInOneAsync_v020.js"></script>
+<script type="text/javascript" src="/tuf1/js/TUF1_Captcha.js?d=1577772177795"></script>
+<script>
+if ("www.shipmentlink.com".indexOf(location.hostname)==-1) {
+	location.href="http://www.shipmentlink.com";
+}
+
+function showLangLayerMsg() {
+
+}
+
+function saveLangSetting(lang,controller,check) {
+	//set cookie
+	var date = new Date((new Date()).getTime() + 2592000000);
+	document.cookie = "WEB_CTRY_LANG=_"+lang+";path=/;expires=" + date.toGMTString();
+	// reload page
+	location.reload();
+}   
+</script>
+
+<script language="JavaScript" src="/tuf1/html/TUF1_DynamicReq.js"></script>
+<script language="JavaScript" src="/tuf1/html/TUF1_CacheData.js"></script>
+<script language="JavaScript" src="/tuf1/js/TUF1_MainMenu.js"></script>
+<link rel="stylesheet" href="/tuf1/css/TUF1_MainMenu.css" type="text/css" />
+
+<script>
+function setMenubyLang() {
+	var str = "<div id=\"Global_EC_Menu_Div\"><ul id=\"navigation\" class=\"horizontal\" style=\"top:61px;\"><li style=\"width:141px;\"><a hideFocus onclick=\"javascript:return false;\" href=\"#\">Sailing Schedules<\/a><ul><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tvs2\/jsp\/TVS2_LongTermMenu.jsp?type=L\" >Search by Area<\/a><\/li><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tvs2\/jsp\/TVS2_InteractiveSchedule.jsp\" >Search by Point<\/a><\/li><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tvs2\/jsp\/TVS2_VesselSchedule.jsp\" >Search by Vessel<\/a><\/li><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tvs2\/jsp\/TVS2_VesselArrivalTime.jsp\" >Vessel Arrival Time<\/a><\/li><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tvs2\/jsp\/TVS2_TerminalProspect.jsp\" >Terminal Prospect<\/a><\/li><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tvs3\/jsp\/TVS3_SchedulesMail.jsp\" >Schedules Email<\/a><\/li><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tvs2\/jsp\/TVS2_LongTermMenu.jsp?type=S\" >Routing Network<\/a><\/li><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tvi1\/jsp\/TVI1_VesselParticulars.jsp\" >Vessel Particulars<\/a><\/li><li style=\"width:141px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/eqc1\/jsp\/EQC1_Container_Tare_Weight_Search.jsp\" >Container Tare Weight<\/a><\/li><\/ul><\/li><li style=\"width:141px;\"><a hideFocus onclick=\"javascript:return false;\" href=\"#\">B\/L Process<\/a><ul><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com#\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> All-in-One Service<\/a><ul style=\"margin-left:165px; \"><li style=\"width:190px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TUF1_ControllerServlet.do?action=allInOne&lang=en\" >e-Booking<\/a><li style=\"width:190px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/EVG1_ReportVGMController.do?action=vgmIndex\" >Submitting VGM<\/a><li style=\"width:190px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TUF1_ControllerServlet.do?action=allInOne&lang=en\" >B\/L Instruction<\/a><li style=\"width:190px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TUF1_ControllerServlet.do?action=allInOne&lang=en\" >Internet B\/L<\/a><li style=\"width:190px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TUF1_ControllerServlet.do?action=allInOne&lang=en\" >Arrival Notice<\/a><li style=\"width:190px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TUF1_ControllerServlet.do?action=allInOne&lang=en\" >US Importer Security Filing(ISF)<\/a><\/ul><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com#\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> Intelligent Services<\/a><ul style=\"margin-left:165px; \"><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TUF1_ControllerServlet.do?action=allInOne&lang=en\" >i-B\/L&nbsp<img src=\"\/tuf1\/images\/ico_New2.gif\" border=\"0\" alt=\"i-B\/L\"><\/a><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TUF1_ControllerServlet.do?action=allInOne&lang=en\" >i-Dispatch&nbsp<img src=\"\/tuf1\/images\/ico_New2.gif\" border=\"0\" alt=\"i-Dispatch\"><\/a><\/ul><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com#\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> Import Door Delivery<\/a><ul style=\"margin-left:165px; \"><li style=\"width:255px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/mdb1\/jsp\/MDB1_NewOrder.jsp\" >Create Delivery Order<\/a><li style=\"width:255px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/mdb1\/jsp\/MDB1_QueryOrder.jsp\" >Door Delivery Process &amp; Status Review<\/a><\/ul><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tdb2\/jsp\/TDB2_Blclause.jsp\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> B\/L Clauses<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/msq1\/jsp\/MSQ1_Index.jsp\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> Tariff &amp; Rates<\/a><\/li><\/ul><\/li><li style=\"width:141px;\"><a hideFocus onclick=\"javascript:return false;\" href=\"#\">Cargo Tracking<\/a><ul><li style=\"width:220px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TDB1_CargoTracking.do\" >Cargo Tracking<\/a><\/li><li style=\"width:220px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tdb1\/jsp\/TDB1_UsaItLocation.jsp\" >U.S.A. IT Location<\/a><\/li><li style=\"width:220px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/ena1\/jsp\/ENA1_RailStatus.jsp\" >North America Traffic Information<\/a><\/li><\/ul><\/li><li style=\"width:152px;\"><a hideFocus onclick=\"javascript:return false;\" href=\"#\">Customer Services<\/a><ul><li style=\"width:152px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TAM1_ShipmentReportController.do\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> Shipment Statistics<\/a><\/li><li style=\"width:152px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TDB1_TRController.do\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> Tracking Reports<\/a><\/li><li style=\"width:152px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tdb1\/jsp\/en\/TDB1_EventNotification.jsp\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> Event Notification<\/a><\/li><li style=\"width:152px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/servlet\/TDB1_MemberTracking.do\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> Member Tracking<\/a><\/li><li style=\"width:152px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tam1\/jsp\/TAM1_EdiRegisterNotice.jsp\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> EDI Services<\/a><\/li><li style=\"width:152px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tam1\/jsp\/TAM1_RegisterDispatcher.jsp\" >Register<\/a><\/li><li style=\"width:152px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com#\" ><img src=\"\/tuf1\/images\/ico_lock.gif\" border=\"0\"> My Profile<\/a><ul style=\"margin-left:152px; \"><li style=\"width:220px;\">\t\t<a hideFocus href=\"https:\/\/www.shipmentlink.com\/servlet\/TAM1_SpMaintainController.do\" >Update My Password or Profile<\/a><li style=\"width:220px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tam1\/jsp\/TAM1_UsrUpdateService.jsp\" >Apply E-Commerce Services<\/a><\/ul><\/li><\/ul><\/li><li style=\"width:168px;\"><a hideFocus onclick=\"javascript:return false;\" href=\"#\">Regional Information<\/a><ul><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/br\/\" >Brazil Brasil<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/cl\/\" >Chile Chile<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/cn\/\" >China \u4E2D\u56FD<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/co\/\" >Colombia Colombia<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/de\/\" >Germany Deutschland<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/hk\/\" >Hong Kong \u9999\u6E2F<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/in\/\" >India Bharat<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/it\/\" >Italy Italia<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/jp\/\" >Japan \u65E5\u672C<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/kr\/\" >Korea \uD55C\uAD6D<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/my\/\" >Malaysia<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/nl\/\" >Netherlands Holland<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/pe\/\" >Peru Per\u00FA<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/es\/\" >Spain Espa\u00F1a<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/tw\/\" >Taiwan \u53F0\u7063<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/gb\/\" >United Kingdom<\/a><\/li><li style=\"width:165px;\">\t\t<a hideFocus href=\"http:\/\/www.shipmentlink.com\/vn\/\" >Vietnam<\/a><\/li><\/ul><\/li><li style=\"width:130px;\"><a hideFocus onclick=\"javascript:return false;\" href=\"#\">Carriers<\/a><ul><li style=\"width:200px;\">\t\t<a hideFocus href=\"http:\/\/www.evergreen-line.com\" target=\"_blank\">Evergreen Line<\/a><\/li><li style=\"width:200px;\">\t\t<a hideFocus href=\"http:\/\/www.evergreen-marine.com\" target=\"_blank\">Evergreen Marine<\/a><\/li><li style=\"width:200px;\">\t\t<a hideFocus href=\"http:\/\/www.evergreen-marine.co.uk\" target=\"_blank\">Evergreen Marine (UK)<\/a><\/li><li style=\"width:200px;\">\t\t<a hideFocus href=\"http:\/\/www.italiamarittima.it\" target=\"_blank\">Italia Marittima<\/a><\/li><li style=\"width:200px;\">\t\t<a hideFocus href=\"http:\/\/www.evergreen-marine.com.hk\" target=\"_blank\">Evergreen Marine (Hong Kong)<\/a><\/li><li style=\"width:200px;\">\t\t<a hideFocus href=\"http:\/\/www.evergreen-marine.com.sg\" target=\"_blank\">Evergreen Marine (Singapore)<\/a><\/li><\/ul><\/li><li isLast=\"true\" style=\"width:132px;\"><a hideFocus href=\"\/tam1\/jsp\/TAM1_Login.jsp\">Login<\/a><\/li><\/ul><\/div>";
+
+	if("en"=="zh-TW"){
+		str = str.replace("http://www.evergreen-marine.com","http://www.evergreen-marine.com/tw");
+	}
+	document.getElementById("Global_EC_Menu").innerHTML = str;
+}
+</script>
+
+<style type="text/css">
+<!--
+body {
+	margin-left: 0px;
+	margin-top: 0px;
+	margin-right: 0px;
+	margin-bottom: 0px;
+}
+-->
+</style>
+<!-- Right Box -->
+<div id="tuf1_rightbox">
+	<div id="tuf1_rightbox_tab_quickSearch" class="tuf1_rightbox_tab" onclick="tuf1_rightbox_toggle('quickSearch')"><img src="/tuf1/images/rightbox-icon-search.png" border="0"></div>
+
+	<div id="tuf1_rightbox_tab_contactUs" class="tuf1_rightbox_tab" onclick="tuf1_rightbox_toggle('contactUs')"><img src="/tuf1/images/rightbox-icon-contact.png" border="0"></div>
+	<div id="tuf1_rightbox_tab_top" class="tuf1_rightbox_tab" onclick="tuf1_rightbox_toggle('top')"><a href="#tuf1_top"><img src="/tuf1/images/rightbox-icon-top.png" border="0"></a></div>
+	<div id="tuf1_rightbox_content">
+	    <div id="tuf1_rightbox_content_quickSearch" class="funcbox">
+	    	
+
+
+
+<div style="width:250px;">
+    <form id="tuf1_rightboxsearch_form" name="tuf1_rightboxsearch_form" method="post">
+        <div>
+        	<div class="searchtype"><span><input type="radio" name="tuf1_rightboxsearch_type" value="Tracking" checked onClick="javascript:changRightBoxQuickSearch(this.value);" >Tracking</span></div>&nbsp;&nbsp;<!-- Cargo Tracking -->
+        	<div class="searchtype"><span><input type="radio" name="tuf1_rightboxsearch_type" value="Schedule" onClick="javascript:changRightBoxQuickSearch(this.value);" >Schedules</span></div><!-- Sailing Schedules -->
+        	<input type="hidden" id="tuf1_rightboxsearch_type_value" name="tuf1_rightboxsearch_type_value" value="Tracking">
+    	</div>
+    	<div id="tuf1_rightboxsearch_tracking_div">
+    		<select class="selectcss" id="tuf1_rightboxsearch_trackingtype" name="tuf1_rightboxsearch_trackingtype" style="width:220px; height: 25px;" onchange="javascript:tdb1_save_rightbox_option(this);">
+				<option value="BL">Bill of Lading No.</option>
+				<option value="CNTR">Container No.</option>
+				<option value="BKG">Booking No.</option>
+			</select>
+			<br/>
+			<input class="inputcss" style="height: 25px;" ecType="AutoComplete" id="tuf1_rightboxsearch_trackingno" name="tuf1_rightboxsearch_trackingno" allowNoData="yes" action="preLoad" scope="context" datasource="" value="Please input Reference No." dataWidth="220px" placeholder="Reference No." cookieKey="WEB_QCCTRACK" onclick="javascript:this.value='';"/>
+    	</div>
+    	<div id="tuf1_rightboxsearch_schedule_div">
+    		<input class="inputcss" style="height: 25px;" ecType="AutoComplete" id="tuf1_rightboxsearch_tvs2qsOriAC" allowNoData="yes" action="preLoad" scope="context" datasource="bkLocations" value="Please input Origin" dataWidth="220px" placeholder="Please input Origin" cookieKey="RIGHTBOX_VSL_ORI" onclick="rightbox_tvs2_clear(this);"/><br/>
+			<input class="inputcss" style="height: 25px;" ecType="AutoComplete" id="tuf1_rightboxsearch_tvs2qsDesAC" allowNoData="no" action="preLoad" scope="context" datasource="bkLocations" value="Please input Destination" dataWidth="220px" placeholder="Please input Destination" cookieKey="RIGHTBOX_VSL_DEST" onclick="rightbox_tvs2_clear(this);"/><br/>
+			<span ecType="PopupCalendar"  id="tuf1_rightboxsearch_departure" type="DropDown" class="big"></span>
+			<select class="selectcss" name="tuf1_rightboxsearch_durationWeek" id="tuf1_rightboxsearch_durationWeek" size="1" style="width:220px; height: 25px;">
+				<option value="7">1 week(s)</option><!-- 1 week(s) -->
+				<option value="14" selected>2 week(s)</option><!-- 2 week(s) -->
+				<option value="21">3 week(s)</option><!-- 3 week(s) -->
+				<option value="28">4 week(s)</option><!-- 4 week(s) -->
+			</select>      	
+			<input type='hidden' name='CheckKey' id='CheckKey' value=''>  
+            <script language='JavaScript' src='/servlet/RobotAwayAJAX.js'></script> 
+		</div>
+		
+		<div id="tuf1_rightboxsearch_captcha_div">
+		    <input type="text" name="captcha_input" id="captcha_input" value="" placeholder="Verification Code" maxlength="4" class="inputcss" style="width:125px; height: 25px;">&nbsp;
+            <img src='/servlet/TUF1_CaptchaUtils?src=rightBoxCaptchaImg' id="rightBoxCaptchaImg" align="absmiddle" width="70" height="20">&nbsp;
+            <a href="javascript:captchaReload('rightBoxCaptchaImg');"><img src="/tuf1/images/ico_Refresh.gif" alt="Refresh" title="Refresh" align="absmiddle" border="0"></a><br>
+            <input type="hidden" name="hd_captcha_source" id="hd_captcha_source" value="rightBoxCaptchaImg">
+		</div>
+		
+        <br><span class="SubmitBt"><a href="javascript:submitRightBoxQuickSearch();">Search</a></span><br>
+    </form>
+</div>
+<script>
+
+//CargoTracking
+/* from w3scools */
+function rightbox_w3s_getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0; i<ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1);
+        if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
+    }
+    return "";
+}
+
+function rightbox_w3s_setCookie(cname, cvalue, exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    var expires = "expires="+d.toUTCString();
+    document.cookie = cname + "=" + cvalue + "; " + expires;
+}
+
+function checkRightBoxDigit(id){
+    var value =  document.getElementById(id).value;
+    re = /^[0-9]+$/;
+    if (re.test(value)){
+        return true;
+    }else{
+        return false;
+    }
+}
+
+
+function rightBoxFormSubmit(v,c){
+	var type = document.getElementById("tuf1_rightboxsearch_trackingtype").value;
+	var number = document.getElementById("tuf1_rightboxsearch_trackingno").value.trim().toUpperCase();
+	document.getElementById("tuf1_rightboxsearch_trackingno").value = number;
+	var re = /^[A-Za-z0-9]+$/;
+	document.getElementById("tuf1_rightboxsearch_trackingno_hideValue").value = number;
+	document.getElementById("tuf1_rightboxsearch_trackingno_visibleValue").value = number;
+	
+	if(number=="" || !re.test(number)){
+		alert("Please input Reference No.");
+		document.getElementById("tuf1_rightboxsearch_trackingno").focus();
+		return false;
+	}else{
+		if(chkCaptcha(document.tuf1_rightboxsearch_form.captcha_input)){
+			var url = "/servlet/TDB1_CargoTracking.do";
+		    if(type=="BL"){
+		    	url = url + "?TYPE=BL&BL="+number;
+		    }else if(type=="CNTR"){
+		    	url = url + "?TYPE=CNTR&CNTR="+number;
+		    }else if(type=="BKG"){
+		    	url = url + "?TYPE=BK&bkno="+number;
+		    }	
+		    url = url + "&viewSrc=rightBox";
+		    ac_setAutoCompleteCookie('tuf1_rightboxsearch_trackingno', 'WEB_QCCTRACK');	
+		    document.tuf1_rightboxsearch_form.action = url;
+		    document.tuf1_rightboxsearch_form.submit();
+		}
+	}
+}
+
+function tdb1_save_rightbox_option(obj){
+	if(obj){
+		rightbox_w3s_setCookie("TDB1_QUICK_SEARCH_TYPE", obj.value, 60);
+	}
+}
+
+function tdb1_init_rightbox_search_type(){	
+	var cookieValue = rightbox_w3s_getCookie("TDB1_QUICK_SEARCH_TYPE");	
+	if(cookieValue != ""){
+		document.getElementById("tuf1_rightboxsearch_trackingtype").value = cookieValue;
+	}
+}
+
+//船期
+
+function RightBoxCheckMonth(month)
+{
+    var monthArr = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+    return monthArr[month-1];
+}
+
+function RightBoxCheckValue()
+{
+	var ori = document.getElementById("tuf1_rightboxsearch_tvs2qsOriAC_hideValue").value;
+	var oriLocationName = document.getElementById("tuf1_rightboxsearch_tvs2qsOriAC").value;
+	var des = document.getElementById("tuf1_rightboxsearch_tvs2qsDesAC_hideValue").value;
+	var desLocationName = document.getElementById("tuf1_rightboxsearch_tvs2qsDesAC").value;
+	var duration = document.getElementById("tuf1_rightboxsearch_durationWeek").value;
+	var tuf1_rightboxsearch_departureDate = getId("tuf1_rightboxsearch_departureYear").value+getId("tuf1_rightboxsearch_departureMonth").value+getId("tuf1_rightboxsearch_departureDay").value;
+	var tuf1_rightboxsearch_departureDateShow = RightBoxCheckMonth(getId("tuf1_rightboxsearch_departureMonth").value)+"-"+getId("tuf1_rightboxsearch_departureDay").value+"-"+getId("tuf1_rightboxsearch_departureYear").value;
+	
+	if(ori=="")
+	{
+		alert("Please input Origin");
+		document.getElementById("tuf1_rightboxsearch_tvs2qsOriAC").focus();
+	}else if(des==""){
+		alert("Please input Destination");
+		document.getElementById("tuf1_rightboxsearch_tvs2qsDesAC").focus();
+	}else{	
+		if(chkCaptcha(document.tuf1_rightboxsearch_form.captcha_input)){
+			var url = "/tvs2/jsp/TVS2_InteractiveScheduleRouting.jsp";
+			url = url + "?func=getSearchResult"+
+					        "&carrier=V"+
+					        "&oriLocation="+ ori +
+						    "&oriLocationName="+oriLocationName+
+					        "&desLocation="+ des +
+						    "&desLocationName="+desLocationName+
+					        "&departureDate="+ tuf1_rightboxsearch_departureDate +
+					        "&durationWeek="+ duration +
+					        "&reeferCargo=N"+
+						    "&departureDateShow="+tuf1_rightboxsearch_departureDateShow;
+			
+						    
+				url = url + "&captcha_input="+document.tuf1_rightboxsearch_form.captcha_input.value;
+				url = url + "&hd_captcha_source="+document.tuf1_rightboxsearch_form.hd_captcha_source.value;
+			
+			
+			url = url + "&viewSrc=rightBox";
+			
+			ac_setAutoCompleteCookie('tuf1_rightboxsearch_tvs2qsOriAC', 'RIGHTBOX_VSL_ORI');
+			ac_setAutoCompleteCookie('tuf1_rightboxsearch_tvs2qsDesAC', 'RIGHTBOX_VSL_DEST');
+			
+			document.tuf1_rightboxsearch_form.action = url;
+			wshash()
+			document.tuf1_rightboxsearch_form.submit();
+		}
+	}
+}
+
+function rightbox_tvs2_clear(obj) 
+{
+	obj.value = "";
+}
+
+
+//Common
+function changRightBoxQuickSearch(quickMode){
+	document.getElementById("tuf1_rightboxsearch_type_value").value = quickMode;
+	if(quickMode === "Schedule"){
+		document.getElementById("tuf1_rightboxsearch_tracking_div").style.display = "none";
+		document.getElementById("tuf1_rightboxsearch_schedule_div").style.display = "block";
+		document.getElementById("tuf1_rightboxsearch_tvs2qsOriAC").value = "";
+		document.getElementById("tuf1_rightboxsearch_tvs2qsDesAC").value = "";
+	}else{
+		document.getElementById("tuf1_rightboxsearch_tracking_div").style.display = "block";
+		document.getElementById("tuf1_rightboxsearch_schedule_div").style.display = "none";
+		document.getElementById("tuf1_rightboxsearch_trackingno").value = "";
+		
+		tdb1_init_rightbox_search_type();
+	}
+
+}
+
+function submitRightBoxQuickSearch(){
+	var quickMode = document.getElementById("tuf1_rightboxsearch_type_value").value;
+	if(quickMode === "Schedule"){
+		RightBoxCheckValue();
+	}else{
+		rightBoxFormSubmit(13,2);
+	}
+}
+
+initPopupCalendar("tuf1_rightboxsearch_departure");
+changRightBoxQuickSearch("Tracking");
+initAutoComplete();
+
+
+
+
+
+</script>
+
+
+	    </div>
+
+        <div id="tuf1_rightbox_content_contactUs" class="funcbox">
+	    	<ul>
+	    	
+	    	
+	    	
+	    	   <li><a href="/tcc1/jsp/TCC1_Contact.jsp?viewSrc=rightBox">Contact Us</a></li>
+	    	
+	    	
+	    		
+	    	</ul>
+	    </div>
+	</div>
+</div>
+
+<script language="JavaScript" src="/tuf1/js/TUF1_RightBox.js"></script>
+
+<!-- Language Check Layer-->
+<div id="shipmentlink_lang_layer" style="width:300px;height:200px;position:absolute;top:20%;left:50%;margin-left:-150px;z-index:99999;display:none;">
+    <div style="position:absolute;width:300px;height:200px;left:0px;top:150px;background-image:url('/tuf1/images/ec_lang_check.gif');background-repeat:no-repeat;"></div>
+    <!-- div style="position:absolute; left:273px; top:155px"><a href="javascript:closeLangSettingLayer();"><img name="img_news_close" src="/tuf1/images/ico_close.gif" border="0" alt=""></a></div-->
+    <div style="position:absolute;width:280px;heigh:10px;left:15px;top:200px;" align="center">
+        <font class="f16tilb2">Would you use language: <b>Español</b> ?</font>
+    </div>  
+    <div style="position:absolute;width:400px;left:23px;top:270px;">
+		<button type="button" style="width:250px;" onclick="javascript:saveLangSetting('es','Y','Y');">Yes, please continue.</button><br>
+        <button type="button" style="width:250px;" onclick="javascript:saveLangSetting('en','Y','Y');">No, use English.</button><br>
+    </div>  
+</div>
+<script>showLangLayerMsg();</script>
+
+
+<div style="width:320px; height:15px; position:absolute; right:50%; top:40px; margin-right:-490px; z-index:1; visibility:visible" align="right">
+	<div class="f10hadln">
+	
+	
+		<a href="/tcc1/jsp/TCC1_Contact.jsp">Contact Us</a>&nbsp;|&nbsp;<!-- Contact Us -->
+		<a href="/tam1/jsp/TAM1_RegisterDispatcher.jsp">Register</a><!-- Register -->
+	
+	    &nbsp;|&nbsp;<a href="javascript:chgList('/')"><img name="img_home" border="0" src="/tuf1/images/Home.gif"></a>
+		
+	</div>
+</div>
+
+<div id="tuf1_top" style="width:1000px;position:absolute;top:0px;left:50%;margin-left:-490px;">
+	<div style="height:60px;">
+  		<img src="/tuf1/images/ec_title.jpg" usemap="#Map" border="0" width="999" height="60">
+  		<map name="Map">
+		    <area shape="rect" coords="27,8,240,43" href="/">
+		</map>
+  	</div>
+  
+  	<div style="background-color:#21337f; height:22">
+  		<span id="Global_EC_Menu"></span><script>setMenubyLang();dropdownMenu("navigation");linkBlur();</script>
+  	</div>
+  
+  	<div style="bgcolor:#21337f; height:22">
+  		<img src="/tuf1/images/shadow.gif" width="999" height="13">
+  	</div>
+    <div>
+    
+    
+
+
+		<table width="999" border="0">
+		    <tr>
+		        <td align="center">
+		            <table width="100%" border="0">
+		                <tr>
+		                    <td align="left" width="50%" class="f16tilb3">&nbsp;&nbsp;Cargo Tracking</td>
+		                    <td align="right" width="50%" class="f13tabn4">
+		                        
+		                        <form name="frmPrint" action="/servlet/TDB1_CargoTracking.do" method="post" target="TrackingPrintWin">
+		                            <input type="hidden" name="TYPE" value="BL">
+		                            <input type="hidden" name="BL" value="003903689108">
+		                            <input type="hidden" name="CNTR" value="">
+		                            <input type="hidden" name="PRINT" value="YES">
+		                        </form>
+		                            
+		                                <img src="/tuf1/images/ico_Item1.gif" border="0" align="absmiddle">&nbsp;
+		                                <a href="javascript:frmPrint()">Printable Page</a>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		                        
+		                    </td>
+		                </tr>
+		            </table>
+                    <form name="frmCargo" action="/servlet/TDB1_CargoTracking.do" method="post" onkeypress="return frmSubmit(event,1)">
+				        <input type="hidden" name="TYPE">
+				        <input type="hidden" name="BL">
+				        <input type="hidden" name="CNTR">
+				        <input type="hidden" name="bkno">
+				        <input type="hidden" name="query_bkno">
+				        <input type="hidden" name="query_rvs">
+				        <input type="hidden" name="query_docno">
+				        <input type="hidden" name="query_seq">
+				        <input type="hidden" name="PRINT">
+				        <table width="100%">
+				            <tr>
+				                <td align="center">
+				                    <table id="quick2" width="760" cellpadding="5" cellspacing="1" border="0" class="f12rown3">
+				                        <tr>
+				                            <td class="f12rown5" align="center">
+				                                <table border="0" >
+				                                    <tr>
+				                                        <td class="f12rown5" align="right" nowrap><font class="f12wrdb2">Trace shipments by</font></td>
+				                                        <td class="f12rown5" align="left" nowrap>&nbsp;<input type="radio" value="s_bl" name="SEL"  checked >Bill of Lading No.&nbsp;(e.g., 012345678900)
+														</td>
+				                                    </tr>
+													<tr>
+				                                        <td class="f12rown5" align="right" nowrap rowspan="2">&nbsp;</td>
+				                                        <td class="f12rown5" align="left" nowrap>&nbsp;<input type="radio" value="s_cntr" name="SEL"  >Container No.&nbsp;(e.g., EISU1234567)
+				                                        </td>
+				                                    </tr>
+				                                    <tr>
+				                                        <td class="f12rown5" align="left" >&nbsp;<input type="radio" value="bk" name="SEL"  >Booking No.&nbsp;(e.g., 012345678900)</td>
+				                                    </tr>
+				                                </table>
+				                            </td>
+				                            <td align="left" class="f12rown1">
+				                                <input type="text" name="NO" maxlength="12" style="width:220px;margin-bottom:5px;" value="003903689108" onkeypress="IsEngorInt(event)" onkeyup="this.value = this.value.toUpperCase();">&nbsp;&nbsp;
+				                            	
+				                            	<div id="captcha_div_s"></div><br>
+				                            	
+												<input type="button" align="absmiddle" value="Submit" onClick="javascript:frmSubmit(13,2);" />
+				                            </td>
+				                        </tr>
+				                    </table>
+				                </td>
+				            </tr>
+	                    </table>
+                    </form>
+	            </td>
+	        </tr>
+       </table>
+
+
+<script>
+
+	var captchaContent = getCaptchaDiv();
+	document.getElementById("captcha_div_s").innerHTML = captchaContent;
+
+</script>
+
+		<table width="999" border="0">
+
+		<tr><td align="center">
+  
+        <table width="95%" cellspacing="1" cellpadding="1" border="0" bgcolor="#999999" align="center">
+		<form name="frmCntrMove" action="/servlet/TDB1_CargoTracking.do" method="post" target="CntrMoveWin">
+            <input type="hidden" name="bl_no" value="003903689108">
+            <input type="hidden" name="cntr_no">
+            <input type="hidden" name="onboard_date" value="20200105">
+            <input type="hidden" name="pol" value="TWKSG">
+			<input type="hidden" name="pod" value="USBOS">
+			<input type="hidden" name="podctry" value="US"> 
+            <input type="hidden" name="TYPE" value="CntrMove">
+        </form>
+        <form name="frmAMSDetail" action="/servlet/TDB1_CargoTracking.do" method="post" target="amsDetail">
+            <input type="hidden" name="bl_no" value="003903689108">
+            <input type="hidden" name="country" value="US">
+            <input type="hidden" name="TYPE" value="AMS">
+            <input type="hidden" name="pod" value="USBOS">
+			<input type="hidden" name="customs" value="">
+			<input type="hidden" name="filing_pod" value="">
+        </form>
+            <tr>
+                <td align="center" class="f12wrdb2" bgcolor="#FFFFFF" nowrap width="10%">
+                    <img src="/tuf1/images/EGLV_logo.gif" alt="">
+                </td>
+                <td width="15%" align="center" class="f13tabb2" nowrap>B/L No.</td>
+                <td align="center" class="f12wrdb2" bgcolor="#FFFFFF" nowrap width="30%">EGLV 003903689108</td>
+                <td width="20%" align="center" class="f13tabb2" nowrap>Vessel Voyage on B/L</td>
+                <td align="center" class="f12wrdb2" bgcolor="#FFFFFF" nowrap width="30%">
+                EVER BRAVE 1743-017N
+
+                &nbsp;&#x28;&#x9577;&#x4f73;&#x8f2a;&#x29;
+                </td>
+            </tr>
+        </table>
+
+
+				<br>
+	            <table width="95%" cellspacing="1" cellpadding="1" border="0" bgcolor="#999999" align="center">
+                    <tr>
+                        <td class="f13tabb2" align="left">Estimated Date of Arrival at Destination : <font color="#9E0B0E">FEB-12-2020</font></td>
+                    </tr>
+                </table>
+
+		<br>
+		<table width="95%" cellspacing="1" cellpadding="2" border="0" bgcolor="#999999" align="center">
+			<tr>
+				<td colspan="4" class="f13tabb2" align="left">Basic Information : Sea Waybill</td>
+			</tr>
+	        <tr>
+				<td width="20%" align="right" class="f12rown2" nowrap>Place of Receipt</td>
+				<td width="30%" align="left"  class="f12rown1" nowrap>&nbsp;KEELUNG &#x28;TW&#x29;</td>
+				<td width="23%" align="right" class="f12rown2" nowrap>Container Count</td>
+				<td width="27%" align="left"  class="f12rown1" nowrap>    1</td>
+			</tr>
+			<tr>
+				<td align="right" class="f12rown2" nowrap>Port of Loading</td>
+				<td align="left"  class="f12rown1" nowrap>&nbsp;KAOHSIUNG &#x28;TW&#x29;</td>
+				<td align="right" class="f12rown2" nowrap>Gross Weight</td>
+				<td align="left"  class="f12rown1" nowrap>            .000 KGS</td>
+			</tr>
+			<tr>
+				<td align="right" class="f12rown2" nowrap>Port of Discharge</td>
+				<td align="left"  class="f12rown1" nowrap>&nbsp;BOSTON, MA &#x28;US&#x29;</td>
+				<td align="right" class="f12rown2" nowrap>Measurement</td>
+				<td align="left"  class="f12rown1" nowrap>            .0000 CBM</td>
+			</tr>
+			<tr>
+				<td align="right" class="f12rown2" nowrap>Place of Delivery</td>
+				<td align="left"  class="f12rown1" nowrap>&nbsp;BOSTON, MA &#x28;US&#x29;</td>
+				<td align="right" class="f12rown2" nowrap>Manifest Quantity</td>
+				<td align="left"  class="f12rown1" nowrap>         0 </td>
+			</tr>
+			<tr>
+				<td align="right" class="f12rown2" nowrap>OCP Final Destination</td>
+				<td align="left"  class="f12rown1" nowrap>&nbsp;&nbsp; </td>
+				<td align="right" class="f12rown2" nowrap>Estimated On Board Date</td>
+				<td align="left"  class="f12rown1" nowrap>JAN-05-2020</td>
+			</tr>
+			<tr>
+				 <td align="right" class="f12rown2" nowrap>Service Mode</td>
+				 <td align="left"  class="f12rown1" nowrap>&nbsp;PORT&#x2f;PORT</td>
+				 <td align="right" class="f12rown2" nowrap>VGM Cut Off Date(via Hard Copy)</td>
+				 <td align="left"  class="f12rown1" nowrap>DEC-31-2019 12&#x3a;00</td>
+			</tr>
+			<tr>
+			     <td align="right" class="f12rown2" nowrap>&nbsp;</td>
+			     <td align="left" class="f12rown1" nowrap>&nbsp;</td>
+			     <td align="right" class="f12rown2" nowrap>VGM Cut Off Date(via EDI/WEB/APP)</td>
+			     <td align="left" class="f12rown1" nowrap>DEC-31-2019 12&#x3a;00</td>
+			</tr>
+			<tr>
+			     <td align="right" class="f12rown2" nowrap>&nbsp;</td>
+			     <td align="left"  class="f12rown1" nowrap>&nbsp;</td>
+			     <td align="right" class="f12rown2" nowrap>Cut Off Date</td>
+			     <td align="left"  class="f12rown1" nowrap>DEC-31-2019 12&#x3a;00</td>
+			</tr>
+		</table>
+        
+
+
+
+                <br>
+				<table width="95%" cellspacing="1" cellpadding="1" border="0" bgcolor="#999999" align="center">
+				<tr>
+					<td colspan="3" class="f13tabb2" align="left">Plan Moves</td>
+				</tr>
+				<tr>
+					<td width="20%" align="left" class="f12rown2">Estimated Arrival Date</td>
+					<td width="35%" align="left" class="f12rown2">Location</td>
+					<td align="left" class="f12rown2">Estimated Arrival Vessel/Voyage</td>
+				</tr>
+
+				<tr>
+					<td align="left" class="f12rown1" nowrap>&nbsp;JAN-05-2020</td>
+					<td align="left" class="f12rown1">&nbsp;TAIPEI &#x28;TW&#x29;</td>
+
+					<td align="left" class="f12rown1">&nbsp;To be Advised</td>
+				</tr>
+
+				<tr>
+					<td align="left" class="f12rown1" nowrap>&nbsp;JAN-07-2020</td>
+					<td align="left" class="f12rown1">&nbsp;KAOHSIUNG &#x28;TW&#x29;</td>
+
+					<td align="left" class="f12rown1">&nbsp;To be Advised</td>
+				</tr>
+
+				<tr>
+					<td align="left" class="f12rown1" nowrap>&nbsp;JAN-09-2020</td>
+					<td align="left" class="f12rown1">&nbsp;PUSAN &#x28;KR&#x29;</td>
+
+					<td align="left" class="f12rown1">&nbsp;EVER BRAVE 1743-017N</td>
+				</tr>
+
+				<tr>
+					<td align="left" class="f12rown1" nowrap>&nbsp;FEB-12-2020</td>
+					<td align="left" class="f12rown1">&nbsp;BOSTON, MA &#x28;US&#x29;</td>
+
+					<td align="left" class="f12rown1">&nbsp;EVER LIVEN 0935-040E</td>
+				</tr>
+
+                </table>
+
+
+
+
+				<br>
+				<table width="95%" border="0" align="center" cellpadding="0" cellspacing="0">
+					<tr>
+					  <td align="left" class="f13tabn4" scope="col"><span class="style1" id="RlsStatusTitle">+</span> 
+					  	<a href="JavaScript:getDispInfo('RlsStatusTitle','RlsStatusInfo');">Release Status</a>
+					  </td>
+					</tr>
+				</table>
+				<div id="RlsStatusInfo"></div>	
+       
+			<br>
+			<table width="95%" border="0" align="center" cellpadding="0" cellspacing="0">
+				<tr>
+				  <td align="left" class="f13tabn4" scope="col"><span class="style1" id="ContactOfficeTitle">+</span> 
+					<a href="JavaScript:getDispInfo('ContactOfficeTitle','ContactOfficeInfo');">Contact Office</a>
+				  </td>
+				</tr>
+			</table>
+			<div id="ContactOfficeInfo"></div>
+			
+			<br>
+			<table width="95%" border="0" align="center" cellpadding="0" cellspacing="0">
+				<tr>
+				  <td align="left" class="f13tabn4" scope="col"><span class="style1" id="PickupRefTitle">+</span> 
+					<a href="JavaScript:getDispInfo('PickupRefTitle','PickupRefInfo');">Pick-up Reference Information</a>
+				  </td>
+				</tr>
+			</table>
+			<div id="PickupRefInfo"></div>
+
+
+
+        <br>
+		<table width="95%" align="center">
+		<tr><td align="left" valign="top" class="f12wrdn2">DISCLAIMER : A minimum delay of 20-minutes is in effect for database updates. All information is subject to change without prior notice.</td></tr>
+        </table>
+    
+
+</td></tr>
+</table>
+
+        <br>
+		<table width="95%" align="center">
+			<tr>
+				<td align="center">
+					<a href="javascript:backForBL();"><img src="/tuf1/images/btn_Back.gif" alt="" border="0"></a>
+				</td>
+			</tr>
+        </table>
+        <table width="100%" border="0" align="center">
+			<tr>
+				<td align="right"><a href="#top"><img src="/tuf1/images/ico_Top.gif" border="0" alt=""></a>&nbsp;&nbsp;</td>
+			</tr>
+        </table>        
+
+
+
+
+
+<div>
+    <hr size="1">
+    
+	<div align="center" class="f12wrdn1">
+		<a href="/tuf1/jsp/TUF1_DisclaimerClause.jsp?clause=terms">Legal Terms of Use</a>, <a href="/tuf1/jsp/TUF1_DisclaimerClause.jsp?clause=copyright">Copyright</a>, <a href="/tuf1/jsp/TUF1_DisclaimerClause.jsp?clause=privacy">Privacy Policy</a> and <a href="/tuf1/jsp/TUF1_DisclaimerClause.jsp?clause=cookie">Cookie Policy</a> for ShipmentLink Shipping & Transport Website.
+	    <br>
+	    Copyright&copy; 2001-2019 , All Rights Reserved by Evergreen International Corp.
+	</div>
+</div>
+
+</body>
+</html>
+
+	<script language="javascript">
+	function setDefault() {
+		initToolTip(); //20151218 for MAC 
+	 }
+	
+	function toggle(divName) {
+		var obj = document.getElementById(divName);
+		if (obj.style.display == 'none'){
+			document.getElementById('CustomsTitle').innerHTML = '-';
+			obj.style.display = "block";
+		}else{
+			document.getElementById('CustomsTitle').innerHTML = '+';			
+			obj.style.display = 'none';
+		}
+	}
+	
+	function getBlockInfo(dataDivName) {
+		var objData=document.getElementById(dataDivName); // 顯示資料的 DIV
+		
+		var contentUrl = '';
+		var tdb1_dispInfo = new TUF1_DynamicReq();
+		tdb1_dispInfo.setMsgShowType("2","Loading... Please wait a moment.");
+		tdb1_dispInfo.setMsgBoxOffset(-50,0);
+		
+		if (dataDivName == 'AMInfo')
+		{
+			contentUrl = "/servlet/TDB1_CargoTracking.do?TYPE=GetDispInfo&Item=AMSACK&BL=003903689108&firstCtnNo=DUMMYCNTR&pod=USBOS";
+		}else if (dataDivName == 'atbNoInfo')
+		{
+			contentUrl = "/servlet/TDB1_CargoTracking.do?TYPE=GetDispInfo&Item=atbNo&BL=003903689108";
+		}
+		
+		tdb1_dispInfo.getContent(contentUrl, dataDivName);
+	}
+	
+	// 用來抓取收合型態之資料
+	function getDispInfo(titleDivName, dataDivName) {
+		var objTitle=document.getElementById(titleDivName); // 資料的 Title
+		var objData=document.getElementById(dataDivName); // 顯示資料的 DIV
+		
+		// 當尚未抓取 pickup & return depot information 時，才透過 AJAX 去抓資料
+		if (objData.innerHTML == '')
+		{
+			var contentUrl = '';
+			var tdb1_dispInfo = new TUF1_DynamicReq();
+			tdb1_dispInfo.setMsgShowType("2","Loading... Please wait a moment.");
+			tdb1_dispInfo.setMsgBoxOffset(-50,0);
+			
+			if (dataDivName == 'pickupRtnInfo')
+			{
+				var podctry = document.frmCntrMove.podctry.value;
+				contentUrl = "/servlet/TDB1_CargoTracking.do?TYPE=GetPickupRtnInfo&BL=003903689108&ctrycode="+podctry+"&firstCtnNo=DUMMYCNTR&firstCtnType=&pickupVslVoy=null";
+			}
+			else if (dataDivName == 'AMInfo')
+			{
+				contentUrl = "/servlet/TDB1_CargoTracking.do?TYPE=GetDispInfo&Item=AMSACK&BL=003903689108&firstCtnNo=DUMMYCNTR&pod=USBOS";
+			}
+			else if (dataDivName == 'RlsStatusInfo')
+			{
+				contentUrl = "/servlet/TDB1_CargoTracking.do?TYPE=GetDispInfo&Item=RlsStatus&BL=003903689108";
+			}
+			else if (dataDivName == 'ContactOfficeInfo')
+			{
+				contentUrl = "/servlet/TDB1_CargoTracking.do?TYPE=GetDispInfo&Item=ContactOffice&BL=003903689108";
+			}
+			else if (dataDivName == 'PickupRefInfo')
+			{
+				contentUrl = "/servlet/TDB1_CargoTracking.do?TYPE=GetDispInfo&Item=PickupRef&BL=003903689108&firstCtnNo=DUMMYCNTR";
+			}
+			else if (dataDivName == 'CtnMovesInfo')
+			{
+				contentUrl = "/servlet/TDB1_CargoTracking.do?TYPE=GetDispInfo&Item=CtnMoves&BL=003903689108&firstCtnNo=DUMMYCNTR&ctnFromDate=&ctnToDate=";
+			}else if (dataDivName == 'atbNoInfo')
+			{
+				contentUrl = "/servlet/TDB1_CargoTracking.do?TYPE=GetDispInfo&Item=atbNo&BL=003903689108";
+			}
+			
+			tdb1_dispInfo.getContent(contentUrl, dataDivName);
+			objTitle.innerHTML = '-';
+		}
+		else // 縮合的功能
+		{
+			if (objData.style.display == '')
+			{
+				objData.style.display = "none";
+				objTitle.innerHTML = '+';
+			}
+			else
+			{
+				objData.style.display = '';
+				objTitle.innerHTML = '-';
+			}
+		}
+	}
+	
+	getVesselSchedule = function(vessel_name,vessel_code,vessel_voyage) 
+	{
+		var win1;
+		win1 = window.open('/tvs2/jsp/TVS2_ShowVesselSchedule.jsp?vessel_name='+vessel_name+'&vessel_code='+vessel_code+'&vessel_voyage='+vessel_voyage,"win1","left="+((screen.width-520)/2)+",top="+((screen.height-500)/2-50)+",width=520,height=500,toolbar=0,menubar=0,resizable=0,scrollbars=1,status=0");
+	}
+	</script>

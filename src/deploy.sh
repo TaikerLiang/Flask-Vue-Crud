@@ -8,6 +8,15 @@ do
     esac
 done
 
+cd .. && python -m pytest test/ --disable-warnings
+existed=$?
+cd src
+
+if [ $existed = 1 ]
+then
+    exit 0
+fi
+
 if [ "x$target" = "xprd" ]; then
     echo "deploy to scrapy cloud project: 407697"
     shub image build 407697 -f Dockerfile.prd

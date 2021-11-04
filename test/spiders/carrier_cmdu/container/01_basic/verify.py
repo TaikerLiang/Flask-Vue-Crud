@@ -9,6 +9,7 @@ def verify(results):
         pod=LocationItem(name='LONG BEACH, CA (US)'),
         final_dest=LocationItem(name=None),
         eta='Thu 05 Sep 2019 04:30',
+        ata=None,
     )
 
     assert results[1] == ContainerItem(
@@ -30,4 +31,40 @@ def verify(results):
         description='Arrival final port of discharge',
         location=LocationItem(name='LONG BEACH, CA'),
         est_or_actual='E',
+    )
+
+def multi_verify(results):
+
+    assert results[0] == MblItem(
+        por=LocationItem(name=None),
+        pol=LocationItem(name='NINGBO (CN)'),
+        pod=LocationItem(name='LONG BEACH, CA (US)'),
+        final_dest=LocationItem(name=None),
+        eta='Thu 05 Sep 2019 04:30',
+        ata=None,
+        task_id=1,
+    )
+
+    assert results[1] == ContainerItem(
+        container_key='ECMU9893257',
+        container_no='ECMU9893257',
+        task_id=1,
+    )
+
+    assert results[2] == ContainerStatusItem(
+        container_key='ECMU9893257',
+        local_date_time='Tue 13 Aug 2019 03:54',
+        description='Empty to shipper',
+        location=LocationItem(name='NINGBO'),
+        est_or_actual='A',
+        task_id=1,
+    )
+
+    assert results[5] == ContainerStatusItem(
+        container_key='ECMU9893257',
+        local_date_time='Thu 05 Sep 2019 04:30',
+        description='Arrival final port of discharge',
+        location=LocationItem(name='LONG BEACH, CA'),
+        est_or_actual='E',
+        task_id=1,
     )

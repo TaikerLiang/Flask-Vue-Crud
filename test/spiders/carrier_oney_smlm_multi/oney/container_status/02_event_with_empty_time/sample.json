@@ -1,0 +1,454 @@
+{
+"TRANS_RESULT_KEY":"S",
+"Exception":"",
+"count":"13",
+"list": [
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "1",
+    "copNo": "CSGN9A24583850",
+    "eventDt": "2019-10-28 21:57",
+    "vslEngNm": "",
+    "placeNm": "HO CHI MINH ,VIETNAM",
+    "skdVoyNo": "",
+    "yardNm": "ICD TAY NAM",
+    "copDtlSeq": "1011",
+    "skdDirCd": "",
+    "actTpCd": "A",
+    "statusNm": "Empty Container Release to Shipper",
+    "statusCd": "MOTYDO",
+    "nodCd": "VNSGN12",
+    "vvd": "",
+    "hashColumns": [
+      [
+        "vsl_eng_nm",
+        ""
+      ],
+      [
+        "mvmt_sts_cd",
+        {}
+      ],
+      [
+        "cntr_flg",
+        {}
+      ],
+      [
+        "weight",
+        {}
+      ],
+      [
+        "nod_cd",
+        "VNSGN12"
+      ],
+      [
+        "cop_sts_cd",
+        {}
+      ],
+      [
+        "no",
+        "1"
+      ],
+      [
+        "enbl_flag",
+        {}
+      ],
+      [
+        "seal_no",
+        {}
+      ],
+      [
+        "skd_dir_cd",
+        ""
+      ],
+      [
+        "place_nm",
+        "HO CHI MINH ,VIETNAM"
+      ],
+      [
+        "pagerows",
+        {}
+      ],
+      [
+        "ibflag",
+        {}
+      ],
+      [
+        "cntr_tpsz_nm",
+        {}
+      ],
+      [
+        "status_cd",
+        "MOTYDO"
+      ],
+      [
+        "status_nm",
+        "Empty Container Release to Shipper"
+      ],
+      [
+        "bkg_no",
+        {}
+      ],
+      [
+        "bl_no",
+        {}
+      ],
+      [
+        "cop_dtl_seq",
+        "1011"
+      ],
+      [
+        "piece",
+        {}
+      ],
+      [
+        "act_tp_cd",
+        "A"
+      ],
+      [
+        "soc_flg",
+        {}
+      ],
+      [
+        "cntr_tpsz_cd",
+        {}
+      ],
+      [
+        "yard_cd",
+        {}
+      ],
+      [
+        "vvd",
+        ""
+      ],
+      [
+        "place_cd",
+        {}
+      ],
+      [
+        "po_no",
+        {}
+      ],
+      [
+        "yard_nm",
+        "ICD TAY NAM"
+      ],
+      [
+        "event_dt",
+        "2019-10-28 21:57"
+      ],
+      [
+        "cntr_no",
+        {}
+      ],
+      [
+        "dsp_bkg_no",
+        {}
+      ],
+      [
+        "skd_voy_no",
+        ""
+      ],
+      [
+        "cop_no",
+        "CSGN9A24583850"
+      ],
+      [
+        "vsl_cd",
+        ""
+      ]
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "2",
+    "copNo": "CSGN9A24583850",
+    "eventDt": "2019-10-29 13:58",
+    "vslEngNm": "",
+    "placeNm": "HO CHI MINH ,VIETNAM",
+    "skdVoyNo": "",
+    "yardNm": "ICD TAY NAM",
+    "copDtlSeq": "1031",
+    "skdDirCd": "",
+    "actTpCd": "A",
+    "statusNm": "Gate In to Outbound Terminal",
+    "statusCd": "FOTMAD",
+    "nodCd": "VNSGN12",
+    "vvd": "",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "3",
+    "copNo": "CSGN9A24583850",
+    "eventDt": "",
+    "vslEngNm": "",
+    "placeNm": "HO CHI MINH ,VIETNAM",
+    "skdVoyNo": "",
+    "yardNm": "ICD TAY NAM",
+    "copDtlSeq": "1032",
+    "skdDirCd": "",
+    "actTpCd": "A",
+    "statusNm": "Feeder Loading at O/B Inland Port",
+    "statusCd": "FOWMLO",
+    "nodCd": "VNSGN12",
+    "vvd": "",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "4",
+    "copNo": "CSGN9A24583850",
+    "eventDt": "2019-11-04 02:57",
+    "vslEngNm": "",
+    "placeNm": "HO CHI MINH ,VIETNAM",
+    "skdVoyNo": "",
+    "yardNm": "ICD TAY NAM",
+    "copDtlSeq": "1033",
+    "skdDirCd": "",
+    "actTpCd": "A",
+    "statusNm": "Feeder Departure from O/B Inland Port",
+    "statusCd": "FOWMDO",
+    "nodCd": "VNSGN12",
+    "vvd": "",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "5",
+    "copNo": "CSGN9A24583850",
+    "eventDt": "2019-11-04 18:41",
+    "vslEngNm": "",
+    "placeNm": "CAI MEP ,VIETNAM",
+    "skdVoyNo": "",
+    "yardNm": "TCIT (TAN CANG CAIMEP INTL TERMINAL)",
+    "copDtlSeq": "1051",
+    "skdDirCd": "",
+    "actTpCd": "A",
+    "statusNm": "Outbound Feeder Arrival at Inland Port",
+    "statusCd": "FLWMAD",
+    "nodCd": "VNCMP04",
+    "vvd": "",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "6",
+    "copNo": "CSGN9A24583850",
+    "eventDt": "",
+    "vslEngNm": "",
+    "placeNm": "CAI MEP ,VIETNAM",
+    "skdVoyNo": "",
+    "yardNm": "TCIT (TAN CANG CAIMEP INTL TERMINAL)",
+    "copDtlSeq": "1052",
+    "skdDirCd": "",
+    "actTpCd": "A",
+    "statusNm": "Water POL Unloading Destination",
+    "statusCd": "FLWMUD",
+    "nodCd": "VNCMP04",
+    "vvd": "",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "NAGT",
+    "no": "7",
+    "copNo": "CSGN9A24583850",
+    "eventDt": "2019-11-05 10:36",
+    "vslEngNm": "NYK ARGUS",
+    "placeNm": "CAI MEP ,VIETNAM",
+    "skdVoyNo": "0102",
+    "yardNm": "TCIT (TAN CANG CAIMEP INTL TERMINAL)",
+    "copDtlSeq": "1053",
+    "skdDirCd": "E",
+    "actTpCd": "A",
+    "statusNm": "Loaded on 'NYK ARGUS 102E' at Port of Loading",
+    "statusCd": "FLVMLO",
+    "nodCd": "VNCMP04",
+    "vvd": "NYK ARGUS 102E",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "NAGT",
+    "no": "8",
+    "copNo": "CSGN9A24583850",
+    "eventDt": "2019-11-05 21:54",
+    "vslEngNm": "NYK ARGUS",
+    "placeNm": "CAI MEP ,VIETNAM",
+    "skdVoyNo": "0102",
+    "yardNm": "TCIT (TAN CANG CAIMEP INTL TERMINAL)",
+    "copDtlSeq": "4054",
+    "skdDirCd": "E",
+    "actTpCd": "A",
+    "statusNm": "'NYK ARGUS 102E' Departure from Port of Loading",
+    "statusCd": "FLVMDO",
+    "nodCd": "VNCMP04",
+    "vvd": "NYK ARGUS 102E",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "NAGT",
+    "no": "9",
+    "copNo": "CSGN9A24583850",
+    "eventDt": "2019-11-22 05:30",
+    "vslEngNm": "NYK ARGUS",
+    "placeNm": "LONG BEACH, CA ,UNITED STATES",
+    "skdVoyNo": "0102",
+    "yardNm": "ITS (INTL TRANSPORTATION SERVICES)",
+    "copDtlSeq": "4071",
+    "skdDirCd": "E",
+    "actTpCd": "A",
+    "statusNm": "'NYK ARGUS 102E' Arrival at Port of Discharging",
+    "statusCd": "FUVMAD",
+    "nodCd": "USLGB02",
+    "vvd": "NYK ARGUS 102E",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "NAGT",
+    "no": "10",
+    "copNo": "CSGN9A24583850",
+    "eventDt": "2019-11-22 06:52",
+    "vslEngNm": "NYK ARGUS",
+    "placeNm": "LONG BEACH, CA ,UNITED STATES",
+    "skdVoyNo": "0102",
+    "yardNm": "ITS (INTL TRANSPORTATION SERVICES)",
+    "copDtlSeq": "4072",
+    "skdDirCd": "E",
+    "actTpCd": "A",
+    "statusNm": "'NYK ARGUS 102E' POD Berthing Destination",
+    "statusCd": "FUVMBD",
+    "nodCd": "USLGB02",
+    "vvd": "NYK ARGUS 102E",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "NAGT",
+    "no": "11",
+    "copNo": "CSGN9A24583850",
+    "eventDt": "2019-11-23 14:16",
+    "vslEngNm": "NYK ARGUS",
+    "placeNm": "LONG BEACH, CA ,UNITED STATES",
+    "skdVoyNo": "0102",
+    "yardNm": "ITS (INTL TRANSPORTATION SERVICES)",
+    "copDtlSeq": "6073",
+    "skdDirCd": "E",
+    "actTpCd": "A",
+    "statusNm": "Unloaded from 'NYK ARGUS 102E' at Port of Discharging",
+    "statusCd": "FUVMUD",
+    "nodCd": "USLGB02",
+    "vvd": "NYK ARGUS 102E",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "12",
+    "copNo": "CSGN9A24583850",
+    "eventDt": "2019-12-02 16:31",
+    "vslEngNm": "",
+    "placeNm": "LONG BEACH, CA ,UNITED STATES",
+    "skdVoyNo": "",
+    "yardNm": "ITS (INTL TRANSPORTATION SERVICES)",
+    "copDtlSeq": "6074",
+    "skdDirCd": "",
+    "actTpCd": "A",
+    "statusNm": "Gate Out from Inbound Terminal for Delivery to Consignee (or Port Shuttle)",
+    "statusCd": "FITMDO",
+    "nodCd": "USLGB02",
+    "vvd": "",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "13",
+    "copNo": "CSGN9A24583850",
+    "eventDt": "2019-12-04 10:04",
+    "vslEngNm": "",
+    "placeNm": "LOS ANGELES, CA ,UNITED STATES",
+    "skdVoyNo": "",
+    "yardNm": "LAX STREET TURN",
+    "copDtlSeq": "6091",
+    "skdDirCd": "",
+    "actTpCd": "A",
+    "statusNm": "Empty Container Returned from Customer",
+    "statusCd": "MITYAD",
+    "nodCd": "USLAX99",
+    "vvd": "",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  }
+]}

@@ -118,7 +118,7 @@ class ContainerRoutingRule(BaseRoutingRule):
                 'vessel': container['VesselName'],
                 'mbl_no': container['BillOfLading'][0],
                 'weight': container['GrossWeight'],
-                'hazardous': container['HazardousClass'] or None,
+                'hazardous': container['HazardousClass'].strip() or None,
             }
 
             container_nos.remove(container['ContainerId'])

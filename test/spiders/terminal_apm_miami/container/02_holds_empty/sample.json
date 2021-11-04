@@ -1,0 +1,38 @@
+{
+  "ContainerAvailabilityResults": [
+    {
+      "Appointment": "No",
+      "AppointmentDate": "No",
+      "BillOfLading": ["NBPC016685A"],
+      "CanBeSaved": true,
+      "ContainerId": "GLDU9857654",
+      "ContainerState": "YARD",
+      "Customs": "RELEASED",
+      "Demurrage": "",
+      "DischargedDate": "12/08/21 23:23",
+      "Freight": "RELEASED",
+      "GateOutDate": "",
+      "GrossWeight": "12073",
+      "HazardousClass": "",
+      "Holds": [],
+      "HoldsDescription": [],
+      "IsBillOfLading": false,
+      "IsContainer": true,
+      "IsHazardous": false,
+      "IsoCode": "22G1",
+      "IsSaved": false,
+      "LineId": "CMA",
+      "LocalDateTime": "17/08/21",
+      "ReadyForDelivery": true,
+      "ReadyForDeliveryReason": "",
+      "SizeTypeHeight": "20/GP/86",
+      "StoragePaidThroughDate": "18/08/21",
+      "StrippingDate": "",
+      "VesselEta": "11/08/21 08:00",
+      "VesselName": "GULF BRIDGE",
+      "YardLocation": "Yard Grounded (4H25B4)"
+    }
+  ],
+  "Filters": ["NBPC016685A"],
+  "ResultsCount": 1
+}

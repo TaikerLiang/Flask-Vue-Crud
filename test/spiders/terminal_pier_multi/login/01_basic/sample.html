@@ -1,0 +1,856 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+
+<!--[if lt IE 7]> <html dir="ltr" lang="en-US" class="oldie"> <![endif]-->
+<!--[if IE 7]>    <html dir="ltr" lang="en-US" class="oldie"> <![endif]-->
+<!--[if IE 8]>    <html dir="ltr" lang="en-US" class="oldie"> <![endif]-->
+<!--[if IE 9]>    <html dir="ltr" lang="en-US" class="oldie"> <![endif]-->
+<!--[if gt IE 9]><!--> <html dir="ltr" lang="en-US"> <!--<![endif]-->
+<head>
+    <meta charset="utf-8">
+    <meta name="keywords" content=""/>
+    <meta name="description" content=""/>
+    <meta name="author" content="Tideworks Technology"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+
+    <title>Pier A - Forecast&reg; by Tideworks</title>
+
+    <link rel="shortcut icon" href="/fc-PA/favicon.ico">
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<link rel="stylesheet" href="/fc-PA/css/TableTools.css">
+<link rel="stylesheet" href="/fc-PA/css/datatable.css">
+<link rel="stylesheet" href="/fc-PA/css/sticky-footer.css">
+<link rel="stylesheet" href="/fc-PA/css/base.css?version=95013000032420211705" type="text/css" media="screen, projection, print">
+<link rel="stylesheet" href="/fc-PA/css/flick/jquery-ui-1.8.6.custom.css" type="text/css">
+<link rel="stylesheet" href="/fc-PA/css/print.css?version=95013000032420211705" type="text/css" media="print">
+<link rel="stylesheet" href="/fc-PA/js/shadowbox-3.0.3/shadowbox.css?version=95013000032420211705" type="text/css">
+<link rel="stylesheet" href="/fc-PA/css/font-awesome-4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="/fc-PA/css/sweet-alert/sweetalert.css">
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,700" rel="stylesheet">
+
+
+
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" src="/fc-PA/js/main.js?version=95013000032420211705"></script>
+<script type="text/javascript" src="/fc-PA/js/scripts.jsp?version=95013000032420211705"></script>
+<script type="text/javascript" src="/fc-PA/js/ajax.jsp?version=95013000032420211705"></script>
+<script type="text/javascript" src="/fc-PA/js/EqptService.js?version=95013000032420211705"></script>
+
+<script type="text/javascript" src="/fc-PA/js/jquery-1.9.1.min.js"></script>
+<script type="text/javascript" src="/fc-PA/js/jquery.alert.js"></script>
+<script type="text/javascript" src="/fc-PA/js/jquery.cookie.js"></script>
+<script type="text/javascript" src="/fc-PA/js/jquery.dropdownPlain.js"></script>
+<script type="text/javascript" src="/fc-PA/js/jquery.easing.1.3.js"></script>
+<script type="text/javascript" src="/fc-PA/js/jquery.form.js"></script>
+<script type="text/javascript" src="/fc-PA/js/jquery-ui-1.10.3.custom.min.js"></script>
+<script type="text/javascript" src="/fc-PA/js/jquery.ui.datepicker-en-GB.js"></script>
+<script type="text/javascript" src="/fc-PA/js/jquery.ui.datepicker-da-DK.js"></script>
+<script type="text/javascript" src="/fc-PA/js/jquery.ui.datepicker-es.js"></script>
+<script type="text/javascript" src="/fc-PA/js/jquery.backstretch.min.js"></script>
+<script type="text/javascript" src="/fc-PA/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="/fc-PA/js/TableTools.min.js"></script>
+<script type="text/javascript" src="/fc-PA/js/datatable.js"></script>
+
+<script type="text/javascript" src="/fc-PA/js/shadowbox-3.0.3/shadowbox.js"></script>
+
+<script type="text/javascript" src="/fc-PA/js/customFormElements.js"></script>
+
+<script type="text/javascript" src="/fc-PA/js/typeahead.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/fc-PA/js/moment-with-locales.js"></script>
+
+<script type="text/javascript" src="/fc-PA/js/sweet-alert/sweetalert.min.js"></script>
+
+
+<!-- IE Fix -->
+<script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
+
+<script type="text/javascript" src="/fc-PA/js/startswith.js"></script>
+
+
+
+
+    <script type="text/javascript">
+    $().ready(function () {
+        setNavStyle("#menu-home");
+
+        $("#close-browser-alert").click(function(){
+            $("#browser-alert").fadeOut("fast");
+            $.cookie('browser-alert', "true",{path: '/'});
+        });
+
+        $("#close-config-alert").click(function(){
+            $("#config-alert").fadeOut("fast");
+            $.cookie('config-alert', "true",{path: '/'});
+        });
+
+        if($("html").hasClass("oldie") && !$.cookie('browser-alert')) {
+            $("#browser-alert").fadeIn("fast");
+        }
+
+        if(!$.cookie('config-alert')) {
+            $("#config-alert").fadeIn("fast");
+        }
+
+        $("#close").click(function(){
+            $("#convertedUserDialog").fadeOut("fast");
+        });
+
+        $("#docked-list").hide().find("li:gt(3)").hide();
+        $("#todays-list").hide().find("li:gt(3)").hide();
+        $("#tomorrows-list").hide().find("li:gt(3)").hide();
+
+
+            $("#homepageAlert").modal("show");
+
+
+
+        $('#declineMessaging').click(function() {
+            $("#pushOptIn").slideUp("fast");
+        });
+
+    });
+
+    function moreVesselVoyages(item, list){
+        $(item).hide();
+        $("#" + list + "-list li").show();
+    }
+
+    function showVesselVoyages(list){
+        if ($("#" + list + "-list").is(":hidden")) {
+            $("#" + list + "-list").slideDown("fast");
+        } else {
+            $("#" + list + "-list").hide();
+            $("#" + list + "-list").hide().find("li:gt(3)").hide();
+            $("#more-" + list).show();
+        }
+    }
+    </script>
+
+
+
+</head>
+
+<body>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script src="/fc-PA/js/bootstrap-hover-dropdown.js"></script>
+
+<script type="text/javascript">
+$().ready(function() {
+
+    $('.js-activated').dropdownHover().dropdown();
+
+    $('[data-toggle="tooltip"]').tooltip();
+
+    if($(window).width() <= 768) {
+        $('ul.nav li.dropdown a').removeClass("disabled");
+        //console.log("remove class " + $(window).width());
+    } else {
+        $('ul.nav li.dropdown a').addClass("disabled");
+        //console.log("add class " + $(window).width());
+    }
+
+    $(window).resize(function() {
+        if($(window).width() <= 768) {
+            $('ul.nav li.dropdown a').removeClass("disabled");
+            //console.log("remove class " + $(window).width());
+        } else {
+            $('ul.nav li.dropdown a').addClass("disabled");
+            //console.log("add class " + $(window).width());
+        }
+    });
+
+    // we need this variable to hold the value that the user selects.
+    var selectedItem = quickSearchCookie();
+
+    $(".dropdown-menu li a").click(function(){
+        var selText = $(this).text();
+
+
+        $(this).parents('.input-group-btn').find('.dropdown-toggle').html(selText+' <span class="caret"></span>');
+        quickSearchCookie(this.id);
+
+        // set the variable value to what the user selected.
+        selectedItem = this.id;
+    });
+
+    var $linkToSelect = $("#"+selectedItem);
+    //if we have such link in menu (different user roles may have different set of links)
+    if ($linkToSelect.length) {
+        $linkToSelect.parents('.input-group-btn').find('.dropdown-toggle').html($linkToSelect.text()+' <span class="caret"></span>');
+    } else {
+        //if we have have items in the list, click on the first item.
+        if ($("#quickSearchForm ul.dropdown-menu li a").length) $("#quickSearchForm ul.dropdown-menu li a").first().click();
+    }
+
+    $("#quickSearchForm").submit(function(){
+
+        // create a new array to determine which functional area to send the user to.
+        var searchTypeList = new Array();
+
+
+
+
+                searchTypeList['CONTAINER'] = '/equipment/default.do?method=equipmentSubmit&f=qs&equipClass=CTR&number=';
+                searchTypeList['CHASSIS'] = '/equipment/default.do?method=equipmentSubmit&f=qs&equipClass=CHS&number=';
+
+
+
+        // get the search criteria
+        var number = $("#quickSearch").val().toUpperCase();
+
+        // make sure we have data
+        if(hasData(number) == false ){
+            twitterAlertMessage('Please enter all search criteria before continuing.');
+            $("#quickSearch").focus();
+            return false;
+        }
+
+        // do some basic client side validation of the value entered.
+        switch(selectedItem){
+        case 'CONTAINER':
+            if(invalidChars(number) == false ) {
+                twitterAlertMessage("Invalid Container Number (it should consist of 4 alpha and 6 or 7 numeric).");
+                $("#quickSearch").focus();
+                return false;
+            }
+            break;
+        case 'CHASSIS':
+            if(invalidChars(number) == false ) {
+                $("#quickSearch").focus();
+                return false;
+            }
+            break;
+        }
+
+        // set a cookie value of what the user last searched by.
+        $.cookie('quick_search', selectedItem,{path: '/'});
+
+        // determine which item the user selected.
+        var url = searchTypeList[selectedItem];
+
+        // turn that into a url to send them to.
+        window.location = '/fc-PA' + url + number;
+        return false;
+    });
+
+
+});
+
+</script>
+
+<div id="headerAlert"></div>
+
+<div class="navbar navbar-inverse navbar-static-top">
+
+    <div class="container hidden-xs">
+
+        <div class="nav navbar-nav navbar-left">
+
+            <a href="/fc-PA/home/default.do" class="terminalname-responsive">
+
+                <img src="/fc-PA/images/logo-50x50.png" class="pull-left">
+
+                <h2 class="pull-left">Pier A</h2>
+
+                <div class="clearfix"></div>
+
+            </a>
+
+        </div>
+
+        <div class="navbar-text navbar-right text-right">
+            <div><small>You are signed in as WILLY&#32;WANG | <a href="/fc-PA/myaccount/default.do" class="headerlink">My Account</a> | <a href="/fc-PA/j_spring_security_logout" class="headerlink" id="signOut" title="Click here to sign out">Sign Out</a></small></div>
+            <div><small>Consignee Company Admin (02843)</small></div>
+        </div>
+
+    </div>
+
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <i class="fa fa-bars fa-lg" aria-hidden="true" title="Toggle navigation"></i>
+            <span class="sr-only">Toggle navigation</span>
+        </button>
+        <h4><a class="navbar-brand hidden-lg hidden-md hidden-sm terminalname" href="/fc-PA/home/default.do">Pier A</a></h4>
+    </div>
+
+    <div class="container navbar-collapse collapse">
+
+
+
+
+
+
+
+
+
+                <ul class="nav navbar-nav">
+
+                    <li class="dropdown" id="menu-home">
+                        <a href="/fc-PA/home/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Home <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/fc-PA/home/default.do?method=contacts">Contacts</a></li>
+
+                                <li><a href="/fc-PA/home/default.do?method=directions">Directions</a></li>
+
+
+                                <li><a href="/fc-PA/home/default.do?method=cameras">Gate Cameras</a></li>
+
+                            <li><a href="/fc-PA/home/default.do?method=hours">Hours</a></li>
+                            <li><a href="/fc-PA/home/default.do?method=schedule">Vessel Schedule</a></li>
+                        </ul>
+                    </li>
+
+
+
+
+
+                            <li class="dropdown" id="menu-equipment">
+                                <a href="/fc-PA/equipment/default.do?method=equipment" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Equipment</a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="/fc-PA/equipment/default.do?method=equipment">Search</a></li>
+
+
+                                    <li><a href="/fc-PA/equipment/default.do?method=massUpdate">Mass Update</a></li>
+
+
+                                </ul>
+                            </li>
+
+
+
+
+
+
+
+
+
+
+
+
+                    <li class="dropdown" id="menu-import">
+                        <a href="/fc-PA/import/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Import <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/fc-PA/import/default.do">Availability</a></li>
+
+                        </ul>
+                    </li>
+
+
+
+
+
+
+
+                            <li class="dropdown" id="menu-export">
+                                <a href="/fc-PA/export/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Export <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="/fc-PA/export/default.do">Booking</a></li>
+                                    <li><a href="/fc-PA/export/default.do?method=edo">EDO</a></li>
+                                </ul>
+                            </li>
+
+
+
+
+
+
+
+
+
+
+
+                </ul>
+
+
+
+
+                <ul class="nav navbar-nav navbar-right">
+
+
+
+
+
+
+
+
+
+
+
+
+
+                </ul>
+
+
+    </div>
+
+</div>
+
+<div class="container">
+
+    <div class="row">
+
+        <div class="col-sm-9">
+
+
+
+
+            <div class="hint-large south north text-right">Today is Friday, August 27</div>
+
+
+
+            <div id="browser-alert" class="banner-alert bg-danger pad-10 south_20" style="display: none">
+                <h4 class="stop"><strong>Attention Internet Explorer Users</strong></h4>
+                <p>Microsoft <a href="https://blogs.msdn.microsoft.com/ie/2014/08/07/stay-up-to-date-with-internet-explorer/" target="_blank" rel="noopener">announced</a> they will be ending support for IE7, IE8 and IE9 by <strong>January 2016</strong>. With this change we recommend customers update their browsers to the latest version of Internet Explorer as soon as possible to avoid potential performance issues and a downgraded Forecast user experience.</p>
+
+                <p>Please see our <a href="/fc-PA/footer/default.do?method=requirements">site requirements</a> for a list of supported browsers.</p>
+
+                <button type="button" class="close" aria-label="Close" id="close-browser-alert"><span aria-hidden="true">&times;</span></button>
+
+                <div class="clearfix"></div>
+            </div>
+
+
+
+            <p><strong>FOR TERMINAL MAP CLICK HERE: <a href="../docs/pierayardmap.pdf">Pier A Yard Map</a></strong></p>
+<div class="MsoNormal" style="margin: 0in 0in 0pt;">
+<p style="text-align: left;"><strong>PIER A WEEKLY GATE HOURS <br /></strong>Subject to change.</p>
+</div>
+<p style="text-align: center;"><strong>THIS WEEK'S </strong><strong>SCHEDULE</strong></p>
+<p style="text-align: center;">&nbsp;</p>
+<table style="border-style: solid; width: 621px; height: 171px; margin-right: auto; margin-left: auto;" border="2">
+<tbody>
+<tr style="height: 18px;">
+<td style="width: 63.4375px; height: 18px; text-align: center;">&nbsp;</td>
+<td style="width: 64.4531px; height: 15px; text-align: center;" bgcolor="#ccfff0">Aug-23</td>
+<td style="width: 59.4219px; height: 15px; text-align: center;" bgcolor="#ccfff0">Aug-24</td>
+<td style="width: 60.4219px; height: 15px; text-align: center;" bgcolor="#ccfff0">Aug-25</td>
+<td style="width: 77.5312px; height: 15px; text-align: center;" bgcolor="#ccfff0">Aug-26</td>
+<td style="width: 76.5312px; height: 15px; text-align: center;" bgcolor="#ccfff0">Aug-27</td>
+<td style="width: 78.5469px; height: 15px; text-align: center;" bgcolor="#ccfff0">Aug-28</td>
+<td style="width: 86.6562px; height: 15px; text-align: center;" bgcolor="#ccfff0">Aug-29</td>
+</tr>
+<tr style="height: 18px;">
+<td style="width: 63.4375px; height: 16px; text-align: center;">SHIFT</td>
+<td style="width: 64.4531px; height: 16px; text-align: center;">MON</td>
+<td style="width: 59.4219px; height: 16px; text-align: center;">TUE</td>
+<td style="width: 60.4219px; height: 16px; text-align: center;">WED</td>
+<td style="width: 77.5312px; height: 16px; text-align: center;">THU</td>
+<td style="width: 76.5312px; height: 16px; text-align: center;">FRI</td>
+<td style="width: 78.5469px; height: 16px; text-align: center;">SAT</td>
+<td style="width: 86.6562px; height: 16px; text-align: center;">SUN</td>
+</tr>
+<tr style="height: 18px;">
+<td style="width: 63.4375px; height: 18px; text-align: center;">0700-1700</td>
+<td style="width: 64.4531px; height: 18px; text-align: center;"><span style="color: #008000;"><strong>OPEN</strong></span></td>
+<td style="width: 59.4219px; height: 18px; text-align: center;"><span style="color: #008000;"><strong>OPEN</strong></span></td>
+<td style="width: 60.4219px; height: 18px; text-align: center;"><span style="color: #008000;"><strong><span style="color: #ff0000;"><span style="color: #008000; background-color: #ffffff;">OPEN</span></span></strong></span></td>
+<td style="width: 77.5312px; height: 18px; text-align: center;"><span style="color: #008000;"><strong><span style="color: #ff0000;"><span style="color: #008000; background-color: #ffffff;">OPEN</span></span></strong></span></td>
+<td style="width: 76.5312px; height: 18px; text-align: center;"><span style="color: #008000;"><strong><span style="color: #ff0000;"><span style="color: #008000; background-color: #ffffff;">OPEN</span></span></strong></span></td>
+<td style="width: 78.5469px; height: 18px; text-align: center;"><span style="color: #ff0000;"><strong>CLOSED</strong></span></td>
+<td style="width: 86.6562px; height: 18px; text-align: center;"><span style="color: #ff0000;"><strong>CLOSED</strong></span></td>
+</tr>
+<tr style="height: 18px;">
+<td style="width: 63.4375px; height: 10px; text-align: center;">1800-0300</td>
+<td style="width: 64.4531px; height: 10px; text-align: center;"><span style="color: #008000;"><strong>OPEN</strong></span></td>
+<td style="width: 59.4219px; height: 10px; text-align: center;"><span style="color: #008000;"><strong>OPEN</strong></span></td>
+<td style="width: 60.4219px; height: 10px; text-align: center;"><span style="color: #008000;"><strong><span style="color: #ff0000;"><span style="color: #008000; background-color: #ffffff;">OPEN</span></span></strong></span></td>
+<td style="width: 77.5312px; height: 10px; text-align: center;"><span style="color: #ff0000;"><strong><span style="color: #008000;"><span style="color: #008000; background-color: #ffffff;">OPEN</span></span></strong></span></td>
+<td style="width: 76.5312px; height: 10px; text-align: center;"><span style="color: #008000;"><strong>Import Pick-up ONLY</strong></span></td>
+<td style="width: 78.5469px; height: 10px; text-align: center;"><span style="color: #ff0000;"><strong>CLOSED</strong></span></td>
+<td style="width: 86.6562px; height: 10px; text-align: center;"><span style="color: #ff0000;"><strong>CLOSED</strong></span></td>
+</tr>
+</tbody>
+</table>
+<p style="text-align: center;"><em style="cursor: text; outline-color: transparent; outline-style: none; outline-width: 0px;"><span style="color: #ff0000;"><strong>*</strong></span></em><strong style="cursor: text; outline-color: transparent; outline-style: none; outline-width: 0px;"><em style="cursor: text; outline-color: transparent; outline-style: none; outline-width: 0px;"><span style="color: #ff0000;">Export First Receiving Days &amp; Empty Receiving charts are located in the NEWS section on the right</span></em></strong></p>
+<p><strong><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Exam Fees:</span></strong></p>
+<p><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Tail Gate and CET Exams are $265.00 effective 7/1/2018<br /></span><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Delivery Orders are only required for Off Dock Exams.</span></p>
+<p><span style="color: black; background: yellow;">Attention.</span></p>
+<p><span style="color: black; background: yellow;">As of September 1<sup>st</sup>. 2021, &nbsp;fees associated with containers needed to be inspected by a government agency will increase to $300.00 per container.</span></p>
+<p><span style="color: black; background: yellow;">Normal payment methods will remain unchanged.</span></p>
+<p><span style="color: black; background: yellow;">Thank You.</span></p>
+<p><span style="color: black; background: yellow;">Pier A</span></p>
+<p><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;"><span style="font-size: 11.0pt; font-family: 'Calibri',sans-serif; color: black; background: yellow;">Long Beach</span></span></p>
+<p><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;"><strong>Delivery Orders and Delivery Tickets</strong><br />Please note effective 1/1/19, Delivery Orders and Delivery Tickets can now be sent to this email address.<br /><span style="font-family: 'Arial',sans-serif;"><a href="mailto:SLCPTS@ssamarine.com">SLCPTS@ssamarine.com</a></span></span></p>
+<p><strong><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Demurrage/Exam Fee Payments:</span></strong></p>
+<p><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Payments can be&nbsp;made on eModal at <a href="http://www.emodal.com/">www.emodal.com.</a><br /><br /></span><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Additionally Demurrage and Exam fee payments can be issued via <br />Company check, Cashier&rsquo;s check or Money Order and sent via Overnight Courier to<br />SSA Utah office at:</span></p>
+<p><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;"><strong><span style="font-family: 'Helvetica','sans-serif';">SSA Terminals (Pier A)&nbsp;LLC<br /></span></strong></span><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">11814 Election Road, Suite #210<br /></span><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Draper, UT 84020</span></p>
+<p><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">If paying same day, please fax <strong><span style="font-family: 'Helvetica','sans-serif';">Company check/Money Order</span></strong> and &ldquo;<strong><span style="font-family: 'Helvetica','sans-serif';">Overnight Night Tracking Slip</span></strong>&rdquo;<br />to (801) 545-3117. Check needs to be in the SSA Utah office the following<br />business day.</span></p>
+<p><strong><span style="color: #333333; font-family: 'Helvetica','sans-serif'; font-size: 10.5pt;">Note:&nbsp;&nbsp; There is a $2,000.00 per Customer/per day<br />limit when paying by Company check.</span></strong></p>
+<p>&nbsp;</p>
+<p><strong>PORT OF LONG BEACH CLEAN TRUCK PROGRAM</strong><br />Please note, the "Port of Long Beach Clean Truck Program" went into effect February 18th, 2009.&nbsp; Any driver receiving a red light will be rejected from the terminal.<br /><br />You may go to the "Clean Truck Center" to have your RFID checked.<br /><br /></p>
+<div align="center">* * *</div>
+<p><br />Por favor de notar, el "Programa Limpio de Camiones en Puerto de Long Beach" <span id="result_box" class="short_text" lang="es"><span class="hps">entr&oacute; en vigor</span> <span class="hps">18 de febrero 2009</span></span>.&nbsp; Cualquier conductor que reciba una luz roja sera rechazado del terminal.<br /><br />Usted puede ir al "Centro de Camiones" para revisar su RFID.<br /><br /></p>
+<div align="center"><big><strong>Clean Truck Center</strong><br />1265 Harbor Avenue<br />Long Beach, CA 90813<br />(866)721-5686</big></div>
+<p><br />&nbsp;<br />Access to Pier A is governed by the terms and conditions set forth in SSAT's Marine Terminal Operator (MTO) schedule which is available at SSAT's main office or online at <a href="http://www.ssamarine.com/">www.ssamarine.com</a>.<br /><br />&nbsp;</p>
+<div align="center"><big><strong>SSA Terminals- Pier A, Long Beach</strong></big><br /><strong><span style="color: #d60011;">TRUCK DRIVER SAFETY</span></strong></div>
+<p>&nbsp;<br /><span style="color: #d60011;">SSA Terminals- Pier A, Long Beach, is committed to providing a safe working environment for all workers at our facility.&nbsp; As part of this effort, we would like to remind all truck drivers of the following basic safety requirements:<br /><br /></span><br /><big><strong><span style="color: #d60011;">1. Upon entering the terminal, all drivers <span style="text-decoration: underline;">MUST</span> wear a high visibility safety vest.</span></strong></big><br /><big><strong><span style="color: #d60011;"><br />2. Truck drivers <span style="text-decoration: underline;">MUST</span> remain in their vehicle at all times while in the container yard. (The only exception is hooking up or disconnecting a chassis).</span></strong></big><br /><br /><span style="color: #d60011;"><big><strong>3. Drivers must <span style="text-decoration: underline;">NEVER</span> approach operating equipment under any circumstances!</strong></big><br /></span><br /><span style="color: #d60011;"><em><br /></em></span></p>
+<div align="center"><span style="color: #d60011;"><em>Failure to follow these safety rules will result in loss of terminal access privileges. Please be sure to advise any/all drivers you may have working at SSA Terminals.</em></span></div>
+<p>&nbsp;</p>
+<div align="center">***************************************************************************************</div>
+<p><br /><strong>PierPass:</strong> &nbsp; Please ensure that the PierPass fee has been paid before attempting to drop off or pick up a laoded container.<br /><br /><br /><strong>Reduce Your Time by Going Online:</strong><br />Forecast uses the Internet to help you communicate faster and easier with shipping lines, trucking companies, brokers, and other interested parties. The system provides real-time information such as import container availability, vessel schedules, activity reports and booking status before truckers arrive at our terminal, so that once they arrive, processing is faster and trouble free. The result for you is faster gate turn times and an increased competitive advantage.<br /><br /><strong><br /></strong><big><strong>FORECAST BENEFITS AND FEATURES</strong></big><strong><br /><em>Improve Gate Turn Times by...</em></strong><br /><br /><strong>Booking Pre-Check:</strong> Reduce trouble tickets and cut gate turn times by allowing truckers to check whether a booking is valid in your system before they arrive at the gate.<br /><br /><strong>Demurrage Details:</strong> Cut down on time spent handling demurrage problems at the gate by letting truckers know ahead of time when demurrage is due.<br /><br /><strong>Automated Email Notifications:</strong> Sign-up to be notified immediately when their containers are ready for pick up, a specific booking has been input, or a particular container has gated in or out.<br /><br /><strong>Enhanced Availability:</strong> Allowing interested parties to inquire on multiple containers at one time and see detailed information for container clearance and demurrage statuses.</p>
+
+
+
+
+
+        </div>
+
+        <div class="col-sm-3 break-west">
+
+            <div class="pad-20">
+
+
+                    <div class="south_20"><a href="http://www.carrix.com/" target="_blank"><img src="/fc-PA/images/logo_ssa.gif" alt="Pier A" border="0"/></a></div>
+
+
+                <div class="terminal-address nowrap"><p>700 Pier A Plaza<br />Long Beach, CA 90813<br />562.491.4000<br />562.590.2913 fax<br />Terminal A Firms Code Z978</p></div>
+
+
+
+            </div>
+
+
+
+                <div class="break-north pad-10">
+
+                    <h4 class="bold text-uppercase"><i class="fa fa-info-circle"></i> News</h4>
+
+                    <div class="pad-10">
+
+                            <div class="south">
+                                <h5><a href="default.do?method=page&id=0" class="normal south">EMPTY RECEIVING</a></h5>
+                            </div>
+
+                            <div class="south">
+                                <h5><a href="default.do?method=page&id=1" class="normal south">Export Receiving</a></h5>
+                            </div>
+
+                            <div class="south">
+                                <h5><a href="default.do?method=page&id=2" class="normal south">Free Flow / Peel Off</a></h5>
+                            </div>
+
+                            <div class="south">
+                                <h5><a href="default.do?method=page&id=3" class="normal south">Trucker Information</a></h5>
+                            </div>
+
+                            <div class="south">
+                                <h5><a href="default.do?method=page&id=4" class="normal south">Trucker/Visitor Safety Video</a></h5>
+                            </div>
+
+                    </div>
+
+                </div>
+
+
+
+
+
+                <div class="break-north pad-10">
+
+                    <h4 class="south bold text-uppercase"><i class="fa fa-ship"></i> Vessels</h4>
+
+                    <div id="vessels" class="pad-10">
+
+                        <h5 class="pointer bold" id="docked" style="margin: 0px; padding-bottom: 5px" onclick="showVesselVoyages('docked')">Docked <span class="badge">0</span></h5>
+                        <div id="docked-list" class="south">
+
+                                None
+
+
+                        </div>
+
+                        <h5 class="pointer bold" id="todays" style="margin: 0px; padding-bottom: 5px" onclick="showVesselVoyages('todays')">Arriving Today <span class="badge">0</span></h5>
+                        <div id="todays-list" class="south">
+
+                                None
+
+
+                        </div>
+
+                        <h5 class="pointer bold" id="tomorrows" style="margin: 0px; padding-bottom: 5px" onclick="showVesselVoyages('tomorrows')">Arriving Tomorrow <span class="badge">4</span></h5>
+                        <div id="tomorrows-list" class="south">
+
+
+
+                                    <ul class="list-nopad">
+
+                                        <li style="list-style-type: none" class="south">WAN HAI 507 <span title="In">198E</span>/<span title="Out">198W</span> - WHL<br>
+
+
+                                                    <small class="text-muted">Arriving at 7:00 AM</small>
+
+
+
+                                        </li>
+
+                                        <li style="list-style-type: none" class="south">AS CONSTANTINA <span title="In">2130E</span>/<span title="Out">2130W</span> - BAL<br>
+
+
+                                                    <small class="text-muted">Arriving at 7:00 AM</small>
+
+
+
+                                        </li>
+
+                                        <li style="list-style-type: none" class="south">LONG BEACH EXPRESS <span title="In">1W</span>/<span title="Out">1E</span> - HLC<br>
+
+
+                                                    <small class="text-muted">Arriving at 7:00 AM</small>
+
+
+
+                                        </li>
+
+                                        <li style="list-style-type: none" class="south">COSCO SHIPPING ROSE <span title="In">006E</span>/<span title="Out">006W</span> - COS<br>
+
+
+                                                    <small class="text-muted">Arriving at 7:00 AM</small>
+
+
+
+                                        </li>
+
+                                    </ul>
+
+
+
+                        </div>
+
+                        <div class="north"><a href="/fc-PA/home/default.do?method=schedule">Vessel Schedule</a></div>
+
+                    </div>
+
+                </div>
+
+
+
+
+
+
+                <div class="break-north pad-10">
+                    <a href="http://www.pierpass.org/" target="_blank" rel="noopener"><img src="/fc-PA/images/PierPASSAnimatedBannerAd.gif" width="183" height="64" alt="PierPASS" border="0"/></a>
+                </div>
+
+
+        </div>
+
+    </div>
+
+</div>
+
+
+    <!-- Modal -->
+    <div class="modal fade" id="homepageAlert" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h3 class="modal-title text-danger" id="myModalLabel">
+                        <span class="fa-stack">
+                            <i class="fa fa-circle fa-stack-2x"></i>
+                            <i class="fa fa-bell fa-stack-1x fa-inverse"></i>
+                        </span>
+
+                        Pier A Alert
+                    </h3>
+                </div>
+                <div class="modal-body">
+                    <p>&nbsp;</p>
+<h3 style="text-align: justify;">&nbsp;</h3>
+<h3 style="text-align: center;">&nbsp;</h3>
+<p><em><span style="color: black; font-size: 26pt;">SSAT&nbsp;Pier&nbsp;A&nbsp;now </span></em><em><span style="color: black; font-size: 26pt;">requires&nbsp;</span></em></p>
+<p><em><span style="color: black; font-size: 26pt;"><span style="text-decoration: underline;"><strong>Mandatory&nbsp;Import&nbsp;Appointments</strong></span>.&nbsp;</span></em></p>
+<p><em><span style="color: black; font-size: 26pt;">Scheduling&nbsp;is&nbsp;made&nbsp;thru&nbsp;<span style="text-decoration: underline;">eModal.com</span></span></em></p>
+<p>&nbsp;</p>
+<p><em><span style="color: black; font-size: 26pt;">It </span></em><em><span style="font-size: 26pt;">is<span style="color: black;"> mandatory to pre-gate<br />your <span style="text-decoration: underline;"><strong>FULL IN</strong></span> and <strong><span style="text-decoration: underline;">MTY IN</span></strong> at <strong>Pier A </strong>thru eModal</span><strong>. </strong></span></em><!--?xml:namespace prefix = "o" ns = "urn:schemas-microsoft-com:office:office" ?--></p>
+<p><em><span style="text-decoration: underline;"><span style="color: red; font-size: 22pt;">Drivers without a pre-arrival<br />on file will not be processed</span></span></em><em><span style="color: black; font-size: 14pt;">until the<br />pre-arrival is complete.</span></em></p>
+<p><em><span style="background: yellow; font-size: 14pt;">It is recommended to<br />confirm <strong><span style="text-decoration: underline;">all equipment is On-hired</span></strong> with the Line prior to arriving<br />at the terminal.</span></em></p>
+<p><em><span style="color: black; font-size: 14pt;">For <strong><span style="text-decoration: underline;">eModal</span></strong><br />pre-gate issues or questions please contact Support: <a href="mailto:helpdesk@eModal.com"><span style="font-style: normal;">helpdesk@eModal.com</span></a><br />or (866)758-3838.</span></em></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<footer class="footer">
+
+    <div class="container">
+
+        <div class="col-xs-12 col-sm-9 pad-10">
+            <span class="hidden-xs">
+                <a href="/fc-PA/footer/default.do?method=requirements">Site Requirements</a> |
+                <a href="/fc-PA/footer/default.do?method=gdpr">General Data Protection Statement</a> |
+                <a href="/fc-PA/footer/default.do?method=privacy">Privacy Policy</a> |
+                <a href="/fc-PA/footer/default.do?method=terms">Terms of Service</a>
+                 | <a href="/fc-PA/footer/default.do?method=contactUs">Contact Us</a><br>
+            </span>
+
+            &copy;2021&nbsp;Tideworks Technology. All Rights Reserved. <span class="hidden-xs">Forecast&reg; by Tideworks version 9.5.0.13000 (03242021-1705)<br>
+            Generated: 08/27/2021 3:04 AM</span>
+        </div>
+
+        <div class="col-sm-3 pad-10 hidden-xs hidden-sm">
+
+            <form name="pageFooter" id="pageFooter" action='/fc-PA/home/default.do' method="post">
+            <input type="hidden" name="siteLanguage"/>
+
+                <div class="world">
+
+                    <select name="language" id="lang" onchange="checkSelectedLanguage();" class="form-control input-sm">
+
+                        <option value="en_US" selected>English (United States)</option>
+
+                        <option value="es_MX" >Spanish (Mexico)</option>
+
+                        <option value="es_PA" >Spanish (Panama)</option>
+
+                        <option value="vi_VN" >Vietnamese</option>
+
+                    </select>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</footer>
+
+<script type="text/javascript">
+    var msg = "Are you sure you want to switch languages?\nIf you are in the middle of a task you may have to start over.";
+
+    function checkSelectedLanguage() {
+        if (false === true) {
+            if(confirm(msg) !== true) {
+                document.all["lang"].value = 'en_US';
+                return false;
+            }
+        }
+        document.pageFooter.siteLanguage.value = document.pageFooter.lang.value;
+        document.pageFooter.submit();
+    }
+
+
+        var userType = "CO_CONSIGNEE (02843)";
+        var _gaq = _gaq || [];
+        _gaq.push(
+            ['_setAccount', 'UA-11978469-8'],
+            ['_setCustomVar',1,'forecastUserType',userType.substr(3, userType.length),2],
+            ['_trackPageview'],
+            ['b._setAccount', 'UA-11978469-31'],
+            ['b._setCustomVar',1,'forecastUserType',userType.substr(3, userType.length),2],
+            ['b._trackPageview']
+        );
+
+        (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' === document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+
+</script>
+
+</body>
+</html>

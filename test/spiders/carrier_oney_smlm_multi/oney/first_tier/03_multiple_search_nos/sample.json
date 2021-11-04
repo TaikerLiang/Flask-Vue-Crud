@@ -1,0 +1,452 @@
+{
+"TRANS_RESULT_KEY":"S",
+"Exception":"",
+"count":"10",
+"list": [
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "weight": "8,140.000 KGS",
+    "copNo": "CRIC1716538560",
+    "blNo": "RICBAR817500",
+    "eventDt": "2021-07-27 18:33",
+    "cntrTpszCd": "D5",
+    "copStsCd": "T",
+    "sealNo": "6692708",
+    "placeCd": "USLAX08",
+    "placeNm": "LOS ANGELES, CA, UNITED STATES",
+    "yardNm": "WBCT (WEST BASIN CONTAINER TERMINAL)",
+    "statusNm": "Vessel Departure from Port of Loading",
+    "bkgNo": "RICBAR817500",
+    "poNo": "",
+    "yardCd": "USLAX08",
+    "statusCd": "FLVMDO",
+    "cntrNo": "TCLU8945254",
+    "cntrTpszNm": "40'DRY HC.",
+    "cntrFlg": "Y",
+    "enblFlag": "Y",
+    "dspbkgNo": "RICBAR817500",
+    "socFlg": "N",
+    "mvmtStsCd": "VL",
+    "hashColumns": [
+      [
+        "no",
+        {}
+      ],
+      [
+        "bl_no",
+        "RICBAR817500"
+      ],
+      [
+        "cntr_no",
+        "TCLU8945254"
+      ],
+      [
+        "cntr_tpsz_nm",
+        "40'DRY HC."
+      ],
+      [
+        "ibflag",
+        {}
+      ],
+      [
+        "event_dt",
+        "2021-07-27 18:33"
+      ],
+      [
+        "cop_dtl_seq",
+        {}
+      ],
+      [
+        "yard_cd",
+        "USLAX08"
+      ],
+      [
+        "seal_no",
+        "6692708"
+      ],
+      [
+        "dsp_bkg_no",
+        "RICBAR817500"
+      ],
+      [
+        "place_cd",
+        "USLAX08"
+      ],
+      [
+        "status_cd",
+        "FLVMDO"
+      ],
+      [
+        "cop_no",
+        "CRIC1716538560"
+      ],
+      [
+        "nod_cd",
+        {}
+      ],
+      [
+        "act_tp_cd",
+        {}
+      ],
+      [
+        "po_no",
+        ""
+      ],
+      [
+        "soc_flg",
+        "N"
+      ],
+      [
+        "pagerows",
+        {}
+      ],
+      [
+        "cntr_tpsz_cd",
+        "D5"
+      ],
+      [
+        "enbl_flag",
+        "Y"
+      ],
+      [
+        "vvd",
+        {}
+      ],
+      [
+        "weight",
+        "8,140.000 KGS"
+      ],
+      [
+        "yard_nm",
+        "WBCT (WEST BASIN CONTAINER TERMINAL)"
+      ],
+      [
+        "cntr_flg",
+        "Y"
+      ],
+      [
+        "bkg_no",
+        "RICBAR817500"
+      ],
+      [
+        "vsl_eng_nm",
+        {}
+      ],
+      [
+        "vsl_cd",
+        {}
+      ],
+      [
+        "cop_sts_cd",
+        "T"
+      ],
+      [
+        "piece",
+        {}
+      ],
+      [
+        "mvmt_sts_cd",
+        "VL"
+      ],
+      [
+        "status_nm",
+        "Vessel Departure from Port of Loading"
+      ],
+      [
+        "skd_dir_cd",
+        {}
+      ],
+      [
+        "place_nm",
+        "LOS ANGELES, CA, UNITED STATES"
+      ],
+      [
+        "skd_voy_no",
+        {}
+      ]
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "weight": "18,234.000 KGS",
+    "copNo": "CRIC1603067490",
+    "blNo": "RICBDK658400",
+    "eventDt": "2021-08-16 19:39",
+    "cntrTpszCd": "D2",
+    "copStsCd": "F",
+    "sealNo": "448871",
+    "placeCd": "CNSHAI3",
+    "placeNm": "SHANGHAI, SHANGHAI, CHINA",
+    "yardNm": "NO.5 ZIDONG DEPOT",
+    "statusNm": "Empty Container Returned from Customer",
+    "bkgNo": "RICBDK658400",
+    "poNo": "",
+    "yardCd": "CNSHAI3",
+    "statusCd": "MITYAD",
+    "cntrNo": "TEMU4598663",
+    "cntrTpszNm": "20'DRY ST.",
+    "cntrFlg": "Y",
+    "enblFlag": "Y",
+    "dspbkgNo": "RICBDK658400",
+    "socFlg": "N",
+    "mvmtStsCd": "MT",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "weight": "18,234.000 KGS",
+    "copNo": "CRIC1603067491",
+    "blNo": "RICBDK658400",
+    "eventDt": "2021-08-16 19:40",
+    "cntrTpszCd": "D2",
+    "copStsCd": "F",
+    "sealNo": "451596",
+    "placeCd": "CNSHAI3",
+    "placeNm": "SHANGHAI, SHANGHAI, CHINA",
+    "yardNm": "NO.5 ZIDONG DEPOT",
+    "statusNm": "Empty Container Returned from Customer",
+    "bkgNo": "RICBDK658400",
+    "poNo": "",
+    "yardCd": "CNSHAI3",
+    "statusCd": "MITYAD",
+    "cntrNo": "TCLU6897753",
+    "cntrTpszNm": "20'DRY ST.",
+    "cntrFlg": "Y",
+    "enblFlag": "Y",
+    "dspbkgNo": "RICBDK658400",
+    "socFlg": "N",
+    "mvmtStsCd": "MT",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "weight": "18,234.000 KGS",
+    "copNo": "CRIC1603067492",
+    "blNo": "RICBDK658400",
+    "eventDt": "2021-08-16 17:42",
+    "cntrTpszCd": "D2",
+    "copStsCd": "F",
+    "sealNo": "448965",
+    "placeCd": "CNSHAI3",
+    "placeNm": "SHANGHAI, SHANGHAI, CHINA",
+    "yardNm": "NO.5 ZIDONG DEPOT",
+    "statusNm": "Empty Container Returned from Customer",
+    "bkgNo": "RICBDK658400",
+    "poNo": "",
+    "yardCd": "CNSHAI3",
+    "statusCd": "MITYAD",
+    "cntrNo": "TRLU9667959",
+    "cntrTpszNm": "20'DRY ST.",
+    "cntrFlg": "Y",
+    "enblFlag": "Y",
+    "dspbkgNo": "RICBDK658400",
+    "socFlg": "N",
+    "mvmtStsCd": "MT",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "weight": "18,234.000 KGS",
+    "copNo": "CRIC1603067494",
+    "blNo": "RICBDK658400",
+    "eventDt": "2021-08-13 16:58",
+    "cntrTpszCd": "D2",
+    "copStsCd": "F",
+    "sealNo": "448932",
+    "placeCd": "CNSHAI3",
+    "placeNm": "SHANGHAI, SHANGHAI, CHINA",
+    "yardNm": "NO.5 ZIDONG DEPOT",
+    "statusNm": "Empty Container Returned from Customer",
+    "bkgNo": "RICBDK658400",
+    "poNo": "",
+    "yardCd": "CNSHAI3",
+    "statusCd": "MITYAD",
+    "cntrNo": "KKTU7972223",
+    "cntrTpszNm": "20'DRY ST.",
+    "cntrFlg": "Y",
+    "enblFlag": "Y",
+    "dspbkgNo": "RICBDK658400",
+    "socFlg": "N",
+    "mvmtStsCd": "MT",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "weight": "18,234.000 KGS",
+    "copNo": "CRIC1603067495",
+    "blNo": "RICBDK658400",
+    "eventDt": "2021-08-13 15:53",
+    "cntrTpszCd": "D2",
+    "copStsCd": "F",
+    "sealNo": "448933",
+    "placeCd": "CNSHAI3",
+    "placeNm": "SHANGHAI, SHANGHAI, CHINA",
+    "yardNm": "NO.5 ZIDONG DEPOT",
+    "statusNm": "Empty Container Returned from Customer",
+    "bkgNo": "RICBDK658400",
+    "poNo": "",
+    "yardCd": "CNSHAI3",
+    "statusCd": "MITYAD",
+    "cntrNo": "KKTU8182291",
+    "cntrTpszNm": "20'DRY ST.",
+    "cntrFlg": "Y",
+    "enblFlag": "Y",
+    "dspbkgNo": "RICBDK658400",
+    "socFlg": "N",
+    "mvmtStsCd": "MT",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "weight": "18,234.000 KGS",
+    "copNo": "CRIC1603067496",
+    "blNo": "RICBDK658400",
+    "eventDt": "2021-08-13 15:55",
+    "cntrTpszCd": "D2",
+    "copStsCd": "F",
+    "sealNo": "448934",
+    "placeCd": "CNSHAI3",
+    "placeNm": "SHANGHAI, SHANGHAI, CHINA",
+    "yardNm": "NO.5 ZIDONG DEPOT",
+    "statusNm": "Empty Container Returned from Customer",
+    "bkgNo": "RICBDK658400",
+    "poNo": "",
+    "yardCd": "CNSHAI3",
+    "statusCd": "MITYAD",
+    "cntrNo": "FBIU0312455",
+    "cntrTpszNm": "20'DRY ST.",
+    "cntrFlg": "Y",
+    "enblFlag": "Y",
+    "dspbkgNo": "RICBDK658400",
+    "socFlg": "N",
+    "mvmtStsCd": "MT",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "weight": "18,234.000 KGS",
+    "copNo": "CRIC1603067489",
+    "blNo": "RICBDK658400",
+    "eventDt": "2021-08-16 17:43",
+    "cntrTpszCd": "D2",
+    "copStsCd": "F",
+    "sealNo": "451565",
+    "placeCd": "CNSHAI3",
+    "placeNm": "SHANGHAI, SHANGHAI, CHINA",
+    "yardNm": "NO.5 ZIDONG DEPOT",
+    "statusNm": "Empty Container Returned from Customer",
+    "bkgNo": "RICBDK658400",
+    "poNo": "",
+    "yardCd": "CNSHAI3",
+    "statusCd": "MITYAD",
+    "cntrNo": "NYKU3438324",
+    "cntrTpszNm": "20'DRY ST.",
+    "cntrFlg": "Y",
+    "enblFlag": "Y",
+    "dspbkgNo": "RICBDK658400",
+    "socFlg": "N",
+    "mvmtStsCd": "MT",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "weight": "18,234.000 KGS",
+    "copNo": "CRIC1603067493",
+    "blNo": "RICBDK658400",
+    "eventDt": "2021-08-13 16:57",
+    "cntrTpszCd": "D2",
+    "copStsCd": "F",
+    "sealNo": "451600",
+    "placeCd": "CNSHAI3",
+    "placeNm": "SHANGHAI, SHANGHAI, CHINA",
+    "yardNm": "NO.5 ZIDONG DEPOT",
+    "statusNm": "Empty Container Returned from Customer",
+    "bkgNo": "RICBDK658400",
+    "poNo": "",
+    "yardCd": "CNSHAI3",
+    "statusCd": "MITYAD",
+    "cntrNo": "KKTU7942722",
+    "cntrTpszNm": "20'DRY ST.",
+    "cntrFlg": "Y",
+    "enblFlag": "Y",
+    "dspbkgNo": "RICBDK658400",
+    "socFlg": "N",
+    "mvmtStsCd": "MT",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "weight": "20,003.000 KGS",
+    "copNo": "CRIC1608275197",
+    "blNo": "RICBDW223900",
+    "eventDt": "2021-07-29 03:42",
+    "cntrTpszCd": "D2",
+    "copStsCd": "T",
+    "sealNo": "7433",
+    "placeCd": "USLAX01",
+    "placeNm": "LOS ANGELES, CA, UNITED STATES",
+    "yardNm": "YTI (YUSEN TERMINAL INTL)",
+    "statusNm": "Vessel Departure from Port of Loading",
+    "bkgNo": "RICBDW223900",
+    "poNo": "",
+    "yardCd": "USLAX01",
+    "statusCd": "FLVMDO",
+    "cntrNo": "TCLU3191927",
+    "cntrTpszNm": "20'DRY ST.",
+    "cntrFlg": "Y",
+    "enblFlag": "Y",
+    "dspbkgNo": "RICBDW223900",
+    "socFlg": "N",
+    "mvmtStsCd": "VL",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  }
+]}

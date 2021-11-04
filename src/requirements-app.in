@@ -1,9 +1,13 @@
 Faker
-Scrapy
 click
 requests
 selenium
 selenium-wire
 opencv-python
 anticaptchaofficial
+python_anticaptcha
 ujson
+mitmproxy
+Scrapy==2.4.1
+pyppeteer
+pyppeteer_stealth

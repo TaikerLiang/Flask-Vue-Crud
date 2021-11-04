@@ -1,0 +1,464 @@
+{
+"Exception":"",
+"TRANS_RESULT_KEY":"S",
+"count":"14",
+"list": [
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "1",
+    "copNo": "CTAO9916398264",
+    "eventDt": "2019-09-25 18:00",
+    "vslEngNm": "",
+    "placeNm": "QINGDAO,CHINA ,CHINA",
+    "skdVoyNo": "",
+    "yardNm": "QINGDAO GLJ LOGISTICS CO., LTD.",
+    "copDtlSeq": "1011",
+    "skdDirCd": "",
+    "actTpCd": "A",
+    "statusNm": "Empty Container Release to Shipper",
+    "statusCd": "MOTYDO",
+    "nodCd": "CNTAOTF",
+    "hashColumns": [
+      [
+        "vsl_eng_nm",
+        ""
+      ],
+      [
+        "cntr_flg",
+        {}
+      ],
+      [
+        "weight",
+        {}
+      ],
+      [
+        "nod_cd",
+        "CNTAOTF"
+      ],
+      [
+        "vgm_wgt",
+        {}
+      ],
+      [
+        "vgm_unit",
+        {}
+      ],
+      [
+        "no",
+        "1"
+      ],
+      [
+        "cop_sts_cd",
+        {}
+      ],
+      [
+        "enbl_flag",
+        {}
+      ],
+      [
+        "seal_no",
+        {}
+      ],
+      [
+        "skd_dir_cd",
+        ""
+      ],
+      [
+        "place_nm",
+        "QINGDAO,CHINA ,CHINA"
+      ],
+      [
+        "pagerows",
+        {}
+      ],
+      [
+        "ibflag",
+        {}
+      ],
+      [
+        "cntr_tpsz_nm",
+        {}
+      ],
+      [
+        "status_cd",
+        "MOTYDO"
+      ],
+      [
+        "status_nm",
+        "Empty Container Release to Shipper"
+      ],
+      [
+        "bkg_no",
+        {}
+      ],
+      [
+        "bl_no",
+        {}
+      ],
+      [
+        "cop_dtl_seq",
+        "1011"
+      ],
+      [
+        "piece",
+        {}
+      ],
+      [
+        "act_tp_cd",
+        "A"
+      ],
+      [
+        "vgm_status",
+        {}
+      ],
+      [
+        "cntr_tpsz_cd",
+        {}
+      ],
+      [
+        "yard_cd",
+        {}
+      ],
+      [
+        "po_no",
+        {}
+      ],
+      [
+        "place_cd",
+        {}
+      ],
+      [
+        "yard_nm",
+        "QINGDAO GLJ LOGISTICS CO., LTD."
+      ],
+      [
+        "event_dt",
+        "2019-09-25 18:00"
+      ],
+      [
+        "cntr_no",
+        {}
+      ],
+      [
+        "dsp_bkg_no",
+        {}
+      ],
+      [
+        "skd_voy_no",
+        ""
+      ],
+      [
+        "cop_no",
+        "CTAO9916398264"
+      ],
+      [
+        "vsl_cd",
+        ""
+      ]
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "2",
+    "copNo": "CTAO9916398264",
+    "eventDt": "2019-09-27 22:30",
+    "vslEngNm": "",
+    "placeNm": "QINGDAO,CHINA ,CHINA",
+    "skdVoyNo": "",
+    "yardNm": "QINGDAO NEW QIANWAN CONTAINER TERMINAL CO., LTD.",
+    "copDtlSeq": "1031",
+    "skdDirCd": "",
+    "actTpCd": "A",
+    "statusNm": "Gate In to Outbound Terminal",
+    "statusCd": "FOTMAD",
+    "nodCd": "CNTAOQN",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "SCBH",
+    "no": "3",
+    "copNo": "CTAO9916398264",
+    "eventDt": "2019-10-01 06:03",
+    "vslEngNm": "BOMAR HAMBURG",
+    "placeNm": "QINGDAO,CHINA ,CHINA",
+    "skdVoyNo": "1939",
+    "yardNm": "QINGDAO NEW QIANWAN CONTAINER TERMINAL CO., LTD.",
+    "copDtlSeq": "1032",
+    "skdDirCd": "E",
+    "actTpCd": "A",
+    "statusNm": "Loaded on 'BOMAR HAMBURG 1939E' at Port of Loading",
+    "statusCd": "FLVMLO",
+    "nodCd": "CNTAOQN",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "SCBH",
+    "no": "4",
+    "copNo": "CTAO9916398264",
+    "eventDt": "2019-10-01 12:45",
+    "vslEngNm": "BOMAR HAMBURG",
+    "placeNm": "QINGDAO,CHINA ,CHINA",
+    "skdVoyNo": "1939",
+    "yardNm": "QINGDAO NEW QIANWAN CONTAINER TERMINAL CO., LTD.",
+    "copDtlSeq": "4033",
+    "skdDirCd": "E",
+    "actTpCd": "A",
+    "statusNm": "'BOMAR HAMBURG 1939E' Departure from Port of Loading",
+    "statusCd": "FLVMDO",
+    "nodCd": "CNTAOQN",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "SCBH",
+    "no": "5",
+    "copNo": "CTAO9916398264",
+    "eventDt": "2019-10-03 16:55",
+    "vslEngNm": "BOMAR HAMBURG",
+    "placeNm": "BUSAN ,REPUBLIC OF KOREA",
+    "skdVoyNo": "1939",
+    "yardNm": "PUSAN NEWPORT CO.,LTD.",
+    "copDtlSeq": "4051",
+    "skdDirCd": "E",
+    "actTpCd": "A",
+    "statusNm": "'BOMAR HAMBURG 1939E' Arrival at Transhipment Port",
+    "statusCd": "FTVMAD",
+    "nodCd": "KRPUSYN",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "SCBH",
+    "no": "6",
+    "copNo": "CTAO9916398264",
+    "eventDt": "2019-10-03 17:55",
+    "vslEngNm": "BOMAR HAMBURG",
+    "placeNm": "BUSAN ,REPUBLIC OF KOREA",
+    "skdVoyNo": "1939",
+    "yardNm": "PUSAN NEWPORT CO.,LTD.",
+    "copDtlSeq": "4052",
+    "skdDirCd": "E",
+    "actTpCd": "A",
+    "statusNm": "'BOMAR HAMBURG 1939E' T/S Berthing Destination",
+    "statusCd": "FTVMBD",
+    "nodCd": "KRPUSYN",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "SCBH",
+    "no": "7",
+    "copNo": "CTAO9916398264",
+    "eventDt": "2019-10-03 23:35",
+    "vslEngNm": "BOMAR HAMBURG",
+    "placeNm": "BUSAN ,REPUBLIC OF KOREA",
+    "skdVoyNo": "1939",
+    "yardNm": "PUSAN NEWPORT CO.,LTD.",
+    "copDtlSeq": "4053",
+    "skdDirCd": "E",
+    "actTpCd": "A",
+    "statusNm": "Unloaded from 'BOMAR HAMBURG 1939E' at Transhipment Port",
+    "statusCd": "FTVMUD",
+    "nodCd": "KRPUSYN",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "SMSH",
+    "no": "8",
+    "copNo": "CTAO9916398264",
+    "eventDt": "2019-10-06 10:09",
+    "vslEngNm": "SM SHANGHAI",
+    "placeNm": "BUSAN ,REPUBLIC OF KOREA",
+    "skdVoyNo": "1907",
+    "yardNm": "PUSAN NEWPORT CO.,LTD.",
+    "copDtlSeq": "4054",
+    "skdDirCd": "E",
+    "actTpCd": "A",
+    "statusNm": "Loaded on 'SM SHANGHAI 1907E' at Transhipment Port",
+    "statusCd": "FTVMLO",
+    "nodCd": "KRPUSYN",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "SMSH",
+    "no": "9",
+    "copNo": "CTAO9916398264",
+    "eventDt": "2019-10-06 21:47",
+    "vslEngNm": "SM SHANGHAI",
+    "placeNm": "BUSAN ,REPUBLIC OF KOREA",
+    "skdVoyNo": "1907",
+    "yardNm": "PUSAN NEWPORT CO.,LTD.",
+    "copDtlSeq": "4055",
+    "skdDirCd": "E",
+    "actTpCd": "A",
+    "statusNm": "'SM SHANGHAI 1907E' Depature from Transhipment Port",
+    "statusCd": "FTVMDO",
+    "nodCd": "KRPUSYN",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "SMSH",
+    "no": "10",
+    "copNo": "CTAO9916398264",
+    "eventDt": "2019-10-18 14:30",
+    "vslEngNm": "SM SHANGHAI",
+    "placeNm": "LONG BEACH,CA ,UNITED STATES",
+    "skdVoyNo": "1907",
+    "yardNm": "SSA TERMINAL PIER A",
+    "copDtlSeq": "4071",
+    "skdDirCd": "E",
+    "actTpCd": "E",
+    "statusNm": "'SM SHANGHAI 1907E' Arrival at Port of Discharging",
+    "statusCd": "FUVMAD",
+    "nodCd": "USLGBM1",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "SMSH",
+    "no": "11",
+    "copNo": "CTAO9916398264",
+    "eventDt": "2019-10-18 16:00",
+    "vslEngNm": "SM SHANGHAI",
+    "placeNm": "LONG BEACH,CA ,UNITED STATES",
+    "skdVoyNo": "1907",
+    "yardNm": "SSA TERMINAL PIER A",
+    "copDtlSeq": "4072",
+    "skdDirCd": "E",
+    "actTpCd": "E",
+    "statusNm": "'SM SHANGHAI 1907E' POD Berthing Destination",
+    "statusCd": "FUVMBD",
+    "nodCd": "USLGBM1",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "SMSH",
+    "no": "12",
+    "copNo": "CTAO9916398264",
+    "eventDt": "2019-10-19 15:00",
+    "vslEngNm": "SM SHANGHAI",
+    "placeNm": "LONG BEACH,CA ,UNITED STATES",
+    "skdVoyNo": "1907",
+    "yardNm": "SSA TERMINAL PIER A",
+    "copDtlSeq": "6073",
+    "skdDirCd": "E",
+    "actTpCd": "E",
+    "statusNm": "Unloaded from 'SM SHANGHAI 1907E' at Port of Discharging",
+    "statusCd": "FUVMUD",
+    "nodCd": "USLGBM1",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "13",
+    "copNo": "CTAO9916398264",
+    "eventDt": "2019-10-22 11:00",
+    "vslEngNm": "",
+    "placeNm": "LONG BEACH,CA ,UNITED STATES",
+    "skdVoyNo": "",
+    "yardNm": "SSA TERMINAL PIER A",
+    "copDtlSeq": "6074",
+    "skdDirCd": "",
+    "actTpCd": "E",
+    "statusNm": "Gate Out from Inbound Terminal<br>OR<br>Shuttled to ODCY",
+    "statusCd": "FITMDO",
+    "nodCd": "USLGBM1",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  },
+  {
+    "maxRows": 0,
+    "models": [
+    ],
+    "vslCd": "",
+    "no": "14",
+    "copNo": "CTAO9916398264",
+    "eventDt": "2019-10-22 17:00",
+    "vslEngNm": "",
+    "placeNm": "LONG BEACH,CA ,UNITED STATES",
+    "skdVoyNo": "",
+    "yardNm": "SSA TERMINAL PIER A",
+    "copDtlSeq": "6091",
+    "skdDirCd": "",
+    "actTpCd": "E",
+    "statusNm": "Empty Container Returned from Customer",
+    "statusCd": "MITYAD",
+    "nodCd": "USLGBM1",
+    "hashColumns": [
+    ],
+    "hashFields": [
+    ]
+  }
+]}

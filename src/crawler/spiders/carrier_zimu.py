@@ -1,15 +1,11 @@
 import dataclasses
 import random
-import time
 from typing import List, Dict, Tuple, Union
+import asyncio
 
 import scrapy
-from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from urllib3.exceptions import ReadTimeoutError
+from pyppeteer import launch, logging
+from pyppeteer.errors import TimeoutError
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
@@ -34,7 +30,7 @@ from crawler.extractors.table_extractors import TopHeaderTableLocator, TableExtr
 
 
 class CarrierZimuSpider(BaseCarrierSpider):
-    name = 'carrier_zimu'
+    name = "carrier_zimu"
 
     def __init__(self, *args, **kwargs):
         super(CarrierZimuSpider, self).__init__(*args, **kwargs)
@@ -50,7 +46,7 @@ class CarrierZimuSpider(BaseCarrierSpider):
         yield self._build_request_by(option=option)
 
     def parse(self, response):
-        yield DebugItem(info={'meta': dict(response.meta)})
+        yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -72,14 +68,9 @@ class CarrierZimuSpider(BaseCarrierSpider):
         }
 
         if option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(
-                url=option.url,
-                headers=option.headers,
-                meta=meta,
-                callback=self.parse,
-            )
+            return scrapy.Request(url=option.url, headers=option.headers, meta=meta, callback=self.parse,)
         else:
-            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
+            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
 
 # ---------------------------------------------------------------------------------
@@ -87,48 +78,63 @@ class CarrierZimuSpider(BaseCarrierSpider):
 
 class ContentGetter:
     def __init__(self):
-        options = webdriver.FirefoxOptions()
-        options.add_argument('--headless')
-        options.add_argument(f'user-agent={self._random_choose_user_agent()}')
-        self._driver = webdriver.Firefox(firefox_options=options)
+        logging.disable(logging.DEBUG)
 
-    def search_and_return(self, mbl_no: str):
-        self._driver.get('https://www.zim.com/tools/track-a-shipment')
+    async def launch_browser(self):
+        browser_args = [
+            "--no-sandbox",
+            "--disable-gpu",
+            "--disable-blink-features",
+            "--disable-infobars",
+            "--window-size=1920,1080",
+        ]
 
+        self._browser = await launch(headless=True, slowMo=20, args=browser_args)
+        page = await self._browser.newPage()
+
+        await page.setUserAgent(self._random_choose_user_agent())
+
+        return page
+
+    async def search(self, mbl_no: str):
+        page = await self.launch_browser()
+        await page.goto("https://www.zim.com/tools/track-a-shipment")
+
+        accept_btn = "button#onetrust-accept-btn-handler"
         try:
-            accept_btn = WebDriverWait(self._driver, 10).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, "button[title='I Agree']"))
-            )
-        except (TimeoutException, ReadTimeoutError):
+            await page.waitForSelector(accept_btn, timeout=10000)
+            await asyncio.sleep(1)
+        except TimeoutError:
             raise LoadWebsiteTimeOutFatal()
 
-        time.sleep(1)
-        accept_btn.click()
+        await page.click(accept_btn)
 
-        search_bar = self._driver.find_elements_by_css_selector("input[name='consnumber']")[0]
-        search_btn = self._driver.find_elements_by_css_selector("input[value='Track Shipment']")[0]
-
-        time.sleep(1)
-        search_bar.send_keys(mbl_no)
-        search_btn.click()
+        await asyncio.sleep(1)
+        await page.type("input[name='consnumber']", text=mbl_no)
+        await page.click("input[value='Track Shipment']")
 
         try:
-            WebDriverWait(self._driver, 20).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "div[class='bottom row']"))
-            )
-        except TimeoutException:
+            await page.waitForSelector("div[class='bottom row']", timeout=20000)
+        except TimeoutError:
             raise LoadWebsiteTimeOutFatal()
 
-        return self._driver.page_source
+        page_source = await page.content()
+        await self._browser.close()
+
+        return page_source
 
     @staticmethod
     def _random_choose_user_agent():
         user_agents = [
-            # firefox
-            ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:80.0) ' 'Gecko/20100101 ' 'Firefox/80.0'),
-            ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:79.0) ' 'Gecko/20100101 ' 'Firefox/79.0'),
-            ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) ' 'Gecko/20100101 ' 'Firefox/78.0'),
-            ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0.1) ' 'Gecko/20100101 ' 'Firefox/78.0.1'),
+            (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
+            ),
+            (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
+            ),
+            (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
+            ),
         ]
 
         return random.choice(user_agents)
@@ -149,37 +155,30 @@ class ScheduleInfo:
 
 
 class MainInfoRoutingRule(BaseRoutingRule):
-    name = 'MAIN_INFO'
+    name = "MAIN_INFO"
 
     @classmethod
     def build_request_option(cls, mbl_no) -> RequestOption:
-        url = f'https://www.google.com'
+        url = f"https://www.google.com"
 
-        return RequestOption(
-            method=RequestOption.METHOD_GET,
-            rule_name=cls.name,
-            url=url,
-            meta={
-                'mbl_no': mbl_no,
-            },
-        )
+        return RequestOption(method=RequestOption.METHOD_GET, rule_name=cls.name, url=url, meta={"mbl_no": mbl_no,},)
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.html'
+        return f"{self.name}.html"
 
     def handle(self, response):
-        mbl_no = response.meta['mbl_no']
+        mbl_no = response.meta["mbl_no"]
 
         self._check_mbl_no(response=response)
 
         content_getter = ContentGetter()
-        response_text = content_getter.search_and_return(mbl_no=mbl_no)
+        response_text = asyncio.get_event_loop().run_until_complete(content_getter.search(mbl_no=mbl_no))
         response_selector = scrapy.Selector(text=response_text)
 
-        for item in self._handle_item(response=response_selector):
+        for item in self.handle_item(response=response_selector):
             yield item
 
-    def _handle_item(self, response):
+    def handle_item(self, response):
         main_info = self._extract_main_info(response=response)
 
         raw_vessel_list = self._extract_vessel_list(response=response)
@@ -188,15 +187,11 @@ class MainInfoRoutingRule(BaseRoutingRule):
         vessel_list = self._arrange_vessel_list(raw_vessel_list)
 
         schedule_list = self._arrange_schedule_list(
-            raw_schedule_list,
-            pol=main_info['pol'],
-            etd=main_info['etd'],
-            pod=main_info['pod'],
-            eta=main_info['eta'],
+            raw_schedule_list, pol=main_info["pol"], etd=main_info["etd"], pod=main_info["pod"], eta=main_info["eta"],
         )
 
         if len(vessel_list) >= len(schedule_list):
-            raise CarrierResponseFormatError(reason=f'vessel_list: `{vessel_list}`, schedule_list: `{schedule_list}`')
+            raise CarrierResponseFormatError(reason=f"vessel_list: `{vessel_list}`, schedule_list: `{schedule_list}`")
 
         for vessel_index, vessel in enumerate(vessel_list):
             departure_info = schedule_list[vessel_index]
@@ -214,7 +209,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         to_pod_vessel = self._find_to_pod_vessel(vessel_list, schedule_list)
 
-        final_dest = main_info['final_dest']
+        final_dest = main_info["final_dest"]
         if not final_dest:
             final_dest_un_lo_code = None
             final_dest_name = None
@@ -226,91 +221,90 @@ class MainInfoRoutingRule(BaseRoutingRule):
             final_dest_name = final_dest
 
         yield MblItem(
-            mbl_no=main_info['mbl_no'],
+            mbl_no=main_info["mbl_no"],
             vessel=to_pod_vessel.vessel,
             voyage=to_pod_vessel.voyage,
-            por=LocationItem(name=main_info['por']),
-            pol=LocationItem(name=main_info['pol']),
-            pod=LocationItem(name=main_info['pod']),
+            por=LocationItem(name=main_info["por"]),
+            pol=LocationItem(name=main_info["pol"]),
+            pod=LocationItem(name=main_info["pod"]),
             final_dest=LocationItem(un_lo_code=final_dest_un_lo_code, name=final_dest_name),
-            etd=main_info['etd'] or None,
-            eta=main_info['eta'] or None,
-            deliv_eta=main_info['deliv_eta'] or None,
+            etd=main_info["etd"] or None,
+            eta=main_info["eta"] or None,
+            deliv_eta=main_info["deliv_eta"] or None,
         )
 
         container_no_list = self._extract_container_no_list(response=response)
         for container_no in container_no_list:
             yield ContainerItem(
-                container_key=container_no,
-                container_no=container_no,
+                container_key=container_no, container_no=container_no,
             )
 
             container_status_list = self._extract_container_status_list(response=response, container_no=container_no)
             for container_status in container_status_list:
                 yield ContainerStatusItem(
                     container_key=container_no,
-                    description=container_status['description'],
-                    local_date_time=container_status['local_time'],
-                    location=LocationItem(name=container_status['location']),
+                    description=container_status["description"],
+                    local_date_time=container_status["local_time"],
+                    location=LocationItem(name=container_status["location"]),
                 )
 
     @staticmethod
     def _check_mbl_no(response):
-        no_result_information = response.css('section#noResult p')
+        no_result_information = response.css("section#noResult p")
         if no_result_information:
             raise CarrierInvalidMblNoError()
 
-        wrong_format_message = response.css('span.field-validation-error')
+        wrong_format_message = response.css("span.field-validation-error")
         if wrong_format_message:
             raise CarrierInvalidMblNoError()
 
     def _extract_main_info(self, response: scrapy.Selector):
-        mbl_no = response.css('dl.dl-inline dd::text').get()
+        mbl_no = response.css("dl.dl-inline dd::text").get()
 
         pod_dl = response.xpath("//dl[@class='dlist']/*[text()='POD']/..")
         if pod_dl:
             pod_info = dict(self.extract_dl(dl=pod_dl))
         else:
             pod_info = {
-                'Arrival Date': '',
+                "Arrival Date": "",
             }
 
-        routing_schedule_dl_list = response.css('dl.dl-list')
+        routing_schedule_dl_list = response.css("dl.dl-list")
         routing_schedule_list = []
         for routing_schedule_dl in routing_schedule_dl_list:
             routing_schedule_info = self.extract_dl(dl=routing_schedule_dl)
             routing_schedule_list.extend(routing_schedule_info)
         routing_schedule = dict(routing_schedule_list)
 
-        if 'Final Destination:' in routing_schedule:
-            final_dest = routing_schedule['Final Destination:'].strip()
-            deliv_eta = response.css('dt#etaDate::text').get() or ''
-            eta = pod_info['Arrival Date']
+        if "Final Destination:" in routing_schedule:
+            final_dest = routing_schedule["Final Destination:"].strip()
+            deliv_eta = response.css("dt#etaDate::text").get() or ""
+            eta = pod_info.get("Arrival Date", "")
         else:
-            final_dest = ''
-            deliv_eta = ''
-            eta = response.css('dt#etaDate::text').get() or ''
+            final_dest = ""
+            deliv_eta = ""
+            eta = response.css("dt#etaDate::text").get() or ""
 
         return {
-            'mbl_no': mbl_no.strip(),
-            'por': routing_schedule.get('Place of Receipt (POR)') or None,
-            'pol': routing_schedule['Port of Loading (POL)'].strip(),
-            'pod': routing_schedule['Port of Discharge (POD)'].strip(),
-            'final_dest': final_dest,
-            'deliv_eta': deliv_eta.strip(),
-            'etd': routing_schedule['Sailing Date'].strip(),
-            'eta': eta.strip(),
+            "mbl_no": mbl_no.strip(),
+            "por": routing_schedule.get("Place of Receipt (POR)") or None,
+            "pol": routing_schedule["Port of Loading (POL)"].strip(),
+            "pod": routing_schedule["Port of Discharge (POD)"].strip(),
+            "final_dest": final_dest,
+            "deliv_eta": deliv_eta.strip(),
+            "etd": routing_schedule["Sailing Date"].strip(),
+            "eta": eta.strip(),
         }
 
     def _extract_vessel_list(self, response) -> List[Dict]:
         vessel_list = []
 
-        vessel_td_list = response.css('table.progress-info tr.bottom-row td')
+        vessel_td_list = response.css("table.progress-info tr.bottom-row td")
         for vessel_td in vessel_td_list:
-            if vessel_td.css('::attr(class)') == 'hidden':
+            if vessel_td.css("::attr(class)") == "hidden":
                 continue
 
-            vessel_dl = vessel_td.css('dl')
+            vessel_dl = vessel_td.css("dl")
             if not vessel_dl:
                 vessel = {}
             else:
@@ -322,14 +316,14 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def _extract_schedule_list(self, response) -> List[Dict]:
         schedule_list = []
 
-        schedule_td_list = response.css('table.progress-info tr.top-row td')
+        schedule_td_list = response.css("table.progress-info tr.top-row td")
         for schedule_td in schedule_td_list:
-            schedule_dl = schedule_td.css('dl')
+            schedule_dl = schedule_td.css("dl")
             if not schedule_dl:
                 schedule = {}
             else:
                 may_empty_schedule = dict(self.extract_dl(dl=schedule_dl))
-                schedule = {} if '' in may_empty_schedule else may_empty_schedule
+                schedule = {} if "" in may_empty_schedule else may_empty_schedule
             schedule_list.append(schedule)
 
         return schedule_list
@@ -341,7 +335,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             if not raw_vessel:
                 continue
 
-            vessel_name, voyage = raw_vessel['Vessel / Voyage'].split('/', 1)
+            vessel_name, voyage = raw_vessel["Vessel / Voyage"].split("/", 1)
             vessel_list.append(VesselInfo(vessel=vessel_name, voyage=voyage))
 
         return vessel_list
@@ -349,56 +343,46 @@ class MainInfoRoutingRule(BaseRoutingRule):
     @staticmethod
     def _arrange_schedule_list(schedule_list, pol, etd, pod, eta) -> List[ScheduleInfo]:
         result = [
-            ScheduleInfo(port_type='POL', port_name=pol, eta='', etd=etd),  # POL
+            ScheduleInfo(port_type="POL", port_name=pol, eta="", etd=etd),  # POL
         ]
         for schedule in schedule_list:
             if not schedule:
                 continue
 
-            elif 'Transshipment' in schedule:
+            elif "Transshipment" in schedule:
                 result.append(
                     ScheduleInfo(
-                        port_type='Transshipment',
-                        port_name=schedule['Transshipment'],
-                        eta=schedule.get('Arrival Date', ''),
-                        etd=schedule.get('Sailing Date', ''),
+                        port_type="Transshipment",
+                        port_name=schedule["Transshipment"],
+                        eta=schedule.get("Arrival Date", ""),
+                        etd=schedule.get("Sailing Date", ""),
                     )
                 )
 
-            elif 'POD' in schedule:
+            elif "POD" in schedule:
                 result.append(
                     ScheduleInfo(
-                        port_type='POD',
-                        port_name=schedule['POD'],
-                        eta=schedule['Arrival Date'],
-                        etd='',
+                        port_type="POD", port_name=schedule["POD"], eta=schedule.get("Arrival Date", ""), etd="",
                     )
                 )
 
-            elif 'POL' in schedule:
+            elif "POL" in schedule:
                 pass
 
             else:
-                raise CarrierResponseFormatError(reason=f'Unknown port type of schedule: `{schedule}`')
+                raise CarrierResponseFormatError(reason=f"Unknown port type of schedule: `{schedule}`")
 
         # add POD ?
         last_schedule = result[-1]
-        if last_schedule.port_type != 'POD':
-            result.append(
-                ScheduleInfo(
-                    port_type='POD',
-                    port_name=pod,
-                    eta=eta,
-                    etd='',
-                )
-            )
+        if last_schedule.port_type != "POD":
+            result.append(ScheduleInfo(port_type="POD", port_name=pod, eta=eta, etd="",))
 
         return result
 
     @staticmethod
     def _find_to_pod_vessel(vessel_list, schedule_list) -> VesselInfo:
         last_schedule_info = schedule_list[-1]
-        assert last_schedule_info.port_type == 'POD'
+        assert last_schedule_info.port_type == "POD"
 
         is_last_vessel_to_pod = len(schedule_list) == (len(vessel_list) + 1)
 
@@ -409,7 +393,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_no_list(response) -> List[str]:
-        container_no_not_strip_list = response.css('div.opener h3::text').getall()
+        container_no_not_strip_list = response.css("div.opener h3::text").getall()
         container_no_list = []
 
         for container_no_not_strip in container_no_not_strip_list:
@@ -430,14 +414,14 @@ class MainInfoRoutingRule(BaseRoutingRule):
         for left in table_locator.iter_left_header():
             container_status_list.append(
                 {
-                    'description': table_extractor.extract_cell(
-                        top='Activity', left=left, extractor=first_text_td_extractor
+                    "description": table_extractor.extract_cell(
+                        top="Activity", left=left, extractor=first_text_td_extractor
                     ),
-                    'location': table_extractor.extract_cell(
-                        top='Location', left=left, extractor=first_text_td_extractor
+                    "location": table_extractor.extract_cell(
+                        top="Location", left=left, extractor=first_text_td_extractor
                     ),
-                    'local_time': table_extractor.extract_cell(
-                        top='Local Date & Time', left=left, extractor=first_text_td_extractor
+                    "local_time": table_extractor.extract_cell(
+                        top="Local Date & Time", left=left, extractor=first_text_td_extractor
                     ),
                 }
             )
@@ -460,11 +444,11 @@ class MainInfoRoutingRule(BaseRoutingRule):
         if dd_extractor is None:
             dd_extractor = AllTextCellExtractor()
 
-        dt_list = dl.css('dt')
+        dt_list = dl.css("dt")
         dl_info_list = []
 
         for dt_index, dt in enumerate(dt_list):
-            dd = dt.xpath('following-sibling::dd[1]')
+            dd = dt.xpath("following-sibling::dd[1]")
 
             dt_text = dt_extractor.extract(dt)
             dd_text = dd_extractor.extract(dd)
@@ -477,10 +461,10 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
 
 class AllTextCellExtractor(BaseTableCellExtractor):
-    def __init__(self, css_query: str = '::text'):
+    def __init__(self, css_query: str = "::text"):
         self.css_query = css_query
 
     def extract(self, cell: scrapy.Selector):
         text_not_strip_list = cell.css(self.css_query).getall()
         text_list = [text.strip() for text in text_not_strip_list if isinstance(text, str)]
-        return ' '.join(text_list)
+        return " ".join(text_list)

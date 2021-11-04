@@ -17,28 +17,30 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
+@pytest.mark.skip()
 @pytest.mark.parametrize(
-    'sub,mbl_no,',
+    "sub,mbl_no,",
     [
-        ('01_NKAI90055900', 'NKAI90055900'),
-        ('02_HUPE90310700', 'HUPE90310700'),
+        ("01_NKAI90055900", "NKAI90055900"),
+        ("02_HUPE90310700", "HUPE90310700"),
+        ("03_invalid_mbl_no", "NKAI00000000"),
     ],
 )
 def test_track_handler(sub, mbl_no, sample_loader):
-    json_text = sample_loader.read_file(sub, 'sample.json')
+    json_text = sample_loader.read_file(sub, "sample.json")
 
     option = TrackRoutingRule.build_request_option(mbl_no=mbl_no, cookies={})
 
     response = TextResponse(
         url=option.url,
         body=json_text,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=option.url,
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: TrackRoutingRule.name,
-                'mbl_no': mbl_no,
-                'cookies': {},
+                "mbl_no": mbl_no,
+                "cookies": {},
             },
         ),
     )
@@ -46,16 +48,15 @@ def test_track_handler(sub, mbl_no, sample_loader):
     rule = TrackRoutingRule()
     results = list(rule.handle(response=response))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verifier = verify_module.Verifier()
     verifier.verify(results=results)
 
 
 @pytest.mark.parametrize(
-    'sub,mbl_no,sample_file,expect_exception',
+    "sub,mbl_no,sample_file,expect_exception",
     [
-        ('e01_invalid_mbl_no', 'NKAI00000000', 'sample.json', CarrierInvalidMblNoError),
-        ('e02_invalid_cookies', 'NKAI90055900', 'sample.html', CarrierResponseFormatError),
+        ("e01_invalid_cookies", "NKAI90055900", "sample.html", CarrierResponseFormatError),
     ],
 )
 def test_track_handler_no_mbl_error(sub, mbl_no, sample_file, expect_exception, sample_loader):
@@ -66,13 +67,13 @@ def test_track_handler_no_mbl_error(sub, mbl_no, sample_file, expect_exception, 
     response = TextResponse(
         url=option.url,
         body=json_text,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=option.url,
             meta={
                 RuleManager.META_CARRIER_CORE_RULE_NAME: TrackRoutingRule.name,
-                'mbl_no': mbl_no,
-                'cookies': '',
+                "mbl_no": mbl_no,
+                "cookies": "",
             },
         ),
     )

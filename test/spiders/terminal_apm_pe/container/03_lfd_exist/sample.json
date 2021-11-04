@@ -1,0 +1,38 @@
+{
+  "ContainerAvailabilityResults": [
+    {
+      "Appointment": "Yes",
+      "AppointmentDate": "17/08/21 06:00",
+      "BillOfLading": ["CF318116"],
+      "CanBeSaved": true,
+      "ContainerId": "TGCU5024679",
+      "ContainerState": "YARD",
+      "Customs": "RELEASED",
+      "Demurrage": "",
+      "DischargedDate": "11/08/21 08:07",
+      "Freight": "RELEASED",
+      "GateOutDate": "",
+      "GrossWeight": "15512",
+      "HazardousClass": "",
+      "Holds": [],
+      "HoldsDescription": [],
+      "IsBillOfLading": false,
+      "IsContainer": true,
+      "IsHazardous": false,
+      "IsoCode": "45G1",
+      "IsSaved": false,
+      "LineId": "MSC",
+      "LocalDateTime": "17/08/21",
+      "ReadyForDelivery": true,
+      "ReadyForDeliveryReason": "",
+      "SizeTypeHeight": "40/GP/96",
+      "StoragePaidThroughDate": "17/08/21",
+      "StrippingDate": "",
+      "VesselEta": "08/08/21 08:00",
+      "VesselName": "YORK",
+      "YardLocation": "Yard Grounded (G40518C4)"
+    }
+  ],
+  "Filters": ["CF318116"],
+  "ResultsCount": 1
+}

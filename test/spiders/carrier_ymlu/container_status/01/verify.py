@@ -22,7 +22,7 @@ def verify(results: List):
 
     assert results[32] == ContainerStatusItem(
         container_key='YMLU3555177',
-        description='Empty to CFS',
+        description='Empty to CFS (BKG#:)',
         local_date_time='2019/07/31 19:10',
         location=LocationItem(name='KAOHSIUNG (KAOHSIUNG TERMINAL NO.3-#70)'),
         transport=None,

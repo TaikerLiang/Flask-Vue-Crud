@@ -1,0 +1,910 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+
+<!--[if lt IE 7]> <html dir="ltr" lang="en-US" class="oldie"> <![endif]-->
+<!--[if IE 7]>    <html dir="ltr" lang="en-US" class="oldie"> <![endif]-->
+<!--[if IE 8]>    <html dir="ltr" lang="en-US" class="oldie"> <![endif]-->
+<!--[if IE 9]>    <html dir="ltr" lang="en-US" class="oldie"> <![endif]-->
+<!--[if gt IE 9]><!--> <html dir="ltr" lang="en-US"> <!--<![endif]-->
+<head>
+    <meta charset="utf-8">
+    <meta name="keywords" content=""/>
+    <meta name="description" content=""/>
+    <meta name="author" content="Tideworks Technology"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+
+    <title>POMTOC - Forecast&reg; by Tideworks</title>
+
+    <link rel="shortcut icon" href="/fc-POM/favicon.ico">
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<link rel="stylesheet" href="/fc-POM/css/TableTools.css">
+<link rel="stylesheet" href="/fc-POM/css/datatable.css">
+<link rel="stylesheet" href="/fc-POM/css/sticky-footer.css">
+<link rel="stylesheet" href="/fc-POM/css/base.css?version=95013000042920212248" type="text/css" media="screen, projection, print">
+<link rel="stylesheet" href="/fc-POM/css/flick/jquery-ui-1.8.6.custom.css" type="text/css">
+<link rel="stylesheet" href="/fc-POM/css/print.css?version=95013000042920212248" type="text/css" media="print">
+<link rel="stylesheet" href="/fc-POM/js/shadowbox-3.0.3/shadowbox.css?version=95013000042920212248" type="text/css">
+<link rel="stylesheet" href="/fc-POM/css/font-awesome-4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="/fc-POM/css/sweet-alert/sweetalert.css">
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,700" rel="stylesheet">
+
+
+
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" src="/fc-POM/js/main.js?version=95013000042920212248"></script>
+<script type="text/javascript" src="/fc-POM/js/scripts.jsp?version=95013000042920212248"></script>
+<script type="text/javascript" src="/fc-POM/js/ajax.jsp?version=95013000042920212248"></script>
+<script type="text/javascript" src="/fc-POM/js/EqptService.js?version=95013000042920212248"></script>
+
+<script type="text/javascript" src="/fc-POM/js/jquery-1.9.1.min.js"></script>
+<script type="text/javascript" src="/fc-POM/js/jquery.alert.js"></script>
+<script type="text/javascript" src="/fc-POM/js/jquery.cookie.js"></script>
+<script type="text/javascript" src="/fc-POM/js/jquery.dropdownPlain.js"></script>
+<script type="text/javascript" src="/fc-POM/js/jquery.easing.1.3.js"></script>
+<script type="text/javascript" src="/fc-POM/js/jquery.form.js"></script>
+<script type="text/javascript" src="/fc-POM/js/jquery-ui-1.10.3.custom.min.js"></script>
+<script type="text/javascript" src="/fc-POM/js/jquery.ui.datepicker-en-GB.js"></script>
+<script type="text/javascript" src="/fc-POM/js/jquery.ui.datepicker-da-DK.js"></script>
+<script type="text/javascript" src="/fc-POM/js/jquery.ui.datepicker-es.js"></script>
+<script type="text/javascript" src="/fc-POM/js/jquery.backstretch.min.js"></script>
+<script type="text/javascript" src="/fc-POM/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="/fc-POM/js/TableTools.min.js"></script>
+<script type="text/javascript" src="/fc-POM/js/datatable.js"></script>
+
+<script type="text/javascript" src="/fc-POM/js/shadowbox-3.0.3/shadowbox.js"></script>
+
+<script type="text/javascript" src="/fc-POM/js/customFormElements.js"></script>
+
+<script type="text/javascript" src="/fc-POM/js/typeahead.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/fc-POM/js/moment-with-locales.js"></script>
+
+<script type="text/javascript" src="/fc-POM/js/sweet-alert/sweetalert.min.js"></script>
+
+
+<!-- IE Fix -->
+<script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
+
+<script type="text/javascript" src="/fc-POM/js/startswith.js"></script>
+
+
+
+
+    <script type="text/javascript">
+    $().ready(function () {
+        setNavStyle("#menu-home");
+
+        $("#close-browser-alert").click(function(){
+            $("#browser-alert").fadeOut("fast");
+            $.cookie('browser-alert', "true",{path: '/'});
+        });
+
+        $("#close-config-alert").click(function(){
+            $("#config-alert").fadeOut("fast");
+            $.cookie('config-alert', "true",{path: '/'});
+        });
+
+        if($("html").hasClass("oldie") && !$.cookie('browser-alert')) {
+            $("#browser-alert").fadeIn("fast");
+        }
+
+        if(!$.cookie('config-alert')) {
+            $("#config-alert").fadeIn("fast");
+        }
+
+        $("#close").click(function(){
+            $("#convertedUserDialog").fadeOut("fast");
+        });
+
+        $("#docked-list").hide().find("li:gt(3)").hide();
+        $("#todays-list").hide().find("li:gt(3)").hide();
+        $("#tomorrows-list").hide().find("li:gt(3)").hide();
+
+
+            $("#homepageAlert").modal("show");
+
+
+
+        $('#declineMessaging').click(function() {
+            $("#pushOptIn").slideUp("fast");
+        });
+
+    });
+
+    function moreVesselVoyages(item, list){
+        $(item).hide();
+        $("#" + list + "-list li").show();
+    }
+
+    function showVesselVoyages(list){
+        if ($("#" + list + "-list").is(":hidden")) {
+            $("#" + list + "-list").slideDown("fast");
+        } else {
+            $("#" + list + "-list").hide();
+            $("#" + list + "-list").hide().find("li:gt(3)").hide();
+            $("#more-" + list).show();
+        }
+    }
+    </script>
+
+
+
+</head>
+
+<body>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script src="/fc-POM/js/bootstrap-hover-dropdown.js"></script>
+
+<script type="text/javascript">
+$().ready(function() {
+
+    $('.js-activated').dropdownHover().dropdown();
+
+    $('[data-toggle="tooltip"]').tooltip();
+
+    if($(window).width() <= 768) {
+        $('ul.nav li.dropdown a').removeClass("disabled");
+        //console.log("remove class " + $(window).width());
+    } else {
+        $('ul.nav li.dropdown a').addClass("disabled");
+        //console.log("add class " + $(window).width());
+    }
+
+    $(window).resize(function() {
+        if($(window).width() <= 768) {
+            $('ul.nav li.dropdown a').removeClass("disabled");
+            //console.log("remove class " + $(window).width());
+        } else {
+            $('ul.nav li.dropdown a').addClass("disabled");
+            //console.log("add class " + $(window).width());
+        }
+    });
+
+    // we need this variable to hold the value that the user selects.
+    var selectedItem = quickSearchCookie();
+
+    $(".dropdown-menu li a").click(function(){
+        var selText = $(this).text();
+
+
+        $(this).parents('.input-group-btn').find('.dropdown-toggle').html(selText+' <span class="caret"></span>');
+        quickSearchCookie(this.id);
+
+        // set the variable value to what the user selected.
+        selectedItem = this.id;
+    });
+
+    var $linkToSelect = $("#"+selectedItem);
+    //if we have such link in menu (different user roles may have different set of links)
+    if ($linkToSelect.length) {
+        $linkToSelect.parents('.input-group-btn').find('.dropdown-toggle').html($linkToSelect.text()+' <span class="caret"></span>');
+    } else {
+        //if we have have items in the list, click on the first item.
+        if ($("#quickSearchForm ul.dropdown-menu li a").length) $("#quickSearchForm ul.dropdown-menu li a").first().click();
+    }
+
+    $("#quickSearchForm").submit(function(){
+
+        // create a new array to determine which functional area to send the user to.
+        var searchTypeList = new Array();
+
+
+
+
+                searchTypeList['CONTAINER'] = '/equipment/default.do?method=equipmentSubmit&f=qs&equipClass=CTR&number=';
+                searchTypeList['CHASSIS'] = '/equipment/default.do?method=equipmentSubmit&f=qs&equipClass=CHS&number=';
+
+
+
+        // get the search criteria
+        var number = $("#quickSearch").val().toUpperCase();
+
+        // make sure we have data
+        if(hasData(number) == false ){
+            twitterAlertMessage('Please enter all search criteria before continuing.');
+            $("#quickSearch").focus();
+            return false;
+        }
+
+        // do some basic client side validation of the value entered.
+        switch(selectedItem){
+        case 'CONTAINER':
+            if(invalidChars(number) == false ) {
+                twitterAlertMessage("Invalid Container Number (it should consist of 4 alpha and 6 or 7 numeric).");
+                $("#quickSearch").focus();
+                return false;
+            }
+            break;
+        case 'CHASSIS':
+            if(invalidChars(number) == false ) {
+                $("#quickSearch").focus();
+                return false;
+            }
+            break;
+        }
+
+        // set a cookie value of what the user last searched by.
+        $.cookie('quick_search', selectedItem,{path: '/'});
+
+        // determine which item the user selected.
+        var url = searchTypeList[selectedItem];
+
+        // turn that into a url to send them to.
+        window.location = '/fc-POM' + url + number;
+        return false;
+    });
+
+
+});
+
+</script>
+
+<div id="headerAlert"></div>
+
+<div class="navbar navbar-inverse navbar-static-top">
+
+    <div class="container hidden-xs">
+
+        <div class="nav navbar-nav navbar-left">
+
+            <a href="/fc-POM/home/default.do" class="terminalname-responsive">
+
+                <img src="/fc-POM/images/logo-50x50.png" class="pull-left">
+
+                <h2 class="pull-left">POMTOC</h2>
+
+                <div class="clearfix"></div>
+
+            </a>
+
+        </div>
+
+        <div class="navbar-text navbar-right text-right">
+            <div><small>You are signed in as SCOTT&#32;LU | <a href="/fc-POM/myaccount/default.do" class="headerlink">My Account</a> | <a href="/fc-POM/j_spring_security_logout" class="headerlink" id="signOut" title="Click here to sign out">Sign Out</a></small></div>
+            <div><small>Broker/Freight Forwarder Company Admin (48336)</small></div>
+        </div>
+
+    </div>
+
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <i class="fa fa-bars fa-lg" aria-hidden="true" title="Toggle navigation"></i>
+            <span class="sr-only">Toggle navigation</span>
+        </button>
+        <h4><a class="navbar-brand hidden-lg hidden-md hidden-sm terminalname" href="/fc-POM/home/default.do">POMTOC</a></h4>
+    </div>
+
+    <div class="container navbar-collapse collapse">
+
+
+
+
+
+
+
+
+
+                <ul class="nav navbar-nav">
+
+                    <li class="dropdown" id="menu-home">
+                        <a href="/fc-POM/home/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Home <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/fc-POM/home/default.do?method=contacts">Contacts</a></li>
+
+                                <li><a href="/fc-POM/home/default.do?method=directions">Directions</a></li>
+
+
+                                <li><a href="/fc-POM/home/default.do?method=cameras">Gate Cameras</a></li>
+
+                            <li><a href="/fc-POM/home/default.do?method=hours">Hours</a></li>
+                            <li><a href="/fc-POM/home/default.do?method=schedule">Vessel Schedule</a></li>
+                        </ul>
+                    </li>
+
+
+
+
+
+                            <li class="dropdown" id="menu-equipment">
+                                <a href="/fc-POM/equipment/default.do?method=equipment" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Equipment</a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="/fc-POM/equipment/default.do?method=equipment">Search</a></li>
+
+
+                                    <li><a href="/fc-POM/equipment/default.do?method=massUpdate">Mass Update</a></li>
+
+
+                                </ul>
+                            </li>
+
+
+
+
+
+
+
+
+
+
+
+
+                    <li class="dropdown" id="menu-import">
+                        <a href="/fc-POM/import/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Import <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/fc-POM/import/default.do">Availability</a></li>
+
+                        </ul>
+                    </li>
+
+
+
+
+
+
+
+                            <li class="dropdown" id="menu-export">
+                                <a href="/fc-POM/export/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Export <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="/fc-POM/export/default.do">Booking</a></li>
+                                    <li><a href="/fc-POM/export/default.do?method=edo">EDO</a></li>
+                                </ul>
+                            </li>
+
+
+
+
+
+
+
+                            <li class="dropdown" id="menu-fees">
+                                <a href="/fc-POM/fees/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Fees <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="/fc-POM/fees/default.do">Pay Fees</a></li>
+                                    <li><a href="/fc-POM/fees/default.do?method=history">Transaction History</a></li>
+                                </ul>
+                            </li>
+
+
+
+
+
+
+
+                </ul>
+
+
+
+
+                <ul class="nav navbar-nav navbar-right">
+
+
+
+
+
+
+
+
+
+
+
+
+
+                </ul>
+
+
+    </div>
+
+</div>
+
+<div class="container">
+
+    <div class="row">
+
+        <div class="col-sm-9">
+
+
+
+
+            <div class="hint-large south north text-right">Today is Monday, August 30</div>
+
+
+
+            <div id="browser-alert" class="banner-alert bg-danger pad-10 south_20" style="display: none">
+                <h4 class="stop"><strong>Attention Internet Explorer Users</strong></h4>
+                <p>Microsoft <a href="https://blogs.msdn.microsoft.com/ie/2014/08/07/stay-up-to-date-with-internet-explorer/" target="_blank" rel="noopener">announced</a> they will be ending support for IE7, IE8 and IE9 by <strong>January 2016</strong>. With this change we recommend customers update their browsers to the latest version of Internet Explorer as soon as possible to avoid potential performance issues and a downgraded Forecast user experience.</p>
+
+                <p>Please see our <a href="/fc-POM/footer/default.do?method=requirements">site requirements</a> for a list of supported browsers.</p>
+
+                <button type="button" class="close" aria-label="Close" id="close-browser-alert"><span aria-hidden="true">&times;</span></button>
+
+                <div class="clearfix"></div>
+            </div>
+
+
+
+            <p><strong>Welcome to Forecast!</strong></p>
+<!--?xml:namespace prefix = o ns = "urn:schemas-microsoft-com:office:office" /-->
+<p class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto;">Now you can quickly and easily obtain real time information and greatly enhance gate turns with Forecast. From the convenience of your desk-top, POMTOC's Forecast system will provide you with all your cargo and container availability needs such as:</p>
+<ul type="disc">
+<li class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto; mso-list: l0 level1 lfo1; tab-stops: list .5in;">Empty Container Allocations</li>
+<li class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto; mso-list: l0 level1 lfo1; tab-stops: list .5in;">Export Bookings</li>
+<li class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto; mso-list: l0 level1 lfo1; tab-stops: list .5in;">Import Container Availability</li>
+<li class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto; mso-list: l0 level1 lfo1; tab-stops: list .5in;">Terminal Demurrage Charges</li>
+<li class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto; mso-list: l0 level1 lfo1; tab-stops: list .5in;">Line Demurrage Charges</li>
+<li class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto; mso-list: l0 level1 lfo1; tab-stops: list .5in;">Trucker/Line Interchange Agreements</li>
+<li class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto; mso-list: l0 level1 lfo1; tab-stops: list .5in;">Vessel Schedules</li>
+<li class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto; mso-list: l0 level1 lfo1; tab-stops: list .5in;">Container Gate Activity</li>
+<li class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto; mso-list: l0 level1 lfo1; tab-stops: list .5in;">Email Notifications</li>
+<li class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto; mso-list: l0 level1 lfo1; tab-stops: list .5in;">On-Line Payments<br /><br />If you need additional information on using Forecast, please contact our Customer Service and Support Team at 305.372.8979.<br /><br />POMTOC's Demurrage Office is open Monday through Friday between 8:00 am to 4:30 pm and is closed between 12:00 pm and 1:00 pm for lunch. For your convenience, below please find our physical address as well as our mailing address.</li>
+</ul>
+<p class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto;">&nbsp;</p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto;">Physical Address:&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto;">&nbsp;</p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto;">POMTOC</p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto;">635 Australia Way</p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto;">Miami, FL 33132</p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto;">&nbsp;</p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto;">&nbsp;</p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto;">***Demurrage charges must be PAID ON-LINE using your credit card. Select the "FEES" tab and follow instructions***We only accept Visa &amp; Master Card on-line.</p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto;"><br />For a complete listing of our Holidays and hours of operations, please click on the above "HOURS OF OPERATIONS" tab.</p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto;">&nbsp;</p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto;">&nbsp;</p>
+<p class="MsoNormal" style="margin: 0in 0in 0pt; mso-margin-top-alt: auto; mso-margin-bottom-alt: auto;">&nbsp;</p>
+
+
+
+
+
+        </div>
+
+        <div class="col-sm-3 break-west">
+
+            <div class="pad-20">
+
+
+                    <div class="south_20"><a href="http://www.pomtoc.com/" target="_blank"><img src="/fc-POM/images/logo_pomtoc.gif" alt="POMTOC" border="0"/></a></div>
+
+
+                <div class="terminal-address nowrap"><p><strong>Port of Miami Terminal Operating Company, LC</strong><br />CBP Firm Code: L-239<br />US-FDA Reg. No: 18859011372<br /><br /><strong>POMTOC</strong><br />635 Australia Way<br />Miami, FL 33132<br />(305)533-8200 tel<br />(305)3736916 fax<br /><a class="email" href="mailto:probres@pomtoc.com">probres@pomtoc.com</a></p></div>
+
+
+
+
+
+
+
+                    <div class="north">
+
+                        Today
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                8:00 AM - 6:00 PM
+
+
+                                    <div class="hint">
+                                        * Inbound Gate closes at 5 PM.
+                                    </div>
+
+
+
+
+
+
+                    </div>
+
+
+
+            </div>
+
+
+
+                <div class="break-north pad-10">
+
+                    <h4 class="bold text-uppercase"><i class="fa fa-info-circle"></i> News</h4>
+
+                    <div class="pad-10">
+
+                            <div class="south">
+                                <h5><a href="default.do?method=page&id=0" class="normal south">New Website features for POMTOC</a></h5>
+                            </div>
+
+                            <div class="south">
+                                <h5><a href="default.do?method=page&id=1" class="normal south">Terminal Rules & Regulations For Drivers 2008</a></h5>
+                            </div>
+
+                    </div>
+
+                </div>
+
+
+
+
+
+                <div class="break-north pad-10">
+
+                    <h4 class="south bold text-uppercase"><i class="fa fa-ship"></i> Vessels</h4>
+
+                    <div id="vessels" class="pad-10">
+
+                        <h5 class="pointer bold" id="docked" style="margin: 0px; padding-bottom: 5px" onclick="showVesselVoyages('docked')">Docked <span class="badge">5</span></h5>
+                        <div id="docked-list" class="south">
+
+
+
+                                    <ul class="list-nopad">
+
+                                        <li style="list-style-type: none" class="south">MAERSK STADELHORN <span title="In">126W</span>/<span title="Out">131E</span> - MAE<br>
+
+
+
+                                                    <small class="text-muted">
+
+
+                                                                Arrived at 08/28/2021 8:00 AM
+
+
+
+                                                    </small>
+
+
+                                        </li>
+
+                                        <li style="list-style-type: none" class="south">MAERSK SEVILLE <span title="In">128E</span>/<span title="Out">133W</span> - MAE<br>
+
+
+
+                                                    <small class="text-muted">
+
+
+                                                                Arrived at 08/20/2021 8:00 AM
+
+
+
+                                                    </small>
+
+
+                                        </li>
+
+                                        <li style="list-style-type: none" class="south">MSC CHARLESTON <span title="In">129W</span>/<span title="Out">0129W</span> - MSC<br>
+
+
+
+                                                    <small class="text-muted">
+
+
+                                                                Arrived at 08/13/2021 8:00 AM
+
+
+
+                                                    </small>
+
+
+                                        </li>
+
+                                        <li style="list-style-type: none" class="south">MAERSK KARLSKRONA <span title="In">130E</span>/<span title="Out">0130E</span> - MAE<br>
+
+
+
+                                                    <small class="text-muted">
+
+
+                                                                Arrived at 08/07/2021 8:00 AM
+
+
+
+                                                    </small>
+
+
+                                        </li>
+
+                                        <li style="list-style-type: none" class="south">SEALAND WASHINGTON <span title="In">128W</span>/<span title="Out">0128W</span> - MAE<br>
+
+
+
+                                                    <small class="text-muted">
+
+
+                                                                Arrived at 08/06/2021 7:00 PM
+
+
+
+                                                    </small>
+
+
+                                        </li>
+
+                                    </ul>
+
+                                        <div class="south_20" id="more-docked" onclick="moreVesselVoyages(this,'docked')">
+                                            <a href="javascript:void(0)">Show 1 More</a>
+                                        </div>
+
+
+
+                        </div>
+
+                        <h5 class="pointer bold" id="todays" style="margin: 0px; padding-bottom: 5px" onclick="showVesselVoyages('todays')">Arriving Today <span class="badge">0</span></h5>
+                        <div id="todays-list" class="south">
+
+                                None
+
+
+                        </div>
+
+                        <h5 class="pointer bold" id="tomorrows" style="margin: 0px; padding-bottom: 5px" onclick="showVesselVoyages('tomorrows')">Arriving Tomorrow <span class="badge">1</span></h5>
+                        <div id="tomorrows-list" class="south">
+
+
+
+                                    <ul class="list-nopad">
+
+                                        <li style="list-style-type: none" class="south">ADRIAN MAERSK <span title="In">127W</span>/<span title="Out">132E</span> - MAE<br>
+
+
+
+                                                    <small class="text-muted">Arriving at 8:00 AM</small>
+
+
+                                        </li>
+
+                                    </ul>
+
+
+
+                        </div>
+
+                        <div class="north"><a href="/fc-POM/home/default.do?method=schedule">Vessel Schedule</a></div>
+
+                    </div>
+
+                </div>
+
+
+
+
+
+
+
+        </div>
+
+    </div>
+
+</div>
+
+
+    <!-- Modal -->
+    <div class="modal fade" id="homepageAlert" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h3 class="modal-title text-danger" id="myModalLabel">
+                        <span class="fa-stack">
+                            <i class="fa fa-circle fa-stack-2x"></i>
+                            <i class="fa fa-bell fa-stack-1x fa-inverse"></i>
+                        </span>
+
+                        POMTOC Alert
+                    </h3>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Updated 8/30/2021 @ 0100 RCS</strong></p>
+<p><span style="text-decoration: underline;"><strong>NOTICE:</strong></span><span style="color: #ff0000;"><strong> All dry import containers on Maersk Stadelhorn and Maersk Seville will be block stacked. NOTAVAIL constraints will be removed once a majority of imports have been made available for pickup.<span style="color: #0000ff;"> All Live Reefers will be available for immediate pick up</span>.</strong></span></p>
+<p><strong><span style="text-decoration: underline;">NOTICE:</span> <span style="color: #ff0000;">We are experiencing phone issues intermittently.&nbsp; If unable to contact us by phone please send an email.&nbsp; RCS 8/26/2021 at 1200 hrs.</span></strong></p>
+<p><span style="text-decoration: underline;"><strong>NOTICE:</strong></span> POMTOC will be <span style="color: #ff0000;"><strong>CLOSED</strong></span> on <strong><span style="text-decoration: underline;">Monday, 9/6/21</span></strong> in observance of Labor Day.</p>
+<p><strong><u>Export Re</u></strong><strong><u>ceiving Dates:</u>&nbsp; </strong><span style="color: #000000;">Export receiving dates will to&nbsp;be altered to correspond with tentative vessel arrivals to Miami. <span style="text-decoration: underline;">Below dates are for Dry Export Receiving, only.</span>&nbsp; <span style="color: #3366ff;"><strong>Effective 8/1/2020, both Maersk &amp; MSC will have reduced Live Reefer receiving windows (by their direction). Please contact the respective Line for Live Reefer receiving dates.</strong></span></span></p>
+<ul>
+<li><span style="color: #008000;"><strong>ADRIAN MAERSK - Monday, 8/23/21</strong></span></li>
+<li><span style="color: #008000;"><strong>SEAMAX DARIEN - Thursday,&nbsp; 8/26/21</strong></span></li>
+<li><span style="color: #008000;"><strong>MAERSK ALGOL - Monday, 8/30/21</strong></span></li>
+</ul>
+<p><span style="text-decoration: underline;"><strong>Monday:</strong></span> POMTOC Gate opens at <strong>0700</strong> hrs. MAERSK SEVILLE will commence operations at 1300 hrs.</p>
+<p><span style="color: #2b2b2b; font-family: 'Arial','sans-serif';"><span style="text-decoration: underline;"><strong>Empty Receiving:</strong></span> See Empty Receiving Instructions. <strong><span style="color: #ff0000;"><span style="color: #008000;">POMTOC Gates will be <span style="text-decoration: underline;">OPEN</span> to receiving <span style="text-decoration: underline;">MAERSK, MSC and ZIM Line</span> empty returns, good order and damaged, <span style="text-decoration: underline;">effective Monday, 8/23/2021.</span></span></span></strong></span></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<footer class="footer">
+
+    <div class="container">
+
+        <div class="col-xs-12 col-sm-9 pad-10">
+            <span class="hidden-xs">
+                <a href="/fc-POM/footer/default.do?method=requirements">Site Requirements</a> |
+                <a href="/fc-POM/footer/default.do?method=gdpr">General Data Protection Statement</a> |
+                <a href="/fc-POM/footer/default.do?method=privacy">Privacy Policy</a> |
+                <a href="/fc-POM/footer/default.do?method=terms">Terms of Service</a>
+                 | <a href="/fc-POM/footer/default.do?method=contactUs">Contact Us</a><br>
+            </span>
+
+            &copy;2021&nbsp;Tideworks Technology. All Rights Reserved. <span class="hidden-xs">Forecast&reg; by Tideworks version 9.5.0.13000 (04292021-2248)<br>
+            Generated: 08/30/2021 2:53 AM</span>
+        </div>
+
+        <div class="col-sm-3 pad-10 hidden-xs hidden-sm">
+
+            <form name="pageFooter" id="pageFooter" action='/fc-POM/home/default.do' method="post">
+            <input type="hidden" name="siteLanguage"/>
+
+                <div class="world">
+
+                    <select name="language" id="lang" onchange="checkSelectedLanguage();" class="form-control input-sm">
+
+                        <option value="en_US" selected>English (United States)</option>
+
+                        <option value="es_MX" >Spanish (Mexico)</option>
+
+                        <option value="es_PA" >Spanish (Panama)</option>
+
+                        <option value="vi_VN" >Vietnamese</option>
+
+                    </select>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</footer>
+
+<script type="text/javascript">
+    var msg = "Are you sure you want to switch languages?\nIf you are in the middle of a task you may have to start over.";
+
+    function checkSelectedLanguage() {
+        if (false === true) {
+            if(confirm(msg) !== true) {
+                document.all["lang"].value = 'en_US';
+                return false;
+            }
+        }
+        document.pageFooter.siteLanguage.value = document.pageFooter.lang.value;
+        document.pageFooter.submit();
+    }
+
+
+        var userType = "CO_BROKER_FORWARDING (48336)";
+        var _gaq = _gaq || [];
+        _gaq.push(
+            ['_setAccount', 'UA-11978469-7'],
+            ['_setCustomVar',1,'forecastUserType',userType.substr(3, userType.length),2],
+            ['_trackPageview'],
+            ['b._setAccount', 'UA-11978469-31'],
+            ['b._setCustomVar',1,'forecastUserType',userType.substr(3, userType.length),2],
+            ['b._trackPageview']
+        );
+
+        (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' === document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+
+</script>
+
+</body>
+</html>
