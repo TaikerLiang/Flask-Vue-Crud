@@ -4,6 +4,7 @@ from typing import Dict
 import scrapy
 from scrapy import Selector
 
+from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
@@ -26,7 +27,6 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
-from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor, HeaderMismatchError
 
 
 class ForceRestart:
@@ -363,7 +363,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
 
-        for index in table_locator.iter_left_headers():
+        for index in table_locator.iter_left_header():
             is_actual = bool(table.extract_cell("Status", index, extractor=ActualIconTdExtractor()))
             yield {
                 "local_date_time": table.extract_cell("Date", index),
@@ -376,45 +376,22 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 # -----------------------------------------------------------------------------------------------------------
 
 
-class ContainerStatusTableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = {}
-        self._data_len = 0
-
+class ContainerStatusTableLocator(BaseTable):
     def parse(self, table: Selector):
         title_th_list = table.css("thead th")
+        title_text_list = [title.strip() for title in title_th_list.css("::text").getall()]
         data_tr_list = table.css("tbody tr[class]")
 
-        for title_index, title_th in enumerate(title_th_list):
-            data_index = title_index
+        for index, tr in enumerate(data_tr_list):
+            tds = tr.css("td")
+            self._left_header_set.add(index)
+            for title_index, (title, td) in enumerate(zip(title_text_list, tds)):
+                if title_index == 1:
+                    assert title == ""
+                    title = "Status"
 
-            title = title_th.css("::text").get().strip()
-
-            if title_index == 1:
-                assert title == ""
-                title = "Status"
-
-            self._td_map[title] = []
-
-            for data_tr in data_tr_list:
-                data_td = data_tr.css("td")[data_index]
-
-                self._td_map[title].append(data_td)
-
-        self._data_len = len(data_tr_list)
-
-    def get_cell(self, top, left) -> Selector:
-        try:
-            return self._td_map[top][left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def iter_left_headers(self):
-        for index in range(self._data_len):
-            yield index
+                self._td_map.setdefault(title, [])
+                self._td_map[title].append(td)
 
 
 class ActualIconTdExtractor(BaseTableCellExtractor):
