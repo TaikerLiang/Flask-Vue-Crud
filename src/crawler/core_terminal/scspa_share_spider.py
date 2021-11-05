@@ -91,7 +91,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         getter = ContentGetter()
-        content_table = getter.get(response.meta.get("container_no_list"))
+        content_table = getter.get_content(response.meta.get("container_no_list"))
 
         for content in content_table:
             yield TerminalItem(
@@ -107,7 +107,7 @@ class ContentGetter(ChromeContentGetter):
     PASSWORD = "Hardc0re"
     URL = "https://goport.scspa.com/scspa/index"
 
-    def get(self, container_no_list):
+    def get_content(self, container_no_list):
         self.login()
         self.search(container_no_list)
         # check the result popup is appeared
