@@ -4,13 +4,12 @@ from typing import Dict
 import scrapy
 from scrapy import Selector
 
+from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.exceptions import (
-    CarrierInvalidMblNoError,
     CarrierResponseFormatError,
     SuspiciousOperationError,
     DataNotFoundError,
-    CarrierInvalidSearchNoError,
 )
 
 from crawler.core_carrier.items import (
@@ -20,15 +19,13 @@ from crawler.core_carrier.items import (
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
-    ExportData,
     ExportErrorData,
 )
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.request_helpers import RequestOption, ProxyManager
+from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
-from crawler.extractors.table_extractors import BaseTableLocator, TableExtractor, HeaderMismatchError
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 
 STATUS_ONE_CONTAINER = "STATUS_ONE_CONTAINER"
@@ -108,10 +105,19 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
         }
 
         if option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(url=option.url, headers=option.headers, meta=meta, dont_filter=True,)
+            return scrapy.Request(
+                url=option.url,
+                headers=option.headers,
+                meta=meta,
+                dont_filter=True,
+            )
         elif option.method == RequestOption.METHOD_POST_FORM:
             return scrapy.FormRequest(
-                url=option.url, headers=option.headers, formdata=option.form_data, meta=meta, dont_filter=True,
+                url=option.url,
+                headers=option.headers,
+                formdata=option.form_data,
+                meta=meta,
+                dont_filter=True,
             )
         else:
             raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
@@ -131,7 +137,11 @@ class CheckIpRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f"https://api.myip.com",
-            meta={"search_no": search_no, "base_url": base_url, "task_id": task_id,},
+            meta={
+                "search_no": search_no,
+                "base_url": base_url,
+                "task_id": task_id,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -178,7 +188,11 @@ class FirstTierRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_POST_FORM,
             url=f"{base_url}/ebusiness/tracking/search",
             form_data=form_data,
-            meta={"search_no": search_no, "base_url": base_url, "task_id": task_id,},
+            meta={
+                "search_no": search_no,
+                "base_url": base_url,
+                "task_id": task_id,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -269,7 +283,11 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 f"{base_url}/ebusiness/tracking/detail/{container_no}?SearchCriteria={search_criteria}&"
                 f"SearchByReference={search_no}"
             ),
-            meta={"search_no": search_no, "container_no": container_no, "task_id": task_id,},
+            meta={
+                "search_no": search_no,
+                "container_no": container_no,
+                "task_id": task_id,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -295,7 +313,9 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         container_no = container_info["container_no"]
 
         yield ContainerItem(
-            task_id=task_id, container_key=container_no, container_no=container_no,
+            task_id=task_id,
+            container_key=container_no,
+            container_no=container_no,
         )
 
         container_status_list = self._extract_container_status(response=response)
@@ -355,7 +375,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
 
-        for index in table_locator.iter_left_headers():
+        for index in table_locator.iter_left_header():
             is_actual = bool(table.extract_cell("Status", index, extractor=ActualIconTdExtractor()))
             yield {
                 "local_date_time": table.extract_cell("Date", index),
@@ -365,45 +385,22 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             }
 
 
-class ContainerStatusTableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = {}
-        self._data_len = 0
-
+class ContainerStatusTableLocator(BaseTable):
     def parse(self, table: Selector):
         title_th_list = table.css("thead th")
+        title_text_list = [title.strip() for title in title_th_list.css("::text").getall()]
         data_tr_list = table.css("tbody tr[class]")
 
-        for title_index, title_th in enumerate(title_th_list):
-            data_index = title_index
+        for index, tr in enumerate(data_tr_list):
+            tds = tr.css("td")
+            self._left_header_set.add(index)
+            for title_index, (title, td) in enumerate(zip(title_text_list, tds)):
+                if title_index == 1:
+                    assert title == ""
+                    title = "Status"
 
-            title = title_th.css("::text").get().strip()
-
-            if title_index == 1:
-                assert title == ""
-                title = "Status"
-
-            self._td_map[title] = []
-
-            for data_tr in data_tr_list:
-                data_td = data_tr.css("td")[data_index]
-
-                self._td_map[title].append(data_td)
-
-        self._data_len = len(data_tr_list)
-
-    def get_cell(self, top, left) -> Selector:
-        try:
-            return self._td_map[top][left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def iter_left_headers(self):
-        for index in range(self._data_len):
-            yield index
+                self._td_map.setdefault(title, [])
+                self._td_map[title].append(td)
 
 
 class ActualIconTdExtractor(BaseTableCellExtractor):
