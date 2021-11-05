@@ -21,7 +21,6 @@ from crawler.core_carrier.items import (
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 
 URL = "https://www.msc.com"
 
@@ -279,13 +278,12 @@ class Extractor:
         table_locator = MainInfoTableLocator()
         table_locator.parse(table=table_selector)
         table_extractor = TableExtractor(table_locator=table_locator)
-        td_extractor = FirstTextTdExtractor()
 
         return {
-            "pol": table_extractor.extract_cell(top="Port of load", extractor=td_extractor),
-            "pod": table_extractor.extract_cell(top="Port of discharge", extractor=td_extractor),
-            "etd": table_extractor.extract_cell(top="Departure date", extractor=td_extractor),
-            "vessel": table_extractor.extract_cell(top="Vessel", extractor=td_extractor),
+            "pol": table_extractor.extract_cell(top="Port of load"),
+            "pod": table_extractor.extract_cell(top="Port of discharge"),
+            "etd": table_extractor.extract_cell(top="Departure date"),
+            "vessel": table_extractor.extract_cell(top="Vessel"),
         }
 
     @staticmethod
@@ -352,7 +350,6 @@ class Extractor:
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table_selector)
         table_extractor = TableExtractor(table_locator=table_locator)
-        td_extractor = FirstTextTdExtractor()
 
         container_status_list = []
         for left in table_locator.iter_left_header():
@@ -367,11 +364,11 @@ class Extractor:
 
             container_status_list.append(
                 {
-                    "location": table_extractor.extract_cell(top="Location", left=left, extractor=td_extractor),
-                    "local_date_time": table_extractor.extract_cell(top="Date", left=left, extractor=td_extractor),
-                    "description": table_extractor.extract_cell(top="Description", left=left, extractor=td_extractor),
-                    "vessel": table_extractor.extract_cell(top="Vessel", left=left, extractor=td_extractor),
-                    "voyage": table_extractor.extract_cell(top="Voyage", left=left, extractor=td_extractor),
+                    "location": table_extractor.extract_cell(top="Location", left=left),
+                    "local_date_time": table_extractor.extract_cell(top="Date", left=left),
+                    "description": table_extractor.extract_cell(top="Description", left=left),
+                    "vessel": table_extractor.extract_cell(top="Vessel", left=left),
+                    "voyage": table_extractor.extract_cell(top="Voyage", left=left),
                     "est_or_actual": est_or_actual,
                 }
             )
