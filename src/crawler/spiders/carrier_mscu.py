@@ -434,7 +434,6 @@ class ContainerInfoTableLocator(BaseTable):
     """
 
     def parse(self, table: scrapy.Selector):
-        # title_th_list = table.xpath(".//th/parent::tr/th")
         title_th_list = table.css("thead tr th")
         title_text_list = [self._extract_top(th=th) for th in title_th_list]
         data_td_list = table.css("tbody tr td")
