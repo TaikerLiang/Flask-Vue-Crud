@@ -2,16 +2,10 @@ import re
 from typing import List, Dict
 
 import scrapy
-from selenium import webdriver
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.wait import WebDriverWait
 
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
-    LoadWebsiteTimeOutError,
     CarrierResponseFormatError,
     SuspiciousOperationError,
 )
