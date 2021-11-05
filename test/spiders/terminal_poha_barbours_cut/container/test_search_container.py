@@ -18,10 +18,40 @@ def sample_loader(sample_loader):
 @pytest.mark.parametrize(
     "sub, container_no",
     [
-        ("01_basic", "EITU1692078"),
+        ("01_basic_available", "EITU1692078"),
     ],
 )
-def test_container_handle(sub, container_no, sample_loader):
+def test_container_handle_available(sub, container_no, sample_loader):
+    httptext = sample_loader.read_file(sub, "sample.html")
+
+    option = ContainerRoutingRule.build_request_option(
+        task_id=1,
+        container_no=container_no,
+        cookies={},
+    )
+    response = TextResponse(
+        url=option.url,
+        body=httptext,
+        encoding="utf-8",
+        request=Request(
+            url=option.url,
+            meta=option.meta,
+        ),
+    )
+    rule = ContainerRoutingRule()
+    results = list(rule.handle(response=response))
+
+    verify_module = sample_loader.load_sample_module(sub, "verify")
+    verify_module.verify(results=results)
+
+
+@pytest.mark.parametrize(
+    "sub, container_no",
+    [
+        ("02_basic_unavailable", "KOCU4002224"),
+    ],
+)
+def test_container_handle_unavailable(sub, container_no, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
     option = ContainerRoutingRule.build_request_option(

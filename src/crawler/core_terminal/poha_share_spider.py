@@ -129,7 +129,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         if container_no:
             info = {}
 
-            info["Available"] = response.xpath("//div[contains(@id, 'MainContent_pnlReady')]/span/text()").get()
+            info["Available"] = response.css("div[id^='MainContent_pnl']").css("span::text").get()
             info["Container #"] = container_no
             info["Line Status"] = response.xpath("//span[@id='MainContent_FREIGHT']/text()").get()
             info["Customs Status"] = response.xpath("//span[@id='MainContent_CUSTOMS']/text()").get()
