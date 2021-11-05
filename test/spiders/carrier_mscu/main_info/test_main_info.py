@@ -5,7 +5,6 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
-from crawler.core_carrier.exceptions import CarrierInvalidSearchNoError
 from crawler.spiders.carrier_mscu import MainRoutingRule
 from test.spiders.carrier_mscu import main_info
 
