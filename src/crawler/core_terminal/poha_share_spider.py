@@ -5,7 +5,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 
 from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_FATAL
-from crawler.core_terminal.base_spiders import BaseTerminalSpider
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import (
     DebugItem,
     TerminalItem,
@@ -19,14 +19,13 @@ from crawler.core.selenium import ChromeContentGetter
 BASE_URL = "http://mca.poha.com/container-availability"
 
 
-class PohaShareSpider(BaseTerminalSpider):
+class PohaShareSpider(BaseMultiTerminalSpider):
     firms_code = ""
     name = ""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.task_id = kwargs.get("task_id")
         rules = [
             ConfigureSettingsRule(),
             ContainerRoutingRule(),
@@ -35,7 +34,7 @@ class PohaShareSpider(BaseTerminalSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        option = ConfigureSettingsRule.build_request_option(task_id=self.task_id, container_no=self.container_no)
+        option = ConfigureSettingsRule.build_request_option(task_ids=self.task_ids, container_nos=self.container_nos)
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -47,10 +46,7 @@ class PohaShareSpider(BaseTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
-                result["task_id"] = self.task_id
-                yield result
-            elif isinstance(result, ExportErrorData):
+            if True in [isinstance(result, item) for item in [TerminalItem, InvalidContainerNoItem, ExportErrorData]]:
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -82,27 +78,28 @@ class ConfigureSettingsRule(BaseRoutingRule):
     name = "Configure"
 
     @classmethod
-    def build_request_option(cls, task_id, container_no) -> RequestOption:
+    def build_request_option(cls, task_ids, container_nos) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://www.google.com",
-            meta={"task_id": task_id, "container_no": container_no},
+            meta={"task_ids": task_ids, "container_nos": container_nos},
         )
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.json"
 
     def handle(self, response):
-        task_id = response.meta.get("task_id")
-        container_no = response.meta.get("container_no")
+        task_ids = response.meta.get("task_ids")
+        container_nos = response.meta.get("container_nos")
 
         browser = ContentGetter()
         browser.configure()
         cookies = browser.get_cookies_dict()
         browser.close()
 
-        yield ContainerRoutingRule.build_request_option(task_id=task_id, container_no=container_no, cookies=cookies)
+        for task_id, container_no in zip(task_ids, container_nos):
+            yield ContainerRoutingRule.build_request_option(task_id=task_id, container_no=container_no, cookies=cookies)
 
 
 # -------------------------------------------------------------------------------
@@ -140,6 +137,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
             if info.get("Container #") == response.meta.get("container_no"):
                 yield TerminalItem(
+                    task_id=response.meta.get("task_id"),
                     container_no=info.get("Container #"),
                     available=info.get("Available").strip(),
                     carrier_release=info.get("Line Status"),

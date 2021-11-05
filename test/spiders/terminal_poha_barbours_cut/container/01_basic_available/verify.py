@@ -7,6 +7,7 @@ def verify(results: List[TerminalItem]):
     assert results[0] == TerminalItem(
         available="Ready for Pick-up",
         container_no="EITU1692078",
+        task_id=1,
         carrier="Evergreen Shipping Agency (America)(EGLV)",
         carrier_release="RELEASED",
         customs_release="RELEASED",
