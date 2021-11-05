@@ -3,9 +3,4 @@ from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 
 
 def verify(results):
-    assert results[0] == ExportErrorData(
-        task_id="1",
-        mbl_no="OOLU0000000000",
-        status=CARRIER_RESULT_STATUS_ERROR,
-        detail="Data was not found",
-    )
+    assert results[0] is True

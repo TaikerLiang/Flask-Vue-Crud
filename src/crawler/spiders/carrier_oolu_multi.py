@@ -29,7 +29,6 @@ from crawler.core_carrier.items import (
     LocationItem,
     ContainerItem,
     ContainerStatusItem,
-    ExportErrorData,
     DebugItem,
     ExportErrorData,
 )
@@ -369,6 +368,7 @@ class CargoTrackingRule(BaseRoutingRule):
 
     def handle(self, response):
         search_no = response.meta["search_no"]
+        task_id = response.meta["task_id"]
 
         try:
             windows = self._content_getter.get_window_handles()
@@ -455,7 +455,7 @@ class CargoTrackingRule(BaseRoutingRule):
                 self._content_getter.quit()
                 raise LoadWebsiteTimeOutError(url=url)
 
-            response = Selector(text=self._content_getter.get_page_text())
+            response = Selector(text=self._content_getter.get_page_source())
 
             for item in self._handle_container_response(task_id=task_id, response=response, container_no=container_no):
                 yield item
