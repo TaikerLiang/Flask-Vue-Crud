@@ -33,8 +33,8 @@ from crawler.core_carrier.items import (
 )
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, LoadWebsiteTimeOutError
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
+from crawler.core.table import BaseTable, TableExtractor
 
 
 BASE_URL = "http://moc.oocl.com"
@@ -92,7 +92,11 @@ class CarrierOoluSpider(BaseCarrierSpider):
 
         if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
-                url=option.url, headers=option.headers, meta=meta, dont_filter=True, callback=self.parse,
+                url=option.url,
+                headers=option.headers,
+                meta=meta,
+                dont_filter=True,
+                callback=self.parse,
             )
 
         else:
@@ -126,7 +130,7 @@ class ContentGetter(ChromeContentGetter):
         self._driver.close()
 
         # jump back to origin window
-        windows = self.driver.window_handles
+        windows = self._driver.window_handles
         assert len(windows) == 1
         self._driver.switch_to.window(windows[0])
 
@@ -340,7 +344,7 @@ class CargoTrackingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://www.google.com",
-            meta={"search_no": search_no,},
+            meta={"search_no": search_no},
         )
 
     def get_save_name(self, response) -> str:
@@ -379,11 +383,15 @@ class CargoTrackingRule(BaseRoutingRule):
         if cls.is_search_no_invalid(response):
             if search_type == SHIPMENT_TYPE_MBL:
                 yield ExportErrorData(
-                    mbl_no=search_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found",
+                    mbl_no=search_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
                 )
             else:
                 yield ExportErrorData(
-                    booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found",
+                    booking_no=search_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
                 )
             return
 
@@ -421,7 +429,8 @@ class CargoTrackingRule(BaseRoutingRule):
         container_list = cls._extract_container_list(selector_map=selector_map)
         for i, container in enumerate(container_list):
             yield ContainerStatusRule.build_request_option(
-                container_no=container["container_no"].strip(), click_element_css=f"a[id='form:link{i}']",
+                container_no=container["container_no"].strip(),
+                click_element_css=f"a[id='form:link{i}']",
             )
 
     @staticmethod
@@ -455,14 +464,14 @@ class CargoTrackingRule(BaseRoutingRule):
         table_extractor = TableExtractor(table_locator)
         first_td_extractor = FirstTextTdExtractor()
 
-        if not table_extractor.has_header(top="Inbound Customs Clearance Status:"):
+        if not table_extractor.has_header(left="Inbound Customs Clearance Status:"):
             return {
                 "status": "",
                 "date": "",
             }
 
         custom_release_info = table_extractor.extract_cell(
-            top="Inbound Customs Clearance Status:", left=None, extractor=first_td_extractor
+            left="Inbound Customs Clearance Status:", extractor=first_td_extractor
         )
         custom_release_status, custom_release_date = cls._parse_custom_release_info(custom_release_info)
 
@@ -571,22 +580,17 @@ class CargoTrackingRule(BaseRoutingRule):
         table_extractor = TableExtractor(table_locator=container_table_locator)
 
         container_no_list = []
-        for left in container_table_locator.iter_left_headers():
+        for left in container_table_locator.iter_left_header():
             container_no_text = table_extractor.extract_cell("Container Number", left)
             # container_no_text: OOLU843521-8
             container_id, check_no = container_no_text.split("-")
-            container_no_list.append(
-                {"container_id": container_id, "container_no": f"{container_id}{check_no}",}
-            )
+            container_no_list.append({"container_id": container_id, "container_no": f"{container_id}{check_no}"})
         return container_no_list
 
 
-class SummaryRightTableLocator(BaseTableLocator):
+class SummaryRightTableLocator(BaseTable):
     TD_TITLE_INDEX = 0
     TD_DATA_INDEX = 1
-
-    def __init__(self):
-        self._td_map = {}  # title: td
 
     def parse(self, table: Selector):
         tr_list = table.css("tr")
@@ -601,21 +605,12 @@ class SummaryRightTableLocator(BaseTableLocator):
 
             title_not_strip = title_td.css("::text").get()
             title = title_not_strip.strip() if isinstance(title_not_strip, str) else ""
-
-            self._td_map[title] = data_td
-
-    def get_cell(self, top, left) -> Selector:
-        assert left is None
-        try:
-            return self._td_map[top]
-        except (KeyError, IndexError) as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
+            self.add_left_header_set(title)
+            td_dict = self._td_map.setdefault(0, {})
+            td_dict[title] = data_td
 
 
-class RoutingTableLocator(BaseTableLocator):
+class RoutingTableLocator(BaseTable):
     """
     +-------------------------------------+ <tbody>
     | Title 1  | Title 2  | ... |   <th>  | <tr>
@@ -634,12 +629,10 @@ class RoutingTableLocator(BaseTableLocator):
     FIRST_LEFT_HEADER = 0
     LAST_LEFT_HEADER = -1
 
-    def __init__(self):
-        self._td_map = {}  # title: [td, ...]
-
     def parse(self, table: scrapy.Selector):
         title_tr = table.css("tr")[self.TR_TITLE_INDEX]
         data_trs = table.css("tr")[self.TR_DATA_START_INDEX :]
+        self._left_header_set = set(range(len(data_trs)))
 
         raw_title_list = title_tr.css("th::text").getall()
         title_list = [title.strip() for title in raw_title_list if isinstance(title, str)]
@@ -652,17 +645,8 @@ class RoutingTableLocator(BaseTableLocator):
                 data_td = data_tr.css("td")[data_index]
                 self._td_map[title].append(data_td)
 
-    def get_cell(self, top, left) -> scrapy.Selector:
-        try:
-            return self._td_map[top][left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
 
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-
-class ContainerTableLocator(BaseTableLocator):
+class ContainerTableLocator(BaseTable):
     """
     +---------+---------+-----+-------------------------+-----+ <tbody>  -----+
     | Title 1 | Title 2 | ... |      Latest Event       | ... | <tr> <th>     |
@@ -677,16 +661,13 @@ class ContainerTableLocator(BaseTableLocator):
     TR_SUB_TITLE_INDEX = 1
     TR_DATA_START_INDEX = 2
 
-    def __init__(self):
-        self._td_map = {}  # title: [td, ...]
-        self._data_len = 0
-
     def parse(self, table: scrapy.Selector):
         tr_list = table.xpath("./tr") or table.xpath("./tbody/tr")
 
         main_title_list = tr_list[self.TR_MAIN_TITLE_INDEX].css("th::text").getall()
         sub_title_list = tr_list[self.TR_SUB_TITLE_INDEX].css("th::text").getall()
         data_tr_list = tr_list[self.TR_DATA_START_INDEX :]
+        self._left_header_set = set(range(len(data_tr_list)))
 
         title_list = []
         for main_title_index, main_title in enumerate(main_title_list):
@@ -705,22 +686,6 @@ class ContainerTableLocator(BaseTableLocator):
             for data_tr in data_tr_list:
                 data_td = data_tr.css("td")[data_index]
                 self._td_map[title].append(data_td)
-
-        first_title = title_list[0]
-        self._data_len = len(self._td_map[first_title])
-
-    def get_cell(self, top, left) -> scrapy.Selector:
-        try:
-            return self._td_map[top][left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def iter_left_headers(self):
-        for index in range(self._data_len):
-            yield index
 
 
 class VesselVoyageTdExtractor(BaseTableCellExtractor):
@@ -804,7 +769,7 @@ class ContainerStatusRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://www.google.com",
-            meta={"container_no": container_no, "click_element_css": click_element_css,},
+            meta={"container_no": container_no, "click_element_css": click_element_css},
         )
 
     @staticmethod
@@ -882,15 +847,13 @@ class ContainerStatusRule(BaseRoutingRule):
         td_extractor = DetentionDateTdExtractor()
 
         if table_locator.has_header(left="Demurrage Last Free Date:"):
-            lfd_info = table_extractor.extract_cell(top=None, left="Demurrage Last Free Date:", extractor=td_extractor)
+            lfd_info = table_extractor.extract_cell(left="Demurrage Last Free Date:", extractor=td_extractor)
             _, lfd = _get_est_and_actual(status=lfd_info["status"], time_str=lfd_info["time_str"])
         else:
             lfd = ""
 
         if table_locator.has_header(left="Detention Last Free Date:"):
-            det_lfd_info = table_extractor.extract_cell(
-                top=None, left="Detention Last Free Date:", extractor=td_extractor
-            )
+            det_lfd_info = table_extractor.extract_cell(left="Detention Last Free Date:", extractor=td_extractor)
             _, det_lfd = _get_est_and_actual(status=det_lfd_info["status"], time_str=det_lfd_info["time_str"])
         else:
             det_lfd = ""
@@ -913,7 +876,7 @@ class ContainerStatusRule(BaseRoutingRule):
         span_extractor = FirstTextTdExtractor(css_query="span::text")
 
         container_status_list = []
-        for left in table_locator.iter_left_headers():
+        for left in table_locator.iter_left_header():
             container_status_list.append(
                 {
                     "event": table_extractor.extract_cell(top="Event", left=left, extractor=first_text_extractor),
@@ -927,7 +890,7 @@ class ContainerStatusRule(BaseRoutingRule):
         return container_status_list
 
 
-class ContainerStatusTableLocator(BaseTableLocator):
+class ContainerStatusTableLocator(BaseTable):
     """
     +--------------------------------------+ <tbody>
     | Title 1  | Title 2  | ... | Title N  | <tr> <th>
@@ -944,13 +907,10 @@ class ContainerStatusTableLocator(BaseTableLocator):
 
     DATA_START_TR_INDEX = 1
 
-    def __init__(self):
-        self._td_map = {}  # title: [td, ...]
-        self._data_len = 0
-
     def parse(self, table: scrapy.Selector):
         title_list = table.css("th::text").getall()
         data_tr_list = table.css("tr")[self.DATA_START_TR_INDEX :]
+        self._left_header_set = set(range(len(data_tr_list)))
 
         for title_index, title in enumerate(title_list):
             data_index = title_index
@@ -961,24 +921,8 @@ class ContainerStatusTableLocator(BaseTableLocator):
                 data_td = data_tr.css("td")[data_index]
                 self._td_map[title].append(data_td)
 
-        first_title = title_list[0]
-        self._data_len = len(self._td_map[first_title])
 
-    def get_cell(self, top, left) -> scrapy.Selector:
-        try:
-            return self._td_map[top][left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def iter_left_headers(self):
-        for index in range(self._data_len):
-            yield index
-
-
-class DestinationTableLocator(BaseTableLocator):
+class DestinationTableLocator(BaseTable):
     """
     +--------------------------------+ <tbody>
     | Title 1 | Data 1,1  | Data 1,2 | <tr> <td>
@@ -996,9 +940,6 @@ class DestinationTableLocator(BaseTableLocator):
     TITEL_TD_INDEX = 0
     DATA_NEEDED_TD_INDEX = 2
 
-    def __init__(self):
-        self._td_map = {}  # title: td
-
     def parse(self, table: scrapy.Selector):
         tr_list = table.css("tr")
 
@@ -1008,17 +949,9 @@ class DestinationTableLocator(BaseTableLocator):
             title_td = td_list[self.TITEL_TD_INDEX]
             title = title_td.css("::text").get()
             title = title.strip() if isinstance(title, str) else ""
-            self._td_map[title] = td_list[self.DATA_NEEDED_TD_INDEX]
-
-    def get_cell(self, top, left) -> scrapy.Selector:
-        assert top is None
-        try:
-            return self._td_map[left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (left in self._td_map) and (top is None)
+            self.add_left_header_set(title)
+            td_dict = self._td_map.setdefault(0, {})
+            td_dict[title] = td_list[self.DATA_NEEDED_TD_INDEX]
 
 
 class DetentionDateTdExtractor(BaseTableCellExtractor):
