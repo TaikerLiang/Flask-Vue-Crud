@@ -34,11 +34,13 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         bill_rules = [
             HomePageRoutingRule(),
             MainRoutingRule(search_type=SHIPMENT_TYPE_MBL),
+            NextRoundRoutingRule(),
         ]
 
         booking_rules = [
             HomePageRoutingRule(),
             MainRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
+            NextRoundRoutingRule(),
         ]
 
         if self.search_type == SHIPMENT_TYPE_MBL:
@@ -49,13 +51,12 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         self._proxy_manager = HydraproxyProxyManager(session="mscu", logger=self.logger)
 
     def start(self):
-        for s_no, t_id in zip(self.search_nos, self.task_ids):
-            option = self._prepare_start(search_no=s_no, task_id=t_id)
-            yield self._build_request_by(option=option)
+        option = self._prepare_start(search_nos=self.search_nos, task_ids=self.task_ids)
+        yield self._build_request_by(option=option)
 
-    def _prepare_start(self, search_no: str, task_id: str):
+    def _prepare_start(self, search_nos: List, task_ids: List):
         self._proxy_manager.renew_proxy()
-        option = HomePageRoutingRule.build_request_option(search_no=search_no, task_id=task_id)
+        option = HomePageRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         return proxy_option
 
@@ -82,19 +83,10 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         }
 
         if option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(
-                url=option.url,
-                meta=meta,
-                dont_filter=True,
-            )
+            return scrapy.Request(url=option.url, meta=meta, dont_filter=True,)
 
         elif option.method == RequestOption.METHOD_POST_FORM:
-            return scrapy.FormRequest(
-                url=option.url,
-                formdata=option.form_data,
-                meta=meta,
-                dont_filter=True,
-            )
+            return scrapy.FormRequest(url=option.url, formdata=option.form_data, meta=meta, dont_filter=True,)
         else:
             raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
@@ -106,29 +98,26 @@ class HomePageRoutingRule(BaseRoutingRule):
     name = "HOME_PAGE"
 
     @classmethod
-    def build_request_option(cls, search_no, task_id) -> RequestOption:
+    def build_request_option(cls, search_nos: List, task_ids: List) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://www.msc.com/track-a-shipment?agencyPath=twn",
-            meta={
-                "search_no": search_no,
-                "task_id": task_id,
-            },
+            meta={"search_nos": search_nos, "task_ids": task_ids,},
         )
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
     def handle(self, response):
-        task_id = response.meta["task_id"]
-        search_no = response.meta["search_no"]
+        task_ids = response.meta["task_ids"]
+        search_nos = response.meta["search_nos"]
 
         view_state = response.css("input#__VIEWSTATE::attr(value)").get()
         validation = response.css("input#__EVENTVALIDATION::attr(value)").get()
 
         yield MainRoutingRule.build_request_option(
-            search_no=search_no, view_state=view_state, validation=validation, task_id=task_id
+            search_nos=search_nos, view_state=view_state, validation=validation, task_ids=task_ids
         )
 
 
@@ -142,12 +131,12 @@ class MainRoutingRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, search_no, view_state, validation, task_id) -> RequestOption:
+    def build_request_option(cls, search_nos: List, task_ids: List, view_state, validation) -> RequestOption:
         form_data = {
             "__EVENTTARGET": "ctl00$ctl00$plcMain$plcMain$TrackSearch$hlkSearch",
             "__EVENTVALIDATION": validation,
             "__VIEWSTATE": view_state,
-            "ctl00$ctl00$plcMain$plcMain$TrackSearch$txtBolSearch$TextField": search_no,
+            "ctl00$ctl00$plcMain$plcMain$TrackSearch$txtBolSearch$TextField": search_nos[0],
         }
 
         return RequestOption(
@@ -155,34 +144,32 @@ class MainRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_POST_FORM,
             form_data=form_data,
             url="https://www.msc.com/track-a-shipment?agencyPath=twn",
-            meta={
-                "search_no": search_no,
-                "task_id": task_id,
-            },
+            meta={"search_nos": search_nos, "task_ids": task_ids,},
         )
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
     def handle(self, response):
-        task_id = response.meta["task_id"]
-        search_no = response.meta["search_no"]
+        task_ids = response.meta["task_ids"]
+        search_nos = response.meta["search_nos"]
 
         if self._is_search_no_invalid(response=response):
             if self._search_type == SHIPMENT_TYPE_MBL:
                 yield ExportErrorData(
-                    task_id=task_id,
-                    mbl_no=search_no,
+                    task_id=task_ids[0],
+                    mbl_no=search_nos[0],
                     status=CARRIER_RESULT_STATUS_ERROR,
                     detail="Data was not found",
                 )
             else:
                 yield ExportErrorData(
-                    task_id=task_id,
-                    booking_no=search_no,
+                    task_id=task_ids[0],
+                    booking_no=search_nos[0],
                     status=CARRIER_RESULT_STATUS_ERROR,
                     detail="Data was not found",
                 )
+            yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
             return
 
         extractor = Extractor()
@@ -192,15 +179,13 @@ class MainRoutingRule(BaseRoutingRule):
             container_no = extractor.extract_container_no(container_selector_map)
 
             yield ContainerItem(
-                task_id=task_id,
-                container_key=container_no,
-                container_no=container_no,
+                task_id=task_ids[0], container_key=container_no, container_no=container_no,
             )
 
             container_status_list = extractor.extract_container_status_list(container_selector_map)
             for container_status in container_status_list:
                 yield ContainerStatusItem(
-                    task_id=task_id,
+                    task_id=task_ids[0],
                     container_key=container_no,
                     description=container_status["description"],
                     local_date_time=container_status["local_date_time"],
@@ -225,7 +210,7 @@ class MainRoutingRule(BaseRoutingRule):
         latest_update = extractor.extract_latest_update(response=response)
 
         mbl_item = MblItem(
-            task_id=task_id,
+            task_id=task_ids[0],
             pol=LocationItem(name=main_info["pol"]),
             pod=LocationItem(name=main_info["pod"]),
             etd=main_info["etd"],
@@ -234,10 +219,12 @@ class MainRoutingRule(BaseRoutingRule):
             latest_update=latest_update,
         )
         if self._search_type == SHIPMENT_TYPE_MBL:
-            mbl_item["mbl_no"] = search_no
+            mbl_item["mbl_no"] = search_nos[0]
         else:
-            mbl_item["booking_no"] = search_no
+            mbl_item["booking_no"] = search_nos[0]
         yield mbl_item
+
+        yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
     @staticmethod
     def _is_search_no_invalid(response: scrapy.Selector):
@@ -247,6 +234,29 @@ class MainRoutingRule(BaseRoutingRule):
             if error_message and prefix in error_message:
                 return True
         return False
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    @classmethod
+    def build_request_option(cls, search_nos: List, task_ids: List) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://google.com",
+            meta={"search_nos": search_nos, "task_ids": task_ids,},
+        )
+
+    def handle(self, response):
+        task_ids = response.meta["task_ids"]
+        search_nos = response.meta["search_nos"]
+
+        if len(search_nos) == 1 and len(task_ids) == 1:
+            return
+
+        task_ids = task_ids[1:]
+        search_nos = search_nos[1:]
+
+        yield HomePageRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
 
 # -------------------------------------------------------------------------------

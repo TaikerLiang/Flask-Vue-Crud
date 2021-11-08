@@ -33,13 +33,7 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
         url=url,
         body=http_text,
         encoding="utf-8",
-        request=Request(
-            url=url,
-            meta={
-                "search_no": mbl_no,
-                "task_id": "1",
-            },
-        ),
+        request=Request(url=url, meta={"search_nos": [mbl_no], "task_ids": ["1"],},),
     )
 
     rule = MainRoutingRule(search_type=SHIPMENT_TYPE_MBL)
