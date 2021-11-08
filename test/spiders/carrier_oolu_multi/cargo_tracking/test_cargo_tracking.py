@@ -5,7 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
-from crawler.spiders.carrier_oolu_multi import CargoTrackingRule
+from crawler.spiders.carrier_oolu_multi import CargoTrackingRule, ContentGetter, _PageLocator
 from test.spiders.carrier_oolu_multi import cargo_tracking
 
 
@@ -25,7 +25,6 @@ def sample_loader(sample_loader):
         ("04_tranship_exist", "2630699272"),
         ("05_custom_release_title_exist_but_value_empty", "2635541720"),
         ("06_detail_table_not_exist", "2650422090"),
-        ("07_invalid_mbl_no", "OOLU0000000000"),
     ],
 )
 def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
@@ -41,8 +40,36 @@ def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
             meta=option.meta,
         ),
     )
+    locator = _PageLocator()
+    selector_map = locator.locate_selectors(response=response)
+    results = [CargoTrackingRule._extract_custom_release_info(selector_map),
+               CargoTrackingRule._extract_routing_info(selector_map)]
 
-    results = list(CargoTrackingRule._handle_response(response=response, search_type=SHIPMENT_TYPE_MBL))
+    verify_module = sample_loader.load_sample_module(sub, "verify")
+    verify_module.verify(results=results)
+
+
+@pytest.mark.parametrize(
+    "sub,mbl_no",
+    [
+        ("07_invalid_mbl_no", "OOLU0000000000"),
+    ],
+)
+def test_is_search_no_invalid(sub, mbl_no, sample_loader):
+    html_file = sample_loader.read_file(sub, "sample.html")
+
+    option = CargoTrackingRule.build_request_option(search_no=mbl_no, task_id="1")
+    response = TextResponse(
+        url=option.url,
+        body=html_file,
+        encoding="utf-8",
+        request=Request(
+            url=option.url,
+            meta=option.meta,
+        ),
+    )
+
+    results = [CargoTrackingRule.is_search_no_invalid(response=response)]
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
