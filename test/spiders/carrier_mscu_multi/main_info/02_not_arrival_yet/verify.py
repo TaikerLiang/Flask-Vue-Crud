@@ -2,11 +2,7 @@ from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusIt
 
 
 def verify(results):
-    assert results[0] == ContainerItem(
-        task_id="1",
-        container_key="FSCU4872850",
-        container_no="FSCU4872850",
-    )
+    assert results[0] == ContainerItem(task_id="1", container_key="FSCU4872850", container_no="FSCU4872850",)
 
     assert results[1] == ContainerStatusItem(
         task_id="1",
@@ -30,7 +26,7 @@ def verify(results):
         est_or_actual="A",
     )
 
-    assert results[-1] == MblItem(
+    assert results[-2] == MblItem(
         task_id="1",
         mbl_no="MEDUNG283959",
         pol=LocationItem(name="NINGBO, CN"),

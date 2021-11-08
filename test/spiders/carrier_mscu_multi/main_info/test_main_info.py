@@ -20,7 +20,7 @@ def sample_loader(sample_loader):
     "sub,mbl_no,",
     [
         ("01_without_ts_port", "MEDUN4194175"),
-        ("02_not_arrival_yet", "177NDGNENX03449A"),
+        ("02_not_arrival_yet", "MEDUNG283959"),
         ("03_multi_containers", "MEDUMY898253"),
         ("04_data_not_found", "MEDUMY898252"),
     ],
