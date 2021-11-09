@@ -32,12 +32,7 @@ class WarningMessage:
 
 class VoyagecontrolShareSpider(BaseMultiTerminalSpider):
     name = ""
-    company_info = CompanyInfo(
-        lower_short="",
-        upper_short="",
-        email="",
-        password="",
-    )
+    company_info = CompanyInfo(lower_short="", upper_short="", email="", password="",)
 
     def __init__(self, *args, **kwargs):
         super(VoyagecontrolShareSpider, self).__init__(*args, **kwargs)
@@ -90,20 +85,10 @@ class VoyagecontrolShareSpider(BaseMultiTerminalSpider):
         }
 
         if option.method == RequestOption.METHOD_GET:
-            return Request(
-                url=option.url,
-                headers=option.headers,
-                meta=meta,
-                dont_filter=True,
-            )
+            return Request(url=option.url, headers=option.headers, meta=meta, dont_filter=True,)
         elif option.method == RequestOption.METHOD_POST_BODY:
             return Request(
-                url=option.url,
-                headers=option.headers,
-                meta=meta,
-                dont_filter=True,
-                method="POST",
-                body=option.body,
+                url=option.url, headers=option.headers, meta=meta, dont_filter=True, method="POST", body=option.body,
             )
         else:
             raise ValueError(f"Invalid option.method [{option.method}]")
@@ -132,10 +117,7 @@ class LoginRoutingRule(BaseRoutingRule):
             url=url,
             headers=headers,
             body=json.dumps(form_data),
-            meta={
-                "container_no_list": container_no_list,
-                "company_info": company_info,
-            },
+            meta={"container_no_list": container_no_list, "company_info": company_info,},
         )
 
     def get_save_name(self, response) -> str:
@@ -175,9 +157,7 @@ class ListTracedContainerRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
-            headers={
-                "authorization": "JWT " + authorization_token,
-            },
+            headers={"authorization": "JWT " + authorization_token,},
             meta={
                 "is_first": is_first,
                 "container_no": container_no,
@@ -293,13 +273,14 @@ class ContainerInquiryRoutingRule(BaseRoutingRule):
         data = json.loads(response.text)
         if data["data"][0]:
             data = json.loads(data["data"][0])
-            if isinstance(data["query-response"]["data-table"]["rows"]["row"], list):
-                row = data["query-response"]["data-table"]["rows"]["row"][0]["field"]
-            else:
-                row = data["query-response"]["data-table"]["rows"]["row"]["field"]
+            if data["query-response"]["data-table"]["rows"]:
+                if isinstance(data["query-response"]["data-table"]["rows"]["row"], list):
+                    row = data["query-response"]["data-table"]["rows"]["row"][0]["field"]
+                else:
+                    row = data["query-response"]["data-table"]["rows"]["row"]["field"]
 
-            if not row[23].strip():
-                container_data["last_free_day"] = row[23].strip()
+                if row[23].strip():
+                    container_data["last_free_day"] = row[23].strip()
 
         yield TerminalItem(**container_data)
 
@@ -434,11 +415,7 @@ class SearchMblRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_GET,
             url=url,
             headers=headers,
-            meta={
-                "handle_httpstatus_list": [404],
-                "mbl_no": mbl_no,
-                "company_info": company_info,
-            },
+            meta={"handle_httpstatus_list": [404], "mbl_no": mbl_no, "company_info": company_info,},
         )
 
     def get_save_name(self, response) -> str:
