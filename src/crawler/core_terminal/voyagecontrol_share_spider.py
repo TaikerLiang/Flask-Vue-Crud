@@ -271,14 +271,16 @@ class ContainerInquiryRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_data = response.meta["container_data"]
         data = json.loads(response.text)
-        data = json.loads(data["data"][0])
-        if isinstance(data["query-response"]["data-table"]["rows"]["row"], list):
-            row = data["query-response"]["data-table"]["rows"]["row"][0]["field"]
-        else:
-            row = data["query-response"]["data-table"]["rows"]["row"]["field"]
+        if data["data"][0]:
+            data = json.loads(data["data"][0])
+            if data["query-response"]["data-table"]["rows"]:
+                if isinstance(data["query-response"]["data-table"]["rows"]["row"], list):
+                    row = data["query-response"]["data-table"]["rows"]["row"][0]["field"]
+                else:
+                    row = data["query-response"]["data-table"]["rows"]["row"]["field"]
 
-        if not row[23].strip():
-            container_data["last_free_day"] = row[23].strip()
+                if row[23].strip():
+                    container_data["last_free_day"] = row[23].strip()
 
         yield TerminalItem(**container_data)
 
