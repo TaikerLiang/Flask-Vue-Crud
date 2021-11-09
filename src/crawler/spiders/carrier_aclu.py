@@ -1,6 +1,7 @@
 import abc
 import dataclasses
 import re
+import json
 from typing import List, Pattern, Match, Dict, Union
 
 import scrapy
@@ -70,6 +71,14 @@ class CarrierAcluSpider(BaseCarrierSpider):
                 url=option.url,
                 meta=meta,
             )
+        elif option.method == RequestOption.METHOD_POST_FORM:
+            return scrapy.FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+                headers=option.headers,
+                meta=meta,
+                dont_filter=True,
+            )
         else:
             raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
@@ -82,18 +91,33 @@ class TrackRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, mbl_no: str) -> RequestOption:
+        url = "https://www.aclcargo.com/content/themes/acl/library/parse-cargo-track.php"
+        pattern = re.compile(r"^SA(?P<search_no>.+)")
+        m = pattern.match(mbl_no)
+        request_data = f"SA-{m.group('search_no')}"
         return RequestOption(
-            method=RequestOption.METHOD_GET,
+            method=RequestOption.METHOD_POST_FORM,
             rule_name=cls.name,
-            url=f"{BASE_URL}/trackCargo.php?search_for={mbl_no}",
-            meta={"mbl_no": mbl_no},
+            url=url,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            form_data={"request": request_data},
+            meta={
+                "mbl_no": mbl_no,
+                "request_data": request_data,
+            },
         )
 
     def get_save_name(self, response) -> str:
-        return f"{self.name}.html"
+        return f"{self.name}.json"
 
     def handle(self, response):
         mbl_no = response.meta["mbl_no"]
+        request_data = response.meta["request_data"]
+        response_dict = json.loads(response.text)
+        response = scrapy.Selector(text=response_dict["response"])
+
         if self._is_mbl_no_invalid(response):
             yield ExportErrorData(mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found")
             return
@@ -101,7 +125,7 @@ class TrackRoutingRule(BaseRoutingRule):
         container_infos = self._extract_container_infos(response=response)
         for container_info in container_infos:
             yield DetailTrackingRoutingRule.build_request_option(
-                route=container_info["route"], container_no=container_info["container_no"]
+                route=container_info["route"], request_data=request_data, container_no=container_info["container_no"]
             )
 
     @staticmethod
@@ -111,20 +135,22 @@ class TrackRoutingRule(BaseRoutingRule):
             return True
 
         # container no invalid
-        h1_selectors = response.css("h1")
-        title_rule = CssQueryTextStartswithMatchRule(css_query="::text", startswith="TRACK CARGO")
-        track_title_selector = find_selector_from(selectors=h1_selectors, rule=title_rule)
+        # h1_selectors = response.css("h1")
+        # title_rule = CssQueryTextStartswithMatchRule(css_query="::text", startswith="TRACK CARGO")
+        # track_title_selector = find_selector_from(selectors=h1_selectors, rule=title_rule)
+        #
+        # table = track_title_selector.xpath("./following-sibling::table//table//table")
+        # if not table:
+        #     return
+        #
+        # tds = table.css("td")
+        # mbl_not_active_rule = CssQueryTextStartswithMatchRule(
+        #     css_query="::text", startswith="Unit is no longer active, please contact ACL for additional information"
+        # )
+        # mbl_not_active_td = find_selector_from(selectors=tds, rule=mbl_not_active_rule)
+        # return bool(mbl_not_active_td)
 
-        table = track_title_selector.xpath("./following-sibling::table//table//table")
-        if not table:
-            return
-
-        tds = table.css("td")
-        mbl_not_active_rule = CssQueryTextStartswithMatchRule(
-            css_query="::text", startswith="Unit is no longer active, please contact ACL for additional information"
-        )
-        mbl_not_active_td = find_selector_from(selectors=tds, rule=mbl_not_active_rule)
-        return bool(mbl_not_active_td)
+        return False
 
     def _extract_container_infos(self, response: scrapy.Selector):
         detail_track_texts = response.css("input#DetailedTrack::attr(onclick)").getall()
@@ -141,14 +167,19 @@ class TrackRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _parse_detail_tracking(detail_track_text: str) -> Dict:
-        pattern = re.compile(r"^getHistory[(]'(?P<route>.+Equino=(?P<container_no>[^&]+)[^']+)'[)];$")
+        pattern = re.compile(r"^getHistory[(]'/trackCargo.php[?](?P<route>.+Equino=(?P<container_no>[^&]+)[^']+)'[)];$")
 
         m = pattern.match(detail_track_text)
         if not m:
             raise CarrierResponseFormatError(reason="Detail track not match")
+        post_data_str = m.group("route")
+        post_data_dict = {}
+        for post_data in post_data_str.split("&"):
+            content = post_data.split("=")
+            post_data_dict[content[0]] = content[1]
 
         return {
-            "route": m.group("route"),
+            "route": post_data_dict,
             "container_no": m.group("container_no"),
         }
 
@@ -290,21 +321,27 @@ class DetailTrackingRoutingRule(BaseRoutingRule):
         self.status_transformer = StatusTransformer(parsers=self.parsers)
 
     @classmethod
-    def build_request_option(cls, route: str, container_no: str) -> RequestOption:
+    def build_request_option(cls, route: Dict, request_data: str, container_no: str) -> RequestOption:
+        url = "https://www.aclcargo.com/content/themes/acl/library/parse-cargo-track.php"
+        form_data = {"request": request_data, **route}
         return RequestOption(
-            method=RequestOption.METHOD_GET,
+            method=RequestOption.METHOD_POST_FORM,
             rule_name=cls.name,
-            url=f"{BASE_URL}{route}",
-            meta={
-                "container_no": container_no,
+            url=url,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
             },
+            form_data=form_data,
+            meta={"container_no": container_no},
         )
 
     def get_save_name(self, response) -> str:
         container_no = response.meta["container_no"]
-        return f"{self.name}_{container_no}.html"
+        return f"{self.name}_{container_no}.json"
 
     def handle(self, response):
+        response_dict = json.loads(response.text)
+        response = scrapy.Selector(text=response_dict["response"])
         container_no = self._extract_container_no(response=response)
         yield ContainerItem(
             container_key=container_no,
