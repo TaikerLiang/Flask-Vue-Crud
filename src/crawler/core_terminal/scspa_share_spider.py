@@ -109,12 +109,12 @@ class ContentGetter(ChromeContentGetter):
 
     def get_content(self, container_no_list):
         self.login()
-        self.search(container_no_list)
+        self._search(container_no_list)
         # check the result popup is appeared
         WebDriverWait(self._driver, 20).until(
             EC.presence_of_element_located((By.XPATH, "//div[@id='quickInptPtrWinPnlWinId']"))
         )
-        return self.extract(self._driver.page_source)
+        return self._extract(self._driver.page_source)
 
     def login(self):
         self._driver.get(self.URL)
@@ -128,12 +128,12 @@ class ContentGetter(ChromeContentGetter):
         button = button.find_element(By.CSS_SELECTOR, "button")
         button.click()
 
-    def search(self, container_no_list):
+    def _search(self, container_no_list):
         self._close_popup()
         self._to_search_page()
         self._input_search_target(container_no_list)
 
-    def extract(self, page_source):
+    def _extract(self, page_source):
         content_table = []
         response = TextResponse(
             url=self._driver.current_url,

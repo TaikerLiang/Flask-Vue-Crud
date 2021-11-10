@@ -25,7 +25,7 @@ def test_content_getter_extract(sub, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
     getter = ContentGetter()
-    results = getter.extract(page_source=httptext)
+    results = getter._extract(page_source=httptext)
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
