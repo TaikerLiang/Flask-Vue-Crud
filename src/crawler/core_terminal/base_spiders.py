@@ -18,28 +18,27 @@ TERMINAL_DEFAULT_ITEM_PIPELINES = {
 }
 
 TERMINAL_DEFAULT_SETTINGS = {
-    'SPIDER_MIDDLEWARES': {
-        **TERMINAL_DEFAULT_SPIDER_MIDDLEWARES,
-    },
-    'ITEM_PIPELINES': {
-        **TERMINAL_DEFAULT_ITEM_PIPELINES,
-    },
+    "SPIDER_MIDDLEWARES": {**TERMINAL_DEFAULT_SPIDER_MIDDLEWARES,},
+    "ITEM_PIPELINES": {**TERMINAL_DEFAULT_ITEM_PIPELINES,},
 }
 
 
 class BaseTerminalSpider(scrapy.Spider):
 
-    custom_settings = TERMINAL_DEFAULT_SETTINGS
+    custom_settings = {
+        "CLOSESPIDER_TIMEOUT": 60 * 10,
+        **TERMINAL_DEFAULT_SETTINGS,
+    }
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name=name, **kwargs)
 
         self.request_args = kwargs
 
-        self.container_no = kwargs['container_no']
-        self.mbl_no = kwargs.get('mbl_no', '')
+        self.container_no = kwargs["container_no"]
+        self.mbl_no = kwargs.get("mbl_no", "")
 
-        to_save = 'save' in kwargs
+        to_save = "save" in kwargs
         self._saver = self._prepare_saver(to_save=to_save)
 
         self._error = False
@@ -64,7 +63,7 @@ class BaseTerminalSpider(scrapy.Spider):
         if not to_save:
             return NullSaver()
 
-        save_folder = Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] {self.container_no}'
+        save_folder = Path(__file__).parent.parent.parent.parent / "_save_pages" / f"[{self.name}] {self.container_no}"
 
         return FileSaver(folder_path=save_folder, logger=self.logger)
 
@@ -86,12 +85,9 @@ TERMINAL_MULTI_ITEM_PIPELINES = {
 class BaseMultiTerminalSpider(scrapy.Spider):
 
     custom_settings = {
-        'SPIDER_MIDDLEWARES': {
-            **TERMINAL_DEFAULT_SPIDER_MIDDLEWARES,
-        },
-        'ITEM_PIPELINES': {
-            **TERMINAL_MULTI_ITEM_PIPELINES,
-        },
+        "CLOSESPIDER_TIMEOUT": 60 * 10,
+        "SPIDER_MIDDLEWARES": {**TERMINAL_DEFAULT_SPIDER_MIDDLEWARES,},
+        "ITEM_PIPELINES": {**TERMINAL_MULTI_ITEM_PIPELINES,},
     }
 
     def __init__(self, name=None, **kwargs):
@@ -99,15 +95,15 @@ class BaseMultiTerminalSpider(scrapy.Spider):
 
         self.request_args = kwargs
 
-        self.task_ids = [task_id.strip() for task_id in kwargs['task_id_list'].split(',')]
-        self.container_nos = [container_no.strip() for container_no in kwargs['container_no_list'].split(',')]
-        self.mbl_no = kwargs.get('mbl_no', '')
+        self.task_ids = [task_id.strip() for task_id in kwargs["task_id_list"].split(",")]
+        self.container_nos = [container_no.strip() for container_no in kwargs["container_no_list"].split(",")]
+        self.mbl_no = kwargs.get("mbl_no", "")
         self.cno_tid_map = {}  # container_no: [task_ids]
         for c_no, t_id in zip(self.container_nos, self.task_ids):
             self.cno_tid_map.setdefault(c_no, [])
             self.cno_tid_map[c_no].append(t_id)
 
-        to_save = 'save' in kwargs
+        to_save = "save" in kwargs
         self._saver = self._prepare_saver(to_save=to_save)
 
         self._error = False
@@ -133,7 +129,7 @@ class BaseMultiTerminalSpider(scrapy.Spider):
         if not to_save:
             return NullSaver()
 
-        save_folder = Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] {self.container_nos}'
+        save_folder = Path(__file__).parent.parent.parent.parent / "_save_pages" / f"[{self.name}] {self.container_nos}"
 
         return FileSaver(folder_path=save_folder, logger=self.logger)
 

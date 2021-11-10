@@ -21,31 +21,30 @@ CARRIER_DEFAULT_ITEM_PIPELINES = {
 }
 
 CARRIER_DEFAULT_SETTINGS = {
-    'SPIDER_MIDDLEWARES': {
-        **CARRIER_DEFAULT_SPIDER_MIDDLEWARES,
-    },
-    'ITEM_PIPELINES': {
-        **CARRIER_DEFAULT_ITEM_PIPELINES,
-    },
+    "SPIDER_MIDDLEWARES": {**CARRIER_DEFAULT_SPIDER_MIDDLEWARES,},
+    "ITEM_PIPELINES": {**CARRIER_DEFAULT_ITEM_PIPELINES,},
 }
 
-DISABLE_DUPLICATE_REQUEST_FILTER = {'DUPEFILTER_CLASS': 'scrapy.dupefilters.BaseDupeFilter'}
+DISABLE_DUPLICATE_REQUEST_FILTER = {"DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter"}
 
 
 class BaseCarrierSpider(scrapy.Spider):
 
-    custom_settings = CARRIER_DEFAULT_SETTINGS
+    custom_settings = {
+        "CLOSESPIDER_TIMEOUT": 60 * 10,
+        **CARRIER_DEFAULT_SETTINGS,
+    }
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name=name, **kwargs)
 
         self.request_args = kwargs
 
-        self.booking_no = kwargs.get('booking_no', '')
-        self.mbl_no = kwargs.get('mbl_no', '')
-        self.container_no_list = kwargs.get('container_no_list', '').split(',')
+        self.booking_no = kwargs.get("booking_no", "")
+        self.mbl_no = kwargs.get("mbl_no", "")
+        self.container_no_list = kwargs.get("container_no_list", "").split(",")
 
-        to_save = 'save' in kwargs
+        to_save = "save" in kwargs
         self._saver = self._prepare_saver(to_save=to_save)
 
         self._error = False
@@ -71,8 +70,8 @@ class BaseCarrierSpider(scrapy.Spider):
             return NullSaver()
 
         save_folder = (
-                Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] '
-                f'{self.mbl_no or self.booking_no}'
+            Path(__file__).parent.parent.parent.parent / "_save_pages" / f"[{self.name}] "
+            f"{self.mbl_no or self.booking_no}"
         )
 
         return FileSaver(folder_path=save_folder, logger=self.logger)
@@ -92,21 +91,18 @@ CARRIER_MULTI_ITEM_PIPELINES = {
 class BaseMultiCarrierSpider(scrapy.Spider):
 
     custom_settings = {
-        'SPIDER_MIDDLEWARES': {
-            **CARRIER_DEFAULT_SPIDER_MIDDLEWARES,
-        },
-        'ITEM_PIPELINES': {
-            **CARRIER_MULTI_ITEM_PIPELINES,
-        },
+        "CLOSESPIDER_TIMEOUT": 60 * 10,
+        "SPIDER_MIDDLEWARES": {**CARRIER_DEFAULT_SPIDER_MIDDLEWARES,},
+        "ITEM_PIPELINES": {**CARRIER_MULTI_ITEM_PIPELINES,},
     }
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name=name, **kwargs)
 
         self.request_args = kwargs
-        self.task_ids = [task_id.strip() for task_id in kwargs['task_ids'].split(',')]
-        self.mbl_nos = [mbl_no.strip() for mbl_no in kwargs.get('mbl_nos', '').split(',') if mbl_no]
-        self.booking_nos = [booking_no.strip() for booking_no in kwargs.get('booking_nos', '').split(',') if booking_no]
+        self.task_ids = [task_id.strip() for task_id in kwargs["task_ids"].split(",")]
+        self.mbl_nos = [mbl_no.strip() for mbl_no in kwargs.get("mbl_nos", "").split(",") if mbl_no]
+        self.booking_nos = [booking_no.strip() for booking_no in kwargs.get("booking_nos", "").split(",") if booking_no]
         self.search_no_tasks_map = {}  # search_no: [task_ids]
 
         if self.mbl_nos:
@@ -120,7 +116,7 @@ class BaseMultiCarrierSpider(scrapy.Spider):
             self.search_no_tasks_map.setdefault(s_no, [])
             self.search_no_tasks_map[s_no].append(t_id)
 
-        to_save = 'save' in kwargs
+        to_save = "save" in kwargs
         self._saver = self._prepare_saver(to_save=to_save)
 
         self._error = False
@@ -147,8 +143,8 @@ class BaseMultiCarrierSpider(scrapy.Spider):
             return NullSaver()
 
         save_folder = (
-                Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] '
-                f'{self.mbl_nos or self.booking_nos}'
+            Path(__file__).parent.parent.parent.parent / "_save_pages" / f"[{self.name}] "
+            f"{self.mbl_nos or self.booking_nos}"
         )
 
         return FileSaver(folder_path=save_folder, logger=self.logger)

@@ -19,17 +19,16 @@ AIR_DEFAULT_ITEM_PIPELINES = {
 }
 
 AIR_DEFAULT_SETTINGS = {
-    "SPIDER_MIDDLEWARES": {
-        **AIR_DEFAULT_SPIDER_MIDDLEWARES,
-    },
-    "ITEM_PIPELINES": {
-        **AIR_DEFAULT_ITEM_PIPELINES,
-    },
+    "SPIDER_MIDDLEWARES": {**AIR_DEFAULT_SPIDER_MIDDLEWARES,},
+    "ITEM_PIPELINES": {**AIR_DEFAULT_ITEM_PIPELINES,},
 }
 
 
 class BaseAirSpider(scrapy.Spider):
-    custom_settings = AIR_DEFAULT_SETTINGS
+    custom_settings = {
+        "CLOSESPIDER_TIMEOUT": 60 * 10,
+        **AIR_DEFAULT_SETTINGS,
+    }
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name=name, **kwargs)
@@ -86,12 +85,9 @@ AIR_MULTI_ITEM_PIPELINES = {
 class BaseMultiAirSpider(scrapy.Spider):
 
     custom_settings = {
-        "SPIDER_MIDDLEWARES": {
-            **AIR_DEFAULT_SPIDER_MIDDLEWARES,
-        },
-        "ITEM_PIPELINES": {
-            **AIR_MULTI_ITEM_PIPELINES,
-        },
+        "CLOSESPIDER_TIMEOUT": 60 * 10,
+        "SPIDER_MIDDLEWARES": {**AIR_DEFAULT_SPIDER_MIDDLEWARES,},
+        "ITEM_PIPELINES": {**AIR_MULTI_ITEM_PIPELINES,},
     }
 
     def __init__(self, name=None, **kwargs):
