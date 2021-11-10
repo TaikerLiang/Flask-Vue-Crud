@@ -56,7 +56,7 @@ class TerminalItem(BaseTerminalItem):
 
     @property
     def key(self):
-        return self['task_id']
+        return self["task_id"]
 
 
 class DebugItem(BaseTerminalItem):
@@ -66,3 +66,14 @@ class DebugItem(BaseTerminalItem):
 class InvalidContainerNoItem(BaseTerminalItem):
     task_id = scrapy.Field()
     container_no = scrapy.Field()
+
+
+class InvalidDataFieldItem(BaseTerminalItem):
+    task_id = scrapy.Field()
+    container_no = scrapy.Field()
+    valid_data_dict = scrapy.Field()
+    invalid_data_dict = scrapy.Field()
+
+    @property
+    def key(self):
+        return self["task_id"]
