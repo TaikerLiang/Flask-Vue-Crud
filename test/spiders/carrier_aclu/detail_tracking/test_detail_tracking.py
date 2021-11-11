@@ -16,24 +16,19 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub,container_no,route',
+    "sub,container_no",
     [
-        (
-            '01_basic',
-            'CRSU9164589',
-            '/trackCargo.php?EquiPk=12012928456&ShipFk=0&EmoFk=0&acl_track=CRSU9164589'
-            '&Equino=CRSU9164589&verbosity=detail',
-        ),
+        ("01_basic", "ACLU9685173"),
     ],
 )
-def test_detail_tracking_info_routing_rule(sub, container_no, route, sample_loader):
-    httptext = sample_loader.read_file(sub, 'sample.html')
-    option = DetailTrackingRoutingRule.build_request_option(route=route, container_no=container_no)
+def test_detail_tracking_info_routing_rule(sub, container_no, sample_loader):
+    httptext = sample_loader.read_file(sub, "sample.json")
+    option = DetailTrackingRoutingRule.build_request_option(route={}, request_data="", container_no=container_no)
 
     response = TextResponse(
         url=option.url,
         body=httptext,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=option.url,
         ),
@@ -42,5 +37,5 @@ def test_detail_tracking_info_routing_rule(sub, container_no, route, sample_load
     routing_rule = DetailTrackingRoutingRule()
     results = list(routing_rule.handle(response=response))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
