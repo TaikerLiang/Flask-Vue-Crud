@@ -6,6 +6,7 @@ from typing import Union, Tuple, List
 
 from scrapy import Selector, FormRequest, Request
 
+from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
@@ -27,13 +28,6 @@ from crawler.core_carrier.exceptions import (
 )
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from, BaseMatchRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
-from crawler.extractors.table_extractors import (
-    BaseTableLocator,
-    HeaderMismatchError,
-    TableExtractor,
-    TopHeaderTableLocator,
-    TopLeftHeaderTableLocator,
-)
 
 BASE_URL = "https://www.hamburgsud-line.com/linerportal/pages/hsdg/tnt.xhtml"
 
@@ -86,7 +80,9 @@ class RequestOptionFactory:
             method=RequestOption.METHOD_POST_FORM,
             url=BASE_URL,
             form_data=form_data,
-            meta={"mbl_no": basic_request_spec.mbl_no,},
+            meta={
+                "mbl_no": basic_request_spec.mbl_no,
+            },
         )
 
     @classmethod
@@ -102,7 +98,9 @@ class RequestOptionFactory:
             url=BASE_URL,
             method=RequestOption.METHOD_POST_FORM,
             form_data=form_data,
-            meta={"mbl_no": basic_request_spec.mbl_no,},
+            meta={
+                "mbl_no": basic_request_spec.mbl_no,
+            },
         )
 
 
@@ -193,9 +191,17 @@ class CarrierSuduSpider(BaseMultiCarrierSpider):
         }
 
         if option.method == RequestOption.METHOD_GET:
-            return Request(url=option.url, meta=meta, dont_filter=True,)
+            return Request(
+                url=option.url,
+                meta=meta,
+                dont_filter=True,
+            )
         elif option.method == RequestOption.METHOD_POST_FORM:
-            return FormRequest(url=option.url, formdata=option.form_data, meta=meta,)
+            return FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+                meta=meta,
+            )
         else:
             raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
@@ -224,7 +230,10 @@ class PageInfoRoutingRule(BaseRoutingRule):
         basic_request_spec = prepare_request_spec(mbl_no=mbl_nos[0], response=response)
 
         yield MblSearchResultRoutingRule.build_request_option(
-            mbl_nos=mbl_nos, task_ids=task_ids, basic_request_spec=basic_request_spec, mbl_state=MblState.FIRST,
+            mbl_nos=mbl_nos,
+            task_ids=task_ids,
+            basic_request_spec=basic_request_spec,
+            mbl_state=MblState.FIRST,
         )
 
 
@@ -248,7 +257,11 @@ class MblSearchResultRoutingRule(BaseRoutingRule):
             rule_name=cls.name, basic_request_spec=basic_request_spec
         )
         option = search_option.copy_and_extend_by(
-            meta={"mbl_state": mbl_state, "mbl_nos": mbl_nos, "task_ids": task_ids,}
+            meta={
+                "mbl_state": mbl_state,
+                "mbl_nos": mbl_nos,
+                "task_ids": task_ids,
+            }
         )
 
         return option
@@ -271,7 +284,10 @@ class MblSearchResultRoutingRule(BaseRoutingRule):
 
         if mbl_state == MblState.FIRST and self._is_mbl_no_invalid(response):
             yield ExportErrorData(
-                task_id=task_ids[0], mbl_no=mbl_nos[0], status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found",
+                task_id=task_ids[0],
+                mbl_no=mbl_nos[0],
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail="Data was not found",
             )
             yield NextRoundRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
             return
@@ -447,7 +463,10 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
                     raise RuntimeError()
 
             yield MblSearchResultRoutingRule.build_request_option(
-                basic_request_spec=basic_request_spec, mbl_state=mbl_state, mbl_nos=mbl_nos, task_ids=task_ids,
+                basic_request_spec=basic_request_spec,
+                mbl_state=mbl_state,
+                mbl_nos=mbl_nos,
+                task_ids=task_ids,
             )
         else:
             yield VoyageRoutingRule.build_request_option(
@@ -476,7 +495,9 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         )
 
         yield ContainerItem(
-            task_id=task_id, container_key=container_no, container_no=container_no,
+            task_id=task_id,
+            container_key=container_no,
+            container_no=container_no,
         )
 
         for container_status in container_statuses:
@@ -541,13 +562,13 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         main_info_div = main_info_title.xpath("./following-sibling::div")[0]
 
         table_selector = main_info_div.css("table")
-        top_header_locator = TopHeaderTableLocator()
-        top_header_locator.parse(table=table_selector)
-        table = TableExtractor(table_locator=top_header_locator)
+        container_status_locator = ContainerStatusTableLocator()
+        container_status_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=container_status_locator)
         vessel_voyage_extractor = VesselVoyageTdExtractor()
 
         container_statuses = []
-        for left in top_header_locator.iter_left_header():
+        for left in container_status_locator.iter_left_header():
             vessel_voyage_info = table.extract_cell(top="Mode/Vendor", left=left, extractor=vessel_voyage_extractor)
 
             container_statuses.append(
@@ -699,7 +720,10 @@ class VoyageRoutingRule(BaseRoutingRule):
         basic_request_spec = prepare_request_spec(mbl_no=mbl_nos[0], response=response)
 
         yield MblSearchResultRoutingRule.build_request_option(
-            basic_request_spec=basic_request_spec, mbl_state=mbl_state, mbl_nos=mbl_nos, task_ids=task_ids,
+            basic_request_spec=basic_request_spec,
+            mbl_state=mbl_state,
+            mbl_nos=mbl_nos,
+            task_ids=task_ids,
         )
 
     @staticmethod
@@ -714,9 +738,9 @@ class VoyageRoutingRule(BaseRoutingRule):
         if not table_selector:
             raise CarrierResponseFormatError(reason="Can not find voyage routing table !!!")
 
-        top_left_locator = TopLeftHeaderTableLocator()
-        top_left_locator.parse(table=table_selector)
-        table = TableExtractor(table_locator=top_left_locator)
+        voyage_routing_locator = VoyageRoutingTableLocator()
+        voyage_routing_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=voyage_routing_locator)
 
         eta, etd, pol, pod = None, None, None, None
         if direction == "Arrival":
@@ -756,7 +780,10 @@ class NextRoundRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://google.com",
-            meta={"mbl_nos": mbl_nos, "task_ids": task_ids,},
+            meta={
+                "mbl_nos": mbl_nos,
+                "task_ids": task_ids,
+            },
         )
 
     def handle(self, response):
@@ -795,10 +822,35 @@ class IncorrectValueError(BaseCarrierError):
         return ExportErrorData(status=self.status, detail=f"<incorrect-value-error> `{self.value}`")
 
 
-class MainDivTableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = {}  # title: data
+class ContainerStatusTableLocator(BaseTable):
+    def parse(self, table: Selector):
+        title_text_list = table.css("thead th ::text").getall()
+        data_tr_list = table.css("tbody tr")
 
+        for index, tr in enumerate(data_tr_list):
+            tds = tr.css("td")
+            self.add_left_header_set(index)
+            for title, td in zip(title_text_list, tds):
+                self._td_map.setdefault(title, [])
+                self._td_map[title].append(td)
+
+
+class VoyageRoutingTableLocator(BaseTable):
+    def parse(self, table: Selector):
+        title_text_list = table.css("thead th ::text").getall()
+        data_tr_list = table.css("tbody tr")
+
+        for tr in data_tr_list:
+            tds = tr.css("td")
+            left_header = tds[0].css("::text").get()
+            self.add_left_header_set(left_header)
+
+            for title, td in zip(title_text_list, tds[1:]):
+                self._td_map.setdefault(title, {})
+                self._td_map[title][left_header] = td
+
+
+class MainDivTableLocator(BaseTable):
     def parse(self, table: Selector):
         div_section_list = table.css("div.ui-g")
 
@@ -809,17 +861,8 @@ class MainDivTableLocator(BaseTableLocator):
                 title, data = cell.css("::text").getall()
                 td = Selector(text=f"<td>{data.strip()}</td>")
 
-                self._td_map[title.strip()] = td
-
-    def get_cell(self, top, left) -> Selector:
-        assert left is None
-        try:
-            return self._td_map[top]
-        except KeyError as err:
-            HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
+                self._td_map.setdefault(title, [])
+                self._td_map[title].append(td)
 
 
 class MBLSearchDispatcher:

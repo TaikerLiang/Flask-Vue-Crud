@@ -6,6 +6,7 @@ from typing import Union, Tuple
 
 from scrapy import Selector, FormRequest, Request
 
+from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
@@ -27,21 +28,14 @@ from crawler.core_carrier.exceptions import (
 )
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from, BaseMatchRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
-from crawler.extractors.table_extractors import (
-    BaseTableLocator,
-    HeaderMismatchError,
-    TableExtractor,
-    TopHeaderTableLocator,
-    TopLeftHeaderTableLocator,
-)
 
-BASE_URL = 'https://www.hamburgsud-line.com/linerportal/pages/hsdg/tnt.xhtml'
+BASE_URL = "https://www.hamburgsud-line.com/linerportal/pages/hsdg/tnt.xhtml"
 
 
 class MblState(Enum):
-    FIRST = 'FIRST'
-    SINGLE = 'SINGLE'
-    MULTIPLE = 'MULTIPLE'
+    FIRST = "FIRST"
+    SINGLE = "SINGLE"
+    MULTIPLE = "MULTIPLE"
 
 
 @dataclasses.dataclass
@@ -62,14 +56,14 @@ class VoyageSpec:
 
 class RequestOptionFactory:
     @staticmethod
-    def __build_form_data(basic_request_spec: BasicRequestSpec, container_link_element: str = ''):
-        j_idt2 = 'j_idt8' if basic_request_spec.j_idt == 'j_idt6' else 'j_idt9'
-        search_form = f'{basic_request_spec.j_idt}:searchForm'
+    def __build_form_data(basic_request_spec: BasicRequestSpec, container_link_element: str = ""):
+        j_idt2 = "j_idt8" if basic_request_spec.j_idt == "j_idt6" else "j_idt9"
+        search_form = f"{basic_request_spec.j_idt}:searchForm"
         form_data = {
             search_form: search_form,
-            f'{search_form}:{j_idt2}:inputReferences': basic_request_spec.mbl_no,
-            f'{search_form}:{j_idt2}:search-submit': f'{search_form}:{j_idt2}:search-submit',
-            'javax.faces.ViewState': basic_request_spec.view_state,
+            f"{search_form}:{j_idt2}:inputReferences": basic_request_spec.mbl_no,
+            f"{search_form}:{j_idt2}:search-submit": f"{search_form}:{j_idt2}:search-submit",
+            "javax.faces.ViewState": basic_request_spec.view_state,
         }
 
         if container_link_element:
@@ -87,7 +81,7 @@ class RequestOptionFactory:
             url=BASE_URL,
             form_data=form_data,
             meta={
-                'mbl_no': basic_request_spec.mbl_no,
+                "mbl_no": basic_request_spec.mbl_no,
             },
         )
 
@@ -105,13 +99,13 @@ class RequestOptionFactory:
             method=RequestOption.METHOD_POST_FORM,
             form_data=form_data,
             meta={
-                'mbl_no': basic_request_spec.mbl_no,
+                "mbl_no": basic_request_spec.mbl_no,
             },
         )
 
 
 class CarrierSuduSpider(BaseCarrierSpider):
-    name = 'carrier_sudu'
+    name = "carrier_sudu"
 
     def __init__(self, *args, **kwargs):
         super(CarrierSuduSpider, self).__init__(*args, **kwargs)
@@ -134,7 +128,7 @@ class CarrierSuduSpider(BaseCarrierSpider):
         yield self._build_request_by(option=option)
 
     def parse(self, response):
-        yield DebugItem(info={'meta': dict(response.meta)})
+        yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -172,7 +166,7 @@ class CarrierSuduSpider(BaseCarrierSpider):
                 meta=meta,
             )
         else:
-            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
+            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
 
 class VoyageQueuePopper:
@@ -212,7 +206,7 @@ class RequestOptionQueue:
 
 
 class PageInfoRoutingRule(BaseRoutingRule):
-    name = 'PAGE_INFO'
+    name = "PAGE_INFO"
 
     @classmethod
     def build_request_option(cls, mbl_no: str) -> RequestOption:
@@ -220,14 +214,14 @@ class PageInfoRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=BASE_URL,
-            meta={'mbl_no': mbl_no},
+            meta={"mbl_no": mbl_no},
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.html'
+        return f"{self.name}.html"
 
     def handle(self, response):
-        mbl_no = response.meta['mbl_no']
+        mbl_no = response.meta["mbl_no"]
 
         basic_request_spec = prepare_request_spec(mbl_no=mbl_no, response=response)
 
@@ -241,7 +235,7 @@ class PageInfoRoutingRule(BaseRoutingRule):
 
 
 class MblSearchResultRoutingRule(BaseRoutingRule):
-    name = 'MBL_SEARCH_RESULT'
+    name = "MBL_SEARCH_RESULT"
 
     def __init__(self, voyage_queue_popper: VoyageQueuePopper):
         self._voyage_queue_popper = voyage_queue_popper
@@ -254,13 +248,13 @@ class MblSearchResultRoutingRule(BaseRoutingRule):
         search_option = RequestOptionFactory.build_search_option(
             rule_name=cls.name, basic_request_spec=basic_request_spec
         )
-        option = search_option.copy_and_extend_by(meta={'mbl_state': mbl_state})
+        option = search_option.copy_and_extend_by(meta={"mbl_state": mbl_state})
 
         return option
 
     def get_save_name(self, response):
         self._save_count += 1
-        return f'{self.name}_{self._save_count}.html'
+        return f"{self.name}_{self._save_count}.html"
 
     def handle(self, response):
         """
@@ -270,8 +264,8 @@ class MblSearchResultRoutingRule(BaseRoutingRule):
         if there is a single container in mbl search result, you will get a container detail page,
         then we mark mbl_state is SINGLE and handle this page(Send to ContainerDetailRoutingRule).
         """
-        mbl_no = response.meta['mbl_no']
-        mbl_state = response.meta['mbl_state']
+        mbl_no = response.meta["mbl_no"]
+        mbl_state = response.meta["mbl_state"]
 
         if mbl_state == MblState.FIRST and self.__is_mbl_no_invalid(response):
             raise CarrierInvalidMblNoError()
@@ -330,12 +324,12 @@ class MblSearchResultRoutingRule(BaseRoutingRule):
                     voyage_spec=voyage_spec,
                 )
         else:
-            raise SuspiciousOperationError(msg=f'Unexpected mbl_state: `{mbl_state}`')
+            raise SuspiciousOperationError(msg=f"Unexpected mbl_state: `{mbl_state}`")
 
     @staticmethod
     def __is_mbl_no_invalid(response):
-        error_message = response.css('span.ui-messages-info-summary::text').get()
-        if error_message == 'No results found.':
+        error_message = response.css("span.ui-messages-info-summary::text").get()
+        if error_message == "No results found.":
             return True
 
         return False
@@ -346,7 +340,7 @@ class MblSearchResultRoutingRule(BaseRoutingRule):
         Are there multiple containers in this mbl?
         """
         # detail_div contains detail_table which is in detail page
-        detail_div = response.css('div.ui-grid-responsive')
+        detail_div = response.css("div.ui-grid-responsive")
 
         if detail_div:
             return False
@@ -365,7 +359,7 @@ class MblSearchResultRoutingRule(BaseRoutingRule):
 
 
 class ContainerDetailRoutingRule(BaseRoutingRule):
-    name = 'CONTAINER_DETAIL'
+    name = "CONTAINER_DETAIL"
 
     def __init__(self, voyage_queue_pusher: VoyageQueuePusher):
         self._voyage_queue_pusher = voyage_queue_pusher
@@ -375,7 +369,7 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         cls,
         basic_request_spec: BasicRequestSpec,
         mbl_state: MblState,
-        container_link_element: str = '',
+        container_link_element: str = "",
         voyage_spec: VoyageSpec = None,
     ) -> RequestOption:
         if mbl_state == MblState.MULTIPLE:
@@ -387,20 +381,20 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
                 rule_name=cls.name, basic_request_spec=basic_request_spec
             )
         else:
-            raise SuspiciousOperationError(msg=f'Unexpected mbl_state: `{mbl_state}`')
+            raise SuspiciousOperationError(msg=f"Unexpected mbl_state: `{mbl_state}`")
 
         option = container_option.copy_and_extend_by(
             meta={
-                'container_key': container_link_element,  # for voyage purpose
-                'voyage_spec': voyage_spec,
-                'mbl_state': mbl_state,
+                "container_key": container_link_element,  # for voyage purpose
+                "voyage_spec": voyage_spec,
+                "mbl_state": mbl_state,
             }
         )
 
         return option
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.html'
+        return f"{self.name}.html"
 
     def handle(self, response):
         """
@@ -411,10 +405,10 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         Voyage is not empty, then
         - Click voyage link
         """
-        mbl_no = response.meta['mbl_no']
-        mbl_state = response.meta['mbl_state']
-        voyage_spec = response.meta['voyage_spec']
-        container_key = response.meta.get('container_key', '')
+        mbl_no = response.meta["mbl_no"]
+        mbl_state = response.meta["mbl_state"]
+        voyage_spec = response.meta["voyage_spec"]
+        container_key = response.meta.get("container_key", "")
 
         basic_request_spec = prepare_request_spec(mbl_no=mbl_no, response=response)
 
@@ -442,15 +436,15 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         # parse
         main_info = cls.__extract_main_info(response=response)
         container_statuses = cls.__extract_container_statuses(response=response)
-        container_no = main_info['container_no']
-        por = main_info['por']
-        final_dest = main_info['final_dest']
+        container_no = main_info["container_no"]
+        por = main_info["por"]
+        final_dest = main_info["final_dest"]
 
         yield MblItem(
             por=LocationItem(name=por),
             final_dest=LocationItem(name=final_dest),
-            carrier_release_date=main_info['carrier_release_date'] or None,
-            customs_release_date=main_info['customs_release_date'] or None,
+            carrier_release_date=main_info["carrier_release_date"] or None,
+            customs_release_date=main_info["customs_release_date"] or None,
         )
 
         yield ContainerItem(
@@ -461,11 +455,11 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         for container_status in container_statuses:
             yield ContainerStatusItem(
                 container_key=container_no,
-                description=container_status['description'],
-                local_date_time=container_status['timestamp'],
-                location=LocationItem(name=container_status['location'] or None),
-                vessel=container_status['vessel'] or None,
-                voyage=container_status['voyage'] or None,
+                description=container_status["description"],
+                local_date_time=container_status["timestamp"],
+                location=LocationItem(name=container_status["location"] or None),
+                vessel=container_status["vessel"] or None,
+                voyage=container_status["voyage"] or None,
             )
 
         departure_voyage_spec, arrival_voyage_spec = cls.__get_container_voyage_link_element_specs(
@@ -486,56 +480,56 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def __extract_main_info(response):
-        titles = response.css('h3')
-        rule = CssQueryTextStartswithMatchRule(css_query='::text', startswith='Details')
+        titles = response.css("h3")
+        rule = CssQueryTextStartswithMatchRule(css_query="::text", startswith="Details")
         details_title = find_selector_from(selectors=titles, rule=rule)
-        detail_div = details_title.xpath('./following-sibling::div')
+        detail_div = details_title.xpath("./following-sibling::div")
 
         div_locator = MainDivTableLocator()
         div_locator.parse(table=detail_div)
         table = TableExtractor(table_locator=div_locator)
 
-        carrier_release_date = ''
-        if table.has_header(top='Carrier release'):
-            carrier_release_date = table.extract_cell(top='Carrier release', left=None)
+        carrier_release_date = ""
+        if table.has_header(top="Carrier release"):
+            carrier_release_date = table.extract_cell(top="Carrier release")
 
-        customs_release_date = ''
-        if table.has_header(top='Customs release'):
-            customs_release_date = table.extract_cell(top='Customs release', left=None)
+        customs_release_date = ""
+        if table.has_header(top="Customs release"):
+            customs_release_date = table.extract_cell(top="Customs release")
 
         return {
-            'container_no': table.extract_cell(top='Container', left=None),
-            'por': table.extract_cell(top='Origin', left=None),
-            'final_dest': table.extract_cell(top='Destination', left=None),
-            'carrier_release_date': carrier_release_date,
-            'customs_release_date': customs_release_date,
+            "container_no": table.extract_cell(top="Container"),
+            "por": table.extract_cell(top="Origin"),
+            "final_dest": table.extract_cell(top="Destination"),
+            "carrier_release_date": carrier_release_date,
+            "customs_release_date": customs_release_date,
         }
 
     @staticmethod
     def __extract_container_statuses(response):
-        titles = response.css('h3')
-        rule = CssQueryTextStartswithMatchRule(css_query='::text', startswith='Main information')
+        titles = response.css("h3")
+        rule = CssQueryTextStartswithMatchRule(css_query="::text", startswith="Main information")
         main_info_title = find_selector_from(selectors=titles, rule=rule)
-        main_info_div = main_info_title.xpath('./following-sibling::div')[0]
+        main_info_div = main_info_title.xpath("./following-sibling::div")[0]
 
-        table_selector = main_info_div.css('table')
-        top_header_locator = TopHeaderTableLocator()
-        top_header_locator.parse(table=table_selector)
-        table = TableExtractor(table_locator=top_header_locator)
+        table_selector = main_info_div.css("table")
+        container_status_locator = ContainerStatusTableLocator()
+        container_status_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=container_status_locator)
         vessel_voyage_extractor = VesselVoyageTdExtractor()
 
         container_statuses = []
-        for left in top_header_locator.iter_left_header():
-            vessel_voyage_info = table.extract_cell(top='Mode/Vendor', left=left, extractor=vessel_voyage_extractor)
+        for left in container_status_locator.iter_left_header():
+            vessel_voyage_info = table.extract_cell(top="Mode/Vendor", left=left, extractor=vessel_voyage_extractor)
 
             container_statuses.append(
                 {
-                    'timestamp': table.extract_cell(top='Date', left=left),
-                    'location': table.extract_cell(top='Place', left=left),
-                    'description': table.extract_cell(top='Movement', left=left),
-                    'vessel': vessel_voyage_info['vessel'],
-                    'voyage': vessel_voyage_info['voyage'],
-                    'voyage_css_id': vessel_voyage_info['voyage_css_id'],
+                    "timestamp": table.extract_cell(top="Date", left=left),
+                    "location": table.extract_cell(top="Place", left=left),
+                    "description": table.extract_cell(top="Movement", left=left),
+                    "vessel": vessel_voyage_info["vessel"],
+                    "voyage": vessel_voyage_info["voyage"],
+                    "voyage_css_id": vessel_voyage_info["voyage_css_id"],
                 }
             )
 
@@ -551,14 +545,14 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         departure_voyages = []
         arrival_voyages = []
         for container_status in container_statuses:
-            vessel = container_status['vessel']
-            location = container_status['location']
+            vessel = container_status["vessel"]
+            location = container_status["location"]
 
             if vessel and location == por:
                 voyage_spec = VoyageSpec(
-                    direction='Departure',
+                    direction="Departure",
                     container_key=container_key,
-                    voyage_key=container_status['voyage_css_id'],
+                    voyage_key=container_status["voyage_css_id"],
                     location=por,
                     container_no=container_no,
                 )
@@ -566,9 +560,9 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
 
             elif vessel and location == final_dest:
                 voyage_spec = VoyageSpec(
-                    direction='Arrival',
+                    direction="Arrival",
                     container_key=container_key,
-                    voyage_key=container_status['voyage_css_id'],
+                    voyage_key=container_status["voyage_css_id"],
                     location=final_dest,
                     container_no=container_no,
                 )
@@ -587,22 +581,22 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
 
 class VesselVoyageTdExtractor(BaseTableCellExtractor):
     def extract(self, cell: Selector):
-        a_list = cell.css('a')
+        a_list = cell.css("a")
 
         if len(a_list) == 0:
             return {
-                'vessel': '',
-                'voyage': '',
-                'voyage_css_id': '',
+                "vessel": "",
+                "voyage": "",
+                "voyage_css_id": "",
             }
 
         vessel_cell = a_list[0]
         voyage_cell = a_list[1]
 
         return {
-            'vessel': vessel_cell.css('::text').get().strip(),
-            'voyage': voyage_cell.css('::text').get().strip(),
-            'voyage_css_id': voyage_cell.css('::attr(id)').get(),
+            "vessel": vessel_cell.css("::text").get().strip(),
+            "voyage": voyage_cell.css("::text").get().strip(),
+            "voyage_css_id": voyage_cell.css("::attr(id)").get(),
         }
 
 
@@ -610,18 +604,18 @@ class VesselVoyageTdExtractor(BaseTableCellExtractor):
 
 
 class VoyageRoutingRule(BaseRoutingRule):
-    name = 'VOYAGE'
+    name = "VOYAGE"
 
     @classmethod
     def build_request_option(
         cls, basic_request_spec: BasicRequestSpec, voyage_spec: VoyageSpec, mbl_state: MblState
     ) -> RequestOption:
-        j_idt2 = 'j_idt8' if basic_request_spec.j_idt == 'j_idt6' else 'j_idt9'
-        search_form = f'{basic_request_spec.j_idt}:searchForm'
+        j_idt2 = "j_idt8" if basic_request_spec.j_idt == "j_idt6" else "j_idt9"
+        search_form = f"{basic_request_spec.j_idt}:searchForm"
         form_data = {
             search_form: search_form,
-            f'{search_form}:{j_idt2}:inputReferences': basic_request_spec.mbl_no,
-            'javax.faces.ViewState': basic_request_spec.view_state,
+            f"{search_form}:{j_idt2}:inputReferences": basic_request_spec.mbl_no,
+            "javax.faces.ViewState": basic_request_spec.view_state,
             voyage_spec.voyage_key: voyage_spec.voyage_key,
         }
 
@@ -631,24 +625,24 @@ class VoyageRoutingRule(BaseRoutingRule):
             url=BASE_URL,
             form_data=form_data,
             meta={
-                'mbl_state': mbl_state,
-                'mbl_no': basic_request_spec.mbl_no,
-                'voyage_location': voyage_spec.location,
-                'voyage_direction': voyage_spec.direction,
+                "mbl_state": mbl_state,
+                "mbl_no": basic_request_spec.mbl_no,
+                "voyage_location": voyage_spec.location,
+                "voyage_direction": voyage_spec.direction,
             },
         )
 
     def get_save_name(self, response) -> str:
-        voyage_location = response.meta['voyage_location']
-        voyage_direction = response.meta['voyage_direction']
+        voyage_location = response.meta["voyage_location"]
+        voyage_direction = response.meta["voyage_direction"]
 
-        return f'{self.name}_{voyage_location}_{voyage_direction}.html'
+        return f"{self.name}_{voyage_location}_{voyage_direction}.html"
 
     def handle(self, response):
-        mbl_no = response.meta['mbl_no']
-        mbl_state = response.meta['mbl_state']
-        voyage_location = response.meta['voyage_location']
-        voyage_direction = response.meta['voyage_direction']
+        mbl_no = response.meta["mbl_no"]
+        mbl_state = response.meta["mbl_state"]
+        voyage_location = response.meta["voyage_location"]
+        voyage_direction = response.meta["voyage_direction"]
 
         if self._is_voyage_routing_connectable(response=response):
             voyage_routing = self.__extract_voyage_routing(
@@ -656,13 +650,13 @@ class VoyageRoutingRule(BaseRoutingRule):
             )
 
             yield VesselItem(
-                vessel_key=f'{voyage_location} {voyage_direction}',
-                vessel=voyage_routing['vessel'],
-                voyage=voyage_routing['voyage'],
-                pol=LocationItem(name=voyage_routing['pol']),
-                pod=LocationItem(name=voyage_routing['pod']),
-                etd=voyage_routing['etd'],
-                eta=voyage_routing['eta'],
+                vessel_key=f"{voyage_location} {voyage_direction}",
+                vessel=voyage_routing["vessel"],
+                voyage=voyage_routing["voyage"],
+                pol=LocationItem(name=voyage_routing["pol"]),
+                pod=LocationItem(name=voyage_routing["pod"]),
+                etd=voyage_routing["etd"],
+                eta=voyage_routing["eta"],
             )
 
         basic_request_spec = prepare_request_spec(mbl_no=mbl_no, response=response)
@@ -673,49 +667,49 @@ class VoyageRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _is_voyage_routing_connectable(response: Selector) -> bool:
-        return bool(response.css('h3'))
+        return bool(response.css("h3"))
 
     def __extract_voyage_routing(self, response, location, direction):
-        raw_vessel_voyage = response.css('h3::text').get()
+        raw_vessel_voyage = response.css("h3::text").get()
         vessel, voyage = self.__parse_vessel_voyage(raw_vessel_voyage)
 
         table_selector = response.css('table[role="grid"]')
         if not table_selector:
-            raise CarrierResponseFormatError(reason='Can not find voyage routing table !!!')
+            raise CarrierResponseFormatError(reason="Can not find voyage routing table !!!")
 
-        top_left_locator = TopLeftHeaderTableLocator()
-        top_left_locator.parse(table=table_selector)
-        table = TableExtractor(table_locator=top_left_locator)
+        voyage_routing_locator = VoyageRoutingTableLocator()
+        voyage_routing_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=voyage_routing_locator)
 
         eta, etd, pol, pod = None, None, None, None
-        if direction == 'Arrival':
-            eta = table.extract_cell(top='Estimated Arrival', left=location)
+        if direction == "Arrival":
+            eta = table.extract_cell(top="Estimated Arrival", left=location)
             pod = location
 
-        elif direction == 'Departure':
-            etd = table.extract_cell(top='Estimated Departure', left=location)
+        elif direction == "Departure":
+            etd = table.extract_cell(top="Estimated Departure", left=location)
             pol = location
 
         else:
-            raise CarrierResponseFormatError(reason=f'Unknown arr_or_dep: `{direction}`')
+            raise CarrierResponseFormatError(reason=f"Unknown arr_or_dep: `{direction}`")
 
         return {
-            'vessel': vessel,
-            'voyage': voyage,
-            'eta': eta,
-            'etd': etd,
-            'pol': pol,
-            'pod': pod,
+            "vessel": vessel,
+            "voyage": voyage,
+            "eta": eta,
+            "etd": etd,
+            "pol": pol,
+            "pod": pod,
         }
 
     @staticmethod
     def __parse_vessel_voyage(vessel_voyage):
-        pattern = re.compile(r'^Voyage details -\s+(?P<vessel>[\w+ ]+\w+) -\s+(?P<voyage>\w+)\s+$')
+        pattern = re.compile(r"^Voyage details -\s+(?P<vessel>[\w+ ]+\w+) -\s+(?P<voyage>\w+)\s+$")
         match = pattern.match(vessel_voyage)
         if not match:
-            raise CarrierResponseFormatError(reason=f'Unknown vessel_voyage title: `{vessel_voyage}`')
+            raise CarrierResponseFormatError(reason=f"Unknown vessel_voyage title: `{vessel_voyage}`")
 
-        return match.group('vessel'), match.group('voyage')
+        return match.group("vessel"), match.group("voyage")
 
 
 class TextExistsMatchRule(BaseMatchRule):
@@ -723,8 +717,8 @@ class TextExistsMatchRule(BaseMatchRule):
         self._text = text
 
     def check(self, selector: Selector) -> bool:
-        all_texts = selector.css('::text').getall()
-        together_text = ''.join(all_texts)
+        all_texts = selector.css("::text").getall()
+        together_text = "".join(all_texts)
         if self._text in together_text:
             return True
         return False
@@ -738,34 +732,50 @@ class IncorrectValueError(BaseCarrierError):
         self.value = value
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail=f'<incorrect-value-error> `{self.value}`')
+        return ExportErrorData(status=self.status, detail=f"<incorrect-value-error> `{self.value}`")
 
 
-class MainDivTableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = {}  # title: data
-
+class ContainerStatusTableLocator(BaseTable):
     def parse(self, table: Selector):
-        div_section_list = table.css('div.ui-g')
+        title_text_list = table.css("thead th ::text").getall()
+        data_tr_list = table.css("tbody tr")
+
+        for index, tr in enumerate(data_tr_list):
+            tds = tr.css("td")
+            self.add_left_header_set(index)
+            for title, td in zip(title_text_list, tds):
+                self._td_map.setdefault(title, [])
+                self._td_map[title].append(td)
+
+
+class VoyageRoutingTableLocator(BaseTable):
+    def parse(self, table: Selector):
+        title_text_list = table.css("thead th ::text").getall()
+        data_tr_list = table.css("tbody tr")
+
+        for tr in data_tr_list:
+            tds = tr.css("td")
+            left_header = tds[0].css("::text").get()
+            self.add_left_header_set(left_header)
+
+            for title, td in zip(title_text_list, tds[1:]):
+                self._td_map.setdefault(title, {})
+                self._td_map[title][left_header] = td
+
+
+class MainDivTableLocator(BaseTable):
+    def parse(self, table: Selector):
+        div_section_list = table.css("div.ui-g")
 
         for div_section in div_section_list:
 
-            cell_list = div_section.xpath('./div')
+            cell_list = div_section.xpath("./div")
             for cell in cell_list:
-                title, data = cell.css('::text').getall()
-                td = Selector(text=f'<td>{data.strip()}</td>')
+                title, data = cell.css("::text").getall()
+                td = Selector(text=f"<td>{data.strip()}</td>")
 
-                self._td_map[title.strip()] = td
-
-    def get_cell(self, top, left) -> Selector:
-        assert left is None
-        try:
-            return self._td_map[top]
-        except KeyError as err:
-            HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
+                self._td_map.setdefault(title, [])
+                self._td_map[title].append(td)
 
 
 class MBLSearchDispatcher:
@@ -775,7 +785,7 @@ class MBLSearchDispatcher:
         Are there multiple containers in this mbl?
         """
         # detail_div contains detail_table which is in detail page
-        detail_div = response.css('div.ui-grid-responsive')
+        detail_div = response.css("div.ui-grid-responsive")
 
         if detail_div:
             return False
@@ -784,6 +794,6 @@ class MBLSearchDispatcher:
 
 def prepare_request_spec(mbl_no: str, response) -> BasicRequestSpec:
     view_state = response.css('input[name="javax.faces.ViewState"] ::attr(value)').get()
-    j_idt = response.css('form ::attr(id)').get().strip(':searchForm')
+    j_idt = response.css("form ::attr(id)").get().strip(":searchForm")
 
     return BasicRequestSpec(mbl_no=mbl_no, view_state=view_state, j_idt=j_idt)
