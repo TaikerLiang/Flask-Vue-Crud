@@ -17,4 +17,5 @@ def verify(results: Dict):
         available=False,
         carrier_release=True,
         customs_release=True,
+        last_free_day="\xa0",
     )
