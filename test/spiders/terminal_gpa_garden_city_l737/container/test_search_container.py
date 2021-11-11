@@ -5,7 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from src.crawler.core_terminal.gpa_share_spider import ContainerRoutingRule
-from test.spiders.terminal_gpa_garden_city import container
+from test.spiders.terminal_gpa_garden_city_l737 import container
 
 
 @pytest.fixture
