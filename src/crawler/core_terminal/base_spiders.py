@@ -3,6 +3,7 @@ from pathlib import Path
 
 import scrapy
 
+from crawler.core.base import CLOSESPIDER_TIMEOUT
 from .middlewares import TerminalSpiderMiddleware
 from .pipelines import TerminalItemPipeline, TerminalMultiItemsPipeline
 from .request_helpers import RequestOption
@@ -26,7 +27,7 @@ TERMINAL_DEFAULT_SETTINGS = {
 class BaseTerminalSpider(scrapy.Spider):
 
     custom_settings = {
-        "CLOSESPIDER_TIMEOUT": 60 * 10,
+        "CLOSESPIDER_TIMEOUT": CLOSESPIDER_TIMEOUT,
         **TERMINAL_DEFAULT_SETTINGS,
     }
 
@@ -85,7 +86,7 @@ TERMINAL_MULTI_ITEM_PIPELINES = {
 class BaseMultiTerminalSpider(scrapy.Spider):
 
     custom_settings = {
-        "CLOSESPIDER_TIMEOUT": 60 * 10,
+        "CLOSESPIDER_TIMEOUT": CLOSESPIDER_TIMEOUT,
         "SPIDER_MIDDLEWARES": {**TERMINAL_DEFAULT_SPIDER_MIDDLEWARES,},
         "ITEM_PIPELINES": {**TERMINAL_MULTI_ITEM_PIPELINES,},
     }

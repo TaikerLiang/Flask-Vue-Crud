@@ -3,6 +3,7 @@ from pathlib import Path
 
 import scrapy
 
+from crawler.core.base import CLOSESPIDER_TIMEOUT
 from .middlewares import AirSpiderMiddleware
 from .pipelines import AirItemPipeline, AirMultiItemsPipeline
 from .request_helpers import RequestOption
@@ -26,7 +27,7 @@ AIR_DEFAULT_SETTINGS = {
 
 class BaseAirSpider(scrapy.Spider):
     custom_settings = {
-        "CLOSESPIDER_TIMEOUT": 60 * 10,
+        "CLOSESPIDER_TIMEOUT": CLOSESPIDER_TIMEOUT,
         **AIR_DEFAULT_SETTINGS,
     }
 
@@ -85,7 +86,7 @@ AIR_MULTI_ITEM_PIPELINES = {
 class BaseMultiAirSpider(scrapy.Spider):
 
     custom_settings = {
-        "CLOSESPIDER_TIMEOUT": 60 * 10,
+        "CLOSESPIDER_TIMEOUT": CLOSESPIDER_TIMEOUT,
         "SPIDER_MIDDLEWARES": {**AIR_DEFAULT_SPIDER_MIDDLEWARES,},
         "ITEM_PIPELINES": {**AIR_MULTI_ITEM_PIPELINES,},
     }

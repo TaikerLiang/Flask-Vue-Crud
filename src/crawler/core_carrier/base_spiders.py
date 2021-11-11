@@ -4,6 +4,7 @@ from pathlib import Path
 import scrapy
 
 from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core.base import CLOSESPIDER_TIMEOUT
 from .middlewares import CarrierSpiderMiddleware
 from .pipelines import CarrierItemPipeline, CarrierMultiItemsPipeline
 from .base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
@@ -31,7 +32,7 @@ DISABLE_DUPLICATE_REQUEST_FILTER = {"DUPEFILTER_CLASS": "scrapy.dupefilters.Base
 class BaseCarrierSpider(scrapy.Spider):
 
     custom_settings = {
-        "CLOSESPIDER_TIMEOUT": 60 * 10,
+        "CLOSESPIDER_TIMEOUT": CLOSESPIDER_TIMEOUT,
         **CARRIER_DEFAULT_SETTINGS,
     }
 
@@ -91,7 +92,7 @@ CARRIER_MULTI_ITEM_PIPELINES = {
 class BaseMultiCarrierSpider(scrapy.Spider):
 
     custom_settings = {
-        "CLOSESPIDER_TIMEOUT": 60 * 10,
+        "CLOSESPIDER_TIMEOUT": CLOSESPIDER_TIMEOUT,
         "SPIDER_MIDDLEWARES": {**CARRIER_DEFAULT_SPIDER_MIDDLEWARES,},
         "ITEM_PIPELINES": {**CARRIER_MULTI_ITEM_PIPELINES,},
     }

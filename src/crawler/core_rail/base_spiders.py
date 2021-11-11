@@ -3,6 +3,7 @@ from pathlib import Path
 
 import scrapy
 
+from crawler.core.base import CLOSESPIDER_TIMEOUT
 from .middlewares import RailSpiderMiddleware
 from .pipelines import RailItemPipeline, RailMultiItemsPipeline
 from .request_helpers import RequestOption
@@ -18,27 +19,26 @@ RAIL_DEFAULT_ITEM_PIPELINES = {
 }
 
 RAIL_DEFAULT_SETTINGS = {
-    'SPIDER_MIDDLEWARES': {
-        **RAIL_DEFAULT_SPIDER_MIDDLEWARES,
-    },
-    'ITEM_PIPELINES': {
-        **RAIL_DEFAULT_ITEM_PIPELINES,
-    },
+    "SPIDER_MIDDLEWARES": {**RAIL_DEFAULT_SPIDER_MIDDLEWARES,},
+    "ITEM_PIPELINES": {**RAIL_DEFAULT_ITEM_PIPELINES,},
 }
 
 
 class BaseRailSpider(scrapy.Spider):
 
-    custom_settings = RAIL_DEFAULT_SETTINGS
+    custom_settings = {
+        "CLOSESPIDER_TIMEOUT": CLOSESPIDER_TIMEOUT,
+        **RAIL_DEFAULT_SETTINGS,
+    }
 
     def __init__(self, name=None, **kwargs):
         super().__init__(name=name, **kwargs)
 
         self.request_args = kwargs
 
-        self.container_no = kwargs['container_no']
+        self.container_no = kwargs["container_no"]
 
-        to_save = 'save' in kwargs
+        to_save = "save" in kwargs
         self._saver = self._prepare_saver(to_save=to_save)
 
         self._error = False
@@ -63,7 +63,7 @@ class BaseRailSpider(scrapy.Spider):
         if not to_save:
             return NullSaver()
 
-        save_folder = Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] {self.container_no}'
+        save_folder = Path(__file__).parent.parent.parent.parent / "_save_pages" / f"[{self.name}] {self.container_no}"
 
         return FileSaver(folder_path=save_folder, logger=self.logger)
 
@@ -85,12 +85,9 @@ RAIL_MULTI_ITEM_PIPELINES = {
 class BaseMultiRailSpider(scrapy.Spider):
 
     custom_settings = {
-        'SPIDER_MIDDLEWARES': {
-            **RAIL_DEFAULT_SPIDER_MIDDLEWARES,
-        },
-        'ITEM_PIPELINES': {
-            **RAIL_MULTI_ITEM_PIPELINES,
-        },
+        "CLOSESPIDER_TIMEOUT": CLOSESPIDER_TIMEOUT,
+        "SPIDER_MIDDLEWARES": {**RAIL_DEFAULT_SPIDER_MIDDLEWARES,},
+        "ITEM_PIPELINES": {**RAIL_MULTI_ITEM_PIPELINES,},
     }
 
     def __init__(self, name=None, **kwargs):
@@ -98,14 +95,14 @@ class BaseMultiRailSpider(scrapy.Spider):
 
         self.request_args = kwargs
 
-        self.task_ids = [task_id.strip() for task_id in kwargs['task_id_list'].split(',')]
-        self.container_nos = [container_no.strip() for container_no in kwargs['container_no_list'].split(',')]
+        self.task_ids = [task_id.strip() for task_id in kwargs["task_id_list"].split(",")]
+        self.container_nos = [container_no.strip() for container_no in kwargs["container_no_list"].split(",")]
         self.cno_tid_map = {}  # container_no: [task_ids]
         for c_no, t_id in zip(self.container_nos, self.task_ids):
             self.cno_tid_map.setdefault(c_no, [])
             self.cno_tid_map[c_no].append(t_id)
 
-        to_save = 'save' in kwargs
+        to_save = "save" in kwargs
         self._saver = self._prepare_saver(to_save=to_save)
 
         self._error = False
@@ -131,7 +128,7 @@ class BaseMultiRailSpider(scrapy.Spider):
         if not to_save:
             return NullSaver()
 
-        save_folder = Path(__file__).parent.parent.parent.parent / '_save_pages' / f'[{self.name}] {self.container_nos}'
+        save_folder = Path(__file__).parent.parent.parent.parent / "_save_pages" / f"[{self.name}] {self.container_nos}"
 
         return FileSaver(folder_path=save_folder, logger=self.logger)
 
