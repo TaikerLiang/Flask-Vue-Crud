@@ -698,7 +698,7 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
     def _extract_firms_code(response: Selector):
         # [0]WEST BASIN CONTAINER TERMINAL [1](Firms code:Y773)
         discharged_port_terminal_text = response.css(
-            f"span#ContentPlaceHolder1_rptBLNo_lblDischarged_0 ::text"
+            f"span#ContentPlaceHolder1_rptBLNo_gvBasicInformation_0_lblDischarge_0 ::text"
         ).getall()
         if len(discharged_port_terminal_text) == 1:
             return None
