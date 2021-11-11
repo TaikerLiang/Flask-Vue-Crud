@@ -190,6 +190,7 @@ class ContainerRoutingRule(BaseRoutingRule):
                     yield TerminalItem(
                         container_no=info.get("container_no"),
                         available=info.get("available"),
+                        last_free_day=info.get("last_free_day"),
                         carrier_release=info.get("line_release"),
                         customs_release=info.get("customs_release"),
                     )
@@ -214,6 +215,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         for row in table:
             available = row[0]
             container_no = row[1]
+            last_free_day = row[2]
             location = row[5]
             line_status = row[7]
             customs_status = row[8]
@@ -231,6 +233,8 @@ class ContainerRoutingRule(BaseRoutingRule):
                 info["available"] = True
             elif available == "No":
                 info["available"] = False
+
+            info["last_free_day"] = last_free_day
 
             if line_status == "RELEASED":
                 info["line_release"] = True
