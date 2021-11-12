@@ -1,7 +1,7 @@
 from crawler.core_terminal.ets_share_spider import EtsShareSpider, CompanyInfo
 
 
-class TerminalBerthSpider(EtsShareSpider):
+class TerminalEtsBerthSpider(EtsShareSpider):
     firms_code = "Y124"
     name = "terminal_ets_berth"
     company_info = CompanyInfo(
