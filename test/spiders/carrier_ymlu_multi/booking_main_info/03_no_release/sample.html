@@ -2,13 +2,17 @@
 
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
-<head id="Head1"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><meta name="description" content="Yang Ming Marine Transport Corporation (Yang Ming) have observed our core value of &#39;Teamwork, Innovation, Honesty and Pragmatism&#39; in enhancing our transportation expertise and service quality.&lt;br/>陽明海運股份有限公司全球員工秉持”團隊、創新、誠信、務實”之價值理念，專注於全球化與精緻化的海運運輸經營，不僅以”準、快、穩、省”四大準則提供優良服務，在營運績效及策略上，透過與世界其他知名船公司聯營合作，發揮全球營運資源整合效能，使得業績持續穩健成長，成為全球名列前茅的海運公司。" /><meta http-equiv='X-UA-Compatible' content ='IE=edge' /> <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1'>
+<head id="Head1"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" /><meta name="description" content="Yang Ming Marine Transport Corporation (Yang Ming) have observed our core value of &#39;Teamwork, Innovation, Honesty and Pragmatism&#39; in enhancing our transportation expertise and service quality.&lt;br/>陽明海運股份有限公司全球員工秉持”團隊、創新、誠信、務實”之價值理念，專注於全球化與精緻化的海運運輸經營，不僅以”準、快、穩、省”四大準則提供優良服務，在營運績效及策略上，透過與世界其他知名船公司聯營合作，發揮全球營運資源整合效能，使得業績持續穩健成長，成為全球名列前茅的海運公司。" /><meta http-equiv='X-UA-Compatible' content ='IE=edge' /> <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1'>
     <!-- Bootstrap -->
-    <link href="../../favorite.ico" rel="Shortcut Icon" />
+    <link href="../../Content/Img/favorite.ico" rel="Shortcut Icon" />
     <link href="/Content/Css/bootstrap.css" rel="stylesheet" />
     <link href="/Content/Css/bootstrap-theme.css" rel="stylesheet" />
-    <link href="/Content/Css/layout.css?ver=20200207" rel="stylesheet" />
-    <link href="/Content/Css/Index.css?ver=20151013" rel="stylesheet" />
+
+
+    <link href="/Content/Css/layout.css?ver=20211110a" rel="stylesheet" />
+
+
+    <link href="/Content/Css/Index.css?ver=202011191830" rel="stylesheet" />
     <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -25,13 +29,80 @@
     <script src="/Scripts/bootstrap.min.js" type="text/javascript"></script>
     <script src="/Scripts/jquery.hoverIntent.minified.js" type="text/javascript"></script>
     <script src="/Scripts/jquery-menulink.js" type="text/javascript"></script>
-    
+
     <script src="/Scripts/verge.min.js" type="text/javascript"></script>
     <script src="/Scripts/rwdaddon.js" type="text/javascript"></script>
     <script src="/Scripts/jquery.blockUI.js" type="text/javascript"></script>
     <title>
 	YangMing Marine Transport Corp.
 </title>
+    <script src="/Scripts/cookieconsent.min.js"></script>
+    <script>
+        function isValidEmail(email) {
+            const regex = /^(("")("".+?""@)|(([0-9a-zA-Z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)@))((\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-zA-Z][-\w]*[0-9a-zA-Z]*\.)+[a-zA-Z0-9][\-a-zA-Z0-9]{0,22}[a-zA-Z]))$/;
+            var IsValidFlag = true;
+
+            if (email.indexOf(";", 0) >= 1) //多筆email
+            {
+                email = email.trimEnd(';');
+                var emailArray = email.split(';');
+                emailArray.forEach(function (tmp) {
+                    if (!tmp.trim() == "") {
+                        if (regex.test(String(tmp.trim())) == false)
+                            IsValidFlag = false;
+                    }
+                });
+            }
+            else //一個email
+            {
+                IsValidFlag = regex.test(String(email.trim()));
+            }
+
+            return IsValidFlag;
+        }
+
+        function inIframe() {
+            try {
+                return window.self !== window.top;
+            } catch (e) {
+                return true;
+            }
+        }
+
+        function getCookie(name)//取cookies函数
+        {
+            var arr = document.cookie.match(new RegExp("(^| )" + name + "=([^;]*)(;|$)"));
+            if (arr != null) return unescape(arr[2]); return null;
+
+        }
+
+        if (inIframe() || getCookie("APP") == "Y") {
+
+        } else {
+            window.addEventListener("load", function () {
+                window.cookieconsent.initialise({
+                    "palette": {
+                        "popup": {
+                            "background": "#F2F2F2"
+                        },
+                        "button": {
+                            "background": "transparent",
+                            "text": "#666666",
+                            "border": "#BBBCBC"
+                        },
+                        "revokable": true
+                    },
+                    "content": {
+                        "message": 'This Website uses necessary cookies to collect data in order to enable core functionality, including security and network management. If you continue without changing your settings, we will deem this as your consent to receive these cookies. To find out more about the cookies we use, see our Privacy and Security Statement.',
+                        "dismiss": 'Agree',
+                        "link": 'Check YM’s Privacy and Security Statement',
+                        "target": "_self",
+                        "href": '/PrivacyAndSecurity.aspx'
+                    }
+                })
+            });
+        }
+    </script>
 
     <script type="text/cjs">
        // document.domain = "yangming.com";
@@ -76,7 +147,7 @@
             exp.setTime(exp.getTime() + Days * 24 * 60 * 60 * 1000);
             document.cookie = name + "=" + escape(value) + ";expires=" + exp.toGMTString();
         }
-        function getCookie(name)//取cookies函数        
+        function getCookie(name)//取cookies函数
         {
             var arr = document.cookie.match(new RegExp("(^| )" + name + "=([^;]*)(;|$)"));
             if (arr != null) return unescape(arr[2]); return null;
@@ -119,7 +190,7 @@
         }
     </style>
 
-    
+
     <link href="/Content/Css/jquery.dataTables.min.css" rel="stylesheet"
         type="text/css" />
     <link href="/Content/Css/dataTables.fixedColumns.min.css" rel="stylesheet"
@@ -129,45 +200,53 @@
     <script src="/Scripts/dataTables.fixedColumns.min.js" type="text/javascript"></script>
     <script src="/Scripts/shCore.js" type="text/javascript"></script>
     <style type="text/css">
-        .divTitle
-        {
+        .divTitle {
             color: #FFFFFF;
             background-color: #0577B2;
             padding: 3px;
             border-right: 1px solid #FFF;
             border-bottom: 1px solid #FFF;
-            font-size: 12px; 
+            font-size: 12px;
             vertical-align: middle;
             word-wrap: break-word;
             table-layout: fixed;
         }
-        .mycls a
-        {
+
+        .mycls a {
             color: #0577B3;
         }
-        .field_odd
-        {
-            color: #000000; 
-            background-color: #E3E3E3; 
-            padding: 3px; 
-            border-right: 1px solid #FFF; 
-            border-bottom: 1px solid #FFF; 
-            font-size: 12px; 
+
+        .field_odd {
+            color: #000000;
+            background-color: #E3E3E3;
+            padding: 3px;
+            border-right: 1px solid #FFF;
+            border-bottom: 1px solid #FFF;
+            font-size: 12px;
             vertical-align: middle;
             word-wrap: break-word;
             table-layout: fixed;
         }
-        .field_even
-        {
-            color: #000000; 
-            background-color: #C9ECFE; 
-            padding: 3px; 
-            border-right: 1px solid #FFF; 
-            border-bottom: 1px solid #FFF; 
-            font-size: 12px; 
+
+        .field_even {
+            color: #000000;
+            background-color: #C9ECFE;
+            padding: 3px;
+            border-right: 1px solid #FFF;
+            border-bottom: 1px solid #FFF;
+            font-size: 12px;
             vertical-align: middle;
             word-wrap: break-word;
             table-layout: fixed;
+        }
+
+        .Button_DCSA:hover {
+            color: #0577B3;
+            margin-left: 20px;
+            margin-top: 20px;
+            background-color: #FFFFFF;
+            border: none;
+            text-decoration: underline;
         }
     </style>
     <script type="text/javascript">
@@ -175,7 +254,7 @@
         var lfrzcnt = 1;
         var hy = "100%"; //rptBLNo
         var tblselector;
-        // 要作 freeze column 的 table name 
+        // 要作 freeze column 的 table name
         //gvBasicInformation,gvRoutingSchedule,gvCustomsStatus,gvLastFreeDate,gvLatestEvent
         $(document).ready(function () {
             tblselector = $("#ContentPlaceHolder1_hidGVID").val().split(",");
@@ -208,7 +287,7 @@
             // set new timer
             resizeTimer = setTimeout(function () {
                 resizeTimer = null;
-                // put your resize logic here and it will only be called when 
+                // put your resize logic here and it will only be called when
                 // there's been a pause in resize events
                 OrigTblGet("#ContentPlaceHolder1_hidTblOrigID", "#ContentPlaceHolder1_hidTblOrigHeight");
                 if (verge.viewportW() < 1025) {
@@ -257,22 +336,32 @@
             return false;
         }
 
-
         function openMAIL(strUrl) {
             location.href = strUrl;
         }
 
-      
-
-       
+        function Show_DCSA(obj) {
+            var count = obj.id.substr(36);
+            $('#ContentPlaceHolder1_rptBLNo_btnDCSA_' + count).hide();
+            $('#ContentPlaceHolder1_rptBLNo_btn_NonDCSA_' + count).show();
+            $('#ContentPlaceHolder1_rptBLNo_gvLatestEvent_' + count).hide();
+            $('#ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_' + count).show();
+        }
+        function Show_NonDCSA(obj) {
+            var count = obj.id.substr(40);
+            $('#ContentPlaceHolder1_rptBLNo_btnDCSA_' + count).show();
+            $('#ContentPlaceHolder1_rptBLNo_btn_NonDCSA_' + count).hide();
+            $('#ContentPlaceHolder1_rptBLNo_gvLatestEvent_' + count).show();
+            $('#ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_' + count).hide();
+        }
     </script>
 </head>
 <body>
-    <form method="post" action="./blconnect.aspx?BLADG=I209365239%2c&amp;rdolType=BL&amp;type=cargo" id="form1">
+    <form method="post" action="./blconnect.aspx?var=7LSUj9WFfLj5ZC6B7nZkLg9qsj3e3NcRdWxqCY8%2fpO%2bltDp8D95LbaF0lKhUuKlqCWNa9DgHvg29FNYZYBp1Zyu6mG5oXvPxuuKmYyVmtaNTDRhcWwoP88ypSQmHP55W" id="form1">
 <div class="aspNetHidden">
 <input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
 <input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
-<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwUJNTc2MjQ2NjQwDxYGHgl2c1JvdXRpbmcyiBAAAQAAAP////8BAAAAAAAAAAwCAAAATlN5c3RlbS5EYXRhLCBWZXJzaW9uPTQuMC4wLjAsIEN1bHR1cmU9bmV1dHJhbCwgUHVibGljS2V5VG9rZW49Yjc3YTVjNTYxOTM0ZTA4OQUBAAAAFVN5c3RlbS5EYXRhLkRhdGFUYWJsZQMAAAAZRGF0YVRhYmxlLlJlbW90aW5nVmVyc2lvbglYbWxTY2hlbWELWG1sRGlmZkdyYW0DAQEOU3lzdGVtLlZlcnNpb24CAAAACQMAAAAGBAAAAIIIPD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTE2Ij8+DQo8eHM6c2NoZW1hIHhtbG5zPSIiIHhtbG5zOnhzPSJodHRwOi8vd3d3LnczLm9yZy8yMDAxL1hNTFNjaGVtYSIgeG1sbnM6bXNkYXRhPSJ1cm46c2NoZW1hcy1taWNyb3NvZnQtY29tOnhtbC1tc2RhdGEiPg0KICA8eHM6ZWxlbWVudCBuYW1lPSJUYWJsZTEiPg0KICAgIDx4czpjb21wbGV4VHlwZT4NCiAgICAgIDx4czpzZXF1ZW5jZT4NCiAgICAgICAgPHhzOmVsZW1lbnQgbmFtZT0iTE9DIiB0eXBlPSJ4czpzdHJpbmciIG1zZGF0YTp0YXJnZXROYW1lc3BhY2U9IiIgbWluT2NjdXJzPSIwIiAvPg0KICAgICAgICA8eHM6ZWxlbWVudCBuYW1lPSJWX0RBVEUiIHR5cGU9InhzOnN0cmluZyIgbXNkYXRhOnRhcmdldE5hbWVzcGFjZT0iIiBtaW5PY2N1cnM9IjAiIC8+DQogICAgICAgIDx4czplbGVtZW50IG5hbWU9IlZfREFURV9CIiB0eXBlPSJ4czpzdHJpbmciIG1zZGF0YTp0YXJnZXROYW1lc3BhY2U9IiIgbWluT2NjdXJzPSIwIiAvPg0KICAgICAgICA8eHM6ZWxlbWVudCBuYW1lPSJEQVRFX1RZUEUiIHR5cGU9InhzOnN0cmluZyIgbXNkYXRhOnRhcmdldE5hbWVzcGFjZT0iIiBtaW5PY2N1cnM9IjAiIC8+DQogICAgICAgIDx4czplbGVtZW50IG5hbWU9IkRBVEVfVFlQRV9CIiB0eXBlPSJ4czpzdHJpbmciIG1zZGF0YTp0YXJnZXROYW1lc3BhY2U9IiIgbWluT2NjdXJzPSIwIiAvPg0KICAgICAgPC94czpzZXF1ZW5jZT4NCiAgICA8L3hzOmNvbXBsZXhUeXBlPg0KICA8L3hzOmVsZW1lbnQ+DQogIDx4czplbGVtZW50IG5hbWU9InRtcERhdGFTZXQiIG1zZGF0YTpJc0RhdGFTZXQ9InRydWUiIG1zZGF0YTpNYWluRGF0YVRhYmxlPSJUYWJsZTEiIG1zZGF0YTpVc2VDdXJyZW50TG9jYWxlPSJ0cnVlIj4NCiAgICA8eHM6Y29tcGxleFR5cGU+DQogICAgICA8eHM6Y2hvaWNlIG1pbk9jY3Vycz0iMCIgbWF4T2NjdXJzPSJ1bmJvdW5kZWQiIC8+DQogICAgPC94czpjb21wbGV4VHlwZT4NCiAgPC94czplbGVtZW50Pg0KPC94czpzY2hlbWE+BgUAAADZBTxkaWZmZ3I6ZGlmZmdyYW0geG1sbnM6bXNkYXRhPSJ1cm46c2NoZW1hcy1taWNyb3NvZnQtY29tOnhtbC1tc2RhdGEiIHhtbG5zOmRpZmZncj0idXJuOnNjaGVtYXMtbWljcm9zb2Z0LWNvbTp4bWwtZGlmZmdyYW0tdjEiPg0KICA8dG1wRGF0YVNldD4NCiAgICA8VGFibGUxIGRpZmZncjppZD0iVGFibGUxMSIgbXNkYXRhOnJvd09yZGVyPSIwIiBkaWZmZ3I6aGFzQ2hhbmdlcz0iaW5zZXJ0ZWQiPg0KICAgICAgPExPQz5LQU9IU0lVTkc8L0xPQz4NCiAgICAgIDxWX0RBVEU+MjAxOS8xMC8wMSAxMDozNTwvVl9EQVRFPg0KICAgICAgPFZfREFURV9CIC8+DQogICAgICA8REFURV9UWVBFPkFjdHVhbDwvREFURV9UWVBFPg0KICAgICAgPERBVEVfVFlQRV9CIC8+DQogICAgPC9UYWJsZTE+DQogICAgPFRhYmxlMSBkaWZmZ3I6aWQ9IlRhYmxlMTIiIG1zZGF0YTpyb3dPcmRlcj0iMSIgZGlmZmdyOmhhc0NoYW5nZXM9Imluc2VydGVkIj4NCiAgICAgIDxMT0M+TUFOSUxBIChOT1JUSCBIQVJCT1VSKTwvTE9DPg0KICAgICAgPFZfREFURT4yMDE5LzEwLzA0IDE1OjAwPC9WX0RBVEU+DQogICAgICA8Vl9EQVRFX0I+MjAxOS8xMC8wNCAxNjowMDwvVl9EQVRFX0I+DQogICAgICA8REFURV9UWVBFPkFjdHVhbDwvREFURV9UWVBFPg0KICAgICAgPERBVEVfVFlQRV9CPkFjdHVhbDwvREFURV9UWVBFX0I+DQogICAgPC9UYWJsZTE+DQogIDwvdG1wRGF0YVNldD4NCjwvZGlmZmdyOmRpZmZncmFtPgQDAAAADlN5c3RlbS5WZXJzaW9uBAAAAAZfTWFqb3IGX01pbm9yBl9CdWlsZAlfUmV2aXNpb24AAAAACAgICAIAAAAAAAAA//////////8LHgt2c0NvbnRhaW5lcjLyGAABAAAA/////wEAAAAAAAAADAIAAABOU3lzdGVtLkRhdGEsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5BQEAAAAVU3lzdGVtLkRhdGEuRGF0YVRhYmxlAwAAABlEYXRhVGFibGUuUmVtb3RpbmdWZXJzaW9uCVhtbFNjaGVtYQtYbWxEaWZmR3JhbQMBAQ5TeXN0ZW0uVmVyc2lvbgIAAAAJAwAAAAYEAAAA3w88P3htbCB2ZXJzaW9uPSIxLjAiIGVuY29kaW5nPSJ1dGYtMTYiPz4NCjx4czpzY2hlbWEgeG1sbnM9IiIgeG1sbnM6eHM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDEvWE1MU2NoZW1hIiB4bWxuczptc2RhdGE9InVybjpzY2hlbWFzLW1pY3Jvc29mdC1jb206eG1sLW1zZGF0YSI+DQogIDx4czplbGVtZW50IG5hbWU9IlRhYmxlMSI+DQogICAgPHhzOmNvbXBsZXhUeXBlPg0KICAgICAgPHhzOnNlcXVlbmNlPg0KICAgICAgICA8eHM6ZWxlbWVudCBuYW1lPSJDVE5SX05VTSIgdHlwZT0ieHM6c3RyaW5nIiBtc2RhdGE6dGFyZ2V0TmFtZXNwYWNlPSIiIG1pbk9jY3Vycz0iMCIgLz4NCiAgICAgICAgPHhzOmVsZW1lbnQgbmFtZT0iQ05fU0laRSIgdHlwZT0ieHM6c3RyaW5nIiBtc2RhdGE6dGFyZ2V0TmFtZXNwYWNlPSIiIG1pbk9jY3Vycz0iMCIgLz4NCiAgICAgICAgPHhzOmVsZW1lbnQgbmFtZT0iU1RSX1RZUEUiIHR5cGU9InhzOnN0cmluZyIgbXNkYXRhOnRhcmdldE5hbWVzcGFjZT0iIiBtaW5PY2N1cnM9IjAiIC8+DQogICAgICAgIDx4czplbGVtZW50IG5hbWU9IlNFQUxfTk8iIHR5cGU9InhzOnN0cmluZyIgbXNkYXRhOnRhcmdldE5hbWVzcGFjZT0iIiBtaW5PY2N1cnM9IjAiIC8+DQogICAgICAgIDx4czplbGVtZW50IG5hbWU9Ik1PVkVfREFURSIgdHlwZT0ieHM6c3RyaW5nIiBtc2RhdGE6dGFyZ2V0TmFtZXNwYWNlPSIiIG1pbk9jY3Vycz0iMCIgLz4NCiAgICAgICAgPHhzOmVsZW1lbnQgbmFtZT0iTU9WRV9UWVBFIiB0eXBlPSJ4czpzdHJpbmciIG1zZGF0YTp0YXJnZXROYW1lc3BhY2U9IiIgbWluT2NjdXJzPSIwIiAvPg0KICAgICAgICA8eHM6ZWxlbWVudCBuYW1lPSJNT1ZFX1RZUEVfREVTQyIgdHlwZT0ieHM6c3RyaW5nIiBtc2RhdGE6dGFyZ2V0TmFtZXNwYWNlPSIiIG1pbk9jY3Vycz0iMCIgLz4NCiAgICAgICAgPHhzOmVsZW1lbnQgbmFtZT0iRVZFTlRfTkFNRSIgdHlwZT0ieHM6c3RyaW5nIiBtc2RhdGE6dGFyZ2V0TmFtZXNwYWNlPSIiIG1pbk9jY3Vycz0iMCIgLz4NCiAgICAgICAgPHhzOmVsZW1lbnQgbmFtZT0iUExBQ0VfTkFNRSIgdHlwZT0ieHM6c3RyaW5nIiBtc2RhdGE6dGFyZ2V0TmFtZXNwYWNlPSIiIG1pbk9jY3Vycz0iMCIgLz4NCiAgICAgICAgPHhzOmVsZW1lbnQgbmFtZT0iRFBPUlRfRVRBIiB0eXBlPSJ4czpzdHJpbmciIG1zZGF0YTp0YXJnZXROYW1lc3BhY2U9IiIgbWluT2NjdXJzPSIwIiAvPg0KICAgICAgICA8eHM6ZWxlbWVudCBuYW1lPSJTVFJfREFURV9GSU5BTCIgdHlwZT0ieHM6c3RyaW5nIiBtc2RhdGE6dGFyZ2V0TmFtZXNwYWNlPSIiIG1pbk9jY3Vycz0iMCIgLz4NCiAgICAgICAgPHhzOmVsZW1lbnQgbmFtZT0iREFURV9UWVBFX0ZJTkFMIiB0eXBlPSJ4czpzdHJpbmciIG1zZGF0YTp0YXJnZXROYW1lc3BhY2U9IiIgbWluT2NjdXJzPSIwIiAvPg0KICAgICAgICA8eHM6ZWxlbWVudCBuYW1lPSJMSUZFQ1lDTEUiIHR5cGU9InhzOnN0cmluZyIgbXNkYXRhOnRhcmdldE5hbWVzcGFjZT0iIiBtaW5PY2N1cnM9IjAiIC8+DQogICAgICAgIDx4czplbGVtZW50IG5hbWU9IkJMTk8iIHR5cGU9InhzOnN0cmluZyIgbXNkYXRhOnRhcmdldE5hbWVzcGFjZT0iIiBtaW5PY2N1cnM9IjAiIC8+DQogICAgICAgIDx4czplbGVtZW50IG5hbWU9IlZHTSIgdHlwZT0ieHM6c3RyaW5nIiBtc2RhdGE6dGFyZ2V0TmFtZXNwYWNlPSIiIG1pbk9jY3Vycz0iMCIgLz4NCiAgICAgIDwveHM6c2VxdWVuY2U+DQogICAgPC94czpjb21wbGV4VHlwZT4NCiAgPC94czplbGVtZW50Pg0KICA8eHM6ZWxlbWVudCBuYW1lPSJ0bXBEYXRhU2V0IiBtc2RhdGE6SXNEYXRhU2V0PSJ0cnVlIiBtc2RhdGE6TWFpbkRhdGFUYWJsZT0iVGFibGUxIiBtc2RhdGE6VXNlQ3VycmVudExvY2FsZT0idHJ1ZSI+DQogICAgPHhzOmNvbXBsZXhUeXBlPg0KICAgICAgPHhzOmNob2ljZSBtaW5PY2N1cnM9IjAiIG1heE9jY3Vycz0idW5ib3VuZGVkIiAvPg0KICAgIDwveHM6Y29tcGxleFR5cGU+DQogIDwveHM6ZWxlbWVudD4NCjwveHM6c2NoZW1hPgYFAAAA5gY8ZGlmZmdyOmRpZmZncmFtIHhtbG5zOm1zZGF0YT0idXJuOnNjaGVtYXMtbWljcm9zb2Z0LWNvbTp4bWwtbXNkYXRhIiB4bWxuczpkaWZmZ3I9InVybjpzY2hlbWFzLW1pY3Jvc29mdC1jb206eG1sLWRpZmZncmFtLXYxIj4NCiAgPHRtcERhdGFTZXQ+DQogICAgPFRhYmxlMSBkaWZmZ3I6aWQ9IlRhYmxlMTEiIG1zZGF0YTpyb3dPcmRlcj0iMCIgZGlmZmdyOmhhc0NoYW5nZXM9Imluc2VydGVkIj4NCiAgICAgIDxDVE5SX05VTT5UR0hVNTMwOTUwOTwvQ1ROUl9OVU0+DQogICAgICA8Q05fU0laRT40MDwvQ05fU0laRT4NCiAgICAgIDxTVFJfVFlQRT5EQy1EcnkgY2FyZ28gY29udGFpbmVyPC9TVFJfVFlQRT4NCiAgICAgIDxTRUFMX05PPllNQUYyMTc5NjM8L1NFQUxfTk8+DQogICAgICA8TU9WRV9EQVRFPjIwMTkvMTAvMTggMDA6NDQ8L01PVkVfREFURT4NCiAgICAgIDxNT1ZFX1RZUEU+MTE8L01PVkVfVFlQRT4NCiAgICAgIDxNT1ZFX1RZUEVfREVTQz5GQ0wvRkNMPC9NT1ZFX1RZUEVfREVTQz4NCiAgICAgIDxFVkVOVF9OQU1FPkVtcHR5IFJldHVybmVkPC9FVkVOVF9OQU1FPg0KICAgICAgPFBMQUNFX05BTUU+TUFOSUxBJmx0O0JSIC8mZ3Q7KEJveGl0IEJ1c2luZXNzIFNvbHV0aW9ucyBDb3JwLik8L1BMQUNFX05BTUU+DQogICAgICA8RFBPUlRfRVRBIC8+DQogICAgICA8U1RSX0RBVEVfRklOQUwgLz4NCiAgICAgIDxEQVRFX1RZUEVfRklOQUwgLz4NCiAgICAgIDxMSUZFQ1lDTEU+MjwvTElGRUNZQ0xFPg0KICAgICAgPEJMTk8+STIwOTM2NTIzOTwvQkxOTz4NCiAgICAgIDxWR00geG1sOnNwYWNlPSJwcmVzZXJ2ZSI+IDwvVkdNPg0KICAgIDwvVGFibGUxPg0KICA8L3RtcERhdGFTZXQ+DQo8L2RpZmZncjpkaWZmZ3JhbT4EAwAAAA5TeXN0ZW0uVmVyc2lvbgQAAAAGX01ham9yBl9NaW5vcgZfQnVpbGQJX1JldmlzaW9uAAAAAAgICAgCAAAAAAAAAP//////////Cx4FSW5kZXhmFgJmD2QWAgIDD2QWBAIHD2QWBgIBDxYCHgVzdHlsZQUNZGlzcGxheTpub25lO2QCBQ9kFgQCAQ9kFgQCOA8WAh4HVmlzaWJsZWhkAl0PZBYCZg9kFgICAw9kFgICAw8PFgIeBFRleHQF0BM8ZGw+PGR0Pjxmb250IHNpemU9Mj5Mb2NhbCBJbmZvPC9mb250PjwvZHQ+PGRkPjxhIGhyZWYgPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZSgnQVUnLCdlbi11cycpOyA+IEF1c3RyYWxpYTwvYT48L2RkPjxkZD48YSBocmVmID0nIycgb25jbGljaz1zZXRMb2NhbFNpdGUoJ0JFJywnZW4tdXMnKTsgPiBCZWxnaXVtPC9hPjwvZGQ+PGRkPjxhIGhyZWYgPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZSgnQkcnLCdlbi11cycpOyA+IEJ1bGdhcmlhPC9hPjwvZGQ+PGRkPjxhIGhyZWYgPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZSgnQ0EnLCdlbi11cycpOyA+IENhbmFkYTwvYT48L2RkPjxkZD48YSBocmVmID0nIycgb25jbGljaz1zZXRMb2NhbFNpdGUoJ0NOJywnemgtY24nKTsgPiBDaGluYSjnroDkvZPkuK3mlocpPC9hPjwvZGQ+PGRkPjxhIGhyZWYgPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZSgnSEsnLCd6aC10dycpOyA+IENoaW5hLUhvbmcgS29uZyjnuYHpq5TkuK3mlocpPC9hPjwvZGQ+PGRkPjxhIGhyZWYgPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZSgnRUcnLCdlbi11cycpOyA+IEVneXB0PC9hPjwvZGQ+PGRkPjxhIGhyZWYgPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZSgnRUUnLCdlbi11cycpOyA+IEVzdG9uaWE8L2E+PC9kZD48L2RsPjxkbD48ZHQ+Jm5ic3A7PC9kdD48ZGQ+PGEgaHJlZiA9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlKCdERScsJ2VuLXVzJyk7ID4gR2VybWFueTwvYT48L2RkPjxkZD48YSBocmVmID0nIycgb25jbGljaz1zZXRMb2NhbFNpdGUoJ0dSJywnZW4tdXMnKTsgPiBHcmVlY2U8L2E+PC9kZD48ZGQ+PGEgaHJlZiA9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlKCdJTicsJ2VuLXVzJyk7ID4gSW5kaWE8L2E+PC9kZD48ZGQ+PGEgaHJlZiA9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlKCdJRCcsJ2VuLXVzJyk7ID4gSW5kb25lc2lhPC9hPjwvZGQ+PGRkPjxhIGhyZWYgPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZSgnSVQnLCdlbi11cycpOyA+IEl0YWx5PC9hPjwvZGQ+PGRkPjxhIGhyZWYgPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZSgnSlAnLCdqYS1qcCcpOyA+IEphcGFuKOaXpeacrOiqnik8L2E+PC9kZD48ZGQ+PGEgaHJlZiA9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlKCdLUicsJ2tvLUtSJyk7ID4gS29yZWEo7ZWc6rWt7Ja0KTwvYT48L2RkPjxkZD48YSBocmVmID0nIycgb25jbGljaz1zZXRMb2NhbFNpdGUoJ0xWJywnZW4tdXMnKTsgPiBMYXR2aWE8L2E+PC9kZD48L2RsPjxkbD48ZHQ+Jm5ic3A7PC9kdD48ZGQ+PGEgaHJlZiA9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlKCdMVCcsJ2VuLXVzJyk7ID4gTGl0aHVhbmlhPC9hPjwvZGQ+PGRkPjxhIGhyZWYgPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZSgnTVknLCdlbi11cycpOyA+IE1hbGF5c2lhPC9hPjwvZGQ+PGRkPjxhIGhyZWYgPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZSgnTkwnLCdlbi11cycpOyA+IE5ldGhlcmxhbmRzPC9hPjwvZGQ+PGRkPjxhIGhyZWYgPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZSgnUEgnLCdlbi11cycpOyA+IFBoaWxpcHBpbmVzPC9hPjwvZGQ+PGRkPjxhIGhyZWYgPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZSgnUEwnLCdlbi11cycpOyA+IFBvbGFuZDwvYT48L2RkPjxkZD48YSBocmVmID0nIycgb25jbGljaz1zZXRMb2NhbFNpdGUoJ1JVJywnZW4tdXMnKTsgPiBSdXNzaWEo0KDQvtGB0YHQuNGPKTwvYT48L2RkPjxkZD48YSBocmVmID0nIycgb25jbGljaz1zZXRMb2NhbFNpdGUoJ1NHJywnZW4tdXMnKTsgPiBTaW5nYXBvcmU8L2E+PC9kZD48ZGQ+PGEgaHJlZiA9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlKCdFUycsJ2VuLXVzJyk7ID4gU3BhaW48L2E+PC9kZD48L2RsPjxkbD48ZHQ+Jm5ic3A7PC9kdD48ZGQ+PGEgaHJlZiA9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlKCdTRScsJ2VuLXVzJyk7ID4gU3dlZGVuPC9hPjwvZGQ+PGRkPjxhIGhyZWYgPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZSgnVFcnLCd6aC10dycpOyA+IFRhaXdhbijnuYHpq5TkuK3mlocpPC9hPjwvZGQ+PGRkPjxhIGhyZWYgPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZSgnVEgnLCdlbi11cycpOyA+IFRoYWlsYW5kKOC4m+C4o+C4sOC5gOC4l+C4qOC5hOC4l+C4oik8L2E+PC9kZD48ZGQ+PGEgaHJlZiA9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlKCdUUicsJ2VuLXVzJyk7ID4gVHVya2V5KFR1cmtpc2gpPC9hPjwvZGQ+PGRkPjxhIGhyZWYgPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZSgnQUUnLCdlbi11cycpOyA+IFVBRTwvYT48L2RkPjxkZD48YSBocmVmID0nIycgb25jbGljaz1zZXRMb2NhbFNpdGUoJ0dCJywnZW4tdXMnKTsgPiBVbml0ZWQgS2luZ2RvbTwvYT48L2RkPjxkZD48YSBocmVmID0nIycgb25jbGljaz1zZXRMb2NhbFNpdGUoJ1VTJywnZW4tdXMnKTsgPiBVU0E8L2E+PC9kZD48ZGQ+PGEgaHJlZiA9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlKCdWTicsJ2VuLXVzJyk7ID4gVmlldG5hbTwvYT48L2RkPjwvZGw+ZGQCAw8WAh8EaGQCBg9kFghmDw9kFgIeBVN0eWxlBSxwYWRkaW5nLXRvcDo1cHg7cGFkZGluZy1ib3R0b206NXB4O2Rpc3BsYXk6O2QCAQ8PZBYCHwYFMHBhZGRpbmctdG9wOjVweDtwYWRkaW5nLWJvdHRvbTo1cHg7ZGlzcGxheTpub25lO2QCAg9kFgICJQ9kFgJmD2QWAgIEDw8WAh8FBfgtPGxpIGNsYXNzPSdkcm9wZG93biBkcm9wZG93bi1zdWJtZW51IG1lbnVfbGknPiA8YSB0YWJpbmRleCA9Jy0xJyBjbGFzcz0nZHJvcGRvd24tdG9nZ2xlJyAgZGF0YS10b2dnbGU9J2Ryb3Bkb3duJyBocmVmPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZV9Sd2QoJ0FVJywnZW4tdXMnKTsgPiBBdXN0cmFsaWE8L2E+PC9saT48bGkgY2xhc3M9J2Ryb3Bkb3duIGRyb3Bkb3duLXN1Ym1lbnUgbWVudV9saSc+IDxhIHRhYmluZGV4ID0nLTEnIGNsYXNzPSdkcm9wZG93bi10b2dnbGUnICBkYXRhLXRvZ2dsZT0nZHJvcGRvd24nIGhyZWY9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlX1J3ZCgnQkUnLCdlbi11cycpOyA+IEJlbGdpdW08L2E+PC9saT48bGkgY2xhc3M9J2Ryb3Bkb3duIGRyb3Bkb3duLXN1Ym1lbnUgbWVudV9saSc+IDxhIHRhYmluZGV4ID0nLTEnIGNsYXNzPSdkcm9wZG93bi10b2dnbGUnICBkYXRhLXRvZ2dsZT0nZHJvcGRvd24nIGhyZWY9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlX1J3ZCgnQkcnLCdlbi11cycpOyA+IEJ1bGdhcmlhPC9hPjwvbGk+PGxpIGNsYXNzPSdkcm9wZG93biBkcm9wZG93bi1zdWJtZW51IG1lbnVfbGknPiA8YSB0YWJpbmRleCA9Jy0xJyBjbGFzcz0nZHJvcGRvd24tdG9nZ2xlJyAgZGF0YS10b2dnbGU9J2Ryb3Bkb3duJyBocmVmPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZV9Sd2QoJ0NBJywnZW4tdXMnKTsgPiBDYW5hZGE8L2E+PC9saT48bGkgY2xhc3M9J2Ryb3Bkb3duIGRyb3Bkb3duLXN1Ym1lbnUgbWVudV9saSc+IDxhIHRhYmluZGV4ID0nLTEnIGNsYXNzPSdkcm9wZG93bi10b2dnbGUnICBkYXRhLXRvZ2dsZT0nZHJvcGRvd24nIGhyZWY9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlX1J3ZCgnQ04nLCd6aC1jbicpOyA+IENoaW5hKOeugOS9k+S4reaWhyk8L2E+PC9saT48bGkgY2xhc3M9J2Ryb3Bkb3duIGRyb3Bkb3duLXN1Ym1lbnUgbWVudV9saSc+IDxhIHRhYmluZGV4ID0nLTEnIGNsYXNzPSdkcm9wZG93bi10b2dnbGUnICBkYXRhLXRvZ2dsZT0nZHJvcGRvd24nIGhyZWY9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlX1J3ZCgnSEsnLCd6aC10dycpOyA+IENoaW5hLUhvbmcgS29uZyjnuYHpq5TkuK3mlocpPC9hPjwvbGk+PGxpIGNsYXNzPSdkcm9wZG93biBkcm9wZG93bi1zdWJtZW51IG1lbnVfbGknPiA8YSB0YWJpbmRleCA9Jy0xJyBjbGFzcz0nZHJvcGRvd24tdG9nZ2xlJyAgZGF0YS10b2dnbGU9J2Ryb3Bkb3duJyBocmVmPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZV9Sd2QoJ0VHJywnZW4tdXMnKTsgPiBFZ3lwdDwvYT48L2xpPjxsaSBjbGFzcz0nZHJvcGRvd24gZHJvcGRvd24tc3VibWVudSBtZW51X2xpJz4gPGEgdGFiaW5kZXggPSctMScgY2xhc3M9J2Ryb3Bkb3duLXRvZ2dsZScgIGRhdGEtdG9nZ2xlPSdkcm9wZG93bicgaHJlZj0nIycgb25jbGljaz1zZXRMb2NhbFNpdGVfUndkKCdFRScsJ2VuLXVzJyk7ID4gRXN0b25pYTwvYT48L2xpPjxsaSBjbGFzcz0nZHJvcGRvd24gZHJvcGRvd24tc3VibWVudSBtZW51X2xpJz4gPGEgdGFiaW5kZXggPSctMScgY2xhc3M9J2Ryb3Bkb3duLXRvZ2dsZScgIGRhdGEtdG9nZ2xlPSdkcm9wZG93bicgaHJlZj0nIycgb25jbGljaz1zZXRMb2NhbFNpdGVfUndkKCdERScsJ2VuLXVzJyk7ID4gR2VybWFueTwvYT48L2xpPjxsaSBjbGFzcz0nZHJvcGRvd24gZHJvcGRvd24tc3VibWVudSBtZW51X2xpJz4gPGEgdGFiaW5kZXggPSctMScgY2xhc3M9J2Ryb3Bkb3duLXRvZ2dsZScgIGRhdGEtdG9nZ2xlPSdkcm9wZG93bicgaHJlZj0nIycgb25jbGljaz1zZXRMb2NhbFNpdGVfUndkKCdHUicsJ2VuLXVzJyk7ID4gR3JlZWNlPC9hPjwvbGk+PGxpIGNsYXNzPSdkcm9wZG93biBkcm9wZG93bi1zdWJtZW51IG1lbnVfbGknPiA8YSB0YWJpbmRleCA9Jy0xJyBjbGFzcz0nZHJvcGRvd24tdG9nZ2xlJyAgZGF0YS10b2dnbGU9J2Ryb3Bkb3duJyBocmVmPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZV9Sd2QoJ0lOJywnZW4tdXMnKTsgPiBJbmRpYTwvYT48L2xpPjxsaSBjbGFzcz0nZHJvcGRvd24gZHJvcGRvd24tc3VibWVudSBtZW51X2xpJz4gPGEgdGFiaW5kZXggPSctMScgY2xhc3M9J2Ryb3Bkb3duLXRvZ2dsZScgIGRhdGEtdG9nZ2xlPSdkcm9wZG93bicgaHJlZj0nIycgb25jbGljaz1zZXRMb2NhbFNpdGVfUndkKCdJRCcsJ2VuLXVzJyk7ID4gSW5kb25lc2lhPC9hPjwvbGk+PGxpIGNsYXNzPSdkcm9wZG93biBkcm9wZG93bi1zdWJtZW51IG1lbnVfbGknPiA8YSB0YWJpbmRleCA9Jy0xJyBjbGFzcz0nZHJvcGRvd24tdG9nZ2xlJyAgZGF0YS10b2dnbGU9J2Ryb3Bkb3duJyBocmVmPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZV9Sd2QoJ0lUJywnZW4tdXMnKTsgPiBJdGFseTwvYT48L2xpPjxsaSBjbGFzcz0nZHJvcGRvd24gZHJvcGRvd24tc3VibWVudSBtZW51X2xpJz4gPGEgdGFiaW5kZXggPSctMScgY2xhc3M9J2Ryb3Bkb3duLXRvZ2dsZScgIGRhdGEtdG9nZ2xlPSdkcm9wZG93bicgaHJlZj0nIycgb25jbGljaz1zZXRMb2NhbFNpdGVfUndkKCdKUCcsJ2phLWpwJyk7ID4gSmFwYW4o5pel5pys6KqeKTwvYT48L2xpPjxsaSBjbGFzcz0nZHJvcGRvd24gZHJvcGRvd24tc3VibWVudSBtZW51X2xpJz4gPGEgdGFiaW5kZXggPSctMScgY2xhc3M9J2Ryb3Bkb3duLXRvZ2dsZScgIGRhdGEtdG9nZ2xlPSdkcm9wZG93bicgaHJlZj0nIycgb25jbGljaz1zZXRMb2NhbFNpdGVfUndkKCdLUicsJ2tvLUtSJyk7ID4gS29yZWEo7ZWc6rWt7Ja0KTwvYT48L2xpPjxsaSBjbGFzcz0nZHJvcGRvd24gZHJvcGRvd24tc3VibWVudSBtZW51X2xpJz4gPGEgdGFiaW5kZXggPSctMScgY2xhc3M9J2Ryb3Bkb3duLXRvZ2dsZScgIGRhdGEtdG9nZ2xlPSdkcm9wZG93bicgaHJlZj0nIycgb25jbGljaz1zZXRMb2NhbFNpdGVfUndkKCdMVicsJ2VuLXVzJyk7ID4gTGF0dmlhPC9hPjwvbGk+PGxpIGNsYXNzPSdkcm9wZG93biBkcm9wZG93bi1zdWJtZW51IG1lbnVfbGknPiA8YSB0YWJpbmRleCA9Jy0xJyBjbGFzcz0nZHJvcGRvd24tdG9nZ2xlJyAgZGF0YS10b2dnbGU9J2Ryb3Bkb3duJyBocmVmPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZV9Sd2QoJ0xUJywnZW4tdXMnKTsgPiBMaXRodWFuaWE8L2E+PC9saT48bGkgY2xhc3M9J2Ryb3Bkb3duIGRyb3Bkb3duLXN1Ym1lbnUgbWVudV9saSc+IDxhIHRhYmluZGV4ID0nLTEnIGNsYXNzPSdkcm9wZG93bi10b2dnbGUnICBkYXRhLXRvZ2dsZT0nZHJvcGRvd24nIGhyZWY9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlX1J3ZCgnTVknLCdlbi11cycpOyA+IE1hbGF5c2lhPC9hPjwvbGk+PGxpIGNsYXNzPSdkcm9wZG93biBkcm9wZG93bi1zdWJtZW51IG1lbnVfbGknPiA8YSB0YWJpbmRleCA9Jy0xJyBjbGFzcz0nZHJvcGRvd24tdG9nZ2xlJyAgZGF0YS10b2dnbGU9J2Ryb3Bkb3duJyBocmVmPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZV9Sd2QoJ05MJywnZW4tdXMnKTsgPiBOZXRoZXJsYW5kczwvYT48L2xpPjxsaSBjbGFzcz0nZHJvcGRvd24gZHJvcGRvd24tc3VibWVudSBtZW51X2xpJz4gPGEgdGFiaW5kZXggPSctMScgY2xhc3M9J2Ryb3Bkb3duLXRvZ2dsZScgIGRhdGEtdG9nZ2xlPSdkcm9wZG93bicgaHJlZj0nIycgb25jbGljaz1zZXRMb2NhbFNpdGVfUndkKCdQSCcsJ2VuLXVzJyk7ID4gUGhpbGlwcGluZXM8L2E+PC9saT48bGkgY2xhc3M9J2Ryb3Bkb3duIGRyb3Bkb3duLXN1Ym1lbnUgbWVudV9saSc+IDxhIHRhYmluZGV4ID0nLTEnIGNsYXNzPSdkcm9wZG93bi10b2dnbGUnICBkYXRhLXRvZ2dsZT0nZHJvcGRvd24nIGhyZWY9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlX1J3ZCgnUEwnLCdlbi11cycpOyA+IFBvbGFuZDwvYT48L2xpPjxsaSBjbGFzcz0nZHJvcGRvd24gZHJvcGRvd24tc3VibWVudSBtZW51X2xpJz4gPGEgdGFiaW5kZXggPSctMScgY2xhc3M9J2Ryb3Bkb3duLXRvZ2dsZScgIGRhdGEtdG9nZ2xlPSdkcm9wZG93bicgaHJlZj0nIycgb25jbGljaz1zZXRMb2NhbFNpdGVfUndkKCdSVScsJ2VuLXVzJyk7ID4gUnVzc2lhKNCg0L7RgdGB0LjRjyk8L2E+PC9saT48bGkgY2xhc3M9J2Ryb3Bkb3duIGRyb3Bkb3duLXN1Ym1lbnUgbWVudV9saSc+IDxhIHRhYmluZGV4ID0nLTEnIGNsYXNzPSdkcm9wZG93bi10b2dnbGUnICBkYXRhLXRvZ2dsZT0nZHJvcGRvd24nIGhyZWY9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlX1J3ZCgnU0cnLCdlbi11cycpOyA+IFNpbmdhcG9yZTwvYT48L2xpPjxsaSBjbGFzcz0nZHJvcGRvd24gZHJvcGRvd24tc3VibWVudSBtZW51X2xpJz4gPGEgdGFiaW5kZXggPSctMScgY2xhc3M9J2Ryb3Bkb3duLXRvZ2dsZScgIGRhdGEtdG9nZ2xlPSdkcm9wZG93bicgaHJlZj0nIycgb25jbGljaz1zZXRMb2NhbFNpdGVfUndkKCdFUycsJ2VuLXVzJyk7ID4gU3BhaW48L2E+PC9saT48bGkgY2xhc3M9J2Ryb3Bkb3duIGRyb3Bkb3duLXN1Ym1lbnUgbWVudV9saSc+IDxhIHRhYmluZGV4ID0nLTEnIGNsYXNzPSdkcm9wZG93bi10b2dnbGUnICBkYXRhLXRvZ2dsZT0nZHJvcGRvd24nIGhyZWY9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlX1J3ZCgnU0UnLCdlbi11cycpOyA+IFN3ZWRlbjwvYT48L2xpPjxsaSBjbGFzcz0nZHJvcGRvd24gZHJvcGRvd24tc3VibWVudSBtZW51X2xpJz4gPGEgdGFiaW5kZXggPSctMScgY2xhc3M9J2Ryb3Bkb3duLXRvZ2dsZScgIGRhdGEtdG9nZ2xlPSdkcm9wZG93bicgaHJlZj0nIycgb25jbGljaz1zZXRMb2NhbFNpdGVfUndkKCdUVycsJ3poLXR3Jyk7ID4gVGFpd2FuKOe5gemrlOS4reaWhyk8L2E+PC9saT48bGkgY2xhc3M9J2Ryb3Bkb3duIGRyb3Bkb3duLXN1Ym1lbnUgbWVudV9saSc+IDxhIHRhYmluZGV4ID0nLTEnIGNsYXNzPSdkcm9wZG93bi10b2dnbGUnICBkYXRhLXRvZ2dsZT0nZHJvcGRvd24nIGhyZWY9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlX1J3ZCgnVEgnLCdlbi11cycpOyA+IFRoYWlsYW5kKOC4m+C4o+C4sOC5gOC4l+C4qOC5hOC4l+C4oik8L2E+PC9saT48bGkgY2xhc3M9J2Ryb3Bkb3duIGRyb3Bkb3duLXN1Ym1lbnUgbWVudV9saSc+IDxhIHRhYmluZGV4ID0nLTEnIGNsYXNzPSdkcm9wZG93bi10b2dnbGUnICBkYXRhLXRvZ2dsZT0nZHJvcGRvd24nIGhyZWY9JyMnIG9uY2xpY2s9c2V0TG9jYWxTaXRlX1J3ZCgnVFInLCdlbi11cycpOyA+IFR1cmtleShUdXJraXNoKTwvYT48L2xpPjxsaSBjbGFzcz0nZHJvcGRvd24gZHJvcGRvd24tc3VibWVudSBtZW51X2xpJz4gPGEgdGFiaW5kZXggPSctMScgY2xhc3M9J2Ryb3Bkb3duLXRvZ2dsZScgIGRhdGEtdG9nZ2xlPSdkcm9wZG93bicgaHJlZj0nIycgb25jbGljaz1zZXRMb2NhbFNpdGVfUndkKCdBRScsJ2VuLXVzJyk7ID4gVUFFPC9hPjwvbGk+PGxpIGNsYXNzPSdkcm9wZG93biBkcm9wZG93bi1zdWJtZW51IG1lbnVfbGknPiA8YSB0YWJpbmRleCA9Jy0xJyBjbGFzcz0nZHJvcGRvd24tdG9nZ2xlJyAgZGF0YS10b2dnbGU9J2Ryb3Bkb3duJyBocmVmPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZV9Sd2QoJ0dCJywnZW4tdXMnKTsgPiBVbml0ZWQgS2luZ2RvbTwvYT48L2xpPjxsaSBjbGFzcz0nZHJvcGRvd24gZHJvcGRvd24tc3VibWVudSBtZW51X2xpJz4gPGEgdGFiaW5kZXggPSctMScgY2xhc3M9J2Ryb3Bkb3duLXRvZ2dsZScgIGRhdGEtdG9nZ2xlPSdkcm9wZG93bicgaHJlZj0nIycgb25jbGljaz1zZXRMb2NhbFNpdGVfUndkKCdVUycsJ2VuLXVzJyk7ID4gVVNBPC9hPjwvbGk+PGxpIGNsYXNzPSdkcm9wZG93biBkcm9wZG93bi1zdWJtZW51IG1lbnVfbGknPiA8YSB0YWJpbmRleCA9Jy0xJyBjbGFzcz0nZHJvcGRvd24tdG9nZ2xlJyAgZGF0YS10b2dnbGU9J2Ryb3Bkb3duJyBocmVmPScjJyBvbmNsaWNrPXNldExvY2FsU2l0ZV9Sd2QoJ1ZOJywnZW4tdXMnKTsgPiBWaWV0bmFtPC9hPjwvbGk+ZGQCAw8WAh8EaGQCCw9kFgICAw9kFgYCAw8WAh8EaGQCCw8WAh4FVmFsdWUFXiNDb250ZW50UGxhY2VIb2xkZXIxX3JwdEJMTm9fZ3ZCYXNpY0luZm9ybWF0aW9uXzAsI0NvbnRlbnRQbGFjZUhvbGRlcjFfcnB0QkxOb19ndkxhdGVzdEV2ZW50XzBkAg0PFgIeC18hSXRlbUNvdW50AgEWAmYPZBYGAgcPDxYCHwUFCkkyMDkzNjUyMzlkZAILD2QWAgIBDxYCHwUFazxhIGhyZWY9InRyYWNrX3RyYWNlX3N1YnNjcmlwdGlvbi5hc3B4P3N0cm51bT1JMjA5MzY1MjM5LCIgdGFyZ2V0PSJfYmxhbmsiPlRyYWNraW5nIFJlcG9ydCBTdWJzY3JpcHRpb248L2E+ZAIND2QWJAIDDzwrABEDAA8WBh4TVXNlQWNjZXNzaWJsZUhlYWRlcmceC18hRGF0YUJvdW5kZx8IAgFkARAWABYAFgAMFCsAABYCZg9kFgZmDw8WAh4MVGFibGVTZWN0aW9uCyopU3lzdGVtLldlYi5VSS5XZWJDb250cm9scy5UYWJsZVJvd1NlY3Rpb24AZGQCAQ9kFghmD2QWAgIBDw8WAh8FBRFLQU9IU0lVTkcsIFRhaXdhbmRkAgEPZBYCAgEPDxYCHwUFEUtBT0hTSVVORywgVGFpd2FuZGQCAg9kFgICAQ8PFgIfBQUjTUFOSUxBIChOT1JUSCBIQVJCT1VSKSwgUGhpbGlwcGluZXNkZAIDD2QWAgIBDw8WAh8FBSNNQU5JTEEgKE5PUlRIIEhBUkJPVVIpLCBQaGlsaXBwaW5lc2RkAgIPDxYCHwRoZGQCCQ8PFgIfBQXOATxhIGhyZWY9Ii4uL3Zlc3NlbF90cmFja2luZy92ZXNzZWxfdHJhY2tpbmdfZGV0YWlsLmFzcHg/dmVzc2VsPVNJTlAmZnVuYz1jdXJyZW50IiAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHRhcmdldD0iX2JsYW5rIiB0aXRsZT0iQ2xpY2sgaGVyZSB0byB2aWV3IHZlc3NlbCBzY2hlZHVsZSI+U0lOR0FQT1JFPC9hPiAtIDA5NlMgKFRQRTk0MFMpZGQCDw8PFgIfBQUHMTAyMCBCR2RkAhUPDxYCHwUFCjIwMTkvMTAvMDJkZAIbDw8WAh8FBQUyNTcwNGRkAiMPDxYCHwUFEDEgdW5pdCAoMSAqIDQwJylkZAIpDw8WAh8FBQI1MGRkAjEPDxYCHwUFH0NvbnRhaW5lciBZYXJkIC0gQ29udGFpbmVyIFlhcmRkZAIzDxYCHwMFKWZsb2F0OmxlZnQ7cGFkZGluZy10b3A6MTBweDtkaXNwbGF5Om5vbmU7ZAI3DxYCHwgCAhYEZg9kFgQCAQ8PFgIfBQUJS0FPSFNJVU5HZGQCAw8PFgIfBQUZMjAxOS8xMC8wMSAxMDozNSAoQWN0dWFsKWRkAgEPZBYEAgEPDxYCHwUFFk1BTklMQSAoTk9SVEggSEFSQk9VUilkZAIDDw8WAh8FBXcyMDE5LzEwLzA0IDE1OjAwIChBY3R1YWwpPGJyIC8+PGZvbnQgY29sb3I9JyNGRjAwMDAnPio8L2ZvbnQ+Jm5ic3A7QmVydGhpbmcgdGltZSBhdCB0ZXJtaW5hbDogMjAxOS8xMC8wNCAxNjowMCAoQWN0dWFsKWRkAjkPFgIfAwUdbWFyZ2luLXRvcDoxMHB4O2Rpc3BsYXk6bm9uZTtkAjsPFgIfAwUfcGFkZGluZy10b3A6MjBweDtkaXNwbGF5OmJsb2NrOxYCAgUPDxYCHwUFJVRlbGV4IFJlbGVhc2UgaXMgQWNjZXB0ZWQgJiBQcm9jZXNzZWRkZAI9DxYCHwMFHnBhZGRpbmctdG9wOjIwcHg7ZGlzcGxheTpub25lO2QCQQ8WAh8DBR5wYWRkaW5nLXRvcDoyMHB4O2Rpc3BsYXk6bm9uZTtkAkMPFgIfAwUecGFkZGluZy10b3A6MjBweDtkaXNwbGF5Om5vbmU7ZAJFDxYCHwMFHnBhZGRpbmctdG9wOjIwcHg7ZGlzcGxheTpub25lO2QCRw8WAh8DBR5wYWRkaW5nLXRvcDoyMHB4O2Rpc3BsYXk6bm9uZTsWBAIHD2QWAgIBDzwrABEDAA8WBB8KZx8IZmQBEBYAFgAWAAwUKwAAZAIJD2QWAgIBDzwrABEDAA8WBB8KZx8IZmQBEBYAFgAWAAwUKwAAZAJLDzwrABEDAA8WBh8JZx8KZx8IAgFkARAWAQIIFgE8KwAFAQAWAh8EaBYBAgYMFCsAABYCZg9kFgZmDw8WAh8LCysEAGQWAgIIDw8WAh8EaGRkAgEPZBYUZg9kFgICAQ8WAh8FBXA8YSBocmVmPSJjdGNvbm5lY3QuYXNweD9yZG9sVHlwZT1CTCZjdG5ybm89VEdIVTUzMDk1MDkmYmxubz1JMjA5MzY1MjM5Jm1vdmVydHlwZT0xMSZsaWZlY3ljbGU9MiI+VEdIVTUzMDk1MDk8L2E+ZAIBD2QWAgIBDw8WAh8FBQI0MGRkAgIPZBYCAgEPDxYCHwUFFkRDLURyeSBjYXJnbyBjb250YWluZXJkZAIDD2QWAgIBDw8WAh8FBQpZTUFGMjE3OTYzZGQCBA9kFgICAQ8PFgIfBQUHRkNML0ZDTGRkAgUPZBYCAgEPDxYCHwUFEDIwMTkvMTAvMTggMDA6NDRkZAIGD2QWAgIBDw8WAh8FBQ5FbXB0eSBSZXR1cm5lZGRkAgcPZBYCAgEPDxYCHwUFLE1BTklMQTxCUiAvPihCb3hpdCBCdXNpbmVzcyBTb2x1dGlvbnMgQ29ycC4pZGQCCA9kFgICAQ8PFgIfBWVkZAIJD2QWAgIBDw8WAh8FBQEgZGQCAg8PFgIfBGhkZBgEBTVjdGwwMCRDb250ZW50UGxhY2VIb2xkZXIxJHJwdEJMTm8kY3RsMDAkZ3ZMYXRlc3RFdmVudA88KwAMAQgCAWQFNmN0bDAwJENvbnRlbnRQbGFjZUhvbGRlcjEkcnB0QkxObyRjdGwwMCRndkxhc3RGcmVlRGF0ZQ88KwAMAQhmZAU3Y3RsMDAkQ29udGVudFBsYWNlSG9sZGVyMSRycHRCTE5vJGN0bDAwJGd2Q3VzdG9tc1N0YXR1cw88KwAMAQhmZAU6Y3RsMDAkQ29udGVudFBsYWNlSG9sZGVyMSRycHRCTE5vJGN0bDAwJGd2QmFzaWNJbmZvcm1hdGlvbg88KwAMAQgCAWSBRCjyuO78ffNc9le6OAfvj9ESL3q87v94qHGFlxOZkw==" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="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" />
 </div>
 
 <script type="text/javascript">
@@ -292,22 +381,23 @@ function __doPostBack(eventTarget, eventArgument) {
 </script>
 
 
-<script src="/WebResource.axd?d=mBvig7cnFE-IWnQfMPJVJyDTBWWKWi2g89EMrFzIbDz31H1RNF-80i3_d6dBwFiD2t_YcaXmiXYPP57Ix47FGzj6iE8GoAndd5zYempFbk41&amp;t=636765215060000000" type="text/javascript"></script>
+<script src="/WebResource.axd?d=Z7O-ov7B7f7TAbGmP_mPcmUFtqohxFH4IqYZ8MEnaxeWmYJBo_pmsrTsicNg8Hf1nDdgRoRaPXLed1wfspEPVV7sGqNtPRryTGO2w2mtUD81&amp;t=637454356754849868" type="text/javascript"></script>
 
 
-<script src="/ScriptResource.axd?d=czunIZG4nYwfGSXDdaU_krtCvmhEnVSemwx78Jnr1FyvkYxNshzeF1yiq90xvMutH1QOnctYXcGDB3_tCAtJQmlNkMaFcH8ZyRZ13t6rFRv-wBKBqEyCeprLCiV4qEIsW679bBvypyvE5YKmDwjwOUhFD0NQO6b6owfGCVtHAGY1&amp;t=2b48f70a" type="text/javascript"></script>
-<script src="/ScriptResource.axd?d=TwZQlZbr4yhPZdXTPGZ8CAuT5WYtLWv0P_Nv8wpMyqMXDXFH-DTzmt64OY9U53JHHqljClJxMTLaKnnMb4aAahWPAYdjGtn2DyRL55qc0PsBtbwk97oAmMHJcKktmdVgPmPcEsJHCpEt1gxxwt5PgRVB-zseryg64a7G9almRVKfrVf8sr63ukMpI2sCqUhQ0&amp;t=2b48f70a" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=ao3poIdmOt8tqjg1tZkjjzjMfCgvz-MoWzASa1VykaZCpujaW3oXpoY1FzI2_Ex9JEnU0m8F6vrhMkxkAVy239mNoEWHtrgueBGzmAZjIY5U5OAHNUFka7914mOcl00xZH4ACY2ZBTgq0dNV865sfgM2X74mhGVGoDtPPSWT5pY1&amp;t=363be08" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=LKDWpJj1LskH6uvdLlDURWZ_jM_6tr7AfgxtqV8go4dA6zpkn7vxdWNhuRZ8SBfCAau3Wi8-epWhTI5LVNbXtvBj-6pjSgcxty7RPd3DP9dCm-m0jcoDXR6bczpaBxh6qc-5YZqNmw02rH_ZFvDeQGYvqnjVJkIMvqUEpJZDZz47WKskcT74ng_-0WeBxUGb0&amp;t=363be08" type="text/javascript"></script>
 <div class="aspNetHidden">
 
 	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="508E7D00" />
-	<input type="hidden" name="__PREVIOUSPAGE" id="__PREVIOUSPAGE" value="4Fqqz3-m8yEeu9v_gxwcvW_FU9_wYI91C4CLudBE5Qu3cnstRP33D7WvD8c1_lK0TAyE5GwJTnu17luH9ecbqsBJoo0NPpW9MiY6OL3NrLTR3hp2IED8KP8w7BKzPrJW0" />
-	<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="/wEdABYbAPC8MSw9LoybsQvRypnV0kzCBn0GUXaybVvEgpGhJBan8Hipa+RH80BtXbRl05cVKm2QObfOHv4blEBfrAgEQSDCMfw7FN3se4IlFUFNZwcT55ELczTiJdZdBbjd+jjgfUbRDP1Za3tqCVuKq3JEw4QmG2ZBf5yfkBcn8Fpvt1YiQ3AIrw+8qjq/hphzila537o4gpB7yFh0Z+/huRSzD8S/fVI8QOjmC5BCjLpbvOvR4V3EgbS0+ZZwcCcLplFlzq22l7PnnAt92r18eCR+BOMQiXGYsEm9J2SUM+NFkQhuPOavqRH44nE3wPOjiD7hW92/tcBehS8A7rMr7VHmweUEK5AxTg8sFWvAj413xMu0t2thqmqRXXt4ea0sO9YHHtkSnkWOkafC9d1XkIWNtd4irRCGYF9cWkg9N731x3YCG3HWlKvXjS2bFBEfyqJA8WJLP8gdV3bFReFRYgHKkAZAROIZrcKZej1y6YCMtcxIZxlkEWAEyLdeUUzE9xo=" />
+	<input type="hidden" name="__VIEWSTATEENCRYPTED" id="__VIEWSTATEENCRYPTED" value="" />
+	<input type="hidden" name="__PREVIOUSPAGE" id="__PREVIOUSPAGE" value="RfWXBKB3JNmUcsNYbjBlIoLbRxvLcsAEggGJV-5m0yIw35yDPIP9dnkTOOcGD0u4rjos9VyRJpz-IgICJpKACKgj01MtAEUQbW4TS_8YoXH1zV-c_raxemhWft9GxOR10" />
+	<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="sdMize23TKKLZojW3gGbgKdaVd69XXndbsTPOkoTMhBFInY5xH8N1Ttt1n07YwiPsag/1GfK7ceA+IEPYtG729WHwphcJG4D8RiLjxeqNXhWo6jur6774h0bSO2u9xtRhi0a18wCeU19UjucU3DaAGFKg1NYok6oIJJL4bbqj88SpJZWTzyoxWzk2+4sYGwShNHI/mNkMvzFju0j4RFQpOhgXzfq/DCV0AirT4i79ePA303Xlsq5T0ag9gwO1LKLpS/QX/eSExtttL59KK6sTCsIIhC2zWs7KP1KJStGmafleUkCuiuxWSQ3TDkuajerFku9JQC3Mz/Lm1s9TmtWCXFl5jmt3JqcOp4toQ+KhSDp7ZWbxpQq/2z1AdPB6SUA72vv1cE0txbe5Vhq5RDFS0AbbXC/FhEsCyHyxZJoizxHa/zkwbr1uO/wtkDr2rBhZAMQ/X0gYjXD65HP8Po+R9MZinTfGhGAK3CLpH37W/YuAMtxe/SEMFE5OgcjDvWxKxaZ/f0VnOf7FpRTqpxzYNjHB8JC5nZYfLLegTefGW5UWC0fnqJTMt0gI/j/LBjY2rodPXziSyUWI2D/dYIc2/0aat41QrsMfBfenNqKtmovITwbFJEn46saMMPi54k1ow906J0Jq/vKfKsS/dgrmg==" />
 </div>
         <input type="hidden" name="ctl00$hidButtonType" id="hidButtonType" value="0" />
         <input type="hidden" name="ctl00$hfIsInIframe" id="hfIsInIframe" />
 
         <div id="outter_wrap_rwd">
-            
+
             <div id="main_wrap_rwd" class="container">
                 <div id="header_rwd">
                     <script type="text/javascript">
@@ -324,23 +414,36 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                 <!------ Orignal Menu ------->
                                 <div id="header">
                                     <a id="lnkHome" class="navbar-brand hidden-xs hidden-sm" href="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$lnkHome&quot;, &quot;&quot;, false, &quot;&quot;, &quot;/index.aspx&quot;, false, true))" style="padding-top: 30px">
-                                        <img src="/Content/Img/logo.png" alt="" style="width: 100%;" />
+                                        <img src="/Content/Img/logo.svg" alt="" style="width: 70px;" />
                                     </a>
 
                                     <div id="LoginInfo" class="sayhello" style="display:none;">Hello,</div>
-                                    <div>
+                                    <div class="top-area">
                                         <ul class="language">
-                                            <li>
-                                                <a id="lbtus_en" href="javascript:__doPostBack(&#39;ctl00$lbtus_en&#39;,&#39;&#39;)">English</a></li>
-                                            <li>
-                                                <a id="lbtzh_tw" href="javascript:__doPostBack(&#39;ctl00$lbtzh_tw&#39;,&#39;&#39;)">繁體中文</a></li>
-                                            
-                                            <li>
-                                                <a id="lbtzh_cn" href="javascript:__doPostBack(&#39;ctl00$lbtzh_cn&#39;,&#39;&#39;)">简体中文</a></li>
-                                            
+                                            <li class="global">Language
+                                                <div class="country">
+                                                    <a id="lbtus_en" href="javascript:__doPostBack(&#39;ctl00$lbtus_en&#39;,&#39;&#39;)">English</a>
+                                                    <a id="lbtzh_tw" href="javascript:__doPostBack(&#39;ctl00$lbtzh_tw&#39;,&#39;&#39;)">繁體中文</a>
+                                                    <a id="lbtzh_cn" href="javascript:__doPostBack(&#39;ctl00$lbtzh_cn&#39;,&#39;&#39;)">简体中文</a>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                        <ul class="flex-box">
+                                            <li id="login" class="login-icon"><a href="/e-service/member_area/member_login.aspx">Login</a></li>
+                                            <li class="logout-icon" style="display: none"><a href="/e-service/member_area/member_login_index.aspx?h_Sign=Logout">Logout</a>
+                                                <div class="logbox">
+                                                    <a href="/e-service/member_area/member_login_index.aspx">
+                                                        My YM Account</a>
+                                                    <a href="/e-service/member_area/register_modify.aspx">
+                                                        Change Register</a>
+                                                    <a href="/e-service/member_area/change_password.aspx">
+                                                        Change Password</a>
+                                                    <a href="/e-service/member_area/member_management.aspx">
+                                                        Sub-user Maintenance</a>
+                                                </div>
+                                            </li>
+                                            <li id="register" class="register_icon"><a href="/e-service/member_area/register.aspx">Register</a></li>
                                             <li class="search_icon"><a href="/search.aspx" title="Website Search">Search</a></li>
-                                            <li class="logout_icon" style="display: none"><a href="/e-service/member_area/member_login_index.aspx?h_Sign=Logout"
-                                                title="Logout">Logout</a></li>
                                         </ul>
                                     </div>
                                     <div id="navi">
@@ -366,7 +469,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                                                     <a href="/About_Us/Group_Profile/TopManagement.aspx">
                                                                         Organization & Top Management
                                                                     </a>
-                                                                    
+
                                                                 </dd>
                                                                 <dd>
                                                                     <a href="/About_Us/Group_Profile/AwardAndCertificate.aspx">
@@ -388,7 +491,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                                                         Related Websites
                                                                     </a>
                                                                 </dd>
-                                                                
+
                                                             </dl>
                                                             <dl>
                                                                 <dt>
@@ -396,13 +499,13 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                                                 </dt>
                                                                 <dd>
                                                                     <a href="/About_Us/ISO_Management/Quality_Policy.aspx">
-                                                                        Quality Policy</a></dd>
+                                                                        Quality Management</a></dd>
                                                                 <dd>
-                                                                    <a href="/About_Us/ISO_Management/Environment_Protection.aspx">
-                                                                        Environmental Protection</a></dd>
+                                                                    <a href="/About_Us/ISO_Management/Environment_Policy.aspx">
+                                                                        Environment Management</a></dd>
                                                                 <dd>
                                                                     <a href="/About_Us/ISO_Management/Information_Security_Management_system.aspx">
-                                                                        Information Security Management System
+                                                                        Information Security Management
                                                                     </a></dd>
                                                                 <dd>
                                                                     <a href="/About_Us/ISO_Management/Safety_and_Health_Management.aspx">
@@ -425,8 +528,8 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                                                 <dt>
                                                                     Environmental Protection</dt>
                                                                 <dd>
-                                                                    <a href="/About_Us/Environment_Preservation/Environment_Policy.aspx">
-                                                                        Environment Policy</a></dd>
+                                                                    <a href="/About_Us/Environment_Preservation/Environment_Performance.aspx">
+                                                                        Environment Performance</a></dd>
                                                                 <dd>
                                                                     <a href="/about_us/Environment_Preservation/greenvessel.aspx">
                                                                         Green Vessel</a></dd>
@@ -437,8 +540,8 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                                                     <a href="/about_us/Environment_Preservation/carboncalculator.aspx">
                                                                         Carbon Calculator</a></dd>
                                                                 <dd>
-                                                                    <a href="/about_Us/Environment_Preservation/Clean_Cargo_Working_Group.aspx">
-                                                                        Clean Cargo Working Group</a></dd>
+                                                                    <a href="/about_Us/Environment_Preservation/Clean_Cargo.aspx">
+                                                                        Clean Cargo</a></dd>
                                                             </dl>
                                                             <dl id="job_en">
                                                                 <dt>Jobs &amp; Career</dt>
@@ -448,7 +551,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                                                     <a href="/About_Us/Jobs_Career/Job_Opportunity.aspx">Global Job Opportunity</a></dd>
                                                             </dl>
 
-                                                            
+
                                                         </div>
                                                     </div>
                                                 </li>
@@ -520,56 +623,12 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                                                 <dd>
                                                                     <a href="/service/Useful_Info/dangerouscargoinformation.aspx">
                                                                         Dangerous Cargo Information</a></dd>
-                                                                
+
                                                             </dl>
                                                         </div>
                                                     </div>
                                                 </li>
                                                 <!---------------------end Our Service---------------------------------------------------------->
-                                                <!---------------------Office Network------------------------------------>
-                                                <li class="menu_btn"><a href="#">
-                                                    Office Network</a>
-                                                    <div class="sub" style="opacity: 0; display: none; width: 960px;">
-                                                        <div class="wrap_local">
-                                                            <div class="left">
-                                                                <ul>
-                                                                    <li class="title_head_office">
-                                                                        Global Headquarters</li>
-                                                                    <li><a href="/office_network/headquarter/headquarter.aspx">
-                                                                        Global Headquarters</a></li>
-                                                                </ul>
-                                                            </div>
-                                                            <div class="left">
-                                                                <ul>
-                                                                    <li class="title_head_office">
-                                                                        Regional Head Office</li>
-                                                                    <li><a href="/office_network/regional_head_office/head_office.aspx#Central & South America">Central & South America</a></li>
-                                                                    <li><a href="/office_network/regional_head_office/head_office.aspx#Europe">Europe</a></li>
-                                                                    <li><a href="/office_network/regional_head_office/head_office.aspx#Mediterranean">Mediterranean Head Office</a></li>
-                                                                    <li><a href="/office_network/regional_head_office/head_office.aspx#Middle East">Middle East Head Office</a></li>
-                                                                    <li><a href="/office_network/regional_head_office/head_office.aspx#North America">North America</a></li>
-                                                                </ul>
-                                                            </div>
-                                                            <div class="right">
-                                                                <span class="agent_title">
-                                                                    Office & Agent</span>
-                                                                <ul>
-                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#ASI">Asia</a></li>
-                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#BLS">Black Sea</a></li>
-                                                                    <li style="display:none;"><a href="/office_network/office_agent/agent_overview.aspx#CBS">Caribbean Sea</a></li>
-                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#AMC">Central America</a></li>
-                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#EUR">Europe</a></li>
-                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#MED">Mediterranean</a></li>
-                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#ME">Middle East</a></li>
-                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#AMN">North America</a></li>
-                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#OCE">Oceania</a></li>
-                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#AMS">South America</a></li>
-                                                                </ul>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </li>
-                                                <!---------------------end Office Network---------------------------------------------------------->
                                                 <li class="menu_btn"><a href="#">
                                                     News</a>
                                                     <div class="sub" style="opacity: 0; display: none; width: 960px;">
@@ -590,28 +649,68 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                                     </div>
                                                     <!-- end of item_news -->
                                                 </li>
+                                                <!--20210119 new menu start-->
+                                                <li id="Corporate_en" class="menu_btn"><a href="#">
+                                                    Corporate Governance</a>
+                                                    <div class="sub">
+                                                        <div class="wrap_corporate">
+                                                            <dl>
+                                                                <dt>Corporate Governance Structure</dt>
+                                                                <dd><a href="/CorporateGovernance/Corporategovernancestructure.aspx">Corporate Governance Structure Chart</a></dd>
+                                                                <dd><a href="/CorporateGovernance/ChiefCorporateGovernanceOfficer.aspx">Chief Corporate Governance Officer</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>Implementation Status of Corporate Governance</dt>
+                                                                <dd><a href="/CorporateGovernance/ImplementationStatusofEthicalCorporateManagement.aspx">Implementation Status of Ethical Corporate Management </a></dd>
+                                                                <dd><a href="/CorporateGovernance/ImplementationStatusofHumanRightsPolicies.aspx">Implementation Status of Human Rights Policies</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>Board of Directors</dt>
+                                                                <dd><a href="/CorporateGovernance/BoardMembers.aspx">Board Members</a></dd>
+                                                                <dd><a href="/CorporateGovernance/BoardDiversityPolicy.aspx">The Board Diversity Policy</a></dd>
+                                                                <dd><a href="/CorporateGovernance/SuccessionPlanforBoardMembers.aspx">Succession Plan for Board Members</a></dd>
+                                                                <dd><a href="/CorporateGovernance/BoardofDirectorsMeetingStatus.aspx">Board of Directors Meeting Status</a></dd>
+                                                                <dd><a href="/CorporateGovernance/MajorResolutionsofBoardMeetings.aspx">Major Resolutions of Board Meetings</a></dd>
+                                                                <dd><a href="/CorporateGovernance/ContinuingEducationforDirectors.aspx">Continuing Education for Directors</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>Functional Committees</dt>
+                                                                <dd><a href="/CorporateGovernance/FunctionalCommittees.aspx">Functional Committees</a></dd>
+                                                                <dd><a href="/CorporateGovernance/FunctionalCommitteesMeetingStatus.aspx">Functional Committees Meeting Status</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>Independent Directors’ Communication Status</dt>
+                                                                <dd><a href="/CorporateGovernance/IndependentDirectorsandChiefAuditor.aspx">Communication Status</a></dd>
+
+                                                            </dl>
+                                                            <!-- <dl>
+                                                                <dt>內部稽核</dt>
+                                                                <dd><a href="#">稽核室組織系統及人員配置表</a></dd>
+                                                                <dd><a href="#">稽核室執掌</a></dd>
+                                                            </dl> -->
+                                                            <dl>
+                                                                <dt>Whistleblowing System</dt>
+                                                                <dd><a href="/CorporateGovernance/WhistleblowingSystem.aspx">Whistleblowing System</a></dd>
+
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>Rules and Regulations</dt>
+                                                                <dd><a href="/CorporateGovernance/RulesandRegulations.aspx">Rules and Regulations</a></dd>
+
+                                                            </dl>
+                                                        </div>
+                                                    </div>
+                                                </li>
+
+                                                <!--20210119 new menu end-->
                                                 <li id="Investor_en" class="menu_btn"><a href="#">
                                                     Investor</a>
                                                     <div class="sub">
                                                         <div class="wrap_investment">
-                                                            <dl id="en_us">
-                                                                <dt>
-                                                                    Corporate Governance</dt>
-                                                                <dd>
-                                                                    <a href="/investor_relations/Corporate_Governance/ArticleofIncorporation.aspx">
-                                                                        Article of Incorporation</a></dd>
-                                                                <dd>
-                                                                    <a href="/investor_relations/Corporate_Governance/CorporateSocialResponsibility.aspx">Corporate Governance</a></dd>
-                                                                <dd>
-                                                                    <a href="/investor_relations/Corporate_Governance/WhistleblowingSystem.aspx">Whistlebowling system</a></dd>
-                                                                 <dd>
-                                                                    <a href="/investor_relations/Corporate_Governance/BoardofDirectors.aspx">Board of Directors</a></dd>
-                                                                 <dd>
-                                                                    <a href="/investor_relations/Corporate_Governance/Committee.aspx">Committee</a></dd>
-                                                            </dl>
                                                             <dl>
                                                                 <dt>
                                                                     Shareholder Services</dt>
+
                                                                 <dd>
                                                                     <a href="/investor_relations/Shareholder_Services/FinancialReportInfo.aspx">Financial Report Info.</a></dd>
                                                                 <dd>
@@ -622,17 +721,24 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                                                     <a href="/investor_relations/Shareholder_Services/Investor_Conference.aspx">Investor Conference</a></dd>
                                                             </dl>
                                                             <dl>
+                                                                <dt>Risk Management</dt>
+                                                                <dd>
+                                                                    <a href="/investor_relations/TwRisk_management/Risk_Management.aspx">Risk Management Policy</a></dd>
+                                                            </dl>
+                                                            <dl>
                                                                 <dt>Corporate Social Responsibility</dt>
                                                                 <dd>
                                                                     <a href="/investor_relations/Corporate_Governance/CorporateSocialReportList.aspx">Corporate Social Responsibility Report</a></dd>
                                                                 <dd>
-                                                                    <a href="/investor_relations/TwCorporate_Governance/questionnaire.aspx">Stakeholder Area</a></dd>
+                                                                    <a href="/investor_relations/Corporate_Governance/Stakeholder.aspx">Stakeholder Area</a></dd>
+                                                                <dd>
+                                                                    <a href="/investor_relations/Corporate_Governance/Sustainable_Procurement.aspx">Sustainable Procurement</a></dd>
                                                             </dl>
                                                         </div>
                                                     </div>
                                                     <!-- end of item_news -->
                                                 </li>
-                                                
+
                                                 <li class="menu_btn"><a href="#">
                                                     e-Service</a>
                                                     <div class="sub" style="opacity: 0; display: none; width: 960px;">
@@ -724,7 +830,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                                                             Change Password</a></dd>
                                                                     <dd>
                                                                         <a href="/e-service/member_area/member_management.aspx">
-                                                                            Sub-user Maintainence</a></dd>
+                                                                            Sub-user Maintenance</a></dd>
                                                                 </div>
                                                                 <dd>
                                                                     <a href="/e-service/member_area/faqs.aspx">
@@ -743,7 +849,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                                                     <a href="/e-service/bl_process/bl_instruction.aspx">
                                                                         B/L&nbsp;Instruction</a></dd>
                                                                 <dd>
-                                                                    
+
                                                                     <a href="/e-service/bl_process/blprint_main.aspx">
                                                                         B/L Print</a></dd>
                                                                 <dd>
@@ -752,37 +858,91 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                                             </dl>
                                                             <dl style="padding-top: 40px">
                                                                 <dd>
+                                                                    <a href="/e-service/track_trace/ShipmentManagement.aspx">
+                                                                        Shipment Management</a></dd>
+                                                                <dd>
                                                                     <a href="/e-service/track_trace/ShipmentControl.aspx">
-                                                                        Shipment&nbsp;Control</a></dd>
-                                                                <dd style="visibility: hidden">
-                                                                    <a href="/e-service/tariff/DropOffOV.aspx">
-                                                                        My Drop off</a></dd>
+                                                                        Report and Notification</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt><a href="/e-service/EDI/EDI_OV.aspx">
+                                                                    EDI/API</a></dt>
+                                                                <dd>
+                                                                    <a href="/e-service/EDI/EDI_Intro.aspx?IntroType=EDI">
+                                                                        EDI Introduction</a></dd>
+                                                                <dd>
+                                                                    <a href="/e-service/EDI/EDI_Intro.aspx?IntroType=API">
+                                                                        API Introduction</a></dd>
                                                             </dl>
                                                         </div>
                                                     </div>
                                                 </li>
+                                                <!---------------------Office Network------------------------------------>
+                                                <li class="menu_btn"><a href="#">
+                                                    Office Network</a>
+                                                    <div class="sub" style="opacity: 0; display: none; width: 960px;">
+                                                        <div class="wrap_local">
+                                                            <div class="left">
+                                                                <ul>
+                                                                    <li class="title_head_office">
+                                                                        Global Headquarters</li>
+                                                                    <li><a href="/office_network/headquarter/headquarter.aspx">
+                                                                        Global Headquarters</a></li>
+                                                                </ul>
+                                                            </div>
+                                                            <div class="left">
+                                                                <ul>
+                                                                    <li class="title_head_office">
+                                                                        Regional Head Office</li>
+                                                                    <li><a href="/office_network/regional_head_office/head_office.aspx#Central & South America">Central & South America</a></li>
+                                                                    <li><a href="/office_network/regional_head_office/head_office.aspx#Europe">Europe</a></li>
+                                                                    <li><a href="/office_network/regional_head_office/head_office.aspx#Mediterranean">Mediterranean Head Office</a></li>
+                                                                    <li><a href="/office_network/regional_head_office/head_office.aspx#Middle East">Middle East Head Office</a></li>
+                                                                    <li><a href="/office_network/regional_head_office/head_office.aspx#North America">North America</a></li>
+                                                                </ul>
+                                                            </div>
+                                                            <div class="right">
+                                                                <span class="agent_title">
+                                                                    Office & Agent</span>
+                                                                <ul>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#ASI">Asia</a></li>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#BLS">Black Sea</a></li>
+                                                                    <li style="display: none;"><a href="/office_network/office_agent/agent_overview.aspx#CBS">Caribbean Sea</a></li>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#AMC">Central America</a></li>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#EUR">Europe</a></li>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#MED">Mediterranean</a></li>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#ME">Middle East</a></li>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#AMN">North America</a></li>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#OCE">Oceania</a></li>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#AMS">South America</a></li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <!---------------------end Office Network---------------------------------------------------------->
                                                 <div id="Master_Local_Menu">
 
 
 <script type='text/javascript'>
     function setLocalSite(localver,Lang_ver) {
-        document.getElementById('ctl145_hidlocalver').value = localver;
-        document.getElementById('ctl145_hidLang_ver').value = Lang_ver;
-        document.getElementById('ctl145_lnkLocalSite').click();   
+        document.getElementById('ctl153_hidlocalver').value = localver;
+        document.getElementById('ctl153_hidLang_ver').value = Lang_ver;
+        document.getElementById('ctl153_lnkLocalSite').click();
     }
 
 </script>
-<input type="hidden" name="ctl00$ctl145$hidlocalver" id="ctl145_hidlocalver" value="EN" />
-<input type="hidden" name="ctl00$ctl145$hidLang_ver" id="ctl145_hidLang_ver" value="en-us" />
-<a id="ctl145_lnkLocalSite" href="javascript:__doPostBack(&#39;ctl00$ctl145$lnkLocalSite&#39;,&#39;&#39;)"></a>
+<input type="hidden" name="ctl00$ctl153$hidlocalver" id="ctl153_hidlocalver" value="EN" />
+<input type="hidden" name="ctl00$ctl153$hidLang_ver" id="ctl153_hidLang_ver" value="en-us" />
+<a id="ctl153_lnkLocalSite" href="javascript:__doPostBack(&#39;ctl00$ctl153$lnkLocalSite&#39;,&#39;&#39;)"></a>
 
-<li id="ctl145_LocalInfo" class="menu_btn">
+<li id="ctl153_LocalInfo" class="menu_btn">
     <a href="#">
-        Local Info
+        Local Websites
     </a>
     <div class="sub">
         <div class="wrap_local_site">
-            <span id="ctl145_lblLocal"><dl><dt><font size=2>Local Info</font></dt><dd><a href ='#' onclick=setLocalSite('AU','en-us'); > Australia</a></dd><dd><a href ='#' onclick=setLocalSite('BE','en-us'); > Belgium</a></dd><dd><a href ='#' onclick=setLocalSite('BG','en-us'); > Bulgaria</a></dd><dd><a href ='#' onclick=setLocalSite('CA','en-us'); > Canada</a></dd><dd><a href ='#' onclick=setLocalSite('CN','zh-cn'); > China(简体中文)</a></dd><dd><a href ='#' onclick=setLocalSite('HK','zh-tw'); > China-Hong Kong(繁體中文)</a></dd><dd><a href ='#' onclick=setLocalSite('EG','en-us'); > Egypt</a></dd><dd><a href ='#' onclick=setLocalSite('EE','en-us'); > Estonia</a></dd></dl><dl><dt>&nbsp;</dt><dd><a href ='#' onclick=setLocalSite('DE','en-us'); > Germany</a></dd><dd><a href ='#' onclick=setLocalSite('GR','en-us'); > Greece</a></dd><dd><a href ='#' onclick=setLocalSite('IN','en-us'); > India</a></dd><dd><a href ='#' onclick=setLocalSite('ID','en-us'); > Indonesia</a></dd><dd><a href ='#' onclick=setLocalSite('IT','en-us'); > Italy</a></dd><dd><a href ='#' onclick=setLocalSite('JP','ja-jp'); > Japan(日本語)</a></dd><dd><a href ='#' onclick=setLocalSite('KR','ko-KR'); > Korea(한국어)</a></dd><dd><a href ='#' onclick=setLocalSite('LV','en-us'); > Latvia</a></dd></dl><dl><dt>&nbsp;</dt><dd><a href ='#' onclick=setLocalSite('LT','en-us'); > Lithuania</a></dd><dd><a href ='#' onclick=setLocalSite('MY','en-us'); > Malaysia</a></dd><dd><a href ='#' onclick=setLocalSite('NL','en-us'); > Netherlands</a></dd><dd><a href ='#' onclick=setLocalSite('PH','en-us'); > Philippines</a></dd><dd><a href ='#' onclick=setLocalSite('PL','en-us'); > Poland</a></dd><dd><a href ='#' onclick=setLocalSite('RU','en-us'); > Russia(Россия)</a></dd><dd><a href ='#' onclick=setLocalSite('SG','en-us'); > Singapore</a></dd><dd><a href ='#' onclick=setLocalSite('ES','en-us'); > Spain</a></dd></dl><dl><dt>&nbsp;</dt><dd><a href ='#' onclick=setLocalSite('SE','en-us'); > Sweden</a></dd><dd><a href ='#' onclick=setLocalSite('TW','zh-tw'); > Taiwan(繁體中文)</a></dd><dd><a href ='#' onclick=setLocalSite('TH','en-us'); > Thailand(ประเทศไทย)</a></dd><dd><a href ='#' onclick=setLocalSite('TR','en-us'); > Turkey(Turkish)</a></dd><dd><a href ='#' onclick=setLocalSite('AE','en-us'); > UAE</a></dd><dd><a href ='#' onclick=setLocalSite('GB','en-us'); > United Kingdom</a></dd><dd><a href ='#' onclick=setLocalSite('US','en-us'); > USA</a></dd><dd><a href ='#' onclick=setLocalSite('VN','en-us'); > Vietnam</a></dd></dl></span>
+            <span id="ctl153_lblLocal"><dl><dt><font size=2>Local Info</font></dt><dd><a href ='#' onclick=setLocalSite('AU','en-us'); > Australia</a></dd><dd><a href ='#' onclick=setLocalSite('BE','en-us'); > Belgium</a></dd><dd><a href ='#' onclick=setLocalSite('BG','en-us'); > Bulgaria</a></dd><dd><a href ='#' onclick=setLocalSite('CA','en-us'); > Canada</a></dd><dd><a href ='#' onclick=setLocalSite('CN','zh-cn'); > China(简体中文)</a></dd><dd><a href ='#' onclick=setLocalSite('HK','zh-tw'); > China-Hong Kong(繁體中文)</a></dd><dd><a href ='#' onclick=setLocalSite('EG','en-us'); > Egypt</a></dd><dd><a href ='#' onclick=setLocalSite('EE','en-us'); > Estonia</a></dd><dd><a href ='#' onclick=setLocalSite('DE','en-us'); > Germany</a></dd><dd><a href ='#' onclick=setLocalSite('GR','en-us'); > Greece</a></dd></dl><dl><dt>&nbsp;</dt><dd><a href ='#' onclick=setLocalSite('IN','en-us'); > India</a></dd><dd><a href ='#' onclick=setLocalSite('ID','en-us'); > Indonesia</a></dd><dd><a href ='#' onclick=setLocalSite('IT','en-us'); > Italy</a></dd><dd><a href ='#' onclick=setLocalSite('JP','ja-jp'); > Japan(日本語)</a></dd><dd><a href ='#' onclick=setLocalSite('KR','ko-KR'); > Korea(한국어)</a></dd><dd><a href ='#' onclick=setLocalSite('LV','en-us'); > Latvia</a></dd><dd><a href ='#' onclick=setLocalSite('LT','en-us'); > Lithuania</a></dd><dd><a href ='#' onclick=setLocalSite('MY','en-us'); > Malaysia</a></dd><dd><a href ='#' onclick=setLocalSite('NL','en-us'); > Netherlands</a></dd><dd><a href ='#' onclick=setLocalSite('PE','en-us'); > Peru</a></dd></dl><dl><dt>&nbsp;</dt><dd><a href ='#' onclick=setLocalSite('PH','en-us'); > Philippines</a></dd><dd><a href ='#' onclick=setLocalSite('PL','en-us'); > Poland</a></dd><dd><a href ='#' onclick=setLocalSite('RU','en-us'); > Russia(Россия)</a></dd><dd><a href ='#' onclick=setLocalSite('SG','en-us'); > Singapore</a></dd><dd><a href ='#' onclick=setLocalSite('ES','en-us'); > Spain</a></dd><dd><a href ='#' onclick=setLocalSite('SE','en-us'); > Sweden</a></dd><dd><a href ='#' onclick=setLocalSite('TW','zh-tw'); > Taiwan(繁體中文)</a></dd><dd><a href ='#' onclick=setLocalSite('TH','en-us'); > Thailand(ประเทศไทย)</a></dd><dd><a href ='#' onclick=setLocalSite('TR','en-us'); > Turkey(Turkish)</a></dd><dd><a href ='#' onclick=setLocalSite('AE','en-us'); > UAE</a></dd></dl><dl><dt>&nbsp;</dt><dd><a href ='#' onclick=setLocalSite('GB','en-us'); > United Kingdom</a></dd><dd><a href ='#' onclick=setLocalSite('US','en-us'); > USA</a></dd><dd><a href ='#' onclick=setLocalSite('VN','en-us'); > Vietnam</a></dd></span>
         </div>
     </div>
 </li>
@@ -791,7 +951,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
 
                                             <!---------------------end menu_en----------------------------------->
 
-                                            
+
                                             <!---------------------end menu_zh_tw------------------------------------>
                                         </ul>
 
@@ -862,17 +1022,17 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                         <button type="button" data-toggle="collapse" class="navbar-toggle btnextra" style="display: " onclick="login('login');">
                                             <span class="sr-only">user</span>
                                             <span>
-                                                
+
                                                 <img src="/Content/Img/app_account.png" style="width: 24px; height: 24px;" />
-                                                
+
                                             </span>
                                         </button>
                                         <button type="button" data-toggle="collapse" class="navbar-toggle btnextra" style="display: none" onclick="login('logout');">
                                             <span class="sr-only">Logout</span>
                                             <span>
-                                                
+
                                                 <img src="/Content/Img/logout_m.png" style="width: 24px; height: 24px;" />
-                                                
+
                                             </span>
                                         </button>
 
@@ -881,7 +1041,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
 
                                         <div style="display: none; padding-top: 15px; font-size: 12px">
                                             <span style="vertical-align: middle; color: White">
-                                                
+
                                             </span>
                                         </div>
                                     </div>
@@ -1035,7 +1195,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                                             <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/e-service/track_trace/track_trace_subscription.aspx">
                                                                 Tracking Report Subscription</a></li>
                                                             <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/e-service/track_trace/ShipmentControl.aspx">
-                                                                Shipment&nbsp;Control</a></li>
+                                                                Report and Notification</a></li>
                                                         </ul>
                                                     </li>
                                                 </ul>
@@ -1045,15 +1205,15 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
 
 <script type='text/javascript'>
     function setLocalSite_Rwd(localver, Lang_ver) {
-        document.getElementById('ctl146_hidlocalver').value = localver;
-        document.getElementById('ctl146_hidLang_ver').value = Lang_ver;
-        document.getElementById('ctl146_lnkLocalSite').click();
+        document.getElementById('ctl154_hidlocalver').value = localver;
+        document.getElementById('ctl154_hidLang_ver').value = Lang_ver;
+        document.getElementById('ctl154_lnkLocalSite').click();
     }
 
 </script>
-<input type="hidden" name="ctl00$ctl146$hidlocalver" id="ctl146_hidlocalver" value="EN" />
-<input type="hidden" name="ctl00$ctl146$hidLang_ver" id="ctl146_hidLang_ver" value="en-us" />
-<a id="ctl146_lnkLocalSite" href="javascript:__doPostBack(&#39;ctl00$ctl146$lnkLocalSite&#39;,&#39;&#39;)"></a>
+<input type="hidden" name="ctl00$ctl154$hidlocalver" id="ctl154_hidlocalver" value="EN" />
+<input type="hidden" name="ctl00$ctl154$hidLang_ver" id="ctl154_hidLang_ver" value="en-us" />
+<a id="ctl154_lnkLocalSite" href="javascript:__doPostBack(&#39;ctl00$ctl154$lnkLocalSite&#39;,&#39;&#39;)"></a>
 
 
 <li class="dropdown menu_li"  style="padding-left:30px">
@@ -1061,15 +1221,15 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
         Local Info<b class="caret" style="color: Red;"></b>
     </a>
     <ul class="dropdown-menu">
-       
-              <span id="ctl146_lblLocal"><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('AU','en-us'); > Australia</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('BE','en-us'); > Belgium</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('BG','en-us'); > Bulgaria</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('CA','en-us'); > Canada</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('CN','zh-cn'); > China(简体中文)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('HK','zh-tw'); > China-Hong Kong(繁體中文)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('EG','en-us'); > Egypt</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('EE','en-us'); > Estonia</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('DE','en-us'); > Germany</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('GR','en-us'); > Greece</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('IN','en-us'); > India</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('ID','en-us'); > Indonesia</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('IT','en-us'); > Italy</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('JP','ja-jp'); > Japan(日本語)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('KR','ko-KR'); > Korea(한국어)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('LV','en-us'); > Latvia</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('LT','en-us'); > Lithuania</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('MY','en-us'); > Malaysia</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('NL','en-us'); > Netherlands</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('PH','en-us'); > Philippines</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('PL','en-us'); > Poland</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('RU','en-us'); > Russia(Россия)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('SG','en-us'); > Singapore</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('ES','en-us'); > Spain</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('SE','en-us'); > Sweden</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('TW','zh-tw'); > Taiwan(繁體中文)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('TH','en-us'); > Thailand(ประเทศไทย)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('TR','en-us'); > Turkey(Turkish)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('AE','en-us'); > UAE</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('GB','en-us'); > United Kingdom</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('US','en-us'); > USA</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('VN','en-us'); > Vietnam</a></li></span>
+
+              <span id="ctl154_lblLocal"><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('AU','en-us'); > Australia</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('BE','en-us'); > Belgium</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('BG','en-us'); > Bulgaria</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('CA','en-us'); > Canada</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('CN','zh-cn'); > China(简体中文)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('HK','zh-tw'); > China-Hong Kong(繁體中文)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('EG','en-us'); > Egypt</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('EE','en-us'); > Estonia</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('DE','en-us'); > Germany</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('GR','en-us'); > Greece</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('IN','en-us'); > India</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('ID','en-us'); > Indonesia</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('IT','en-us'); > Italy</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('JP','ja-jp'); > Japan(日本語)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('KR','ko-KR'); > Korea(한국어)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('LV','en-us'); > Latvia</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('LT','en-us'); > Lithuania</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('MY','en-us'); > Malaysia</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('NL','en-us'); > Netherlands</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('PE','en-us'); > Peru</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('PH','en-us'); > Philippines</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('PL','en-us'); > Poland</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('RU','en-us'); > Russia(Россия)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('SG','en-us'); > Singapore</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('ES','en-us'); > Spain</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('SE','en-us'); > Sweden</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('TW','zh-tw'); > Taiwan(繁體中文)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('TH','en-us'); > Thailand(ประเทศไทย)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('TR','en-us'); > Turkey(Turkish)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('AE','en-us'); > UAE</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('GB','en-us'); > United Kingdom</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('US','en-us'); > USA</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('VN','en-us'); > Vietnam</a></li></span>
     </ul>
 </li>
 </span>
                                             <!---------------------end e-Service---------------------------------------------------------->
                                         </ul>
 
-                                        
+
                                     </div>
                                     <div id="navbarlang" class="collapse navbar-collapse">
                                         <ul class="nav navbar-nav">
@@ -1091,14 +1251,14 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                     </div>
                                     <!---- navbarsearch end ---->
                                     <!---- navbaruser start ---->
-                                    
+
                                     <!---- navbaruser end ---->
                                 </div>
                                 <!---- navbar ---->
                             </div>
                         </div>
                     </div>
-                    
+
 
    <div class="row sub_menu">
 		<div class="subnavi_wrapper_rwd ">
@@ -1118,114 +1278,90 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
 		</div>
 	</div>
 
-  <!--  <div class="row sub_menu">
-        <div class="subnavi_wrapper_rwd ">
-            <div id="current_rwd" class=" hidden-xs col-sm-2 col-md-2 col-lg-2">
-                Track & Trace
-            </div>
-            <div id="subnavi_rwd" class="hidden-xs col-sm-10 col-md-10 col-lg-10 ">
-                <a href="tt_ov.aspx" class="hidden-xs hidden-sm">
-                    Overview</a>
-                <a href="track_trace_cargo_tracking.aspx" class="hidden-xs hidden-sm">
-                    Cargo Tracking</a>
-                <a href="track_trace_subscription.aspx" class="hidden-xs hidden-sm">
-                    Tracking Report Subscription</a>
-                <a href="ShipmentControl.aspx" class="hidden-xs hidden-sm">
-                    Shipment&nbsp;Control</a>
-            </div>
-        </div>
-    </div> -->
 
                     <!--Sub Menu-->
                 </div>
                 <div id="content_rwd" class="row" style="background-color: #FFF;">
-                    
-    <div id="ContentPlaceHolder1_banner_rwd" class="col-xs-12 col-sm-12 col-md-12 col-lg-12" style="padding-left:0px">
+
+    <div id="ContentPlaceHolder1_banner_rwd" class="col-xs-12 col-sm-12 col-md-12 col-lg-12" style="padding-left: 0px">
         <img alt="" src="../../Content/img/banner_05.jpg" class="banner_img" />
     </div>
+
+
+
     <div id="ContentPlaceHolder1_article_rwd">
         <div id="ContentPlaceHolder1_divResult" class="eser_ttwrap_topset_rwd col-xs-12 col-sm-12 col-md-12 col-lg-12">
             <h2 class="greent_rwd">
-                Result of Tracking by B/L No.
-				
-		    </h2>
+
+                Result of Tracking by Booking No. and B/L no.
+            </h2>
         </div>
 
-         <br/>
-        <div style="width:100px; margin-left:830px;">
+        <br />
+        <div id="ContentPlaceHolder1_divQuickSurvey" style="width: 100px; margin-left: 830px;">
             <a href="/e-service/survey/survey.aspx?survey=TRACK">
-            <span id="ContentPlaceHolder1_lblQuickSurvey" style="color:#0577B3;">[Quick Survey]</span></a>
+                <span id="ContentPlaceHolder1_lblQuickSurvey" style="color:#0577B3;">[Quick Survey]</span></a>
         </div>
 
-        <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 info_hide">
-            <div align="right" class="moreinfo" style="width: 100%">
-                <img alt="more information" title="more information" src="../../Content/Img/btn_info.gif"
-                    width="23" height="14" />
-            </div>
 
-            <div class="info" style="width: 100%">
-                <ul>
-                    <li class="li_VS" style="line-height: 18px; padding: 0 0 5px 15px; display: block;
-                        background: url(../../Content/Img/icon_bluearrow1.jpg) no-repeat; /*list-style: none;
-                        */ list-style: none; list-style-type: none;">
-                        Below B/L No. were issued within past 1 year, click your B/L No. to search detail.
-                    </li>
-                    <li class="li_VS" style="line-height: 18px; padding: 0 0 5px 15px; display: block;
-                        background: url(../../Content/Img/icon_bluearrow1.jpg) no-repeat; /*list-style: none;
-                        */ list-style: none; list-style-type: none;">
-                        If your newest B/L# is not shown, it's probably because the document file is not transferred to our document center yet. In this situation, you can directly click above targeted Container No. to view its latest events.
-                    </li>
-                </ul>
-            </div>
-        </div>
-        <input type="hidden" name="ctl00$ContentPlaceHolder1$hidGVID" id="ContentPlaceHolder1_hidGVID" value="#ContentPlaceHolder1_rptBLNo_gvBasicInformation_0,#ContentPlaceHolder1_rptBLNo_gvLatestEvent_0" />
-        
+
+
+
+        <input type="hidden" name="ctl00$ContentPlaceHolder1$hidGVID" id="ContentPlaceHolder1_hidGVID" value="#ContentPlaceHolder1_rptBLNo_gvBasicInformation_0,#ContentPlaceHolder1_rptBLNo_gvLatestEvent_0,#ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0" />
+
+
+
+
                 <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
-                   <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 ser06_wrap1_topbar_top_rwd">
+                    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 ser06_wrap1_topbar_top_rwd">
                         &nbsp;
-                   </div>
+                    </div>
 
-                    
+
                     <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
-                       
-                        <div id="ContentPlaceHolder1_rptBLNo_divBKNum_0" style="display:none; font-size:18px">
+
+                        <div id="ContentPlaceHolder1_rptBLNo_divBKNum_0" style="display:block;font-size:18px;">
                             Booking No.
                             :
-                     
+
                             <span class="bluefont3_rwd">
-                                <span id="ContentPlaceHolder1_rptBLNo_lblBKNo_0"></span>
+                                <span id="ContentPlaceHolder1_rptBLNo_lblBKNo_0">YLX392063</span>
                             </span>
                         </div>
-                        
+
                     </div>
                     <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
-                          <div style="font-size:18px">
+                        <div style="font-size: 18px">
                             B/L No.
                             :
-                     
+
                             <span class="bluefont3_rwd">
-                            <span id="ContentPlaceHolder1_rptBLNo_lblBLNo_0">I209365239</span>
-                            &nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblSw_ret_ind_0"></span>
+                                <span id="ContentPlaceHolder1_rptBLNo_lblBLNo_0">W135470441</span>
+                                &nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblSw_ret_ind_0"> (Seaway Bill)</span>
                             </span>
-                        
-                          </div>
-                        
+
+                        </div>
+
                     </div>
                     <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
-                        
-                            <div id="ContentPlaceHolder1_rptBLNo_divSubscription_0" align="right" class="bkfont_rwd">
-                                <a href="track_trace_subscription.aspx?strnum=I209365239," target="_blank">Tracking Report Subscription</a>
-                            </div>
-                    </div>
-                
 
-                        
-                  
-                    
-                
-                 
+                        <div id="ContentPlaceHolder1_rptBLNo_divSubscription_0" align="right" class="bkfont_rwd">
+                            <a href="track_trace_subscription.aspx" target="_blank">Tracking Report Subscription</a>
+                        </div>
+                    </div>
+
+
+
+
+
+
+
+
+
+
                     <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 ser06_wrap1_topbar_bottom_rwd">
-                        &nbsp;</div>
+                        &nbsp;
+                    </div>
                     <div id="ContentPlaceHolder1_rptBLNo_divConcent_0">
                         <div class="eser_vewrap_wrap2_rwd" style="padding-top: 20px;">
                             <div align="center">
@@ -1243,13 +1379,13 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
 		</thead><tbody>
 			<tr class="field_odd" align="left">
 				<td>
-                                                    <span id="ContentPlaceHolder1_rptBLNo_gvBasicInformation_0_lblReceipt_0">KAOHSIUNG, Taiwan</span>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvBasicInformation_0_lblReceipt_0">LOS ANGELES, CA (USLAX)</span>
                                                 </td><td>
-                                                    <span id="ContentPlaceHolder1_rptBLNo_gvBasicInformation_0_lblLoading_0">KAOHSIUNG, Taiwan</span>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvBasicInformation_0_lblLoading_0">LOS ANGELES, CA (USLAX)</span>
                                                 </td><td>
-                                                    <span id="ContentPlaceHolder1_rptBLNo_gvBasicInformation_0_lblDischarge_0">MANILA (NORTH HARBOUR), Philippines</span>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvBasicInformation_0_lblDischarge_0">PUSAN (KRPUS)</span>
                                                 </td><td>
-                                                    <span id="ContentPlaceHolder1_rptBLNo_gvBasicInformation_0_lblDelivery_0">MANILA (NORTH HARBOUR), Philippines</span>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvBasicInformation_0_lblDelivery_0">PUSAN (KRPUS)</span>
                                                 </td>
 			</tr>
 		</tbody>
@@ -1268,9 +1404,8 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                                 :
                                             </div>
                                             <div style="white-space: nowrap; float: left;">
-                                                <b>
-                                                    &nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblVessel_0" class="mycls"><a href="../vessel_tracking/vessel_tracking_detail.aspx?vessel=SINP&func=current" 
-                                  target="_blank" title="Click here to view vessel schedule">SINGAPORE</a> - 096S (TPE940S)</span></b>
+                                                <b>&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblVessel_0" class="mycls"><a href="../vessel_tracking/vessel_tracking_detail.aspx?vessel=MLCT&func=current"
+                                  target="_blank" title="Click here to view vessel schedule">MOL CREATION</a> - 081W (PS3133C)</span></b>
                                             </div>
                                         </div>
                                     </div>
@@ -1281,7 +1416,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                         </div>
                                         <div class="bkfont_rwd" style="width: 400px;">
                                             No. of Packages
-                                            :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblPackages_0">1020 BG</span>
+                                            :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblPackages_0">66 PK</span>
                                         </div>
                                     </div>
                                     <div style="float: left; padding-top: 10px; width: 50%;">
@@ -1291,7 +1426,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                         </div>
                                         <div class="bkfont_rwd" style="width: 400px;">
                                             On Board Date
-                                            :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblBoard_0">2019/10/02</span>
+                                            :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblBoard_0">2021/10/31</span>
                                         </div>
                                     </div>
                                     <div style="float: left; padding-top: 10px;">
@@ -1301,7 +1436,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                         </div>
                                         <div class="bkfont_rwd" style="width: 400px;">
                                             Gross Cargo Weight
-                                            :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblGross_0">25704</span>
+                                            :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblGross_0">39260.68</span>
                                             KGS
                                         </div>
                                     </div>
@@ -1312,7 +1447,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                         </div>
                                         <div class="bkfont_rwd" style="width: 400px;">
                                             No. of Containers
-                                            :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblContainers_0">1 unit (1 * 40')</span>
+                                            :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblContainers_0">2 units (2 * 40')</span>
                                         </div>
                                     </div>
                                     <div style="float: left; padding-top: 10px;">
@@ -1322,7 +1457,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                         </div>
                                         <div class="bkfont_rwd" style="width: 450px;">
                                             Measurement
-                                            :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblMeasurement_0">50</span>
+                                            :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblMeasurement_0">102.70</span>
                                             CBM
                                         </div>
                                     </div>
@@ -1357,50 +1492,51 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                 <div align="left" style="border-top: 1px dashed #999;">
                                     <h4>
                                         Routing Schedule
+                                        &nbsp;
                                     </h4>
                                 </div>
                                 <div style="padding-top: 20px; border-bottom: 1px dashed #999; padding-bottom: 20px;">
-                                   
-                                     <div class="row">
-                                         <div class="hidden-xs hidden-sm col-md-1 col-lg-1">
-                                         </div>
-                                          <div class="col-xs-12 col-sm-12 col-md-10 col-lg-10">
-                                               <div class="cargo-trackbox3">
-                                                 
-                                                     <ul>
-                                                           <li class="place"> 
-                                                                <span id="ContentPlaceHolder1_rptBLNo_rptRoutingSchedule_0_lblRouting_0">KAOHSIUNG</span>
-                                                           </li>
 
-                                                           <li class="date"> 
-                                                              <span id="ContentPlaceHolder1_rptBLNo_rptRoutingSchedule_0_lblDateTime_0">2019/10/01 10:35 (Actual)</span>
-                                                           </li>
+                                    <div class="row">
+                                        <div class="hidden-xs hidden-sm col-md-1 col-lg-1">
+                                        </div>
+                                        <div class="col-xs-12 col-sm-12 col-md-10 col-lg-10">
+                                            <div class="cargo-trackbox3">
 
-                                                           
-                                                     </ul>
-    
-                                               
-                                                     <ul>
-                                                           <li class="place"> 
-                                                                <span id="ContentPlaceHolder1_rptBLNo_rptRoutingSchedule_0_lblRouting_1">MANILA (NORTH HARBOUR)</span>
-                                                           </li>
+                                                        <ul>
+                                                            <li class="place">
+                                                                <span id="ContentPlaceHolder1_rptBLNo_rptRoutingSchedule_0_lblRouting_0">LOS ANGELES</span>
+                                                            </li>
 
-                                                           <li class="date"> 
-                                                              <span id="ContentPlaceHolder1_rptBLNo_rptRoutingSchedule_0_lblDateTime_1">2019/10/04 15:00 (Actual)<br /><font color='#FF0000'>*</font>&nbsp;Berthing time at terminal: 2019/10/04 16:00 (Actual)</span>
-                                                           </li>
-
-                                                           
-                                                     </ul>
-    
-                                               
-                                              </div>
-                                          </div>
-                                     </div>
-                                  
-                                      
+                                                            <li class="date">
+                                                                <span id="ContentPlaceHolder1_rptBLNo_rptRoutingSchedule_0_lblDateTime_0">2021/10/31 04:10 (Actual)</span>
+                                                            </li>
 
 
-                                 
+                                                        </ul>
+
+
+                                                        <ul>
+                                                            <li class="place">
+                                                                <span id="ContentPlaceHolder1_rptBLNo_rptRoutingSchedule_0_lblRouting_1">PUSAN</span>
+                                                            </li>
+
+                                                            <li class="date">
+                                                                <span id="ContentPlaceHolder1_rptBLNo_rptRoutingSchedule_0_lblDateTime_1">2021/11/15 15:00 (Estimated)<br /><font color='#FF0000'>*</font>&nbsp;Berthing time at terminal: 2021/11/15 17:00 (Estimated)</span>
+                                                            </li>
+
+
+                                                        </ul>
+
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+
+
+
                                     <div id="ContentPlaceHolder1_rptBLNo_Discharged_0" style="margin-top:10px;display:none;">
                                         <div style="float: left;" align="left">
                                             <span class="bkfont_rwd">
@@ -1414,27 +1550,14 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                 </div>
                             </div>
                         </div>
+                        <!--Telex Release-->
 
-                        <div id="ContentPlaceHolder1_rptBLNo_TelRelease_0" class="eser_vewrap_wrap2_rwd" style="padding-top:20px;display:block;">
-                            <div class="div_sec" align="center" style="padding-bottom: 20px;">
-                                 <div align="left" style="margin-top: 10px;">
-                                        <h4>
-                                            Telex Release
-                                        </h4>
-                                  </div>
-                                <div align="left">
-                                    Current Status. :
-                                     <span id="ContentPlaceHolder1_rptBLNo_lblStatus_0">Telex Release is Accepted & Processed</span>
-                                </div>
-                            </div>
-                        </div>
+                        <!--DBL Release-->
 
 
-
-                       
                         <div id="ContentPlaceHolder1_rptBLNo_Japan_0" class="eser_vewrap_wrap2_rwd" style="padding-top:20px;display:none;">
                             <div class="div_sec" align="center" style="padding-bottom: 20px;">
-                                
+
                                 <div align="left" style="margin-top: 10px;">
                                     <h4>
                                         Japan AFR Status (filed by Carrier)
@@ -1583,13 +1706,13 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
 
                         <div id="ContentPlaceHolder1_rptBLNo_India_0" class="eser_vewrap_wrap2_rwd" style="padding-top:20px;display:none;">
                             <div class="div_sec" align="center" style="padding-bottom: 20px;">
-                                
+
                                 <div align="left" style="margin-top: 10px;">
                                     <h4>
                                         INDIA Custom Clearance
                                     </h4>
                                 </div>
-                                
+
                                 <div style="padding-top: 10px">
                                     <div class="divTitle">
                                         <div style="color: White;" align="left">
@@ -1599,7 +1722,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                     <div class="field_odd">
                                         <div style="width: 50%; float: left;" align="left">
                                             IGM No
-                                            
+
                                         </div>
                                         <div style="width: 50%;" align="left">
                                             <span id="ContentPlaceHolder1_rptBLNo_lblIGMNO_0">Label</span>
@@ -1608,7 +1731,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                     <div class="field_even">
                                         <div style="width: 50%; float: left;" align="left">
                                             IGM Date
-                                            
+
                                         </div>
                                         <div style="width: 50%;" align="left">
                                             <span id="ContentPlaceHolder1_rptBLNo_lblIGMDATE_0">Label</span>
@@ -1618,7 +1741,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                     <div class="field_odd">
                                         <div style="width: 50%; float: left;" align="left">
                                             Item No
-                                            
+
                                         </div>
                                         <div style="width: 50%;" align="left">
                                             <span id="ContentPlaceHolder1_rptBLNo_lblLINENO_0">Label</span>
@@ -1627,17 +1750,18 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                     <div class="field_even">
                                         <div style="width: 50%; float: left;" align="left">
                                             Nominated Site/CFS
-                                          
+
                                         </div>
                                         <div style="width: 50%;" align="left">
                                             <span id="ContentPlaceHolder1_rptBLNo_lblCFS_NAME_0">Label</span>
                                         </div>
                                     </div>
-                                    
+
                                 </div>
                             </div>
                         </div>
 
+                        <!--24 Hour-->
                         <div id="ContentPlaceHolder1_rptBLNo_Hour_0" class="eser_vewrap_wrap2_rwd" style="padding-top:20px;display:none;">
                             <div class="div_sec" align="center" style="padding-bottom: 20px;">
                                 <div align="left">
@@ -1645,12 +1769,25 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                         24 Hour Advance Manifest</h4>
                                 </div>
                                 <div align="left">
+                                    <!--ACE-->
                                     ACE Status (filed by carrier)
                                     :
                                     <span id="ContentPlaceHolder1_rptBLNo_lblAceStatus_0" class=" bluefont2">Label</span>
+                                    <br />
+                                    <!--ACI-->
+                                    ACI Status (filed by carrier)
+                                    :
+                                    <span id="ContentPlaceHolder1_rptBLNo_lblAciStatus_0" class=" bluefont2">Label</span>
+                                    <br />
+                                    <!--ACI code-->
+                                    ACI Sublocation code
+                                    :
+                                    <span id="ContentPlaceHolder1_rptBLNo_lblAciCode_0" class=" bluefont2">Label</span>
                                 </div>
                             </div>
                         </div>
+
+                        <!--CBP-->
                         <div id="ContentPlaceHolder1_rptBLNo_Cbp_0" class="eser_vewrap_wrap2_rwd" style="padding-top:20px;display:none;">
                             <div class="div_sec" align="center" style="padding-bottom: 20px;">
                                 <div align="left">
@@ -1664,6 +1801,7 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                 </div>
                             </div>
                         </div>
+
                         <div id="ContentPlaceHolder1_rptBLNo_ReleaseStatus_0" class="eser_vewrap_wrap2_rwd" style="padding-top:20px;display:none;">
                             <div class="div_sec" align="center" style="padding-bottom: 20px;">
                                 <div align="left">
@@ -1687,29 +1825,50 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                                     <div align="left">
                                         <span id="ContentPlaceHolder1_rptBLNo_lblCustomsStatus_0" class="bluefont2">Label</span>
                                         <span style="background-color: #FFFFCC;" class="bluefont2" id="Span1" title="View Customs status details.">
-                                            <a onclick="return DisplayDiv(this);" id="ContentPlaceHolder1_rptBLNo_lbtCViewDivgvCustomsStatus_0" href="javascript:__doPostBack(&#39;ctl00$ContentPlaceHolder1$rptBLNo$ctl00$lbtCViewDivgvCustomsStatus&#39;,&#39;&#39;)">» View details</a></span></div></div><br /><div id="ContentPlaceHolder1_rptBLNo_DivgvCustomsStatus_0" style="display: none;">
+                                            <a onclick="return DisplayDiv(this);" id="ContentPlaceHolder1_rptBLNo_lbtCViewDivgvCustomsStatus_0" href="javascript:__doPostBack(&#39;ctl00$ContentPlaceHolder1$rptBLNo$ctl00$lbtCViewDivgvCustomsStatus&#39;,&#39;&#39;)">» View details</a></span>
+                                    </div>
+                                </div>
+                                <br />
+                                <div id="ContentPlaceHolder1_rptBLNo_DivgvCustomsStatus_0" style="display: none;">
                                     <br />
                                     <div>
 
-</div><div id="DivHBLNO" style="display: none;">
-                                        <span id="ContentPlaceHolder1_rptBLNo_lblHBLNO_0"></span></div></div><div id="ContentPlaceHolder1_rptBLNo_LastFreeDate_0" style="margin-top: 10px;">
+</div>
+                                    <div id="DivHBLNO" style="display: none;">
+                                        <span id="ContentPlaceHolder1_rptBLNo_lblHBLNO_0"></span>
+                                    </div>
+                                </div>
+                                <div id="ContentPlaceHolder1_rptBLNo_LastFreeDate_0" style="margin-top: 10px;">
                                     <div align="left" style="width: 150px; float: left;">
                                         Last Free Date
                                         :
                                     </div>
                                     <div align="left">
-                                        <span id="ContentPlaceHolder1_rptBLNo_lblLastFreeDate_0" class="bluefont2">Label</span><span style="background-color: #FFFFCC;" class="bluefont2" id="Span2" title="View last free date details."><a onclick="return DisplayDivLast(this);" id="ContentPlaceHolder1_rptBLNo_lbtCViewDivgvLastFreeDate_0" href="javascript:__doPostBack(&#39;ctl00$ContentPlaceHolder1$rptBLNo$ctl00$lbtCViewDivgvLastFreeDate&#39;,&#39;&#39;)">» View details</a></span></div></div><div id="ContentPlaceHolder1_rptBLNo_DivgvLastFreeDate_0" style="display: none;">
+                                        <span id="ContentPlaceHolder1_rptBLNo_lblLastFreeDate_0" class="bluefont2">Label</span><span style="background-color: #FFFFCC;" class="bluefont2" id="Span2" title="View last free date details."><a onclick="return DisplayDivLast(this);" id="ContentPlaceHolder1_rptBLNo_lbtCViewDivgvLastFreeDate_0" href="javascript:__doPostBack(&#39;ctl00$ContentPlaceHolder1$rptBLNo$ctl00$lbtCViewDivgvLastFreeDate&#39;,&#39;&#39;)">» View details</a></span>
+                                    </div>
+                                </div>
+                                <div id="ContentPlaceHolder1_rptBLNo_DivgvLastFreeDate_0" style="display: none;">
                                     <br />
                                     <div>
 
-</div></div></div></div><div class="eser_vewrap_wrap2_rwd" style="padding-top: 20px; padding-bottom: 30px;">
-                            <div class="div_sec" align="center" style="padding-bottom: 20px;">
+</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="eser_vewrap_wrap2_rwd" style="padding-top: 20px; padding-bottom: 30px;">
+
+
+                            <div id="ContentPlaceHolder1_rptBLNo_div_sec_0" class="div_sec" align="center" style="padding-bottom: 20px;">
                                 <div align="left">
                                     <h4>
                                         Container(s) with Latest Event
                                     </h4>
                                 </div>
-                                <div style="padding-top: 20px;">
+
+                                <input name="ctl00$ContentPlaceHolder1$rptBLNo$ctl00$btnDCSA" type="button" id="ContentPlaceHolder1_rptBLNo_btnDCSA_0" value="[Events compliant with DCSA standard]" class="Button_DCSA" style="margin-left: 700px; margin-top: 20px; background-color: #FFFFFF; color: #0577B3; border: none;" onclick="Show_DCSA(this); " />
+                                <input name="ctl00$ContentPlaceHolder1$rptBLNo$ctl00$btn_NonDCSA" type="button" id="ContentPlaceHolder1_rptBLNo_btn_NonDCSA_0" value="[Switch back]" class="Button_DCSA" style="margin-left: 850px; margin-top: 20px; background-color: #FFFFFF; color: #0577B3; border: none; display: none;" onclick="Show_NonDCSA(this); " />
+
+                                <div id="divLatestEvent" style="padding-top: 20px;">
                                     <div>
 	<table class="responsiveTable2" cellspacing="0" cellpadding="0" rules="all" border="0" border="1" id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0" style="border-collapse:collapse;width: 100%; border-collapse: collapse;">
 		<thead>
@@ -1719,21 +1878,109 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
 		</thead><tbody>
 			<tr class="field_odd" align="left">
 				<td>
-                                                    <a href="ctconnect.aspx?rdolType=BL&ctnrno=TGHU5309509&blno=I209365239&movertype=11&lifecycle=2">TGHU5309509</a></td><td>
-                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblSize_0">40</span></td><td>
-                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblType_0">DC-Dry cargo container</span></td><td>
-                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblSealNo_0">YMAF217963</span></td><td>
-                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblMoveType_0">FCL/FCL</span></td><td>
-                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblDate_0">2019/10/18 00:44</span></td><td>
-                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblLatestEvent_0">Empty Returned</span></td><td>
-                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblPlace_0">MANILA<BR />(Boxit Business Solutions Corp.)</span></td><td>
-                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblVGM_0"> </span>
+                                                    <a href="ctconnect.aspx?var=6kXS94MAUKku1eUXw6LbZAMTU5BAtiGFLLWSJPBbnMqs%2f5F%2fip7BTIWf1sv6XAo%2f9yDF4UlDsfYD1FFmCzpgpxAz3kljkS1MYD47ZFaopdqlRupsprwczrNnU%2f1YtSBNaQXhonKhUrjW2km%2fB6mcxvIxLqwR67ggG4WbzP3K3X0%3d">BMOU5686702</a>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblSize_0">40</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblType_0">HQ-9'6'' container</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblSealNo_0">34346360</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblMoveType_0">FCL/FCL</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblDate_0">2021/10/23 18:35</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblLatestEvent_0">On Board</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblPlace_0">LOS ANGELES<BR />(TraPac, Inc. (LAX))<br /><br /><span style="background-color: #FFFFCC">ETA at PUSAN: 2021/11/15 15:00</span></span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblVGM_0">55116 LBS</span>
+                                                </td>
+			</tr><tr class="field_even" align="left">
+				<td>
+                                                    <a href="ctconnect.aspx?var=6kXS94MAUKku1eUXw6LbZLvtu3CfjeVdgDUjCZOe%2fz3W9UBAT2d4tdy%2b4zP5fuiltVi1fYKQcIwrOna8EksPeKnazidNCW9W3bBDar%2bZQiY%2bknqJsbLCNz4%2bU%2f0h836nQEdXfRqTvscMJl1wED8e3r5XalV445ESXvdXjyD2I2w%3d">TGBU6601787</a>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblSize_1">40</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblType_1">HQ-9'6'' container</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblSealNo_1">34346459</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblMoveType_1">FCL/FCL</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblDate_1">2021/10/29 08:21</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblLatestEvent_1">On Board</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblPlace_1">LOS ANGELES<BR />(TraPac, Inc. (LAX))<br /><br /><span style="background-color: #FFFFCC">ETA at PUSAN: 2021/11/15 15:00</span></span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblVGM_1">54454 LBS</span>
                                                 </td>
 			</tr>
 		</tbody>
 	</table>
 </div>
                                 </div>
+
+                                <!--DCSA version-->
+                                <div id="divLatestEvent_DCSA" style="padding-top: 20px;">
+                                    <div>
+	<table class="responsiveTable2" cellspacing="0" cellpadding="0" rules="all" border="0" border="1" id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0" style="border-collapse:collapse;width: 100%; border-collapse: collapse; display: none">
+		<thead>
+			<tr class="field_name" align="left" style="font-weight:normal;">
+				<td>Container No.</td><td>Size</td><td>Type</td><td>Seal No.</td><td>MoveType</td><td>Date/Time</td><td>Latest Event</td><td>Place</td><td>Event Classifie</td><td>VGM</td>
+			</tr>
+		</thead><tbody>
+			<tr class="field_odd" align="left">
+				<td>
+                                                    <a href="ctconnect.aspx?var=6kXS94MAUKku1eUXw6LbZAMTU5BAtiGFLLWSJPBbnMqs%2f5F%2fip7BTIWf1sv6XAo%2f9yDF4UlDsfYD1FFmCzpgpxAz3kljkS1MYD47ZFaopdqlRupsprwczrNnU%2f1YtSBNaQXhonKhUrjW2km%2fB6mcxvIxLqwR67ggG4WbzP3K3X0%3d">BMOU5686702</a>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblSize_0">40</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblType_0">HQ-9'6'' container</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblSealNo_0">34346360</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblMoveType_0">FCL/FCL</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblDate_0">2021/11/15 17:00</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblLatestEvent_0">Vessel arrival at port terminal</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblPlace_0">PUSAN<BR />(PSA HYUNDAI PUSAN NEW-PORT TERMINAL (HPNT))</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblEventClassifier_0">Estimated</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblVGM_0">55116 LBS</span>
+                                                </td>
+			</tr><tr class="field_even" align="left">
+				<td>
+                                                    <a href="ctconnect.aspx?var=6kXS94MAUKku1eUXw6LbZLvtu3CfjeVdgDUjCZOe%2fz3W9UBAT2d4tdy%2b4zP5fuiltVi1fYKQcIwrOna8EksPeKnazidNCW9W3bBDar%2bZQiY%2bknqJsbLCNz4%2bU%2f0h836nQEdXfRqTvscMJl1wED8e3r5XalV445ESXvdXjyD2I2w%3d">TGBU6601787</a>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblSize_1">40</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblType_1">HQ-9'6'' container</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblSealNo_1">34346459</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblMoveType_1">FCL/FCL</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblDate_1">2021/11/15 17:00</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblLatestEvent_1">Vessel arrival at port terminal</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblPlace_1">PUSAN<BR />(PSA HYUNDAI PUSAN NEW-PORT TERMINAL (HPNT))</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblEventClassifier_1">Estimated</span>
+                                                </td><td>
+                                                    <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_DCSA_0_lblVGM_1">54454 LBS</span>
+                                                </td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+                                </div>
+
                             </div>
                         </div>
                     </div>
@@ -1741,20 +1988,20 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
                         Dear Sir/Madam,
                         <div style="padding-top: 20px; padding-left: 20px;">
                             <p>
-                               
+
                                 The data of the BL No. is not available yet, please use Booking No. or Container No. to trace again.<br />
                                 If there is any question, please mail to us
-                              
-                                
-                                <a id="ContentPlaceHolder1_rptBLNo_Mail_0" style="color: Black;text-decoration:underline;" href="javascript:__doPostBack(&#39;ctl00$ContentPlaceHolder1$rptBLNo$ctl00$Mail&#39;,&#39;&#39;)">cs@yangming.com</a><br />
-                                for further checking.<br /> 
+
+
+                                <a id="ContentPlaceHolder1_rptBLNo_Mail_0" style="color: Black; text-decoration: underline;" href="javascript:__doPostBack(&#39;ctl00$ContentPlaceHolder1$rptBLNo$ctl00$Mail&#39;,&#39;&#39;)">cs@yangming.com</a><br />
+                                for further checking.<br />
                                 Thank you !
 
                             </p>
                         </div>
                     </div>
                 </div>
-            
+
     </div>
     <div id="ContentPlaceHolder1_divNoDataFound2" class="col-xs-12 col-sm-12 col-md-12 col-lg-12" style="padding-top: 20px; display: none; padding-bottom: 40px;">
         <div style="padding-bottom: 40px; font-size: 18px;">
@@ -1772,28 +2019,40 @@ Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 
         </div>
     </div>
     <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 div_sec" style="padding-top: 30px;">
-        
+
         <input type="submit" name="ctl00$ContentPlaceHolder1$btnBack" value="Back" id="ContentPlaceHolder1_btnBack" class="form_btn_80px" />
     </div>
     <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12" style="padding-top: 30px; padding-bottom: 10px;">
         <div class="div_sec">
             <font color="red">DISCLAIMER: This tracking result is for reference only. All information is subject to change without prior notice.</font><br/>For more details, please contact our&nbsp;<a
-                href="../../office_network/office_agent/agent_overview.aspx" target="_blank" style="text-decoration: underline">local office</a>. <br />
+                href="../../office_network/office_agent/agent_overview.aspx" target="_blank" style="text-decoration: underline">local office</a>.
+            <br />
             <br />
         </div>
     </div>
     <input type="hidden" name="ctl00$ContentPlaceHolder1$hidTblOrigHeight" id="ContentPlaceHolder1_hidTblOrigHeight" />
     <input type="hidden" name="ctl00$ContentPlaceHolder1$hidTblOrigID" id="ContentPlaceHolder1_hidTblOrigID" />
+    <input type="hidden" name="ctl00$ContentPlaceHolder1$hidRefNo" id="ContentPlaceHolder1_hidRefNo" value="YLX392063" />
+    <input type="hidden" name="ctl00$ContentPlaceHolder1$hidQType" id="ContentPlaceHolder1_hidQType" value="BK" />
 
                     <!--Main-->
                 </div>
-                
+
     <div id="breadcrumb_rwd" class="row hidden-xs">
         <div class="hidden-xs col-sm-12 col-md-12 col-lg-12">
-            <span id="ContentPlaceHolder3_DIRECT1">Home</span><span id="ContentPlaceHolder3_DIRECT2">e-Service</span><span id="ContentPlaceHolder3_DIRECT3">Track & Trace</span><span id="ContentPlaceHolder3_DIRECT4">Cargo Tracking</span></div></div><div id="footer">
+            <span id="ContentPlaceHolder3_DIRECT1">Home</span>
+            <span id="ContentPlaceHolder3_DIRECT2">e-Service</span>
+            <span id="ContentPlaceHolder3_DIRECT3">Track & Trace</span>
+            <span id="ContentPlaceHolder3_DIRECT4">Cargo Tracking</span>
+        </div>
+    </div>
+    <div id="footer">
         <br />
         <span class="copyright">
-            Copyright © YANG MING. All Rights Reserved.
+            Copyright © YANG MING. All Rights Reserved. <span class="terms"><a href="/TermsOfUse.aspx">
+                Terms of use</a></span>
+            <span class="terms"><a href="/PrivacyAndSecurity.aspx">
+                Privacy & Security</a></span>
         </span>
         <br />
     </div>
