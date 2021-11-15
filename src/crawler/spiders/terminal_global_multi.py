@@ -92,16 +92,11 @@ class ContainerRoutingRule(BaseRoutingRule):
         if len(container_no_list) == 1:
             container_no_list = container_no_list + container_no_list
 
-        # invalid container no handling
-        # if self._is_container_no_invalid(response):
-        #     yield InvalidContainerNoItem(container_no=container_no_list[0])
-        #     return
-
         url = "http://payments.gcterminals.com/GlobalTerminal/globalSearch.do"
 
         for i in range(len(set(container_no_list))):
             form_data = {
-                "containerSelectedIndexParam": str(i),
+                "containerSelectedIndexParam": "",
                 "searchId": "BGLOB",
                 "searchType": "container",
                 "searchTextArea": "\n".join(container_no_list),
@@ -124,6 +119,11 @@ class ContainerRoutingRule(BaseRoutingRule):
             resp = requests.request("POST", url, headers=headers, data=urlencode(form_data))
             resp_selector = Selector(text=resp.text)
 
+            # invalid container no handling
+            if self._is_container_no_invalid(resp_selector):
+                yield InvalidContainerNoItem(container_no=container_no_list[0])
+                return
+
             # extract
             result_table = resp_selector.css("div#results-div table")
             table_locator = MainInfoTableLocator()
@@ -142,8 +142,8 @@ class ContainerRoutingRule(BaseRoutingRule):
             )
 
     @staticmethod
-    def _is_container_no_invalid(response: Selector) -> bool:
-        return bool(response.css("div.not-found-text"))
+    def _is_container_no_invalid(resp_selector: Selector) -> bool:
+        return bool(resp_selector.css("div.not-found-text"))
 
 
 class MainInfoTableLocator(BaseTable):
