@@ -94,7 +94,10 @@ class TrackRoutingRule(BaseRoutingRule):
         url = "https://www.aclcargo.com/content/themes/acl/library/parse-cargo-track.php"
         pattern = re.compile(r"^SA(?P<search_no>.+)")
         m = pattern.match(mbl_no)
-        request_data = f"SA-{m.group('search_no')}"
+        if m is None:
+            request_data = f"SA-{mbl_no}"
+        else:
+            request_data = f"SA-{m.group('search_no')}"
         return RequestOption(
             method=RequestOption.METHOD_POST_FORM,
             rule_name=cls.name,
