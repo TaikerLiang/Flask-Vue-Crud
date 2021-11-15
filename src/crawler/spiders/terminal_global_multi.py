@@ -131,7 +131,6 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         # special case
         if is_special_case:
-            print("bbb")
             container_no_list = container_no_list + container_no_list
             form_data["searchTextArea"] = "\n".join(container_no_list)
 
