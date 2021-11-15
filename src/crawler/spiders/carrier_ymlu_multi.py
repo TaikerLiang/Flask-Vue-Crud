@@ -491,7 +491,18 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
         pod = basic_info["pod"]
 
         routing_schedule = self._extract_routing_schedule(response=response, pol=pol, pod=pod)
-        firms_code = self._extract_firms_code(response=response)
+
+        firms_code = None
+        try:
+            firms_code = self._extract_firms_code(response=response)
+        except CarrierResponseFormatError:
+            yield ExportErrorData(
+                task_id=task_id,
+                booking_no=booking_no,
+                detail="Firms code parsing error",
+                status=CARRIER_RESULT_STATUS_ERROR,
+            )
+
         release_status = self._extract_release_status(response=response)
 
         yield MblItem(
@@ -698,7 +709,7 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
     def _extract_firms_code(response: Selector):
         # [0]WEST BASIN CONTAINER TERMINAL [1](Firms code:Y773)
         discharged_port_terminal_text = response.css(
-            f"span#ContentPlaceHolder1_rptBLNo_gvBasicInformation_0_lblDischarge_0 ::text"
+            f"span#ContentPlaceHolder1_rptBLNo_lblDischarged_0 ::text"
         ).getall()
         if len(discharged_port_terminal_text) == 1:
             return None
@@ -821,7 +832,19 @@ class MainInfoRoutingRule(BaseRoutingRule):
             pod = basic_info["pod"]
 
             routing_schedule = self._extract_routing_schedule(response=response, index=index, pol=pol, pod=pod)
-            firms_code = self._extract_firms_code(response=response, index=index)
+
+            firms_code = None
+
+            try:
+                firms_code = self._extract_firms_code(response=response, index=index)
+            except CarrierResponseFormatError:
+                yield ExportErrorData(
+                    task_id=task_ids[index],
+                    mbl_no=mbl_no,
+                    detail="Firms code parsing error",
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                )
+
             release_status = self._extract_release_status(response=response, index=index)
 
             yield MblItem(

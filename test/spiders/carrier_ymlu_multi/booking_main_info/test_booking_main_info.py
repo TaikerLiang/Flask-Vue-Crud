@@ -16,34 +16,33 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub,mbl_no,task_id',
+    "sub,booking_no,task_id",
     [
-        ('01_all_exist', 'W216104890', 1),
-        ('02_no_xta', 'W209047989', 1),
-        ('03_no_release', 'I209365239', 1),
-        ('04_multi_containers', 'W241061370', 1),
-        ('05_with_firm_code', 'W226020752', 1),
-        ('06_ip_blocked', 'E209048375', 1),
-        ('07_delivery_without_time_status', 'W209139591', 1),
-        ('08_to_be_advised_ver2', 'W470030608', 1),
-        ('09_by_booking_no_and_mbl_no', 'W120511524', 1),
+        ("01_all_exist", "YLX391994", 1),
+        ("02_no_xta", "YHU726505", 1),
+        ("03_no_release", "YLX392063", 1),
+        ("04_multi_containers", "YHU734257", 1),
+        ("05_firms_code_parsing_error", "YHU731790", 1),
+        ("06_ip_blocked", "E209048375", 1),
+        ("07_delivery_without_time_status", "YLX392742", 1),
+        ("08_to_be_advised_ver2", "YHU739759", 1),
     ],
 )
-def test_booking_main_info_page_routing_rule(sub, mbl_no, task_id, sample_loader):
-    httptext = sample_loader.read_file(sub, 'sample.html')
+def test_booking_main_info_page_routing_rule(sub, booking_no, task_id, sample_loader):
+    httptext = sample_loader.read_file(sub, "sample.html")
 
     request_option = BookingMainInfoPageRoutingRule.build_request_option(
         task_id=task_id,
-        follow_url='',
-        mbl_no=mbl_no,
-        booking_no='',
+        follow_url="",
+        mbl_no="",
+        booking_no=booking_no,
         headers={},
     )
 
     response = TextResponse(
         url=request_option.url,
         body=httptext,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=request_option.url,
             meta=request_option.meta,
@@ -53,6 +52,5 @@ def test_booking_main_info_page_routing_rule(sub, mbl_no, task_id, sample_loader
     rule = BookingMainInfoPageRoutingRule()
     results = list(rule.handle(response=response))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
-
