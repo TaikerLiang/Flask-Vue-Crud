@@ -19,6 +19,8 @@ from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.core.table import BaseTable, TableExtractor
+from crawler.core.exceptions import FormatError
+from crawler.core.items import BaseItem
 
 URL = "https://www.msc.com"
 
@@ -69,7 +71,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem):
+            if isinstance(result, BaseCarrierItem) or isinstance(result, BaseItem):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -153,6 +155,7 @@ class MainRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
+        f_err = self._build_error_format(task_id=task_ids[0], search_no=search_nos[0])
 
         if self._is_search_no_invalid(response=response):
             if self._search_type == SHIPMENT_TYPE_MBL:
@@ -174,39 +177,54 @@ class MainRoutingRule(BaseRoutingRule):
 
         extractor = Extractor()
         place_of_deliv_set = set()
-        container_selector_map_list = extractor.locate_container_selector(response=response)
+        try:
+            container_selector_map_list = extractor.locate_container_selector(response=response)
+        except CarrierResponseFormatError as e:
+            yield f_err.build_error_data(detail=e.reason)
+            return
+
         for container_selector_map in container_selector_map_list:
-            container_no = extractor.extract_container_no(container_selector_map)
+            try:
+                container_no = extractor.extract_container_no(container_selector_map)
 
-            yield ContainerItem(
-                task_id=task_ids[0], container_key=container_no, container_no=container_no,
-            )
-
-            container_status_list = extractor.extract_container_status_list(container_selector_map)
-            for container_status in container_status_list:
-                yield ContainerStatusItem(
-                    task_id=task_ids[0],
-                    container_key=container_no,
-                    description=container_status["description"],
-                    local_date_time=container_status["local_date_time"],
-                    location=LocationItem(name=container_status["location"]),
-                    vessel=container_status["vessel"] or None,
-                    voyage=container_status["voyage"] or None,
-                    est_or_actual=container_status["est_or_actual"],
+                yield ContainerItem(
+                    task_id=task_ids[0], container_key=container_no, container_no=container_no,
                 )
 
-            place_of_deliv = extractor.extract_place_of_deliv(container_selector_map)
-            place_of_deliv_set.add(place_of_deliv)
+                container_status_list = extractor.extract_container_status_list(container_selector_map)
+
+                for container_status in container_status_list:
+                    yield ContainerStatusItem(
+                        task_id=task_ids[0],
+                        container_key=container_no,
+                        description=container_status["description"],
+                        local_date_time=container_status["local_date_time"],
+                        location=LocationItem(name=container_status["location"]),
+                        vessel=container_status["vessel"] or None,
+                        voyage=container_status["voyage"] or None,
+                        est_or_actual=container_status["est_or_actual"],
+                    )
+
+                place_of_deliv = extractor.extract_place_of_deliv(container_selector_map)
+                place_of_deliv_set.add(place_of_deliv)
+
+            except CarrierResponseFormatError as e:
+                yield f_err.build_error_data(detail=e.reason)
 
         if not place_of_deliv_set:
             place_of_deliv = None
         elif len(place_of_deliv_set) == 1:
             place_of_deliv = list(place_of_deliv_set)[0] or None
         else:
-            raise CarrierResponseFormatError(reason=f"Different place_of_deliv: `{place_of_deliv_set}`")
+            yield f_err.build_error_data(detail=f"Different place_of_deliv: `{place_of_deliv_set}`")
+            return
 
-        search_no = extractor.extract_search_no(response=response)
-        main_info = extractor.extract_main_info(response=response)
+        try:
+            main_info = extractor.extract_main_info(response=response)
+        except CarrierResponseFormatError as e:
+            yield f_err.build_error_data(detail=e.reason)
+            return
+
         latest_update = extractor.extract_latest_update(response=response)
 
         mbl_item = MblItem(
@@ -234,6 +252,12 @@ class MainRoutingRule(BaseRoutingRule):
             if error_message and prefix in error_message:
                 return True
         return False
+
+    def _build_error_format(self, task_id: str, search_no: str):
+        if self._search_type == SHIPMENT_TYPE_MBL:
+            return FormatError(task_id=task_id, mbl_no=search_no)
+        else:
+            return FormatError(task_id=task_id, booking_no=search_no)
 
 
 class NextRoundRoutingRule(BaseRoutingRule):
@@ -267,26 +291,6 @@ class Extractor:
         self._mbl_no_pattern = re.compile(r"^Bill of lading: (?P<mbl_no>\S+) ([(]\d+ containers?[)])?$")
         self._container_no_pattern = re.compile(r"^Container: (?P<container_no>\S+)$")
         self._latest_update_pattern = re.compile(r"^Tracking results provided by MSC on (?P<latest_update>.+)$")
-
-    def extract_search_no(self, response: scrapy.Selector):
-        search_no_text = response.css("a#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_hlkBOLToggle::text").get()
-
-        if not search_no_text:
-            return None
-
-        return self._parse_mbl_no(search_no_text)
-
-    def _parse_mbl_no(self, mbl_no_text: str):
-        """
-        Sample Text:
-            `Bill of lading: MEDUN4194175 (1 container)`
-            `Bill of lading: MEDUH3870035 `
-        """
-        m = self._mbl_no_pattern.match(mbl_no_text)
-        if not m:
-            raise CarrierResponseFormatError(reason=f"Unknown mbl no format: `{mbl_no_text}`")
-
-        return m.group("mbl_no")
 
     @staticmethod
     def extract_main_info(response: scrapy.Selector):
