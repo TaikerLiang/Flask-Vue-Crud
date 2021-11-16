@@ -6,9 +6,6 @@ from typing import List, Dict
 import scrapy
 from scrapy import Selector
 from selenium import webdriver
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException
 
 from crawler.core_carrier.base import (
@@ -107,20 +104,10 @@ class CarrierWhlcSpider(BaseCarrierSpider):
 
         if option.method == RequestOption.METHOD_POST_BODY:
             return scrapy.Request(
-                url=option.url,
-                headers=option.headers,
-                meta=meta,
-                callback=self.parse,
-                method="POST",
-                body=option.body,
+                url=option.url, headers=option.headers, meta=meta, callback=self.parse, method="POST", body=option.body,
             )
         elif option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(
-                url=option.url,
-                headers=option.headers,
-                cookies=option.cookies,
-                meta=meta,
-            )
+            return scrapy.Request(url=option.url, headers=option.headers, cookies=option.cookies, meta=meta,)
         else:
             raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
@@ -145,10 +132,7 @@ class MblRoutingRule(BaseRoutingRule):
     @classmethod
     def build_request_option(cls, search_no):
         return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=f"https://google.com",
-            meta={"mbl_no": search_no},
+            rule_name=cls.name, method=RequestOption.METHOD_GET, url=f"https://google.com", meta={"mbl_no": search_no},
         )
 
     def handle(self, response):
@@ -163,9 +147,7 @@ class MblRoutingRule(BaseRoutingRule):
         try:
             driver.check_alert()
             yield ExportErrorData(
-                mbl_no=mbl_no,
-                status=CARRIER_RESULT_STATUS_ERROR,
-                detail="Data was not found",
+                mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found",
             )
             return
         except NoAlertPresentException:
@@ -180,8 +162,7 @@ class MblRoutingRule(BaseRoutingRule):
             container_no = container_list[idx]["container_no"]
 
             yield ContainerItem(
-                container_key=container_no,
-                container_no=container_no,
+                container_key=container_no, container_no=container_no,
             )
 
             # detail page
@@ -250,11 +231,7 @@ class MblRoutingRule(BaseRoutingRule):
             history_j_idt = self._parse_history_j_idt_from(text=history_j_idt_text)
 
             return_list.append(
-                {
-                    "container_no": container_no,
-                    "detail_j_idt": detail_j_idt,
-                    "history_j_idt": history_j_idt,
-                }
+                {"container_no": container_no, "detail_j_idt": detail_j_idt, "history_j_idt": history_j_idt,}
             )
 
         return return_list
@@ -351,11 +328,7 @@ class MblRoutingRule(BaseRoutingRule):
             location_name = table.extract_cell(top="Ctnr Depot Name", left=left, extractor=LocationNameTdExtractor())
 
             return_list.append(
-                {
-                    "local_date_time": local_date_time,
-                    "description": description,
-                    "location_name": location_name,
-                }
+                {"local_date_time": local_date_time, "description": description, "location_name": location_name,}
             )
 
         return return_list
@@ -389,9 +362,7 @@ class BookingRoutingRule(BaseRoutingRule):
         response_selector = Selector(text=driver.get_page_source())
         if self._is_search_no_invalid(response=response_selector):
             yield ExportErrorData(
-                booking_no=search_no,
-                status=CARRIER_RESULT_STATUS_ERROR,
-                detail="Data was not found",
+                booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found",
             )
             driver.quit()
             return
@@ -430,8 +401,7 @@ class BookingRoutingRule(BaseRoutingRule):
             container_status_items = self._make_container_status_items(container_no, event_list)
 
             yield ContainerItem(
-                container_key=container_no,
-                container_no=container_no,
+                container_key=container_no, container_no=container_no,
             )
 
             for item in container_status_items:
@@ -517,11 +487,7 @@ class BookingRoutingRule(BaseRoutingRule):
             location_name = table.extract_cell(top="Ctnr Depot Name", left=left, extractor=LocationNameTdExtractor())
 
             return_list.append(
-                {
-                    "local_date_time": local_date_time,
-                    "description": description,
-                    "location_name": location_name,
-                }
+                {"local_date_time": local_date_time, "description": description, "location_name": location_name,}
             )
 
         return return_list

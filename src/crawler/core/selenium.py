@@ -1,9 +1,12 @@
 import random
-from selenium import webdriver
 from typing import Dict
 
+from selenium import webdriver
 
-class BaseContentGetter:
+from crawler.core.defines import BaseContentGetter
+
+
+class SeleniumContentGetter(BaseContentGetter):
     def __init__(self):
         self._driver = None
 
@@ -39,7 +42,7 @@ class BaseContentGetter:
         text = alert.text
 
 
-class ChromeContentGetter(BaseContentGetter):
+class ChromeContentGetter(SeleniumContentGetter):
     def __init__(self):
         super().__init__()
 
@@ -65,7 +68,7 @@ class ChromeContentGetter(BaseContentGetter):
         self._driver.execute_cdp_cmd("Network.enable", {})
 
 
-class FirefoxContentGetter(BaseContentGetter):
+class FirefoxContentGetter(SeleniumContentGetter):
     def __init__(self, service_log_path=None):
         super().__init__()
 
