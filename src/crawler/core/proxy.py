@@ -67,6 +67,14 @@ class ProxyManager:
             f"--proxy-auth={self._proxy_username}:{self.PROXY_PASSWORD}",
         ]
 
+    @property
+    def proxy_username(self):
+        return self._proxy_username
+
+    @property
+    def proxy_password(self):
+        return self._proxy_password
+
 
 class ApifyProxyManager(ProxyManager):
     PROXY_DOMAIN = "proxy.apify.com:8000"

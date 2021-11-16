@@ -4,8 +4,10 @@ import asyncio
 from pyppeteer import launch
 from pyppeteer_stealth import stealth
 
+from crawler.core.defines import BaseContentGetter
 
-class PyppeteerContentGetter:
+
+class PyppeteerContentGetter(BaseContentGetter):
     def __init__(self, proxy_manager: None, is_headless: bool = False):
         self._is_first = True
         self.proxy_manager = proxy_manager
