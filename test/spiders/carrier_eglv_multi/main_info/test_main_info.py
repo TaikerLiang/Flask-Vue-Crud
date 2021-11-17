@@ -30,7 +30,7 @@ def sample_loader(sample_loader):
 def test_main_info_handler(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
-    option = BillMainInfoRoutingRule.build_request_option(mbl_no=mbl_no, verification_code="", task_id="1")
+    option = BillMainInfoRoutingRule.build_request_option(mbl_nos=[mbl_no], verification_code="", task_ids=["1"])
 
     response = TextResponse(
         url=option.url,
@@ -56,7 +56,7 @@ def test_main_info_handler(sub, mbl_no, sample_loader):
 def test_main_info_handler_max_retry_error(sub, mbl_no, expect_exception, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
-    option = BillMainInfoRoutingRule.build_request_option(mbl_no=mbl_no, verification_code="", task_id="1")
+    option = BillMainInfoRoutingRule.build_request_option(mbl_nos=[mbl_no], verification_code="", task_ids=["1"])
 
     response = TextResponse(
         url=option.url,
