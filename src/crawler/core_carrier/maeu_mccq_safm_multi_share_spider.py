@@ -176,9 +176,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
                     est_or_actual=container_status["est_or_actual"],
                 )
 
-        yield NextRoundRoutingRule.build_request_option(
-            search_nos=search_nos, task_ids=task_ids, url_format=url_format
-        )
+        yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, url_format=url_format)
 
     @staticmethod
     def is_search_no_invalid(response_dict):

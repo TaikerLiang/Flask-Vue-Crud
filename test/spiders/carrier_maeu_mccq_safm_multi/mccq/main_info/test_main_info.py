@@ -18,25 +18,26 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub,mbl_no,',
+    "sub,mbl_no,",
     [
-        ('01_multi_containers_finish', '589898475'),
-        ('02_multi_containers_not_finish', '588455529'),
-        ('03_data_not_found', '999455999'),
+        ("01_multi_containers_finish", "589898475"),
+        ("02_multi_containers_not_finish", "588455529"),
+        ("03_data_not_found", "999455999"),
     ],
 )
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
-    jsontext = sample_loader.read_file(sub, 'sample.json')
+    jsontext = sample_loader.read_file(sub, "sample.json")
 
-    option = MainInfoRoutingRule.build_request_option(search_nos=[mbl_no],
-                                                      url_format=CarrierMccqSpider.base_url_format,
-                                                      task_ids=['1'],
-                                                      )
+    option = MainInfoRoutingRule.build_request_option(
+        search_nos=[mbl_no],
+        url_format=CarrierMccqSpider.base_url_format,
+        task_ids=["1"],
+    )
 
     response = TextResponse(
         url=option.url,
         body=jsontext,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=option.url,
             meta=option.meta,
@@ -46,6 +47,5 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     routing_rule = MainInfoRoutingRule(search_type=SHIPMENT_TYPE_MBL)
     results = list(routing_rule.handle(response=response))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
-
