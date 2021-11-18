@@ -30,9 +30,13 @@ class EdiClientService:
         return resp.status_code, resp.text
 
     def _build_provider_result(self, task_id: int, provider_code: str, item_result: Dict) -> Dict:
+        job_key = ""
+        if "SCRAPY_JOB" in os.environ:
+            job_key = os.environ["SCRAPY_JOB"]
+
         result_data = {
             "task_id": task_id,
-            "job_key": "-",
+            "job_key": job_key,
             "spider": "scrapy_cloud_api",
             "close_reason": "",
             "items": [item_result],

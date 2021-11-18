@@ -6,7 +6,7 @@ import logging
 
 import scrapy
 from scrapy import Selector
-from pyppeteer.errors import TimeoutError, ElementHandleError
+from pyppeteer.errors import TimeoutError, ElementHandleError, PageError
 
 from crawler.core.defines import BaseContentGetter
 from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
@@ -27,18 +27,22 @@ from crawler.core_carrier.items import (
 )
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
-    LoadWebsiteTimeOutError,
     BaseCarrierError,
     SuspiciousOperationError,
     CarrierInvalidSearchNoError,
     CARRIER_RESULT_STATUS_ERROR,
+    DriverMaxRetryError,
 )
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 WHLC_BASE_URL = "https://www.wanhai.com/views/cargoTrack/CargoTrack.xhtml"
-COOKIES_RETRY_LIMIT = 3
+MAX_RETRY_COUNT = 3
+
+
+class Restart:
+    pass
 
 
 class CarrierWhlcSpider(BaseMultiCarrierSpider):
@@ -48,6 +52,7 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
         super(CarrierWhlcSpider, self).__init__(*args, **kwargs)
 
         self._driver = WhlcContentGetter(proxy_manager=HydraproxyProxyManager(session="whlc", logger=self.logger))
+        self._retry_count = 0
 
         bill_rules = [MblRoutingRule(content_getter=self._driver)]
 
@@ -62,12 +67,20 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
         self._driver = WhlcContentGetter(proxy_manager=HydraproxyProxyManager(session="whlc", logger=self.logger))
 
     def start(self):
+        yield self._prepare_restart()
+
+    def _prepare_restart(self):
+        if self._retry_count > MAX_RETRY_COUNT:
+            raise DriverMaxRetryError()
+
+        self._retry_count += 1
+
         if self.search_type == SHIPMENT_TYPE_MBL:
             request_option = MblRoutingRule.build_request_option(mbl_nos=self.search_nos, task_ids=self.task_ids)
-            yield self._build_request_by(option=request_option)
         else:
             request_option = BookingRoutingRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids)
-            yield self._build_request_by(option=request_option)
+
+        return self._build_request_by(option=request_option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -80,6 +93,8 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
+            elif isinstance(result, Restart):
+                yield self._prepare_restart()
             elif isinstance(result, RequestOption):
                 self._request_queue.add_request(result)
             else:
@@ -148,8 +163,9 @@ class MblRoutingRule(BaseRoutingRule):
             page_source = asyncio.get_event_loop().run_until_complete(
                 self.driver.multi_search(search_nos=mbl_nos, search_type=self._search_type)
             )
-        except ReadTimeoutError:
-            raise LoadWebsiteTimeOutError(url=WHLC_BASE_URL)
+        except (ReadTimeoutError, TimeoutError, PageError, CarrierResponseFormatError, IndexError):
+            yield Restart()
+            return
 
         response_selector = Selector(text=page_source)
         container_list = self.extract_container_info(response_selector)
@@ -419,9 +435,13 @@ class BookingRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
-        page_source = asyncio.get_event_loop().run_until_complete(
-            self.driver.multi_search(search_nos=search_nos, search_type=self._search_type)
-        )
+        try:
+            page_source = asyncio.get_event_loop().run_until_complete(
+                self.driver.multi_search(search_nos=search_nos, search_type=self._search_type)
+            )
+        except (ReadTimeoutError, TimeoutError, PageError, CarrierResponseFormatError, IndexError):
+            yield Restart()
+            return
 
         response_selector = Selector(text=page_source)
         if self.is_search_no_invalid(response=response_selector):

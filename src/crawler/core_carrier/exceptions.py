@@ -70,6 +70,13 @@ class ProxyMaxRetryError(BaseCarrierError):
         return ExportErrorData(status=self.status, detail="<proxy-max-retry-error>")
 
 
+class DriverMaxRetryError(BaseCarrierError):
+    status = CARRIER_RESULT_STATUS_FATAL
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail="<driver-max-retry-error>")
+
+
 class SuspiciousOperationError(BaseCarrierError):
     status = CARRIER_RESULT_STATUS_ERROR
 
