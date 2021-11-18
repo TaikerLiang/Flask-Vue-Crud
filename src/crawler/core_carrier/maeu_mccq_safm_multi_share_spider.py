@@ -1,21 +1,26 @@
+import json
+import scrapy
 from typing import Dict, Tuple
 
-import scrapy
-
-import json
 from crawler.core_carrier.base import SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL, CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, SuspiciousOperationError
+from crawler.core_carrier.items import (
+    BaseCarrierItem,
+    MblItem,
+    LocationItem,
+    ContainerItem,
+    ContainerStatusItem,
+    DebugItem,
+    ExportErrorData,
+)
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
-from crawler.core_carrier.items import (
-    BaseCarrierItem, MblItem, LocationItem, ContainerItem, ContainerStatusItem, DebugItem, ExportErrorData)
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError, CarrierResponseFormatError, \
-    SuspiciousOperationError, CarrierInvalidSearchNoError
 
 
 class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
-    name = ''
-    base_url_format = ''
+    name = ""
+    base_url_format = ""
 
     def __init__(self, *args, **kwargs):
         super(MaeuMccqSafmShareSpider, self).__init__(*args, **kwargs)
@@ -35,11 +40,13 @@ class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
 
     def start(self):
         for s_no, t_id in zip(self.search_nos, self.task_ids):
-            option = MainInfoRoutingRule.build_request_option(search_no=s_no, task_id=t_id, url_format=self.base_url_format)
+            option = MainInfoRoutingRule.build_request_option(
+                search_no=s_no, task_id=t_id, url_format=self.base_url_format
+            )
             yield self._build_request_by(option=option)
 
     def parse(self, response):
-        yield DebugItem(info={'meta': dict(response.meta)})
+        yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -67,12 +74,11 @@ class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
             )
         else:
-            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
-
+            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
 
 class MainInfoRoutingRule(BaseRoutingRule):
-    name = 'MAIN_INFO'
+    name = "MAIN_INFO"
 
     def __init__(self, search_type):
         self._search_type = search_type
@@ -84,28 +90,33 @@ class MainInfoRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=url_format.format(search_no=search_no),
             meta={
-                'task_id': task_id,
-                'search_no': search_no,
-                'handle_httpstatus_list': [400, 404],
-            }
+                "task_id": task_id,
+                "search_no": search_no,
+                "handle_httpstatus_list": [400, 404],
+            },
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.json'
+        return f"{self.name}.json"
 
     def handle(self, response):
-        task_id = response.meta['task_id']
-        search_no = response.meta['search_no']
+        task_id = response.meta["task_id"]
+        search_no = response.meta["search_no"]
         response_dict = json.loads(response.text)
 
         if self.is_search_no_invalid(response_dict):
             if self._search_type == SHIPMENT_TYPE_MBL:
-                yield ExportErrorData(task_id=task_id, mbl_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
-                                      detail='Data was not found')
+                yield ExportErrorData(
+                    task_id=task_id, mbl_no=search_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found"
+                )
                 return
             else:
-                yield ExportErrorData(task_id=task_id, booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR,
-                                      detail='Data was not found')
+                yield ExportErrorData(
+                    task_id=task_id,
+                    booking_no=search_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
                 return
 
         search_no = self._extract_search_no(response_dict=response_dict)
@@ -113,89 +124,89 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         mbl_item = MblItem(
             task_id=task_id,
-            por=LocationItem(name=routing_info['por']),
-            final_dest=LocationItem(name=routing_info['final_dest']),
+            por=LocationItem(name=routing_info["por"]),
+            final_dest=LocationItem(name=routing_info["final_dest"]),
         )
         if self._search_type == SHIPMENT_TYPE_MBL:
-            mbl_item['mbl_no'] = search_no
+            mbl_item["mbl_no"] = search_no
         else:
-            mbl_item['booking_no'] = search_no
+            mbl_item["booking_no"] = search_no
         yield mbl_item
 
         containers = self._extract_containers(response_dict=response_dict)
         for container in containers:
-            container_no = container['no']
+            container_no = container["no"]
 
             yield ContainerItem(
                 task_id=task_id,
                 container_key=container_no,
                 container_no=container_no,
-                final_dest_eta=container['final_dest_eta'],
+                final_dest_eta=container["final_dest_eta"],
             )
 
-            for container_status in container['container_statuses']:
+            for container_status in container["container_statuses"]:
                 yield ContainerStatusItem(
                     task_id=task_id,
                     container_key=container_no,
-                    description=container_status['description'],
-                    local_date_time=container_status['timestamp'],
-                    location=LocationItem(name=container_status['location_name']),
-                    vessel=container_status['vessel'] or None,
-                    voyage=container_status['voyage'] or None,
-                    est_or_actual=container_status['est_or_actual'],
+                    description=container_status["description"],
+                    local_date_time=container_status["timestamp"],
+                    location=LocationItem(name=container_status["location_name"]),
+                    vessel=container_status["vessel"] or None,
+                    voyage=container_status["voyage"] or None,
+                    est_or_actual=container_status["est_or_actual"],
                 )
 
     @staticmethod
     def is_search_no_invalid(response_dict):
-        if 'error' in response_dict:
+        if "error" in response_dict:
             return True
         return False
 
     @staticmethod
     def _extract_search_no(response_dict):
-        return response_dict['tpdoc_num']
+        return response_dict["tpdoc_num"]
 
     def _extract_routing_info(self, response_dict):
-        origin = response_dict['origin']
-        destination = response_dict.get('destination')
+        origin = response_dict["origin"]
+        destination = response_dict.get("destination")
 
         return {
-            'por': self._format_location(loc_info=origin),
-            'final_dest': self._format_location(loc_info=destination) if destination else None,
+            "por": self._format_location(loc_info=origin),
+            "final_dest": self._format_location(loc_info=destination) if destination else None,
         }
 
     def _extract_containers(self, response_dict):
-        containers = response_dict['containers']
+        containers = response_dict["containers"]
 
         container_info_list = []
         for container in containers:
             container_statuses = []
 
-            locations = container.get('locations', [])
+            locations = container.get("locations", [])
             for location in locations:
                 location_name = self._format_location(loc_info=location)
 
-                for event in location['events']:
+                for event in location["events"]:
                     timestamp, est_or_actual = self._get_time_and_status(event)
 
                     container_statuses.append(
                         {
-                            'location_name': location_name,
-                            'description': event['activity'],
-                            'vessel': self._format_vessel_name(
-                                vessel_name=event['vessel_name'], vessel_num=event['vessel_num']
+                            "location_name": location_name,
+                            "description": event["activity"],
+                            "vessel": self._format_vessel_name(
+                                vessel_name=event["vessel_name"], vessel_num=event["vessel_num"]
                             ),
-                            'voyage': event['voyage_num'],
-                            'timestamp': timestamp,
-                            'est_or_actual': est_or_actual,
+                            "voyage": event["voyage_num"],
+                            "timestamp": timestamp,
+                            "est_or_actual": est_or_actual,
                         }
                     )
 
             container_info_list.append(
                 {
-                    'no': container['container_num'],
-                    'final_dest_eta': container['eta_final_delivery'],
-                    'container_statuses': container_statuses,
+                    "no": container["container_num"],
+                    "final_dest_eta": container["eta_final_delivery"],
+                    "container_statuses": container_statuses,
                 }
             )
 
@@ -204,21 +215,21 @@ class MainInfoRoutingRule(BaseRoutingRule):
     @staticmethod
     def _format_location(loc_info: Dict):
         # terminal
-        if loc_info['terminal']:
-            terminal_str = f'{loc_info["terminal"]} -- '
+        if loc_info["terminal"]:
+            terminal_str = f"{loc_info['terminal']} -- "
         else:
-            terminal_str = ''
+            terminal_str = ""
 
         # state & country
         state_country_list = []
 
-        if loc_info['state']:
-            state_country_list.append(loc_info['state'])
+        if loc_info["state"]:
+            state_country_list.append(loc_info["state"])
 
-        state_country_list.append(loc_info['country_code'])
-        state_country_str = ', '.join(state_country_list)
+        state_country_list.append(loc_info["country_code"])
+        state_country_str = ", ".join(state_country_list)
 
-        return f'{terminal_str}{loc_info["city"]} ({state_country_str})'
+        return f"{terminal_str}{loc_info['city']} ({state_country_str})"
 
     @staticmethod
     def _format_vessel_name(vessel_name, vessel_num):
@@ -230,15 +241,14 @@ class MainInfoRoutingRule(BaseRoutingRule):
         if vessel_num:
             name_list.append(vessel_num)
 
-        return ' '.join(name_list)
+        return " ".join(name_list)
 
     @staticmethod
     def _get_time_and_status(event: Dict) -> Tuple:
-        if 'actual_time' in event:
-            return event['actual_time'], 'A'
+        if "actual_time" in event:
+            return event["actual_time"], "A"
 
-        if 'expected_time' in event:
-            return event['expected_time'], 'E'
+        if "expected_time" in event:
+            return event["expected_time"], "E"
 
-        raise CarrierResponseFormatError(reason=f'Unknown time in container_status" `{event}`')
-
+        raise CarrierResponseFormatError(reason=f"Unknown time in container_status `{event}`")
