@@ -540,16 +540,16 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
 
         carrier_release_date = ""
         if table.has_header(top="Carrier release"):
-            carrier_release_date = table.extract_cell(top="Carrier release", left=None)
+            carrier_release_date = table.extract_cell(top="Carrier release")
 
         customs_release_date = ""
         if table.has_header(top="Customs release"):
-            customs_release_date = table.extract_cell(top="Customs release", left=None)
+            customs_release_date = table.extract_cell(top="Customs release")
 
         return {
-            "container_no": table.extract_cell(top="Container", left=None),
-            "por": table.extract_cell(top="Origin", left=None),
-            "final_dest": table.extract_cell(top="Destination", left=None),
+            "container_no": table.extract_cell(top="Container"),
+            "por": table.extract_cell(top="Origin"),
+            "final_dest": table.extract_cell(top="Destination"),
             "carrier_release_date": carrier_release_date,
             "customs_release_date": customs_release_date,
         }
