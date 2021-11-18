@@ -32,6 +32,7 @@ from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatch
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
 
 BASE_URL = "https://www.yangming.com"
+MAX_PAGE_NUM = 10
 
 
 @dataclasses.dataclass
@@ -53,12 +54,14 @@ class CarrierYmluSpider(BaseMultiCarrierSpider):
     def __init__(self, *args, **kwargs):
         super(CarrierYmluSpider, self).__init__(*args, **kwargs)
         self._cookie_jar_id = 1
+        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         bill_rules = [
             MainPageRoutingRule(),
             CaptchaRoutingRule(),
             MainInfoRoutingRule(),
             ContainerStatusRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         booking_rules = [
@@ -67,6 +70,7 @@ class CarrierYmluSpider(BaseMultiCarrierSpider):
             BookingInfoRoutingRule(),
             BookingMainInfoPageRoutingRule(),
             ContainerStatusRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         if self.search_type == SHIPMENT_TYPE_MBL:
@@ -341,6 +345,8 @@ class BookingInfoRoutingRule(BaseRoutingRule):
         # len(booking_nos) should not exceed 12
         for i, booking_no in enumerate(booking_nos, start=1):
             form_data[f"ctl00$ContentPlaceHolder1$num{i}"] = booking_no
+            if i > MAX_PAGE_NUM:
+                break
 
         return RequestOption(
             method=RequestOption.METHOD_POST_FORM,
@@ -361,7 +367,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_ids = response.meta["task_ids"]
         headers = response.meta["headers"]
-        booking_nos = response.meta["booking_nos"]
+        search_nos = response.meta["booking_nos"]
 
         if check_ip_error(response=response):
             yield Restart(reason="IP block")
@@ -378,7 +384,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
                 task_id=task_ids[0],
                 follow_url=follow_url,
                 mbl_no=mbl_no,
-                booking_no=booking_nos[0],
+                booking_no=search_nos[0],
                 headers=headers,
             )
             return
@@ -404,6 +410,10 @@ class BookingInfoRoutingRule(BaseRoutingRule):
                         booking_no=booking_no,
                         headers=headers,
                     )
+
+        yield NextRoundRoutingRule.build_request_option(
+            search_nos=search_nos, search_type=SHIPMENT_TYPE_BOOKING, task_ids=task_ids
+        )
 
     @staticmethod
     def _search_success(response: Selector):
@@ -784,6 +794,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
         # len(mbl_nos) should not exceed 12
         for i, mbl_no in enumerate(mbl_nos, start=1):
             form_data[f"ctl00$ContentPlaceHolder1$num{i}"] = mbl_no
+            if i > MAX_PAGE_NUM:
+                break
 
         return RequestOption(
             method=RequestOption.METHOD_POST_FORM,
@@ -803,6 +815,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         task_ids = response.meta["task_ids"]
+        search_nos = response.meta["search_nos"]
         headers = response.meta["headers"]
 
         if check_ip_error(response=response):
@@ -887,6 +900,10 @@ class MainInfoRoutingRule(BaseRoutingRule):
                     headers=headers,
                 )
             table_index += 1
+
+        yield NextRoundRoutingRule.build_request_option(
+            search_nos=search_nos, task_ids=task_ids, search_type=SHIPMENT_TYPE_MBL
+        )
 
     @staticmethod
     def _search_success(response: Selector):
@@ -1399,6 +1416,35 @@ class TopHeaderIsTdTableLocator(BaseTableLocator):
     def iter_left_headers(self):
         for index in range(self._data_len):
             yield index
+
+
+# --------------------------------------------------------------------
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    @classmethod
+    def build_request_option(cls, search_nos: List, task_ids: List, search_type: str) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://google.com",
+            meta={"search_nos": search_nos, "task_ids": task_ids, "search_type": search_type},
+        )
+
+    def handle(self, response):
+        task_ids = response.meta["task_ids"]
+        search_nos = response.meta["search_nos"]
+        search_type = response.meta["search_type"]
+
+        if len(search_nos) <= MAX_PAGE_NUM and len(task_ids) <= MAX_PAGE_NUM:
+            return
+
+        task_ids = task_ids[MAX_PAGE_NUM:]
+        search_nos = search_nos[MAX_PAGE_NUM:]
+
+        yield MainPageRoutingRule.build_request_option(
+            search_nos=search_nos, task_ids=task_ids, search_type=search_type
+        )
 
 
 # --------------------------------------------------------------------
