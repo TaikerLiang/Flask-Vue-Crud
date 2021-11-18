@@ -5,7 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_terminal.ets_share_spider import MainPageRoutingRule
-from crawler.spiders.terminal_ets_berth import TerminalBerthSpider
+from crawler.spiders.terminal_ets_berth import TerminalEtsBerthSpider
 from test.spiders.terminal_ets import main_page
 
 
@@ -27,7 +27,7 @@ def test_main_page_handle(sub, container_no, sample_loader):
 
     option = MainPageRoutingRule.build_request_option(
         container_no_list=[container_no],
-        company_info=TerminalBerthSpider.company_info,
+        company_info=TerminalEtsBerthSpider.company_info,
     )
 
     response = TextResponse(

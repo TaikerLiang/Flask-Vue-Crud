@@ -5,7 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_terminal.ets_share_spider import LoginRoutingRule
-from crawler.spiders.terminal_ets_pierce_county import TerminalPierceCountySpider
+from crawler.spiders.terminal_ets_pierce_county import TerminalEtsPierceCountySpider
 from test.spiders.terminal_ets import login
 
 
@@ -30,7 +30,7 @@ def test_login_handle(sub, container_no, sample_loader):
         container_no_list=[container_no],
         dc="",
         verify_key="",
-        company_info=TerminalPierceCountySpider.company_info,
+        company_info=TerminalEtsPierceCountySpider.company_info,
     )
 
     response = TextResponse(
