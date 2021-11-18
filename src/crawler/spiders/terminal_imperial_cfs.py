@@ -101,14 +101,11 @@ class ContainerRoutingRule(BaseRoutingRule):
         yield TerminalItem(
             container_no=left_table.extract_cell(left="CONTAINER NO.") or None,
             mbl_no=left_table.extract_cell(left="MBL NO.") or None,
-            # gate_out_date=right_table.extract_cell(left="GO DATE") or None,
-            # discharge_date=right_table.extract_cell(left="DEVAN DATE") or None,
             last_free_day=right_table.extract_cell(left="LAST FREE DATE") or None,
             vessel=left_table.extract_cell(left="VESSEL") or None,
         )
 
-    @staticmethod
-    def _is_container_no_invalid(response):
+    def _is_container_no_invalid(self, response):
         if response.css("div.Availability-table h1::text").get() == "Unable to Locate Shipment":
             return True
         return False
