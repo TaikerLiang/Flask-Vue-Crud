@@ -29,6 +29,8 @@ from crawler.core_carrier.items import (
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 
+MAX_PAGE_NUM = 10
+
 
 @dataclasses.dataclass
 class Restart:
@@ -44,6 +46,8 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
     def __init__(self, *args, **kwargs):
         super(OneySmlmSharedSpider, self).__init__(*args, **kwargs)
 
+        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
+
         self._proxy_manager = HydraproxyProxyManager(session="oneysmlm", logger=self.logger)
 
         bill_rules = [
@@ -52,6 +56,7 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
             ContainerStatusRoutingRule(),
             ReleaseStatusRoutingRule(),
             RailInfoRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         booking_rules = [
@@ -60,6 +65,7 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
             ContainerStatusRoutingRule(),
             ReleaseStatusRoutingRule(),
             RailInfoRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         if self.search_type == SHIPMENT_TYPE_MBL:
@@ -129,19 +135,9 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
         }
 
         if option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(
-                url=option.url,
-                meta=meta,
-                headers=option.headers,
-                dont_filter=True,
-            )
+            return scrapy.Request(url=option.url, meta=meta, headers=option.headers, dont_filter=True,)
         elif option.method == RequestOption.METHOD_POST_FORM:
-            return scrapy.FormRequest(
-                url=option.url,
-                formdata=option.form_data,
-                meta=meta,
-                dont_filter=True,
-            )
+            return scrapy.FormRequest(url=option.url, formdata=option.form_data, meta=meta, dont_filter=True,)
         else:
             raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
@@ -157,7 +153,11 @@ class FirstTierRoutingRule(BaseRoutingRule):
     @classmethod
     def build_request_option(cls, search_nos, base_url, task_ids) -> RequestOption:
         time_stamp = build_timestamp()
-        search_name = ",".join(search_nos)
+        if len(search_nos) > MAX_PAGE_NUM:
+            search_name = ",".join(search_nos[:MAX_PAGE_NUM])
+        else:
+            search_name = ",".join(search_nos)
+
         url = (
             f"{base_url}?_search=false&nd={time_stamp}&rows=10000&page=1&sidx=&sord=asc&"
             f"f_cmd={cls.f_cmd}&search_type=B&search_name={search_name}&cust_cd="
@@ -182,11 +182,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=url,
             headers=headers,
-            meta={
-                "base_url": base_url,
-                "task_ids": task_ids,
-                "search_nos": search_nos,
-            },
+            meta={"base_url": base_url, "task_ids": task_ids, "search_nos": search_nos,},
         )
 
     def get_save_name(self, response) -> str:
@@ -205,7 +201,14 @@ class FirstTierRoutingRule(BaseRoutingRule):
         booking_no_set = self._get_booking_no_set_from(container_list=container_info_list)
         mbl_no_set = self._get_mbl_no_set_from(container_list=container_info_list)
 
-        for search_no, task_id in zip(search_nos, task_ids):
+        if len(search_nos) > MAX_PAGE_NUM:
+            search_nos_in_paging = search_nos[:MAX_PAGE_NUM]
+            task_ids_in_paging = task_ids[:MAX_PAGE_NUM]
+        else:
+            search_nos_in_paging = search_nos
+            task_ids_in_paging = task_ids
+
+        for search_no, task_id in zip(search_nos_in_paging, task_ids_in_paging):
             if self._search_type == SHIPMENT_TYPE_MBL:
                 if search_no in mbl_no_set:
                     yield MblItem(task_id=task_id, mbl_no=search_no)
@@ -220,6 +223,10 @@ class FirstTierRoutingRule(BaseRoutingRule):
                         status=CARRIER_RESULT_STATUS_ERROR,
                         detail="Data was not found",
                     )
+                    yield NextRoundRoutingRule.build_request_option(
+                        search_nos=search_nos, task_ids=task_ids, search_type=self._search_type, base_url=base_url
+                    )
+                    return
             elif self._search_type == SHIPMENT_TYPE_BOOKING:
                 if search_no in booking_no_set:
                     yield MblItem(task_id=task_id, booking_no=search_no)
@@ -234,6 +241,10 @@ class FirstTierRoutingRule(BaseRoutingRule):
                         status=CARRIER_RESULT_STATUS_ERROR,
                         detail="Data was not found",
                     )
+                    yield NextRoundRoutingRule.build_request_option(
+                        search_nos=search_nos, task_ids=task_ids, search_type=self._search_type, base_url=base_url
+                    )
+                    return
 
         for container_info in container_info_list:
             container_no = container_info["container_no"]
@@ -245,9 +256,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
             task_id = task_ids[index]
 
             yield ContainerItem(
-                task_id=task_id,
-                container_key=container_no,
-                container_no=container_no,
+                task_id=task_id, container_key=container_no, container_no=container_no,
             )
 
             yield ContainerStatusRoutingRule.build_request_option(
@@ -259,10 +268,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
             )
 
             yield ReleaseStatusRoutingRule.build_request_option(
-                container_no=container_no,
-                booking_no=container_info["booking_no"],
-                base_url=base_url,
-                task_id=task_id,
+                container_no=container_no, booking_no=container_info["booking_no"], base_url=base_url, task_id=task_id,
             )
 
             yield RailInfoRoutingRule.build_request_option(
@@ -271,6 +277,10 @@ class FirstTierRoutingRule(BaseRoutingRule):
                 base_url=base_url,
                 task_id=task_id,
             )
+
+        yield NextRoundRoutingRule.build_request_option(
+            search_nos=search_nos, task_ids=task_ids, search_type=self._search_type, base_url=base_url
+        )
 
     @staticmethod
     def _is_search_no_invalid(response_dict):
@@ -331,9 +341,7 @@ class VesselRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=base_url,
             form_data=form_data,
-            meta={
-                "task_id": task_id,
-            },
+            meta={"task_id": task_id,},
         )
 
     def get_save_name(self, response) -> str:
@@ -405,10 +413,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=base_url,
             form_data=form_data,
-            meta={
-                "container_key": container_no,
-                "task_id": task_id,
-            },
+            meta={"container_key": container_no, "task_id": task_id,},
         )
 
     def get_save_name(self, response) -> str:
@@ -477,10 +482,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=base_url,
             form_data=form_data,
-            meta={
-                "container_key": container_no,
-                "task_id": task_id,
-            },
+            meta={"container_key": container_no, "task_id": task_id,},
         )
 
     def get_save_name(self, response) -> str:
@@ -503,9 +505,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
         )
 
         yield ContainerItem(
-            task_id=task_id,
-            container_key=container_key,
-            last_free_day=release_info["last_free_day"] or None,
+            task_id=task_id, container_key=container_key, last_free_day=release_info["last_free_day"] or None,
         )
 
     @staticmethod
@@ -550,10 +550,7 @@ class RailInfoRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=base_url,
             form_data=form_data,
-            meta={
-                "container_key": container_no,
-                "task_id": task_id,
-            },
+            meta={"container_key": container_no, "task_id": task_id,},
         )
 
     def get_save_name(self, response) -> str:
@@ -568,9 +565,7 @@ class RailInfoRoutingRule(BaseRoutingRule):
         ready_for_pick_up = self._extract_ready_for_pick_up(response_dict=response_dict)
 
         yield ContainerItem(
-            task_id=task_id,
-            container_key=container_key,
-            ready_for_pick_up=ready_for_pick_up or None,
+            task_id=task_id, container_key=container_key, ready_for_pick_up=ready_for_pick_up or None,
         )
 
     @staticmethod
@@ -583,6 +578,33 @@ class RailInfoRoutingRule(BaseRoutingRule):
             raise CarrierResponseFormatError(f"Rail information format error: `{rail_data_list}`")
 
         return rail_data_list[0]["pickUpAvail"]
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    @classmethod
+    def build_request_option(cls, search_nos: List, task_ids: List, search_type: str, base_url: str) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://google.com",
+            meta={"search_nos": search_nos, "task_ids": task_ids, "base_url": base_url, "search_type": search_type,},
+        )
+
+    def handle(self, response):
+        task_ids = response.meta["task_ids"]
+        search_nos = response.meta["search_nos"]
+        base_url = response.meta["base_url"]
+        search_type = response.meta["search_type"]
+
+        if len(search_nos) <= MAX_PAGE_NUM and len(task_ids) <= MAX_PAGE_NUM:
+            return
+
+        task_ids = task_ids[MAX_PAGE_NUM:]
+        search_nos = search_nos[MAX_PAGE_NUM:]
+
+        yield FirstTierRoutingRule(search_type=search_type).build_request_option(
+            search_nos=search_nos, task_ids=task_ids, base_url=base_url
+        )
 
 
 # -----------------------------------------------------------------------------------------------------------
