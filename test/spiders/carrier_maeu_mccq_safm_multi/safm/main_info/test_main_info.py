@@ -30,7 +30,8 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     jsontext = sample_loader.read_file(sub, 'sample.json')
 
     option = MainInfoRoutingRule.build_request_option(
-        search_no=mbl_no, url_format=CarrierSafmSpider.base_url_format, task_id='1')
+        search_nos=[mbl_no], url_format=CarrierSafmSpider.base_url_format, task_ids=['1']
+    )
 
     response = TextResponse(
         url=option.url,

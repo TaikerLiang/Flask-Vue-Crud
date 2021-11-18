@@ -1,21 +1,26 @@
 import json
-import scrapy
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL, CARRIER_RESULT_STATUS_ERROR
+import scrapy
+
+from crawler.core_carrier.base import (
+    CARRIER_RESULT_STATUS_ERROR,
+    SHIPMENT_TYPE_BOOKING,
+    SHIPMENT_TYPE_MBL,
+)
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import CarrierResponseFormatError, SuspiciousOperationError
 from crawler.core_carrier.items import (
     BaseCarrierItem,
-    MblItem,
-    LocationItem,
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
     ExportErrorData,
+    LocationItem,
+    MblItem,
 )
 from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 
 
 class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
@@ -25,12 +30,16 @@ class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
     def __init__(self, *args, **kwargs):
         super(MaeuMccqSafmShareSpider, self).__init__(*args, **kwargs)
 
+        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
+
         bill_rules = [
             MainInfoRoutingRule(SHIPMENT_TYPE_MBL),
+            NextRoundRoutingRule(),
         ]
 
         booking_rules = [
             MainInfoRoutingRule(SHIPMENT_TYPE_BOOKING),
+            NextRoundRoutingRule(),
         ]
 
         if self.search_type == SHIPMENT_TYPE_MBL:
@@ -39,11 +48,10 @@ class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
             self._rule_manager = RuleManager(rules=booking_rules)
 
     def start(self):
-        for s_no, t_id in zip(self.search_nos, self.task_ids):
-            option = MainInfoRoutingRule.build_request_option(
-                search_no=s_no, task_id=t_id, url_format=self.base_url_format
-            )
-            yield self._build_request_by(option=option)
+        option = MainInfoRoutingRule.build_request_option(
+            search_nos=self.search_nos, task_ids=self.task_ids, url_format=self.base_url_format
+        )
+        yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -84,15 +92,15 @@ class MainInfoRoutingRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, search_no: str, task_id: str, url_format: str) -> RequestOption:
+    def build_request_option(cls, search_nos: List, task_ids: List, url_format: str) -> RequestOption:
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
-            url=url_format.format(search_no=search_no),
+            url=url_format.format(search_no=search_nos[0]),
             meta={
-                "task_id": task_id,
-                "search_no": search_no,
-                "handle_httpstatus_list": [400, 404],
+                "task_ids": task_ids,
+                "search_nos": search_nos,
+                "url_format": url_format,
             },
         )
 
@@ -100,22 +108,34 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return f"{self.name}.json"
 
     def handle(self, response):
-        task_id = response.meta["task_id"]
-        search_no = response.meta["search_no"]
+        task_ids = response.meta["task_ids"]
+        search_nos = response.meta["search_nos"]
+        url_format = response.meta["url_format"]
+
+        current_task_id = task_ids[0]
         response_dict = json.loads(response.text)
 
         if self.is_search_no_invalid(response_dict):
             if self._search_type == SHIPMENT_TYPE_MBL:
                 yield ExportErrorData(
-                    task_id=task_id, mbl_no=search_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found"
+                    task_id=current_task_id,
+                    mbl_no=search_nos[0],
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+                yield NextRoundRoutingRule.build_request_option(
+                    search_nos=search_nos, task_ids=task_ids, url_format=url_format
                 )
                 return
             else:
                 yield ExportErrorData(
-                    task_id=task_id,
-                    booking_no=search_no,
+                    task_id=current_task_id,
+                    booking_no=search_nos[0],
                     status=CARRIER_RESULT_STATUS_ERROR,
                     detail="Data was not found",
+                )
+                yield NextRoundRoutingRule.build_request_option(
+                    search_nos=search_nos, task_ids=task_ids, url_format=url_format
                 )
                 return
 
@@ -123,7 +143,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         routing_info = self._extract_routing_info(response_dict=response_dict)
 
         mbl_item = MblItem(
-            task_id=task_id,
+            task_id=current_task_id,
             por=LocationItem(name=routing_info["por"]),
             final_dest=LocationItem(name=routing_info["final_dest"]),
         )
@@ -138,7 +158,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             container_no = container["no"]
 
             yield ContainerItem(
-                task_id=task_id,
+                task_id=current_task_id,
                 container_key=container_no,
                 container_no=container_no,
                 final_dest_eta=container["final_dest_eta"],
@@ -146,7 +166,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
             for container_status in container["container_statuses"]:
                 yield ContainerStatusItem(
-                    task_id=task_id,
+                    task_id=current_task_id,
                     container_key=container_no,
                     description=container_status["description"],
                     local_date_time=container_status["timestamp"],
@@ -155,6 +175,10 @@ class MainInfoRoutingRule(BaseRoutingRule):
                     voyage=container_status["voyage"] or None,
                     est_or_actual=container_status["est_or_actual"],
                 )
+
+        yield NextRoundRoutingRule.build_request_option(
+            search_nos=search_nos, task_ids=task_ids, url_format=url_format
+        )
 
     @staticmethod
     def is_search_no_invalid(response_dict):
@@ -252,3 +276,33 @@ class MainInfoRoutingRule(BaseRoutingRule):
             return event["expected_time"], "E"
 
         raise CarrierResponseFormatError(reason=f"Unknown time in container_status `{event}`")
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    name = "ROUTING"
+
+    @classmethod
+    def build_request_option(cls, search_nos: List, task_ids: List, url_format: str) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://www.google.com",
+            meta={
+                "search_nos": search_nos,
+                "task_ids": task_ids,
+                "url_format": url_format,
+            },
+        )
+
+    def handle(self, response):
+        task_ids = response.meta["task_ids"]
+        search_nos = response.meta["search_nos"]
+        url_format = response.meta["url_format"]
+
+        if len(search_nos) == 1 and len(task_ids) == 1:
+            return
+
+        task_ids = task_ids[1:]
+        search_nos = search_nos[1:]
+
+        yield MainInfoRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, url_format=url_format)
