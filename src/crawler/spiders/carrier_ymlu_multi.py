@@ -28,7 +28,8 @@ from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
+from crawler.core.table import BaseTable, TableExtractor
+from crawler.extractors.table_extractors import HeaderMismatchError
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
 
 BASE_URL = "https://www.yangming.com"
@@ -579,10 +580,10 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
         span_text_td_extractor = TdExtractorFactory.build_span_text_td_extractor()
 
         return {
-            "por": table.extract_cell(top="Receipt", left=None, extractor=span_text_td_extractor) or None,
-            "pol": table.extract_cell(top="Loading", left=None, extractor=span_text_td_extractor) or None,
-            "pod": table.extract_cell(top="Discharge", left=None, extractor=span_text_td_extractor) or None,
-            "place_of_deliv": table.extract_cell(top="Delivery", left=None, extractor=span_text_td_extractor) or None,
+            "por": table.extract_cell(top="Receipt", extractor=span_text_td_extractor) or None,
+            "pol": table.extract_cell(top="Loading", extractor=span_text_td_extractor) or None,
+            "pod": table.extract_cell(top="Discharge", extractor=span_text_td_extractor) or None,
+            "place_of_deliv": table.extract_cell(top="Delivery", extractor=span_text_td_extractor) or None,
         }
 
     @staticmethod
@@ -640,7 +641,7 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
         a_href_td_extractor = TdExtractorFactory.build_a_href_extractor()
 
         container_info_list = []
-        for left in table_locator.iter_left_headers():
+        for left in table_locator.iter_left_header():
             container_no = table.extract_cell(top="Container No.", left=left, extractor=a_text_td_extractor)
             follow_url = table.extract_cell(top="Container No.", left=left, extractor=a_href_td_extractor)
 
@@ -681,7 +682,7 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
             span_text_td_extractor = TdExtractorFactory.build_span_text_td_extractor()
 
             customs_date = None
-            for left in table_locator.iter_left_headers():
+            for left in table_locator.iter_left_header():
                 event_code = table.extract_cell(top="Event", left=left, extractor=span_text_td_extractor)
                 if event_code == "1C":
                     customs_date = table.extract_cell(top="Date/Time", left=left, extractor=span_text_td_extractor)
@@ -757,7 +758,7 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
         span_text_td_extractor = TdExtractorFactory.build_span_text_td_extractor()
 
         last_free_day_dict = {}  # container_no: last_free_day
-        for left in table_locator.iter_left_headers():
+        for left in table_locator.iter_left_header():
             container_no = table.extract_cell(top="Container No.", left=left, extractor=span_text_td_extractor)
 
             last_free_date = None
@@ -942,10 +943,10 @@ class MainInfoRoutingRule(BaseRoutingRule):
         span_text_td_extractor = TdExtractorFactory.build_span_text_td_extractor()
 
         return {
-            "por": table.extract_cell(top="Receipt", left=None, extractor=span_text_td_extractor) or None,
-            "pol": table.extract_cell(top="Loading", left=None, extractor=span_text_td_extractor) or None,
-            "pod": table.extract_cell(top="Discharge", left=None, extractor=span_text_td_extractor) or None,
-            "place_of_deliv": table.extract_cell(top="Delivery", left=None, extractor=span_text_td_extractor) or None,
+            "por": table.extract_cell(top="Receipt", extractor=span_text_td_extractor) or None,
+            "pol": table.extract_cell(top="Loading", extractor=span_text_td_extractor) or None,
+            "pod": table.extract_cell(top="Discharge", extractor=span_text_td_extractor) or None,
+            "place_of_deliv": table.extract_cell(top="Delivery", extractor=span_text_td_extractor) or None,
         }
 
     @staticmethod
@@ -1005,7 +1006,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         a_href_td_extractor = TdExtractorFactory.build_a_href_extractor()
 
         container_info_list = []
-        for left in table_locator.iter_left_headers():
+        for left in table_locator.iter_left_header():
             container_no = table.extract_cell(top="Container No.", left=left, extractor=a_text_td_extractor)
             follow_url = table.extract_cell(top="Container No.", left=left, extractor=a_href_td_extractor)
 
@@ -1049,7 +1050,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             span_text_td_extractor = TdExtractorFactory.build_span_text_td_extractor()
 
             customs_date = None
-            for left in table_locator.iter_left_headers():
+            for left in table_locator.iter_left_header():
                 event_code = table.extract_cell(top="Event", left=left, extractor=span_text_td_extractor)
                 if event_code == "1C":
                     customs_date = table.extract_cell(top="Date/Time", left=left, extractor=span_text_td_extractor)
@@ -1126,7 +1127,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         span_text_td_extractor = TdExtractorFactory.build_span_text_td_extractor()
 
         last_free_day_dict = {}  # container_no: last_free_day
-        for left in table_locator.iter_left_headers():
+        for left in table_locator.iter_left_header():
             container_no = table.extract_cell(top="Container No.", left=left, extractor=span_text_td_extractor)
 
             last_free_date = None
@@ -1163,7 +1164,7 @@ class ScheduleParser:
         return schedules
 
 
-class TopHeaderStartswithTableLocator(BaseTableLocator):
+class TopHeaderStartswithTableLocator(BaseTable):
     """
     +----------+----------+-----+----------+ <thead>
     | Title 1  | Title 2  | ... | Title N  | <tr> <td>
@@ -1179,13 +1180,10 @@ class TopHeaderStartswithTableLocator(BaseTableLocator):
     +----------+----------+-----+----------+ <\tbody>
     """
 
-    def __init__(self):
-        self._td_map = {}  # top_header: [td, ...]
-        self._data_len = 0
-
     def parse(self, table: Selector):
         title_td_list = table.css("thead td")
         data_tr_list = table.css("tbody tr")
+        self._left_header_set = set(range(len(data_tr_list)))
 
         for title_index, title_td in enumerate(title_td_list):
             data_index = title_index
@@ -1198,11 +1196,9 @@ class TopHeaderStartswithTableLocator(BaseTableLocator):
 
                 self._td_map[title].append(data_td)
 
-        self._data_len = len(data_tr_list)
-
-    def get_cell(self, top, left: Union[int, None]) -> Selector:
+    def get_cell(self, top: Union[str, int] = 0, left: Union[str, int] = 0) -> Selector:
         top_header = self._get_top_header(top=top)
-        left_header = 0 if left is None else left
+        left_header = left
 
         try:
             return self._td_map[top_header][left_header]
@@ -1216,10 +1212,6 @@ class TopHeaderStartswithTableLocator(BaseTableLocator):
             return False
 
         return left is None
-
-    def iter_left_headers(self):
-        for index in range(self._data_len):
-            yield index
 
     def _get_top_header(self, top):
         if top in self._td_map:
@@ -1235,7 +1227,7 @@ class TopHeaderStartswithTableLocator(BaseTableLocator):
 # --------------------------------------------------------------------
 
 
-class TopHeaderThInTbodyTableLocator(BaseTableLocator):
+class TopHeaderThInTbodyTableLocator(BaseTable):
     """
     +----------+----------+-----+----------+ <tbody>
     | Titie 1  | Title 2  | ... | Title N  | <tr> <th>
@@ -1252,13 +1244,10 @@ class TopHeaderThInTbodyTableLocator(BaseTableLocator):
 
     TR_DATA_BEGIN = 1
 
-    def __init__(self):
-        self._td_map = {}  # top_header: [td, ...]
-        self._data_len = 0
-
     def parse(self, table: Selector):
         title_td_list = table.css("th")
         data_tr_list = table.css("tr")[self.TR_DATA_BEGIN :]
+        self._left_header_set = set(range(len(data_tr_list)))
 
         for title_index, title_td in enumerate(title_td_list):
             data_index = title_index
@@ -1270,22 +1259,6 @@ class TopHeaderThInTbodyTableLocator(BaseTableLocator):
                 data_td = data_tr.css("td")[data_index]
 
                 self._td_map[title].append(data_td)
-
-        self._data_len = len(data_tr_list)
-
-    def get_cell(self, top, left: Union[int, None]) -> Selector:
-        try:
-            left = 0 if left is None else left
-            return self._td_map[top][left]
-        except (KeyError, IndexError) as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def iter_left_headers(self):
-        for index in range(self._data_len):
-            yield index
 
 
 # --------------------------------------------------------------------
@@ -1344,7 +1317,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         span_all_text_td_extractor = SpanAllTextTdExtractor()
 
         container_stauts_list = []
-        for left in table_locator.iter_left_headers():
+        for left in table_locator.iter_left_header():
             location_name_with_eol = table.extract_cell(
                 top="At Facility", left=left, extractor=span_all_text_td_extractor
             )
@@ -1365,7 +1338,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 # --------------------------------------------------------------------
 
 
-class TopHeaderIsTdTableLocator(BaseTableLocator):
+class TopHeaderIsTdTableLocator(BaseTable):
     """
     +----------+----------+-----+----------+ <thead>
     | Title 1  | Title 2  | ... | Title N  | <tr> <td>
@@ -1381,13 +1354,10 @@ class TopHeaderIsTdTableLocator(BaseTableLocator):
     +----------+----------+-----+----------+ <\tbody>
     """
 
-    def __init__(self):
-        self._td_map = {}  # top_header: [td, ...]
-        self._data_len = 0
-
     def parse(self, table: Selector):
         title_td_list = table.css("thead td")
         data_tr_list = table.css("tbody tr")
+        self._left_header_set = set(range(len(data_tr_list)))
 
         for title_index, title_td in enumerate(title_td_list):
             data_index = title_index
@@ -1399,23 +1369,6 @@ class TopHeaderIsTdTableLocator(BaseTableLocator):
                 data_td = data_tr.css("td")[data_index]
 
                 self._td_map[title].append(data_td)
-
-        self._data_len = len(data_tr_list)
-
-    def get_cell(self, top, left: Union[int, None]) -> Selector:
-        left = 0 if left is None else left
-
-        try:
-            return self._td_map[top][left]
-        except (KeyError, IndexError) as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def iter_left_headers(self):
-        for index in range(self._data_len):
-            yield index
 
 
 # --------------------------------------------------------------------
