@@ -35,9 +35,9 @@ def test_tracing_rule_handler(sub, mbl_no, sample_loader):
         request=Request(
             url=url,
             meta={
-                "mbl_no": mbl_no,
+                "mbl_nos": [mbl_no],
                 "cookies": "",
-                "task_id": 1,
+                "task_ids": [1],
             },
         ),
     )

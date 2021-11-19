@@ -1,5 +1,5 @@
 import re
-from typing import Dict
+from typing import Dict, List
 
 import scrapy
 from selenium.webdriver.support.ui import WebDriverWait
@@ -36,9 +36,12 @@ class CarrierHlcuSpider(BaseMultiCarrierSpider):
     def __init__(self, *args, **kwargs):
         super(CarrierHlcuSpider, self).__init__(*args, **kwargs)
 
+        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
+
         rules = [
             TracingRoutingRule(),
             ContainerRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -48,9 +51,10 @@ class CarrierHlcuSpider(BaseMultiCarrierSpider):
         cookies_getter = ContentGetter()
         cookies = cookies_getter.get_cookies()
 
-        for s_no, t_id in zip(self.search_nos, self.task_ids):
-            request_option = TracingRoutingRule.build_request_option(mbl_no=s_no, task_id=t_id, cookies=cookies)
-            yield self._build_request_by(option=request_option)
+        request_option = TracingRoutingRule.build_request_option(
+            mbl_nos=self.search_nos, task_ids=self.task_ids, cookies=cookies
+        )
+        yield self._build_request_by(option=request_option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -83,6 +87,7 @@ class CarrierHlcuSpider(BaseMultiCarrierSpider):
                 url=option.url,
                 cookies=option.cookies,
                 meta=meta,
+                dont_filter=True,
             )
         elif option.method == RequestOption.METHOD_POST_FORM:
             return scrapy.FormRequest(
@@ -90,6 +95,7 @@ class CarrierHlcuSpider(BaseMultiCarrierSpider):
                 cookies=option.cookies,
                 formdata=option.form_data,
                 meta=meta,
+                dont_filter=True,
             )
         else:
             raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
@@ -105,8 +111,8 @@ class TracingRoutingRule(BaseRoutingRule):
         self._cookies_pattern = re.compile(r"^(?P<key>[^=]+)=(?P<value>[^;]+);.+$")
 
     @classmethod
-    def build_request_option(cls, mbl_no: str, task_id: str, cookies: Dict) -> RequestOption:
-        url = f"{BASE_URL}/online-business/track/track-by-booking-solution.html?blno={mbl_no}"
+    def build_request_option(cls, mbl_nos: List, task_ids: List, cookies: Dict) -> RequestOption:
+        url = f"{BASE_URL}/online-business/track/track-by-booking-solution.html?blno={mbl_nos[0]}"
 
         return RequestOption(
             rule_name=cls.name,
@@ -114,9 +120,9 @@ class TracingRoutingRule(BaseRoutingRule):
             url=url,
             cookies=cookies,
             meta={
-                "mbl_no": mbl_no,
+                "mbl_nos": mbl_nos,
                 "cookies": cookies,
-                "task_id": task_id,
+                "task_ids": task_ids,
             },
         )
 
@@ -125,22 +131,23 @@ class TracingRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         cookies = response.meta["cookies"]
-        mbl_no = response.meta["mbl_no"]
-        task_id = response.meta["task_id"]
+        mbl_nos = response.meta["mbl_nos"]
+        task_ids = response.meta["task_ids"]
 
         if self._is_mbl_no_invalid(response):
             yield ExportErrorData(
-                mbl_no=mbl_no,
-                task_id=task_id,
+                mbl_no=mbl_nos[0],
+                task_id=task_ids[0],
                 status=CARRIER_RESULT_STATUS_ERROR,
                 detail="Data was not found",
             )
+            yield NextRoundRoutingRule.build_request_option(search_nos=mbl_nos, task_ids=task_ids, cookies=cookies)
             return
 
         container_nos = self._extract_container_nos(response=response)
         for container_no in container_nos:
             yield ContainerItem(
-                task_id=task_id,
+                task_id=task_ids[0],
                 container_no=container_no,
                 container_key=container_no,
             )
@@ -152,13 +159,15 @@ class TracingRoutingRule(BaseRoutingRule):
 
         for container_index, container_no in enumerate(container_nos):
             yield ContainerRoutingRule.build_request_option(
-                mbl_no=mbl_no,
-                task_id=task_id,
+                mbl_no=mbl_nos[0],
+                task_id=task_ids[0],
                 container_key=container_no,
                 cookies=new_cookies,
                 container_index=container_index,
                 view_state=view_state,
             )
+
+        yield NextRoundRoutingRule.build_request_option(search_nos=mbl_nos, task_ids=task_ids, cookies=cookies)
 
     @staticmethod
     def _is_mbl_no_invalid(response):
@@ -321,6 +330,36 @@ class ContainerRoutingRule(BaseRoutingRule):
             raise CarrierResponseFormatError(reason=f"Unknown status: `{class_name}`")
 
 
+# -------------------------------------------------------------------------------
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    @classmethod
+    def build_request_option(cls, search_nos: List, task_ids: List, cookies: Dict) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://google.com",
+            meta={"search_nos": search_nos, "task_ids": task_ids, "cookies": cookies},
+        )
+
+    def handle(self, response):
+        task_ids = response.meta["task_ids"]
+        search_nos = response.meta["search_nos"]
+        cookies = response.meta["cookies"]
+
+        if len(search_nos) == 1 and len(task_ids) == 1:
+            return
+
+        task_ids = task_ids[1:]
+        search_nos = search_nos[1:]
+
+        yield TracingRoutingRule.build_request_option(mbl_nos=search_nos, task_ids=task_ids, cookies=cookies)
+
+
+# -------------------------------------------------------------------------------
+
+
 class ContainerInfoTableLocator(BaseTable):
     """
     +---------+---------+-----+---------+ <thead>
@@ -336,19 +375,20 @@ class ContainerInfoTableLocator(BaseTable):
     | Data    |         |     |         | <tr><td>
     +---------+---------+-----+---------+ </tbody>
     """
+
     def parse(self, table: scrapy.Selector):
         top_header_list = []
 
-        for th in table.css('thead th'):
-            raw_top_header = th.css('::text').get()
-            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ''
+        for th in table.css("thead th"):
+            raw_top_header = th.css("::text").get()
+            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ""
             top_header_list.append(top_header)
             self._td_map[top_header] = []
 
-        data_tr_list = table.css('tbody tr')
+        data_tr_list = table.css("tbody tr")
         for index, tr in enumerate(data_tr_list):
             self._left_header_set.add(index)
-            for top, td in zip(top_header_list, tr.css('td')):
+            for top, td in zip(top_header_list, tr.css("td")):
                 self._td_map[top].append(td)
 
 
@@ -367,13 +407,13 @@ class ContainerStatusTableLocator(BaseTable):
             title_list.append(title)
             self._td_map[title] = []
 
-        data_tr_list = table.css('tbody tr')
+        data_tr_list = table.css("tbody tr")
         for index, data_tr in enumerate(data_tr_list):
             self._left_header_set.add(index)
             tr_class_set = set()
-            data_td_list = data_tr.css('td')
+            data_td_list = data_tr.css("td")
             for title, data_td in zip(title_list, data_td_list):
-                data_td_class = data_td.css('td::attr(class)').get()
+                data_td_class = data_td.css("td::attr(class)").get()
                 tr_class_set.add(data_td_class)
 
                 self._td_map[title].append(data_td)
