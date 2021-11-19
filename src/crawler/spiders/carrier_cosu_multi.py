@@ -10,12 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from urllib3.exceptions import ReadTimeoutError
 from crawler.core.selenium import FirefoxContentGetter
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_ERROR
-from crawler.core_carrier.exceptions import (
-    SuspiciousOperationError,
-    LoadWebsiteTimeOutFatal,
-    CarrierInvalidMblNoError,
-    CarrierInvalidSearchNoError,
-)
+from crawler.core_carrier.exceptions import SuspiciousOperationError, LoadWebsiteTimeOutFatal
 from crawler.core_carrier.items import (
     LocationItem,
     MblItem,
