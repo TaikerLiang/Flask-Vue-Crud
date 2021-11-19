@@ -10,8 +10,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from urllib3.exceptions import ReadTimeoutError
 from crawler.core.selenium import FirefoxContentGetter
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_ERROR
-from crawler.core_carrier.exceptions import SuspiciousOperationError, LoadWebsiteTimeOutFatal, CarrierInvalidMblNoError, \
-    CarrierInvalidSearchNoError
+from crawler.core_carrier.exceptions import (
+    SuspiciousOperationError,
+    LoadWebsiteTimeOutFatal,
+    CarrierInvalidMblNoError,
+    CarrierInvalidSearchNoError,
+)
 from crawler.core_carrier.items import (
     LocationItem,
     MblItem,
@@ -31,17 +35,19 @@ from crawler.core.table import BaseTable, TableExtractor
 
 
 class CarrierCosuSpider(BaseMultiCarrierSpider):
-    name = 'carrier_cosu_multi'
+    name = "carrier_cosu_multi"
 
     def __init__(self, *args, **kwargs):
         super(CarrierCosuSpider, self).__init__(*args, **kwargs)
 
         bill_rules = [
             MainInfoRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         booking_rules = [
             BookingInfoRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         if self.search_type == SHIPMENT_TYPE_MBL:
@@ -59,7 +65,7 @@ class CarrierCosuSpider(BaseMultiCarrierSpider):
             yield self._build_request_by(option=option)
 
     def parse(self, response):
-        yield DebugItem(info={'meta': dict(response.meta)})
+        yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -86,137 +92,177 @@ class CarrierCosuSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
             )
         else:
-            raise SuspiciousOperationError(msg=f'Unexpected request method: `{option.method}`')
+            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
 
 # ---------------------------------------------------------------------------------------------------------
 
 
 class MainInfoRoutingRule(BaseRoutingRule):
-    name = 'MAIN_INFO'
+    name = "MAIN_INFO"
 
     def __init__(self):
         pass
 
     @classmethod
     def build_request_option(cls, mbl_nos, task_ids) -> RequestOption:
-        url = f'https://www.google.com'
+        url = f"https://www.google.com"
 
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=url,
             meta={
-                'mbl_nos': mbl_nos,
-                'task_ids': task_ids,
+                "mbl_nos": mbl_nos,
+                "task_ids": task_ids,
             },
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.html'
+        return f"{self.name}.html"
 
     def handle(self, response):
-        mbl_nos = response.meta['mbl_nos']
-        task_ids = response.meta['task_ids']
+        mbl_nos = response.meta["mbl_nos"]
+        task_ids = response.meta["task_ids"]
         content_getter = ContentGetter()
 
-        for mbl_no, task_id in zip(mbl_nos, task_ids):
-            response_text = content_getter.search_and_return(search_no=mbl_no, is_booking=False)
-            response_selector = scrapy.Selector(text=response_text)
+        response_text = content_getter.search_and_return(search_no=mbl_nos[0], is_booking=False)
+        response_selector = scrapy.Selector(text=response_text)
 
-            raw_booking_nos = response_selector.css('a.exitedBKNumber::text').getall()
-            booking_nos = [raw_booking_no.strip() for raw_booking_no in raw_booking_nos]
+        raw_booking_nos = response_selector.css("a.exitedBKNumber::text").getall()
+        booking_nos = [raw_booking_no.strip() for raw_booking_no in raw_booking_nos]
 
-            if self._is_mbl_no_invalid(response=response_selector) and not booking_nos:
-                yield ExportErrorData(task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR,
-                                      detail='Data was not found')
-            elif not self._is_mbl_no_invalid(response=response_selector):
-                item_extractor = ItemExtractor(task_id=task_id)
-                for item in item_extractor.extract(
-                        response=response_selector, content_getter=content_getter, search_type=SHIPMENT_TYPE_MBL):
-                    yield item
-            elif booking_nos:
-                for booking_no in booking_nos:
-                    yield MblItem(task_id=task_id, mbl_no=mbl_no)
-                    for b_item in self.process_booking(content_getter=content_getter, booking_no=booking_no, task_id=task_id):
-                        yield b_item
+        if self._is_mbl_no_invalid(response=response_selector) and not booking_nos:
+            yield ExportErrorData(
+                task_id=task_ids[0], mbl_no=mbl_nos[0], status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found"
+            )
+            yield NextRoundRoutingRule.build_request_option(
+                search_type=SHIPMENT_TYPE_MBL,
+                search_nos=mbl_nos,
+                task_ids=task_ids,
+            )
+        elif not self._is_mbl_no_invalid(response=response_selector):
+            item_extractor = ItemExtractor(task_id=task_ids[0])
+            for item in item_extractor.extract(
+                response=response_selector, content_getter=content_getter, search_type=SHIPMENT_TYPE_MBL
+            ):
+                yield item
+            yield NextRoundRoutingRule.build_request_option(
+                search_type=SHIPMENT_TYPE_MBL,
+                search_nos=mbl_nos,
+                task_ids=task_ids,
+            )
+        elif booking_nos:
+            for booking_no in booking_nos:
+                yield MblItem(task_id=task_ids[0], mbl_no=mbl_nos[0])
+                for b_item in self.process_booking(
+                    content_getter=content_getter, booking_no=booking_no, task_id=task_ids[0]
+                ):
+                    yield b_item
+            yield NextRoundRoutingRule.build_request_option(
+                search_type=SHIPMENT_TYPE_MBL,
+                search_nos=mbl_nos,
+                task_ids=task_ids,
+            )
 
         content_getter.close()
 
     @staticmethod
     def _is_mbl_no_invalid(response: Selector) -> bool:
-        return bool(response.css('div.noFoundTips')) or response.css('div.ivu-form-item-error-tip::text').get() == 'Invalid B/L number'
+        return (
+            bool(response.css("div.noFoundTips"))
+            or response.css("div.ivu-form-item-error-tip::text").get() == "Invalid B/L number"
+        )
 
     def process_booking(self, content_getter, booking_no: str, task_id: int):
         item_extractor = ItemExtractor(task_id=task_id)
         response_text = content_getter.search_and_return(search_no=booking_no, is_booking=True)
         response_selector = scrapy.Selector(text=response_text)
         if self._is_booking_no_invalid(response=response_selector):
-            yield ExportErrorData(task_id=task_id, booking_no=booking_no, status=CARRIER_RESULT_STATUS_ERROR,
-                                  detail='Data was not found')
+            yield ExportErrorData(
+                task_id=task_id, booking_no=booking_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found"
+            )
 
         for item in item_extractor.extract(
-                response=response_selector,
-                content_getter=content_getter,
-                search_type=SHIPMENT_TYPE_BOOKING,
+            response=response_selector,
+            content_getter=content_getter,
+            search_type=SHIPMENT_TYPE_BOOKING,
         ):
             yield item
 
     @staticmethod
     def _is_booking_no_invalid(response: Selector) -> bool:
-        return bool(response.css('div.noFoundTips')) or response.css('div.ivu-form-item-error-tip::text').get() == 'Booking number is error'
+        return (
+            bool(response.css("div.noFoundTips"))
+            or response.css("div.ivu-form-item-error-tip::text").get() == "Booking number is error"
+        )
 
 
 # ---------------------------------------------------------------------------------------------------------
 
 
 class BookingInfoRoutingRule(BaseRoutingRule):
-    name = 'BOOKING_INFO'
+    name = "BOOKING_INFO"
 
     @classmethod
     def build_request_option(cls, task_ids: str, booking_nos: str) -> RequestOption:
-        url = f'https://www.google.com'
+        url = f"https://www.google.com"
 
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=url,
             meta={
-                'booking_nos': booking_nos,
-                'task_ids': task_ids,
+                "booking_nos": booking_nos,
+                "task_ids": task_ids,
             },
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.html'
+        return f"{self.name}.html"
 
     def handle(self, response):
-        task_ids = response.meta['task_ids']
-        booking_nos = response.meta['booking_nos']
+        task_ids = response.meta["task_ids"]
+        booking_nos = response.meta["booking_nos"]
         content_getter = ContentGetter()
 
-        for booking_no, task_id in zip(booking_nos, task_ids):
-            response_text = content_getter.search_and_return(search_no=booking_no, is_booking=True)
-            response_selector = scrapy.Selector(text=response_text)
+        response_text = content_getter.search_and_return(search_no=booking_nos[0], is_booking=True)
+        response_selector = scrapy.Selector(text=response_text)
 
-            if self._is_booking_no_invalid(response=response_selector):
-                yield ExportErrorData(task_id=task_id, booking_no=booking_no, status=CARRIER_RESULT_STATUS_ERROR,
-                                      detail='Data was not found')
-                continue
-
-            item_extractor = ItemExtractor(task_id=task_id)
-            for item in item_extractor.extract(
-                response=response_selector,
-                content_getter=content_getter,
+        if self._is_booking_no_invalid(response=response_selector):
+            yield ExportErrorData(
+                task_id=task_ids[0],
+                booking_no=booking_nos[0],
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
+            yield NextRoundRoutingRule.build_request_option(
                 search_type=SHIPMENT_TYPE_BOOKING,
-            ):
-                yield item
+                search_nos=booking_nos,
+                task_ids=task_ids,
+            )
+
+        item_extractor = ItemExtractor(task_id=task_ids[0])
+        for item in item_extractor.extract(
+            response=response_selector,
+            content_getter=content_getter,
+            search_type=SHIPMENT_TYPE_BOOKING,
+        ):
+            yield item
+        yield NextRoundRoutingRule.build_request_option(
+            search_type=SHIPMENT_TYPE_BOOKING,
+            search_nos=booking_nos,
+            task_ids=task_ids,
+        )
 
         content_getter.close()
 
     @staticmethod
     def _is_booking_no_invalid(response: Selector) -> bool:
-        return bool(response.css('div.noFoundTips')) or response.css('div.ivu-form-item-error-tip::text').get() == 'Booking number is error'
+        return (
+            bool(response.css("div.noFoundTips"))
+            or response.css("div.ivu-form-item-error-tip::text").get() == "Booking number is error"
+        )
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -241,7 +287,7 @@ class ItemExtractor:
 
             container_status_items = self._make_container_status_items(
                 task_id=self.task_id,
-                container_no=c_item['container_no'],
+                container_no=c_item["container_no"],
                 response=response_selector,
             )
 
@@ -253,114 +299,114 @@ class ItemExtractor:
         mbl_data = cls._extract_main_info(response=response)
         mbl_item = MblItem(
             task_id=task_id,
-            vessel=mbl_data.get('vessel', None),
-            voyage=mbl_data.get('voyage', None),
-            por=LocationItem(name=mbl_data.get('por_name', None)),
-            pol=LocationItem(name=mbl_data.get('pol_name', None)),
+            vessel=mbl_data.get("vessel", None),
+            voyage=mbl_data.get("voyage", None),
+            por=LocationItem(name=mbl_data.get("por_name", None)),
+            pol=LocationItem(name=mbl_data.get("pol_name", None)),
             pod=LocationItem(
-                name=mbl_data.get('pod_name', None),
-                firms_code=mbl_data.get('pod_firms_code', None),
+                name=mbl_data.get("pod_name", None),
+                firms_code=mbl_data.get("pod_firms_code", None),
             ),
             final_dest=LocationItem(
-                name=mbl_data.get('final_dest_name', None),
-                firms_code=mbl_data.get('final_dest_firms_code', None),
+                name=mbl_data.get("final_dest_name", None),
+                firms_code=mbl_data.get("final_dest_firms_code", None),
             ),
-            etd=mbl_data.get('etd', None),
-            atd=mbl_data.get('atd', None),
-            eta=mbl_data.get('eta', None),
-            ata=mbl_data.get('ata', None),
-            deliv_eta=mbl_data.get('pick_up_eta', None),
-            bl_type=mbl_data.get('bl_type', None),
-            cargo_cutoff_date=mbl_data.get('cargo_cutoff', None),
-            surrendered_status=mbl_data.get('surrendered_status', None),
+            etd=mbl_data.get("etd", None),
+            atd=mbl_data.get("atd", None),
+            eta=mbl_data.get("eta", None),
+            ata=mbl_data.get("ata", None),
+            deliv_eta=mbl_data.get("pick_up_eta", None),
+            bl_type=mbl_data.get("bl_type", None),
+            cargo_cutoff_date=mbl_data.get("cargo_cutoff", None),
+            surrendered_status=mbl_data.get("surrendered_status", None),
             # trans_eta=data.get('trans_eta', None),
             # container_quantity=data.get('container_quantity', None),
         )
-        if mbl_data['mbl_no'] and search_type == SHIPMENT_TYPE_MBL:
-            mbl_item['mbl_no'] = mbl_data['mbl_no']
+        if mbl_data["mbl_no"] and search_type == SHIPMENT_TYPE_MBL:
+            mbl_item["mbl_no"] = mbl_data["mbl_no"]
         elif search_type == SHIPMENT_TYPE_BOOKING:
-            mbl_item['booking_no'] = mbl_data['booking_no']
+            mbl_item["booking_no"] = mbl_data["booking_no"]
 
         return mbl_item
 
     @staticmethod
     def _extract_main_info(response: scrapy.Selector) -> Dict:
-        table_like_div = response.css('div.ivu-c-detailPart')[0]  # 0 for booking info bookmark, 1 for print bookmark
+        table_like_div = response.css("div.ivu-c-detailPart")[0]  # 0 for booking info bookmark, 1 for print bookmark
         table_locator = MainInfoTableLocator()
         table_locator.parse(table=table_like_div)
         table_extractor = TableExtractor(table_locator=table_locator)
 
-        vessel_voyage = table_extractor.extract_cell(left='Vessel / Voyage')
-        raw_vessel, raw_voyage = vessel_voyage.split('/')
+        vessel_voyage = table_extractor.extract_cell(left="Vessel / Voyage")
+        raw_vessel, raw_voyage = vessel_voyage.split("/")
         vessel, voyage = raw_vessel.strip(), raw_voyage.strip()
 
-        raw_booking_no = table_extractor.extract_cell(left='Booking Number')
-        booking_no = raw_booking_no.split(' ')[0]
+        raw_booking_no = table_extractor.extract_cell(left="Booking Number")
+        booking_no = raw_booking_no.split(" ")[0]
 
-        if table_extractor.has_header(left='POD Firms Code'):
-            pod_firms_code = table_extractor.extract_cell(left='POD Firms Code')
+        if table_extractor.has_header(left="POD Firms Code"):
+            pod_firms_code = table_extractor.extract_cell(left="POD Firms Code")
         else:
             pod_firms_code = None
 
-        if table_extractor.has_header(left='Final Destination Firms Code'):
-            final_dest_firms_code = table_extractor.extract_cell(left='Final Destination Firms Code')
+        if table_extractor.has_header(left="Final Destination Firms Code"):
+            final_dest_firms_code = table_extractor.extract_cell(left="Final Destination Firms Code")
         else:
             final_dest_firms_code = None
 
-        if table_extractor.has_header(left='BL Surrendered Status'):
-            surrendered_status = table_extractor.extract_cell(left='BL Surrendered Status')
+        if table_extractor.has_header(left="BL Surrendered Status"):
+            surrendered_status = table_extractor.extract_cell(left="BL Surrendered Status")
         else:
             surrendered_status = None
 
-        if table_extractor.has_header(left='B/L Type'):
-            bl_type = table_extractor.extract_cell(left='B/L Type')
+        if table_extractor.has_header(left="B/L Type"):
+            bl_type = table_extractor.extract_cell(left="B/L Type")
         else:
             bl_type = None
 
         data = {
-            'mbl_no': table_extractor.extract_cell(left='Bill of Lading Number'),
-            'booking_no': booking_no,
-            'por_name': table_extractor.extract_cell(left='Place of Receipt'),
-            'pol_name': table_extractor.extract_cell(left='POL'),
-            'pod_name': table_extractor.extract_cell(left='POD'),
-            'final_dest_name': table_extractor.extract_cell(left='Final Destination'),
-            'vessel': vessel,
-            'voyage': voyage or None,
-            'bl_type': bl_type,
-            'pick_up_eta': table_extractor.extract_cell(left='ETA at Place of Delivery'),
-            'cargo_cutoff': table_extractor.extract_cell(left='Cargo Cutoff'),
-            'pod_firms_code': pod_firms_code,
-            'final_dest_firms_code': final_dest_firms_code,
-            'surrendered_status': surrendered_status,
+            "mbl_no": table_extractor.extract_cell(left="Bill of Lading Number"),
+            "booking_no": booking_no,
+            "por_name": table_extractor.extract_cell(left="Place of Receipt"),
+            "pol_name": table_extractor.extract_cell(left="POL"),
+            "pod_name": table_extractor.extract_cell(left="POD"),
+            "final_dest_name": table_extractor.extract_cell(left="Final Destination"),
+            "vessel": vessel,
+            "voyage": voyage or None,
+            "bl_type": bl_type,
+            "pick_up_eta": table_extractor.extract_cell(left="ETA at Place of Delivery"),
+            "cargo_cutoff": table_extractor.extract_cell(left="Cargo Cutoff"),
+            "pod_firms_code": pod_firms_code,
+            "final_dest_firms_code": final_dest_firms_code,
+            "surrendered_status": surrendered_status,
         }
 
-        vessel_schedule_div = response.css('div.ivu-steps-horizontal')
-        xtd_div = vessel_schedule_div.css('div.ivu-steps-item-pol')
-        xta_div = vessel_schedule_div.css('div.ivu-steps-item-pod')
+        vessel_schedule_div = response.css("div.ivu-steps-horizontal")
+        xtd_div = vessel_schedule_div.css("div.ivu-steps-item-pol")
+        xta_div = vessel_schedule_div.css("div.ivu-steps-item-pod")
 
-        xtd_key = xtd_div.css('div.ivu-steps-name::text').get().strip()
-        xtd_time = xtd_div.css('div.ivu-steps-date::text').get().strip()
+        xtd_key = xtd_div.css("div.ivu-steps-name::text").get().strip()
+        xtd_time = xtd_div.css("div.ivu-steps-date::text").get().strip()
 
-        if xtd_key == 'ATD':
-            data['atd'] = xtd_time
-            data['etd'] = None
+        if xtd_key == "ATD":
+            data["atd"] = xtd_time
+            data["etd"] = None
         else:
-            data['atd'] = None
-            data['etd'] = xtd_time
+            data["atd"] = None
+            data["etd"] = xtd_time
 
-        xta_key = xta_div.css('div.ivu-steps-name::text').get().strip()
-        xta_time = xta_div.css('div.ivu-steps-date::text').get()
+        xta_key = xta_div.css("div.ivu-steps-name::text").get().strip()
+        xta_time = xta_div.css("div.ivu-steps-date::text").get()
 
         # xta_time might be None
         if xta_time:
             xta_time.strip()
 
-        if xta_key == 'ATA':
-            data['ata'] = xta_time
-            data['eta'] = None
+        if xta_key == "ATA":
+            data["ata"] = xta_time
+            data["eta"] = None
         else:
-            data['ata'] = None
-            data['eta'] = xta_time
+            data["ata"] = None
+            data["eta"] = xta_time
 
         return data
 
@@ -372,15 +418,15 @@ class ItemExtractor:
             vessels.append(
                 VesselItem(
                     task_id=task_id,
-                    vessel_key=vessel['vessel'],
-                    vessel=vessel['vessel'],
-                    voyage=vessel['voyage'],
-                    pol=LocationItem(name=vessel['pol']),
-                    pod=LocationItem(name=vessel['pod']),
-                    etd=vessel['etd'],
-                    eta=vessel['eta'],
-                    atd=vessel['atd'],
-                    ata=vessel['ata'],
+                    vessel_key=vessel["vessel"],
+                    vessel=vessel["vessel"],
+                    voyage=vessel["voyage"],
+                    pol=LocationItem(name=vessel["pol"]),
+                    pod=LocationItem(name=vessel["pod"]),
+                    etd=vessel["etd"],
+                    eta=vessel["eta"],
+                    atd=vessel["atd"],
+                    ata=vessel["ata"],
                 )
             )
         return vessels
@@ -388,7 +434,7 @@ class ItemExtractor:
     @staticmethod
     def _extract_schedule_detail_info(response: scrapy.Selector) -> List:
         # 0 for booking info bookmark, 1 for print bookmark
-        table_like_div = response.css('div.cargoTrackingSailing div.ivu-table')[0]
+        table_like_div = response.css("div.cargoTrackingSailing div.ivu-table")[0]
         table_locator = VesselContainerTableLocator()
         table_locator.parse(table=table_like_div)
         table_extractor = TableExtractor(table_locator=table_locator)
@@ -396,36 +442,36 @@ class ItemExtractor:
         vessels = []
         for left in table_locator.iter_left_header():
             service_voyage = table_extractor.extract_cell(
-                top='Service / Voyage', left=left, extractor=LabelContentTableCellExtractor()
+                top="Service / Voyage", left=left, extractor=LabelContentTableCellExtractor()
             )
 
             departure_date = table_extractor.extract_cell(
-                top='Departure Date', left=left, extractor=LabelContentTableCellExtractor()
+                top="Departure Date", left=left, extractor=LabelContentTableCellExtractor()
             )
 
             arrive_date = table_extractor.extract_cell(
-                top='Arrival Date', left=left, extractor=LabelContentTableCellExtractor()
+                top="Arrival Date", left=left, extractor=LabelContentTableCellExtractor()
             )
 
             vessels.append(
                 {
-                    'vessel_key': table_extractor.extract_cell(
-                        top='Vessel', left=left, extractor=FirstTextTdExtractor(css_query='a::text')
+                    "vessel_key": table_extractor.extract_cell(
+                        top="Vessel", left=left, extractor=FirstTextTdExtractor(css_query="a::text")
                     ),
-                    'vessel': table_extractor.extract_cell(
-                        top='Vessel', left=left, extractor=FirstTextTdExtractor(css_query='a::text')
+                    "vessel": table_extractor.extract_cell(
+                        top="Vessel", left=left, extractor=FirstTextTdExtractor(css_query="a::text")
                     ),
-                    'voyage': service_voyage['Voyage'],
-                    'pol': table_extractor.extract_cell(
-                        top='POL', left=left, extractor=FirstTextTdExtractor(css_query='span::text')
+                    "voyage": service_voyage["Voyage"],
+                    "pol": table_extractor.extract_cell(
+                        top="POL", left=left, extractor=FirstTextTdExtractor(css_query="span::text")
                     ),
-                    'pod': table_extractor.extract_cell(
-                        top='POD', left=left, extractor=FirstTextTdExtractor(css_query='span::text')
+                    "pod": table_extractor.extract_cell(
+                        top="POD", left=left, extractor=FirstTextTdExtractor(css_query="span::text")
                     ),
-                    'etd': departure_date['expected'],
-                    'atd': departure_date['actual'],
-                    'eta': arrive_date['expected'],
-                    'ata': arrive_date['actual'],
+                    "etd": departure_date["expected"],
+                    "atd": departure_date["actual"],
+                    "eta": arrive_date["expected"],
+                    "ata": arrive_date["actual"],
                 }
             )
 
@@ -440,17 +486,17 @@ class ItemExtractor:
             container_items.append(
                 ContainerItem(
                     task_id=task_id,
-                    container_key=container_info['container_key'],
-                    container_no=container_info['container_no'],
-                    last_free_day=container_info['last_free_day'],
-                    depot_last_free_day=container_info['depot_last_free_day'],
+                    container_key=container_info["container_key"],
+                    container_no=container_info["container_no"],
+                    last_free_day=container_info["last_free_day"],
+                    depot_last_free_day=container_info["depot_last_free_day"],
                 )
             )
         return container_items
 
     @staticmethod
     def _extract_container_infos(response: scrapy.Selector):
-        table_like_div = response.css('div.movingList')[0]  # 0 for booking info bookmark, 1 for print bookmark
+        table_like_div = response.css("div.movingList")[0]  # 0 for booking info bookmark, 1 for print bookmark
         table_locator = VesselContainerTableLocator()
         table_locator.parse(table=table_like_div)
         table_extractor = TableExtractor(table_locator=table_locator)
@@ -458,29 +504,31 @@ class ItemExtractor:
 
         for left in table_locator.iter_left_header():
             container_no = table_extractor.extract_cell(
-                top='Container No.', left=left, extractor=OnlyContentTableCellExtractor()
+                top="Container No.", left=left, extractor=OnlyContentTableCellExtractor()
             )[
                 0
             ]  # 0 container_no, 1 container_spec
             lfd_related = {}
-            if table_extractor.has_header(top='LFD'):
+            if table_extractor.has_header(top="LFD"):
                 lfd_related = table_extractor.extract_cell(
-                    top='LFD', left=left, extractor=LabelContentTableCellExtractor()
+                    top="LFD", left=left, extractor=LabelContentTableCellExtractor()
                 )
 
             container_infos.append(
                 {
-                    'container_key': get_container_key(container_no=container_no),
-                    'container_no': container_no,
-                    'last_free_day': lfd_related.get('LFD', ''),
-                    'depot_last_free_day': lfd_related.get('Depot LFD', ''),
+                    "container_key": get_container_key(container_no=container_no),
+                    "container_no": container_no,
+                    "last_free_day": lfd_related.get("LFD", ""),
+                    "depot_last_free_day": lfd_related.get("Depot LFD", ""),
                 }
             )
 
         return container_infos
 
     @classmethod
-    def _make_container_status_items(cls, task_id: str, container_no: str, response: scrapy.Selector) -> List[BaseCarrierItem]:
+    def _make_container_status_items(
+        cls, task_id: str, container_no: str, response: scrapy.Selector
+    ) -> List[BaseCarrierItem]:
         container_status_infos = cls._extract_container_status_infos(response=response)
 
         container_status_items = []
@@ -489,10 +537,10 @@ class ItemExtractor:
                 ContainerStatusItem(
                     task_id=task_id,
                     container_key=get_container_key(container_no),
-                    description=container_status_info['description'],
-                    local_date_time=container_status_info['local_date_time'],
-                    location=LocationItem(name=container_status_info['location']),
-                    transport=container_status_info['transport'],
+                    description=container_status_info["description"],
+                    local_date_time=container_status_info["local_date_time"],
+                    location=LocationItem(name=container_status_info["location"]),
+                    transport=container_status_info["transport"],
                 )
             )
 
@@ -500,11 +548,11 @@ class ItemExtractor:
 
     @staticmethod
     def _extract_container_status_infos(response: scrapy.Selector):
-        pop_up_divs = response.css('div.ivu-poptip-content')
-        rule = CssQueryExistMatchRule(css_query='p.poptip-title-up')
+        pop_up_divs = response.css("div.ivu-poptip-content")
+        rule = CssQueryExistMatchRule(css_query="p.poptip-title-up")
         container_status_div = find_selector_from(selectors=pop_up_divs, rule=rule)
 
-        table_like_div = container_status_div.css('div.ivu-table')
+        table_like_div = container_status_div.css("div.ivu-table")
         table_locator = VesselContainerTableLocator()
         table_locator.parse(table=table_like_div)
         table_extractor = TableExtractor(table_locator=table_locator)
@@ -512,16 +560,16 @@ class ItemExtractor:
         container_status_infos = []
         for left in table_locator.iter_left_header():
             multi_status = table_extractor.extract_cell(
-                top='Latest Status', left=left, extractor=OnlyContentTableCellExtractor()
+                top="Latest Status", left=left, extractor=OnlyContentTableCellExtractor()
             )  # 0 description, 1 time, 2 transport
 
             container_status_infos.append(
                 {
-                    'description': multi_status[0],
-                    'local_date_time': multi_status[1],
-                    'transport': multi_status[2],
-                    'location': table_extractor.extract_cell(
-                        top='Location', left=left, extractor=JoinAllWithSpaceTableCellExtractor()
+                    "description": multi_status[0],
+                    "local_date_time": multi_status[1],
+                    "transport": multi_status[2],
+                    "location": table_extractor.extract_cell(
+                        top="Location", left=left, extractor=JoinAllWithSpaceTableCellExtractor()
                     ),
                 }
             )
@@ -529,20 +577,47 @@ class ItemExtractor:
         return container_status_infos
 
 
+class NextRoundRoutingRule(BaseRoutingRule):
+    @classmethod
+    def build_request_option(cls, search_type: str, search_nos: List, task_ids: List) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://google.com",
+            meta={"search_nos": search_nos, "task_ids": task_ids, "search_type": search_type},
+        )
+
+    def handle(self, response):
+        task_ids = response.meta["task_ids"]
+        search_nos = response.meta["search_nos"]
+        search_type = response.meta["search_type"]
+
+        if len(search_nos) == 1 and len(task_ids) == 1:
+            return
+
+        task_ids = task_ids[1:]
+        search_nos = search_nos[1:]
+
+        if search_type == SHIPMENT_TYPE_MBL:
+            yield MainInfoRoutingRule.build_request_option(mbl_nos=search_nos, task_ids=task_ids)
+        else:
+            yield BookingInfoRoutingRule.build_request_option(booking_nos=search_nos, task_ids=task_ids)
+
+
 class MainInfoTableLocator(BaseTable):
     def parse(self, table: Selector):
-        label_cells = table.css('div.label p.tebleCell')
-        content_cells = table.css('div.content p.tebleCell')
+        label_cells = table.css("div.label p.tebleCell")
+        content_cells = table.css("div.content p.tebleCell")
 
         for label_cell, content_cell in zip(label_cells, content_cells):
-            raw_label_texts = label_cell.css('::text').getall()
-            label_with_colon = ''.join([raw_label_t.strip() for raw_label_t in raw_label_texts])
+            raw_label_texts = label_cell.css("::text").getall()
+            label_with_colon = "".join([raw_label_t.strip() for raw_label_t in raw_label_texts])
             label = label_with_colon[:-1]  # delete colon
 
-            raw_content_texts = content_cell.css('::text').getall()
-            content = ''.join([raw_content_t.strip() for raw_content_t in raw_content_texts])
+            raw_content_texts = content_cell.css("::text").getall()
+            content = "".join([raw_content_t.strip() for raw_content_t in raw_content_texts])
 
-            data_td = Selector(text=f'<td>{content}</td>')
+            data_td = Selector(text=f"<td>{content}</td>")
 
             self._left_header_set.add(label)
             td_dict = self._td_map.setdefault(0, {})
@@ -551,12 +626,12 @@ class MainInfoTableLocator(BaseTable):
 
 class VesselContainerTableLocator(BaseTable):
     def parse(self, table: Selector):
-        ths = table.css('div.ivu-table-header th')
-        ths_span_text = [th.css('span::text').get() for th in ths]
-        trs = table.css('tr.ivu-table-row')
+        ths = table.css("div.ivu-table-header th")
+        ths_span_text = [th.css("span::text").get() for th in ths]
+        trs = table.css("tr.ivu-table-row")
 
         for index, tr in enumerate(trs):
-            tds = tr.css('td')
+            tds = tr.css("td")
             self._left_header_set.add(index)
             for th_span_text, td in zip(ths_span_text, tds):
                 self._td_map.setdefault(th_span_text, [])
@@ -566,13 +641,13 @@ class VesselContainerTableLocator(BaseTable):
 class LabelContentTableCellExtractor(BaseTableCellExtractor):
     def extract(self, cell: Selector):
         result = {}
-        info_items = cell.css('p.infoItem')
+        info_items = cell.css("p.infoItem")
 
         for info_item in info_items:
-            label_with_colon = info_item.css('span.label::text').get().strip()
+            label_with_colon = info_item.css("span.label::text").get().strip()
             label = label_with_colon[:-1]
 
-            raw_content = info_item.css('span.content::text').get()
+            raw_content = info_item.css("span.content::text").get()
             content = raw_content.strip() if raw_content else raw_content
 
             result[label] = content
@@ -582,8 +657,8 @@ class LabelContentTableCellExtractor(BaseTableCellExtractor):
 
 class JoinAllWithSpaceTableCellExtractor(BaseTableCellExtractor):
     def extract(self, cell: Selector):
-        all_texts = cell.css('::text').getall()
-        result_text = ' '.join([text.strip() for text in all_texts]).strip()
+        all_texts = cell.css("::text").getall()
+        result_text = " ".join([text.strip() for text in all_texts]).strip()
 
         return result_text
 
@@ -591,10 +666,10 @@ class JoinAllWithSpaceTableCellExtractor(BaseTableCellExtractor):
 class OnlyContentTableCellExtractor(BaseTableCellExtractor):
     def extract(self, cell: Selector):
         results = []
-        info_items = cell.css('p.infoItem')
+        info_items = cell.css("p.infoItem")
 
         for info_item in info_items:
-            raw_content = info_item.css('span.content::text').get()
+            raw_content = info_item.css("span.content::text").get()
             content = raw_content.strip() if raw_content else raw_content
             results.append(content)
 
@@ -606,8 +681,8 @@ class OnlyContentTableCellExtractor(BaseTableCellExtractor):
 
 class ContentGetter(FirefoxContentGetter):
     def __init__(self):
-        super().__init__(service_log_path='/dev/null')
-        self._driver.get('https://elines.coscoshipping.com/ebusiness/cargoTracking')
+        super().__init__(service_log_path="/dev/null")
+        self._driver.get("https://elines.coscoshipping.com/ebusiness/cargoTracking")
         self._is_first = True
 
     def search_and_return(self, search_no: str, is_booking: bool = True):
@@ -617,12 +692,12 @@ class ContentGetter(FirefoxContentGetter):
             self._handle_cookie()
 
         if is_booking:
-            trackingType = 'BOOKING'
+            trackingType = "BOOKING"
         else:
-            trackingType = 'BILLOFLADING'
+            trackingType = "BILLOFLADING"
 
         self._driver.get(
-            f'https://elines.coscoshipping.com/ebusiness/cargoTracking?trackingType={trackingType}&number={search_no}'
+            f"https://elines.coscoshipping.com/ebusiness/cargoTracking?trackingType={trackingType}&number={search_no}"
         )
 
         try:
