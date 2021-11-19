@@ -1,5 +1,5 @@
 import json
-from typing import Dict
+from typing import Dict, List
 
 import scrapy
 from scrapy import Selector
@@ -45,16 +45,20 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
     def __init__(self, *args, **kwargs):
         super(AnlcApluCmduShareSpider, self).__init__(*args, **kwargs)
 
+        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
+
         bill_rules = [
             CheckIpRule(search_type=SHIPMENT_TYPE_MBL),
             FirstTierRoutingRule(search_type=SHIPMENT_TYPE_MBL),
             ContainerStatusRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         booking_rules = [
             CheckIpRule(search_type=SHIPMENT_TYPE_BOOKING),
             FirstTierRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
             ContainerStatusRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         if self.search_type == SHIPMENT_TYPE_MBL:
@@ -65,13 +69,12 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
         self._proxy_manager = HydraproxyProxyManager(session="share", logger=self.logger)
 
     def start(self):
-        for s_no, t_id in zip(self.search_nos, self.task_ids):
-            option = self._prepare_start(search_no=s_no, task_id=t_id)
-            yield self._build_request_by(option=option)
+        option = self._prepare_start(search_nos=self.search_nos, task_ids=self.task_ids)
+        yield self._build_request_by(option=option)
 
-    def _prepare_start(self, search_no: str, task_id: str):
+    def _prepare_start(self, search_nos: List, task_ids: List):
         self._proxy_manager.renew_proxy()
-        option = CheckIpRule.build_request_option(search_no=search_no, base_url=self.base_url, task_id=task_id)
+        option = CheckIpRule.build_request_option(base_url=self.base_url, search_nos=search_nos, task_ids=task_ids)
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         return proxy_option
 
@@ -82,9 +85,6 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
         save_name = routing_rule.get_save_name(response=response)
         self._saver.save(to=save_name, text=response.text)
 
-        search_no = response.meta["search_no"]
-        task_id = response.meta["task_id"]
-
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
@@ -92,7 +92,9 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
                 yield self._build_request_by(option=proxy_option)
             elif isinstance(result, ForceRestart):
-                proxy_option = self._prepare_start(search_no=search_no, task_id=task_id)
+                search_nos = response.meta["search_nos"]
+                task_ids = response.meta["task_ids"]
+                proxy_option = self._prepare_start(search_nos=search_nos, task_ids=task_ids)
                 yield self._build_request_by(option=proxy_option)
             else:
                 # raise RuntimeError()
@@ -132,15 +134,15 @@ class CheckIpRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, base_url: str, search_no: str, task_id: str):
+    def build_request_option(cls, base_url: str, search_nos: List, task_ids: List):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f"https://api.myip.com",
             meta={
-                "search_no": search_no,
+                "search_nos": search_nos,
                 "base_url": base_url,
-                "task_id": task_id,
+                "task_ids": task_ids,
             },
         )
 
@@ -148,9 +150,9 @@ class CheckIpRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        search_no = response.meta["search_no"]
         base_url = response.meta["base_url"]
-        task_id = response.meta["task_id"]
+        search_nos = response.meta["search_nos"]
+        task_ids = response.meta["task_ids"]
 
         response_json = json.loads(response.text)
         ip = response_json["ip"]
@@ -164,7 +166,7 @@ class CheckIpRule(BaseRoutingRule):
 
         self._sent_ips.append(ip)
         yield FirstTierRoutingRule.build_request_option(
-            base_url=base_url, search_no=search_no, search_type=self._search_type, task_id=task_id
+            base_url=base_url, search_nos=search_nos, search_type=self._search_type, task_ids=task_ids
         )
 
 
@@ -175,11 +177,12 @@ class FirstTierRoutingRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, base_url: str, search_no: str, search_type: str, task_id: str) -> RequestOption:
+    def build_request_option(cls, base_url: str, search_nos: List, search_type: str, task_ids: List) -> RequestOption:
+        current_search_no = search_nos[0]
         form_data = {
             "g-recaptcha-response": "",
             "SearchBy": "BL" if search_type == SHIPMENT_TYPE_MBL else "Booking",
-            "Reference": search_no,
+            "Reference": current_search_no,
             "search": "Search",
         }
 
@@ -189,9 +192,9 @@ class FirstTierRoutingRule(BaseRoutingRule):
             url=f"{base_url}/ebusiness/tracking/search",
             form_data=form_data,
             meta={
-                "search_no": search_no,
+                "search_nos": search_nos,
                 "base_url": base_url,
-                "task_id": task_id,
+                "task_ids": task_ids,
             },
         )
 
@@ -199,16 +202,19 @@ class FirstTierRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        search_no = response.meta["search_no"]
         base_url = response.meta["base_url"]
-        task_id = response.meta["task_id"]
+        search_nos = response.meta["search_nos"]
+        task_ids = response.meta["task_ids"]
+
+        current_search_no = search_nos[0]
+        current_task_id = task_ids[0]
 
         mbl_status = self._extract_mbl_status(response=response)
 
         if self._search_type == SHIPMENT_TYPE_MBL:
-            basic_mbl_item = MblItem(task_id=task_id, mbl_no=search_no)
+            basic_mbl_item = MblItem(task_id=current_task_id, mbl_no=current_search_no)
         else:
-            basic_mbl_item = MblItem(task_id=task_id, booking_no=search_no)
+            basic_mbl_item = MblItem(task_id=current_task_id, booking_no=current_search_no)
 
         if mbl_status == STATUS_ONE_CONTAINER:
             yield basic_mbl_item
@@ -224,9 +230,9 @@ class FirstTierRoutingRule(BaseRoutingRule):
                 yield ContainerStatusRoutingRule.build_request_option(
                     container_no=container_no,
                     base_url=base_url,
-                    search_no=search_no,
+                    search_no=current_search_no,
                     search_type=self._search_type,
-                    task_id=task_id,
+                    task_id=current_task_id,
                 )
 
         elif mbl_status == STATUS_WEBSITE_SUSPEND:
@@ -235,15 +241,25 @@ class FirstTierRoutingRule(BaseRoutingRule):
         else:  # STATUS_MBL_NOT_EXIST
             if self._search_type == SHIPMENT_TYPE_MBL:
                 yield ExportErrorData(
-                    task_id=task_id, mbl_no=search_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found"
-                )
-            elif self._search_type == SHIPMENT_TYPE_BOOKING:
-                yield ExportErrorData(
-                    task_id=task_id,
-                    booking_no=search_no,
+                    task_id=current_task_id,
+                    mbl_no=current_search_no,
                     status=CARRIER_RESULT_STATUS_ERROR,
                     detail="Data was not found",
                 )
+            elif self._search_type == SHIPMENT_TYPE_BOOKING:
+                yield ExportErrorData(
+                    task_id=current_task_id,
+                    booking_no=current_search_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+
+        yield NextRoundRoutingRule.build_request_option(
+            base_url=base_url,
+            search_nos=search_nos,
+            search_type=self._search_type,
+            task_ids=task_ids,
+        )
 
     @staticmethod
     def _extract_mbl_status(response: Selector):
@@ -295,7 +311,9 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         return f"container_status_{container_no}.html"
 
     def handle(self, response):
-        task_id = response.meta["task_id"]
+        task_id = response.meta.get("task_id")
+        if not task_id:
+            task_id = response.meta["task_ids"][0]
 
         container_info = self._extract_page_title(response=response)
         main_info = self._extract_tracking_no_map(response=response)
@@ -383,6 +401,40 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 "location": table.extract_cell("Location", index, LocationTdExtractor()),
                 "est_or_actual": "A" if is_actual else "E",
             }
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    name = "ROUTING"
+
+    @classmethod
+    def build_request_option(cls, base_url: str, search_nos: List, search_type: str, task_ids: List) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://www.google.com",
+            meta={
+                "base_url": base_url,
+                "search_nos": search_nos,
+                "search_type": search_type,
+                "task_ids": task_ids,
+            },
+        )
+
+    def handle(self, response):
+        base_url = response.meta["base_url"]
+        search_type = response.meta["search_type"]
+        task_ids = response.meta["task_ids"]
+        search_nos = response.meta["search_nos"]
+
+        if len(search_nos) == 1 and len(task_ids) == 1:
+            return
+
+        task_ids = task_ids[1:]
+        search_nos = search_nos[1:]
+
+        yield FirstTierRoutingRule.build_request_option(
+            base_url=base_url, search_nos=search_nos, search_type=search_type, task_ids=task_ids
+        )
 
 
 class ContainerStatusTableLocator(BaseTable):
