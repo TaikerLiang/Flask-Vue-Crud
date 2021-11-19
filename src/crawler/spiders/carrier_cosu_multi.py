@@ -236,19 +236,19 @@ class BookingInfoRoutingRule(BaseRoutingRule):
                 search_nos=booking_nos,
                 task_ids=task_ids,
             )
-
-        item_extractor = ItemExtractor(task_id=task_ids[0])
-        for item in item_extractor.extract(
-            response=response_selector,
-            content_getter=content_getter,
-            search_type=SHIPMENT_TYPE_BOOKING,
-        ):
-            yield item
-        yield NextRoundRoutingRule.build_request_option(
-            search_type=SHIPMENT_TYPE_BOOKING,
-            search_nos=booking_nos,
-            task_ids=task_ids,
-        )
+        else:
+            item_extractor = ItemExtractor(task_id=task_ids[0])
+            for item in item_extractor.extract(
+                response=response_selector,
+                content_getter=content_getter,
+                search_type=SHIPMENT_TYPE_BOOKING,
+            ):
+                yield item
+            yield NextRoundRoutingRule.build_request_option(
+                search_type=SHIPMENT_TYPE_BOOKING,
+                search_nos=booking_nos,
+                task_ids=task_ids,
+            )
 
         content_getter.close()
 
