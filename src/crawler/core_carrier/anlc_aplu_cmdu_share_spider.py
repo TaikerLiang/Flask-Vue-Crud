@@ -72,9 +72,9 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
         option = self._prepare_start(search_nos=self.search_nos, task_ids=self.task_ids)
         yield self._build_request_by(option=option)
 
-    def _prepare_start(self, search_nos: str, task_ids: str):
+    def _prepare_start(self, search_nos: List, task_ids: List):
         self._proxy_manager.renew_proxy()
-        option = CheckIpRule.build_request_option(search_nos=search_nos, base_url=self.base_url, task_ids=task_ids)
+        option = CheckIpRule.build_request_option(base_url=self.base_url, search_nos=search_nos, task_ids=task_ids)
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         return proxy_option
 
@@ -134,7 +134,7 @@ class CheckIpRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, base_url: str, search_nos: str, task_ids: str):
+    def build_request_option(cls, base_url: str, search_nos: List, task_ids: List):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
@@ -150,8 +150,8 @@ class CheckIpRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        search_nos = response.meta["search_nos"]
         base_url = response.meta["base_url"]
+        search_nos = response.meta["search_nos"]
         task_ids = response.meta["task_ids"]
 
         response_json = json.loads(response.text)
@@ -177,7 +177,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, base_url: str, search_nos: str, search_type: str, task_ids: str) -> RequestOption:
+    def build_request_option(cls, base_url: str, search_nos: List, search_type: str, task_ids: List) -> RequestOption:
         current_search_no = search_nos[0]
         form_data = {
             "g-recaptcha-response": "",
@@ -202,8 +202,8 @@ class FirstTierRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        search_nos = response.meta["search_nos"]
         base_url = response.meta["base_url"]
+        search_nos = response.meta["search_nos"]
         task_ids = response.meta["task_ids"]
 
         current_search_no = search_nos[0]
