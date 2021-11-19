@@ -95,7 +95,6 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
                 yield self._build_request_by(option=proxy_option)
             elif isinstance(result, Restart):
-                print("taiker result.task_id, result.search_no", result.search_nos, result.task_ids)
                 search_nos = result.search_nos
                 task_ids = result.task_ids
                 self.logger.warning(f"----- {result.reason}, try new proxy and restart")
@@ -224,7 +223,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
                         detail="Data was not found",
                     )
                     yield NextRoundRoutingRule.build_request_option(
-                        search_nos=search_nos, task_ids=task_ids, search_type=self._search_type, base_url=base_url
+                        search_nos=search_nos, task_ids=task_ids, base_url=base_url
                     )
                     return
             elif self._search_type == SHIPMENT_TYPE_BOOKING:
@@ -242,7 +241,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
                         detail="Data was not found",
                     )
                     yield NextRoundRoutingRule.build_request_option(
-                        search_nos=search_nos, task_ids=task_ids, search_type=self._search_type, base_url=base_url
+                        search_nos=search_nos, task_ids=task_ids, base_url=base_url
                     )
                     return
 
@@ -278,9 +277,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
                 task_id=task_id,
             )
 
-        yield NextRoundRoutingRule.build_request_option(
-            search_nos=search_nos, task_ids=task_ids, search_type=self._search_type, base_url=base_url
-        )
+        yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, base_url=base_url)
 
     @staticmethod
     def _is_search_no_invalid(response_dict):
@@ -582,19 +579,18 @@ class RailInfoRoutingRule(BaseRoutingRule):
 
 class NextRoundRoutingRule(BaseRoutingRule):
     @classmethod
-    def build_request_option(cls, search_nos: List, task_ids: List, search_type: str, base_url: str) -> RequestOption:
+    def build_request_option(cls, search_nos: List, task_ids: List, base_url: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://google.com",
-            meta={"search_nos": search_nos, "task_ids": task_ids, "base_url": base_url, "search_type": search_type,},
+            meta={"search_nos": search_nos, "task_ids": task_ids, "base_url": base_url},
         )
 
     def handle(self, response):
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
         base_url = response.meta["base_url"]
-        search_type = response.meta["search_type"]
 
         if len(search_nos) <= MAX_PAGE_NUM and len(task_ids) <= MAX_PAGE_NUM:
             return
@@ -602,9 +598,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         task_ids = task_ids[MAX_PAGE_NUM:]
         search_nos = search_nos[MAX_PAGE_NUM:]
 
-        yield FirstTierRoutingRule(search_type=search_type).build_request_option(
-            search_nos=search_nos, task_ids=task_ids, base_url=base_url
-        )
+        yield FirstTierRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, base_url=base_url)
 
 
 # -----------------------------------------------------------------------------------------------------------
