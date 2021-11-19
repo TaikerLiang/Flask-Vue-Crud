@@ -13,12 +13,8 @@ from crawler.core_rail.exceptions import RailResponseFormatError, DriverMaxRetry
 from crawler.core_rail.items import BaseRailItem, RailItem, DebugItem, InvalidContainerNoItem
 from crawler.core_rail.request_helpers import RequestOption
 from crawler.core_rail.rules import RuleManager, BaseRoutingRule
-from crawler.extractors.table_extractors import (
-    BaseTableLocator,
-    HeaderMismatchError,
-    TableExtractor,
-    BaseTableCellExtractor,
-)
+from crawler.extractors.table_extractors import BaseTableCellExtractor
+from crawler.core.table import BaseTable, TableExtractor
 
 
 BASE_URL = "https://accessns.nscorp.com"
@@ -90,10 +86,19 @@ class RailNSSpider(BaseMultiRailSpider):
         }
 
         if option.method == RequestOption.METHOD_POST_BODY:
-            return scrapy.Request(method="POST", url=option.url, headers=option.headers, body=option.body, meta=meta,)
+            return scrapy.Request(
+                method="POST",
+                url=option.url,
+                headers=option.headers,
+                body=option.body,
+                meta=meta,
+            )
 
         elif option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(url=option.url, meta=meta,)
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
 
         else:
             raise KeyError()
@@ -111,7 +116,10 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         cls._proxy_manager = proxy_manager
         return RequestOption(
-            rule_name=cls.name, method=RequestOption.METHOD_GET, url=url, meta={"container_nos": container_nos},
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=url,
+            meta={"container_nos": container_nos},
         )
 
     def get_save_name(self, response) -> str:
@@ -275,10 +283,7 @@ class ContentGetter:
         return page_source
 
 
-class TrackAndTraceTableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = {}  # top_header: [td, td, ...]
-
+class TrackAndTraceTableLocator(BaseTable):
     def parse(self, table: scrapy.Selector):
         titles = table.css("span.ag-header-cell-text ::text").getall()
         titles = [t.strip() for t in titles]
@@ -293,26 +298,7 @@ class TrackAndTraceTableLocator(BaseTableLocator):
 
                 self._td_map.setdefault(title, [])
                 self._td_map[title].append(data_div)
-
-    def get_cell(self, top, left) -> scrapy.Selector:
-        try:
-            return self._td_map[top][left]
-        except (IndexError, KeyError) as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (left is None) and (top in self._td_map)
-
-    def iter_left_header(self):
-        first_title = list(self._td_map.keys())
-        content_len = 0
-
-        if first_title:
-            first_title = first_title[0]
-            content_len = len(self._td_map[first_title])
-
-        for i in range(content_len):
-            yield i
+                self.add_left_header_set(data_id)
 
 
 class DivCellExtractor(BaseTableCellExtractor):
