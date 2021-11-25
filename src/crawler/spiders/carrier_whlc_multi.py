@@ -1,5 +1,7 @@
 import re
 import asyncio
+import time
+
 from urllib3.exceptions import ReadTimeoutError
 from typing import List, Dict
 import logging
@@ -196,7 +198,7 @@ class MblRoutingRule(BaseRoutingRule):
                     yield item
             except ElementHandleError:
                 pass
-            except TimeoutError:
+            except (TimeoutError, CarrierResponseFormatError, IndexError):
                 yield ExportErrorData(
                     task_id=task_id,
                     mbl_no=mbl_no,
@@ -212,7 +214,7 @@ class MblRoutingRule(BaseRoutingRule):
                     yield item
             except ElementHandleError:
                 pass
-            except TimeoutError:
+            except (TimeoutError, CarrierResponseFormatError, IndexError):
                 yield ExportErrorData(
                     task_id=task_id,
                     mbl_no=mbl_no,
@@ -222,6 +224,7 @@ class MblRoutingRule(BaseRoutingRule):
                 self.driver.close_page_and_switch_last()
                 continue
 
+            time.sleep(3)
             self.driver.close_page_and_switch_last()
         asyncio.get_event_loop().run_until_complete(self.driver.close_page())
 
