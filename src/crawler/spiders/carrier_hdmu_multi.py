@@ -821,7 +821,7 @@ class MainRoutingRule(BaseRoutingRule):
                 "delivery_order_time": None,
             }
 
-        table_selector = response.css("#trackingForm div.left_table01")[1]
+        table_selector = response.css("div.left_table01")[1]
         table_locator = LeftHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
@@ -883,7 +883,7 @@ class MainRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_vessel(response):
-        tables = response.css("#trackingForm div.base_table01")
+        tables = response.css("div.base_table01")
         rule = SpecificThTextExistMatchRule(text="Vessel / Voyage")
         table_selector = find_selector_from(selectors=tables, rule=rule)
 
@@ -926,7 +926,7 @@ class MainRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _get_container_table(response):
-        tables = response.css("#trackingForm div.base_table01")
+        tables = response.css("div.base_table01")
         rule = SpecificThTextExistMatchRule(text="Container No.")
         container_table = find_selector_from(selectors=tables, rule=rule)
 
@@ -1116,7 +1116,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_status_list(response) -> list:
-        tables = response.css("#trackingForm div.base_table01")
+        tables = response.css("div.base_table01")
         rule = SpecificThTextExistMatchRule(text="Date")
         table_selector = find_selector_from(selectors=tables, rule=rule)
 
@@ -1160,7 +1160,10 @@ class ContainerRoutingRule(BaseRoutingRule):
                 "fdd": None,
             }
 
-        table_selector = response.css("#trackingForm div.left_table01")[-1]
+        tables = response.css("div.left_table01")
+        rule = SpecificThTextExistMatchRule(text="Empty Container Return Location")
+        table_selector = find_selector_from(selectors=tables, rule=rule)
+
         table_locator = LeftHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
@@ -1173,7 +1176,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _get_container_table(response):
-        tables = response.css("#trackingForm div.base_table01")
+        tables = response.css("div.base_table01")
         rule = SpecificThTextExistMatchRule(text="Container No.")
         container_table = find_selector_from(selectors=tables, rule=rule)
 
