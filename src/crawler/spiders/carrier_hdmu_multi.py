@@ -12,11 +12,10 @@ from crawler.core_carrier.base import (
     SHIPMENT_TYPE_BOOKING,
     CARRIER_RESULT_STATUS_FATAL,
 )
-from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider, CARRIER_DEFAULT_SETTINGS
+from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
     SuspiciousOperationError,
-    CarrierInvalidSearchNoError,
 )
 from crawler.core_carrier.items import (
     ExportErrorData,
@@ -119,6 +118,8 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.custom_settings.update({"DOWNLOAD_TIMEOUT": 30})
+        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
+
         self._cookiejar_id_map = {}
         self._item_recorder_map = {}
         self._request_queue_map = {}
@@ -136,6 +137,7 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
             MainRoutingRule(self._item_recorder_map, search_type=SHIPMENT_TYPE_MBL),
             ContainerRoutingRule(self._item_recorder_map),
             AvailabilityRoutingRule(self._item_recorder_map),
+            NextRoundRoutingRule(search_type=SHIPMENT_TYPE_MBL),
         ]
 
         booking_rules = [
@@ -146,6 +148,7 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
             MainRoutingRule(self._item_recorder_map, search_type=SHIPMENT_TYPE_BOOKING),
             ContainerRoutingRule(self._item_recorder_map),
             AvailabilityRoutingRule(self._item_recorder_map),
+            NextRoundRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
         ]
 
         self._proxy_manager = HydraproxyProxyManager(session="hdmu", logger=self.logger)
@@ -156,24 +159,24 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
             self._rule_manager = RuleManager(rules=booking_rules)
 
     def start(self):
-        for s_no, t_id in zip(self.search_nos, self.task_ids):
-            yield self._prepare_restart(search_no=s_no, task_id=t_id)
+        yield self._prepare_restart(search_nos=self.search_nos, task_ids=self.task_ids)
 
     def retry(self, failure: Failure):
-        search_no = failure.request.cb_kwargs["search_no"]
-        task_id = failure.request.cb_kwargs["task_id"]
+        search_nos = failure.request.cb_kwargs["search_nos"]
+        task_ids = failure.request.cb_kwargs["task_ids"]
 
         try:
-            yield self._prepare_restart(search_no=search_no, task_id=task_id)
+            yield self._prepare_restart(search_nos=search_nos, task_ids=task_ids)
         except ProxyMaxRetryError:
-            for item in self._item_recorder_map[task_id].items:
+            for item in self._item_recorder_map[task_ids[0]].items:
                 yield item
 
-    def parse(self, response, search_no, task_id):
+    def parse(self, response, search_nos: List, task_ids: List):
         yield DebugItem(info={"meta": dict(response.meta)})
 
-        search_no = response.meta["search_no"]
-        task_id = response.meta["task_id"]
+        search_nos = response.meta["search_nos"]
+        task_ids = response.meta["task_ids"]
+        current_task_id = task_ids[0]
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -186,35 +189,40 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
             if isinstance(result, RequestOption):
                 rule_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=result)
                 rule_proxy_cookie_option = self._add_cookiejar_id_into_request_option(
-                    option=rule_proxy_option, task_id=task_id
+                    option=rule_proxy_option, task_id=current_task_id
                 )
                 rule_request = self._build_request_by(option=rule_proxy_cookie_option)
-                self._request_queue_map[task_id].add(request=rule_request)
+
+                if routing_rule.name == "ROUTING":
+                    yield rule_request
+                else:
+                    self._request_queue_map[current_task_id].add(request=rule_request)
 
                 # # test
                 # request = self._build_request_by(option=result)
                 # self._request_queue.add(request=request)
             elif isinstance(result, ForceRestart):
                 try:
-                    restart_request = self._prepare_restart(search_no=search_no, task_id=task_id)
-                    self._request_queue_map[task_id].add(request=restart_request)
-                except ProxyMaxRetryError as err:
+                    restart_request = self._prepare_restart(search_nos=search_nos, task_ids=task_ids)
+                    self._request_queue_map[current_task_id].add(request=restart_request)
+                except ProxyMaxRetryError:
+                    current_search_no = search_nos[0]
                     if self.search_type == SHIPMENT_TYPE_MBL:
                         error_item = ExportErrorData(
-                            mbl_no=search_no,
-                            task_id=task_id,
+                            mbl_no=current_search_no,
+                            task_id=current_task_id,
                             status=CARRIER_RESULT_STATUS_FATAL,
                             detail="<proxy-max-retry-error>",
                         )
-                        self._item_recorder_map[task_id].record_item(key=("ERROR", None), item=error_item)
+                        self._item_recorder_map[current_task_id].record_item(key=("ERROR", None), item=error_item)
                     elif self.search_type == SHIPMENT_TYPE_BOOKING:
                         error_item = ExportErrorData(
-                            booking_no=search_no,
-                            task_id=task_id,
+                            booking_no=current_search_no,
+                            task_id=current_task_id,
                             status=CARRIER_RESULT_STATUS_FATAL,
                             detail="<proxy-max-retry-error>",
                         )
-                        self._item_recorder_map[task_id].record_item(key=("ERROR", None), item=error_item)
+                        self._item_recorder_map[current_task_id].record_item(key=("ERROR", None), item=error_item)
 
             elif isinstance(result, BaseCarrierItem):
                 pass
@@ -222,21 +230,23 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
                 raise RuntimeError()
 
         # yield request / item
-        if not self._request_queue_map[task_id].is_empty():
-            yield self._request_queue_map[task_id].next()
+        if not self._request_queue_map[current_task_id].is_empty():
+            yield self._request_queue_map[current_task_id].next()
         else:
-            for item in self._item_recorder_map[task_id].items:
+            for item in self._item_recorder_map[current_task_id].items:
                 yield item
 
-    def _prepare_restart(self, search_no: str, task_id: str) -> Request:
-        self._request_queue_map[task_id].clear()
-        self._proxy_manager.renew_proxy()
-        self._cookiejar_id_map[task_id] += 1
+    def _prepare_restart(self, search_nos: List, task_ids: List) -> Request:
+        current_task_id = task_ids[0]
 
-        option = CheckIpRule.build_request_option(search_no=search_no, task_id=task_id)
+        self._request_queue_map[current_task_id].clear()
+        self._proxy_manager.renew_proxy()
+        self._cookiejar_id_map[current_task_id] += 1
+
+        option = CheckIpRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
         restart_proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         restart_proxy_cookie_option = self._add_cookiejar_id_into_request_option(
-            option=restart_proxy_option, task_id=task_id
+            option=restart_proxy_option, task_id=current_task_id
         )
         return self._build_request_by(option=restart_proxy_cookie_option)
 
@@ -255,7 +265,7 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
             else:
                 return search_no
 
-    def _add_cookiejar_id_into_request_option(self, option, task_id) -> RequestOption:
+    def _add_cookiejar_id_into_request_option(self, option, task_id: str) -> RequestOption:
         return option.copy_and_extend_by(meta={"cookiejar": self._cookiejar_id_map[task_id]})
 
     def _build_request_by(self, option: RequestOption):
@@ -273,8 +283,8 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
                 callback=self.parse,
                 errback=self.retry,
                 cb_kwargs={
-                    "search_no": meta["search_no"],
-                    "task_id": meta["task_id"],
+                    "search_nos": meta["search_nos"],
+                    "task_ids": meta["task_ids"],
                 },
             )
 
@@ -288,8 +298,8 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
                 callback=self.parse,
                 errback=self.retry,
                 cb_kwargs={
-                    "search_no": meta["search_no"],
-                    "task_id": meta["task_id"],
+                    "search_nos": meta["search_nos"],
+                    "task_ids": meta["task_ids"],
                 },
             )
 
@@ -304,8 +314,8 @@ class CarrierHdmuSpider(BaseMultiCarrierSpider):
                 callback=self.parse,
                 errback=self.retry,
                 cb_kwargs={
-                    "search_no": meta["search_no"],
-                    "task_id": meta["task_id"],
+                    "search_nos": meta["search_nos"],
+                    "task_ids": meta["task_ids"],
                 },
             )
 
@@ -323,14 +333,14 @@ class CheckIpRule(BaseRoutingRule):
         self._sent_ips = []
 
     @classmethod
-    def build_request_option(cls, search_no, task_id):
+    def build_request_option(cls, search_nos: List, task_ids: List):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f"https://api.myip.com/",
             meta={
-                "search_no": search_no,
-                "task_id": task_id,
+                "search_nos": search_nos,
+                "task_ids": task_ids,
             },
         )
 
@@ -338,8 +348,8 @@ class CheckIpRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        search_no = response.meta["search_no"]
-        task_id = response.meta["task_id"]
+        search_nos = response.meta["search_nos"]
+        task_ids = response.meta["task_ids"]
 
         response_dict = json.loads(response.text)
         ip = response_dict["ip"]
@@ -350,14 +360,14 @@ class CheckIpRule(BaseRoutingRule):
         else:
             self._sent_ips.append(ip)
             print(f"[INFO][{self.__class__.__name__}] ---- using ip: `{ip}`")
-            yield Cookies1RoutingRule.build_request_option(search_no=search_no, task_id=task_id)
+            yield Cookies1RoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
 
 class Cookies1RoutingRule(BaseRoutingRule):
     name = "COOKIES1"
 
     @classmethod
-    def build_request_option(cls, search_no, task_id):
+    def build_request_option(cls, search_nos: List, task_ids: List):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
@@ -378,8 +388,8 @@ class Cookies1RoutingRule(BaseRoutingRule):
                 "Referer": "https://www.hmm21.com/",
             },
             meta={
-                "search_no": search_no,
-                "task_id": task_id,
+                "search_nos": search_nos,
+                "task_ids": task_ids,
             },
         )
 
@@ -387,13 +397,13 @@ class Cookies1RoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        search_no = response.meta["search_no"]
-        task_id = response.meta["task_id"]
+        search_nos = response.meta["search_nos"]
+        task_ids = response.meta["task_ids"]
 
         cookies = self._extract_cookies_dict_from(response=response)
 
         if cookies:
-            yield Cookies2RoutingRule.build_request_option(search_no=search_no, task_id=task_id, cookies=cookies)
+            yield Cookies2RoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, cookies=cookies)
         else:
             yield ForceRestart()
 
@@ -412,7 +422,7 @@ class Cookies2RoutingRule(BaseRoutingRule):
     name = "COOKIES2"
 
     @classmethod
-    def build_request_option(cls, search_no, task_id, cookies: Dict):
+    def build_request_option(cls, search_nos: List, task_ids: List, cookies: Dict):
         # bill_form_body = (
         #     'blFields=3&cnFields=3&'
         #     f'numbers={search_no}&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&numbers=&'
@@ -436,7 +446,7 @@ class Cookies2RoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=(
-                f"{BASE_URL}/cms/business/ebiz/trackTrace/trackTrace/index.jsp?type=1&number={search_no}&"
+                f"{BASE_URL}/cms/business/ebiz/trackTrace/trackTrace/index.jsp?type=1&number={search_nos[0]}&"
                 f"is_quick=Y&quick_params="
             ),
             headers={
@@ -456,8 +466,8 @@ class Cookies2RoutingRule(BaseRoutingRule):
                 "Cookie": CookieHelper.get_cookie_str(cookies),
             },
             meta={
-                "search_no": search_no,
-                "task_id": task_id,
+                "search_nos": search_nos,
+                "task_ids": task_ids,
                 "cookies": cookies,
             },
         )
@@ -466,14 +476,14 @@ class Cookies2RoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        search_no = response.meta["search_no"]
-        task_id = response.meta["task_id"]
+        search_nos = response.meta["search_nos"]
+        task_ids = response.meta["task_ids"]
         cookies = response.meta["cookies"]
 
         cookies.update(CookieHelper.get_cookies(response=response))
 
         if cookies:
-            yield Cookies3RoutingRule.build_request_option(search_no=search_no, task_id=task_id, cookies=cookies)
+            yield Cookies3RoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, cookies=cookies)
             # yield MainRoutingRule.build_request_option(
             #     search_no=search_no, search_type=self._search_type, cookies=cookies)
         else:
@@ -487,7 +497,7 @@ class Cookies3RoutingRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, search_no, task_id, cookies: Dict):
+    def build_request_option(cls, search_nos: List, task_ids: List, cookies: Dict):
         # form_data = {
         #     'blFields': '3',
         #     'cnFields': '3',
@@ -499,7 +509,7 @@ class Cookies3RoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"{BASE_URL}/ebiz/track_trace/main_new.jsp?type=1&number={search_no}&is_quick=Y&quick_params=",
+            url=f"{BASE_URL}/ebiz/track_trace/main_new.jsp?type=1&number={search_nos[0]}&is_quick=Y&quick_params=",
             headers={
                 "Connection": "keep-alive",
                 "Upgrade-Insecure-Requests": "1",
@@ -512,7 +522,7 @@ class Cookies3RoutingRule(BaseRoutingRule):
                     "q=0.8,application/signed-exchange;v=b3;q=0.9"
                 ),
                 "Referer": (
-                    f"{BASE_URL}/cms/business/ebiz/trackTrace/trackTrace/index.jsp?type=1&number={search_no}&"
+                    f"{BASE_URL}/cms/business/ebiz/trackTrace/trackTrace/index.jsp?type=1&number={search_nos[0]}&"
                     f"is_quick=Y&quick_params="
                 ),
                 "Accept-Language": "en-US,en;q=0.9",
@@ -520,8 +530,8 @@ class Cookies3RoutingRule(BaseRoutingRule):
             },
             # form_data=form_data,
             meta={
-                "search_no": search_no,
-                "task_id": task_id,
+                "search_nos": search_nos,
+                "task_ids": task_ids,
                 "cookies": cookies,
             },
         )
@@ -530,15 +540,15 @@ class Cookies3RoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        search_no = response.meta["search_no"]
-        task_id = response.meta["task_id"]
+        search_nos = response.meta["search_nos"]
+        task_ids = response.meta["task_ids"]
         cookies = response.meta["cookies"]
 
         cookies.update(CookieHelper.get_cookies(response=response))
 
         if cookies:
             yield MainRoutingRule.build_request_option(
-                search_no=search_no, task_id=task_id, search_type=self._search_type, cookies=cookies
+                search_nos=search_nos, task_ids=task_ids, search_type=self._search_type, cookies=cookies
             )
         else:
             yield ForceRestart()
@@ -564,7 +574,10 @@ class MainRoutingRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, task_id, search_no, search_type, cookies, under_line: bool = False):
+    def build_request_option(
+        cls, task_ids: List, search_nos: List, search_type, cookies: Dict, under_line: bool = False
+    ):
+        current_search_no = search_nos[0]
         url_plug_in = "/_" if under_line else ""
 
         form_data = {
@@ -579,10 +592,10 @@ class MainRoutingRule(BaseRoutingRule):
         numbers = [("numbers", "")] * 24
 
         if search_type == SHIPMENT_TYPE_MBL:
-            form_data["number"] = search_no
-            numbers[0] = ("numbers", search_no)
+            form_data["number"] = current_search_no
+            numbers[0] = ("numbers", current_search_no)
         elif search_type == SHIPMENT_TYPE_BOOKING:
-            numbers[18] = ("numbers", search_no)
+            numbers[18] = ("numbers", current_search_no)
 
         body = urlencode(query=form_data) + "&" + urlencode(numbers)
 
@@ -600,15 +613,15 @@ class MainRoutingRule(BaseRoutingRule):
                     "Chrome/87.0.4280.141 Safari/537.36"
                 ),
                 "Referer": (
-                    f"{BASE_URL}/ebiz/track_trace/main_new.jsp?type=1&number={search_no}&is_quick=Y&quick_params=",
+                    f"{BASE_URL}/ebiz/track_trace/main_new.jsp?type=1&number={current_search_no}&is_quick=Y&quick_params=",
                 ),
                 "Accept-Language": "en-US,en;q=0.9",
                 "Cookie": CookieHelper.get_cookie_str(cookies),
             },
             body=body,
             meta={
-                "search_no": search_no,
-                "task_id": task_id,
+                "search_nos": search_nos,
+                "task_ids": task_ids,
                 "search_type": search_type,
                 "cookies": cookies,
                 "under_line": under_line,
@@ -619,11 +632,14 @@ class MainRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        search_no = response.meta["search_no"]
-        task_id = response.meta["task_id"]
-        search_type = response.meta["search_type"]
+        search_nos = response.meta["search_nos"]
+        task_ids = response.meta["task_ids"]
         cookies = response.meta["cookies"]
         under_line = response.meta["under_line"]
+
+        current_search_no = search_nos[0]
+        current_task_id = task_ids[0]
+        current_item_recorder_map = self._item_recorder_map[current_task_id]
 
         cookies.update(CookieHelper.get_cookies(response=response))
         if self._is_search_no_invalid(response=response):
@@ -631,34 +647,36 @@ class MainRoutingRule(BaseRoutingRule):
                 # retry to send other request with underline url
                 # ex: {BASE_URL}/_/ebiz/track_trace/trackCTP_nTmp.jsp
                 yield MainRoutingRule.build_request_option(
-                    search_no=search_no,
-                    task_id=task_id,
+                    search_nos=search_nos,
+                    task_ids=task_ids,
                     search_type=self._search_type,
                     cookies=cookies,
                     under_line=True,
                 )
                 return
 
-            if search_type == SHIPMENT_TYPE_MBL:
+            if self._search_type == SHIPMENT_TYPE_MBL:
                 error_item = ExportErrorData(
-                    mbl_no=search_no,
-                    task_id=task_id,
+                    mbl_no=current_search_no,
+                    task_id=current_task_id,
                     status=CARRIER_RESULT_STATUS_ERROR,
                     detail="Data was not found",
                 )
 
-                self._item_recorder_map[task_id].record_item(key=("ERROR", search_no), item=error_item)
-            elif search_type == SHIPMENT_TYPE_BOOKING:
+                current_item_recorder_map.record_item(key=("ERROR", current_search_no), item=error_item)
+            elif self._search_type == SHIPMENT_TYPE_BOOKING:
                 error_item = ExportErrorData(
-                    booking_no=search_no,
-                    task_id=task_id,
+                    booking_no=current_search_no,
+                    task_id=current_task_id,
                     status=CARRIER_RESULT_STATUS_ERROR,
                     detail="Data was not found",
                 )
-                self._item_recorder_map[task_id].record_item(key=("ERROR", search_no), item=error_item)
+                current_item_recorder_map.record_item(key=("ERROR", current_search_no), item=error_item)
+
+            yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, cookies=cookies)
             return
 
-        if not self._item_recorder_map[task_id].is_item_recorded(key=(MBL, search_no)):
+        if not current_item_recorder_map.is_item_recorded(key=(MBL, current_search_no)):
             try:
                 tracking_results = self._extract_tracking_results(response=response)
                 customs_status = self._extract_customs_status(response=response)
@@ -669,7 +687,7 @@ class MainRoutingRule(BaseRoutingRule):
                 return
 
             mbl_item = MblItem(
-                task_id=task_id,
+                task_id=current_task_id,
                 por=LocationItem(name=tracking_results["location.por"]),
                 pod=LocationItem(name=tracking_results["location.pod"]),
                 pol=LocationItem(name=tracking_results["location.pol"]),
@@ -699,17 +717,17 @@ class MainRoutingRule(BaseRoutingRule):
             )
 
             if self._search_type == SHIPMENT_TYPE_MBL:
-                mbl_item["mbl_no"] = search_no
+                mbl_item["mbl_no"] = current_search_no
             elif self._search_type == SHIPMENT_TYPE_BOOKING:
-                mbl_item["booking_no"] = search_no
+                mbl_item["booking_no"] = current_search_no
 
-            self._item_recorder_map[task_id].record_item(key=(MBL, search_no), item=mbl_item)
+            current_item_recorder_map.record_item(key=(MBL, current_search_no), item=mbl_item)
 
-        if not self._item_recorder_map[task_id].is_item_recorded(key=(VESSEL, search_no)):
+        if not current_item_recorder_map.is_item_recorded(key=(VESSEL, current_search_no)):
             vessel = self._extract_vessel(response=response)
 
             vessel_item = VesselItem(
-                task_id=task_id,
+                task_id=current_task_id,
                 vessel_key=vessel["vessel"],
                 vessel=vessel["vessel"],
                 voyage=vessel["voyage"],
@@ -720,7 +738,7 @@ class MainRoutingRule(BaseRoutingRule):
                 atd=vessel["atd"],
                 etd=vessel["etd"],
             )
-            self._item_recorder_map[task_id].record_item(key=(VESSEL, search_no), item=vessel_item)
+            current_item_recorder_map.record_item(key=(VESSEL, current_search_no), item=vessel_item)
 
         # parse other containers if there are many containers
         container_contents = self._extract_container_contents(response=response)
@@ -728,10 +746,8 @@ class MainRoutingRule(BaseRoutingRule):
         for container_content in container_contents:
             if all(
                 [
-                    self._item_recorder_map[task_id].is_item_recorded(key=(CONTAINER, container_content.container_no)),
-                    self._item_recorder_map[task_id].is_item_recorded(
-                        key=(AVAILABILITY, container_content.container_no)
-                    ),
+                    current_item_recorder_map.is_item_recorded(key=(CONTAINER, container_content.container_no)),
+                    current_item_recorder_map.is_item_recorded(key=(AVAILABILITY, container_content.container_no)),
                 ]
             ):
                 continue
@@ -746,8 +762,8 @@ class MainRoutingRule(BaseRoutingRule):
             else:
                 h_num -= 1
                 yield ContainerRoutingRule.build_request_option(
-                    search_no=search_no,
-                    task_id=task_id,
+                    search_nos=search_nos,
+                    task_ids=task_ids,
                     search_type=self._search_type,
                     container_index=container_content.index,
                     h_num=h_num,
@@ -757,6 +773,7 @@ class MainRoutingRule(BaseRoutingRule):
 
         # avoid this function not yield anything
         yield MblItem()
+        yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, cookies=cookies)
 
     @staticmethod
     def _is_search_no_invalid(response):
@@ -951,27 +968,35 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(
-        cls, search_no, task_id, search_type, container_index, h_num, cookies: Dict, under_line: bool = False
+        cls,
+        search_nos: List,
+        task_ids: List,
+        search_type,
+        container_index,
+        h_num,
+        cookies: Dict,
+        under_line: bool = False,
     ):
+        current_search_no = search_nos[0]
         url_plug_in = "/_" if under_line else ""
 
         form_data = {
             "selectedContainerIndex": f"{container_index}",
             "hNum": f"{h_num}",
-            "tempBLOrBKG": search_no,
+            "tempBLOrBKG": current_search_no,
             "numbers": [""] * 24,
         }
 
         if search_type == SHIPMENT_TYPE_MBL:
-            form_data["numbers"][0] = search_no
+            form_data["numbers"][0] = current_search_no
         else:
-            form_data["numbers"][18] = search_no
+            form_data["numbers"][18] = current_search_no
         body = urlencode(query=form_data)
 
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url=f"{BASE_URL}{url_plug_in}/ebiz/track_trace/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={search_no}",
+            url=f"{BASE_URL}{url_plug_in}/ebiz/track_trace/trackCTP_nTmp.jsp?US_IMPORT=Y&BNO_IMPORT={current_search_no}",
             headers={
                 "Connection": "keep-alive",
                 "Cache-Control": "max-age=0",
@@ -992,8 +1017,8 @@ class ContainerRoutingRule(BaseRoutingRule):
             },
             body=body,
             meta={
-                "search_no": search_no,
-                "task_id": task_id,
+                "search_nos": search_nos,
+                "task_ids": task_ids,
                 "container_index": container_index,
                 "cookies": cookies,
                 "under_line": under_line,
@@ -1005,20 +1030,22 @@ class ContainerRoutingRule(BaseRoutingRule):
         return f"{self.name}_{container_index}.html"
 
     def handle(self, response):
-        search_no = response.meta["search_no"]
-        task_id = response.meta["task_id"]
+        search_nos = response.meta["search_nos"]
+        task_ids = response.meta["task_ids"]
         container_index = response.meta["container_index"]
         under_line = response.meta["under_line"]
+        current_search_no = search_nos[0]
+        current_task_id = task_ids[0]
 
         container_info = self._extract_container_info(response=response, container_index=container_index)
         container_no = container_info["container_no"]
 
-        if not self._item_recorder_map[task_id].is_item_recorded(key=(CONTAINER, container_no)):
+        if not self._item_recorder_map[current_task_id].is_item_recorded(key=(CONTAINER, container_no)):
             tracking_results = self._extract_tracking_results(response=response)
             empty_return_location = self._extract_empty_return_location(response=response)
 
             container_item = ContainerItem(
-                task_id=task_id,
+                task_id=current_task_id,
                 container_key=container_no,
                 container_no=container_no,
                 last_free_day=container_info["lfd"],
@@ -1029,9 +1056,9 @@ class ContainerRoutingRule(BaseRoutingRule):
                 final_dest_eta=tracking_results["arrival.dest_estimate"],
                 ready_for_pick_up=None,
             )
-            self._item_recorder_map[task_id].record_item(key=(CONTAINER, container_no), item=container_item)
+            self._item_recorder_map[current_task_id].record_item(key=(CONTAINER, container_no), item=container_item)
 
-        if not self._item_recorder_map[task_id].is_item_recorded(key=(CONTAINER_STATUS, container_no)):
+        if not self._item_recorder_map[current_task_id].is_item_recorded(key=(CONTAINER_STATUS, container_no)):
             container_status = self._extract_container_status_list(response=response)
 
             container_status_items = []
@@ -1040,7 +1067,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
                 container_status_items.append(
                     ContainerStatusItem(
-                        task_id=task_id,
+                        task_id=current_task_id,
                         container_key=container_no,
                         description=container["status"],
                         local_date_time=container["date"],
@@ -1049,22 +1076,25 @@ class ContainerRoutingRule(BaseRoutingRule):
                     )
                 )
 
-            self._item_recorder_map[task_id].record_item(
+            self._item_recorder_map[current_task_id].record_item(
                 key=(CONTAINER_STATUS, container_no), items=container_status_items
             )
 
         # catch availability
-        if not self._item_recorder_map[task_id].is_item_recorded(key=(AVAILABILITY, container_no)):
+        if not self._item_recorder_map[current_task_id].is_item_recorded(key=(AVAILABILITY, container_no)):
             ava_exist = self._extract_availability_exist(response=response)
             if ava_exist:
                 yield AvailabilityRoutingRule.build_request_option(
-                    search_no=search_no, task_id=task_id, container_no=container_no, under_line=under_line
+                    search_no=current_search_no,
+                    task_id=current_task_id,
+                    container_no=container_no,
+                    under_line=under_line,
                 )
             else:
-                self._item_recorder_map[task_id].record_item(key=(AVAILABILITY, container_no))
+                self._item_recorder_map[current_task_id].record_item(key=(AVAILABILITY, container_no))
 
         # avoid this function not yield anything
-        yield MblItem(task_id=task_id)
+        yield MblItem(task_id=current_task_id)
 
     @staticmethod
     def _extract_tracking_results(response):
@@ -1126,10 +1156,10 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         container_status_list = []
         for index in table_locator.iter_left_header():
-            date = table.extract_cell('Date', index)
-            time = table.extract_cell('Time', index)
-            location = table.extract_cell('Location', index, extractor=IgnoreDashTdExtractor())
-            mode = table.extract_cell('Mode', index, extractor=IgnoreDashTdExtractor())
+            date = table.extract_cell("Date", index)
+            time = table.extract_cell("Time", index)
+            location = table.extract_cell("Location", index, extractor=IgnoreDashTdExtractor())
+            mode = table.extract_cell("Mode", index, extractor=IgnoreDashTdExtractor())
 
             container_status_list.append(
                 {
@@ -1246,9 +1276,47 @@ class AvailabilityRoutingRule(BaseRoutingRule):
         table_locator = TopHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
-        if table.has_header('STATUS', 0):
-            return table.extract_cell('STATUS', 0)
+        if table.has_header("STATUS", 0):
+            return table.extract_cell("STATUS", 0)
         return None
+
+
+# -------------------------------------------------------------------------------
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    name = "ROUTING"
+
+    def __init__(self, search_type):
+        self._search_type = search_type
+
+    @classmethod
+    def build_request_option(cls, search_nos: List, task_ids: List, cookies: Dict) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://www.google.com",
+            meta={
+                "search_nos": search_nos,
+                "task_ids": task_ids,
+                "cookies": cookies,
+            },
+        )
+
+    def handle(self, response):
+        task_ids = response.meta["task_ids"]
+        search_nos = response.meta["search_nos"]
+        cookies = response.meta["cookies"]
+
+        if len(search_nos) == 1 and len(task_ids) == 1:
+            return
+
+        task_ids = task_ids[1:]
+        search_nos = search_nos[1:]
+
+        yield MainRoutingRule.build_request_option(
+            search_nos=search_nos, task_ids=task_ids, search_type=self._search_type, cookies=cookies
+        )
 
 
 class RedBlueTdExtractor(BaseTableCellExtractor):
@@ -1263,9 +1331,9 @@ class RedBlueTdExtractor(BaseTableCellExtractor):
 
 class IgnoreDashTdExtractor(BaseTableCellExtractor):
     def extract(self, cell: Selector):
-        td_text = cell.css('::text').get()
-        text = td_text.strip() if td_text else ''
-        return text if text != '-' else None
+        td_text = cell.css("::text").get()
+        text = td_text.strip() if td_text else ""
+        return text if text != "-" else None
 
 
 class TopHeaderTableLocator(BaseTable):
@@ -1283,19 +1351,20 @@ class TopHeaderTableLocator(BaseTable):
     | Data    |         |     |         | <tr><td>
     +---------+---------+-----+---------+ </tbody>
     """
+
     def parse(self, table: Selector):
         top_header_list = []
 
-        for th in table.css('thead th'):
-            raw_top_header = th.css('::text').get()
-            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ''
+        for th in table.css("thead th"):
+            raw_top_header = th.css("::text").get()
+            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ""
             top_header_list.append(top_header)
             self._td_map[top_header] = []
 
-        data_tr_list = table.css('tbody tr')
+        data_tr_list = table.css("tbody tr")
         for index, tr in enumerate(data_tr_list):
             self._left_header_set.add(index)
-            for top, td in zip(top_header_list, tr.css('td')):
+            for top, td in zip(top_header_list, tr.css("td")):
                 self._td_map[top].append(td)
 
 
@@ -1303,18 +1372,18 @@ class TopLeftHeaderTableLocator(BaseTable):
     def parse(self, table: Selector):
         top_header_map = {}  # top_index: top_header
 
-        for index, th in enumerate(table.css('thead th')):
+        for index, th in enumerate(table.css("thead th")):
             if index == 0:
                 continue  # ignore top-left header
 
-            top_header = th.css('::text').get().strip()
+            top_header = th.css("::text").get().strip()
             top_header_map[index] = top_header
             self._td_map[top_header] = {}
 
-        for tr in table.css('tbody tr'):
-            td_list = list(tr.css('td'))
+        for tr in table.css("tbody tr"):
+            td_list = list(tr.css("td"))
 
-            left_header = td_list[0].css('::text').get().strip()
+            left_header = td_list[0].css("::text").get().strip()
             self._left_header_set.add(left_header)
 
             for top_index, td in enumerate(td_list[1:], start=1):
@@ -1324,10 +1393,10 @@ class TopLeftHeaderTableLocator(BaseTable):
 
 class LeftHeaderTableLocator(BaseTable):
     def parse(self, table: Selector):
-        for tr in table.css('tr'):
-            left_header = tr.css('th ::text').get().strip()
+        for tr in table.css("tr"):
+            left_header = tr.css("th ::text").get().strip()
             self._left_header_set.add(left_header)
 
-            for top_index, td in enumerate(tr.css('td')):
+            for top_index, td in enumerate(tr.css("td")):
                 td_dict = self._td_map.setdefault(top_index, {})
                 td_dict[left_header] = td
