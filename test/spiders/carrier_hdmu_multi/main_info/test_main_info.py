@@ -38,7 +38,7 @@ def test_main_routing_rule(sample_loader, sub, mbl_no):
     underline = sub == "08_2_data_not_found"
 
     option = MainRoutingRule.build_request_option(
-        search_no=mbl_no, task_id="1", search_type=SHIPMENT_TYPE_MBL, cookies={}, under_line=underline
+        search_nos=[mbl_no], task_ids=["1"], search_type=SHIPMENT_TYPE_MBL, cookies={}, under_line=underline
     )
 
     response = TextResponse(
@@ -70,7 +70,7 @@ def test_main_routing_rule_error(sample_loader, sub, mbl_no, expect_exception):
     html_text = sample_loader.read_file(sub, "sample.html")
 
     option = MainRoutingRule.build_request_option(
-        search_no=mbl_no, task_id="1", search_type=SHIPMENT_TYPE_MBL, cookies={}, under_line=True
+        search_nos=[mbl_no], task_ids=["1"], search_type=SHIPMENT_TYPE_MBL, cookies={}, under_line=True
     )
 
     response = TextResponse(
