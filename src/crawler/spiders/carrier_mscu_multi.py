@@ -34,13 +34,13 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         bill_rules = [
-            HomePageRoutingRule(),
+            HomePageRoutingRule(search_type=SHIPMENT_TYPE_MBL),
             MainRoutingRule(search_type=SHIPMENT_TYPE_MBL),
             NextRoundRoutingRule(),
         ]
 
         booking_rules = [
-            HomePageRoutingRule(),
+            HomePageRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
             MainRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
             NextRoundRoutingRule(),
         ]
@@ -99,6 +99,9 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
 class HomePageRoutingRule(BaseRoutingRule):
     name = "HOME_PAGE"
 
+    def __init__(self, search_type):
+        self._search_type = search_type
+
     @classmethod
     def build_request_option(cls, search_nos: List, task_ids: List) -> RequestOption:
         return RequestOption(
@@ -119,7 +122,11 @@ class HomePageRoutingRule(BaseRoutingRule):
         validation = response.css("input#__EVENTVALIDATION::attr(value)").get()
 
         yield MainRoutingRule.build_request_option(
-            search_nos=search_nos, view_state=view_state, validation=validation, task_ids=task_ids
+            search_nos=search_nos,
+            view_state=view_state,
+            validation=validation,
+            task_ids=task_ids,
+            search_type=self._search_type,
         )
 
 
@@ -133,12 +140,19 @@ class MainRoutingRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, search_nos: List, task_ids: List, view_state, validation) -> RequestOption:
+    def build_request_option(
+        cls, search_nos: List, task_ids: List, view_state, validation, search_type
+    ) -> RequestOption:
+        if search_type == SHIPMENT_TYPE_MBL:
+            drop_down_field = "containerbilloflading"
+        else:
+            drop_down_field = "bookingnumber"
         form_data = {
             "__EVENTTARGET": "ctl00$ctl00$plcMain$plcMain$TrackSearch$hlkSearch",
             "__EVENTVALIDATION": validation,
             "__VIEWSTATE": view_state,
             "ctl00$ctl00$plcMain$plcMain$TrackSearch$txtBolSearch$TextField": search_nos[0],
+            "ctl00$ctl00$plcMain$plcMain$TrackSearch$fldTrackingType$DropDownField": drop_down_field,
         }
 
         return RequestOption(
