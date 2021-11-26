@@ -563,7 +563,7 @@ class BookingRoutingRule(BaseRoutingRule):
 
 class WhlcContentGetter(PyppeteerContentGetter):
     def __init__(self, proxy_manager: ProxyManager = None):
-        super().__init__(proxy_manager, is_headless=False)
+        super().__init__(proxy_manager, is_headless=True)
         logging.disable(logging.DEBUG)
 
         self._type_select_num_map = {
