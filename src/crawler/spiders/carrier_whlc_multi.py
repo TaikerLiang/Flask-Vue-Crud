@@ -10,6 +10,7 @@ import scrapy
 from scrapy import Selector
 from pyppeteer.errors import TimeoutError, ElementHandleError, PageError
 
+from crawler.core.table import BaseTable, TableExtractor
 from crawler.core.defines import BaseContentGetter
 from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
 from crawler.core.pyppeteer import PyppeteerContentGetter
@@ -37,7 +38,6 @@ from crawler.core_carrier.exceptions import (
 )
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 WHLC_BASE_URL = "https://www.wanhai.com/views/cargoTrack/CargoTrack.xhtml"
 MAX_RETRY_COUNT = 3
@@ -124,7 +124,11 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
             )
         elif option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
-                url=option.url, headers=option.headers, cookies=option.cookies, meta=meta, dont_filter=True,
+                url=option.url,
+                headers=option.headers,
+                cookies=option.cookies,
+                meta=meta,
+                dont_filter=True,
             )
         else:
             raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
@@ -189,7 +193,9 @@ class MblRoutingRule(BaseRoutingRule):
             task_id = task_ids[index]
 
             yield ContainerItem(
-                task_id=task_id, container_key=container_no, container_no=container_no,
+                task_id=task_id,
+                container_key=container_no,
+                container_no=container_no,
             )
 
             # detail page
@@ -276,7 +282,7 @@ class MblRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
         return_list = []
-        for left in table_locator.iter_left_headers():
+        for left in table_locator.iter_left_header():
             container_no_text = table.extract_cell("Ctnr No.", left)
             container_no = self._parse_container_no_from(text=container_no_text)
 
@@ -396,13 +402,17 @@ class MblRoutingRule(BaseRoutingRule):
         table = TableExtractor(table_locator=table_locator)
 
         return_list = []
-        for left in table_locator.iter_left_headers():
+        for left in table_locator.iter_left_header():
             description = table.extract_cell(top="Status Name", left=left, extractor=DescriptionTdExtractor())
             local_date_time = table.extract_cell(top="Ctnr Date", left=left, extractor=LocalDateTimeTdExtractor())
             location_name = table.extract_cell(top="Ctnr Depot Name", left=left, extractor=LocationNameTdExtractor())
 
             return_list.append(
-                {"local_date_time": local_date_time, "description": description, "location_name": location_name,}
+                {
+                    "local_date_time": local_date_time,
+                    "description": description,
+                    "location_name": location_name,
+                }
             )
 
         return return_list
@@ -429,7 +439,10 @@ class BookingRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f"https://google.com",
-            meta={"search_nos": search_nos, "task_ids": task_ids,},
+            meta={
+                "search_nos": search_nos,
+                "task_ids": task_ids,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -489,7 +502,8 @@ class BookingRoutingRule(BaseRoutingRule):
         vessel_info = self.extract_vessel_info(Selector(text=response))
 
         yield MblItem(
-            task_id=task_id, booking_no=search_no,
+            task_id=task_id,
+            booking_no=search_no,
         )
 
         yield VesselItem(
@@ -533,7 +547,9 @@ class BookingRoutingRule(BaseRoutingRule):
             container_status_items = self.make_container_status_items(task_id, container_no, event_list)
 
             yield ContainerItem(
-                task_id=task_id, container_key=container_no, container_no=container_no,
+                task_id=task_id,
+                container_key=container_no,
+                container_no=container_no,
             )
 
             for item in container_status_items:
@@ -553,7 +569,7 @@ class BookingRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
         return_list = []
-        for left in table_locator.iter_left_headers():
+        for left in table_locator.iter_left_header():
             booking_no_text = table.extract_cell("Book No.", left)
             booking_no = self._parse_booking_no_from(text=booking_no_text)
 
@@ -561,7 +577,10 @@ class BookingRoutingRule(BaseRoutingRule):
             detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text)
 
             return_list.append(
-                {"booking_no": booking_no, "detail_j_idt": detail_j_idt,}
+                {
+                    "booking_no": booking_no,
+                    "detail_j_idt": detail_j_idt,
+                }
             )
 
         return return_list
@@ -603,8 +622,8 @@ class BookingRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table)
 
         return {
-            "vessel": table_locator.get_cell("Vessel Name"),
-            "voyage": table_locator.get_cell("Voyage"),
+            "vessel": table_locator.get_cell(left="Vessel Name"),
+            "voyage": table_locator.get_cell(left="Voyage"),
         }
 
     @staticmethod
@@ -616,12 +635,12 @@ class BookingRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table)
 
         return {
-            "por": table_locator.get_cell("Place of Receipt").replace("\xa0", " "),
-            "pol": table_locator.get_cell("Port of Loading").replace("\xa0", " "),
-            "pod": table_locator.get_cell("Port of Discharge").replace("\xa0", " "),
-            "place_of_deliv": table_locator.get_cell("Place of Delivery").replace("\xa0", " "),
-            "eta": table_locator.get_cell("Estimated Departure Date"),
-            "etd": table_locator.get_cell("Estimated Arrival Date"),
+            "por": table_locator.get_cell(left="Place of Receipt").replace("\xa0", " "),
+            "pol": table_locator.get_cell(left="Port of Loading").replace("\xa0", " "),
+            "pod": table_locator.get_cell(left="Port of Discharge").replace("\xa0", " "),
+            "place_of_deliv": table_locator.get_cell(left="Place of Delivery").replace("\xa0", " "),
+            "eta": table_locator.get_cell(left="Estimated Departure Date"),
+            "etd": table_locator.get_cell(left="Estimated Arrival Date"),
         }
 
     @staticmethod
@@ -661,13 +680,17 @@ class BookingRoutingRule(BaseRoutingRule):
         table = TableExtractor(table_locator=table_locator)
 
         return_list = []
-        for left in table_locator.iter_left_headers():
+        for left in table_locator.iter_left_header():
             description = table.extract_cell(top="Status Name", left=left, extractor=DescriptionTdExtractor())
             local_date_time = table.extract_cell(top="Ctnr Date", left=left, extractor=LocalDateTimeTdExtractor())
             location_name = table.extract_cell(top="Ctnr Depot Name", left=left, extractor=LocationNameTdExtractor())
 
             return_list.append(
-                {"local_date_time": local_date_time, "description": description, "location_name": location_name,}
+                {
+                    "local_date_time": local_date_time,
+                    "description": description,
+                    "location_name": location_name,
+                }
             )
 
         return return_list
@@ -748,151 +771,85 @@ class WhlcContentGetter(PyppeteerContentGetter):
         asyncio.get_event_loop().run_until_complete(self.switch_to_last())
 
 
-class BookingBasicTableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = {}
-
+class BookingBasicTableLocator(BaseTable):
     def parse(self, table: Selector, numbers: int = 1):
-        tr_list = table.css("tbody tr")
+        title_list = [th.css("strong::text").get().strip() for th in table.css("tbody th")]
+        data_td_list = table.css("tbody tr td")
 
-        for tr in tr_list:
-            # the value will be emtpy
-            titles = tr.css("th")
-            values = tr.css("td")
+        for title, data_td in zip(title_list, data_td_list):
+            self.add_left_header_set(title)
 
-            for i in range(len(titles)):
-                title = titles[i].css("strong::text").get().strip()
-                value = (values[i].css("::text").get() or "").strip()
-                self._td_map[title] = value
-
-    def get_cell(self, top, left=None) -> Selector:
-        return self._td_map[top]
-
-    def has_header(self, top=None, left=None) -> bool:
-        pass
+            data = (data_td.css("::text").get() or "").strip()
+            self.add_td_map(data, top=0, left=title)
 
 
-class BookingVesselTableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = {}
-
+class BookingVesselTableLocator(BaseTable):
     def parse(self, table: Selector, numbers: int = 1):
-        tr_list = table.css("tbody tr")
+        title_list = [th.css("strong::text").get().strip() for th in table.css("tbody th")]
+        data_td_list = table.css("tbody tr td")
 
-        for tr in tr_list:
-            # the value will be emtpy
-            titles = tr.css("th")
-            values = tr.css("td")
+        for title, data_td in zip(title_list, data_td_list):
+            self.add_left_header_set(title)
 
-            for i in range(len(titles)):
-                title = titles[i].css("strong::text").get().strip()
-                value = (values[i].css("::text").get() or "").strip()
-                self._td_map[title] = value
-
-    def get_cell(self, top, left=None) -> Selector:
-        return self._td_map[top]
-
-    def has_header(self, top=None, left=None) -> bool:
-        pass
+            data = (data_td.css("::text").get() or "").strip()
+            self.add_td_map(data, top=0, left=title)
 
 
-class BookingContainerListTableLocator(BaseTableLocator):
+class BookingContainerListTableLocator(BaseTable):
 
     TR_TITLE_INDEX = 0
     TR_DATA_BEGIN_INDEX = 1
-
-    def __init__(self):
-        self._td_map = []
-        self._data_len = 0
 
     def parse(self, table: Selector):
         title_tr = table.css("tbody tr")[self.TR_TITLE_INDEX]
         data_tr_list = table.css("tbody tr")[self.TR_DATA_BEGIN_INDEX :]
 
-        title_text_list = title_tr.css("th strong::text").getall()
+        title_text_list = [title.strip() for title in title_tr.css("th strong::text").getall()]
         title_text_list[0] = "ID"
 
-        for data_tr in data_tr_list:
-            if len(data_tr.css("td")) == 1:
+        for index, data_tr in enumerate(data_tr_list):
+            data_td_list = data_tr.css("td")
+            if len(data_td_list) == 1:
                 break
-            row = {}
-            for title_index, title_text in enumerate(title_text_list):
-                title_text = title_text.strip()
-                container_no = data_tr.css("td a::text").get().strip()
-                tds = data_tr.css("td")
-                row[title_text] = (tds[title_index].css("::text").get() or "").strip()
-                if title_text == "Ctnr No.":
-                    row[title_text] = container_no
 
-            self._td_map.append(row)
+            self.add_left_header_set(index)
+
+            for title, data_td in zip(title_text_list, data_td_list):
+                data = (data_td.css("::text").get() or "").strip()
+                if title == "Ctnr No.":
+                    data = data_td.css("a::text").get().strip()
+                self.add_td_map(data, top=title, left=index)
 
     def get_container_no_list(self) -> List:
-        return [row["Ctnr No."] for row in self._td_map]
-
-    def get_cell(self, top, left) -> scrapy.Selector:
-        try:
-            return self._td_map[top][left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def iter_left_headers(self):
-        for index in range(self._data_len):
-            yield index
+        return [self.get_cell(top="Ctnr No.", left=i) for i in self.iter_left_header()]
 
 
-class ContainerListTableLocator(BaseTableLocator):
+class ContainerListTableLocator(BaseTable):
     TR_TITLE_INDEX = 0
     TR_DATA_BEGIN_INDEX = 1
 
-    def __init__(self):
-        self._td_map = {}
-        self._data_len = 0
-
     def parse(self, table: Selector):
         title_tr = table.css("tr")[self.TR_TITLE_INDEX]
+        title_text_list = [title.strip() for title in title_tr.css("th::text").getall()]
         data_tr_list = table.css("tr")[self.TR_DATA_BEGIN_INDEX :]
 
-        title_text_list = title_tr.css("th::text").getall()
+        for index, data_tr in enumerate(data_tr_list):
+            self.add_left_header_set(index)
 
-        for title_index, title_text in enumerate(title_text_list):
-            data_index = title_index
-
-            title_text = title_text.strip()
-            self._td_map[title_text] = []
-
-            for data_tr in data_tr_list:
-                data_td = data_tr.css("td")[data_index]
-
-                self._td_map[title_text].append(data_td)
-
-        first_title_text = title_text_list[0]
-        self._data_len = len(self._td_map[first_title_text])
-
-    def get_cell(self, top, left) -> scrapy.Selector:
-        try:
-            return self._td_map[top][left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def iter_left_headers(self):
-        for index in range(self._data_len):
-            yield index
+            data_td_list = data_tr.css("td")
+            for title, data_td in zip(title_text_list, data_td_list):
+                self._td_map.setdefault(title, [])
+                self._td_map[title].append(data_td)
 
 
-class LocationLeftTableLocator(BaseTableLocator):
+class LocationLeftTableLocator(BaseTable):
     """
-        +------------------------------------------------+ <tbody>
-        | Title 1 | Data 1  | Data 2 | Title    | Data   | <tr>
-        +---------+---------+--------+----------+--------+
-        | Title 2 |         |        | Title    | Data   | <tr>
-        +---------+---------+--------+----------+--------+ </tbody>
-        (       only use here        )
+    +------------------------------------------------+ <tbody>
+    | Title 1 | Data 1  | Data 2 | Title    | Data   | <tr>
+    +---------+---------+--------+----------+--------+
+    | Title 2 |         |        | Title    | Data   | <tr>
+    +---------+---------+--------+----------+--------+ </tbody>
+    (       only use here        )
     """
 
     TR_TITLE_INDEX_BEGIN = 1
@@ -900,42 +857,27 @@ class LocationLeftTableLocator(BaseTableLocator):
     TD_DATA_INDEX_BEGIN = 0
     TD_DATA_INDEX_END = 2
 
-    def __init__(self):
-        self._td_map = {}
-        self._left_header_set = set()
-
     def parse(self, table: Selector):
-        top_index_set = set()
         tr_list = table.css("tr")[self.TR_TITLE_INDEX_BEGIN :]
 
         for tr in tr_list:
-            left_header = tr.css("th::text")[self.TH_TITLE_INDEX].get().strip()
-            self._left_header_set.add(left_header)
+            title = tr.css("th::text")[self.TH_TITLE_INDEX].get().strip()
+            self.add_left_header_set(title)
 
             data_td_list = tr.css("td")[self.TD_DATA_INDEX_BEGIN : self.TD_DATA_INDEX_END]
             for top_index, td in enumerate(data_td_list):
-                top_index_set.add(top_index)
                 td_dict = self._td_map.setdefault(top_index, {})
-                td_dict[left_header] = td
-
-    def get_cell(self, top, left) -> Selector:
-        try:
-            return self._td_map[top][left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top is None) and (left in self._left_header_set)
+                td_dict[title] = td
 
 
-class DateLeftTableLocator(BaseTableLocator):
+class DateLeftTableLocator(BaseTable):
     """
-        +------------------------------------------------+ <tbody>
-        | Title   | Data    | Data   | Title 1  | Data   | <tr>
-        +---------+---------+--------+----------+--------+
-        | Title   |         |        | Title 2  | Data   | <tr>
-        +---------+---------+--------+----------+--------+ </tbody>
-                                     (   only use here   )
+    +------------------------------------------------+ <tbody>
+    | Title   | Data    | Data   | Title 1  | Data   | <tr>
+    +---------+---------+--------+----------+--------+
+    | Title   |         |        | Title 2  | Data   | <tr>
+    +---------+---------+--------+----------+--------+ </tbody>
+                                 (   only use here   )
     """
 
     TR_TITLE_INDEX_BEGIN = 1
@@ -943,87 +885,50 @@ class DateLeftTableLocator(BaseTableLocator):
     TD_DATA_INDEX_BEGIN = 2
     TD_DATA_INDEX_END = 3
 
-    def __init__(self):
-        self._td_map = {}
-        self._left_header_set = set()
-
     def parse(self, table: Selector):
-        top_index_set = set()
         tr_list = table.css("tr")[self.TR_TITLE_INDEX_BEGIN :]
 
         for tr in tr_list:
-            left_header = tr.css("th::text")[self.TH_TITLE_INDEX].get().strip()
-            self._left_header_set.add(left_header)
+            title = tr.css("th::text")[self.TH_TITLE_INDEX].get().strip()
+            self.add_left_header_set(title)
 
             data_td_list = tr.css("td")[self.TD_DATA_INDEX_BEGIN : self.TD_DATA_INDEX_END]
             for top_index, td in enumerate(data_td_list):
-                top_index_set.add(top_index)
                 td_dict = self._td_map.setdefault(top_index, {})
-                td_dict[left_header] = td
-
-    def get_cell(self, top, left) -> Selector:
-        try:
-            return self._td_map[top][left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top is None) and (left in self._left_header_set)
+                td_dict[title] = td
 
 
-class ContainerStatusTableLocator(BaseTableLocator):
+class ContainerStatusTableLocator(BaseTable):
     """
-        +-----------------------------------+ <tbody>
-        | Title 1 | Title 2 | ... | Title N | <tr>
-        +---------+---------+-----+---------+
-        | Data    |         |     |         | <tr>
-        +---------+---------+-----+---------+
-        | Data    |         |     |         | <tr>
-        +---------+---------+-----+---------+
-        | ...     |         |     |         | <tr>
-        +---------+---------+-----+---------+
-        | Data    |         |     |         | <tr>
-        +---------+---------+-----+---------+ </tbody>
+    +-----------------------------------+ <tbody>
+    | Title 1 | Title 2 | ... | Title N | <tr>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr>
+    +---------+---------+-----+---------+
+    | ...     |         |     |         | <tr>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr>
+    +---------+---------+-----+---------+ </tbody>
     """
 
     TR_TITLE_INDEX = 0
     TR_DATA_BEGIN_INDEX = 1
 
-    def __init__(self):
-        self._td_map = {}
-        self._data_len = 0
-
     def parse(self, table: Selector):
         title_tr = table.css("tr")[self.TR_TITLE_INDEX]
         data_tr_list = table.css("tr")[self.TR_DATA_BEGIN_INDEX :]
 
-        title_text_list = title_tr.css("th::text").getall()
+        title_text_list = [title.strip() for title in title_tr.css("th::text").getall()]
 
-        for title_index, title_text in enumerate(title_text_list):
-            data_index = title_index
+        for index, data_tr in enumerate(data_tr_list):
+            self.add_left_header_set(index)
 
-            title_text = title_text.strip()
-            self._td_map[title_text] = []
-
-            for data_tr in data_tr_list:
-                data_td = data_tr.css("td")[data_index]
-
-                self._td_map[title_text].append(data_td)
-
-        self._data_len = len(data_tr_list)
-
-    def get_cell(self, top, left) -> Selector:
-        try:
-            return self._td_map[top][left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def iter_left_headers(self):
-        for index in range(self._data_len):
-            yield index
+            data_td_list = data_tr.css("td")
+            for title, data_td in zip(title_text_list, data_td_list):
+                self._td_map.setdefault(title, [])
+                self._td_map[title].append(data_td)
 
 
 class DescriptionTdExtractor(BaseTableCellExtractor):
