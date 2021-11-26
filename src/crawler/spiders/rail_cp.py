@@ -10,7 +10,7 @@ from crawler.core_rail.exceptions import DriverMaxRetryError, RailInvalidContain
 from crawler.core_rail.items import BaseRailItem, RailItem, DebugItem, InvalidContainerNoItem
 from crawler.core_rail.request_helpers import RequestOption
 from crawler.core_rail.rules import RuleManager, BaseRoutingRule
-from selenium import webdriver
+from crawler.core.selenium import ChromeContentGetter
 from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
@@ -83,11 +83,20 @@ class RailCPSpider(BaseMultiRailSpider):
 
         if option.method == RequestOption.METHOD_POST_BODY:
             return scrapy.Request(
-                method="POST", url=option.url, headers=option.headers, body=option.body, meta=meta, dont_filter=True,
+                method="POST",
+                url=option.url,
+                headers=option.headers,
+                body=option.body,
+                meta=meta,
+                dont_filter=True,
             )
 
         elif option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(url=option.url, meta=meta, dont_filter=True,)
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+                dont_filter=True,
+            )
 
         else:
             raise KeyError()
@@ -104,7 +113,10 @@ class ContainerRoutingRule(BaseRoutingRule):
         url = "https://www.google.com"
 
         return RequestOption(
-            rule_name=cls.name, method=RequestOption.METHOD_GET, url=url, meta={"container_nos": container_nos},
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=url,
+            meta={"container_nos": container_nos},
         )
 
     def get_save_name(self, response) -> str:
@@ -321,30 +333,12 @@ class ContainerInfoTableParser:
         return content_list
 
 
-class ContentGetter:
+class ContentGetter(ChromeContentGetter):
     USER_NAME = "gftracking"
     PASS_WORD = "Hardcore2021"
 
     def __init__(self):
-        options = webdriver.ChromeOptions()
-        options.add_argument("--disable-extensions")
-        options.add_argument("--disable-notifications")
-        options.add_argument("--headless")
-        options.add_argument("--enable-javascript")
-        options.add_argument("--disable-gpu")
-        options.add_argument(
-            f"user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
-            f"Chrome/88.0.4324.96 Safari/537.36"
-        )
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--no-sandbox")
-        options.add_argument("window-size=1200x600")
-        options.add_argument("--disable-blink-features=AutomationControlled")
-        options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        options.add_experimental_option("useAutomationExtension", False)
-
-        self._driver = webdriver.Chrome(options=options)
-        # self._driver.get('https://www8.cpr.ca/f5idp/saml/idp/profile/redirectorpost/sso')
+        super(ContentGetter, self).__init__()
         self._driver.get("https://www8.cpr.ca/cx/sap/bc/ui5_ui5/ui2/ushell/shells/abap/Fiorilaunchpad.html?#Shell-home")
         self._is_first = True
 
@@ -428,9 +422,6 @@ class ContentGetter:
         container_no_holder = driver.find_element_by_css_selector('div[id^="__data"] > a')
         return len(container_no_holder.text) != 0
 
-    def get_page_source(self):
-        return self._driver.page_source
-
     def click_last_row(self):
         last_td = self._driver.find_element_by_css_selector("div > table[id$=-table-fixed] tr.sapUiTableLastRow td")
         last_td.click()
@@ -440,6 +431,3 @@ class ContentGetter:
         actions.send_keys(Keys.DOWN)
         actions.perform()
         time.sleep(3)
-
-    def quit(self):
-        self._driver.quit()
