@@ -15,7 +15,7 @@ from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
-from crawler.extractors.table_extractors import BaseTableLocator
+from crawler.core.table import BaseTable
 
 
 @dataclasses.dataclass
@@ -28,7 +28,12 @@ class CompanyInfo:
 
 class TtiWutShareSpider(BaseMultiTerminalSpider):
     name = ""
-    company_info = CompanyInfo(url="", upper_short="", email="", password="",)
+    company_info = CompanyInfo(
+        url="",
+        upper_short="",
+        email="",
+        password="",
+    )
 
     def __init__(self, *args, **kwargs):
         super(TtiWutShareSpider, self).__init__(*args, **kwargs)
@@ -73,10 +78,17 @@ class TtiWutShareSpider(BaseMultiTerminalSpider):
         }
 
         if option.method == RequestOption.METHOD_POST_FORM:
-            return scrapy.FormRequest(url=option.url, formdata=option.form_data, meta=meta,)
+            return scrapy.FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+                meta=meta,
+            )
 
         elif option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(url=option.url, meta=meta,)
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
 
         else:
             raise RuntimeError()
@@ -92,7 +104,10 @@ class MainRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
-            meta={"container_no_list": container_no_list, "company_info": company_info,},
+            meta={
+                "container_no_list": container_no_list,
+                "company_info": company_info,
+            },
         )
 
     def handle(self, response):
@@ -113,7 +128,9 @@ class MainRoutingRule(BaseRoutingRule):
     def _handle_response(cls, response, container_no_list):
         containers = cls._extract_container_info(response, len(container_no_list))
         for container in containers:
-            yield TerminalItem(**container,)
+            yield TerminalItem(
+                **container,
+            )
 
     @staticmethod
     def _extract_container_info(response: Selector, numbers: int):
@@ -197,11 +214,9 @@ class ContentGetter(ChromeContentGetter):
         self._driver.quit()
 
 
-class ContainerTableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = []
-
+class ContainerTableLocator(BaseTable):
     def parse(self, table: Selector, numbers: int = 1):
+        self._left_header_set = set(range(numbers))
         titles_ths = table.css("th")
         title_list = []
         for title in titles_ths:
@@ -222,17 +237,12 @@ class ContainerTableLocator(BaseTableLocator):
             if not is_append:
                 continue
 
-            row = {}
             for title_index, title in enumerate(title_list):
-                row[title] = data_list[title_index]
+                self._td_map.setdefault(title, [])
+                self._td_map[title].append(data_list[title_index])
 
-            self._td_map.append(row)
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def get_cell(self, top, left=0) -> scrapy.Selector:
-        try:
-            return self._td_map[left][top]
-        except (KeyError, IndexError) as err:
+    def get_cell(self, top=0, left=0) -> scrapy.Selector:
+        if self.has_header(top, left):
+            return self._td_map[top][left]
+        else:
             return None
