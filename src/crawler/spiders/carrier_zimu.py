@@ -26,7 +26,9 @@ from crawler.core_carrier.items import (
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor, BaseTableCellExtractor
-from crawler.extractors.table_extractors import TopHeaderTableLocator, TableExtractor
+from crawler.core.table import TableExtractor, BaseTable
+from crawler.core.pyppeteer import PyppeteerContentGetter
+from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
 
 
 class CarrierZimuSpider(BaseCarrierSpider):
@@ -76,68 +78,36 @@ class CarrierZimuSpider(BaseCarrierSpider):
 # ---------------------------------------------------------------------------------
 
 
-class ContentGetter:
-    def __init__(self):
-        logging.disable(logging.DEBUG)
-
-    async def launch_browser(self):
-        browser_args = [
-            "--no-sandbox",
-            "--disable-gpu",
-            "--disable-blink-features",
-            "--disable-infobars",
-            "--window-size=1920,1080",
-        ]
-
-        self._browser = await launch(headless=True, slowMo=20, args=browser_args)
-        page = await self._browser.newPage()
-
-        await page.setUserAgent(self._random_choose_user_agent())
-
-        return page
+class ContentGetter(PyppeteerContentGetter):
+    def __init__(self, proxy_manager: ProxyManager = None):
+        super().__init__(proxy_manager, is_headless=False)
+        pyppeteer_logger = logging.getLogger("pyppeteer")
+        pyppeteer_logger.setLevel(logging.WARNING)
 
     async def search(self, mbl_no: str):
-        page = await self.launch_browser()
-        await page.goto("https://www.zim.com/tools/track-a-shipment")
+        await self.page.goto("https://www.zim.com/tools/track-a-shipment")
 
         accept_btn = "button#onetrust-accept-btn-handler"
         try:
-            await page.waitForSelector(accept_btn, timeout=10000)
+            await self.page.waitForSelector(accept_btn, timeout=10000)
             await asyncio.sleep(1)
         except TimeoutError:
             raise LoadWebsiteTimeOutFatal()
 
-        await page.click(accept_btn)
+        await self.page.click(accept_btn)
 
         await asyncio.sleep(1)
-        await page.type("input[name='consnumber']", text=mbl_no)
-        await page.click("input[value='Track Shipment']")
+        await self.page.type("input[name='consnumber']", text=mbl_no)
+        await self.page.click("input[value='Track Shipment']")
 
         try:
-            await page.waitForSelector("div[class='bottom row']", timeout=20000)
+            await self.page.waitForSelector("div[class='bottom row']", timeout=20000)
         except TimeoutError:
             raise LoadWebsiteTimeOutFatal()
 
-        page_source = await page.content()
-        await self._browser.close()
+        page_source = await self.page.content()
 
         return page_source
-
-    @staticmethod
-    def _random_choose_user_agent():
-        user_agents = [
-            (
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
-            ),
-            (
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
-            ),
-            (
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
-            ),
-        ]
-
-        return random.choice(user_agents)
 
 
 @dataclasses.dataclass
@@ -405,7 +375,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         table_css_query = f"div[data-cont-id='{container_no} '] + div.slide table"
         table_selector = response.css(table_css_query)
 
-        table_locator = TopHeaderTableLocator()
+        table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table_selector)
         table_extractor = TableExtractor(table_locator=table_locator)
         first_text_td_extractor = FirstTextTdExtractor()
@@ -458,6 +428,23 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
 
 # ------------------------------------------------------------------------
+
+
+class ContainerStatusTableLocator(BaseTable):
+    def parse(self, table: scrapy.Selector):
+        top_header_list = []
+
+        for th in table.css("thead th"):
+            raw_top_header = th.css("::text").get()
+            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ""
+            top_header_list.append(top_header)
+            self._td_map[top_header] = []
+
+        data_tr_list = table.css("tbody tr")
+        for index, tr in enumerate(data_tr_list):
+            self._left_header_set.add(index)
+            for top, td in zip(top_header_list, tr.css("td")):
+                self._td_map[top].append(td)
 
 
 class AllTextCellExtractor(BaseTableCellExtractor):
