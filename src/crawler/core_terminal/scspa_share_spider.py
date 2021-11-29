@@ -2,7 +2,6 @@ import time
 from typing import List
 
 import scrapy
-from scrapy.http import TextResponse
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
@@ -22,8 +21,10 @@ class ScspaShareSpider(BaseMultiTerminalSpider):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self._content_getter = ContentGetter()
+
         rules = [
-            ContainerRoutingRule(),
+            ContainerRoutingRule(content_getter=self._content_getter),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -75,6 +76,9 @@ class ScspaShareSpider(BaseMultiTerminalSpider):
 class ContainerRoutingRule(BaseRoutingRule):
     name = "Container"
 
+    def __init__(self, content_getter: ChromeContentGetter):
+        self._content_getter = content_getter
+
     @classmethod
     def build_request_option(cls, container_no_list: List[str]) -> RequestOption:
         return RequestOption(
@@ -90,9 +94,15 @@ class ContainerRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        getter = ContentGetter()
-        content_table = getter.get_content(response.meta.get("container_no_list"))
+        container_no_list = response.meta["container_no_list"]
+        res = self._content_getter._search_and_return(container_no_list=container_no_list)
 
+        for item in self._handle_response(response=res):
+            yield item
+
+    @classmethod
+    def _handle_response(cls, response):
+        content_table = cls._extract_content_table(response)
         for content in content_table:
             yield TerminalItem(
                 container_no=content[0],
@@ -101,20 +111,23 @@ class ContainerRoutingRule(BaseRoutingRule):
                 vessel=content[2],
             )
 
+    @staticmethod
+    def _extract_content_table(page_source):
+        content_table = []
+        response = scrapy.Selector(text=page_source)
+
+        table = response.xpath("(//table[contains(@class, 'x-grid-table')])[2]")
+        tr_list = table.xpath("./tbody/tr")[1:]
+        for tr in tr_list:
+            content_table.append(tr.xpath("./td/div/text()").getall())
+
+        return content_table
+
 
 class ContentGetter(ChromeContentGetter):
     USERNAME = "tk@hardcoretech.co"
     PASSWORD = "Hardc0re"
     URL = "https://goport.scspa.com/scspa/index"
-
-    def get_content(self, container_no_list):
-        self.login()
-        self._search(container_no_list)
-        # check the result popup is appeared
-        WebDriverWait(self._driver, 20).until(
-            EC.presence_of_element_located((By.XPATH, "//div[@id='quickInptPtrWinPnlWinId']"))
-        )
-        return self._extract(self._driver.page_source)
 
     def login(self):
         self._driver.get(self.URL)
@@ -128,26 +141,17 @@ class ContentGetter(ChromeContentGetter):
         button = button.find_element(By.CSS_SELECTOR, "button")
         button.click()
 
-    def _search(self, container_no_list):
+    def _search_and_return(self, container_no_list):
+        self.login()
         self._close_popup()
         self._to_search_page()
         self._input_search_target(container_no_list)
 
-    def _extract(self, page_source):
-        content_table = []
-        response = TextResponse(
-            url=self._driver.current_url,
-            body=page_source,
-            encoding="utf-8",
+        # check the result popup is appeared
+        WebDriverWait(self._driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, "//div[@id='quickInptPtrWinPnlWinId']"))
         )
-
-        table = response.xpath("(//table[contains(@class, 'x-grid-table')])[2]")
-        tr_list = table.xpath("./tbody/tr")[1:]
-        for tr in tr_list:
-            content = [ele.strip() for ele in tr.xpath("./td/div/text()").getall()]
-            content_table.append(tr.xpath("./td/div/text()").getall())
-
-        return content_table
+        return self.get_page_source()
 
     def _close_popup(self):
         while True:
