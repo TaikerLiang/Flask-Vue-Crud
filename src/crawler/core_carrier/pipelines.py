@@ -23,7 +23,7 @@ class BaseItemPipeline:
         # edi client setting
         user = os.environ.get("EDI_ENGINE_USER")
         token = os.environ.get("EDI_ENGINE_TOKEN")
-        url = os.environ.get("EDI_ENGINE_URL")
+        url = (os.environ.get("EDI_ENGINE_BASE_URL") or "") + "tracking-carrier/local/"
         self.edi_client = EdiClientService(url=url, edi_user=user, edi_token=token)
 
     def handle_err_result(self, collector, task_id: int, result: Dict):

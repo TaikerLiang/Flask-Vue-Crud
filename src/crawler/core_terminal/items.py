@@ -63,14 +63,16 @@ class DebugItem(BaseTerminalItem):
     info = scrapy.Field()
 
 
-class InvalidContainerNoItem(BaseTerminalItem):
+class InvalidItem(BaseTerminalItem):
     task_id = scrapy.Field()
     container_no = scrapy.Field()
 
 
-class InvalidDataFieldItem(BaseTerminalItem):
-    task_id = scrapy.Field()
-    container_no = scrapy.Field()
+class InvalidContainerNoItem(InvalidItem):
+    pass
+
+
+class InvalidDataFieldItem(InvalidItem):
     valid_data_dict = scrapy.Field()
     invalid_data_dict = scrapy.Field()
 

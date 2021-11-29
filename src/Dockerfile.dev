@@ -100,7 +100,7 @@ RUN unzip /tmp/chrome-linux.zip -d ~/.local/share/pyppeteer/local-chromium/58842
 ENV OPENSSL_CONF=/etc/ssl/
 ENV TERM xterm
 ENV SCRAPY_SETTINGS_MODULE crawler.settings
-ENV EDI_ENGINE_URL http://tracking.hardcoretech.co:18110/api/tracking-carrier/local/
+ENV EDI_ENGINE_BASE_URL http://tracking.hardcoretech.co:18110/api/
 ENV EDI_ENGINE_USER tracking-local
 ENV EDI_ENGINE_TOKEN LK1YG0FD70TPKCG76RMSCO9HLMK7J23R5ZEJX1VM3607
 ENV EDI_HOST tracking.hardcoretech.co
