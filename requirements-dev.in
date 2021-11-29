@@ -7,3 +7,4 @@ pre-commit
 pip-tools
 python-dotenv
 Pillow
+shub==2.10.0

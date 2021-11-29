@@ -52,15 +52,14 @@ pyenv local [PYTHON-VENV-NAME]
 ### Install Python Packages
 
 ```bash
-pip install -U pip setuptools
-pip install -e '.[dev]'
+pip install -r requirements-dev.txt
 ```
 
 
 ## Run Tests
 
-```bash
-epsc test
+```
+pytest -x test
 ```
 
 
