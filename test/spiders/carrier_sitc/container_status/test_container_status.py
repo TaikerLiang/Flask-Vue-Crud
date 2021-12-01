@@ -17,24 +17,24 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub,mbl_no,container_no',
+    "sub,mbl_no,container_no",
     [
-        ('01_basic', 'SITDSHSGZ02389', 'TEXU1590148'),
+        ("01_basic", "SITDSHSGZ02389", "TEXU1590148"),
     ],
 )
 def test_container_status_routing_rule(sub, mbl_no, container_no, sample_loader):
-    html_text = sample_loader.read_file(sub, 'sample.json')
+    html_text = sample_loader.read_file(sub, "sample.json")
 
-    option = ContainerStatusRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
+    option = ContainerStatusRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no, token="")
 
     response = TextResponse(
         url=option.url,
         body=html_text,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=option.url,
             meta={
-                'container_key': container_no,
+                "container_key": container_no,
             },
         ),
     )
@@ -42,5 +42,5 @@ def test_container_status_routing_rule(sub, mbl_no, container_no, sample_loader)
     routing_rule = ContainerStatusRoutingRule()
     results = list(routing_rule.handle(response=response))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)

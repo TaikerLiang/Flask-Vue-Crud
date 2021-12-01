@@ -24,7 +24,6 @@ from crawler.core_carrier.exceptions import (
     SuspiciousOperationError,
 )
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
-from crawler.extractors.table_extractors import HeaderMismatchError, BaseTableLocator
 from crawler.services.captcha_service import CaptchaSolverService
 
 SITC_BASE_URL = "https://api.sitcline.com"
@@ -37,7 +36,9 @@ class CarrierSitcSpider(BaseCarrierSpider):
         super(CarrierSitcSpider, self).__init__(*args, **kwargs)
 
         rules = [
-            CaptchaRoutingRule(),
+            Captcha1RoutingRule(),
+            LoginRoutingRule(),
+            Captcha2RoutingRule(),
             BasicInfoRoutingRule(),
             ContainerStatusRoutingRule(),
         ]
@@ -45,13 +46,19 @@ class CarrierSitcSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        request_option = CaptchaRoutingRule.build_request_option(mbl_no=self.mbl_no,)
+        request_option = Captcha1RoutingRule.build_request_option(
+            mbl_no=self.mbl_no,
+        )
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
+
+        if routing_rule.name != "CAPTCHA1" and routing_rule.name != "CAPTCHA2":
+            save_name = routing_rule.get_save_name(response=response)
+            self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
@@ -65,18 +72,28 @@ class CarrierSitcSpider(BaseCarrierSpider):
         meta = {RuleManager.META_CARRIER_CORE_RULE_NAME: option.rule_name, **option.meta}
 
         if option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(url=option.url, meta=meta,)
+            return scrapy.Request(url=option.url, meta=meta, headers=option.headers)
         elif option.method == RequestOption.METHOD_POST_FORM:
-            return scrapy.FormRequest(url=option.url, formdata=option.form_data, meta=meta,)
+            return scrapy.FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+                meta=meta,
+            )
         elif option.method == RequestOption.METHOD_POST_BODY:
-            return scrapy.Request(method="POST", url=option.url, headers=option.headers, body=option.body, meta=meta,)
+            return scrapy.Request(
+                method="POST",
+                url=option.url,
+                headers=option.headers,
+                body=option.body,
+                meta=meta,
+            )
         else:
             raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
 
 # -------------------------------------------------------------------------------
-class CaptchaRoutingRule(BaseRoutingRule):
-    name = "CAPTCHA"
+class Captcha1RoutingRule(BaseRoutingRule):
+    name = "CAPTCHA1"
 
     @classmethod
     def build_request_option(cls, mbl_no) -> RequestOption:
@@ -87,7 +104,10 @@ class CaptchaRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_GET,
             url=f"{SITC_BASE_URL}/code?randomStr={rand_str}",
             headers={"Content-Type": "application/text"},
-            meta={"mbl_no": mbl_no, "rand_str": rand_str,},
+            meta={
+                "mbl_no": mbl_no,
+                "rand_str": rand_str,
+            },
         )
 
     def handle(self, response):
@@ -96,20 +116,32 @@ class CaptchaRoutingRule(BaseRoutingRule):
         captcha_solver = CaptchaSolverService()
         captcha_code = captcha_solver.solve_image(image_content=response.body)
 
-        yield BasicInfoRoutingRule.build_request_option(mbl_no=mbl_no, rand_str=rand_str, captcha_code=captcha_code)
+        yield LoginRoutingRule.build_request_option(mbl_no=mbl_no, rand_str=rand_str, captcha_code=captcha_code)
 
 
-class BasicInfoRoutingRule(BaseRoutingRule):
-    name = "BASIC_INFO"
+# -------------------------------------------------------------------------------
+
+
+class LoginRoutingRule(BaseRoutingRule):
+    name = "LOGIN"
+    USERNAME = "GoFreight"
+    PASSWORD = "hardcore@2021"
 
     @classmethod
     def build_request_option(cls, mbl_no: str, rand_str: str, captcha_code: str) -> RequestOption:
+        url = (
+            f"{SITC_BASE_URL}/auth/oauth/token?username={cls.USERNAME}&password=mnKt%2B%2BJ6mBIizkv7%2BhnfyQ%3D%3D"
+            f"&randomStr={rand_str}&code={captcha_code}&grant_type=password&scope=server"
+        )
+
         return RequestOption(
+            method=RequestOption.METHOD_GET,
             rule_name=cls.name,
-            method=RequestOption.METHOD_POST_BODY,
-            url=f"{SITC_BASE_URL}/doc/cargoTrack/search?blNo={mbl_no}&containerNo=&code={captcha_code}&randomStr={rand_str}",
-            headers={"Content-Type": "application/json"},
-            meta={"mbl_no": mbl_no,},
+            url=url,
+            headers={"Accept": "application/json", "TenantId": "2", "authorization": "Basic cGlnOnBpZw=="},
+            meta={
+                "mbl_no": mbl_no,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -117,6 +149,66 @@ class BasicInfoRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta["mbl_no"]
+        response_dict = json.loads(response.text)
+        token = f"{response_dict['token_type']} {response_dict['access_token']}"
+        print("token: ", token)
+
+        yield Captcha2RoutingRule.build_request_option(mbl_no=mbl_no, token=token)
+
+
+# -------------------------------------------------------------------------------
+
+
+class Captcha2RoutingRule(BaseRoutingRule):
+    name = "CAPTCHA2"
+
+    @classmethod
+    def build_request_option(cls, mbl_no, token: str) -> RequestOption:
+        rand_str = "".join(random.choice(string.digits) for _ in range(17))
+
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=f"{SITC_BASE_URL}/code?randomStr={rand_str}",
+            headers={"Content-Type": "application/text"},
+            meta={"mbl_no": mbl_no, "rand_str": rand_str, "token": token},
+        )
+
+    def handle(self, response):
+        mbl_no = response.meta["mbl_no"]
+        rand_str = response.meta["rand_str"]
+        token = response.meta["token"]
+        captcha_solver = CaptchaSolverService()
+        captcha_code = captcha_solver.solve_image(image_content=response.body)
+
+        yield BasicInfoRoutingRule.build_request_option(
+            mbl_no=mbl_no, rand_str=rand_str, captcha_code=captcha_code, token=token
+        )
+
+
+class BasicInfoRoutingRule(BaseRoutingRule):
+    name = "BASIC_INFO"
+
+    @classmethod
+    def build_request_option(cls, mbl_no: str, rand_str: str, captcha_code: str, token: str) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_BODY,
+            url=f"{SITC_BASE_URL}/doc/cargoTrack/search?blNo={mbl_no}&containerNo=&code={captcha_code}&randomStr={rand_str}",
+            headers={
+                "Content-Type": "application/json",
+                "authorization": token,
+                "TenantId": "2",
+            },
+            meta={"mbl_no": mbl_no, "token": token},
+        )
+
+    def get_save_name(self, response) -> str:
+        return f"{self.name}.json"
+
+    def handle(self, response):
+        mbl_no = response.meta["mbl_no"]
+        token = response.meta["token"]
         response_dict = json.loads(response.text)["data"]
 
         basic_info = self._extract_basic_info(response=response_dict)
@@ -148,10 +240,11 @@ class BasicInfoRoutingRule(BaseRoutingRule):
         for container in container_info_list:
             container_no = container["container_no"]
             yield ContainerItem(
-                container_key=container_no, container_no=container_no,
+                container_key=container_no,
+                container_no=container_no,
             )
 
-            yield ContainerStatusRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no)
+            yield ContainerStatusRoutingRule.build_request_option(mbl_no=mbl_no, container_no=container_no, token=token)
 
     @staticmethod
     def _extract_basic_info(response: Dict) -> Dict:
@@ -220,7 +313,9 @@ class BasicInfoRoutingRule(BaseRoutingRule):
         return_list = []
         for container in container_list:
             return_list.append(
-                {"container_no": container["containerNo"],}
+                {
+                    "container_no": container["containerNo"],
+                }
             )
 
         return return_list
@@ -230,18 +325,22 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     name = "CONTAINER_STATUS"
 
     @classmethod
-    def build_request_option(cls, mbl_no: str, container_no: str) -> RequestOption:
+    def build_request_option(cls, mbl_no: str, container_no: str, token: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
             url=f"{SITC_BASE_URL}/doc/cargoTrack/detail?blNo={mbl_no}&containerNo={container_no}",
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "authorization": token,
+                "TenantId": "2",
+            },
             meta={"container_key": container_no},
         )
 
     def get_save_name(self, response) -> str:
         container_key = response.meta["container_key"]
-        return f"{self.name}_{container_key}.html"
+        return f"{self.name}_{container_key}.json"
 
     def handle(self, response):
         container_key = response.meta["container_key"]
@@ -271,45 +370,3 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             )
 
         return container_status_list
-
-
-class ContainerStatusTableLocator(BaseTableLocator):
-
-    TR_TITLE_INDEX = 0
-
-    def __init__(self):
-        self._td_map = {}
-        self._data_len = 0
-
-    def parse(self, table: scrapy.Selector):
-        title_tr = table.css("thead tr")[self.TR_TITLE_INDEX]
-        data_tr_list = table.css("tbody tr")
-
-        title_text_list = title_tr.css("td::text").getall()
-
-        for title_index, title_text in enumerate(title_text_list):
-            data_index = title_index
-
-            title_text = title_text.strip()
-            self._td_map[title_text] = []
-
-            for data_tr in data_tr_list:
-                data_td = data_tr.css("td")[data_index]
-
-                self._td_map[title_text].append(data_td)
-
-        first_title_text = title_text_list[0]
-        self._data_len = len(self._td_map[first_title_text])
-
-    def get_cell(self, top, left) -> scrapy.Selector:
-        try:
-            return self._td_map[top][left]
-        except KeyError as err:
-            raise HeaderMismatchError(repr(err))
-
-    def has_header(self, top=None, left=None) -> bool:
-        return (top in self._td_map) and (left is None)
-
-    def iter_left_headers(self):
-        for index in range(self._data_len):
-            yield index
