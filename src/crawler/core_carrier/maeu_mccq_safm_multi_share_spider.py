@@ -2,6 +2,7 @@ import json
 from typing import Dict, List, Tuple
 
 import scrapy
+from crawler.core_carrier.anlc_aplu_cmdu_share_spider import NextRoundRoutingRule
 
 from crawler.core_carrier.base import (
     CARRIER_RESULT_STATUS_ERROR,
@@ -21,6 +22,7 @@ from crawler.core_carrier.items import (
 )
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
+from crawler.core.proxy import HydraproxyProxyManager
 
 
 class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
@@ -42,6 +44,7 @@ class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
             NextRoundRoutingRule(),
         ]
 
+        self._proxy_manager = HydraproxyProxyManager(session="maeu_mccq_safm_share", logger=self.logger)
         if self.search_type == SHIPMENT_TYPE_MBL:
             self._rule_manager = RuleManager(rules=bill_rules)
         elif self.search_type == SHIPMENT_TYPE_BOOKING:
@@ -51,7 +54,10 @@ class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
         option = MainInfoRoutingRule.build_request_option(
             search_nos=self.search_nos, task_ids=self.task_ids, url_format=self.base_url_format
         )
-        yield self._build_request_by(option=option)
+
+        self._proxy_manager.renew_proxy(allow_reset=True)
+        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
+        yield self._build_request_by(option=proxy_option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -65,6 +71,10 @@ class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
             if isinstance(result, BaseCarrierItem):
                 yield result
             elif isinstance(result, RequestOption):
+                if response.meta[RuleManager.META_CARRIER_CORE_RULE_NAME] == NextRoundRoutingRule.name:
+                    self._proxy_manager.renew_proxy(allow_reset=True)
+                    result = self._proxy_manager.apply_proxy_to_request_option(option=result)
+
                 yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
