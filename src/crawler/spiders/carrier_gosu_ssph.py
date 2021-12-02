@@ -21,7 +21,8 @@ from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core.table import BaseTable, TableExtractor
 
-URL = "https://www.sethshipping.com/track_shipment_ajax"
+# URL = "https://www.sethshipping.com/track_shipment_ajax"
+URL = "https://www.gslltd.com.hk/track-shipment.php"
 
 
 class SharedSpider(BaseCarrierSpider):
@@ -31,13 +32,14 @@ class SharedSpider(BaseCarrierSpider):
         super(SharedSpider, self).__init__(*args, **kwargs)
 
         rules = [
+            HomePageRoutingRule(),
             MainInfoRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        request_option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        request_option = HomePageRoutingRule.build_request_option(mbl_no=self.mbl_no)
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -65,6 +67,7 @@ class SharedSpider(BaseCarrierSpider):
         if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
                 url=option.url,
+                headers=option.headers,
                 meta=meta,
             )
         elif option.method == RequestOption.METHOD_POST_BODY:
@@ -88,25 +91,15 @@ class CarrierGosuSpider(SharedSpider):
     name = "carrier_gosu"
 
 
-class MainInfoRoutingRule(BaseRoutingRule):
-    name = "MAIN_INFO"
+class HomePageRoutingRule(BaseRoutingRule):
+    name = "HOME_PAGE"
 
     @classmethod
     def build_request_option(cls, mbl_no) -> RequestOption:
-        form_data = {"containerid": mbl_no}
-        body = urlencode(query=form_data)
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_POST_BODY,
+            method=RequestOption.METHOD_GET,
             url=URL,
-            headers={
-                "Connection": "keep-alive",
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36",
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                "Referer": "https://www.sethshipping.com/tracking_shipment?id=SSPHAMD1234567",
-                "Accept-Language": "en-US,en;q=0.9",
-            },
-            body=body,
             meta={
                 "mbl_no": mbl_no,
             },
@@ -117,6 +110,62 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta["mbl_no"]
+
+        token_cap = self._extract_token_cap(response.text)
+        cookies = self._extract_cookies(response)
+        yield MainInfoRoutingRule.build_request_option(mbl_no=mbl_no, token_cap=token_cap, cookies=cookies)
+
+    @staticmethod
+    def _extract_token_cap(response_text):
+        pattern = re.compile(r"\'token_cap\': \"(?P<token_cap>[A-Za-z0-9]+)\"")
+        match = pattern.search(response_text)
+
+        return match.group("token_cap")
+
+    @staticmethod
+    def _extract_cookies(response):
+        cookies = {}
+        for cookie_byte in response.headers.getlist("Set-Cookie"):
+            kv = cookie_byte.decode("utf-8").split(";")[0].split("=")
+            cookies[kv[0]] = kv[1]
+
+        return cookies
+
+
+class MainInfoRoutingRule(BaseRoutingRule):
+    name = "MAIN_INFO"
+
+    @classmethod
+    def build_request_option(cls, mbl_no, token_cap, cookies: Dict) -> RequestOption:
+        form_data = {
+            "containerid": mbl_no,
+            "token_cap": token_cap,
+        }
+        body = urlencode(query=form_data)
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_BODY,
+            url="https://www.gslltd.com.hk/get_tracing.php",
+            headers={
+                "Connection": "keep-alive",
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "Referer": "https://www.gslltd.com.hk/track-shipment.php",
+                "Accept-Language": "en-US,en;q=0.9",
+            },
+            body=body,
+            cookies=cookies,
+            meta={
+                "mbl_no": mbl_no,
+            },
+        )
+
+    def get_save_name(self, response) -> str:
+        return f"{self.name}.html"
+
+    def handle(self, response):
+        mbl_no = response.meta["mbl_no"]
+
         if self._is_mbl_no_invalid(response=response):
             yield ExportErrorData(mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found")
             return
@@ -187,11 +236,11 @@ class MainInfoRoutingRule(BaseRoutingRule):
         table_extractor = TableExtractor(table_locator=table_locator)
 
         return {
-            'por_name': table_extractor.extract_cell(left='Final Destination:') or None,
-            'pol_name': table_extractor.extract_cell(left='Port of Loading (POL)') or None,
-            'pod_name': table_extractor.extract_cell(left='Port of Discharge (POD)') or None,
-            'final_dest_name': table_extractor.extract_cell(left='Final Destination:') or None,
-            'eta': table_extractor.extract_cell(left='Estimated Time of Arrival') or None,
+            "por_name": table_extractor.extract_cell(left="Final Destination:") or None,
+            "pol_name": table_extractor.extract_cell(left="Port of Loading (POL)") or None,
+            "pod_name": table_extractor.extract_cell(left="Port of Discharge (POD)") or None,
+            "final_dest_name": table_extractor.extract_cell(left="Final Destination:") or None,
+            "eta": table_extractor.extract_cell(left="Estimated Time of Arrival") or None,
         }
 
     @staticmethod
@@ -203,19 +252,19 @@ class MainInfoRoutingRule(BaseRoutingRule):
             table_locator.parse(table=table)
             table_extractor = TableExtractor(table_locator=table_locator)
             pol = pod = etd = eta = None
-            if table_extractor.has_header(top='Port of Loading'):
-                pol = table_extractor.extract_cell(top='Port of Loading')
-            if table_extractor.has_header(top='Port of Discharge'):
-                pod = table_extractor.extract_cell(top='Port of Discharge')
-            if table_extractor.has_header(top='ETD'):
-                etd = table_extractor.extract_cell(top='ETD')
-            if table_extractor.has_header(top='ETA'):
-                eta = table_extractor.extract_cell(top='ETA')
-            if table_extractor.has_header(top='Vessel / Voyage'):
-                vessel_voyage = table_extractor.extract_cell(top='Vessel / Voyage')
+            if table_extractor.has_header(top="Port of Loading"):
+                pol = table_extractor.extract_cell(top="Port of Loading")
+            if table_extractor.has_header(top="Port of Discharge"):
+                pod = table_extractor.extract_cell(top="Port of Discharge")
+            if table_extractor.has_header(top="ETD"):
+                etd = table_extractor.extract_cell(top="ETD")
+            if table_extractor.has_header(top="ETA"):
+                eta = table_extractor.extract_cell(top="ETA")
+            if table_extractor.has_header(top="Vessel / Voyage"):
+                vessel_voyage = table_extractor.extract_cell(top="Vessel / Voyage")
             else:
-                vessel_voyage = ''
-            vessel_voyage_pattern = re.compile(r'^(?P<vessel>.+)/(?P<voyage>.+)$')
+                vessel_voyage = ""
+            vessel_voyage_pattern = re.compile(r"^(?P<vessel>.+)/(?P<voyage>.+)$")
             vessel_voyage_match = vessel_voyage_pattern.match(vessel_voyage)
             if vessel_voyage_match:
                 vessel = vessel_voyage_match.group("vessel")
@@ -259,7 +308,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_status(response, idx) -> List:
-        table = response.css(f'div#collapse{idx+1} table')
+        table = response.css(f"div#collapse{idx+1} table")
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table)
         table_extractor = TableExtractor(table_locator=table_locator)
@@ -294,20 +343,21 @@ class MainInfoRoutingRule(BaseRoutingRule):
 class MainInfoTableLocator(BaseTable):
     def parse(self, table: scrapy.Selector):
         td_dict = self._td_map.setdefault(0, {})
-        for tr in table.css('tr'):
-            label = tr.css('td ::text')[0].get().strip()
+        for tr in table.css("tr"):
+            label = tr.css("td ::text")[0].get().strip()
             self._left_header_set.add(label)
-            content = tr.css('td')[1]
+            content = tr.css("td")[1]
             td_dict[label] = content
+
 
 class VesselTableLocator(BaseTable):
     def parse(self, table: scrapy.Selector):
         self._left_header_set.add(0)
-        for tr in table.css('tr'):
-            for td in tr.css('td'):
-                if td.css('p'):
-                    label = td.css('p ::text')[0].get().strip()
-                    content = td.css('p')[1]
+        for tr in table.css("tr"):
+            for td in tr.css("td"):
+                if td.css("p"):
+                    label = td.css("p ::text")[0].get().strip()
+                    content = td.css("p")[1]
                     self._td_map[label] = [content]
 
 
@@ -322,10 +372,10 @@ class ContainerTableLocator(BaseTable):
             top_header_list.append(top_header)
             self._td_map[top_header] = []
 
-        data_tr_list = table.css('tbody tr.accordion-toggle.collapsed')
+        data_tr_list = table.css("tbody tr.accordion-toggle.collapsed")
         for index, tr in enumerate(data_tr_list):
             self._left_header_set.add(index)
-            for top, td in zip(top_header_list, tr.css('td')):
+            for top, td in zip(top_header_list, tr.css("td")):
                 self._td_map[top].append(td)
 
 
@@ -333,15 +383,15 @@ class ContainerStatusTableLocator(BaseTable):
     def parse(self, table: scrapy.Selector):
         top_header_list = []
 
-        head = table.css('thead')[0]
-        for th in head.css('th'):
-            raw_top_header = th.css('::text').get()
-            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ''
+        head = table.css("thead")[0]
+        for th in head.css("th"):
+            raw_top_header = th.css("::text").get()
+            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ""
             top_header_list.append(top_header)
             self._td_map[top_header] = []
 
-        data_tr_list = table.css('tbody tr')
+        data_tr_list = table.css("tbody tr")
         for index, tr in enumerate(data_tr_list):
             self._left_header_set.add(index)
-            for top, td in zip(top_header_list, tr.css('td')):
+            for top, td in zip(top_header_list, tr.css("td")):
                 self._td_map[top].append(td)
