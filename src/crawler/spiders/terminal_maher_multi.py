@@ -9,6 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
+from crawler.core.table import HeaderMismatchError
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import LoadWebsiteTimeOutFatal
@@ -82,6 +83,7 @@ class TerminalMaherMultiSpider(BaseMultiTerminalSpider):
         ]
 
         self._rule_manager = RuleManager(rules=rules)
+        self._max_retry_times = 3
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
@@ -96,17 +98,28 @@ class TerminalMaherMultiSpider(BaseMultiTerminalSpider):
         save_name = routing_rule.get_save_name(response=response)
         self._saver.save(to=save_name, text=response.text)
 
-        for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
-                c_no = result["container_no"]
-                t_ids = self.cno_tid_map[c_no]
-                for t_id in t_ids:
-                    result["task_id"] = t_id
-                    yield result
-            elif isinstance(result, RequestOption):
-                yield self._build_request_by(option=result)
+        try:
+            for result in routing_rule.handle(response=response):
+                if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+                    c_no = result["container_no"]
+                    t_ids = self.cno_tid_map[c_no]
+                    for t_id in t_ids:
+                        result["task_id"] = t_id
+                        yield result
+                elif isinstance(result, RequestOption):
+                    yield self._build_request_by(option=result)
+                else:
+                    raise RuntimeError()
+        except HeaderMismatchError as e:
+            self._max_retry_times -= 1
+
+            # retry searching
+            if self._max_retry_times >= 0:
+                unique_container_nos = list(self.cno_tid_map.keys())
+                option = SearchRoutingRule.build_request_option(container_no_list=unique_container_nos)
+                yield self._build_request_by(option=option)
             else:
-                raise RuntimeError()
+                raise HeaderMismatchError("Already consumed all retry times")
 
     def _build_request_by(self, option: RequestOption):
         meta = {
@@ -195,6 +208,7 @@ class SearchRoutingRule(BaseRoutingRule):
 
         res = []
         for i in range(len(set(container_no_list))):
+            raise HeaderMismatchError()
             res.append(
                 {
                     "container_no": table_locator.get_cell(left=i, top="Container"),
