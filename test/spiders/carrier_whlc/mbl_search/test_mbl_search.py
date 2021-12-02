@@ -15,55 +15,55 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub,mbl_no',
+    "sub,mbl_no",
     [
-        ('01_single_container', '031B554489'),
-        ('02_multiple_container', '025B648783'),
+        ("01_single_container", "031B554489"),
+        ("02_multiple_container", "025B648783"),
     ],
 )
 def test_extract_container_info(sub, mbl_no, sample_loader):
-    html_text = sample_loader.read_file(sub, 'main_page.html')
+    html_text = sample_loader.read_file(sub, "main_page.html")
 
     response_selector = Selector(text=html_text)
 
-    routing_rule = MblRoutingRule()
+    routing_rule = MblRoutingRule(content_getter=None)
     results = list(routing_rule._extract_container_info(response_selector))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
 
 
 @pytest.mark.parametrize(
-    'sub,mbl_no,container_no',
+    "sub,mbl_no,container_no",
     [
-        ('03_detail', '031B554489', 'WHSU6570305'),
+        ("03_detail", "031B554489", "WHSU6570305"),
     ],
 )
 def test_extract_date_information(sub, mbl_no, container_no, sample_loader):
-    html_text = sample_loader.read_file(sub, 'detail_page.html')
+    html_text = sample_loader.read_file(sub, "detail_page.html")
 
     response_selector = Selector(text=html_text)
 
-    routing_rule = MblRoutingRule()
+    routing_rule = MblRoutingRule(content_getter=None)
     results = routing_rule._extract_date_information(response_selector)
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
 
 
 @pytest.mark.parametrize(
-    'sub,mbl_no,container_no',
+    "sub,mbl_no,container_no",
     [
-        ('04_history', '031B554489', 'WHSU6570305'),
+        ("04_history", "031B554489", "WHSU6570305"),
     ],
 )
 def test_extract_container_status(sub, mbl_no, container_no, sample_loader):
-    html_text = sample_loader.read_file(sub, 'history_page.html')
+    html_text = sample_loader.read_file(sub, "history_page.html")
 
     response_selector = Selector(text=html_text)
 
-    routing_rule = MblRoutingRule()
+    routing_rule = MblRoutingRule(content_getter=None)
     results = list(routing_rule._extract_container_status(response_selector))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
