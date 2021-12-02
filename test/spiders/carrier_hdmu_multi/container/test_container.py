@@ -27,8 +27,8 @@ def test_container_routing_rule(sub, mbl_no, sample_loader, container_no, contai
     html_text = sample_loader.read_file(sub, "sample.html")
 
     option = ContainerRoutingRule.build_request_option(
-        search_no=mbl_no,
-        task_id="1",
+        search_nos=[mbl_no],
+        task_ids=["1"],
         search_type=SHIPMENT_TYPE_MBL,
         container_index=container_index,
         h_num=0,
