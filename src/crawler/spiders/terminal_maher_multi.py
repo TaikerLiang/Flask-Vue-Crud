@@ -208,7 +208,6 @@ class SearchRoutingRule(BaseRoutingRule):
 
         res = []
         for i in range(len(set(container_no_list))):
-            raise HeaderMismatchError()
             res.append(
                 {
                     "container_no": table_locator.get_cell(left=i, top="Container"),
