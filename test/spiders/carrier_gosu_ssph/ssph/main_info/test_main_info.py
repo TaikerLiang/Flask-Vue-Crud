@@ -23,13 +23,13 @@ def sample_loader(sample_loader):
     ],
 )
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
-    http_text = sample_loader.read_file(sub, "sample.html")
+    json_text = sample_loader.read_file(sub, "sample.html")
 
-    option = MainInfoRoutingRule.build_request_option(mbl_no=mbl_no, token_cap="", cookies={})
+    option = MainInfoRoutingRule.build_request_option(mbl_no=mbl_no)
 
     response = TextResponse(
         url=option.url,
-        body=http_text,
+        body=json_text,
         encoding="utf-8",
         request=Request(
             url=option.url,
