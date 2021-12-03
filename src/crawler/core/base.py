@@ -10,3 +10,6 @@ PROXY_GROUP_RESIDENTIAL = "RESIDENTIAL"
 
 # spider timeout
 CLOSESPIDER_TIMEOUT = 60 * 20
+
+# dummy
+DUMMY_URL_DICT = {"google": "https://www.google.com"}
