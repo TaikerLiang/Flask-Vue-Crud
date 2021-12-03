@@ -1,14 +1,20 @@
-import re
 from typing import Dict, List
 
 import scrapy
+from scrapy.selector import Selector
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import TimeoutException
 
+from crawler.core.base import DUMMY_URL_DICT
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError,
+    SuspiciousOperationError,
+    LoadWebsiteTimeOutError,
+)
 from crawler.core_carrier.items import (
     BaseCarrierItem,
     ExportErrorData,
@@ -17,17 +23,17 @@ from crawler.core_carrier.items import (
     ContainerStatusItem,
     DebugItem,
 )
-from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    SuspiciousOperationError,
-    LoadWebsiteTimeOutError,
-)
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
 from crawler.core.selenium import ChromeContentGetter
-from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.core.table import TableExtractor, BaseTable
+from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 
 
 BASE_URL = "https://www.hapag-lloyd.com/en"
+SEARCH_URL = f"{BASE_URL}/online-business/track/track-by-booking-solution.html"
+
+MAX_RETRY_COUNT = 1
 
 
 class CarrierHlcuSpider(BaseMultiCarrierSpider):
@@ -38,9 +44,11 @@ class CarrierHlcuSpider(BaseMultiCarrierSpider):
 
         self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
+        self._content_getter = ContentGetter()
+        self._content_getter.connect()
+
         rules = [
-            TracingRoutingRule(),
-            ContainerRoutingRule(),
+            TracingRoutingRule(self._content_getter),
             NextRoundRoutingRule(),
         ]
 
@@ -48,12 +56,7 @@ class CarrierHlcuSpider(BaseMultiCarrierSpider):
         self._request_queue = RequestOptionQueue()
 
     def start(self):
-        cookies_getter = ContentGetter()
-        cookies = cookies_getter.get_cookies()
-
-        request_option = TracingRoutingRule.build_request_option(
-            mbl_nos=self.search_nos, task_ids=self.task_ids, cookies=cookies
-        )
+        request_option = TracingRoutingRule.build_request_option(mbl_nos=self.search_nos, task_ids=self.task_ids)
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -107,70 +110,72 @@ class CarrierHlcuSpider(BaseMultiCarrierSpider):
 class TracingRoutingRule(BaseRoutingRule):
     name = "TRACING"
 
-    def __init__(self):
-        self._cookies_pattern = re.compile(r"^(?P<key>[^=]+)=(?P<value>[^;]+);.+$")
+    def __init__(self, content_getter):
+        self._content_getter = content_getter
 
     @classmethod
-    def build_request_option(cls, mbl_nos: List, task_ids: List, cookies: Dict) -> RequestOption:
-        url = f"{BASE_URL}/online-business/track/track-by-booking-solution.html?blno={mbl_nos[0]}"
-
+    def build_request_option(cls, mbl_nos: List, task_ids: List) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=url,
-            cookies=cookies,
-            meta={
-                "mbl_nos": mbl_nos,
-                "cookies": cookies,
-                "task_ids": task_ids,
-            },
+            url=DUMMY_URL_DICT["google"],
+            meta={"mbl_nos": mbl_nos, "task_ids": task_ids},
         )
 
     def get_save_name(self, response):
         return f"{self.name}.html"
 
     def handle(self, response):
-        cookies = response.meta["cookies"]
         mbl_nos = response.meta["mbl_nos"]
         task_ids = response.meta["task_ids"]
+        current_mbl_no = mbl_nos[0]
+        current_task_id = task_ids[0]
 
-        if self._is_mbl_no_invalid(response):
+        mbl_page = self._content_getter.get_mbl_page(mbl_no=current_mbl_no)
+        selector = Selector(text=mbl_page)
+
+        if self._is_mbl_no_invalid(selector):
             yield ExportErrorData(
-                mbl_no=mbl_nos[0],
-                task_id=task_ids[0],
+                mbl_no=current_mbl_no,
+                task_id=current_task_id,
                 status=CARRIER_RESULT_STATUS_ERROR,
                 detail="Data was not found",
             )
-            yield NextRoundRoutingRule.build_request_option(search_nos=mbl_nos, task_ids=task_ids, cookies=cookies)
+            yield NextRoundRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
             return
 
-        container_nos = self._extract_container_nos(response=response)
+        container_nos = self._extract_container_nos(response=selector)
         for container_no in container_nos:
             yield ContainerItem(
-                task_id=task_ids[0],
+                task_id=current_task_id,
                 container_no=container_no,
                 container_key=container_no,
             )
 
-        new_cookies = self._handle_cookies(cookies=cookies, response=response)
-        view_state = response.css(
-            'form[id="tracing_by_booking_f"] input[name="javax.faces.ViewState"] ::attr(value)'
-        ).get()
+            container_page = self._content_getter.get_container_page(container_no=container_no)
+            for status_item in self._handle_container(
+                page=container_page, container_no=container_no, task_id=current_task_id
+            ):
+                yield status_item
 
-        for container_index, container_no in enumerate(container_nos):
-            yield ContainerRoutingRule.build_request_option(
-                mbl_no=mbl_nos[0],
-                task_id=task_ids[0],
+        yield NextRoundRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
+
+    def _handle_container(self, page, container_no, task_id):
+        selector = Selector(text=page)
+        container_statuses = self._extract_container_statuses(response=selector)
+        for container_status in container_statuses:
+            yield ContainerStatusItem(
+                task_id=task_id,
                 container_key=container_no,
-                cookies=new_cookies,
-                container_index=container_index,
-                view_state=view_state,
+                description=container_status["description"],
+                local_date_time=container_status["timestamp"],
+                location=LocationItem(name=container_status["place"]),
+                transport=container_status["transport"],
+                voyage=container_status["voyage"],
+                est_or_actual=container_status["est_or_actual"],
             )
 
-        yield NextRoundRoutingRule.build_request_option(search_nos=mbl_nos, task_ids=task_ids, cookies=cookies)
-
-    @staticmethod
-    def _is_mbl_no_invalid(response):
+    def _is_mbl_no_invalid(self, response):
         error_message = response.css('span[id="tracing_by_booking_f:hl15"]::text').get()
         if not error_message:
             return
@@ -178,8 +183,7 @@ class TracingRoutingRule(BaseRoutingRule):
         error_message.strip()
         return error_message.startswith("DOCUMENT does not exist.")
 
-    @staticmethod
-    def _extract_container_nos(response):
+    def _extract_container_nos(self, response):
         table_selector = response.css("table[id='tracing_by_booking_f:hl27']")
         if not table_selector:
             raise CarrierResponseFormatError(reason=f"Container list table not found !!!")
@@ -196,90 +200,6 @@ class TracingRoutingRule(BaseRoutingRule):
             container_list.append(company + no)
 
         return container_list
-
-    def _handle_cookies(self, cookies, response):
-        cookie_bytes = response.headers.getlist("Set-Cookie")
-
-        for cookie_byte in cookie_bytes:
-            cookie_text = cookie_byte.decode("utf-8")
-            key, value = self._parse_cookie(cookie_text=cookie_text)
-            cookies[key] = value
-
-        return cookies
-
-    def _parse_cookie(self, cookie_text):
-        """
-        Sample 1: `TS01a3c52a=01541c804a3dfa684516e96cae7a588b5eea6236b8843ebfc7882ca3e47063c4b3fddc7cc2e58145e71bee297`
-                  `3391cc28597744f23343d7d2544d27a2ce90ca4b356ffb78f5; Path=/`
-        Sample 2: `TSff5ac71e_27=081ecde62cab2000428f3620d78d07ee66ace44f9dc6c6feb6bc1bab646fbc7179082123944d1473084a`
-                  `f55ddf1120009050da999bcc34164749e3339b930c12ec88cf3b1cfb6cd3b77b94f5d061834e;Path=/`
-        """
-        match = self._cookies_pattern.match(cookie_text)
-        if not match:
-            CarrierResponseFormatError(f"Unknown cookie format: `{cookie_text}`")
-
-        return match.group("key"), match.group("value")
-
-
-class ContainerNoTdExtractor(BaseTableCellExtractor):
-    def extract(self, cell: scrapy.Selector):
-        raw_text = cell.css("::text").get()
-        text_list = raw_text.split()
-        text = "".join(text_list)
-
-        return text
-
-
-# -------------------------------------------------------------------------------
-
-
-class ContainerRoutingRule(BaseRoutingRule):
-    name = "CONTAINER"
-
-    @classmethod
-    def build_request_option(
-        cls, mbl_no: str, task_id: str, container_key, cookies: Dict, container_index, view_state
-    ) -> RequestOption:
-        form_data = {
-            "hl27": str(container_index),
-            "javax.faces.ViewState": view_state,
-            "tracing_by_booking_f:hl16": mbl_no,
-            "tracing_by_booking_f:hl27:hl53": "Details",
-            "tracing_by_booking_f_SUBMIT": "1",
-        }
-
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_POST_FORM,
-            url=f"{BASE_URL}/online-business/track/track-by-booking-solution.html?_a=tracing_by_booking",
-            form_data=form_data,
-            cookies=cookies,
-            meta={
-                "container_key": container_key,
-                "task_id": task_id,
-            },
-        )
-
-    def get_save_name(self, response):
-        container_key = response.meta["container_key"]
-        return f"{self.name}_{container_key}.html"
-
-    def handle(self, response):
-        container_key = response.meta["container_key"]
-        task_id = response.meta["task_id"]
-
-        container_statuses = self._extract_container_statuses(response=response)
-        for container_status in container_statuses:
-            yield ContainerStatusItem(
-                task_id=task_id,
-                container_key=container_key,
-                description=container_status["description"],
-                local_date_time=container_status["timestamp"],
-                location=LocationItem(name=container_status["place"]),
-                transport=container_status["transport"],
-                voyage=container_status["voyage"],
-                est_or_actual=container_status["est_or_actual"],
-            )
 
     def _extract_container_statuses(self, response):
         table_selector = response.css("table[id='tracing_by_booking_f:hl66']")
@@ -320,8 +240,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         return container_statuses
 
-    @staticmethod
-    def _get_status_from(class_name):
+    def _get_status_from(self, class_name):
         if class_name == "strong":
             return "A"
         elif not class_name:
@@ -334,27 +253,28 @@ class ContainerRoutingRule(BaseRoutingRule):
 
 
 class NextRoundRoutingRule(BaseRoutingRule):
+    name = "ROUTING"
+
     @classmethod
-    def build_request_option(cls, search_nos: List, task_ids: List, cookies: Dict) -> RequestOption:
+    def build_request_option(cls, mbl_nos: List, task_ids: List) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://google.com",
-            meta={"search_nos": search_nos, "task_ids": task_ids, "cookies": cookies},
+            url=DUMMY_URL_DICT["google"],
+            meta={"mbl_nos": mbl_nos, "task_ids": task_ids},
         )
 
     def handle(self, response):
         task_ids = response.meta["task_ids"]
-        search_nos = response.meta["search_nos"]
-        cookies = response.meta["cookies"]
+        mbl_nos = response.meta["mbl_nos"]
 
-        if len(search_nos) == 1 and len(task_ids) == 1:
+        if len(mbl_nos) == 1 and len(task_ids) == 1:
             return
 
         task_ids = task_ids[1:]
-        search_nos = search_nos[1:]
+        mbl_nos = mbl_nos[1:]
 
-        yield TracingRoutingRule.build_request_option(mbl_nos=search_nos, task_ids=task_ids, cookies=cookies)
+        yield TracingRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
 
 
 # -------------------------------------------------------------------------------
@@ -430,21 +350,38 @@ class ContainerStatusTableLocator(BaseTable):
 
 
 class ContentGetter(ChromeContentGetter):
-    def get_cookies(self):
-        self._driver.get(f"{BASE_URL}/online-business/track/track-by-booking-solution.html")
+    def __init__(self):
+        super().__init__()
+        self.retry_count = 0
+
+    def connect(self):
+        self._driver.get(SEARCH_URL)
 
         try:
-            WebDriverWait(self._driver, 10).until(self._is_cookies_ready)
+            WebDriverWait(self._driver, 10).until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, "button.save-preference-btn-handler.onetrust-close-btn-handler")
+                )
+            )
+            button = self._driver.find_element(
+                By.CSS_SELECTOR, "button.save-preference-btn-handler.onetrust-close-btn-handler"
+            )
+            button.click()
         except TimeoutException:
+            self.restart()
+
+    def restart(self):
+        if self.retry_count >= MAX_RETRY_COUNT:
             raise LoadWebsiteTimeOutError(url=self._driver.current_url)
 
-        cookies = {}
-        for cookie_object in self._driver.get_cookies():
-            cookies[cookie_object["name"]] = cookie_object["value"]
-
+        self.retry_count += 1
         self._driver.close()
-        return cookies
+        self.connect()
 
-    def _is_cookies_ready(self, *_):
-        cookies_str = str(self._driver.get_cookies())
-        return ("OptanonConsent" in cookies_str) and ("TS01a3c52a" in cookies_str) and ("TS01f2bb67" in cookies_str)
+    def get_mbl_page(self, mbl_no):
+        self._driver.get(f"{SEARCH_URL}?blno={mbl_no}")
+        return self._driver.page_source
+
+    def get_container_page(self, container_no):
+        self._driver.get(f"{SEARCH_URL}?view=S8510&container={container_no}")
+        return self._driver.page_source
