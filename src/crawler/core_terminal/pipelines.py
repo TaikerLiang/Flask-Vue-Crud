@@ -36,6 +36,9 @@ class BaseItemPipeline:
         return status_code, text
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+
+
 class TerminalItemPipeline(BaseItemPipeline):
     def __init__(self):
         super().__init__()
@@ -186,13 +189,8 @@ class TerminalMultiItemsPipeline(BaseItemPipeline):
 
         return res
 
-    # def _get_results_of_collectors(self):
-    #     results = []
-    #     for _, collector in self._collector_map.items():
-    #         if not collector.is_item_empty():
-    #             results.append(collector.build_final_data())
 
-    #     return results
+# ---------------------------------------------------------------------------------------------------------------------
 
 
 class TerminalResultCollector:
