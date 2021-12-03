@@ -7,18 +7,20 @@ from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 
-BASE_URL = 'https://twpapi.pachesapeake.com'
+BASE_URL = "https://twpapi.pachesapeake.com"
+MAX_PAGE_NUM = 20
 
 
 class TerminalSeagirtSpider(BaseMultiTerminalSpider):
-    firms_code = 'C324'
-    name = 'terminal_seagirt'
+    firms_code = "C324"
+    name = "terminal_seagirt"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         rules = [
             ContainerRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -29,7 +31,7 @@ class TerminalSeagirtSpider(BaseMultiTerminalSpider):
         yield self._build_request_by(option=option)
 
     def parse(self, response):
-        yield DebugItem(info={'meta': dict(response.meta)})
+        yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -38,11 +40,11 @@ class TerminalSeagirtSpider(BaseMultiTerminalSpider):
 
         for result in routing_rule.handle(response=response):
             if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
-                c_no = result['container_no']
+                c_no = result["container_no"]
                 if c_no:
                     t_ids = self.cno_tid_map[c_no]
                     for t_id in t_ids:
-                        result['task_id'] = t_id
+                        result["task_id"] = t_id
                         yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -63,18 +65,18 @@ class TerminalSeagirtSpider(BaseMultiTerminalSpider):
                 dont_filter=True,
             )
         else:
-            raise ValueError(f'Invalid option.method [{option.method}]')
+            raise ValueError(f"Invalid option.method [{option.method}]")
 
 
 # -------------------------------------------------------------------------------
 
 
 class ContainerRoutingRule(BaseRoutingRule):
-    name = 'CONTAINER'
+    name = "CONTAINER"
 
     @classmethod
     def build_request_option(cls, container_nos: List) -> RequestOption:
-        container_no_str = '%2C'.join(container_nos)
+        container_no_str = "%2C".join(container_nos[:MAX_PAGE_NUM])
         url = f"{BASE_URL}/api/track/GetContainers?siteId=SGT_BAL&key={container_no_str}"
 
         return RequestOption(
@@ -83,19 +85,19 @@ class ContainerRoutingRule(BaseRoutingRule):
             url=url,
             headers={"Accept": "application/json"},
             meta={
-                'container_nos': container_nos,
+                "container_nos": container_nos,
             },
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.json'
+        return f"{self.name}.json"
 
     def handle(self, response):
         response_dict = json.loads(response.text)
-        container_nos = response.meta['container_nos']
+        container_nos = response.meta["container_nos"][:MAX_PAGE_NUM]
 
         for container in response_dict:
-            height = container["Height"].replace("\"", "")
+            height = container["Height"].replace('"', "")
             container_no = container["ContainerNumber"]
             yield TerminalItem(
                 container_no=container_no,
@@ -118,3 +120,31 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         for container_no in container_nos:
             yield InvalidContainerNoItem(container_no=container_no)
+
+        yield NextRoundRoutingRule.build_request_option(response.meta["container_nos"])
+
+
+# --------------------------------------------------------------------
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    @classmethod
+    def build_request_option(cls, container_nos: List) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://google.com",
+            meta={
+                "container_nos": container_nos,
+            },
+        )
+
+    def handle(self, response):
+        container_nos = response.meta["container_nos"]
+
+        if len(container_nos) <= MAX_PAGE_NUM:
+            return
+
+        container_nos = container_nos[MAX_PAGE_NUM:]
+
+        yield ContainerRoutingRule.build_request_option(container_nos=container_nos)
