@@ -25,7 +25,7 @@ def sample_loader(sample_loader):
 )
 def test_add_container_handle(sub, container_no, sample_loader):
     option = AddContainerToTraceRoutingRule.build_request_option(
-        container_no=container_no,
+        container_nos=[container_no],
         authorization_token="",
         company_info=TerminalFenixSpider.company_info,
     )
@@ -57,7 +57,7 @@ def test_add_container_handle(sub, container_no, sample_loader):
 )
 def test_add_container_handle_error(sub, container_no, status_code, invalid_no_item, sample_loader):
     option = AddContainerToTraceRoutingRule.build_request_option(
-        container_no=container_no,
+        container_nos=[container_no],
         authorization_token="",
         company_info=TerminalFenixSpider.company_info,
     )
