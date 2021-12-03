@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 import io
 import random
 import dataclasses
@@ -40,6 +40,7 @@ class EtsShareSpider(BaseMultiTerminalSpider):
             CaptchaRoutingRule(),
             LoginRoutingRule(),
             ContainerRoutingRule(),
+            NextRoundRoutingRule(),
         ]
         self._proxy_manager = HydraproxyProxyManager(session="share", logger=self.logger)
         self._rule_manager = RuleManager(rules=rules)
@@ -93,10 +94,7 @@ class EtsShareSpider(BaseMultiTerminalSpider):
             )
 
         elif option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(
-                url=option.url,
-                meta=meta,
-            )
+            return scrapy.Request(url=option.url, meta=meta, dont_filter=True)
 
         else:
             raise RuntimeError()
@@ -251,7 +249,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             "PI_TMNL_ID": "?cma_env_loc",
             "PI_CTRY_CODE": "?cma_env_ctry",
             "PI_STATE_CODE": "?cma_env_state",
-            "PI_CNTR_NO": "\n".join(container_no_list),
+            "PI_CNTR_NO": "\n".join(container_no_list[:20]),
             "_sk": sk,
             "page": "1",
             "start": "0",
@@ -263,16 +261,25 @@ class ContainerRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_POST_FORM,
             url=f"{BASE_URL}/data/WIMPP003.queryByCntr.data.json?",
             form_data=form_data,
+            meta={"container_no_list": container_no_list, "sk": sk},
         )
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.json"
 
     def handle(self, response):
+        container_no_list = response.meta["container_no_list"]
+
         container_info_list = self._extract_container_info(response=response)
 
+        if self._is_container_no_invalid_with_msg(container_info_list=container_info_list):
+            for c_no in container_no_list[:20]:
+                yield InvalidContainerNoItem(
+                    container_no=c_no,
+                )
+
         for container_info in container_info_list:
-            if container_info["PO_TERMINAL_NAME"] == "<i>Record was not found!</i>":
+            if self._is_container_no_invalid_with_term_name(container_info=container_info):
                 c_no = re.sub("<.*?>", "", container_info["PO_CNTR_NO"])
                 yield InvalidContainerNoItem(
                     container_no=c_no,
@@ -301,6 +308,9 @@ class ContainerRoutingRule(BaseRoutingRule):
                     freight_release=container_info["PO_FR_STATUS"],  # not sure
                 )
 
+        sk = response.meta["sk"]
+        yield NextRoundRoutingRule.build_request_option(container_no_list=container_no_list, sk=sk)
+
     @staticmethod
     def _extract_container_info(response: HtmlResponse):
         response_dict = json.loads(response.text)
@@ -317,3 +327,40 @@ class ContainerRoutingRule(BaseRoutingRule):
             container_info_list.append(container_info)
 
         return container_info_list
+
+    @staticmethod
+    def _is_container_no_invalid_with_term_name(container_info: Dict):
+        if container_info["PO_TERMINAL_NAME"]:
+            return container_info["PO_TERMINAL_NAME"] == "<i>Record was not found!</i>"
+
+    @staticmethod
+    def _is_container_no_invalid_with_msg(container_info_list: List):
+        if len(container_info_list) == 1:
+            return container_info_list[0]["PO_MSG"] == "No data found."
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    name = "NEXY_ROUND"
+
+    @classmethod
+    def build_request_option(cls, container_no_list: List, sk) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://www.google.com",
+            meta={
+                "container_no_list": container_no_list,
+                "sk": sk,
+            },
+        )
+
+    def handle(self, response):
+        container_no_list = response.meta["container_no_list"]
+        sk = response.meta["sk"]
+
+        if len(container_no_list) <= 20:  # page size == 20
+            return
+
+        container_no_list = container_no_list[20:]
+
+        yield ContainerRoutingRule.build_request_option(container_no_list=container_no_list, sk=sk)
