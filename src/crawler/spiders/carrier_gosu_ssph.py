@@ -21,8 +21,7 @@ from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core.table import BaseTable, TableExtractor
 
-# URL = "https://www.sethshipping.com/track_shipment_ajax"
-URL = "https://www.gslltd.com.hk/track-shipment.php"
+URL = "https://www.sethshipping.com/track_shipment_ajax"
 
 
 class SharedSpider(BaseCarrierSpider):
@@ -32,14 +31,13 @@ class SharedSpider(BaseCarrierSpider):
         super(SharedSpider, self).__init__(*args, **kwargs)
 
         rules = [
-            HomePageRoutingRule(),
             MainInfoRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        request_option = HomePageRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        request_option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -67,7 +65,6 @@ class SharedSpider(BaseCarrierSpider):
         if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
                 url=option.url,
-                headers=option.headers,
                 meta=meta,
             )
         elif option.method == RequestOption.METHOD_POST_BODY:
@@ -91,70 +88,25 @@ class CarrierGosuSpider(SharedSpider):
     name = "carrier_gosu"
 
 
-class HomePageRoutingRule(BaseRoutingRule):
-    name = "HOME_PAGE"
-
-    @classmethod
-    def build_request_option(cls, mbl_no) -> RequestOption:
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=URL,
-            meta={
-                "mbl_no": mbl_no,
-            },
-        )
-
-    def get_save_name(self, response) -> str:
-        return f"{self.name}.html"
-
-    def handle(self, response):
-        mbl_no = response.meta["mbl_no"]
-
-        token_cap = self._extract_token_cap(response.text)
-        cookies = self._extract_cookies(response)
-        yield MainInfoRoutingRule.build_request_option(mbl_no=mbl_no, token_cap=token_cap, cookies=cookies)
-
-    @staticmethod
-    def _extract_token_cap(response_text):
-        pattern = re.compile(r"\'token_cap\': \"(?P<token_cap>[A-Za-z0-9]+)\"")
-        match = pattern.search(response_text)
-
-        return match.group("token_cap")
-
-    @staticmethod
-    def _extract_cookies(response):
-        cookies = {}
-        for cookie_byte in response.headers.getlist("Set-Cookie"):
-            kv = cookie_byte.decode("utf-8").split(";")[0].split("=")
-            cookies[kv[0]] = kv[1]
-
-        return cookies
-
-
 class MainInfoRoutingRule(BaseRoutingRule):
     name = "MAIN_INFO"
 
     @classmethod
-    def build_request_option(cls, mbl_no, token_cap, cookies: Dict) -> RequestOption:
-        form_data = {
-            "containerid": mbl_no,
-            "token_cap": token_cap,
-        }
+    def build_request_option(cls, mbl_no) -> RequestOption:
+        form_data = {"containerid": mbl_no}
         body = urlencode(query=form_data)
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url="https://www.gslltd.com.hk/get_tracing.php",
+            url=URL,
             headers={
                 "Connection": "keep-alive",
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36",
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                "Referer": "https://www.gslltd.com.hk/track-shipment.php",
+                "Referer": "https://www.sethshipping.com/tracking_shipment?id=SSPHAMD1234567",
                 "Accept-Language": "en-US,en;q=0.9",
             },
             body=body,
-            cookies=cookies,
             meta={
                 "mbl_no": mbl_no,
             },
@@ -165,7 +117,6 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta["mbl_no"]
-
         if self._is_mbl_no_invalid(response=response):
             yield ExportErrorData(mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found")
             return
