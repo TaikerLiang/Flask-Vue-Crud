@@ -1,5 +1,6 @@
 import dataclasses
 import re
+from typing import Dict
 
 import scrapy
 
@@ -76,6 +77,7 @@ class TideworksShareSpider(BaseMultiTerminalSpider):
                 url=option.url,
                 formdata=option.form_data,
                 meta=meta,
+                cookies=option.cookies,
             )
 
         elif option.method == RequestOption.METHOD_GET:
@@ -116,8 +118,23 @@ class LoginRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_nos = response.meta['container_nos']
         company_info = response.meta['company_info']
+
+        # for NOL(Q795)
+        cookies = {}
+        for cookie_byte in response.headers.getlist("Set-Cookie"):
+            kv = cookie_byte.decode("utf-8").split(";")[0].split("=")
+            cookies[kv[0]] = kv[1]
+        patt = re.compile(r'xhr[.]setRequestHeader[(]"X-CSRF-TOKEN", "(?P<csrf_token>.+)"[)];')
+        m = patt.search(response.text)
+        if m:
+            token = m.group("csrf_token")
+        else:
+            token = ""
+
         for container_no in container_nos:
-            yield SearchContainerRoutingRule.build_request_option(container_no=container_no, company_info=company_info)
+            yield SearchContainerRoutingRule.build_request_option(
+                container_no=container_no, company_info=company_info, cookies=cookies, token=token
+            )
 
 
 # -------------------------------------------------------------------------------
@@ -127,7 +144,9 @@ class SearchContainerRoutingRule(BaseRoutingRule):
     name = 'SEARCH_CONTAINER'
 
     @classmethod
-    def build_request_option(cls, container_no, company_info: CompanyInfo) -> RequestOption:
+    def build_request_option(
+        cls, container_no, company_info: CompanyInfo, cookies: Dict = {}, token: str = ""
+    ) -> RequestOption:
         url = (
             f'https://{company_info.lower_short}.tideworks.com/fc-{company_info.upper_short}/'
             f'import/default.do?method=defaultSearch'
@@ -135,6 +154,7 @@ class SearchContainerRoutingRule(BaseRoutingRule):
         form_data = {
             'searchBy': 'CTR',
             'numbers': container_no,
+            "_csrf": token,
         }
 
         return RequestOption(
@@ -143,6 +163,7 @@ class SearchContainerRoutingRule(BaseRoutingRule):
             url=url,
             form_data=form_data,
             meta={'container_no': container_no, 'company_info': company_info},
+            cookies=cookies,
         )
 
     def get_save_name(self, response) -> str:
