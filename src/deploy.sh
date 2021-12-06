@@ -18,10 +18,13 @@ then
 fi
 
 if [ "x$target" = "xprd" ]; then
-    echo "deploy to scrapy cloud project: 407697"
+    echo "deploy to scrapy cloud project: 407697 & 572059"
     shub image build 407697 -f Dockerfile.prd
     shub image push 407697
     shub image deploy 407697
+    shub image build 572059 -f Dockerfile.prd
+    shub image push 572059
+    shub image deploy 572059
 elif [ "x$target" = "xeval" ]; then
     echo "deploy to scrapy cloud project: 407696"
     shub image build 407696 -f Dockerfile.eval
