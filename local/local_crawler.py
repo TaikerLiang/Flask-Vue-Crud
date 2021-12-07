@@ -78,10 +78,13 @@ def start():
     logger.info(f"number of tasks: {len(local_tasks)}")
 
     # local_tasks = [
-    #     {'type': 'terminal', 'firms_code': 'M029', 'task_id': '128063', 'container_no': 'SEGU6740600'},
-    #     {'type': 'terminal', 'firms_code': 'M029', 'task_id': '128051', 'container_no': 'TCNU3065021'},
-    #     {'type': 'terminal', 'firms_code': 'M029', 'task_id': '128051', 'container_no': 'TLLU5288386'},
-    #     {'type': 'terminal', 'firms_code': 'M029', 'task_id': '128051', 'container_no': 'BMOU4142155'},
+    #     {'type': 'carrier', 'scac_code': 'WHLC', 'task_id': '177601', 'mbl_no': '001BAU3955'},
+    #     {'type': 'carrier', 'scac_code': 'WHLC', 'task_id': '177407', 'mbl_no': '049BA19501'},
+    #     {'type': 'carrier', 'scac_code': 'WHLC', 'task_id': '177601', 'mbl_no': '001BAU3955'},
+    #     {'type': 'carrier', 'scac_code': 'WHLC', 'task_id': '177565', 'mbl_no': '039BX66150'},
+    #     {'type': 'carrier', 'scac_code': 'WHLC', 'task_id': '177564', 'mbl_no': '039BA26243'},
+    #     # {'type': 'terminal', 'firms_code': 'M029', 'task_id': '128051', 'container_no': 'TLLU5288386'},
+    #     # {'type': 'terminal', 'firms_code': 'M029', 'task_id': '128051', 'container_no': 'BMOU4142155'},
     # ]
 
     if len(local_tasks) == 0:
