@@ -1,4 +1,3 @@
-import json
 import time
 from typing import List
 from crawler.core.table import BaseTable
@@ -16,6 +15,9 @@ from crawler.core_terminal.exceptions import LoadWebsiteTimeOutFatal
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
+
+
+MAX_PAGE_NUM = 3
 
 
 class MaherContentGetter(ChromeContentGetter):
@@ -80,6 +82,7 @@ class TerminalMaherMultiSpider(BaseMultiTerminalSpider):
 
         rules = [
             SearchRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -180,12 +183,14 @@ class SearchRoutingRule(BaseRoutingRule):
 
         content_getter = MaherContentGetter()
         content_getter.login()
-        response_text = content_getter.search(container_no_list)
+        response_text = content_getter.search(container_no_list[:MAX_PAGE_NUM])
         time.sleep(3)
         response = Selector(text=response_text)
 
-        for item in self._handle_response(response, container_no_list):
+        for item in self._handle_response(response, container_no_list[:MAX_PAGE_NUM]):
             yield item
+
+        yield NextRoundRoutingRule.build_request_option(container_no_list=container_no_list)
 
     @classmethod
     def _handle_response(cls, response, container_no_list):
@@ -224,6 +229,31 @@ class SearchRoutingRule(BaseRoutingRule):
 
 
 # -------------------------------------------------------------------------------
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    name = "NEXT_ROUND"
+
+    @classmethod
+    def build_request_option(cls, container_no_list: List) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://www.google.com",
+            meta={
+                "container_no_list": container_no_list,
+            },
+        )
+
+    def handle(self, response):
+        container_no_list = response.meta["container_no_list"]
+
+        if len(container_no_list) <= MAX_PAGE_NUM:
+            return
+
+        container_no_list = container_no_list[MAX_PAGE_NUM:]
+
+        yield SearchRoutingRule.build_request_option(container_no_list=container_no_list)
 
 
 class SpecificClassTdContainTextMatchRule(BaseMatchRule):
