@@ -14,6 +14,7 @@ from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError
 
 BASE_URL = "https://voyagertrack.portsamerica.com"
+MAX_PAGE_NUM = 20
 
 
 @dataclasses.dataclass
@@ -107,12 +108,17 @@ class SearchContainerRule(BaseRoutingRule):
 
         content_getter = ContentGetter()
         content_getter.login(company_info.email, company_info.password, company_info.site_name)
-        resp = content_getter.search(container_no_list)
 
-        content_getter.quit()
+        while True:
+            resp = content_getter.search(container_no_list[:MAX_PAGE_NUM])
+            for item in self._handle_response(Selector(text=resp), container_no_list[:MAX_PAGE_NUM]):
+                yield item
 
-        for item in self._handle_response(Selector(text=resp), container_no_list):
-            yield item
+            if len(container_no_list) <= MAX_PAGE_NUM:
+                content_getter.quit()
+                break
+
+            container_no_list = container_no_list[MAX_PAGE_NUM:]
 
     @classmethod
     def _handle_response(cls, response, container_no_list):
@@ -168,6 +174,10 @@ class SearchContainerRule(BaseRoutingRule):
 
 
 class ContentGetter(ChromeContentGetter):
+    def __init__(self):
+        super().__init__()
+        self.search_url = None
+
     def login(self, username, password, site_name):
         url = f"{BASE_URL}/logon?siteId={site_name}"
         self._driver.get(url)
@@ -183,8 +193,9 @@ class ContentGetter(ChromeContentGetter):
         time.sleep(10)
 
     def search(self, container_no_list):
-        url = f"{self._driver.current_url}#/Report/ImportContainer"
-        self._driver.get(url)
+        if not self.search_url:
+            self.search_url = f"{self._driver.current_url}#/Report/ImportContainer"
+        self._driver.get(self.search_url)
         time.sleep(5)
 
         multi_search_btn = self._driver.find_element_by_xpath('//*[@id="imgOpenContainerMultipleEntryDialog"]')
