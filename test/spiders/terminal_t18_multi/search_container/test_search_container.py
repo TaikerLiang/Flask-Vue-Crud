@@ -4,8 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_terminal.items import InvalidContainerNoItem
 from crawler.core_terminal.tideworks_share_spider import SearchContainerRoutingRule
+from crawler.core_terminal.items import InvalidContainerNoItem
 from crawler.spiders.terminal_t18_multi import TerminalT18Spider
 from test.spiders.terminal_t18_multi import search_container
 
@@ -21,15 +21,17 @@ def sample_loader(sample_loader):
     "sub,container_no",
     [
         ("01_basic", "MRKU7819241"),
+        ("02_invalid_container_no", "ZCSU7745227"),
     ],
 )
 def test_search_container(sub, container_no, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
     option = SearchContainerRoutingRule.build_request_option(
-        container_no=container_no,
+        container_nos=[container_no],
         company_info=TerminalT18Spider.company_info,
-        cookies="",
+        cookies={},
+        token="",
     )
 
     response = TextResponse(
