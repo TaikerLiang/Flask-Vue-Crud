@@ -149,10 +149,10 @@ class MblRoutingRule(BaseRoutingRule):
                         self.driver.go_to_next_container_page(ct_links, idx)
                     )
                     ct_detail_selector = Selector(text=content)
+
                     voyage_contents = asyncio.get_event_loop().run_until_complete(self.driver.get_voyage_contents())
-                    voyage_contents_selector = Selector(text=voyage_contents)
                     for result in self.handle_detail_page(
-                        response=ct_detail_selector, task_id=task_ids[0], voyage_content=voyage_contents_selector
+                        response=ct_detail_selector, task_id=task_ids[0], voyage_contents=voyage_contents
                     ):
                         if isinstance(result, BaseCarrierItem):
                             yield result
@@ -160,10 +160,9 @@ class MblRoutingRule(BaseRoutingRule):
                             raise RuntimeError()
                     asyncio.get_event_loop().run_until_complete(self.driver.go_back_from_container_detail_page())
             else:
-                contents = asyncio.get_event_loop().run_until_complete(self.driver.get_voyage_contents())
-                voyage_contents_selector = Selector(text=contents)
+                voyage_contents = asyncio.get_event_loop().run_until_complete(self.driver.get_voyage_contents())
                 for result in self.handle_detail_page(
-                    response=response_selector, task_id=task_ids[0], voyage_content=voyage_contents_selector
+                    response=response_selector, task_id=task_ids[0], voyage_contents=voyage_contents
                 ):
                     if isinstance(result, BaseCarrierItem):
                         yield result
@@ -207,10 +206,14 @@ class MblRoutingRule(BaseRoutingRule):
         container_link_element_map = {container_nos[i]: container_link_elements[i] for i in range(len(container_nos))}
         return container_link_element_map
 
-    def handle_detail_page(self, response: Selector, voyage_content: Selector, task_id: str):
+    def handle_detail_page(self, response: Selector, voyage_contents: List, task_id: str):
+        voyage_content_selectors = [Selector(text=voyage_content) for voyage_content in voyage_contents]
+
         # parse
         main_info = self._extract_main_info(response=response)
-        container_statuses = self.extract_container_statuses(response=response, voyage_content=voyage_content)
+        container_statuses = self.extract_container_statuses(
+            response=response, voyage_contents=voyage_content_selectors
+        )
         container_no = main_info["container_no"]
         por = main_info["por"].strip()
         final_dest = main_info["final_dest"].strip()
@@ -253,7 +256,9 @@ class MblRoutingRule(BaseRoutingRule):
                 continue
 
             voyage_routing = self._extract_voyage_routing(
-                response=voyage_content, location=voyage_spec.location, direction=voyage_spec.direction
+                voyage_routing_responses=voyage_content_selectors,
+                location=voyage_spec.location,
+                direction=voyage_spec.direction,
             )
 
             yield VesselItem(
@@ -340,7 +345,7 @@ class MblRoutingRule(BaseRoutingRule):
             "customs_release_date": customs_release_date,
         }
 
-    def extract_container_statuses(self, response, voyage_content):
+    def extract_container_statuses(self, response, voyage_contents):
         titles = response.css("h3")
         rule = CssQueryTextStartswithMatchRule(css_query="::text", startswith="Main information")
         main_info_title = find_selector_from(selectors=titles, rule=rule)
@@ -368,21 +373,25 @@ class MblRoutingRule(BaseRoutingRule):
             )
 
         container_statuses.reverse()
-
         return container_statuses
 
-    def _extract_voyage_routing(self, response, location, direction):
-        raw_vessel_voyage = response.css("h3::text").get()
-        vessel, voyage = self._parse_vessel_voyage(raw_vessel_voyage)
+    def _extract_voyage_routing(self, voyage_routing_responses: List[Selector], location, direction):
+        final_voyage_routing_locator = VoyageRoutingTableLocator()
 
-        table_selector = response.css('table[role="grid"]')
-        if not table_selector:
-            raise CarrierResponseFormatError(reason="Can not find voyage routing table !!!")
+        for response in voyage_routing_responses:  # there might be multiple voyage information in one container
+            raw_vessel_voyage = response.css("h3::text").get()
+            vessel, voyage = self._parse_vessel_voyage(raw_vessel_voyage)
 
-        voyage_routing_locator = VoyageRoutingTableLocator()
-        voyage_extractor = VoyageDetailPageTdExtractor()
-        voyage_routing_locator.parse(table=table_selector)
-        table = TableExtractor(table_locator=voyage_routing_locator)
+            table_selector = response.css('table[role="grid"]')
+            if not table_selector:
+                raise CarrierResponseFormatError(reason="Can not find voyage routing table !!!")
+
+            voyage_routing_locator = VoyageRoutingTableLocator()
+            voyage_extractor = VoyageDetailPageTdExtractor()
+            voyage_routing_locator.parse(table=table_selector)
+            final_voyage_routing_locator.combine(voyage_routing_locator)
+
+        table = TableExtractor(table_locator=final_voyage_routing_locator)
 
         eta, etd, pol, pod = None, None, None, None
         if direction == "Arrival":
@@ -450,7 +459,8 @@ class ContentGetter(PyppeteerContentGetter):
     def __init__(self, proxy_manager: Optional[ProxyManager] = None, is_headless: Optional[bool] = True):
         super().__init__(proxy_manager, is_headless=is_headless)
         pyppeteer_logger = logging.getLogger("pyppeteer")
-        pyppeteer_logger.setLevel(logging.WARNING)
+        # pyppeteer_logger.setLevel(logging.WARNING)
+        logging.disable(logging.DEBUG)
 
     async def search(self, search_no: str):
         await self.page.goto(BASE_URL, options={"timeout": 60000})
@@ -465,23 +475,29 @@ class ContentGetter(PyppeteerContentGetter):
         return await self.page.content()
 
     async def get_voyage_contents(self):
-        # the vouage pages in different container status are the same
-        links = await self._get_voyage_links()
-        await links[0].click()
-        time.sleep(5)
-        await self.page.evaluate("""{window.scrollBy(0, document.body.scrollHeight);}""")
-        time.sleep(5)
-        content = await self.page.content()
-        await self.page.click("#j_idt7\:searchForm\:j_idt361\:voyageBackButton")
-        time.sleep(5)
+        # the voyage pages in different container status are the same
+        contents = []
+        links = await self._get_distinct_voyage_links()
 
-        return content
+        for link in links:
+            await self.page.evaluate("""elem => elem.click()""", link)
+            time.sleep(5)
+            await self.page.evaluate("""{window.scrollBy(0, document.body.scrollHeight);}""")
+            time.sleep(5)
+            content = await self.page.content()
+            await self.page.click("button[id$=voyageBackButton]")
+            time.sleep(5)
+            contents.append(content)
 
-    async def _get_voyage_links(self, idx: Optional[int] = -1):
-        if idx >= 0:
-            links = await self.page.querySelectorAll("a[id*='voyageDetailsLink']")
-            return links[idx]
-        return await self.page.querySelectorAll("a[id*='voyageDetailsLink']")
+        return contents
+
+    async def _get_distinct_voyage_links(self):
+        links = await self.page.querySelectorAll("a[id*='voyageDetailsLink']")
+        voyage_num_link_map = {await self._get_voyage_link_text(link): link for link in links}
+        return list(voyage_num_link_map.values())
+
+    async def _get_voyage_link_text(self, link_elem_handle):
+        return await self.page.evaluate("""e => e.textContent""", link_elem_handle)
 
     async def get_container_links(self, idx: Optional[int] = -1):
         if idx >= 0:
@@ -498,7 +514,7 @@ class ContentGetter(PyppeteerContentGetter):
         return await self.page.content()
 
     async def go_back_from_container_detail_page(self):
-        await self.page.click("#j_idt7\:searchForm\:j_idt40\:contDetailsBackButton")
+        await self.page.click("button[id$=contDetailsBackButton]")
         time.sleep(5)
 
     async def reset_mbl_search_textarea(self):
@@ -575,6 +591,20 @@ class VoyageRoutingTableLocator(BaseTable):
             for title, td in zip(title_text_list, tds[1:]):
                 self._td_map.setdefault(title, {})
                 self._td_map[title][left_header] = td
+
+    def combine(self, table: BaseTable):
+        self._left_header_set = self._left_header_set.union(table._left_header_set)
+        self._td_map = dict(self._mergedicts(self._td_map, table._td_map))
+
+    def _mergedicts(self, dict1, dict2):
+        for k in set(dict1.keys()).union(dict2.keys()):
+            if k in dict1 and k in dict2:
+                if isinstance(dict1[k], dict) and isinstance(dict2[k], dict):
+                    yield (k, dict(self._mergedicts(dict1[k], dict2[k])))
+            elif k in dict1:
+                yield (k, dict1[k])
+            else:
+                yield (k, dict2[k])
 
 
 class MainDivTableLocator(BaseTable):
