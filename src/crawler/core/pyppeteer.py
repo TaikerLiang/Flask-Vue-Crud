@@ -26,8 +26,8 @@ class PyppeteerContentGetter(BaseContentGetter):
             # "--start-maximized",
         ]
         default_viewport = {
-            "width": 1920,
-            "height": 1080,
+            "width": 1200,
+            "height": 700,
         }
 
         auth = {}

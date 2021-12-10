@@ -472,7 +472,7 @@ class ContentGetter(PyppeteerContentGetter):
         await self.page.evaluate("""{window.scrollBy(0, document.body.scrollHeight);}""")
         time.sleep(5)
         content = await self.page.content()
-        await self.page.click("#j_idt7\:searchForm\:j_idt361\:voyageBackButton")
+        await self.page.click("#j_idt7\:searchForm\:j_idt352\:voyageBackButton")
         time.sleep(5)
 
         return content
@@ -499,7 +499,7 @@ class ContentGetter(PyppeteerContentGetter):
 
     async def go_back_from_container_detail_page(self):
         await self.page.click("#j_idt7\:searchForm\:j_idt40\:contDetailsBackButton")
-        time.sleep(5)
+        time.sleep(10)
 
     async def reset_mbl_search_textarea(self):
         await self.page.click("#j_idt7\:searchForm\:j_idt9\:search-reset")
