@@ -2,7 +2,6 @@ import json
 from typing import Dict, List, Tuple
 
 import scrapy
-from crawler.core_carrier.anlc_aplu_cmdu_share_spider import NextRoundRoutingRule
 
 from crawler.core_carrier.base import (
     CARRIER_RESULT_STATUS_ERROR,
@@ -63,9 +62,9 @@ class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
         yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
-
-        save_name = routing_rule.get_save_name(response=response)
-        self._saver.save(to=save_name, text=response.text)
+        if routing_rule.name != "ROUTING":
+            save_name = routing_rule.get_save_name(response=response)
+            self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
@@ -111,6 +110,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 "task_ids": task_ids,
                 "search_nos": search_nos,
                 "url_format": url_format,
+                "handle_httpstatus_list": [400],
             },
         )
 
