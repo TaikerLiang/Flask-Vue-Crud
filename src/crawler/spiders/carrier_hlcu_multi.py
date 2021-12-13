@@ -148,14 +148,14 @@ class TracingRoutingRule(BaseRoutingRule):
         if self._is_container_nos_exist(selector):
             container_nos = self._extract_container_nos(response=selector)
 
-        for container_no in container_nos:
+        for index, container_no in enumerate(container_nos):
             yield ContainerItem(
                 task_id=current_task_id,
                 container_no=container_no,
                 container_key=container_no,
             )
 
-            container_page = self._content_getter.get_container_page(container_no=container_no)
+            container_page = self._content_getter.get_container_page(index=index)
             for status_item in self._handle_container(
                 page=container_page, container_no=container_no, task_id=current_task_id
             ):
@@ -390,6 +390,9 @@ class ContentGetter(ChromeContentGetter):
         self._driver.get(f"{SEARCH_URL}?blno={mbl_no}")
         return self._driver.page_source
 
-    def get_container_page(self, container_no):
-        self._driver.get(f"{SEARCH_URL}?view=S8510&container={container_no}")
-        return self._driver.page_source
+    def get_container_page(self, index):
+        self._driver.find_elements(By.CSS_SELECTOR, "div.hl-radio")[index].click()
+        self._driver.find_elements(By.CSS_SELECTOR, "button[value='Details']")[0].click()
+        page_source = self._driver.page_source
+        self._driver.back()
+        return page_source
