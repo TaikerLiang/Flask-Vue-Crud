@@ -376,8 +376,12 @@ class MblRoutingRule(BaseRoutingRule):
 
         pod_vessel_voyage = location_table.extract_cell(top=vessel_voyage_index, left="Discharging Port")
         pod_m = pattern.match(pod_vessel_voyage)
-        pod_vessel = pod_m.group("vessel")
-        pod_voyage = pod_m.group("voyage")
+        if pod_m:
+            pod_vessel = pod_m.group("vessel")
+            pod_voyage = pod_m.group("voyage")
+        else:
+            pod_vessel = None
+            pod_voyage = None
 
         return {
             "pol_un_lo_code": location_table.extract_cell(top=un_lo_code_index, left="Loading Port"),
