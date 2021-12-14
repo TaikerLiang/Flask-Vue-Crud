@@ -74,11 +74,11 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
     def start(self):
         if self.search_type == SHIPMENT_TYPE_MBL:
             option = BillMainInfoRoutingRule.build_request_option(
-                mbl_nos=self.search_nos, task_ids=self.task_ids, verification_code=""
+                mbl_nos=self.search_nos, task_ids=self.task_ids, verification_code="", search_type=self.search_type
             )
         else:
             option = BookingMainInfoRoutingRule.build_request_option(
-                booking_nos=self.search_nos, task_ids=self.task_ids, verification_code=""
+                booking_nos=self.search_nos, task_ids=self.task_ids, verification_code="", search_type=self.search_type
             )
 
         yield self._build_request_by(option=option)
@@ -157,12 +157,12 @@ class CaptchaRoutingRule(BaseRoutingRule):
 
         if self._search_type == SHIPMENT_TYPE_BOOKING:
             yield BookingMainInfoRoutingRule.build_request_option(
-                booking_nos=search_nos, verification_code="", task_ids=task_ids
+                booking_nos=search_nos, verification_code="", task_ids=task_ids, search_type=self._search_type
             )
 
         elif self._search_type == SHIPMENT_TYPE_MBL:
             yield BillMainInfoRoutingRule.build_request_option(
-                mbl_nos=search_nos, verification_code="", task_ids=task_ids
+                mbl_nos=search_nos, verification_code="", task_ids=task_ids, search_type=self._search_type
             )
 
 
@@ -183,7 +183,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
         self._retry_count = 0
 
     @classmethod
-    def build_request_option(cls, mbl_nos: List, verification_code: str, task_ids: List) -> RequestOption:
+    def build_request_option(cls, mbl_nos: List, verification_code: str, task_ids: List, search_type: str) -> RequestOption:
         form_data = {
             "BL": mbl_nos[0],
             "CNTR": "",
@@ -203,6 +203,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
             meta={
                 "mbl_nos": mbl_nos,
                 "task_ids": task_ids,
+                "search_type": search_type
             },
         )
 
@@ -216,7 +217,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
         for item in self._handle_main_info_page(response=response):
             yield item
 
-        yield NextRoundRoutingRule.build_request_option(search_nos=mbl_nos, task_ids=task_ids)
+        # yield NextRoundRoutingRule.build_request_option(search_nos=mbl_nos, task_ids=task_ids, search_type=search_type)
 
         # if self._check_captcha(response=response):
         #     # Apply NextRoundRoutingRule inside it
@@ -249,6 +250,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
     def _handle_main_info_page(self, response):
         mbl_nos = response.meta["mbl_nos"]
         task_ids = response.meta["task_ids"]
+        search_type = response.meta["search_type"]
         current_mbl_no = mbl_nos[0]
         current_task_id = task_ids[0]
 
@@ -259,7 +261,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
                 status=CARRIER_RESULT_STATUS_ERROR,
                 detail="Data was not found",
             )
-            yield NextRoundRoutingRule.build_request_option(search_nos=mbl_nos, task_ids=task_ids)
+            yield NextRoundRoutingRule.build_request_option(search_nos=mbl_nos, task_ids=task_ids, search_type=search_type)
             return
 
         mbl_no_info = self._extract_hidden_info(response=response)
@@ -309,7 +311,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
             )
 
         # Apply NextRoundRoutingRule inside of it
-        yield ReleaseStatusRoutingRule.build_request_option(search_nos=mbl_nos, task_ids=task_ids)
+        yield ReleaseStatusRoutingRule.build_request_option(search_nos=mbl_nos, task_ids=task_ids, search_type=search_type)
 
     @staticmethod
     def _is_mbl_no_invalid(response):
@@ -595,7 +597,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
     name = "RELEASE_STATUS"
 
     @classmethod
-    def build_request_option(cls, search_nos: List, task_ids: List) -> RequestOption:
+    def build_request_option(cls, search_nos: List, task_ids: List, search_type: str) -> RequestOption:
         form_data = {
             "TYPE": "GetDispInfo",
             "Item": "RlsStatus",
@@ -610,6 +612,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,
+                "search_type": search_type,
             },
         )
 
@@ -619,6 +622,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
     def handle(self, response):
         search_nos = response.meta["search_nos"]
         task_ids = response.meta["task_ids"]
+        search_type = response.meta["search_type"]
         release_status = self._extract_release_status(response=response)
 
         yield MblItem(
@@ -630,7 +634,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
             customs_release_status=release_status["customs_release_status"],
             customs_release_date=release_status["customs_release_date"],
         )
-        yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+        yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, search_type=search_type)
 
     @staticmethod
     def _extract_release_status(response: scrapy.Selector) -> Dict:
@@ -904,7 +908,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
         self._retry_count = 0
 
     @classmethod
-    def build_request_option(cls, booking_nos: List, verification_code: str, task_ids: List) -> RequestOption:
+    def build_request_option(cls, booking_nos: List, verification_code: str, task_ids: List, search_type: str) -> RequestOption:
         form_data = {
             "BL": "",
             "CNTR": "",
@@ -924,6 +928,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
             meta={
                 "booking_nos": booking_nos,
                 "task_ids": task_ids,
+                "search_type": search_type,
             },
         )
 
@@ -933,31 +938,47 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_ids = response.meta["task_ids"]
         booking_nos = response.meta["booking_nos"]
+        search_type = response.meta["search_type"]
         current_task_id = task_ids[0]
         current_booking_no = booking_nos[0]
 
-        if self._check_captcha(response=response):
-            if self._is_booking_no_invalid(response=response):
-                yield ExportErrorData(
-                    task_id=current_task_id,
-                    booking_no=current_booking_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail="Data was not found",
-                )
-                yield NextRoundRoutingRule.build_request_option(search_nos=booking_nos, task_ids=task_ids)
-                return
+        if self._is_booking_no_invalid(response=response):
+            yield ExportErrorData(
+                task_id=current_task_id,
+                booking_no=current_booking_no,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
+            yield NextRoundRoutingRule.build_request_option(search_nos=booking_nos, task_ids=task_ids, search_type=search_type)
+            return
 
-            # Apply NextRoundRoutingRule inside of it
-            for item in self._handle_main_info_page(response=response):
-                yield item
+        # Apply NextRoundRoutingRule inside of it
+        for item in self._handle_main_info_page(response=response):
+            yield item
 
-        elif self._retry_count < CAPTCHA_RETRY_LIMIT:
-            self._retry_count += 1
-            yield CaptchaRoutingRule.build_request_option(search_nos=booking_nos, task_ids=task_ids)
 
-        else:
-            NextRoundRoutingRule.build_request_option(search_nos=booking_nos, task_ids=task_ids)
-            raise CarrierCaptchaMaxRetryError()
+        # if self._check_captcha(response=response):
+        #     if self._is_booking_no_invalid(response=response):
+        #         yield ExportErrorData(
+        #             task_id=current_task_id,
+        #             booking_no=current_booking_no,
+        #             status=CARRIER_RESULT_STATUS_ERROR,
+        #             detail="Data was not found",
+        #         )
+        #         yield NextRoundRoutingRule.build_request_option(search_nos=booking_nos, task_ids=task_ids)
+        #         return
+        #
+        #     # Apply NextRoundRoutingRule inside of it
+        #     for item in self._handle_main_info_page(response=response):
+        #         yield item
+        #
+        # elif self._retry_count < CAPTCHA_RETRY_LIMIT:
+        #     self._retry_count += 1
+        #     yield CaptchaRoutingRule.build_request_option(search_nos=booking_nos, task_ids=task_ids)
+        #
+        # else:
+        #     NextRoundRoutingRule.build_request_option(search_nos=booking_nos, task_ids=task_ids)
+        #     raise CarrierCaptchaMaxRetryError()
 
     @staticmethod
     def _is_booking_no_invalid(response):
@@ -994,6 +1015,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
     def _handle_main_info_page(self, response):
         task_ids = response.meta["task_ids"]
         booking_nos = response.meta["booking_nos"]
+        search_type = response.meta["search_type"]
         current_task_id = task_ids[0]
 
         booking_no_and_vessel_voyage = self._extract_booking_no_and_vessel_voyage(response=response)
@@ -1035,7 +1057,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
                 pol=hidden_form_info["pol"],
             )
 
-        yield NextRoundRoutingRule.build_request_option(search_nos=booking_nos, task_ids=task_ids)
+        yield NextRoundRoutingRule.build_request_option(search_nos=booking_nos, task_ids=task_ids, search_type=search_type)
 
     def _extract_booking_no_and_vessel_voyage(self, response: scrapy.Selector) -> Dict:
         tables = response.css("table table")
@@ -1278,7 +1300,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
     name = "ROUTING"
 
     @classmethod
-    def build_request_option(cls, search_nos: List, task_ids: List) -> RequestOption:
+    def build_request_option(cls, search_nos: List, task_ids: List, search_type: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
@@ -1286,12 +1308,14 @@ class NextRoundRoutingRule(BaseRoutingRule):
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,
+                "search_type": search_type,
             },
         )
 
     def handle(self, response):
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
+        search_type = response.meta["search_type"]
 
         if len(search_nos) == 1 and len(task_ids) == 1:
             return
@@ -1299,8 +1323,15 @@ class NextRoundRoutingRule(BaseRoutingRule):
         task_ids = task_ids[1:]
         search_nos = search_nos[1:]
 
-        yield CaptchaRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
-
+        # yield CaptchaRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+        if search_type == SHIPMENT_TYPE_MBL:
+            yield BillMainInfoRoutingRule.build_request_option(
+                mbl_nos=search_nos, task_ids=task_ids, verification_code="", search_type=search_type
+            )
+        else:
+             yield BookingMainInfoRoutingRule.build_request_option(
+                booking_nos=search_nos, task_ids=task_ids, verification_code="", search_type=search_type
+            )
 
 class CaptchaAnalyzer:
 
