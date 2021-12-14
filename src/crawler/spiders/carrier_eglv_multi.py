@@ -38,7 +38,7 @@ from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 from crawler.core.table import BaseTable, TableExtractor
 
 CAPTCHA_RETRY_LIMIT = 3
-EGLV_INFO_URL = "https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do"
+EGLV_INFO_URL = "https://ct.shipmentlink.com/servlet/TDB1_CargoTracking.do"
 EGLV_CAPTCHA_URL = "https://www.shipmentlink.com/servlet/TUF1_CaptchaUtils"
 
 
@@ -51,7 +51,7 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
         self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         bill_rules = [
-            CaptchaRoutingRule(search_type=SHIPMENT_TYPE_MBL),
+            # CaptchaRoutingRule(search_type=SHIPMENT_TYPE_MBL),
             BillMainInfoRoutingRule(),
             FilingStatusRoutingRule(),
             ReleaseStatusRoutingRule(),
@@ -60,7 +60,7 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
         ]
 
         booking_rules = [
-            CaptchaRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
+            # CaptchaRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
             BookingMainInfoRoutingRule(),
             ContainerStatusRoutingRule(),
             NextRoundRoutingRule(),
@@ -72,7 +72,15 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
             self._rule_manager = RuleManager(rules=booking_rules)
 
     def start(self):
-        option = CaptchaRoutingRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids)
+        if self.search_type == SHIPMENT_TYPE_MBL:
+            option = BillMainInfoRoutingRule.build_request_option(
+                mbl_nos=self.search_nos, task_ids=self.task_ids, verification_code=""
+            )
+        else:
+            option = BookingMainInfoRoutingRule.build_request_option(
+                booking_nos=self.search_nos, task_ids=self.task_ids, verification_code=""
+            )
+
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -130,7 +138,7 @@ class CaptchaRoutingRule(BaseRoutingRule):
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
-            url=EGLV_CAPTCHA_URL,
+            url="https://google.com",
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,
@@ -144,17 +152,17 @@ class CaptchaRoutingRule(BaseRoutingRule):
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
 
-        captcha_base64 = base64.b64encode(response.body)
-        verification_code = self._captcha_analyzer.analyze_captcha(captcha_base64=captcha_base64)
+        # captcha_base64 = base64.b64encode(response.body)
+        # verification_code = self._captcha_analyzer.analyze_captcha(captcha_base64=captcha_base64)
 
         if self._search_type == SHIPMENT_TYPE_BOOKING:
             yield BookingMainInfoRoutingRule.build_request_option(
-                booking_nos=search_nos, verification_code=verification_code, task_ids=task_ids
+                booking_nos=search_nos, verification_code="", task_ids=task_ids
             )
 
         elif self._search_type == SHIPMENT_TYPE_MBL:
             yield BillMainInfoRoutingRule.build_request_option(
-                mbl_nos=search_nos, verification_code=verification_code, task_ids=task_ids
+                mbl_nos=search_nos, verification_code="", task_ids=task_ids
             )
 
 
@@ -183,7 +191,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
             "TYPE": "BL",
             "NO": [mbl_nos[0], "", "", "", "", ""],
             "SEL": "s_bl",
-            "captcha_input": verification_code,
+            # "captcha_input": verification_code,
             "hd_captcha_input": "",
         }
 
@@ -205,18 +213,23 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
         task_ids = response.meta["task_ids"]
         mbl_nos = response.meta["mbl_nos"]
 
-        if self._check_captcha(response=response):
-            # Apply NextRoundRoutingRule inside it
-            for item in self._handle_main_info_page(response=response):
-                yield item
+        for item in self._handle_main_info_page(response=response):
+            yield item
 
-        elif self._retry_count < CAPTCHA_RETRY_LIMIT:
-            self._retry_count += 1
-            yield CaptchaRoutingRule.build_request_option(search_nos=mbl_nos, task_ids=task_ids)
+        yield NextRoundRoutingRule.build_request_option(search_nos=mbl_nos, task_ids=task_ids)
 
-        else:
-            yield NextRoundRoutingRule.build_request_option(search_nos=mbl_nos, task_ids=task_ids)
-            raise CarrierCaptchaMaxRetryError()
+        # if self._check_captcha(response=response):
+        #     # Apply NextRoundRoutingRule inside it
+        #     for item in self._handle_main_info_page(response=response):
+        #         yield item
+        #
+        # elif self._retry_count < CAPTCHA_RETRY_LIMIT:
+        #     self._retry_count += 1
+        #     yield CaptchaRoutingRule.build_request_option(search_nos=mbl_nos, task_ids=task_ids)
+        #
+        # else:
+        #     yield NextRoundRoutingRule.build_request_option(search_nos=mbl_nos, task_ids=task_ids)
+        #     raise CarrierCaptchaMaxRetryError()
 
     @staticmethod
     def _check_captcha(response) -> bool:
