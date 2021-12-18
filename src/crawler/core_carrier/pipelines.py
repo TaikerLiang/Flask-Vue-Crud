@@ -261,9 +261,15 @@ class CarrierResultCollector:
 
         containers = []
         for container in list(self._containers.values()):
-            for status in container["status"]:
+            new_status = []
+            # remove duplicated events
+            for idx, status in enumerate(container["status"]):
+                if status in container["status"][idx + 1 :]:
+                    continue
                 if "task_id" in status:
                     del status["task_id"]
+                new_status.append(status)
+            container["status"] = new_status
             containers.append(container)
 
         if self._basic or vessels or containers:
