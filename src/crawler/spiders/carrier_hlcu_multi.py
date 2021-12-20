@@ -1,3 +1,4 @@
+from time import sleep
 from typing import Dict, List
 
 import scrapy
@@ -155,6 +156,7 @@ class TracingRoutingRule(BaseRoutingRule):
                 container_key=container_no,
             )
 
+            self._content_getter.get_mbl_page(mbl_no=current_mbl_no)
             container_page = self._content_getter.get_container_page(index=index)
             for status_item in self._handle_container(
                 page=container_page, container_no=container_no, task_id=current_task_id
@@ -394,5 +396,4 @@ class ContentGetter(ChromeContentGetter):
         self._driver.find_elements(By.CSS_SELECTOR, "div.hl-radio")[index].click()
         self._driver.find_elements(By.CSS_SELECTOR, "button[value='Details']")[0].click()
         page_source = self._driver.page_source
-        self._driver.back()
         return page_source
