@@ -11,10 +11,8 @@ from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
-    CarrierInvalidMblNoError,
     ProxyMaxRetryError,
     SuspiciousOperationError,
-    CarrierInvalidSearchNoError,
 )
 from crawler.core_carrier.items import (
     BaseCarrierItem,
@@ -134,9 +132,19 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
         }
 
         if option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(url=option.url, meta=meta, headers=option.headers, dont_filter=True,)
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+                headers=option.headers,
+                dont_filter=True,
+            )
         elif option.method == RequestOption.METHOD_POST_FORM:
-            return scrapy.FormRequest(url=option.url, formdata=option.form_data, meta=meta, dont_filter=True,)
+            return scrapy.FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+                meta=meta,
+                dont_filter=True,
+            )
         else:
             raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
@@ -181,7 +189,11 @@ class FirstTierRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=url,
             headers=headers,
-            meta={"base_url": base_url, "task_ids": task_ids, "search_nos": search_nos,},
+            meta={
+                "base_url": base_url,
+                "task_ids": task_ids,
+                "search_nos": search_nos,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -255,7 +267,9 @@ class FirstTierRoutingRule(BaseRoutingRule):
             task_id = task_ids[index]
 
             yield ContainerItem(
-                task_id=task_id, container_key=container_no, container_no=container_no,
+                task_id=task_id,
+                container_key=container_no,
+                container_no=container_no,
             )
 
             yield ContainerStatusRoutingRule.build_request_option(
@@ -264,10 +278,15 @@ class FirstTierRoutingRule(BaseRoutingRule):
                 cooperation_no=container_info["cooperation_no"],
                 base_url=base_url,
                 task_id=task_id,
+                search_nos=search_nos,
+                task_ids=task_ids,
             )
 
             yield ReleaseStatusRoutingRule.build_request_option(
-                container_no=container_no, booking_no=container_info["booking_no"], base_url=base_url, task_id=task_id,
+                container_no=container_no,
+                booking_no=container_info["booking_no"],
+                base_url=base_url,
+                task_id=task_id,
             )
 
             yield RailInfoRoutingRule.build_request_option(
@@ -338,7 +357,9 @@ class VesselRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=base_url,
             form_data=form_data,
-            meta={"task_id": task_id,},
+            meta={
+                "task_id": task_id,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -397,7 +418,9 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     f_cmd = "125"
 
     @classmethod
-    def build_request_option(cls, container_no, booking_no, cooperation_no, base_url, task_id) -> RequestOption:
+    def build_request_option(
+        cls, container_no, booking_no, cooperation_no, base_url, task_id, search_nos, task_ids
+    ) -> RequestOption:
         form_data = {
             "f_cmd": cls.f_cmd,
             "cntr_no": container_no,
@@ -410,7 +433,12 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=base_url,
             form_data=form_data,
-            meta={"container_key": container_no, "task_id": task_id,},
+            meta={
+                "container_key": container_no,
+                "task_id": task_id,
+                "search_nos": search_nos,
+                "task_ids": task_ids,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -420,9 +448,15 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_id = response.meta["task_id"]
         container_key = response.meta["container_key"]
+        task_ids = response.meta["task_ids"]
+        search_nos = response.meta["search_nos"]
         response_dict = json.loads(response.text)
 
         container_status_list = self._extract_container_status_list(response_dict=response_dict)
+
+        if not container_status_list:
+            yield Restart(reason="No container status info", search_nos=search_nos, task_ids=task_ids)
+            return
 
         for container_status in container_status_list:
             yield ContainerStatusItem(
@@ -479,7 +513,10 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=base_url,
             form_data=form_data,
-            meta={"container_key": container_no, "task_id": task_id,},
+            meta={
+                "container_key": container_no,
+                "task_id": task_id,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -502,7 +539,9 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
         )
 
         yield ContainerItem(
-            task_id=task_id, container_key=container_key, last_free_day=release_info["last_free_day"] or None,
+            task_id=task_id,
+            container_key=container_key,
+            last_free_day=release_info["last_free_day"] or None,
         )
 
     @staticmethod
@@ -547,7 +586,10 @@ class RailInfoRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=base_url,
             form_data=form_data,
-            meta={"container_key": container_no, "task_id": task_id,},
+            meta={
+                "container_key": container_no,
+                "task_id": task_id,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -562,7 +604,9 @@ class RailInfoRoutingRule(BaseRoutingRule):
         ready_for_pick_up = self._extract_ready_for_pick_up(response_dict=response_dict)
 
         yield ContainerItem(
-            task_id=task_id, container_key=container_key, ready_for_pick_up=ready_for_pick_up or None,
+            task_id=task_id,
+            container_key=container_key,
+            ready_for_pick_up=ready_for_pick_up or None,
         )
 
     @staticmethod
