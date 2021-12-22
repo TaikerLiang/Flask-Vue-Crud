@@ -112,7 +112,6 @@ class LoginRoutingRule(BaseRoutingRule):
             meta={
                 "container_nos": container_nos,
                 "company_info": company_info,
-                "is_t18": company_info.lower_short == "t18",
             },
         )
 
@@ -122,13 +121,8 @@ class LoginRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_nos = response.meta["container_nos"]
         company_info = response.meta["company_info"]
-        is_t18 = response.meta["is_t18"]
 
-        # for NOL(Q795)
-        cookies = {}
-        for cookie_byte in response.headers.getlist("Set-Cookie"):
-            kv = cookie_byte.decode("utf-8").split(";")[0].split("=")
-            cookies[kv[0]] = kv[1]
+        cookies = response.request.headers.get("Cookie").decode("utf-8")
 
         patt = re.compile(r'xhr[.]setRequestHeader[(]"X-CSRF-TOKEN", "(?P<csrf_token>.+)"[)];')
         m = patt.search(response.text)
@@ -137,13 +131,9 @@ class LoginRoutingRule(BaseRoutingRule):
         else:
             token = ""
 
-        if is_t18:
-            # for T18(X117)
-            cookies = response.request.headers.get("Cookie").decode("utf-8")
-
         for container_no in container_nos:
             yield SearchContainerRoutingRule.build_request_option(
-                container_no=container_no, company_info=company_info, cookies=cookies, token=token, is_t18=is_t18
+                container_no=container_no, company_info=company_info, cookies=cookies, token=token
             )
 
 
@@ -154,9 +144,7 @@ class SearchContainerRoutingRule(BaseRoutingRule):
     name = "SEARCH_CONTAINER"
 
     @classmethod
-    def build_request_option(
-        cls, container_no, company_info: CompanyInfo, cookies, token: str = "", is_t18: bool = False
-    ) -> RequestOption:
+    def build_request_option(cls, container_no, company_info: CompanyInfo, cookies, token: str = "") -> RequestOption:
         url = (
             f"https://{company_info.lower_short}.tideworks.com/fc-{company_info.upper_short}/"
             f"import/default.do?method=defaultSearch"
@@ -167,24 +155,14 @@ class SearchContainerRoutingRule(BaseRoutingRule):
             "_csrf": token,
         }
 
-        if is_t18:
-            return RequestOption(
-                method=RequestOption.METHOD_POST_FORM,
-                rule_name=cls.name,
-                url=url,
-                headers={"Cookie": cookies},
-                form_data=form_data,
-                meta={"container_no": container_no, "company_info": company_info},
-            )
-        else:
-            return RequestOption(
-                method=RequestOption.METHOD_POST_FORM,
-                rule_name=cls.name,
-                url=url,
-                form_data=form_data,
-                meta={"container_no": container_no, "company_info": company_info},
-                cookies=cookies,
-            )
+        return RequestOption(
+            method=RequestOption.METHOD_POST_FORM,
+            rule_name=cls.name,
+            url=url,
+            headers={"Cookie": cookies},
+            form_data=form_data,
+            meta={"container_no": container_no, "company_info": company_info},
+        )
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
