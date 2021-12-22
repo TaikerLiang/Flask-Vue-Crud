@@ -110,7 +110,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 "task_ids": task_ids,
                 "search_nos": search_nos,
                 "url_format": url_format,
-                "handle_httpstatus_list": [400],
+                "handle_httpstatus_list": [400, 404],
             },
         )
 
