@@ -263,14 +263,6 @@ class ContainerRoutingRule(BaseRoutingRule):
             invalid_data_field_item["valid_data_dict"].update({"location": ["C", "V", "Y"]})
             invalid_data_field_item["invalid_data_dict"].update({"location": location})
 
-        if line_status != "RELEASED" and line_status != "HOLD":
-            invalid_data_field_item["valid_data_dict"].update({"line_status": ["RELEASE", "HOLD"]})
-            invalid_data_field_item["invalid_data_dict"].update({"line_status": line_status})
-
-        if customs_status != "RELEASED" and customs_status != "HOLD":
-            invalid_data_field_item["valid_data_dict"].update({"customs_status": ["RELEASE", "HOLD"]})
-            invalid_data_field_item["invalid_data_dict"].update({"customs_status": customs_status})
-
         if invalid_data_field_item["valid_data_dict"]:
             return invalid_data_field_item
         else:
