@@ -94,7 +94,6 @@ def test_invalid_container_no(sub, container_no_list, sample_loader):
             "e02_invalid_data_field",
             [
                 "OOLU8981883",
-                "CAIU3803055",
                 "CMAU0101886",
             ],
         )
