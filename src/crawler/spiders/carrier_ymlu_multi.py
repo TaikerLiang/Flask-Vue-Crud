@@ -34,6 +34,7 @@ from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, SHIPMENT_TYPE
 
 BASE_URL = "https://www.yangming.com"
 MAX_PAGE_NUM = 10
+PREVIOUS_PAGE_DEFAULT = "2jQCcyv2zz0ay_N55eh7n1vZQbzdMZBkHgWqCjwEzJvQ7-dYDUDPj7uAYGJb2GebRHJat51V7vn_VtGCl6zm5Xc2EpDyvN_HNbfMBqzfLzITuQeTsm4x5QETbL3muJQbuu4XTMhOSbxXyZEyjTBpJg2"
 
 
 @dataclasses.dataclass
@@ -208,6 +209,10 @@ class MainPageRoutingRule(BaseRoutingRule):
 
         else:
             hidden_form_spec = self._extract_hidden_form(response=response)
+            if not hidden_form_spec:
+                yield Restart(reason="No previous_page was found in hidden form")
+                return
+
             cookies_str = self._extract_cookies_str(response=response)
 
             yield CaptchaRoutingRule.build_request_option(
@@ -234,6 +239,10 @@ class MainPageRoutingRule(BaseRoutingRule):
         event_validation = response.css("input#__EVENTVALIDATION::attr(value)").get()
         view_state_generator = response.css("input#__VIEWSTATEGENERATOR::attr(value)").get()
         previous_page = response.css("input#__PREVIOUSPAGE::attr(value)").get()
+
+        if not previous_page:
+            return None
+
         return HiddenFormSpec(
             view_state=view_state,
             event_validation=event_validation,
