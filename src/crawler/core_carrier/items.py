@@ -105,7 +105,7 @@ class VesselItem(BaseCarrierItem):
 
     @property
     def key(self):
-        return self['vessel_key']
+        return self["vessel_key"]
 
 
 class ContainerItem(BaseCarrierItem):
@@ -124,12 +124,28 @@ class ContainerItem(BaseCarrierItem):
     pol_eta = scrapy.Field()
     final_dest_eta = scrapy.Field()
     ready_for_pick_up = scrapy.Field()
+    railway = scrapy.Field()
+    terminal = scrapy.Field()
 
     task_id = scrapy.Field()
 
     @property
     def key(self):
-        return self['container_key']
+        return self["container_key"]
+
+
+class RailItem(BaseCarrierItem):
+    container_key = scrapy.Field()
+    container_no = scrapy.Field()
+    railway = scrapy.Field()
+    description = scrapy.Field()
+    location = scrapy.Field(serializer=LocationItem)
+    local_date_time = scrapy.Field()
+    task_id = scrapy.Field()
+
+    @property
+    def key(self):
+        return self["container_key"]
 
 
 class ContainerStatusItem(BaseCarrierItem):
@@ -137,6 +153,7 @@ class ContainerStatusItem(BaseCarrierItem):
     description = scrapy.Field()
     local_date_time = scrapy.Field()
     location = scrapy.Field(serializer=LocationItem)
+    facility = scrapy.Field()
     transport = scrapy.Field()
     vessel = scrapy.Field()
     voyage = scrapy.Field()
@@ -146,4 +163,4 @@ class ContainerStatusItem(BaseCarrierItem):
 
     @property
     def key(self):
-        return self['container_key']
+        return self["container_key"]
