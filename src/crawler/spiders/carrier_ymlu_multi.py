@@ -34,7 +34,6 @@ from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, SHIPMENT_TYPE
 
 BASE_URL = "https://www.yangming.com"
 MAX_PAGE_NUM = 10
-PREVIOUS_PAGE_DEFAULT = "2jQCcyv2zz0ay_N55eh7n1vZQbzdMZBkHgWqCjwEzJvQ7-dYDUDPj7uAYGJb2GebRHJat51V7vn_VtGCl6zm5Xc2EpDyvN_HNbfMBqzfLzITuQeTsm4x5QETbL3muJQbuu4XTMhOSbxXyZEyjTBpJg2"
 
 
 @dataclasses.dataclass
