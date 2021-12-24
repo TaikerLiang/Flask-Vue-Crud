@@ -234,10 +234,6 @@ class FirstTierRoutingRule(BaseRoutingRule):
                         status=CARRIER_RESULT_STATUS_ERROR,
                         detail="Data was not found",
                     )
-                    yield NextRoundRoutingRule.build_request_option(
-                        search_nos=search_nos, task_ids=task_ids, base_url=base_url
-                    )
-                    return
             elif self._search_type == SHIPMENT_TYPE_BOOKING:
                 if search_no in booking_no_set:
                     yield MblItem(task_id=task_id, booking_no=search_no)
@@ -252,10 +248,6 @@ class FirstTierRoutingRule(BaseRoutingRule):
                         status=CARRIER_RESULT_STATUS_ERROR,
                         detail="Data was not found",
                     )
-                    yield NextRoundRoutingRule.build_request_option(
-                        search_nos=search_nos, task_ids=task_ids, base_url=base_url
-                    )
-                    return
 
         for container_info in container_info_list:
             container_no = container_info["container_no"]

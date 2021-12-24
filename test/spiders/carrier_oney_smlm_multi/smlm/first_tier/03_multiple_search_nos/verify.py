@@ -13,10 +13,10 @@ def verify(results):
         task_id=1,
     )
 
-    assert isinstance(results[1], RequestOption)
-    assert results[1].url == "https://google.com"
-    assert results[1].rule_name == NextRoundRoutingRule.name
-    assert results[1].meta == {
+    assert isinstance(results[19], RequestOption)
+    assert results[19].url == "https://google.com"
+    assert results[19].rule_name == NextRoundRoutingRule.name
+    assert results[19].meta == {
         "search_nos": ["SHSB1FY71701", "NJBH1A243500"],
         "task_ids": [1, 2],
         "base_url": CarrierSmlmSpider.base_url,

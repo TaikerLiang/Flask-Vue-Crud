@@ -1,4 +1,4 @@
-from crawler.core_carrier.items import MblItem, ExportErrorData
+from crawler.core_carrier.items import MblItem, ExportErrorData, ContainerItem
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.oney_smlm_multi_share_spider import VesselRoutingRule, NextRoundRoutingRule
 from crawler.spiders.carrier_oney_multi import CarrierOneySpider
@@ -30,11 +30,16 @@ def verify(results):
         detail="Data was not found",
         task_id=3,
     )
+    assert results[5] == ContainerItem(
+        container_key="NYKU3438324",
+        container_no="NYKU3438324",
+        task_id=2,
+    )
 
-    assert isinstance(results[5], RequestOption)
-    assert results[5].rule_name == NextRoundRoutingRule.name
-    assert results[5].url == "https://google.com"
-    assert results[5].meta == {
+    assert isinstance(results[41], RequestOption)
+    assert results[41].rule_name == NextRoundRoutingRule.name
+    assert results[41].url == "https://google.com"
+    assert results[41].meta == {
         "search_nos": ["RICBDW223900", "RICBDK658400", "DALA35925000"],
         "task_ids": [1, 2, 3],
         "base_url": CarrierOneySpider.base_url,
