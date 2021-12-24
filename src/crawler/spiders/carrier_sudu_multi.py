@@ -536,13 +536,10 @@ class ContentGetter(PyppeteerContentGetter):
         return await self.page.querySelectorAll("a[id*='contDetailsLink']")
 
     async def go_to_next_container_page(self, links: List, idx: int):
-        await asyncio.gather(
-            links[idx].click(),
-            asyncio.sleep(5),
-            self.page.evaluate("""{window.scrollBy(0, document.body.scrollHeight);}"""),
-            asyncio.sleep(3),
-        )
-
+        await links[idx].click()
+        await asyncio.sleep(5)
+        await self.page.evaluate("""{window.scrollBy(0, document.body.scrollHeight);}""")
+        await asyncio.sleep(3)
         return await self.page.content()
 
     async def go_back_from_container_detail_page(self):
