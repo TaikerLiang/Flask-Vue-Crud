@@ -59,7 +59,7 @@ class LocalCrawler:
         self.crawler.quit()
 
 
-@timeout(300, "Function slow; aborted")
+@timeout(180, "Function slow; aborted")
 def run_spider(local_crawler, edi_client, task, start_time):
     for result in local_crawler.run(task=task):
         code, resp = edi_client.send_provider_result_back(
