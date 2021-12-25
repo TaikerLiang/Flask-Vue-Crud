@@ -1,2 +1,3 @@
 def verify(results):
-    assert results == []
+    # restart item
+    assert len(results) == 1

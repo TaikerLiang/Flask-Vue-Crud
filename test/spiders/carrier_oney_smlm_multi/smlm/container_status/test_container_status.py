@@ -17,24 +17,30 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub,mbl_no,cntr_no,bkg_no,cop_no',
+    "sub,mbl_no,cntr_no,bkg_no,cop_no",
     [
-        ('01', 'TATH9C294100', 'SMCU1098525', 'TATH9C294100', 'CTAO9916398264'),
-        ('02_br_in_description', 'SHAM9B410100', 'SDCU6132558', 'SHAM9B410100', 'CSHA9A09444599'),
-        ('03_booking_without_events', 'NJPU9A246200', 'SMCU0000000', 'NJPU9A246200', 'CNBO9C02566855'),
+        ("01", "TATH9C294100", "SMCU1098525", "TATH9C294100", "CTAO9916398264"),
+        ("02_br_in_description", "SHAM9B410100", "SDCU6132558", "SHAM9B410100", "CSHA9A09444599"),
+        ("03_booking_without_events", "NJPU9A246200", "SMCU0000000", "NJPU9A246200", "CNBO9C02566855"),
     ],
 )
 def test_container_status_handle(sub, mbl_no, cntr_no, bkg_no, cop_no, sample_loader):
-    jsontext = sample_loader.read_file(sub, 'sample.json')
+    jsontext = sample_loader.read_file(sub, "sample.json")
 
     option = ContainerStatusRoutingRule.build_request_option(
-        container_no=cntr_no, booking_no=bkg_no, cooperation_no=cop_no, base_url=CarrierSmlmSpider.base_url, task_id=1,
+        container_no=cntr_no,
+        booking_no=bkg_no,
+        cooperation_no=cop_no,
+        base_url=CarrierSmlmSpider.base_url,
+        task_id=1,
+        search_nos=[bkg_no],
+        task_ids=[1],
     )
 
     response = TextResponse(
         url=option.url,
         body=jsontext,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=option.url,
             meta=option.meta,
@@ -44,5 +50,5 @@ def test_container_status_handle(sub, mbl_no, cntr_no, bkg_no, cop_no, sample_lo
     rule = ContainerStatusRoutingRule()
     results = list(rule.handle(response=response))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
