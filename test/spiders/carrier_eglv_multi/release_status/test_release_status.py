@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
 
 from crawler.spiders.carrier_eglv_multi import ReleaseStatusRoutingRule
 from test.spiders.carrier_eglv_multi import release_status
@@ -34,6 +35,7 @@ def test_release_status_handler(sub, mbl_no, sample_loader):
             meta={
                 "search_nos": [mbl_no],
                 "task_ids": ["1"],
+                "search_type": SHIPMENT_TYPE_MBL,
             },
         ),
     )
