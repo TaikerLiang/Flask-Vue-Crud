@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
+from crawler.core_carrier.base import SHIPMENT_TYPE_BOOKING
 
 from crawler.spiders.carrier_eglv_multi import BookingMainInfoRoutingRule
 from test.spiders.carrier_eglv_multi import booking_main_info
@@ -25,7 +26,7 @@ def test_main_info_handler(sub, booking_no, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
     option = BookingMainInfoRoutingRule.build_request_option(
-        booking_nos=[booking_no], verification_code="", task_ids=["1"]
+        booking_nos=[booking_no], verification_code="", task_ids=["1"], search_type=SHIPMENT_TYPE_BOOKING
     )
 
     response = TextResponse(

@@ -11,6 +11,7 @@ from pyppeteer.errors import TimeoutError, PageError
 from crawler.core.table import BaseTable, TableExtractor
 from crawler.core.defines import BaseContentGetter
 from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
@@ -30,17 +31,22 @@ from crawler.core_carrier.items import (
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
     SuspiciousOperationError,
+    ProxyMaxRetryError,
 )
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
+
 
 BASE_URL = "https://www.hamburgsud-line.com/linerportal/pages/hsdg/tnt.xhtml"
 
 MAX_RETRY_COUNT = 3
 
 
+@dataclasses.dataclass
 class Restart:
-    pass
+    search_nos: list
+    task_ids: list
+    reason: str = ""
 
 
 @dataclasses.dataclass
@@ -86,6 +92,25 @@ class CarrierSuduSpider(BaseMultiCarrierSpider):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(result)
+            elif isinstance(result, Restart):
+                search_nos = result.search_nos
+                task_ids = result.task_ids
+                self.logger.warning(f"----- {result.reason}, try new proxy and restart")
+
+                try:
+                    self._driver.proxy_manager.renew_proxy()
+                except ProxyMaxRetryError:
+                    for search_no, task_id in zip(search_nos, task_ids):
+                        yield ExportErrorData(
+                            mbl_no=search_no,
+                            task_id=task_id,
+                            status=CARRIER_RESULT_STATUS_ERROR,
+                            detail="proxy max retry error",
+                        )
+                    return
+
+                option = MblRoutingRule.build_request_option(mbl_nos=search_nos, task_ids=task_ids)
+                yield self._build_request_by(option)
             else:
                 raise RuntimeError()
 
@@ -148,6 +173,11 @@ class MblRoutingRule(BaseRoutingRule):
                     content = asyncio.get_event_loop().run_until_complete(
                         self.driver.go_to_next_container_page(ct_links, idx)
                     )
+
+                    if not content:
+                        yield Restart(search_nos=mbl_nos, task_ids=task_ids, reason="Content not extracted correctly")
+                        return
+
                     ct_detail_selector = Selector(text=content)
 
                     voyage_contents = asyncio.get_event_loop().run_until_complete(self.driver.get_voyage_contents())
@@ -507,10 +537,9 @@ class ContentGetter(PyppeteerContentGetter):
 
     async def go_to_next_container_page(self, links: List, idx: int):
         await links[idx].click()
-        time.sleep(5)
+        await asyncio.sleep(5)
         await self.page.evaluate("""{window.scrollBy(0, document.body.scrollHeight);}""")
-        time.sleep(3)
-
+        await asyncio.sleep(3)
         return await self.page.content()
 
     async def go_back_from_container_detail_page(self):

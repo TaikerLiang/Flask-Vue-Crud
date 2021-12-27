@@ -208,6 +208,10 @@ class MainPageRoutingRule(BaseRoutingRule):
 
         else:
             hidden_form_spec = self._extract_hidden_form(response=response)
+            if not hidden_form_spec:
+                yield Restart(reason="No previous_page was found in hidden form")
+                return
+
             cookies_str = self._extract_cookies_str(response=response)
 
             yield CaptchaRoutingRule.build_request_option(
@@ -234,6 +238,10 @@ class MainPageRoutingRule(BaseRoutingRule):
         event_validation = response.css("input#__EVENTVALIDATION::attr(value)").get()
         view_state_generator = response.css("input#__VIEWSTATEGENERATOR::attr(value)").get()
         previous_page = response.css("input#__PREVIOUSPAGE::attr(value)").get()
+
+        if not previous_page:
+            return None
+
         return HiddenFormSpec(
             view_state=view_state,
             event_validation=event_validation,
