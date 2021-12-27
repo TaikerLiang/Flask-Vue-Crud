@@ -47,6 +47,10 @@ class BaseTable:
         td_dict = self._td_map.setdefault(top, {})
         td_dict[left] = td
 
+    @property
+    def td_map(self):
+        return self._td_map
+
 
 class TableExtractor:
     def __init__(self, table_locator: BaseTable):

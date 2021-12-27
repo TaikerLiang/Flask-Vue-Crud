@@ -240,9 +240,6 @@ class MblRoutingRule(BaseRoutingRule):
     def handle_detail_page(self, response: Selector, voyage_contents: List, task_id: str):
         voyage_content_selectors = [Selector(text=voyage_content) for voyage_content in voyage_contents]
 
-        print(voyage_contents)
-        print(voyage_content_selectors)
-
         # parse
         main_info = self._extract_main_info(response=response)
         container_statuses = self.extract_container_statuses(
@@ -411,7 +408,10 @@ class MblRoutingRule(BaseRoutingRule):
         return container_statuses
 
     def _extract_voyage_routing(self, voyage_routing_responses: List[Selector], location, direction):
-        response = voyage_routing_responses[0]
+        if direction == "Arrival":
+            response = voyage_routing_responses[0]
+        else:
+            response = voyage_routing_responses[-1]
         raw_vessel_voyage = response.css("h3::text").get()
         vessel, voyage = self._parse_vessel_voyage(raw_vessel_voyage)
 
@@ -503,6 +503,7 @@ class ContentGetter(PyppeteerContentGetter):
         await self.page.click("#j_idt7\:searchForm\:j_idt9\:search-submit")
         await asyncio.sleep(5)
         await self.page.evaluate("""{window.scrollBy(0, document.body.scrollHeight);}""")
+        await self.scroll_down()
 
         return await self.page.content()
 
@@ -514,7 +515,7 @@ class ContentGetter(PyppeteerContentGetter):
         for link in links:
             await self.page.evaluate("""elem => elem.click()""", link)
             time.sleep(5)
-            await self.page.evaluate("""{window.scrollBy(0, document.body.scrollHeight);}""")
+            await self.scroll_down()
             time.sleep(5)
             content = await self.page.content()
             try:
