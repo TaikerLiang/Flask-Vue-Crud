@@ -4,6 +4,7 @@ import logging
 import asyncio
 import time
 from typing import Tuple, List, Optional
+from pprint import pprint
 
 from scrapy import Selector, FormRequest, Request
 from pyppeteer.errors import TimeoutError, PageError
@@ -64,7 +65,7 @@ class CarrierSuduSpider(BaseMultiCarrierSpider):
     def __init__(self, *args, **kwargs):
         super(CarrierSuduSpider, self).__init__(*args, **kwargs)
         self._driver = ContentGetter(
-            proxy_manager=HydraproxyProxyManager(session="sudu", logger=self.logger), is_headless=True
+            proxy_manager=HydraproxyProxyManager(session="sudu", logger=self.logger), is_headless=False
         )
 
         rules = [
@@ -162,57 +163,95 @@ class MblRoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_nos = response.meta["mbl_nos"]
         task_ids = response.meta["task_ids"]
-        try:
-            page_source = asyncio.get_event_loop().run_until_complete(self.driver.search(search_no=mbl_nos[0]))
-            response_selector = Selector(text=page_source)
-            if self.is_multi_containers(response_selector):
+
+        page_source = asyncio.get_event_loop().run_until_complete(self.driver.search(search_no=mbl_nos[0]))
+        response_selector = Selector(text=page_source)
+        if self.is_multi_containers(response_selector):
+            ct_links = asyncio.get_event_loop().run_until_complete(self.driver.get_container_links())
+            for idx in range(len(ct_links)):
+                # avoid Node is detached from document
                 ct_links = asyncio.get_event_loop().run_until_complete(self.driver.get_container_links())
-                for idx in range(len(ct_links)):
-                    # avoid Node is detached from document
-                    ct_links = asyncio.get_event_loop().run_until_complete(self.driver.get_container_links())
-                    content = asyncio.get_event_loop().run_until_complete(
-                        self.driver.go_to_next_container_page(ct_links, idx)
-                    )
+                content = asyncio.get_event_loop().run_until_complete(
+                    self.driver.go_to_next_container_page(ct_links, idx)
+                )
 
-                    if not content:
-                        yield Restart(search_nos=mbl_nos, task_ids=task_ids, reason="Content not extracted correctly")
-                        return
+                if not content:
+                    yield Restart(search_nos=mbl_nos, task_ids=task_ids, reason="Content not extracted correctly")
+                    return
 
-                    ct_detail_selector = Selector(text=content)
+                ct_detail_selector = Selector(text=content)
 
-                    voyage_contents = asyncio.get_event_loop().run_until_complete(self.driver.get_voyage_contents())
-                    for result in self.handle_detail_page(
-                        response=ct_detail_selector, task_id=task_ids[0], voyage_contents=voyage_contents
-                    ):
-                        if isinstance(result, BaseCarrierItem):
-                            yield result
-                        else:
-                            raise RuntimeError()
-                    asyncio.get_event_loop().run_until_complete(self.driver.go_back_from_container_detail_page())
-            else:
                 voyage_contents = asyncio.get_event_loop().run_until_complete(self.driver.get_voyage_contents())
                 for result in self.handle_detail_page(
-                    response=response_selector, task_id=task_ids[0], voyage_contents=voyage_contents
+                    response=ct_detail_selector, task_id=task_ids[0], voyage_contents=voyage_contents
                 ):
                     if isinstance(result, BaseCarrierItem):
                         yield result
                     else:
                         raise RuntimeError()
-            asyncio.get_event_loop().run_until_complete(self.driver.reset_mbl_search_textarea())
+                asyncio.get_event_loop().run_until_complete(self.driver.go_back_from_container_detail_page())
+        else:
+            voyage_contents = asyncio.get_event_loop().run_until_complete(self.driver.get_voyage_contents())
+            for result in self.handle_detail_page(
+                response=response_selector, task_id=task_ids[0], voyage_contents=voyage_contents
+            ):
+                if isinstance(result, BaseCarrierItem):
+                    yield result
+                else:
+                    raise RuntimeError()
+        asyncio.get_event_loop().run_until_complete(self.driver.reset_mbl_search_textarea())
 
-        except (TimeoutError, PageError, IndexError):
-            # need close first
-            if self.retry_count >= MAX_RETRY_COUNT:
-                yield ExportErrorData(status=RESULT_STATUS_FATAL, detail="<max-retry-error>")
-                return
-
-            self.retry_count += 1
-            self.driver.quit()
-            self.driver = ContentGetter(
-                proxy_manager=HydraproxyProxyManager(session="sudu", logger=self.logger), is_headless=True
-            )
-            yield MblRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
-            return
+        # try:
+        #     page_source = asyncio.get_event_loop().run_until_complete(self.driver.search(search_no=mbl_nos[0]))
+        #     response_selector = Selector(text=page_source)
+        #     if self.is_multi_containers(response_selector):
+        #         ct_links = asyncio.get_event_loop().run_until_complete(self.driver.get_container_links())
+        #         for idx in range(len(ct_links)):
+        #             # avoid Node is detached from document
+        #             ct_links = asyncio.get_event_loop().run_until_complete(self.driver.get_container_links())
+        #             content = asyncio.get_event_loop().run_until_complete(
+        #                 self.driver.go_to_next_container_page(ct_links, idx)
+        #             )
+        #
+        #             if not content:
+        #                 yield Restart(search_nos=mbl_nos, task_ids=task_ids, reason="Content not extracted correctly")
+        #                 return
+        #
+        #             ct_detail_selector = Selector(text=content)
+        #
+        #             voyage_contents = asyncio.get_event_loop().run_until_complete(self.driver.get_voyage_contents())
+        #             for result in self.handle_detail_page(
+        #                 response=ct_detail_selector, task_id=task_ids[0], voyage_contents=voyage_contents
+        #             ):
+        #                 if isinstance(result, BaseCarrierItem):
+        #                     yield result
+        #                 else:
+        #                     raise RuntimeError()
+        #             asyncio.get_event_loop().run_until_complete(self.driver.go_back_from_container_detail_page())
+        #     else:
+        #         voyage_contents = asyncio.get_event_loop().run_until_complete(self.driver.get_voyage_contents())
+        #         for result in self.handle_detail_page(
+        #             response=response_selector, task_id=task_ids[0], voyage_contents=voyage_contents
+        #         ):
+        #             if isinstance(result, BaseCarrierItem):
+        #                 yield result
+        #             else:
+        #                 raise RuntimeError()
+        #     asyncio.get_event_loop().run_until_complete(self.driver.reset_mbl_search_textarea())
+        #
+        # except (TimeoutError, PageError, IndexError):
+        #     # need close first
+        #     if self.retry_count >= MAX_RETRY_COUNT:
+        #         yield ExportErrorData(status=RESULT_STATUS_FATAL, detail="<max-retry-error>")
+        #         return
+        #
+        #     self.retry_count += 1
+        #     self.driver.quit()
+        #     self.driver = ContentGetter(
+        #         proxy_manager=HydraproxyProxyManager(session="sudu", logger=self.logger), is_headless=False
+        #     )
+        #     yield MblRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
+        #     return
 
         yield NextRoundRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
 
@@ -238,6 +277,9 @@ class MblRoutingRule(BaseRoutingRule):
 
     def handle_detail_page(self, response: Selector, voyage_contents: List, task_id: str):
         voyage_content_selectors = [Selector(text=voyage_content) for voyage_content in voyage_contents]
+
+        print(voyage_contents)
+        print(voyage_content_selectors)
 
         # parse
         main_info = self._extract_main_info(response=response)
@@ -273,34 +315,35 @@ class MblRoutingRule(BaseRoutingRule):
                 voyage=container_status["voyage"] or None,
             )
 
-        departure_voyage_spec, arrival_voyage_spec = self._get_container_voyage_link_element_specs(
-            por=por,
-            final_dest=final_dest,
-            container_statuses=container_statuses,
-            container_key=container_no,
-            container_no=container_no,
-        )
-
-        for voyage_spec in [departure_voyage_spec, arrival_voyage_spec]:
-            if not voyage_spec:
-                continue
-
-            voyage_routing = self._extract_voyage_routing(
-                voyage_routing_responses=voyage_content_selectors,
-                location=voyage_spec.location,
-                direction=voyage_spec.direction,
+        if voyage_contents:
+            departure_voyage_spec, arrival_voyage_spec = self._get_container_voyage_link_element_specs(
+                por=por,
+                final_dest=final_dest,
+                container_statuses=container_statuses,
+                container_key=container_no,
+                container_no=container_no,
             )
 
-            yield VesselItem(
-                task_id=task_id,
-                vessel_key=f"{voyage_spec.location} {voyage_spec.direction}",
-                vessel=voyage_routing["vessel"],
-                voyage=voyage_routing["voyage"],
-                pol=LocationItem(name=voyage_routing["pol"]),
-                pod=LocationItem(name=voyage_routing["pod"]),
-                etd=voyage_routing["etd"],
-                eta=voyage_routing["eta"],
-            )
+            for voyage_spec in [departure_voyage_spec, arrival_voyage_spec]:
+                if not voyage_spec:
+                    continue
+
+                voyage_routing = self._extract_voyage_routing(
+                    voyage_routing_responses=voyage_content_selectors,
+                    location=voyage_spec.location.strip(),
+                    direction=voyage_spec.direction.strip(),
+                )
+
+                yield VesselItem(
+                    task_id=task_id,
+                    vessel_key=f"{voyage_spec.location} {voyage_spec.direction}",
+                    vessel=voyage_routing["vessel"],
+                    voyage=voyage_routing["voyage"],
+                    pol=LocationItem(name=voyage_routing["pol"]),
+                    pod=LocationItem(name=voyage_routing["pod"]),
+                    etd=voyage_routing["etd"],
+                    eta=voyage_routing["eta"],
+                )
 
     @staticmethod
     def _get_container_voyage_link_element_specs(
@@ -406,22 +449,19 @@ class MblRoutingRule(BaseRoutingRule):
         return container_statuses
 
     def _extract_voyage_routing(self, voyage_routing_responses: List[Selector], location, direction):
-        final_voyage_routing_locator = VoyageRoutingTableLocator()
+        response = voyage_routing_responses[0]
+        raw_vessel_voyage = response.css("h3::text").get()
+        vessel, voyage = self._parse_vessel_voyage(raw_vessel_voyage)
 
-        for response in voyage_routing_responses:  # there might be multiple voyage information in one container
-            raw_vessel_voyage = response.css("h3::text").get()
-            vessel, voyage = self._parse_vessel_voyage(raw_vessel_voyage)
+        table_selector = response.css('table[role="grid"]')
+        if not table_selector:
+            raise CarrierResponseFormatError(reason="Can not find voyage routing table !!!")
 
-            table_selector = response.css('table[role="grid"]')
-            if not table_selector:
-                raise CarrierResponseFormatError(reason="Can not find voyage routing table !!!")
+        voyage_routing_locator = VoyageRoutingTableLocator()
+        voyage_extractor = VoyageDetailPageTdExtractor()
+        voyage_routing_locator.parse(table=table_selector)
 
-            voyage_routing_locator = VoyageRoutingTableLocator()
-            voyage_extractor = VoyageDetailPageTdExtractor()
-            voyage_routing_locator.parse(table=table_selector)
-            final_voyage_routing_locator.combine(voyage_routing_locator)
-
-        table = TableExtractor(table_locator=final_voyage_routing_locator)
+        table = TableExtractor(table_locator=voyage_routing_locator)
 
         eta, etd, pol, pod = None, None, None, None
         if direction == "Arrival":
@@ -429,7 +469,7 @@ class MblRoutingRule(BaseRoutingRule):
             pod = location
 
         elif direction == "Departure":
-            etd = table.extract_cell(top="Estimated Departure", left=location, extractor=voyage_extractor)
+            etd = table.extract_cell(top="Estimated Departure", left="Shanghai CNSHA", extractor=voyage_extractor)
             pol = location
 
         else:
@@ -515,8 +555,14 @@ class ContentGetter(PyppeteerContentGetter):
             await self.page.evaluate("""{window.scrollBy(0, document.body.scrollHeight);}""")
             time.sleep(5)
             content = await self.page.content()
-            await self.page.click("button[id$=voyageBackButton]")
+            try:
+                await self.page.click("button[id$=voyageBackButton]")
+            except PageError:
+                # special case, if the voyage_contents page is emtpy, the website will reset the result
+                return []
             time.sleep(5)
+            await self.scroll_down()
+            time.sleep(2)
             contents.append(content)
 
         return contents
@@ -545,6 +591,8 @@ class ContentGetter(PyppeteerContentGetter):
     async def go_back_from_container_detail_page(self):
         await self.page.click("button[id$=contDetailsBackButton]")
         time.sleep(5)
+        await self.scroll_down()
+        time.sleep(2)
 
     async def reset_mbl_search_textarea(self):
         await self.page.click("#j_idt7\:searchForm\:j_idt9\:search-reset")
@@ -620,20 +668,6 @@ class VoyageRoutingTableLocator(BaseTable):
             for title, td in zip(title_text_list, tds[1:]):
                 self._td_map.setdefault(title, {})
                 self._td_map[title][left_header] = td
-
-    def combine(self, table: BaseTable):
-        self._left_header_set = self._left_header_set.union(table._left_header_set)
-        self._td_map = dict(self._mergedicts(self._td_map, table._td_map))
-
-    def _mergedicts(self, dict1, dict2):
-        for k in set(dict1.keys()).union(dict2.keys()):
-            if k in dict1 and k in dict2:
-                if isinstance(dict1[k], dict) and isinstance(dict2[k], dict):
-                    yield (k, dict(self._mergedicts(dict1[k], dict2[k])))
-            elif k in dict1:
-                yield (k, dict1[k])
-            else:
-                yield (k, dict2[k])
 
 
 class MainDivTableLocator(BaseTable):
