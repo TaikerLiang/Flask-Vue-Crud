@@ -4,7 +4,6 @@ import logging
 import asyncio
 import time
 from typing import Tuple, List, Optional
-from pprint import pprint
 
 from scrapy import Selector, FormRequest, Request
 from pyppeteer.errors import TimeoutError, PageError
@@ -65,7 +64,7 @@ class CarrierSuduSpider(BaseMultiCarrierSpider):
     def __init__(self, *args, **kwargs):
         super(CarrierSuduSpider, self).__init__(*args, **kwargs)
         self._driver = ContentGetter(
-            proxy_manager=HydraproxyProxyManager(session="sudu", logger=self.logger), is_headless=False
+            proxy_manager=HydraproxyProxyManager(session="sudu", logger=self.logger), is_headless=True
         )
 
         rules = [
@@ -164,94 +163,57 @@ class MblRoutingRule(BaseRoutingRule):
         mbl_nos = response.meta["mbl_nos"]
         task_ids = response.meta["task_ids"]
 
-        page_source = asyncio.get_event_loop().run_until_complete(self.driver.search(search_no=mbl_nos[0]))
-        response_selector = Selector(text=page_source)
-        if self.is_multi_containers(response_selector):
-            ct_links = asyncio.get_event_loop().run_until_complete(self.driver.get_container_links())
-            for idx in range(len(ct_links)):
-                # avoid Node is detached from document
+        try:
+            page_source = asyncio.get_event_loop().run_until_complete(self.driver.search(search_no=mbl_nos[0]))
+            response_selector = Selector(text=page_source)
+            if self.is_multi_containers(response_selector):
                 ct_links = asyncio.get_event_loop().run_until_complete(self.driver.get_container_links())
-                content = asyncio.get_event_loop().run_until_complete(
-                    self.driver.go_to_next_container_page(ct_links, idx)
-                )
+                for idx in range(len(ct_links)):
+                    # avoid Node is detached from document
+                    ct_links = asyncio.get_event_loop().run_until_complete(self.driver.get_container_links())
+                    content = asyncio.get_event_loop().run_until_complete(
+                        self.driver.go_to_next_container_page(ct_links, idx)
+                    )
 
-                if not content:
-                    yield Restart(search_nos=mbl_nos, task_ids=task_ids, reason="Content not extracted correctly")
-                    return
+                    if not content:
+                        yield Restart(search_nos=mbl_nos, task_ids=task_ids, reason="Content not extracted correctly")
+                        return
 
-                ct_detail_selector = Selector(text=content)
+                    ct_detail_selector = Selector(text=content)
 
+                    voyage_contents = asyncio.get_event_loop().run_until_complete(self.driver.get_voyage_contents())
+                    for result in self.handle_detail_page(
+                        response=ct_detail_selector, task_id=task_ids[0], voyage_contents=voyage_contents
+                    ):
+                        if isinstance(result, BaseCarrierItem):
+                            yield result
+                        else:
+                            raise RuntimeError()
+                    asyncio.get_event_loop().run_until_complete(self.driver.go_back_from_container_detail_page())
+            else:
                 voyage_contents = asyncio.get_event_loop().run_until_complete(self.driver.get_voyage_contents())
                 for result in self.handle_detail_page(
-                    response=ct_detail_selector, task_id=task_ids[0], voyage_contents=voyage_contents
+                    response=response_selector, task_id=task_ids[0], voyage_contents=voyage_contents
                 ):
                     if isinstance(result, BaseCarrierItem):
                         yield result
                     else:
                         raise RuntimeError()
-                asyncio.get_event_loop().run_until_complete(self.driver.go_back_from_container_detail_page())
-        else:
-            voyage_contents = asyncio.get_event_loop().run_until_complete(self.driver.get_voyage_contents())
-            for result in self.handle_detail_page(
-                response=response_selector, task_id=task_ids[0], voyage_contents=voyage_contents
-            ):
-                if isinstance(result, BaseCarrierItem):
-                    yield result
-                else:
-                    raise RuntimeError()
-        asyncio.get_event_loop().run_until_complete(self.driver.reset_mbl_search_textarea())
+            asyncio.get_event_loop().run_until_complete(self.driver.reset_mbl_search_textarea())
 
-        # try:
-        #     page_source = asyncio.get_event_loop().run_until_complete(self.driver.search(search_no=mbl_nos[0]))
-        #     response_selector = Selector(text=page_source)
-        #     if self.is_multi_containers(response_selector):
-        #         ct_links = asyncio.get_event_loop().run_until_complete(self.driver.get_container_links())
-        #         for idx in range(len(ct_links)):
-        #             # avoid Node is detached from document
-        #             ct_links = asyncio.get_event_loop().run_until_complete(self.driver.get_container_links())
-        #             content = asyncio.get_event_loop().run_until_complete(
-        #                 self.driver.go_to_next_container_page(ct_links, idx)
-        #             )
-        #
-        #             if not content:
-        #                 yield Restart(search_nos=mbl_nos, task_ids=task_ids, reason="Content not extracted correctly")
-        #                 return
-        #
-        #             ct_detail_selector = Selector(text=content)
-        #
-        #             voyage_contents = asyncio.get_event_loop().run_until_complete(self.driver.get_voyage_contents())
-        #             for result in self.handle_detail_page(
-        #                 response=ct_detail_selector, task_id=task_ids[0], voyage_contents=voyage_contents
-        #             ):
-        #                 if isinstance(result, BaseCarrierItem):
-        #                     yield result
-        #                 else:
-        #                     raise RuntimeError()
-        #             asyncio.get_event_loop().run_until_complete(self.driver.go_back_from_container_detail_page())
-        #     else:
-        #         voyage_contents = asyncio.get_event_loop().run_until_complete(self.driver.get_voyage_contents())
-        #         for result in self.handle_detail_page(
-        #             response=response_selector, task_id=task_ids[0], voyage_contents=voyage_contents
-        #         ):
-        #             if isinstance(result, BaseCarrierItem):
-        #                 yield result
-        #             else:
-        #                 raise RuntimeError()
-        #     asyncio.get_event_loop().run_until_complete(self.driver.reset_mbl_search_textarea())
-        #
-        # except (TimeoutError, PageError, IndexError):
-        #     # need close first
-        #     if self.retry_count >= MAX_RETRY_COUNT:
-        #         yield ExportErrorData(status=RESULT_STATUS_FATAL, detail="<max-retry-error>")
-        #         return
-        #
-        #     self.retry_count += 1
-        #     self.driver.quit()
-        #     self.driver = ContentGetter(
-        #         proxy_manager=HydraproxyProxyManager(session="sudu", logger=self.logger), is_headless=False
-        #     )
-        #     yield MblRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
-        #     return
+        except (TimeoutError, PageError, IndexError):
+            # need close first
+            if self.retry_count >= MAX_RETRY_COUNT:
+                yield ExportErrorData(status=RESULT_STATUS_FATAL, detail="<max-retry-error>")
+                return
+
+            self.retry_count += 1
+            self.driver.quit()
+            self.driver = ContentGetter(
+                proxy_manager=HydraproxyProxyManager(session="sudu", logger=self.logger), is_headless=True
+            )
+            yield MblRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
+            return
 
         yield NextRoundRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
 
