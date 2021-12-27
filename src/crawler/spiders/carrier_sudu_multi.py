@@ -431,7 +431,7 @@ class MblRoutingRule(BaseRoutingRule):
             pod = location
 
         elif direction == "Departure":
-            etd = table.extract_cell(top="Estimated Departure", left="Shanghai CNSHA", extractor=voyage_extractor)
+            etd = table.extract_cell(top="Estimated Departure", left=location, extractor=voyage_extractor)
             pol = location
 
         else:
