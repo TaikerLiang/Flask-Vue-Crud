@@ -11,6 +11,7 @@ from crawler.core_carrier.oney_smlm_share_spider import (
 def verify(results):
     assert results[0] == MblItem(
         mbl_no='SHSM9C747300',
+        final_dest="CHICAGO,IL, UNITED STATES",
         task_id=1,
     )
 

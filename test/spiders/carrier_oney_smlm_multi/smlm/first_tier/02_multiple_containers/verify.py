@@ -9,7 +9,11 @@ from crawler.core_carrier.oney_smlm_share_spider import (
 
 
 def verify(results):
-    assert results[0] == MblItem(mbl_no='SHFA9A128100', task_id=1,)
+    assert results[0] == MblItem(
+        mbl_no='SHFA9A128100',
+        final_dest="LONG BEACH,CA, UNITED STATES",
+        task_id=1,
+    )
 
     assert isinstance(results[1], RequestOption)
     assert results[1].url == 'https://esvc.smlines.com/smline/CUP_HOM_3301GS.do'
