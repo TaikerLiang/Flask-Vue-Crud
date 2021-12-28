@@ -65,6 +65,8 @@ class CarrierItemPipeline(BaseItemPipeline):
                 self._collector.collect_container_item(item=item)
             elif isinstance(item, carrier_items.ContainerStatusItem):
                 self._collector.collect_container_status_item(item=item)
+            elif isinstance(item, carrier_items.RailItem):
+                self._collector.collect_rail_item(item=item)
             elif isinstance(item, carrier_items.ExportFinalData):
                 res = self._send_result_back_to_edi_engine()
                 return {"status": "CLOSE", "result": res}
@@ -148,6 +150,8 @@ class CarrierMultiItemsPipeline(BaseItemPipeline):
                 collector.collect_container_item(item=item)
             elif isinstance(item, carrier_items.ContainerStatusItem):
                 collector.collect_container_status_item(item=item)
+            elif isinstance(item, carrier_items.RailItem):
+                collector.collect_rail_item(item=item)
             elif isinstance(item, carrier_items.ExportErrorData):
                 collector.collect_error_item(item=item)
             elif isinstance(item, carrier_items.ExportFinalData):
@@ -201,6 +205,7 @@ class CarrierResultCollector:
         self._basic = {}
         self._vessels = OrderedDict()
         self._containers = OrderedDict()
+        self._rails = OrderedDict()
 
     def collect_error_item(self, item: carrier_items.ExportErrorData):
         clean_dict = self._clean_item(item)
@@ -234,6 +239,14 @@ class CarrierResultCollector:
 
         self._containers[item.key]["status"].append(clean_dict)
 
+    def collect_rail_item(self, item: carrier_items.RailItem):
+        clean_dict = self._clean_item(item)
+
+        if item.key not in self._rails:
+            self._containers[item.key] = self._get_default_container_data(container_key=item.key)
+
+        self._containers[item.key]["rail_status"].append(clean_dict)
+
     @staticmethod
     def _get_default_vessel_data(vessel_key: str):
         return {
@@ -246,6 +259,7 @@ class CarrierResultCollector:
             "container_key": container_key,
             "container_no": container_key,
             "status": [],
+            "rail_status": [],
         }
 
     def build_final_data(self) -> Union[Dict, None]:
@@ -262,14 +276,26 @@ class CarrierResultCollector:
         containers = []
         for container in list(self._containers.values()):
             new_status = []
-            # remove duplicated events
+            new_rail_status = []
+
+            # remove duplicated status
             for idx, status in enumerate(container["status"]):
                 if status in container["status"][idx + 1 :]:
                     continue
                 if "task_id" in status:
                     del status["task_id"]
                 new_status.append(status)
+
+            # remove duplicated rail status
+            for idx, rail_status in enumerate(container["rail_status"]):
+                if rail_status in container["rail_status"][idx + 1 :]:
+                    continue
+                if "task_id" in rail_status:
+                    del rail_status["task_id"]
+                new_rail_status.append(rail_status)
+
             container["status"] = new_status
+            container["rail_status"] = new_rail_status
             containers.append(container)
 
         if self._basic or vessels or containers:
