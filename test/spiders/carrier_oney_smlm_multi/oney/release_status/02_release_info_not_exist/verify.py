@@ -11,7 +11,7 @@ def verify(results):
     )
 
     assert results[1] == ContainerItem(
-        container_key='TCLU7088049',
+        container_key="TCLU7088049",
         last_free_day=None,
         terminal=None,
         task_id=1,
