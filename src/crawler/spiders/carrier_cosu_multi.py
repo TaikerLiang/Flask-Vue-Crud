@@ -3,7 +3,7 @@ from typing import List, Dict
 
 import scrapy
 from scrapy import Selector
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -276,8 +276,16 @@ class ItemExtractor:
         for item in vessel_items + [mbl_item]:
             yield item
 
+        content_getter.go_container_info_page()
         content_getter.scroll_to_bottom_of_page()
         for c_i, c_item in enumerate(container_items):
+            try:
+                response_text = content_getter.click_railway_button(c_i)
+                response_selector = scrapy.Selector(text=response_text)
+                railway = self._extract_railway_info(response=response_selector)
+            except NoSuchElementException:
+                railway = None
+
             response_text = content_getter.click_container_status_button(c_i)
             response_selector = scrapy.Selector(text=response_text)
 
@@ -287,7 +295,8 @@ class ItemExtractor:
                 response=response_selector,
             )
 
-            for item in container_status_items + [c_item]:
+            yield ContainerItem(**c_item, terminal=mbl_item["final_dest"]["firms_code"], railway=railway)
+            for item in container_status_items:
                 yield item
 
     @classmethod
@@ -572,6 +581,13 @@ class ItemExtractor:
 
         return container_status_infos
 
+    @staticmethod
+    def _extract_railway_info(response: scrapy.Selector):
+        pop_up_divs = response.css("div.ivu-poptip-content")
+        rule = CssQueryExistMatchRule(css_query="p.poptip-title-up")
+        railway_div = find_selector_from(selectors=pop_up_divs, rule=rule)
+        return railway_div.xpath(".//table/tbody/tr[1]/td[5]/div/span/text()").get().strip()
+
 
 class NextRoundRoutingRule(BaseRoutingRule):
     @classmethod
@@ -717,12 +733,27 @@ class ContentGetter(FirefoxContentGetter):
 
     def click_container_status_button(self, idx: int):
         repeat_three_times_buttons = self._driver.find_elements_by_css_selector(
-            "i[class='ivu-icon ivu-icon-ios-information']"
+            "div.containerSearchBody i[class='ivu-icon ivu-icon-ios-information']"
         )
         button = repeat_three_times_buttons[idx]
 
         button.click()
         time.sleep(8)
+        return self._driver.page_source
+
+    def go_container_info_page(self):
+        container_info_tab = self._driver.find_elements_by_css_selector("div[class='ivu-tabs-tab']")
+
+        container_info_tab[0].click()
+        time.sleep(3)
+
+    def click_railway_button(self, idx: int):
+        railway_button = self._driver.find_element_by_css_selector(
+            f"div.containerSearchBody tr:nth-child({idx + 1}) > td:nth-child(6) span"
+        )
+
+        railway_button.click()
+        time.sleep(5)
         return self._driver.page_source
 
 
