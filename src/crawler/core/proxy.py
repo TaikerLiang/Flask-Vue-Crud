@@ -55,6 +55,7 @@ class ProxyOption:
 class ProxyManager:
     PROXY_URL = "proxy.apify.com:8000"
     PROXY_PASSWORD = "XZTBLpciyyTCFb3378xWJbuYY"
+    MAX_RETRY = 30
 
     def __init__(self, logger: Logger):
         self._logger = logger
@@ -92,37 +93,21 @@ class ApifyProxyManager(ProxyManager):
 
     def __init__(self, session: str, logger: Logger):
         super().__init__(logger)
-        self._proxy_options = [
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-            ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{session}{self._generate_random_string()}"),
-        ]
+        self._session = session
+        self._retry = 0
 
     def renew_proxy(self):
-        if not self._proxy_options:
+        if self._retry > self.MAX_RETRY:
             raise ProxyMaxRetryError()
 
-        option = self._proxy_options.pop(0)
+        option = self._get_new_proxy_option()
         self._logger.warning(f"----- renew proxy ({len(self._proxy_options)}) {option}")
 
         self._proxy_username = f"groups-{option.group},session-{option.session}"
+        self._retry += 1
+
+    def _get_new_proxy_option(self) -> ProxyOption:
+        return ProxyOption(group=PROXY_GROUP_RESIDENTIAL, session=f"{self._session}{self._generate_random_string()}")
 
 
 class HydraproxyProxyManager(ProxyManager):
