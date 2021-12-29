@@ -44,7 +44,7 @@ from crawler.extractors.selector_finder import (
 )
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 
-MAX_RETRY_COUNT = 3
+MAX_RETRY_COUNT = 5
 EGLV_INFO_URL = "https://ct.shipmentlink.com/servlet/TDB1_CargoTracking.do"
 EGLV_CAPTCHA_URL = "https://www.shipmentlink.com/servlet/TUF1_CaptchaUtils"
 
@@ -216,15 +216,18 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
-    def handle_container_status(self, container_no, task_id):
-        httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.container_page(container_no))
-        response = self.get_response_selector(
-            url=EGLV_INFO_URL, httptext=httptext, meta={"container_no": container_no, "task_id": task_id}
-        )
-        rule = ContainerStatusRoutingRule()
+    def handle_container_status(self, container_no, search_nos: List, task_ids: List):
+        try:
+            httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.container_page(container_no))
+            response = self.get_response_selector(
+                url=EGLV_INFO_URL, httptext=httptext, meta={"container_no": container_no, "task_id": task_ids[0]}
+            )
+            rule = ContainerStatusRoutingRule()
 
-        for item in rule.handle(response):
-            yield item
+            for item in rule.handle(response):
+                yield item
+        except TimeoutError:
+            yield Restart(search_nos=search_nos, task_ids=task_ids, reason="handle_filing_status timeout")
 
     @staticmethod
     def get_response_selector(url, httptext, meta):
@@ -279,15 +282,13 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
     def _handle_main_info_page(self, response):
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
-        current_mbl_no = search_nos[0]
-        current_task_id = task_ids[0]
 
         mbl_no_info = self._extract_hidden_info(response=response)
         basic_info = self._extract_basic_info(response=response)
         vessel_info = self._extract_vessel_info(response=response, pod=basic_info["pod_name"])
 
         yield MblItem(
-            task_id=current_task_id,
+            task_id=task_ids[0],
             mbl_no=mbl_no_info["mbl_no"],
             vessel=vessel_info["vessel"],
             voyage=vessel_info["voyage"],
@@ -301,15 +302,17 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
             cargo_cutoff_date=basic_info["cargo_cutoff_date"],
         )
 
-        for item in self.handle_filing_status(mbl_no=current_mbl_no, task_id=current_task_id):
+        for item in self.handle_filing_status(search_nos=search_nos, task_ids=task_ids):
             yield item
 
-        for item in self.handle_release_status(task_id=current_task_id):
+        for item in self.handle_release_status(search_nos=search_nos, task_ids=task_ids):
             yield item
 
         container_list = self._extract_container_info(response=response)
         for container in container_list:
-            for item in self.handle_container_status(container_no=container["container_no"], task_id=current_task_id):
+            for item in self.handle_container_status(
+                container_no=container["container_no"], search_nos=search_nos, task_ids=task_ids
+            ):
                 yield item
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
@@ -438,23 +441,29 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
     def _get_first_container_no(container_list: List):
         return container_list[0]["container_no"]
 
-    def handle_filing_status(self, mbl_no, task_id):
-        httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.custom_info_page())
-        response = self.get_response_selector(
-            url=EGLV_INFO_URL, httptext=httptext, meta={"mbl_no": mbl_no, "task_id": task_id}
-        )
-        rule = FilingStatusRoutingRule()
+    def handle_filing_status(self, search_nos: List, task_ids: List):
+        try:
+            httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.custom_info_page())
+            response = self.get_response_selector(
+                url=EGLV_INFO_URL, httptext=httptext, meta={"mbl_no": search_nos[0], "task_id": task_ids[0]}
+            )
+            rule = FilingStatusRoutingRule()
 
-        for item in rule.handle(response):
-            yield item
+            for item in rule.handle(response):
+                yield item
+        except TimeoutError:
+            yield Restart(search_nos=search_nos, task_ids=task_ids, reason="handle_filing_status timeout")
 
-    def handle_release_status(self, task_id):
-        httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.release_status_page())
-        response = self.get_response_selector(url=EGLV_INFO_URL, httptext=httptext, meta={"task_id": task_id})
-        rule = ReleaseStatusRoutingRule()
+    def handle_release_status(self, search_nos: List, task_ids: List):
+        try:
+            httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.release_status_page())
+            response = self.get_response_selector(url=EGLV_INFO_URL, httptext=httptext, meta={"task_id": task_ids[0]})
+            rule = ReleaseStatusRoutingRule()
 
-        for item in rule.handle(response):
-            yield item
+            for item in rule.handle(response):
+                yield item
+        except TimeoutError:
+            yield Restart(search_nos=search_nos, task_ids=task_ids, reason="handle_release_status timeout")
 
 
 class LeftBasicInfoTableLocator(BaseTable):
