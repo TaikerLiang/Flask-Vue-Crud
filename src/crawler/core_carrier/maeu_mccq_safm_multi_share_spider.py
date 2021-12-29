@@ -21,7 +21,7 @@ from crawler.core_carrier.items import (
 )
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
-from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.proxy import ApifyProxyManager
 
 
 class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
@@ -43,7 +43,7 @@ class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
             NextRoundRoutingRule(),
         ]
 
-        self._proxy_manager = HydraproxyProxyManager(session="maeu_mccq_safm_share", logger=self.logger)
+        self._proxy_manager = ApifyProxyManager(session="maeu_mccq_safm_share", logger=self.logger)
         if self.search_type == SHIPMENT_TYPE_MBL:
             self._rule_manager = RuleManager(rules=bill_rules)
         elif self.search_type == SHIPMENT_TYPE_BOOKING:
@@ -54,7 +54,7 @@ class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
             search_nos=self.search_nos, task_ids=self.task_ids, url_format=self.base_url_format
         )
 
-        self._proxy_manager.renew_proxy(allow_reset=True)
+        self._proxy_manager.renew_proxy()
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         yield self._build_request_by(option=proxy_option)
 
@@ -71,7 +71,7 @@ class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
                 yield result
             elif isinstance(result, RequestOption):
                 if response.meta[RuleManager.META_CARRIER_CORE_RULE_NAME] == NextRoundRoutingRule.name:
-                    self._proxy_manager.renew_proxy(allow_reset=True)
+                    self._proxy_manager.renew_proxy()
                     result = self._proxy_manager.apply_proxy_to_request_option(option=result)
 
                 yield self._build_request_by(option=result)
