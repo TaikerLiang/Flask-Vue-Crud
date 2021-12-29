@@ -1,8 +1,12 @@
 import random
 import asyncio
+import logging
 
 from pyppeteer import launch
 from pyppeteer_stealth import stealth
+from typing import Any
+from pyppeteer import connection, launcher
+import websockets.client
 
 from crawler.core.defines import BaseContentGetter
 
@@ -14,6 +18,7 @@ class PyppeteerContentGetter(BaseContentGetter):
         self.browser = None
         self.page = None
 
+        self._patch_pyppeteer()
         asyncio.get_event_loop().run_until_complete(self.launch_browser(is_headless=is_headless))
 
     async def launch_browser(self, is_headless: bool):
@@ -23,12 +28,17 @@ class PyppeteerContentGetter(BaseContentGetter):
             "--disable-blink-features",
             "--enable-javascript",
             "--window-size=1920,1080",
+            "logLevel--3"
             # "--start-maximized",
         ]
         default_viewport = {
             "width": 1200,
             "height": 700,
         }
+
+        pyppeteer_level = logging.WARNING
+        logging.getLogger("pyppeteer").setLevel(pyppeteer_level)
+        logging.getLogger("websockets.protocol").setLevel(pyppeteer_level)
 
         auth = {}
         if self.proxy_manager:
@@ -66,3 +76,25 @@ class PyppeteerContentGetter(BaseContentGetter):
 
     def quit(self):
         asyncio.get_event_loop().run_until_complete(self.browser.close())
+
+    def _patch_pyppeteer(self):
+        class PatchedConnection(connection.Connection):  # type: ignore
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                super().__init__(*args, **kwargs)
+                # the _ws argument is not yet connected, can simply be replaced with another
+                # with better defaults.
+                self._ws = websockets.client.connect(
+                    self._url,
+                    loop=self._loop,
+                    # the following parameters are all passed to WebSocketCommonProtocol
+                    # which markes all three as Optional, but connect() doesn't, hence the liberal
+                    # use of type: ignore on these lines.
+                    # fixed upstream but not yet released, see aaugustin/websockets#93ad88
+                    max_size=None,  # type: ignore
+                    ping_interval=None,  # type: ignore
+                    ping_timeout=None,  # type: ignore
+                )
+
+        connection.Connection = PatchedConnection
+        # also imported as a  global in pyppeteer.launcher
+        launcher.Connection = PatchedConnection

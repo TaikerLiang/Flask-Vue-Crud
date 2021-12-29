@@ -6,6 +6,7 @@ from typing import Dict, List
 from scrapy import Request
 from scrapy.http import TextResponse
 from pyppeteer.errors import TimeoutError, PageError
+from pyppeteer.dialog import Dialog
 import requests
 import scrapy
 
@@ -110,7 +111,7 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
             if isinstance(result, BaseCarrierItem):
                 yield result
             elif isinstance(result, Restart):
-                yield self._prepare_restart()
+                yield self._prepare_restart(search_nos=result.search_nos, task_ids=result.task_ids)
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
             else:
@@ -166,11 +167,19 @@ class ContentRule(BaseRoutingRule):
         task_ids = response.meta["task_ids"]
 
         try:
-            page_source = asyncio.get_event_loop().run_until_complete(
-                self.driver.search_and_return(
-                    search_no=search_nos[0], search_type=self._search_type, task_id=task_ids[0]
-                )
+            page_source, is_exist = asyncio.get_event_loop().run_until_complete(
+                self.driver.search_and_return(search_no=search_nos[0], search_type=self._search_type)
             )
+
+            if not is_exist:
+                yield ExportErrorData(
+                    task_id=task_ids[0],
+                    booking_no=search_nos[0],
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+                yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+                return
         except (TimeoutError, PageError):
             yield Restart(search_nos=search_nos, task_ids=task_ids, reason="TimeoutError/PageError")
             return
@@ -273,16 +282,6 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
         current_mbl_no = search_nos[0]
         current_task_id = task_ids[0]
 
-        if self._is_mbl_no_invalid(response=response):
-            yield ExportErrorData(
-                task_id=current_task_id,
-                mbl_no=current_mbl_no,
-                status=CARRIER_RESULT_STATUS_ERROR,
-                detail="Data was not found",
-            )
-            yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
-            return
-
         mbl_no_info = self._extract_hidden_info(response=response)
         basic_info = self._extract_basic_info(response=response)
         vessel_info = self._extract_vessel_info(response=response, pod=basic_info["pod_name"])
@@ -314,24 +313,6 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
                 yield item
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
-
-    @staticmethod
-    def _is_mbl_no_invalid(response):
-        script_text = response.css("script::text").get()
-        if "B/L No. is not valid, please check again, thank you." in script_text:
-            return True
-
-        message_under_search_table = response.css("table table tr td.f12wrdb1::text").get()
-        if isinstance(message_under_search_table, str):
-            message_under_search_table = message_under_search_table.strip()
-        mbl_invalid_message = (
-            "No information on B/L No., please enter a valid B/L No. or contact our offices for assistance."
-        )
-
-        if message_under_search_table == mbl_invalid_message:
-            return True
-
-        return False
 
     @staticmethod
     def _extract_hidden_info(response: scrapy.Selector) -> Dict:
@@ -928,7 +909,7 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
         form_data = {
             "BL": "",
             "CNTR": "",
-            "bkno": booking_nos[0],
+            "bkno": search_nos[0],
             "TYPE": "BK",
             "NO": ["", "", "", "", "", ""],
             "SEL": "s_bk",
@@ -951,41 +932,9 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        task_ids = response.meta["task_ids"]
-        search_nos = response.meta["search_nos"]
-        current_task_id = task_ids[0]
-        current_booking_no = search_nos[0]
-
-        if self._is_booking_no_invalid(response=response):
-            yield ExportErrorData(
-                task_id=current_task_id,
-                booking_no=current_booking_no,
-                status=CARRIER_RESULT_STATUS_ERROR,
-                detail="Data was not found",
-            )
-            yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
-            return
-
         # Apply NextRoundRoutingRule inside of it
         for item in self._handle_main_info_page(response=response):
             yield item
-
-    @staticmethod
-    def _is_booking_no_invalid(response):
-        script_text = response.css("script::text").get()
-        if "Booking No. is not valid, please check again, thank you." in script_text:
-            return True
-
-        message_under_search_table = response.css("table table tr td.f12wrdb1::text").get()
-        if isinstance(message_under_search_table, str):
-            message_under_search_table = message_under_search_table.strip()
-        boooking_invalid_message = (
-            "No information on Booking No., please enter a valid Booking No. or contact our offices for assistance."
-        )
-        if message_under_search_table == boooking_invalid_message:
-            return True
-
-        return False
 
     @staticmethod
     def _check_captcha(response) -> bool:
@@ -1328,26 +1277,31 @@ class EglvContentGetter(PyppeteerContentGetter):
     def __init__(self, proxy_manager: ProxyManager = None, is_headless: bool = False):
         super().__init__(proxy_manager, is_headless=is_headless)
 
-    async def search_and_return(self, search_no, search_type, task_id):
-        print(task_id, search_no)
+    async def search_and_return(self, search_no: str, search_type: str):
         btn_value = "s_bl" if search_type == SHIPMENT_TYPE_MBL else "s_bk"
+        self.page.on("dialog", lambda dialog: asyncio.ensure_future(self.close_dialog(dialog)))
 
         await self.page.goto(EGLV_INFO_URL)
-        await self.page.waitForSelector(f"input[value={btn_value}]")
+        await self.page.waitForSelector(f"input[value={btn_value}]", {"timeout": 10000})
         await self.page.waitForSelector("input#NO")
 
         await self.page.click(f"input[value={btn_value}]")
         await self.page.type("input#NO", search_no)
-
-        await asyncio.sleep(1)
-        self.page.on("dialog", lambda dialog: asyncio.ensure_future(self.close_dialog(dialog, task_id)))
+        await asyncio.sleep(2)
         await self.page.click("#quick input[type=button]")
-        await self.page.waitForSelector('table[cellpadding="2"]', {"timeout": 10000})
         await asyncio.sleep(5)
         await self.scroll_down()
 
+        is_exist = await self._check_data_exist()
         content = await self.page.content()
-        return content
+        return content, is_exist
+
+    async def _check_data_exist(self):
+        try:
+            await self.page.waitForSelector('table[cellpadding="2"]', {"timeout": 10000})
+            return True
+        except TimeoutError:
+            return False
 
     async def handle_captcha(self):
         captcha_analyzer = CaptchaAnalyzer()
@@ -1368,19 +1322,16 @@ class EglvContentGetter(PyppeteerContentGetter):
         await asyncio.sleep(2)
 
     @staticmethod
-    async def close_dialog(dialog, task_id):
-        mbl_not_valid_msg = "B/L No. is not valid, please check again, thank you."
-        booking_not_valid_msg = "Booking No. is not valid, please check again, thank you."
-        if dialog.message == mbl_not_valid_msg or dialog.message == booking_not_valid_msg:
-            raise
-        await dialog.accept()
+    async def close_dialog(dialog: Dialog):
+        await asyncio.sleep(2)
+        await dialog.dismiss()
 
     async def custom_info_page(self):
         await self.page.click("a[href=\"JavaScript:toggle('CustomsInfo');\"]")
         await asyncio.sleep(1)
         await self.page.click("a[href=\"JavaScript:getDispInfo('AMTitle','AMInfo');\"]")
         await self.page.waitForSelector("div#AMInfo table")
-        await asyncio.sleep(2)
+        await asyncio.sleep(10)
         div_ele = await self.page.querySelector("div#AMInfo")
         return await self.page.evaluate("(element) => element.outerHTML", div_ele)
 
@@ -1397,7 +1348,7 @@ class EglvContentGetter(PyppeteerContentGetter):
         await asyncio.sleep(3)
         container_page = (await self.browser.pages())[-1]
         await container_page.waitForSelector("table table")
-        await asyncio.sleep(2)
+        await asyncio.sleep(5)
         content = await container_page.content()
         await container_page.close()
 
