@@ -963,14 +963,13 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
     def _handle_main_info_page(self, response):
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
-        current_task_id = task_ids[0]
 
         booking_no_and_vessel_voyage = self._extract_booking_no_and_vessel_voyage(response=response)
         basic_info = self._extract_basic_info(response=response)
         filing_info = self._extract_filing_info(response=response)
 
         yield MblItem(
-            task_id=current_task_id,
+            task_id=task_ids[0],
             booking_no=booking_no_and_vessel_voyage["booking_no"],
             por=LocationItem(name=basic_info["por_name"]),
             pol=LocationItem(name=basic_info["pol_name"]),
@@ -990,14 +989,14 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
         container_infos = self._extract_container_infos(response=response)
         for container_info in container_infos:
             yield ContainerItem(
-                task_id=current_task_id,
+                task_id=task_ids[0],
                 container_key=container_info["container_no"],
                 container_no=container_info["container_no"],
                 full_pickup_date=container_info["full_pickup_date"],
             )
 
             for item in self.handle_container_status(
-                container_no=container_info["container_no"], task_id=current_task_id
+                container_no=container_info["container_no"], search_nos=search_nos, task_ids=task_ids
             ):
                 yield item
 

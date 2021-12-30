@@ -18,7 +18,7 @@ class PyppeteerContentGetter(BaseContentGetter):
         self.browser = None
         self.page = None
 
-        self._patch_pyppeteer()
+        # self._patch_pyppeteer()
         asyncio.get_event_loop().run_until_complete(self.launch_browser(is_headless=is_headless))
 
     async def launch_browser(self, is_headless: bool):
