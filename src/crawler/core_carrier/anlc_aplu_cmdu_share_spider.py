@@ -1,3 +1,4 @@
+import re
 import json
 from typing import Dict, List
 
@@ -345,6 +346,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 description=container_status["description"],
                 location=LocationItem(name=container_status["location"]),
                 est_or_actual=container_status["est_or_actual"],
+                facility=container_status["facility"],
             )
 
     @staticmethod
@@ -400,6 +402,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 "description": table.extract_cell("Moves", index),
                 "location": table.extract_cell("Location", index, LocationTdExtractor()),
                 "est_or_actual": "A" if is_actual else "E",
+                "facility": table.extract_cell("Location", index, FacilityTextExtractor()),
             }
 
 
@@ -465,3 +468,11 @@ class LocationTdExtractor(BaseTableCellExtractor):
     def extract(self, cell: Selector):
         td_i = cell.css("td::text").get().strip()
         return td_i
+
+
+class FacilityTextExtractor(BaseTableCellExtractor):
+    def extract(self, cell: Selector):
+        TAG_RE = re.compile(r"<[^>]+>")
+        i_text = cell.css("script#location__1::text").get(default="").strip()
+        facility = TAG_RE.sub("", i_text)
+        return facility
