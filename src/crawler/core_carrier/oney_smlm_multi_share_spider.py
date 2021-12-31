@@ -5,7 +5,7 @@ from typing import List
 
 import scrapy
 
-from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.proxy import ApifyProxyManager
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
@@ -46,7 +46,7 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
 
         self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
-        self._proxy_manager = HydraproxyProxyManager(session="oneysmlm", logger=self.logger)
+        self._proxy_manager = ApifyProxyManager(session="oneysmlm", logger=self.logger)
 
         bill_rules = [
             FirstTierRoutingRule(search_type=SHIPMENT_TYPE_MBL),

@@ -7,7 +7,7 @@ from scrapy.http import TextResponse
 from pyppeteer.errors import TimeoutError, ElementHandleError
 
 from local.core import BaseLocalCrawler
-from local.proxy import HydraproxyProxyManager, ProxyManager
+from local.proxy import ApifyProxyManager, ProxyManager
 from crawler.core.pyppeteer import PyppeteerContentGetter
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.items import BaseCarrierItem

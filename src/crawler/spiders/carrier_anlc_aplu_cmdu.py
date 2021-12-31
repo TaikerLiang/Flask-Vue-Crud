@@ -22,7 +22,7 @@ from crawler.core_carrier.items import (
     DebugItem,
     ExportErrorData,
 )
-from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.proxy import ApifyProxyManager
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
@@ -59,7 +59,7 @@ class ShareSpider(BaseCarrierSpider):
             self._rule_manager = RuleManager(rules=booking_rules)
             self.search_no = self.booking_no
 
-        self._proxy_manager = HydraproxyProxyManager(session="share", logger=self.logger)
+        self._proxy_manager = ApifyProxyManager(session="share", logger=self.logger)
 
     def start(self):
         option = self._prepare_start()

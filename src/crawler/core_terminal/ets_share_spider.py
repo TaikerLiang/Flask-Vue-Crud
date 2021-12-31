@@ -13,7 +13,7 @@ from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
-from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.proxy import ApifyProxyManager
 
 
 @dataclasses.dataclass
@@ -38,7 +38,7 @@ class EtsShareSpider(BaseMultiTerminalSpider):
             LoginRoutingRule(),
             ContainerRoutingRule(),
         ]
-        self._proxy_manager = HydraproxyProxyManager(session="share", logger=self.logger)
+        self._proxy_manager = ApifyProxyManager(session="share", logger=self.logger)
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):

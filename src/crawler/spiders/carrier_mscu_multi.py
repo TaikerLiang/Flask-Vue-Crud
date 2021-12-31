@@ -15,7 +15,7 @@ from crawler.core_carrier.items import (
     ExportErrorData,
     BaseCarrierItem,
 )
-from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.proxy import ApifyProxyManager
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.core.table import BaseTable, TableExtractor
@@ -50,7 +50,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         elif self.search_type == SHIPMENT_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
 
-        self._proxy_manager = HydraproxyProxyManager(session="mscu", logger=self.logger)
+        self._proxy_manager = ApifyProxyManager(session="mscu", logger=self.logger)
 
     def start(self):
         option = self._prepare_start(search_nos=self.search_nos, task_ids=self.task_ids)

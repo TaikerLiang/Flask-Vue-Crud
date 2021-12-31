@@ -19,7 +19,7 @@ from crawler.core_carrier.items import (
     ExportErrorData,
     DebugItem,
 )
-from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.proxy import ApifyProxyManager
 from crawler.core_carrier.request_helpers import RequestOption, ProxyMaxRetryError
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from, BaseMatchRule
@@ -137,7 +137,7 @@ class CarrierHdmuSpider(BaseCarrierSpider):
         ]
 
         self._request_queue = RequestQueue()
-        self._proxy_manager = HydraproxyProxyManager(session="hdmu", logger=self.logger)
+        self._proxy_manager = ApifyProxyManager(session="hdmu", logger=self.logger)
 
         if self.mbl_no:
             self._rule_manager = RuleManager(rules=bill_rules)

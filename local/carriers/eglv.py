@@ -6,7 +6,7 @@ from pyppeteer.errors import TimeoutError
 from pyppeteer_stealth import stealth
 
 from local.core import BaseLocalCrawler
-from local.proxy import HydraproxyProxyManager, ProxyManager
+from local.proxy import ApifyProxyManager, ProxyManager
 from local.exceptions import DataNotFoundError
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.items import BaseCarrierItem
@@ -126,7 +126,7 @@ class EglvLocalCrawler(BaseLocalCrawler):
 
     def __init__(self):
         super().__init__()
-        self.content_getter = EglvContentGetter(proxy_manager=HydraproxyProxyManager(logger=logger))
+        self.content_getter = EglvContentGetter(proxy_manager=ApifyProxyManager(logger=logger))
         self._search_type = ""
 
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):

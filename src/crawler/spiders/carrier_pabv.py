@@ -6,7 +6,7 @@ from scrapy import Selector
 from urllib3.exceptions import ReadTimeoutError
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.proxy import ApifyProxyManager
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
@@ -42,7 +42,7 @@ class CarrierPabvSpider(BaseCarrierSpider):
     def __init__(self, *args, **kwargs):
         super(CarrierPabvSpider, self).__init__(*args, **kwargs)
 
-        self._proxy_manager = HydraproxyProxyManager(session="pabv", logger=self.logger)
+        self._proxy_manager = ApifyProxyManager(session="pabv", logger=self.logger)
 
         rules = [
             TrackRoutingRule(),
