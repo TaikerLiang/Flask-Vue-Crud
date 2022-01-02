@@ -15,7 +15,7 @@ from crawler.core_carrier.items import (
     ExportErrorData,
     BaseCarrierItem,
 )
-from crawler.core.proxy import ApifyProxyManager
+from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.core.table import BaseTable, TableExtractor
@@ -50,7 +50,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         elif self.search_type == SHIPMENT_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
 
-        self._proxy_manager = ApifyProxyManager(session="mscu", logger=self.logger)
+        self._proxy_manager = HydraproxyProxyManager(session="mscu", logger=self.logger)
 
     def start(self):
         option = self._prepare_start(search_nos=self.search_nos, task_ids=self.task_ids)
@@ -85,10 +85,19 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         }
 
         if option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(url=option.url, meta=meta, dont_filter=True,)
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+                dont_filter=True,
+            )
 
         elif option.method == RequestOption.METHOD_POST_FORM:
-            return scrapy.FormRequest(url=option.url, formdata=option.form_data, meta=meta, dont_filter=True,)
+            return scrapy.FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+                meta=meta,
+                dont_filter=True,
+            )
         else:
             raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
@@ -108,7 +117,10 @@ class HomePageRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://www.msc.com/track-a-shipment?agencyPath=twn",
-            meta={"search_nos": search_nos, "task_ids": task_ids,},
+            meta={
+                "search_nos": search_nos,
+                "task_ids": task_ids,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -160,7 +172,10 @@ class MainRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_POST_FORM,
             form_data=form_data,
             url="https://www.msc.com/track-a-shipment?agencyPath=twn",
-            meta={"search_nos": search_nos, "task_ids": task_ids,},
+            meta={
+                "search_nos": search_nos,
+                "task_ids": task_ids,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -202,7 +217,9 @@ class MainRoutingRule(BaseRoutingRule):
                 container_no = extractor.extract_container_no(container_selector_map)
 
                 yield ContainerItem(
-                    task_id=task_ids[0], container_key=container_no, container_no=container_no,
+                    task_id=task_ids[0],
+                    container_key=container_no,
+                    container_no=container_no,
                 )
 
                 container_status_list = extractor.extract_container_status_list(container_selector_map)
@@ -281,7 +298,10 @@ class NextRoundRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://google.com",
-            meta={"search_nos": search_nos, "task_ids": task_ids,},
+            meta={
+                "search_nos": search_nos,
+                "task_ids": task_ids,
+            },
         )
 
     def handle(self, response):
