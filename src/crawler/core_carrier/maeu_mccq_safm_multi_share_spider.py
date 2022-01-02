@@ -21,7 +21,7 @@ from crawler.core_carrier.items import (
 )
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
-from crawler.core.proxy import ApifyProxyManager
+from crawler.core.proxy import HydraproxyProxyManager
 
 
 class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
@@ -43,7 +43,7 @@ class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
             NextRoundRoutingRule(),
         ]
 
-        self._proxy_manager = ApifyProxyManager(session="maeu_mccq_safm_share", logger=self.logger)
+        self._proxy_manager = HydraproxyProxyManager(session="maeu_mccq_safm_share", logger=self.logger)
         if self.search_type == SHIPMENT_TYPE_MBL:
             self._rule_manager = RuleManager(rules=bill_rules)
         elif self.search_type == SHIPMENT_TYPE_BOOKING:

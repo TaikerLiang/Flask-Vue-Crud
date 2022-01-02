@@ -24,7 +24,7 @@ from crawler.core_carrier.items import (
     ExportErrorData,
     DebugItem,
 )
-from crawler.core.proxy import ApifyProxyManager
+from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
@@ -78,7 +78,7 @@ class CarrierYmluSpider(BaseCarrierSpider):
             self.search_no = self.booking_no
             self.search_type = SHIPMENT_TYPE_BOOKING
 
-        self._proxy_manager = ApifyProxyManager(session="ymlu", logger=self.logger)
+        self._proxy_manager = HydraproxyProxyManager(session="ymlu", logger=self.logger)
 
     def start(self):
         self._proxy_manager.renew_proxy()
