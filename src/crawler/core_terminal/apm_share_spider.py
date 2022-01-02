@@ -8,7 +8,7 @@ from crawler.core_terminal.exceptions import TerminalResponseFormatError
 from crawler.core_terminal.items import BaseTerminalItem, TerminalItem, DebugItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
-from crawler.core.proxy import ApifyProxyManager
+from crawler.core.proxy import HydraproxyProxyManager
 
 BASE_URL = "https://www.apmterminals.com"
 
@@ -22,7 +22,7 @@ class ApmShareSpider(BaseMultiTerminalSpider):
         rules = [
             ContainerRoutingRule(),
         ]
-        self._proxy_manager = ApifyProxyManager(session="share", logger=self.logger)
+        self._proxy_manager = HydraproxyProxyManager(session="share", logger=self.logger)
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):

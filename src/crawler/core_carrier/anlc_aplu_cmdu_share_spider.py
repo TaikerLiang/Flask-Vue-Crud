@@ -23,7 +23,7 @@ from crawler.core_carrier.items import (
 )
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core.proxy import ApifyProxyManager
+from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
@@ -66,7 +66,7 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
         elif self.search_type == SHIPMENT_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
 
-        self._proxy_manager = ApifyProxyManager(session="share", logger=self.logger)
+        self._proxy_manager = HydraproxyProxyManager(session="share", logger=self.logger)
 
     def start(self):
         option = self._prepare_start(search_nos=self.search_nos, task_ids=self.task_ids)

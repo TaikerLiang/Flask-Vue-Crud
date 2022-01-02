@@ -13,7 +13,7 @@ from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
-from crawler.core.proxy import ApifyProxyManager
+from crawler.core.proxy import HydraproxyProxyManager
 
 
 @dataclasses.dataclass
@@ -27,7 +27,10 @@ BASE_URL = "https://www.etslink.com"
 
 class EtsShareSpider(BaseMultiTerminalSpider):
     name = ""
-    company_info = CompanyInfo(email="", password="",)
+    company_info = CompanyInfo(
+        email="",
+        password="",
+    )
 
     def __init__(self, *args, **kwargs):
         super(EtsShareSpider, self).__init__(*args, **kwargs)
@@ -38,7 +41,7 @@ class EtsShareSpider(BaseMultiTerminalSpider):
             LoginRoutingRule(),
             ContainerRoutingRule(),
         ]
-        self._proxy_manager = ApifyProxyManager(session="share", logger=self.logger)
+        self._proxy_manager = HydraproxyProxyManager(session="share", logger=self.logger)
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
@@ -83,10 +86,17 @@ class EtsShareSpider(BaseMultiTerminalSpider):
         }
 
         if option.method == RequestOption.METHOD_POST_FORM:
-            return scrapy.FormRequest(url=option.url, formdata=option.form_data, meta=meta,)
+            return scrapy.FormRequest(
+                url=option.url,
+                formdata=option.form_data,
+                meta=meta,
+            )
 
         elif option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(url=option.url, meta=meta,)
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
 
         else:
             raise RuntimeError()
@@ -101,7 +111,10 @@ class MainPageRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f"{BASE_URL}",
-            meta={"container_no_list": container_no_list, "company_info": company_info,},
+            meta={
+                "container_no_list": container_no_list,
+                "company_info": company_info,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -261,7 +274,9 @@ class ContainerRoutingRule(BaseRoutingRule):
         for container_info in container_info_list:
             if container_info["PO_TERMINAL_NAME"] == "<i>Record was not found!</i>":
                 c_no = re.sub("<.*?>", "", container_info["PO_CNTR_NO"])
-                yield InvalidContainerNoItem(container_no=c_no,)
+                yield InvalidContainerNoItem(
+                    container_no=c_no,
+                )
             else:
                 yield TerminalItem(
                     container_no=container_info["PO_CNTR_NO"],
