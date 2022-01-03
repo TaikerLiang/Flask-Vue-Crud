@@ -8,8 +8,8 @@ from pyppeteer.errors import TimeoutError
 from urllib3.exceptions import ReadTimeoutError
 
 from local.core import BaseLocalCrawler
-from local.proxy import HydraproxyProxyManager, ProxyManager
 from local.exceptions import AccessDeniedError, DataNotFoundError
+from src.crawler.core.proxy import HydraproxyProxyManager, ProxyManager
 from src.crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
 from src.crawler.core.pyppeteer import PyppeteerContentGetter
 from src.crawler.spiders.carrier_zimu import MainInfoRoutingRule
