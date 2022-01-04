@@ -7,7 +7,7 @@ from pyppeteer.errors import TimeoutError, ElementHandleError
 from urllib3.exceptions import ReadTimeoutError
 
 from local.core import BaseLocalCrawler
-from local.proxy import HydraproxyProxyManager, ProxyManager
+from src.crawler.core.proxy import HydraproxyProxyManager, ProxyManager
 from src.crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
 from src.crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from src.crawler.core_carrier.exceptions import (
@@ -116,7 +116,7 @@ class WhlcLocalCrawler(BaseLocalCrawler):
 
     def __init__(self):
         super().__init__()
-        self.content_getter = WhlcContentGetter(proxy_manager=HydraproxyProxyManager(logger=logger))
+        self.content_getter = WhlcContentGetter(proxy_manager=HydraproxyProxyManager(session="whlc", logger=logger))
         self._search_type = ""
 
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):

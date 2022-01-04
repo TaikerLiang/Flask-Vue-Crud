@@ -71,7 +71,7 @@ class ZimuLocalCrawler(BaseLocalCrawler):
 
     def __init__(self):
         super().__init__()
-        self.content_getter = ZimuContentGetter(proxy_manager=HydraproxyProxyManager(logger=logger))
+        self.content_getter = ZimuContentGetter(proxy_manager=HydraproxyProxyManager(session="zimu", logger=logger))
 
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):
         task_ids = task_ids.split(",")
