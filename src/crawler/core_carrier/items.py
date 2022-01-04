@@ -82,6 +82,7 @@ class MblItem(BaseCarrierItem):
     carrier_release_date = scrapy.Field()
     customs_release_status = scrapy.Field()
     customs_release_date = scrapy.Field()
+    berthing_time = scrapy.Field()
 
     task_id = scrapy.Field()
 
