@@ -1,6 +1,6 @@
 import dataclasses
 import re
-from typing import List, Dict
+from typing import Dict
 
 import scrapy
 
@@ -9,9 +9,6 @@ from crawler.core_terminal.exceptions import TerminalResponseFormatError
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
-
-
-MAX_PAGE_NUM = 20
 
 
 @dataclasses.dataclass
@@ -33,12 +30,12 @@ class TideworksShareSpider(BaseMultiTerminalSpider):
 
     def __init__(self, *args, **kwargs):
         super(TideworksShareSpider, self).__init__(*args, **kwargs)
+        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         rules = [
             LoginRoutingRule(),
             SearchContainerRoutingRule(),
             ContainerDetailRoutingRule(),
-            NextRoundRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -88,7 +85,6 @@ class TideworksShareSpider(BaseMultiTerminalSpider):
             return scrapy.Request(
                 url=option.url,
                 meta=meta,
-                dont_filter=True,
             )
 
         else:
@@ -114,7 +110,10 @@ class LoginRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             url=url,
             form_data=form_data,
-            meta={"container_nos": container_nos, "company_info": company_info},
+            meta={
+                "container_nos": container_nos,
+                "company_info": company_info,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -133,9 +132,10 @@ class LoginRoutingRule(BaseRoutingRule):
         else:
             token = ""
 
-        yield SearchContainerRoutingRule.build_request_option(
-            container_nos=container_nos, company_info=company_info, cookies=cookies, token=token
-        )
+        for container_no in container_nos:
+            yield SearchContainerRoutingRule.build_request_option(
+                container_no=container_no, company_info=company_info, cookies=cookies, token=token
+            )
 
 
 # -------------------------------------------------------------------------------
@@ -145,16 +145,14 @@ class SearchContainerRoutingRule(BaseRoutingRule):
     name = "SEARCH_CONTAINER"
 
     @classmethod
-    def build_request_option(
-        cls, container_nos: List, company_info: CompanyInfo, cookies: Dict, token: str = ""
-    ) -> RequestOption:
+    def build_request_option(cls, container_no, company_info: CompanyInfo, cookies, token: str = "") -> RequestOption:
         url = (
             f"https://{company_info.lower_short}.tideworks.com/fc-{company_info.upper_short}/"
             f"import/default.do?method=defaultSearch"
         )
         form_data = {
             "searchBy": "CTR",
-            "numbers": ",".join(container_nos[:MAX_PAGE_NUM]),
+            "numbers": container_no,
             "_csrf": token,
         }
 
@@ -164,45 +162,34 @@ class SearchContainerRoutingRule(BaseRoutingRule):
             url=url,
             headers={"Cookie": cookies},
             form_data=form_data,
-            meta={"container_nos": container_nos, "company_info": company_info, "cookies": cookies, "token": token},
-            cookies=cookies,
+            meta={"container_no": container_no, "company_info": company_info},
         )
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
     def handle(self, response):
-        container_nos = response.meta["container_nos"]
+        container_no = response.meta["container_no"]
         company_info = response.meta["company_info"]
-        cookies = response.meta["cookies"]
-        token = response.meta["token"]
 
-        tr_list = response.css("div#result table:not([id]) tr:not([class])")[1:]
-        for tr in tr_list:
-            if self._is_invalid_container_no(tr=tr):
-                container_no = tr.css("strong ::text").get()
-                yield InvalidContainerNoItem(container_no=container_no)
+        if self._is_invalid_container_no(response=response):
+            yield InvalidContainerNoItem(container_no=container_no)
+            return
 
         # for ContainerDetailRoutingRule request
-        container_urls = self._get_container_urls(response=response)
-        for container_url in container_urls:
-            yield ContainerDetailRoutingRule.build_request_option(
-                container_url=container_url, company_info=company_info
-            )
+        container_url = self._get_first_container_url(response=response)
 
-        yield NextRoundRoutingRule.build_request_option(
-            container_nos=container_nos, company_info=company_info, cookies=cookies, token=token
-        )
+        yield ContainerDetailRoutingRule.build_request_option(container_url=container_url, company_info=company_info)
 
     @staticmethod
-    def _get_container_urls(response: scrapy.Selector) -> str:
-        url = response.css("div#result tr td a::attr(href)").getall()[::2]
+    def _get_first_container_url(response: scrapy.Selector) -> str:
+        url = response.css("div#result tr td a::attr(href)").get()
         return url
 
     @staticmethod
-    def _is_invalid_container_no(tr: scrapy.Selector) -> bool:
-        a_in_td = tr.css("td a")
-        raw_all_text_in_td = tr.css("td ::text").getall()
+    def _is_invalid_container_no(response: scrapy.Selector) -> bool:
+        a_in_td = response.css("div#result tr td a")
+        raw_all_text_in_td = response.css("div#result tr td ::text").getall()
         all_text_in_td = [text.strip() for text in raw_all_text_in_td]
 
         if not a_in_td or ("Check nearby locations" in all_text_in_td):
@@ -352,36 +339,3 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         key = key[:-1]  # delete colon
         value = "".join(div_text_list[1:]).strip()
         return key, value
-
-
-class NextRoundRoutingRule(BaseRoutingRule):
-    name = "NEXT_ROUND"
-
-    @classmethod
-    def build_request_option(cls, container_nos: List, company_info, cookies, token) -> RequestOption:
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url="https://www.google.com",
-            meta={
-                "container_nos": container_nos,
-                "company_info": company_info,
-                "cookies": cookies,
-                "token": token,
-            },
-        )
-
-    def handle(self, response):
-        container_nos = response.meta["container_nos"]
-        company_info = response.meta["company_info"]
-        cookies = response.meta["cookies"]
-        token = response.meta["token"]
-
-        if len(container_nos) <= MAX_PAGE_NUM:
-            return
-
-        container_nos = container_nos[MAX_PAGE_NUM:]
-
-        yield SearchContainerRoutingRule.build_request_option(
-            container_nos=container_nos, company_info=company_info, cookies=cookies, token=token
-        )
