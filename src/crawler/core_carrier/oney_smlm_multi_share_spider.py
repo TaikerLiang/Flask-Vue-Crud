@@ -461,7 +461,6 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         response_dict = json.loads(response.text)
 
         container_status_list = self._extract_container_status_list(response_dict=response_dict)
-        rail_event_list = self._generate_rail_event_list(container_status_list=container_status_list)
 
         if not container_status_list:
             yield Restart(reason="No container status info", search_nos=search_nos, task_ids=task_ids)
@@ -475,16 +474,6 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 local_date_time=container_status["local_time"],
                 location=LocationItem(name=container_status["location"]),
                 est_or_actual=container_status["est_or_actual"],
-            )
-
-        for rail_event in rail_event_list:
-            yield RailItem(
-                task_id=task_id,
-                container_key=container_key,
-                description=rail_event["description"],
-                local_date_time=rail_event["local_date_time"],
-                location=rail_event["location"],
-                est_or_actual=rail_event["est_or_actual"],
             )
 
     def _extract_container_status_list(self, response_dict: Dict) -> List:
@@ -512,31 +501,6 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             )
 
         return container_status_info_list
-
-    def _generate_rail_event_list(self, container_status_list: List) -> List:
-        if not container_status_list:
-            return []
-
-        rail_event_list = []
-        AL_status = "Loaded on rail at inbound rail origin"
-        RL_status = "Inbound Rail Departure"
-        AR_status = "Inbound Rail Arrival"
-        UR_status = "Unloaded from rail at inbound rail destination"
-        for container_status in container_status_list:
-            status = container_status["status"]
-            for rail_status in RAIL_EVENT_DICT.values():
-                if rail_status == status:
-                    rail_event_list.append(
-                        {
-                            "description": status,
-                            "location": container_status["location"],
-                            "local_date_time": container_status["local_time"],
-                            "est_or_actual": container_status["est_or_actual"],
-                        }
-                    )
-                    break
-
-        return rail_event_list
 
 
 class ReleaseStatusRoutingRule(BaseRoutingRule):
