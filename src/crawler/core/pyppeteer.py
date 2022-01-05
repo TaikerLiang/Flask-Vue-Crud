@@ -36,10 +36,6 @@ class PyppeteerContentGetter(BaseContentGetter):
             "height": 700,
         }
 
-        pyppeteer_level = logging.WARNING
-        logging.getLogger("pyppeteer").setLevel(pyppeteer_level)
-        logging.getLogger("websockets.protocol").setLevel(pyppeteer_level)
-
         auth = {}
         if self.proxy_manager:
             browser_args.append(f"--proxy-server=http://{self.proxy_manager.PROXY_DOMAIN}")
@@ -63,6 +59,10 @@ class PyppeteerContentGetter(BaseContentGetter):
             f"Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
             f"Chrome/88.0.4324.96 Safari/537.36"
         )
+
+        pyppeteer_level = logging.WARNING
+        logging.getLogger("pyppeteer").setLevel(pyppeteer_level)
+        logging.getLogger("websockets.protocol").setLevel(pyppeteer_level)
 
     async def move_mouse_to_random_position(self):
         x = random.randint(0, 600)
