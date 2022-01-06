@@ -70,7 +70,12 @@ class CarrierZimuSpider(BaseCarrierSpider):
         }
 
         if option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(url=option.url, headers=option.headers, meta=meta, callback=self.parse,)
+            return scrapy.Request(
+                url=option.url,
+                headers=option.headers,
+                meta=meta,
+                callback=self.parse,
+            )
         else:
             raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
@@ -81,8 +86,8 @@ class CarrierZimuSpider(BaseCarrierSpider):
 class ContentGetter(PyppeteerContentGetter):
     def __init__(self, proxy_manager: ProxyManager = None):
         super().__init__(proxy_manager, is_headless=False)
-        pyppeteer_logger = logging.getLogger("pyppeteer")
-        pyppeteer_logger.setLevel(logging.WARNING)
+        # pyppeteer_logger = logging.getLogger("pyppeteer")
+        # pyppeteer_logger.setLevel(logging.WARNING)
 
     async def search(self, mbl_no: str):
         await self.page.goto("https://www.zim.com/tools/track-a-shipment")
@@ -131,7 +136,14 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def build_request_option(cls, mbl_no) -> RequestOption:
         url = f"https://www.google.com"
 
-        return RequestOption(method=RequestOption.METHOD_GET, rule_name=cls.name, url=url, meta={"mbl_no": mbl_no,},)
+        return RequestOption(
+            method=RequestOption.METHOD_GET,
+            rule_name=cls.name,
+            url=url,
+            meta={
+                "mbl_no": mbl_no,
+            },
+        )
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
@@ -157,7 +169,11 @@ class MainInfoRoutingRule(BaseRoutingRule):
         vessel_list = self._arrange_vessel_list(raw_vessel_list)
 
         schedule_list = self._arrange_schedule_list(
-            raw_schedule_list, pol=main_info["pol"], etd=main_info["etd"], pod=main_info["pod"], eta=main_info["eta"],
+            raw_schedule_list,
+            pol=main_info["pol"],
+            etd=main_info["etd"],
+            pod=main_info["pod"],
+            eta=main_info["eta"],
         )
 
         if len(vessel_list) >= len(schedule_list):
@@ -206,7 +222,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
         container_no_list = self._extract_container_no_list(response=response)
         for container_no in container_no_list:
             yield ContainerItem(
-                container_key=container_no, container_no=container_no,
+                container_key=container_no,
+                container_no=container_no,
             )
 
             container_status_list = self._extract_container_status_list(response=response, container_no=container_no)
@@ -332,7 +349,10 @@ class MainInfoRoutingRule(BaseRoutingRule):
             elif "POD" in schedule:
                 result.append(
                     ScheduleInfo(
-                        port_type="POD", port_name=schedule["POD"], eta=schedule.get("Arrival Date", ""), etd="",
+                        port_type="POD",
+                        port_name=schedule["POD"],
+                        eta=schedule.get("Arrival Date", ""),
+                        etd="",
                     )
                 )
 
@@ -345,7 +365,14 @@ class MainInfoRoutingRule(BaseRoutingRule):
         # add POD ?
         last_schedule = result[-1]
         if last_schedule.port_type != "POD":
-            result.append(ScheduleInfo(port_type="POD", port_name=pod, eta=eta, etd="",))
+            result.append(
+                ScheduleInfo(
+                    port_type="POD",
+                    port_name=pod,
+                    eta=eta,
+                    etd="",
+                )
+            )
 
         return result
 
