@@ -148,6 +148,15 @@ class TracingRoutingRule(BaseRoutingRule):
         container_nos = []
         if self._is_container_nos_exist(selector):
             container_nos = self._extract_container_nos(response=selector)
+        else:
+            yield ExportErrorData(
+                mbl_no=current_mbl_no,
+                task_id=current_task_id,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
+            yield NextRoundRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
+            return
 
         for index, container_no in enumerate(container_nos):
             yield ContainerItem(
