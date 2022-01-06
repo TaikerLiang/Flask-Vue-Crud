@@ -166,7 +166,14 @@ class MblRoutingRule(BaseRoutingRule):
         try:
             page_source = asyncio.get_event_loop().run_until_complete(self.driver.search(search_no=mbl_nos[0]))
             response_selector = Selector(text=page_source)
-            if self.is_multi_containers(response_selector):
+            if self._is_mbl_no_invalid(response_selector):
+                yield ExportErrorData(
+                    mbl_no=mbl_nos[0],
+                    task_id=task_ids[0],
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+            elif self.is_multi_containers(response_selector):
                 ct_links = asyncio.get_event_loop().run_until_complete(self.driver.get_container_links())
                 for idx in range(len(ct_links)):
                     # avoid Node is detached from document
@@ -216,6 +223,15 @@ class MblRoutingRule(BaseRoutingRule):
             return
 
         yield NextRoundRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
+
+    @staticmethod
+    def _is_mbl_no_invalid(response):
+        error_message = response.css("span.ui-messages-info-summary::text").get()
+        if not error_message:
+            return
+
+        error_message.strip()
+        return error_message.startswith("No results found.")
 
     @staticmethod
     def is_multi_containers(response):
