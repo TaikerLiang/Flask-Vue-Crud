@@ -5,7 +5,7 @@ from typing import Dict, List
 
 from scrapy import Request
 from scrapy.http import TextResponse
-from pyppeteer.errors import TimeoutError, PageError
+from pyppeteer.errors import TimeoutError, PageError, NetworkError
 from pyppeteer.dialog import Dialog
 import requests
 import scrapy
@@ -180,7 +180,7 @@ class ContentRule(BaseRoutingRule):
                 )
                 yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
                 return
-        except (TimeoutError, PageError):
+        except (TimeoutError, NetworkError):
             yield Restart(search_nos=search_nos, task_ids=task_ids, reason="TimeoutError/PageError")
             return
 
@@ -219,14 +219,15 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def handle_container_status(self, container_no, search_nos: List, task_ids: List):
         try:
             httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.container_page(container_no))
-            response = self.get_response_selector(
-                url=EGLV_INFO_URL, httptext=httptext, meta={"container_no": container_no, "task_id": task_ids[0]}
-            )
-            rule = ContainerStatusRoutingRule()
+            if httptext:
+                response = self.get_response_selector(
+                    url=EGLV_INFO_URL, httptext=httptext, meta={"container_no": container_no, "task_id": task_ids[0]}
+                )
+                rule = ContainerStatusRoutingRule()
 
-            for item in rule.handle(response):
-                yield item
-        except TimeoutError:
+                for item in rule.handle(response):
+                    yield item
+        except (TimeoutError, NetworkError):
             yield Restart(search_nos=search_nos, task_ids=task_ids, reason="handle_filing_status timeout")
 
     @staticmethod
@@ -444,25 +445,29 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
     def handle_filing_status(self, search_nos: List, task_ids: List):
         try:
             httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.custom_info_page())
-            response = self.get_response_selector(
-                url=EGLV_INFO_URL, httptext=httptext, meta={"mbl_no": search_nos[0], "task_id": task_ids[0]}
-            )
-            rule = FilingStatusRoutingRule()
+            if httptext:
+                response = self.get_response_selector(
+                    url=EGLV_INFO_URL, httptext=httptext, meta={"mbl_no": search_nos[0], "task_id": task_ids[0]}
+                )
+                rule = FilingStatusRoutingRule()
 
-            for item in rule.handle(response):
-                yield item
-        except TimeoutError:
+                for item in rule.handle(response):
+                    yield item
+        except (TimeoutError, NetworkError):
             yield Restart(search_nos=search_nos, task_ids=task_ids, reason="handle_filing_status timeout")
 
     def handle_release_status(self, search_nos: List, task_ids: List):
         try:
             httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.release_status_page())
-            response = self.get_response_selector(url=EGLV_INFO_URL, httptext=httptext, meta={"task_id": task_ids[0]})
-            rule = ReleaseStatusRoutingRule()
+            if httptext:
+                response = self.get_response_selector(
+                    url=EGLV_INFO_URL, httptext=httptext, meta={"task_id": task_ids[0]}
+                )
+                rule = ReleaseStatusRoutingRule()
 
-            for item in rule.handle(response):
-                yield item
-        except TimeoutError:
+                for item in rule.handle(response):
+                    yield item
+        except (TimeoutError, NetworkError):
             yield Restart(search_nos=search_nos, task_ids=task_ids, reason="handle_release_status timeout")
 
 
@@ -1334,30 +1339,38 @@ class EglvContentGetter(PyppeteerContentGetter):
         await asyncio.sleep(2)
         await dialog.dismiss()
 
-    async def custom_info_page(self):
-        await self.page.click("a[href=\"JavaScript:toggle('CustomsInfo');\"]")
-        await asyncio.sleep(1)
-        await self.page.click("a[href=\"JavaScript:getDispInfo('AMTitle','AMInfo');\"]")
-        await self.page.waitForSelector("div#AMInfo table")
-        await asyncio.sleep(10)
-        div_ele = await self.page.querySelector("div#AMInfo")
-        return await self.page.evaluate("(element) => element.outerHTML", div_ele)
+    async def custom_info_page(self) -> str:
+        try:
+            await self.page.click("a[href=\"JavaScript:toggle('CustomsInfo');\"]")
+            await asyncio.sleep(1)
+            await self.page.click("a[href=\"JavaScript:getDispInfo('AMTitle','AMInfo');\"]")
+            await self.page.waitForSelector("div#AMInfo table")
+            await asyncio.sleep(10)
+            div_ele = await self.page.querySelector("div#AMInfo")
+            return await self.page.evaluate("(element) => element.outerHTML", div_ele)
+        except PageError:
+            return ""
 
-    async def release_status_page(self):
-        await self.page.click("a[href=\"JavaScript:getDispInfo('RlsStatusTitle','RlsStatusInfo');\"]")
-        await self.page.waitForSelector("div#RlsStatusInfo table")
-        await asyncio.sleep(2)
-        await self.scroll_down()
-        div_ele = await self.page.querySelector("div#RlsStatusInfo")
-        return await self.page.evaluate("(element) => element.outerHTML", div_ele)
+    async def release_status_page(self) -> str:
+        try:
+            await self.page.click("a[href=\"JavaScript:getDispInfo('RlsStatusTitle','RlsStatusInfo');\"]")
+            await self.page.waitForSelector("div#RlsStatusInfo table")
+            await asyncio.sleep(2)
+            await self.scroll_down()
+            div_ele = await self.page.querySelector("div#RlsStatusInfo")
+            return await self.page.evaluate("(element) => element.outerHTML", div_ele)
+        except PageError:
+            return ""
 
-    async def container_page(self, container_no):
-        await self.page.click(f"a[href^=\"javascript:frmCntrMoveDetail('{container_no}')\"]")
-        await asyncio.sleep(3)
-        container_page = (await self.browser.pages())[-1]
-        await container_page.waitForSelector("table table")
-        await asyncio.sleep(5)
-        content = await container_page.content()
-        await container_page.close()
-
-        return content
+    async def container_page(self, container_no) -> str:
+        try:
+            await self.page.click(f"a[href^=\"javascript:frmCntrMoveDetail('{container_no}')\"]")
+            await asyncio.sleep(3)
+            container_page = (await self.browser.pages())[-1]
+            await container_page.waitForSelector("table table")
+            await asyncio.sleep(5)
+            content = await container_page.content()
+            await container_page.close()
+            return content
+        except PageError:
+            return ""
