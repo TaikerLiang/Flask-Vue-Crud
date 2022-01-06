@@ -177,6 +177,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             yield ExportErrorData(
                 task_id=task_id, booking_no=booking_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found"
             )
+            return
 
         for item in item_extractor.extract(
             response=response_selector,
