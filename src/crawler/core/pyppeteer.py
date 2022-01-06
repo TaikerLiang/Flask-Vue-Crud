@@ -60,9 +60,9 @@ class PyppeteerContentGetter(BaseContentGetter):
             f"Chrome/88.0.4324.96 Safari/537.36"
         )
 
-        pyppeteer_level = logging.WARNING
-        logging.getLogger("pyppeteer").setLevel(pyppeteer_level)
-        logging.getLogger("websockets.protocol").setLevel(pyppeteer_level)
+        # pyppeteer_level = logging.WARNING
+        # logging.getLogger("pyppeteer").setLevel(pyppeteer_level)
+        # logging.getLogger("websockets.protocol").setLevel(pyppeteer_level)
 
     async def move_mouse_to_random_position(self):
         x = random.randint(0, 600)
