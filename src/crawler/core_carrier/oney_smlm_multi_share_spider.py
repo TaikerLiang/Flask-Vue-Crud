@@ -20,7 +20,6 @@ from crawler.core_carrier.items import (
     DebugItem,
     LocationItem,
     MblItem,
-    RailwayItem,
     VesselItem,
     ContainerItem,
     ContainerStatusItem,
