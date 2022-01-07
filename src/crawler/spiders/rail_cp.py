@@ -335,7 +335,7 @@ class ContainerInfoTableParser:
 
 class ContentGetter(ChromeContentGetter):
     USER_NAME = "gftracking"
-    PASS_WORD = "Hardcore2021"
+    PASS_WORD = "Hardcore20221"
 
     def __init__(self):
         super(ContentGetter, self).__init__()
