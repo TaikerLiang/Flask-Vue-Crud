@@ -166,6 +166,10 @@ class ContentRule(BaseRoutingRule):
         search_nos = response.meta["search_nos"]
         task_ids = response.meta["task_ids"]
 
+        page_source, is_exist = asyncio.get_event_loop().run_until_complete(
+            self.driver.search_and_return(search_no=search_nos[0], search_type=self._search_type)
+        )
+
         try:
             page_source, is_exist = asyncio.get_event_loop().run_until_complete(
                 self.driver.search_and_return(search_no=search_nos[0], search_type=self._search_type)
@@ -1365,7 +1369,7 @@ class EglvContentGetter(PyppeteerContentGetter):
     async def container_page(self, container_no) -> str:
         try:
             await self.page.click(f"a[href^=\"javascript:frmCntrMoveDetail('{container_no}')\"]")
-            await asyncio.sleep(3)
+            await asyncio.sleep(10)
             container_page = (await self.browser.pages())[-1]
             await container_page.waitForSelector("table table")
             await asyncio.sleep(5)
