@@ -6,12 +6,12 @@ from typing import List
 import scrapy
 
 from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.exceptions import ProxyMaxRetryError
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
-    ProxyMaxRetryError,
     SuspiciousOperationError,
 )
 from crawler.core_carrier.items import (
@@ -72,7 +72,26 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
             self._rule_manager = RuleManager(rules=booking_rules)
 
     def start(self):
-        self._proxy_manager.renew_proxy()
+        try:
+            self._proxy_manager.renew_proxy()
+        except ProxyMaxRetryError:
+            for search_no, task_id in zip(self.search_nos, self.task_ids):
+                if self.search_type == SHIPMENT_TYPE_MBL:
+                    yield ExportErrorData(
+                        mbl_no=search_no,
+                        task_id=task_id,
+                        status=CARRIER_RESULT_STATUS_ERROR,
+                        detail="Data was not found",
+                    )
+                elif self.search_type == SHIPMENT_TYPE_BOOKING:
+                    yield ExportErrorData(
+                        mbl_no=search_no,
+                        task_id=task_id,
+                        status=CARRIER_RESULT_STATUS_ERROR,
+                        detail="Data was not found",
+                    )
+            return
+
         option = FirstTierRoutingRule.build_request_option(
             search_nos=self.search_nos, task_ids=self.task_ids, base_url=self.base_url
         )
@@ -203,6 +222,11 @@ class FirstTierRoutingRule(BaseRoutingRule):
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
         base_url = response.meta["base_url"]
+
+        if self._is_json_response_invalid(response):
+            yield Restart(reason="JSON response invalid", search_nos=search_nos, task_ids=task_ids)
+            return
+
         response_dict = json.loads(response.text)
         if self._is_search_no_invalid(response_dict):
             yield Restart(reason="IP block", search_nos=search_nos, task_ids=task_ids)
@@ -289,6 +313,10 @@ class FirstTierRoutingRule(BaseRoutingRule):
             )
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, base_url=base_url)
+
+    @staticmethod
+    def _is_json_response_invalid(response):
+        return "System error" in response.text
 
     @staticmethod
     def _is_search_no_invalid(response_dict):
