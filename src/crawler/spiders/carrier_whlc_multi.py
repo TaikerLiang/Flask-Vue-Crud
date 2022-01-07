@@ -238,7 +238,12 @@ class MblRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle_detail_page(self, task_id, idx):
-        page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(idx + 2))
+        try:
+            page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(idx + 2))
+        except TimeoutError:
+            self.driver.close_page_and_switch_last()
+            yield Restart()
+            return
         detail_selector = Selector(text=page_source)
         date_information = self.extract_date_information(detail_selector)
 
@@ -730,7 +735,8 @@ class WhlcContentGetter(PyppeteerContentGetter):
 
     async def go_detail_page(self, idx: int):
         await self.page.waitForSelector(
-            f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u"
+            f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u",
+            options={"timeout": 60000},
         )
         await self.page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u")
         await asyncio.sleep(10)
@@ -741,8 +747,9 @@ class WhlcContentGetter(PyppeteerContentGetter):
 
     async def go_history_page(self, idx: int):
         await self.page.waitForSelector(
-            f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u"
-        ),
+            f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u",
+            options={"timeout": 60000},
+        )
         await self.page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u"),
         await asyncio.sleep(10)
         await self.switch_to_last()
@@ -752,8 +759,9 @@ class WhlcContentGetter(PyppeteerContentGetter):
 
     async def go_booking_history_page(self, idx: int):
         await self.page.waitForSelector(
-            f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"
-        ),
+            f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a",
+            options={"timeout": 60000},
+        )
         await self.page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"),
         await asyncio.sleep(10),
         await self.switch_to_last()
