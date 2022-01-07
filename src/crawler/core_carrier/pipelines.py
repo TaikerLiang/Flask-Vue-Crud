@@ -34,7 +34,6 @@ class BaseItemPipeline:
             )
         else:
             item_result = collector.build_final_data()
-            print(f"item_result: {item_result}")
             status_code, text = self.edi_client.send_provider_result_back(
                 task_id=task_id, provider_code="scrapy_cloud_api", item_result=item_result
             )

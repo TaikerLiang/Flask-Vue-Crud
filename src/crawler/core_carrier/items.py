@@ -37,10 +37,6 @@ class LocationItem(BaseCarrierItem):
     firms_code = scrapy.Field()
 
 
-class RailwayItem(BaseCarrierItem):
-    name = scrapy.Field()
-
-
 class MblItem(BaseCarrierItem):
     booking_no = scrapy.Field()
     mbl_no = scrapy.Field()
@@ -144,7 +140,7 @@ class RailItem(BaseCarrierItem):
     description = scrapy.Field()
     local_date_time = scrapy.Field()
     location = scrapy.Field(serializer=LocationItem)
-    railway = scrapy.Field(serializer=RailwayItem)
+    railway = scrapy.Field()
     est_or_actual = scrapy.Field()
 
     task_id = scrapy.Field()
