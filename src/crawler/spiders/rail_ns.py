@@ -211,7 +211,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
 class ContentGetter:
     USER_NAME = "hvv26"
-    PASS_WORD = "Goft1008"
+    PASS_WORD = "Goft0108"
 
     def __init__(self, proxy_manager: ProxyManager):
         logging.disable(logging.DEBUG)
