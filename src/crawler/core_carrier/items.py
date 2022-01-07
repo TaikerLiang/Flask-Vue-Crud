@@ -128,7 +128,7 @@ class ContainerItem(BaseCarrierItem):
     pol_eta = scrapy.Field()
     final_dest_eta = scrapy.Field()
     ready_for_pick_up = scrapy.Field()
-    railway = scrapy.Field(serializer=RailwayItem)
+    railway = scrapy.Field()
     terminal = scrapy.Field(serializer=LocationItem)
 
     task_id = scrapy.Field()

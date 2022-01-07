@@ -20,21 +20,15 @@ from crawler.core_carrier.items import (
     DebugItem,
     LocationItem,
     MblItem,
+    RailwayItem,
     VesselItem,
     ContainerItem,
     ContainerStatusItem,
-    RailItem,
 )
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 
 MAX_PAGE_NUM = 10
-RAIL_EVENT_DICT = {
-    "AL": "Loaded on rail at inbound rail origin",
-    "RL": "Inbound Rail Departure",
-    "AR": "Inbound Rail Arrival",
-    "UR": "Unloaded from rail at inbound rail destination",
-}
 
 
 @dataclasses.dataclass
@@ -235,7 +229,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
                             final_dest = container["final_dest"]
                             break
 
-                    yield MblItem(task_id=task_id, mbl_no=search_no, final_dest=final_dest)
+                    yield MblItem(task_id=task_id, mbl_no=search_no, final_dest=LocationItem(name=final_dest))
                     yield VesselRoutingRule.build_request_option(
                         booking_no=search_no, base_url=base_url, task_id=task_id
                     )
@@ -255,7 +249,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
                             final_dest = container["final_dest"]
                             break
 
-                    yield MblItem(task_id=task_id, booking_no=search_no, final_dest=final_dest)
+                    yield MblItem(task_id=task_id, booking_no=search_no, final_dest=LocationItem(name=final_dest))
                     yield VesselRoutingRule.build_request_option(
                         booking_no=search_no, base_url=base_url, task_id=task_id
                     )
@@ -549,7 +543,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
             task_id=task_id,
             container_key=container_key,
             last_free_day=release_info.get("last_free_day") or None,
-            terminal=release_info.get("terminal") or None,
+            terminal=LocationItem(name=release_info.get("terminal") or None),
         )
 
     def _extract_release_info(self, response_dict: Dict) -> Dict:
@@ -609,7 +603,7 @@ class RailInfoRoutingRule(BaseRoutingRule):
             task_id=task_id,
             container_key=container_key,
             ready_for_pick_up=rail_info["ready_for_pick_up"] or None,
-            railway=rail_info["railway"],
+            railway=rail_info["railway"] or None,
             final_dest_eta=rail_info["final_dest_eta"],
         )
 
@@ -625,7 +619,7 @@ class RailInfoRoutingRule(BaseRoutingRule):
 
         return {
             "ready_for_pick_up": rail_data["pickUpAvail"],
-            "railway": rail_data["inArrName"],
+            "railway": rail_data["inArrYardNm"],
             "final_dest_eta": rail_data["inArrDate"],
         }
 
