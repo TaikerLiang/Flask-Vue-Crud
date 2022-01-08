@@ -635,9 +635,9 @@ class RailInfoRoutingRule(BaseRoutingRule):
         yield ContainerItem(
             task_id=task_id,
             container_key=container_key,
-            ready_for_pick_up=rail_info["ready_for_pick_up"] or None,
-            railway=rail_info["railway"] or None,
-            final_dest_eta=rail_info["final_dest_eta"],
+            ready_for_pick_up=rail_info.get("ready_for_pick_up", "") or None,
+            railway=rail_info.get("railway", ""),
+            final_dest_eta=rail_info.get("final_dest_eta", ""),
         )
 
     def _extract_rail_info(self, response_dict: Dict) -> Dict:
