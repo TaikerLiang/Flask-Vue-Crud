@@ -6,12 +6,12 @@ from typing import List, Dict, Set
 import scrapy
 
 from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.exceptions import ProxyMaxRetryError
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
-    ProxyMaxRetryError,
     SuspiciousOperationError,
 )
 from crawler.core_carrier.items import (
@@ -28,6 +28,7 @@ from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 
 MAX_PAGE_NUM = 10
+MAX_RETRY_COUNT = 3
 
 
 @dataclasses.dataclass
@@ -47,6 +48,7 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
         self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         self._proxy_manager = HydraproxyProxyManager(session="oneysmlm", logger=self.logger)
+        self._retry_count = 0
 
         bill_rules = [
             FirstTierRoutingRule(search_type=SHIPMENT_TYPE_MBL),
@@ -90,11 +92,34 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
             if isinstance(result, BaseCarrierItem):
                 yield result
             elif isinstance(result, RequestOption):
+                if result.rule_name == "NEXT_ROUND":
+                    self._retry_count = 0
+
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
                 yield self._build_request_by(option=proxy_option)
             elif isinstance(result, Restart):
                 search_nos = result.search_nos
                 task_ids = result.task_ids
+
+                if self._retry_count > MAX_RETRY_COUNT:
+                    for search_no, task_id in zip(search_nos, task_ids):
+                        if self.search_type == SHIPMENT_TYPE_MBL:
+                            yield ExportErrorData(
+                                mbl_no=search_no,
+                                task_id=task_id,
+                                status=CARRIER_RESULT_STATUS_ERROR,
+                                detail="Data was not found",
+                            )
+                        elif self.search_type == SHIPMENT_TYPE_BOOKING:
+                            yield ExportErrorData(
+                                mbl_no=search_no,
+                                task_id=task_id,
+                                status=CARRIER_RESULT_STATUS_ERROR,
+                                detail="Data was not found",
+                            )
+                    return
+
+                self._retry_count += 1
                 self.logger.warning(f"----- {result.reason}, try new proxy and restart")
 
                 try:
@@ -203,6 +228,11 @@ class FirstTierRoutingRule(BaseRoutingRule):
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
         base_url = response.meta["base_url"]
+
+        if self._is_json_response_invalid(response):
+            yield Restart(reason="JSON response invalid", search_nos=search_nos, task_ids=task_ids)
+            return
+
         response_dict = json.loads(response.text)
         if self._is_search_no_invalid(response_dict):
             yield Restart(reason="IP block", search_nos=search_nos, task_ids=task_ids)
@@ -301,6 +331,10 @@ class FirstTierRoutingRule(BaseRoutingRule):
             )
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, base_url=base_url)
+
+    def _is_json_response_invalid(response):
+        return "System error" in response.text
+
 
     def _is_search_no_invalid(self, response_dict: Dict) -> bool:
         return "list" not in response_dict
@@ -624,6 +658,8 @@ class RailInfoRoutingRule(BaseRoutingRule):
 
 
 class NextRoundRoutingRule(BaseRoutingRule):
+    name = "NEXT_ROUND"
+
     @classmethod
     def build_request_option(cls, search_nos: List, task_ids: List, base_url: str) -> RequestOption:
         return RequestOption(
