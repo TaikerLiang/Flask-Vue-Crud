@@ -1,11 +1,10 @@
+from typing import Any
 import random
 import asyncio
 import logging
 
-from pyppeteer import launch
+from pyppeteer import connection, launch, launcher
 from pyppeteer_stealth import stealth
-from typing import Any
-from pyppeteer import connection, launcher
 import websockets.client
 
 from crawler.core.defines import BaseContentGetter
@@ -18,7 +17,7 @@ class PyppeteerContentGetter(BaseContentGetter):
         self.browser = None
         self.page = None
 
-        # self._patch_pyppeteer()
+        self._patch_pyppeteer()
         asyncio.get_event_loop().run_until_complete(self.launch_browser(is_headless=is_headless))
 
     async def launch_browser(self, is_headless: bool):
@@ -28,7 +27,6 @@ class PyppeteerContentGetter(BaseContentGetter):
             "--disable-blink-features",
             "--enable-javascript",
             "--window-size=1920,1080",
-            "logLevel--3"
             # "--start-maximized",
         ]
         default_viewport = {
@@ -45,8 +43,13 @@ class PyppeteerContentGetter(BaseContentGetter):
                 "password": self.proxy_manager.proxy_password,
             }
 
+        pyppeteer_level = logging.WARNING
+        logging.getLogger("pyppeteer").setLevel(pyppeteer_level)
+        logging.getLogger("websockets.protocol").setLevel(pyppeteer_level)
+
         self.browser = await launch(headless=is_headless, args=browser_args, defaultViewport=default_viewport)
-        self.page = await self.browser.newPage()
+        pages = await self.browser.pages()
+        self.page = pages[0]
 
         await stealth(self.page)
 
@@ -59,10 +62,6 @@ class PyppeteerContentGetter(BaseContentGetter):
             f"Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
             f"Chrome/88.0.4324.96 Safari/537.36"
         )
-
-        # pyppeteer_level = logging.WARNING
-        # logging.getLogger("pyppeteer").setLevel(pyppeteer_level)
-        # logging.getLogger("websockets.protocol").setLevel(pyppeteer_level)
 
     async def move_mouse_to_random_position(self):
         x = random.randint(0, 600)

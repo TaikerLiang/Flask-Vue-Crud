@@ -125,7 +125,7 @@ class ContainerItem(BaseCarrierItem):
     final_dest_eta = scrapy.Field()
     ready_for_pick_up = scrapy.Field()
     railway = scrapy.Field()
-    terminal = scrapy.Field()
+    terminal = scrapy.Field(serializer=LocationItem)
 
     task_id = scrapy.Field()
 
@@ -137,10 +137,12 @@ class ContainerItem(BaseCarrierItem):
 class RailItem(BaseCarrierItem):
     container_key = scrapy.Field()
     container_no = scrapy.Field()
-    railway = scrapy.Field()
     description = scrapy.Field()
-    location = scrapy.Field(serializer=LocationItem)
     local_date_time = scrapy.Field()
+    location = scrapy.Field(serializer=LocationItem)
+    railway = scrapy.Field()
+    est_or_actual = scrapy.Field()
+
     task_id = scrapy.Field()
 
     @property

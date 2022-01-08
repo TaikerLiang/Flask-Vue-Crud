@@ -6,7 +6,7 @@ from crawler.core_carrier.exceptions import CARRIER_RESULT_STATUS_ERROR
 
 
 def verify(results):
-    assert results[0] == MblItem(mbl_no="RICBDW223900", task_id=1)
+    assert results[0] == MblItem(mbl_no="RICBDW223900", task_id=1, final_dest="LOS ANGELES, CA, UNITED STATES")
 
     assert isinstance(results[1], RequestOption)
     assert results[1].rule_name == VesselRoutingRule.name
@@ -15,7 +15,7 @@ def verify(results):
         "bkg_no": "RICBDW223900",
     }
 
-    assert results[2] == MblItem(mbl_no="RICBDK658400", task_id=2)
+    assert results[2] == MblItem(mbl_no="RICBDK658400", task_id=2, final_dest="SHANGHAI, SHANGHAI, CHINA")
 
     assert isinstance(results[3], RequestOption)
     assert results[3].rule_name == VesselRoutingRule.name

@@ -8,8 +8,8 @@ from pyppeteer.errors import TimeoutError
 from urllib3.exceptions import ReadTimeoutError
 
 from local.core import BaseLocalCrawler
+from local.proxy import HydraproxyProxyManager, ProxyManager
 from local.exceptions import AccessDeniedError, DataNotFoundError
-from src.crawler.core.proxy import HydraproxyProxyManager, ProxyManager
 from src.crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
 from src.crawler.core.pyppeteer import PyppeteerContentGetter
 from src.crawler.spiders.carrier_zimu import MainInfoRoutingRule
@@ -71,7 +71,7 @@ class ZimuLocalCrawler(BaseLocalCrawler):
 
     def __init__(self):
         super().__init__()
-        self.content_getter = ZimuContentGetter(proxy_manager=HydraproxyProxyManager(session="zimu", logger=logger))
+        self.content_getter = ZimuContentGetter(proxy_manager=HydraproxyProxyManager(logger=logger))
 
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):
         task_ids = task_ids.split(",")
