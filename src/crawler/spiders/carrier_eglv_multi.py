@@ -166,10 +166,6 @@ class ContentRule(BaseRoutingRule):
         search_nos = response.meta["search_nos"]
         task_ids = response.meta["task_ids"]
 
-        page_source, is_exist = asyncio.get_event_loop().run_until_complete(
-            self.driver.search_and_return(search_no=search_nos[0], search_type=self._search_type)
-        )
-
         try:
             page_source, is_exist = asyncio.get_event_loop().run_until_complete(
                 self.driver.search_and_return(search_no=search_nos[0], search_type=self._search_type)
