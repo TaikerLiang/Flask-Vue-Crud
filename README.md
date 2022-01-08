@@ -55,13 +55,18 @@ pyenv local [PYTHON-VENV-NAME]
 pip install -r requirements-dev.txt
 ```
 
+### Run Spider by command
+
+```
+cd src/crawler/spiders/
+scrapy runspider carrier_eglv_multi.py -a mbl_nos=141101170827 -a task_ids=120509
+```
 
 ## Run Tests
 
 ```
 pytest -x test
 ```
-
 
 ## Deploy to Scrapy Cloud
 
@@ -118,7 +123,6 @@ Verify
 ```
 pip install -e '.[dev]'
 ```
-
 
 ## Pre-commit
 
