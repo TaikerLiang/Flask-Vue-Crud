@@ -332,9 +332,9 @@ class FirstTierRoutingRule(BaseRoutingRule):
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, base_url=base_url)
 
+    @staticmethod
     def _is_json_response_invalid(response):
         return "System error" in response.text
-
 
     def _is_search_no_invalid(self, response_dict: Dict) -> bool:
         return "list" not in response_dict
