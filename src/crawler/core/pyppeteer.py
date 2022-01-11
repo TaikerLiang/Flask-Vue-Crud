@@ -17,7 +17,7 @@ class PyppeteerContentGetter(BaseContentGetter):
         self.browser = None
         self.page = None
 
-        self._patch_pyppeteer()
+        # self._patch_pyppeteer()
         asyncio.get_event_loop().run_until_complete(self.launch_browser(is_headless=is_headless))
 
     async def launch_browser(self, is_headless: bool):
@@ -43,8 +43,9 @@ class PyppeteerContentGetter(BaseContentGetter):
                 "password": self.proxy_manager.proxy_password,
             }
 
-        pyppeteer_logger = logging.getLogger("pyppeteer")
-        pyppeteer_logger.setLevel(logging.WARNING)
+        pyppeteer_level = logging.WARNING
+        logging.getLogger("pyppeteer").setLevel(pyppeteer_level)
+        logging.getLogger("websockets.protocol").setLevel(pyppeteer_level)
 
         self.browser = await launch(headless=is_headless, args=browser_args, defaultViewport=default_viewport)
         pages = await self.browser.pages()
@@ -75,7 +76,7 @@ class PyppeteerContentGetter(BaseContentGetter):
     def quit(self):
         asyncio.get_event_loop().run_until_complete(self.browser.close())
 
-    def _patch_pyppeteer(self):
+    def patch_pyppeteer(self):
         class PatchedConnection(connection.Connection):  # type: ignore
             def __init__(self, *args: Any, **kwargs: Any) -> None:
                 super().__init__(*args, **kwargs)

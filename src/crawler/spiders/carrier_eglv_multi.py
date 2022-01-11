@@ -66,6 +66,7 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
         self._driver = EglvContentGetter(
             proxy_manager=HydraproxyProxyManager(session="eglv", logger=self.logger), is_headless=True
         )
+        self._driver.patch_pyppeteer()
 
         bill_rules = [
             ContentRule(content_getter=self._driver, search_type=SHIPMENT_TYPE_MBL),
