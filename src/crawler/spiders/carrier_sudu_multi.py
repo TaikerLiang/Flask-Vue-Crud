@@ -506,19 +506,14 @@ class NextRoundRoutingRule(BaseRoutingRule):
 class ContentGetter(PyppeteerContentGetter):
     def __init__(self, proxy_manager: Optional[ProxyManager] = None, is_headless: Optional[bool] = True):
         super().__init__(proxy_manager, is_headless=is_headless)
-        pyppeteer_logger = logging.getLogger("pyppeteer")
-        # pyppeteer_logger.setLevel(logging.WARNING)
-        logging.disable(logging.DEBUG)
 
     async def search(self, search_no: str):
-        await self.page.goto(BASE_URL, options={"timeout": 60000})
-        await asyncio.sleep(3)
-        await self.page.waitForSelector("#j_idt7\:searchForm\:j_idt9\:inputReferences")
-        await self.page.type(f"#j_idt7\:searchForm\:j_idt9\:inputReferences", search_no)
+        await self.page.goto(BASE_URL)
+        await asyncio.sleep(40)
+        await self.page.type("textarea[id$=inputReferences]", search_no)
         await asyncio.sleep(2)
-        await self.page.click("#j_idt7\:searchForm\:j_idt9\:search-submit")
+        await self.page.click("button[id$=search-submit]")
         await asyncio.sleep(5)
-        await self.page.evaluate("""{window.scrollBy(0, document.body.scrollHeight);}""")
         await self.scroll_down()
 
         return await self.page.content()
@@ -574,7 +569,7 @@ class ContentGetter(PyppeteerContentGetter):
         time.sleep(2)
 
     async def reset_mbl_search_textarea(self):
-        await self.page.click("#j_idt7\:searchForm\:j_idt9\:search-reset")
+        await self.page.click("button[id$=search-reset]")
         time.sleep(3)
 
 

@@ -43,9 +43,8 @@ class PyppeteerContentGetter(BaseContentGetter):
                 "password": self.proxy_manager.proxy_password,
             }
 
-        pyppeteer_level = logging.WARNING
-        logging.getLogger("pyppeteer").setLevel(pyppeteer_level)
-        logging.getLogger("websockets.protocol").setLevel(pyppeteer_level)
+        pyppeteer_logger = logging.getLogger("pyppeteer")
+        pyppeteer_logger.setLevel(logging.WARNING)
 
         self.browser = await launch(headless=is_headless, args=browser_args, defaultViewport=default_viewport)
         pages = await self.browser.pages()
