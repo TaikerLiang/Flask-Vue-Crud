@@ -17,6 +17,8 @@ from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.core.table import BaseTable
 
+MAX_PAGE_NUM = 20
+
 
 @dataclasses.dataclass
 class CompanyInfo:
@@ -88,6 +90,7 @@ class TtiWutShareSpider(BaseMultiTerminalSpider):
             return scrapy.Request(
                 url=option.url,
                 meta=meta,
+                dont_filter=True,
             )
 
         else:
@@ -116,13 +119,19 @@ class MainRoutingRule(BaseRoutingRule):
 
         content_getter = ContentGetter()
         content_getter.login(company_info.email, company_info.password, company_info.url)
-        resp = content_getter.search(container_no_list, company_info.upper_short)
-        resp = Selector(text=resp)
 
-        content_getter.quit()
+        while True:
+            resp = content_getter.search(container_no_list[:MAX_PAGE_NUM], company_info.upper_short)
+            resp = Selector(text=resp)
 
-        for item in self._handle_response(resp, container_no_list):
-            yield item
+            for item in self._handle_response(resp, container_no_list[:MAX_PAGE_NUM]):
+                yield item
+
+            if len(container_no_list) <= MAX_PAGE_NUM:
+                content_getter.quit()
+                break
+
+            container_no_list = container_no_list[MAX_PAGE_NUM:]
 
     @classmethod
     def _handle_response(cls, response, container_no_list):
@@ -175,6 +184,7 @@ class ContentGetter(ChromeContentGetter):
         time.sleep(8)
 
     def search(self, container_no_list: List, short_name: str):
+        self._driver.switch_to.default_content()
         if short_name == "TTI":
             menu_btn = self._driver.find_element_by_xpath('//*[@id="nav"]/li[3]/a')
         else:
@@ -216,7 +226,6 @@ class ContentGetter(ChromeContentGetter):
 
 class ContainerTableLocator(BaseTable):
     def parse(self, table: Selector, numbers: int = 1):
-        self._left_header_set = set(range(numbers))
         titles_ths = table.css("th")
         title_list = []
         for title in titles_ths:
@@ -224,6 +233,7 @@ class ContainerTableLocator(BaseTable):
             title_list.append(title_res)
 
         trs = table.css("tr")
+        index = 0
         for tr in trs:
             data_tds = tr.css("td")
             data_list = []
@@ -236,7 +246,8 @@ class ContainerTableLocator(BaseTable):
 
             if not is_append:
                 continue
-
+            self.add_left_header_set(index)
+            index += 1
             for title_index, title in enumerate(title_list):
                 self._td_map.setdefault(title, [])
                 self._td_map[title].append(data_list[title_index])

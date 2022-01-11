@@ -13,12 +13,12 @@ from selenium.webdriver.support.wait import WebDriverWait
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem, InvalidDataFieldItem
-from crawler.core_terminal.ptp_share_spider import ContainerRoutingRule
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.core.selenium import ChromeContentGetter
 
 BASE_URL = "http://webaccess.gaports.com/express/"
+MAX_PAGE_NUM = 20
 
 
 class GpaShareSpider(BaseMultiTerminalSpider):
@@ -32,6 +32,7 @@ class GpaShareSpider(BaseMultiTerminalSpider):
             LoginRoutingRule(),
             ToContainerPageRoutingRule(),
             ContainerRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -78,6 +79,7 @@ class GpaShareSpider(BaseMultiTerminalSpider):
                 headers=option.headers,
                 meta=meta,
                 cookies=option.cookies,
+                dont_filter=True,
             )
         elif option.method == RequestOption.METHOD_POST_BODY:
             return scrapy.Request(
@@ -155,7 +157,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             "Cookie": f"JSESSIONID={cookies.get('JSESSIONID')}",
         }
         body = {
-            "eqNbrs": "\n".join(container_no_list),
+            "eqNbrs": "\n".join(container_no_list[:MAX_PAGE_NUM]),
             "trkcID": "ANY",
             "pickupDate": date.today().strftime("%d-%b-%Y"),
             "param": "DeliveryInq",
@@ -177,10 +179,11 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_no_list = response.meta.get("container_no_list")
+        cookies = response.meta.get("cookies")
         try:
             table = self._get_table_list(response)
         except TerminalInvalidContainerNoError:
-            yield InvalidContainerNoItem(container_no=container_no_list)
+            yield InvalidContainerNoItem(container_no=container_no_list[:MAX_PAGE_NUM])
         else:
             info_list = self._extract_info_list(table)
             for info in info_list:
@@ -194,6 +197,7 @@ class ContainerRoutingRule(BaseRoutingRule):
                         carrier_release=info.get("line_release"),
                         customs_release=info.get("customs_release"),
                     )
+            yield NextRoundRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
 
     def _get_table_list(self, response: Response) -> List[List]:
         tr_selector = response.css("tbody[class='tablebody1'] tr")
@@ -267,6 +271,30 @@ class ContainerRoutingRule(BaseRoutingRule):
             return invalid_data_field_item
         else:
             return None
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    name = "Next_Round"
+
+    @classmethod
+    def build_request_option(cls, container_no_list: List, cookies: Dict) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://google.com",
+            meta={"container_no_list": container_no_list, "cookies": cookies},
+        )
+
+    def handle(self, response):
+        container_no_list = response.meta["container_no_list"]
+        cookies = response.meta["cookies"]
+
+        if len(container_no_list) <= MAX_PAGE_NUM:
+            return
+
+        container_no_list = container_no_list[MAX_PAGE_NUM:]
+
+        yield ContainerRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
 
 
 class ContentGetter(ChromeContentGetter):

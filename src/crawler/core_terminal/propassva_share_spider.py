@@ -15,6 +15,7 @@ from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError
 from crawler.core.selenium import ChromeContentGetter
 
 BASE_URL = "https://www.propassva.com/"
+MAX_PAGE_NUM = 20
 
 
 class PropassvaShareSpider(BaseMultiTerminalSpider):
@@ -29,6 +30,7 @@ class PropassvaShareSpider(BaseMultiTerminalSpider):
             GetContainerNoRoutingRule(),
             RemoveContainerNoRoutingRule(),
             ContainerRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -72,6 +74,7 @@ class PropassvaShareSpider(BaseMultiTerminalSpider):
                 headers=option.headers,
                 meta=meta,
                 cookies=option.cookies,
+                dont_filter=True,
             )
 
         else:
@@ -199,7 +202,7 @@ class ContainerRoutingRule(BaseRoutingRule):
     def build_request_option(cls, container_no_list: List, cookies: Dict) -> RequestOption:
         url = (
             f"https://availability.propassva.com:64455/ImportAvailability/GetContainerInfoList?"
-            f"apiParams=%7B%22Container_Nbr%22:%22{'%5Cn'.join(container_no_list)}%22%7D&"
+            f"apiParams=%7B%22Container_Nbr%22:%22{'%5Cn'.join(container_no_list[:MAX_PAGE_NUM])}%22%7D&"
             f"sgrdModel=%7B%22searchtext%22:%22%22,%22page%22:1,%22pageSize%22:20,%22sortBy"
             f"%22:%221%22,%22sortDirection%22:%22asc%22,%22sortColumns%22:%22%22%7D"
         )
@@ -223,6 +226,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_no_list = response.meta["container_no_list"]
+        cookies = response.meta["cookies"]
         response_dict = json.loads(response.text)
         for content in response_dict["Content"]:
             if content["ContainerInfo"] == "":
@@ -239,6 +243,32 @@ class ContainerRoutingRule(BaseRoutingRule):
                 vessel=container_info["vsl"],
                 voyage=container_info["voy"],
             )
+        yield NextRoundRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
+
+
+# --------------------------------------------------------------------
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    @classmethod
+    def build_request_option(cls, container_no_list: List, cookies: Dict) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://google.com",
+            meta={"container_no_list": container_no_list, "cookies": cookies},
+        )
+
+    def handle(self, response):
+        container_no_list = response.meta["container_no_list"]
+        cookies = response.meta["cookies"]
+
+        if len(container_no_list) <= MAX_PAGE_NUM:
+            return
+
+        container_no_list = container_no_list[MAX_PAGE_NUM:]
+
+        yield GetContainerNoRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
 
 
 # -------------------------------------------------------------------------------

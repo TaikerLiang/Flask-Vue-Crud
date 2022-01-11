@@ -6,6 +6,7 @@ from scrapy.http import TextResponse
 
 from src.crawler.core_terminal.gpa_share_spider import ContainerRoutingRule
 from test.spiders.terminal_gpa_garden_city_l737 import container
+from crawler.core_terminal.request_helpers import RequestOption
 
 
 @pytest.fixture
@@ -47,7 +48,9 @@ def test_container_handle(sub, container_no_list, sample_loader):
         ),
     )
     rule = ContainerRoutingRule()
-    results_dict = {item.get("container_no"): item for item in rule.handle(response=response)}
+    results_dict = {
+        item.get("container_no"): item for item in rule.handle(response=response) if not isinstance(item, RequestOption)
+    }
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results_dict)
@@ -116,7 +119,9 @@ def test_container_check_data_validability(sub, container_no_list, sample_loader
         ),
     )
     rule = ContainerRoutingRule()
-    results_dict = {item.get("container_no"): item for item in rule.handle(response=response)}
+    results_dict = {
+        item.get("container_no"): item for item in rule.handle(response=response) if not isinstance(item, RequestOption)
+    }
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results_dict)

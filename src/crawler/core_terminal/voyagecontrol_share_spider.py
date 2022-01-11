@@ -32,7 +32,12 @@ class WarningMessage:
 
 class VoyagecontrolShareSpider(BaseMultiTerminalSpider):
     name = ""
-    company_info = CompanyInfo(lower_short="", upper_short="", email="", password="",)
+    company_info = CompanyInfo(
+        lower_short="",
+        upper_short="",
+        email="",
+        password="",
+    )
 
     def __init__(self, *args, **kwargs):
         super(VoyagecontrolShareSpider, self).__init__(*args, **kwargs)
@@ -44,6 +49,7 @@ class VoyagecontrolShareSpider(BaseMultiTerminalSpider):
             ContainerInquiryRoutingRule(),
             DelContainerFromTraceRoutingRule(),
             SearchMblRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -85,10 +91,20 @@ class VoyagecontrolShareSpider(BaseMultiTerminalSpider):
         }
 
         if option.method == RequestOption.METHOD_GET:
-            return Request(url=option.url, headers=option.headers, meta=meta, dont_filter=True,)
+            return Request(
+                url=option.url,
+                headers=option.headers,
+                meta=meta,
+                dont_filter=True,
+            )
         elif option.method == RequestOption.METHOD_POST_BODY:
             return Request(
-                url=option.url, headers=option.headers, meta=meta, dont_filter=True, method="POST", body=option.body,
+                url=option.url,
+                headers=option.headers,
+                meta=meta,
+                dont_filter=True,
+                method="POST",
+                body=option.body,
             )
         else:
             raise ValueError(f"Invalid option.method [{option.method}]")
@@ -117,7 +133,10 @@ class LoginRoutingRule(BaseRoutingRule):
             url=url,
             headers=headers,
             body=json.dumps(form_data),
-            meta={"container_no_list": container_no_list, "company_info": company_info,},
+            meta={
+                "container_no_list": container_no_list,
+                "company_info": company_info,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -130,13 +149,12 @@ class LoginRoutingRule(BaseRoutingRule):
         response_json = json.loads(response.text)
         authorization_token = response_json["token"]
 
-        for container_no in container_no_list:
-            yield ListTracedContainerRoutingRule.build_request_option(
-                container_no=container_no,
-                authorization_token=authorization_token,
-                company_info=company_info,
-                is_first=True,
-            )
+        yield ListTracedContainerRoutingRule.build_request_option(
+            container_nos=container_no_list,
+            authorization_token=authorization_token,
+            company_info=company_info,
+            is_first=True,
+        )
 
         # if mbl_no:
         #     yield SearchMblRoutingRule.build_request_option(mbl_no=mbl_no, token=authorization_token)
@@ -150,17 +168,19 @@ class ListTracedContainerRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(
-        cls, container_no, authorization_token, company_info: CompanyInfo, is_first: bool = False
+        cls, container_nos, authorization_token, company_info: CompanyInfo, is_first: bool = False
     ) -> RequestOption:
         url = f"https://{company_info.lower_short}.voyagecontrol.com/lynx/container/?venue={company_info.lower_short}"
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
-            headers={"authorization": "JWT " + authorization_token,},
+            headers={
+                "authorization": "JWT " + authorization_token,
+            },
             meta={
                 "is_first": is_first,
-                "container_no": container_no,
+                "container_nos": container_nos,
                 "authorization_token": authorization_token,
                 "company_info": company_info,
             },
@@ -171,7 +191,8 @@ class ListTracedContainerRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         is_first = response.meta["is_first"]
-        container_no = response.meta["container_no"]
+        container_nos = response.meta["container_nos"]
+        container_no = container_nos[0]
         authorization_token = response.meta["authorization_token"]
         company_info = response.meta["company_info"]
 
@@ -183,7 +204,7 @@ class ListTracedContainerRoutingRule(BaseRoutingRule):
             if is_first:
                 # update existing container: delete -> add
                 yield DelContainerFromTraceRoutingRule.build_request_option(
-                    container_no=container_no,
+                    container_nos=container_nos,
                     authorization_token=authorization_token,
                     company_info=company_info,
                     not_finished=True,
@@ -198,12 +219,16 @@ class ListTracedContainerRoutingRule(BaseRoutingRule):
             )
 
             yield DelContainerFromTraceRoutingRule.build_request_option(
-                container_no=container_no, authorization_token=authorization_token, company_info=company_info
+                container_nos=container_nos, authorization_token=authorization_token, company_info=company_info
+            )
+
+            yield NextRoundRoutingRule.build_request_option(
+                container_nos=container_nos, authorization_token=authorization_token, company_info=company_info
             )
 
         else:
             yield AddContainerToTraceRoutingRule.build_request_option(
-                container_no=container_no, authorization_token=authorization_token, company_info=company_info
+                container_nos=container_nos, authorization_token=authorization_token, company_info=company_info
             )
 
     @staticmethod
@@ -292,14 +317,14 @@ class AddContainerToTraceRoutingRule(BaseRoutingRule):
     name = "ADD_CONTAINER_TO_TRACE"
 
     @classmethod
-    def build_request_option(cls, container_no, authorization_token, company_info: CompanyInfo) -> RequestOption:
+    def build_request_option(cls, container_nos, authorization_token, company_info: CompanyInfo) -> RequestOption:
         url = f"https://{company_info.lower_short}.voyagecontrol.com/lynx/container/ids/insert?venue={company_info.lower_short}"
         headers = {
             "Content-Type": "application/json",
             "authorization": "JWT " + authorization_token,
         }
         form_data = {
-            "containerIds": [container_no],
+            "containerIds": container_nos[:1],
         }
 
         return RequestOption(
@@ -309,7 +334,7 @@ class AddContainerToTraceRoutingRule(BaseRoutingRule):
             headers=headers,
             body=json.dumps(form_data),
             meta={
-                "container_no": container_no,
+                "container_nos": container_nos,
                 "authorization_token": authorization_token,
                 "dont_retry": True,
                 "handle_httpstatus_list": [502],
@@ -321,7 +346,7 @@ class AddContainerToTraceRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        container_no = response.meta["container_no"]
+        container_nos = response.meta["container_nos"]
         authorization_token = response.meta["authorization_token"]
         company_info = response.meta["company_info"]
 
@@ -335,7 +360,7 @@ class AddContainerToTraceRoutingRule(BaseRoutingRule):
             )
 
         yield ListTracedContainerRoutingRule.build_request_option(
-            container_no=container_no, authorization_token=authorization_token, company_info=company_info
+            container_nos=container_nos, authorization_token=authorization_token, company_info=company_info
         )
 
 
@@ -347,7 +372,7 @@ class DelContainerFromTraceRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(
-        cls, container_no, authorization_token, company_info: CompanyInfo, not_finished: bool = False
+        cls, container_nos, authorization_token, company_info: CompanyInfo, not_finished: bool = False
     ) -> RequestOption:
         url = f"https://{company_info.lower_short}.voyagecontrol.com/lynx/container/ids/delete?venue={company_info.lower_short}"
         headers = {
@@ -355,7 +380,7 @@ class DelContainerFromTraceRoutingRule(BaseRoutingRule):
             "authorization": "JWT " + authorization_token,
         }
         form_data = {
-            "containerIds": [container_no],
+            "containerIds": container_nos[:1],
             "bookingRefs": [None],
         }
 
@@ -366,7 +391,7 @@ class DelContainerFromTraceRoutingRule(BaseRoutingRule):
             headers=headers,
             body=json.dumps(form_data),
             meta={
-                "container_no": container_no,
+                "container_nos": container_nos,
                 "authorization_token": authorization_token,
                 "not_finished": not_finished,
                 "company_info": company_info,
@@ -377,7 +402,7 @@ class DelContainerFromTraceRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        container_no = response.meta["container_no"]
+        container_nos = response.meta["container_nos"]
         authorization_token = response.meta["authorization_token"]
         not_finished = response.meta["not_finished"]
         company_info = response.meta["company_info"]
@@ -389,7 +414,7 @@ class DelContainerFromTraceRoutingRule(BaseRoutingRule):
 
         if not_finished:
             yield AddContainerToTraceRoutingRule.build_request_option(
-                container_no=container_no, authorization_token=authorization_token, company_info=company_info
+                container_nos=container_nos, authorization_token=authorization_token, company_info=company_info
             )
         else:
             # because of parse(), need to yield empty item
@@ -415,7 +440,11 @@ class SearchMblRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_GET,
             url=url,
             headers=headers,
-            meta={"handle_httpstatus_list": [404], "mbl_no": mbl_no, "company_info": company_info,},
+            meta={
+                "handle_httpstatus_list": [404],
+                "mbl_no": mbl_no,
+                "company_info": company_info,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -480,6 +509,43 @@ class SearchMblRoutingRule(BaseRoutingRule):
             "mbl_no": mbl_info_dict["BL Nbr"],
             "voyage": mbl_info_dict["Ves. Visit"],
         }
+
+
+# --------------------------------------------------------------------
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    name = "ROUTING"
+
+    @classmethod
+    def build_request_option(cls, container_nos, authorization_token, company_info: CompanyInfo) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://www.google.com",
+            meta={
+                "container_nos": container_nos,
+                "authorization_token": authorization_token,
+                "company_info": company_info,
+            },
+        )
+
+    def handle(self, response):
+        container_nos = response.meta["container_nos"]
+        authorization_token = response.meta["authorization_token"]
+        company_info = response.meta["company_info"]
+
+        if len(container_nos) == 1:
+            return
+
+        container_nos = container_nos[1:]
+
+        yield ListTracedContainerRoutingRule.build_request_option(
+            container_nos=container_nos,
+            authorization_token=authorization_token,
+            company_info=company_info,
+            is_first=True,
+        )
 
 
 # -------------------------------------------------------------------------------

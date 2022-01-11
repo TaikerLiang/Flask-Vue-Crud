@@ -9,9 +9,10 @@ from selenium.webdriver.support.wait import WebDriverWait
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.ptp_share_spider import ContainerRoutingRule
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
+
+MAX_PAGE_NUM = 10
 
 
 class ScspaShareSpider(BaseMultiTerminalSpider):
@@ -20,11 +21,13 @@ class ScspaShareSpider(BaseMultiTerminalSpider):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         self._content_getter = ContentGetter()
 
         rules = [
             ContainerRoutingRule(content_getter=self._content_getter),
+            NextRoundRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -68,6 +71,7 @@ class ScspaShareSpider(BaseMultiTerminalSpider):
                 headers=option.headers,
                 meta=meta,
                 cookies=option.cookies,
+                dont_filter=True,
             )
         else:
             raise RuntimeError()
@@ -95,10 +99,12 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_no_list = response.meta["container_no_list"]
-        res = self._content_getter._search_and_return(container_no_list=container_no_list)
+        res = self._content_getter._search_and_return(container_no_list=container_no_list[:MAX_PAGE_NUM])
 
         for item in self._handle_response(response=res):
             yield item
+
+        yield NextRoundRoutingRule.build_request_option(container_no_list)
 
     @classmethod
     def _handle_response(cls, response):
@@ -124,10 +130,35 @@ class ContainerRoutingRule(BaseRoutingRule):
         return content_table
 
 
+class NextRoundRoutingRule(BaseRoutingRule):
+    @classmethod
+    def build_request_option(cls, container_no_list: List[str]) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://www.google.com",
+            meta={"container_no_list": container_no_list},
+        )
+
+    def handle(self, response):
+        container_no_list = response.meta["container_no_list"]
+
+        if len(container_no_list) <= MAX_PAGE_NUM:
+            return
+
+        container_no_list = container_no_list[MAX_PAGE_NUM:]
+
+        yield ContainerRoutingRule.build_request_option(container_no_list=container_no_list)
+
+
 class ContentGetter(ChromeContentGetter):
     USERNAME = "tk@hardcoretech.co"
     PASSWORD = "Hardc0re"
     URL = "https://goport.scspa.com/scspa/index"
+
+    def __init__(self):
+        super().__init__()
+        self.is_first = True
 
     def login(self):
         self._driver.get(self.URL)
@@ -142,9 +173,14 @@ class ContentGetter(ChromeContentGetter):
         button.click()
 
     def _search_and_return(self, container_no_list):
-        self.login()
-        self._close_popup()
-        self._to_search_page()
+        if self.is_first:
+            self.login()
+            self._close_popup()
+            self._to_search_page()
+            self.is_first = False
+        else:
+            self._back_to_search_page()
+
         self._input_search_target(container_no_list)
 
         # check the result popup is appeared
@@ -209,3 +245,13 @@ class ContentGetter(ChromeContentGetter):
         button = self._driver.find_element(By.XPATH, "//button[contains(@id, 'scspabutton-')]")
         button.click()
         time.sleep(1)  # wait for website
+
+    def _back_to_search_page(self):
+        button = self._driver.find_element(
+            By.XPATH, "//div[@id='quickInptPtrWinPnlWinId_header-targetEl']/div/img[contains(@class, 'x-tool-close')]"
+        )
+        button.click()
+        time.sleep(1)
+        clear_button = self._driver.find_element(By.XPATH, "//button[span[contains(@class, 'clearIcon')]]")
+        clear_button.click()
+        time.sleep(1)

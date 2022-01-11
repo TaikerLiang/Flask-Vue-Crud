@@ -22,7 +22,7 @@ def verify(results: List):
     assert isinstance(results[1], RequestOption)
     assert results[1].rule_name == DelContainerFromTraceRoutingRule.name
     assert results[1].meta == {
-        "container_no": "TCNU1794174",
+        "container_nos": ["TCNU1794174"],
         "authorization_token": "",
         "not_finished": False,
         "company_info": TerminalFenixSpider.company_info,

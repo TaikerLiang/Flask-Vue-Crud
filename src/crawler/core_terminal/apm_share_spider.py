@@ -21,6 +21,7 @@ class ApmShareSpider(BaseMultiTerminalSpider):
 
         rules = [
             ContainerRoutingRule(),
+            NextRoundRoutingRule(),
         ]
         self._proxy_manager = HydraproxyProxyManager(session="share", logger=self.logger)
         self._rule_manager = RuleManager(rules=rules)
@@ -74,6 +75,14 @@ class ApmShareSpider(BaseMultiTerminalSpider):
                 body=option.body,
                 meta=meta,
             )
+        elif option.method == RequestOption.METHOD_GET:
+            return scrapy.Request(
+                method="GET",
+                url=option.url,
+                headers=option.headers,
+                meta=meta,
+                dont_filter=True,
+            )
 
         else:
             raise KeyError()
@@ -88,7 +97,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         form_data = {
             "DateFormat": "dd/MM/yy",
-            "Ids": container_nos,
+            "Ids": container_nos[:20],  # page size == 20
             "TerminalId": terminal_id,
         }
 
@@ -98,7 +107,10 @@ class ContainerRoutingRule(BaseRoutingRule):
             url=url,
             headers={"Content-Type": "application/json"},
             body=json.dumps(form_data),
-            meta={"container_nos": container_nos},
+            meta={
+                "container_nos": container_nos,
+                "terminal_id": terminal_id,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -106,7 +118,9 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_nos = response.meta["container_nos"]
+        terminal_id = response.meta["terminal_id"]
 
+        cur_container_nos = container_nos[:20]
         response_json = json.loads(response.text)
         for container in response_json["ContainerAvailabilityResults"]:
             result = {
@@ -124,16 +138,18 @@ class ContainerRoutingRule(BaseRoutingRule):
                 "holds": ",".join(container["Holds"]),
                 "cy_location": container["YardLocation"],
                 "vessel": container["VesselName"],
-                "mbl_no": container["BillOfLading"][0],
+                "mbl_no": container["BillOfLading"][0] if container["BillOfLading"] else None,
                 "weight": container["GrossWeight"],
                 "hazardous": container["HazardousClass"].strip() or None,
             }
 
-            container_nos.remove(container["ContainerId"])
+            cur_container_nos.remove(container["ContainerId"])
             yield TerminalItem(**result)
 
-        for container_no in container_nos:
+        for container_no in cur_container_nos:
             yield InvalidContainerNoItem(container_no=container_no)
+
+        yield NextRoundRoutingRule.build_request_option(container_nos=container_nos, terminal_id=terminal_id)
 
     @staticmethod
     def _is_all_container_nos_invalid(response_json):
@@ -151,3 +167,25 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         elif len(container["BillOfLading"]) != 1:
             raise TerminalResponseFormatError(reason=f'Unexpected Mbl_no: `{container["BillOfLading"]}`')
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    @classmethod
+    def build_request_option(cls, container_nos: List, terminal_id: str) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://google.com",
+            meta={"container_nos": container_nos, "terminal_id": terminal_id},
+        )
+
+    def handle(self, response):
+        container_nos = response.meta["container_nos"]
+        terminal_id = response.meta["terminal_id"]
+
+        if len(container_nos) <= 20:  # page size == 20
+            return
+
+        container_nos = container_nos[20:]
+
+        yield ContainerRoutingRule.build_request_option(container_nos=container_nos, terminal_id=terminal_id)

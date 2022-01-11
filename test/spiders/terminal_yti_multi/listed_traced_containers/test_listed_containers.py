@@ -18,13 +18,16 @@ def sample_loader(sample_loader):
 
 @pytest.mark.parametrize(
     "sub,container_no,is_first",
-    [("01_first_and_exist", "BSIU9653301", True), ("02_first_and_not_exist", "FBLU0255200", True),],
+    [
+        ("01_first_and_exist", "BSIU9653301", True),
+        ("02_first_and_not_exist", "FBLU0255200", True),
+    ],
 )
 def test_container_handle(sub, container_no, is_first, sample_loader):
     json_text = sample_loader.read_file(sub, "sample.json")
 
     option = ListTracedContainerRoutingRule.build_request_option(
-        container_no=container_no,
+        container_nos=[container_no],
         authorization_token="",
         company_info=TerminalYtiSpider.company_info,
         is_first=is_first,
@@ -38,7 +41,7 @@ def test_container_handle(sub, container_no, is_first, sample_loader):
             url=option.url,
             meta={
                 "is_first": is_first,
-                "container_no": container_no,
+                "container_nos": [container_no],
                 "authorization_token": "",
                 "company_info": TerminalYtiSpider.company_info,
             },

@@ -1,5 +1,4 @@
 import dataclasses
-import enum
 from typing import Dict, List
 import time
 from crawler.core.selenium import ChromeContentGetter
@@ -8,14 +7,16 @@ from crawler.core.table import BaseTable, TableExtractor
 import scrapy
 from scrapy import Selector
 
+from crawler.core.base import DUMMY_URL_DICT
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import TerminalResponseFormatError
-from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 
 BASE_URL = "https://tms.itslb.com"
+MAX_PAGE_NUM = 20
 
 
 @dataclasses.dataclass
@@ -37,6 +38,7 @@ class TmsSharedSpider(BaseMultiTerminalSpider):
 
         rules = [
             SeleniumRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -111,7 +113,7 @@ class SeleniumRoutingRule(BaseRoutingRule):
         content_getter.select_terminal(terminal_id)
 
         # TODO: can improve here, send request one time
-        for container_no in container_nos:
+        for container_no in container_nos[:MAX_PAGE_NUM]:
             page_source = content_getter.search(container_no)
             resp = Selector(text=page_source)
             if not resp.css("table.table-borderless"):
@@ -121,6 +123,10 @@ class SeleniumRoutingRule(BaseRoutingRule):
                 yield item
 
         content_getter.close()
+
+        yield NextRoundRoutingRule.build_request_option(
+            container_nos=container_nos, terminal_id=terminal_id, company_info=company_info
+        )
 
     @classmethod
     def _handle_response(cls, response):
@@ -194,6 +200,37 @@ class SeleniumRoutingRule(BaseRoutingRule):
             "mbl_no": right_table.extract_cell(left=0, top="B/L#"),
             "demurrage": right_table.extract_cell(left=0, top="Demurrage"),
         }
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    name = "NEXT_ROUND"
+
+    @classmethod
+    def build_request_option(cls, container_nos: List, terminal_id: int, company_info) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=DUMMY_URL_DICT["google"],
+            meta={
+                "container_nos": container_nos,
+                "terminal_id": terminal_id,
+                "company_info": company_info,
+            },
+        )
+
+    def handle(self, response):
+        container_nos = response.meta["container_nos"]
+        terminal_id = response.meta["terminal_id"]
+        company_info = response.meta["company_info"]
+
+        if len(container_nos) <= MAX_PAGE_NUM:
+            return
+
+        container_nos = container_nos[MAX_PAGE_NUM:]
+
+        yield SeleniumRoutingRule.build_request_option(
+            container_nos=container_nos, terminal_id=terminal_id, company_info=company_info
+        )
 
 
 class TopInfoTableLocator(BaseTable):

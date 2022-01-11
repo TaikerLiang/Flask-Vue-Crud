@@ -30,6 +30,7 @@ class TideworksShareSpider(BaseMultiTerminalSpider):
 
     def __init__(self, *args, **kwargs):
         super(TideworksShareSpider, self).__init__(*args, **kwargs)
+        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         rules = [
             LoginRoutingRule(),
