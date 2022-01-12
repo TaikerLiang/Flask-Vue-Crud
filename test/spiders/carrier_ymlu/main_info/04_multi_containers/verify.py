@@ -27,7 +27,7 @@ def verify(results: List):
         container_key='SEGU5613160',
         container_no='SEGU5613160',
         last_free_day=None,
-        terminal=None,
+        terminal=LocationItem(name=None),
     )
 
     assert isinstance(results[2], RequestOption)
@@ -40,7 +40,7 @@ def verify(results: List):
         container_key='YMLU8333608',
         container_no='YMLU8333608',
         last_free_day=None,
-        terminal=None,
+        terminal=LocationItem(name=None),
     )
 
     assert isinstance(results[8], RequestOption)

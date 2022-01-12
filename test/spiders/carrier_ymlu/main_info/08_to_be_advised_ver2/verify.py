@@ -27,7 +27,7 @@ def verify(results: List):
         container_key='YMMU6022283',
         container_no='YMMU6022283',
         last_free_day=None,
-        terminal='Y258',
+        terminal=LocationItem(name='Y258'),
     )
 
     assert isinstance(results[2], RequestOption)

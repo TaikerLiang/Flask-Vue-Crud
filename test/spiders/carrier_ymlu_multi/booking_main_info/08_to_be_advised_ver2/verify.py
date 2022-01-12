@@ -28,5 +28,5 @@ def verify(results: List):
         container_no="SEGU5745335",
         last_free_day=None,
         task_id=1,
-        terminal=None,
+        terminal=LocationItem(name=None),
     )

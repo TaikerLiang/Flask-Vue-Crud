@@ -379,7 +379,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
                     container_key=container_no,
                     container_no=container_no,
                     last_free_day=last_free_day,
-                    terminal=firms_code,
+                    terminal=LocationItem(name=firms_code),
                 )
 
                 follow_url = container_info["follow_url"]
@@ -712,7 +712,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
                     container_key=container_no,
                     container_no=container_no,
                     last_free_day=last_free_day,
-                    terminal=firms_code,
+                    terminal=LocationItem(name=firms_code),
                 )
 
                 follow_url = container_info["follow_url"]
@@ -1115,6 +1115,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
         else:
             container_status_list = self._extract_container_status(response=response)
+            rail = None
             for container_status in container_status_list:
                 yield ContainerStatusItem(
                     container_key=container_no,
@@ -1123,15 +1124,13 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                     location=LocationItem(name=container_status["location_name"]),
                     transport=container_status["transport"] or None,
                 )
-                if container_status["transport"] == "Rail":
-                    pattern = re.compile(r"^(?P<location>.+) [(](?P<rail_name>.+) - (?P<terminal>.+)[)]$")
-                    match = pattern.match(container_status["location_name"])
-                    if match:
-                        rail_name = match.group("rail_name")
-                        yield ContainerItem(
-                            container_key=container_no,
-                            railway=rail_name,
-                        )
+                if "Rail" in container_status["transport"]:
+                    rail = container_status["location_name"]
+            if rail:
+                yield ContainerItem(
+                    container_key=container_no,
+                    railway=rail,
+                )
 
     @staticmethod
     def _extract_container_status(response):

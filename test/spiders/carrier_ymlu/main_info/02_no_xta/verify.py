@@ -27,7 +27,7 @@ def verify(results: List):
         container_key='WWWU9601440',
         container_no='WWWU9601440',
         last_free_day=None,
-        terminal=None,
+        terminal=LocationItem(name=None),
     )
 
     assert isinstance(results[2], RequestOption)

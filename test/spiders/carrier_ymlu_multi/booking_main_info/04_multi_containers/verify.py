@@ -29,7 +29,7 @@ def verify(results: List):
         container_no="FSCU8038064",
         last_free_day=None,
         task_id=1,
-        terminal=None,
+        terminal=LocationItem(name=None),
     )
 
     assert results[5] == ContainerItem(
@@ -37,5 +37,5 @@ def verify(results: List):
         container_no="TEMU8505289",
         last_free_day=None,
         task_id=1,
-        terminal=None,
+        terminal=LocationItem(name=None),
     )
