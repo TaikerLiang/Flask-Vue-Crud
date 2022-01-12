@@ -7,68 +7,73 @@ def verify(results: List):
     results.pop(0)
 
     assert results[0] == MblItem(
-        por=LocationItem(name='HUANGPU (CN)'),
-        pol=LocationItem(name='NANSHA (CN)'),
-        pod=LocationItem(name='OAKLAND, CA (US)'),
+        por=LocationItem(name="HUANGPU (CN)"),
+        pol=LocationItem(name="NANSHA (CN)"),
+        pod=LocationItem(name="OAKLAND, CA (US)"),
         final_dest=LocationItem(name=None),
-        eta='Sat 31 Aug 2019 06:00',
+        eta="Sat 31 Aug 2019 06:00",
         ata=None,
     )
 
     assert results[1] == ContainerItem(
-        container_key='GLDU5292400',
-        container_no='GLDU5292400',
+        container_key="GLDU5292400",
+        container_no="GLDU5292400",
     )
 
     assert results[2] == ContainerStatusItem(
-        container_key='GLDU5292400',
-        local_date_time='Mon 29 Jul 2019 14:51',
-        description='Empty to shipper',
-        location=LocationItem(name='HUANGPU'),
-        est_or_actual='A',
+        container_key="GLDU5292400",
+        local_date_time="Mon 29 Jul 2019 14:51",
+        description="Empty to shipper",
+        location=LocationItem(name="HUANGPU"),
+        est_or_actual="A",
+        facility="",
     )
 
     assert results[7] == ContainerStatusItem(
-        container_key='GLDU5292400',
-        local_date_time='Sat 31 Aug 2019 06:00',
-        description='Arrival final port of discharge',
-        location=LocationItem(name='OAKLAND, CA'),
-        est_or_actual='E',
+        container_key="GLDU5292400",
+        local_date_time="Sat 31 Aug 2019 06:00",
+        description="Arrival final port of discharge",
+        location=LocationItem(name="OAKLAND, CA"),
+        est_or_actual="E",
+        facility="",
     )
+
 
 def multi_verify(results: List):
     results.pop(0)
 
     assert results[0] == MblItem(
-        por=LocationItem(name='HUANGPU (CN)'),
-        pol=LocationItem(name='NANSHA (CN)'),
-        pod=LocationItem(name='OAKLAND, CA (US)'),
+        por=LocationItem(name="HUANGPU (CN)"),
+        pol=LocationItem(name="NANSHA (CN)"),
+        pod=LocationItem(name="OAKLAND, CA (US)"),
         final_dest=LocationItem(name=None),
-        eta='Sat 31 Aug 2019 06:00',
+        eta="Sat 31 Aug 2019 06:00",
         ata=None,
         task_id=1,
     )
 
     assert results[1] == ContainerItem(
-        container_key='GLDU5292400',
-        container_no='GLDU5292400',
+        container_key="GLDU5292400",
+        container_no="GLDU5292400",
         task_id=1,
     )
 
     assert results[2] == ContainerStatusItem(
-        container_key='GLDU5292400',
-        local_date_time='Mon 29 Jul 2019 14:51',
-        description='Empty to shipper',
-        location=LocationItem(name='HUANGPU'),
-        est_or_actual='A',
+        container_key="GLDU5292400",
+        local_date_time="Mon 29 Jul 2019 14:51",
+        description="Empty to shipper",
+        location=LocationItem(name="HUANGPU"),
+        est_or_actual="A",
+        facility="",
         task_id=1,
     )
 
     assert results[7] == ContainerStatusItem(
-        container_key='GLDU5292400',
-        local_date_time='Sat 31 Aug 2019 06:00',
-        description='Arrival final port of discharge',
-        location=LocationItem(name='OAKLAND, CA'),
-        est_or_actual='E',
+        container_key="GLDU5292400",
+        local_date_time="Sat 31 Aug 2019 06:00",
+        description="Arrival final port of discharge",
+        location=LocationItem(name="OAKLAND, CA"),
+        est_or_actual="E",
+        facility="",
         task_id=1,
     )
