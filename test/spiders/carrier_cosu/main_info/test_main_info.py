@@ -17,7 +17,6 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-
 @pytest.mark.parametrize(
     'sub,mbl_no,make_item_fun',
     [
@@ -63,6 +62,25 @@ def test_main_info_container_status(sample_loader, sub, mbl_no, container_no):
     # assert
     verify_module = sample_loader.load_sample_module(sub, 'verify')
     verify_module.verify(items=items)
+
+
+@pytest.mark.parametrize(
+    "sub,mbl_no",
+    [
+        ("05_railway_info", "6199589860"),
+    ],
+)
+def test_main_info_railway_info(sample_loader, sub, mbl_no):
+    http_text = sample_loader.read_file(sub, "sample.html")
+
+    resp = Selector(text=http_text)
+
+    # action
+    result = ItemExtractor._extract_railway_info(response=resp)
+
+    # assert
+    verify_module = sample_loader.load_sample_module(sub, "verify")
+    verify_module.verify(item=result)
 
 
 @pytest.mark.parametrize(
