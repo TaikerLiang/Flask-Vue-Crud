@@ -405,26 +405,26 @@ class VesselRoutingRule(BaseRoutingRule):
         task_id = response.meta["task_id"]
         response_dict = json.loads(response.text)
 
-        if self.__is_vessel_empty(response_dict=response_dict):
-            yield VesselItem(task_id=task_id)
+        if self._is_vessel_empty(response_dict=response_dict):
+            yield VesselItem(vessel_key="", task_id=task_id)
             return
 
         vessel_info_list = self._extract_vessel_info_list(response_dict=response_dict)
         for vessel_info in vessel_info_list:
             yield VesselItem(
                 task_id=task_id,
-                vessel_key=vessel_info["name"],
-                vessel=vessel_info["name"],
-                voyage=vessel_info["voyage"],
-                pol=LocationItem(name=vessel_info["pol"]),
-                pod=LocationItem(name=vessel_info["pod"]),
-                etd=vessel_info["etd"],
-                atd=vessel_info["atd"],
-                eta=vessel_info["eta"],
-                ata=vessel_info["ata"],
+                vessel_key=vessel_info.get("name", ""),
+                vessel=vessel_info.get("name", ""),
+                voyage=vessel_info.get("voyage", ""),
+                pol=LocationItem(name=vessel_info.get("pol", "")),
+                pod=LocationItem(name=vessel_info.get("pod", "")),
+                etd=vessel_info.get("etd", ""),
+                atd=vessel_info.get("atd", ""),
+                eta=vessel_info.get("eta", ""),
+                ata=vessel_info.get("ata", ""),
             )
 
-    def __is_vessel_empty(self, response_dict: Dict) -> List:
+    def _is_vessel_empty(self, response_dict: Dict) -> List:
         return "list" not in response_dict
 
     def _extract_vessel_info_list(self, response_dict: Dict) -> List:
@@ -433,14 +433,14 @@ class VesselRoutingRule(BaseRoutingRule):
         for vessel_data in vessel_data_list:
             vessel_info_list.append(
                 {
-                    "name": vessel_data["vslEngNm"].strip(),
-                    "voyage": vessel_data["skdVoyNo"].strip() + vessel_data["skdDirCd"].strip(),
-                    "pol": vessel_data["polNm"].strip(),
-                    "pod": vessel_data["podNm"].strip(),
-                    "etd": vessel_data["etd"].strip() if vessel_data["etdFlag"] == "C" else None,
-                    "atd": vessel_data["etd"].strip() if vessel_data["etdFlag"] == "A" else None,
-                    "eta": vessel_data["eta"].strip() if vessel_data["etaFlag"] == "C" else None,
-                    "ata": vessel_data["eta"].strip() if vessel_data["etaFlag"] == "A" else None,
+                    "name": vessel_data.get("vslEngNm", "").strip(),
+                    "voyage": vessel_data.get("skdVoyNo", "").strip() + vessel_data["skdDirCd"].strip(),
+                    "pol": vessel_data.get("polNm", "").strip(),
+                    "pod": vessel_data.get("podNm", "").strip(),
+                    "etd": vessel_data.get("etd", "").strip() if vessel_data["etdFlag"] == "C" else None,
+                    "atd": vessel_data.get("etd", "").strip() if vessel_data["etdFlag"] == "A" else None,
+                    "eta": vessel_data.get("eta", "").strip() if vessel_data["etaFlag"] == "C" else None,
+                    "ata": vessel_data.get("eta", "").strip() if vessel_data["etaFlag"] == "A" else None,
                 }
             )
 
