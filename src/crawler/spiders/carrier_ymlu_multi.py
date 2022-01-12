@@ -535,6 +535,7 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
             atd=routing_schedule["atd"],
             eta=routing_schedule["eta"],
             ata=routing_schedule["ata"],
+            berthing_time=routing_schedule["berthing_time"],
             firms_code=firms_code,
             carrier_status=release_status["carrier_status"],
             carrier_release_date=release_status["carrier_release_date"],
@@ -554,6 +555,7 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
                 container_key=container_no,
                 container_no=container_no,
                 last_free_day=last_free_day,
+                terminal=LocationItem(name=firms_code),
             )
 
             follow_url = container_info["follow_url"]
@@ -601,7 +603,8 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
         schedules = parser.parse()
 
         etd, atd, eta, ata = None, None, None, None
-        for place, time_status in schedules:
+        berthing_time = None
+        for place, time_status, berthing_time_str in schedules:
             if time_status in ["To Be Advised …", "To Be Advised...", None]:
                 actual_time, estimate_time = None, None
             else:
@@ -613,12 +616,14 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
             elif pod.startswith(place):
                 ata = actual_time
                 eta = estimate_time
+                berthing_time = berthing_time_str
 
         return {
             "etd": etd,
             "atd": atd,
             "eta": eta,
             "ata": ata,
+            "berthing_time": berthing_time,
         }
 
     @staticmethod
@@ -880,6 +885,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 atd=routing_schedule["atd"],
                 eta=routing_schedule["eta"],
                 ata=routing_schedule["ata"],
+                berthing_time=routing_schedule["berthing_time"],
                 firms_code=firms_code,
                 carrier_status=release_status["carrier_status"],
                 carrier_release_date=release_status["carrier_release_date"],
@@ -899,6 +905,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
                     container_key=container_no,
                     container_no=container_no,
                     last_free_day=last_free_day,
+                    terminal=LocationItem(name=firms_code),
                 )
 
                 follow_url = container_info["follow_url"]
@@ -965,7 +972,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
         schedules = parser.parse()
 
         etd, atd, eta, ata = None, None, None, None
-        for place, time_status in schedules:
+        berthing_time = None
+        for place, time_status, berthing_time_str in schedules:
             if time_status in ["To Be Advised …", "To Be Advised...", None]:
                 actual_time, estimate_time = None, None
             else:
@@ -977,12 +985,14 @@ class MainInfoRoutingRule(BaseRoutingRule):
             elif pod.startswith(place):
                 ata = actual_time
                 eta = estimate_time
+                berthing_time = berthing_time_str
 
         return {
             "etd": etd,
             "atd": atd,
             "eta": eta,
             "ata": ata,
+            "berthing_time": berthing_time,
         }
 
     @staticmethod
@@ -1164,8 +1174,19 @@ class ScheduleParser:
             routing = lis[self.LI_ROUTING_INDEX].css("span::text").get()
             datetime = lis[self.LI_DATETIME_INDEX].css("span::text").get()
             # datetime could be None
+            berthing_time = None
+            if lis[self.LI_DATETIME_INDEX].css("span > font::text").get() == "*":
+                berthing_time_str = lis[self.LI_DATETIME_INDEX].css("span::text").getall()[-1].strip()
+                patt = re.compile(
+                    r"^Berthing time at terminal: "
+                    r"(?P<berthing_time>\d{4}/\d{2}/\d{2} \d{2}:\d{2}) [(](Actual|Estimated)[)]$"
+                )
+                m = patt.match(berthing_time_str)
+                if m:
+                    berthing_time = m.group("berthing_time")
+
             striped_datetime = datetime.strip() if isinstance(datetime, str) else datetime
-            routing_tuple = (routing.strip(), striped_datetime)
+            routing_tuple = (routing.strip(), striped_datetime, berthing_time)
 
             schedules.append(routing_tuple)
 
@@ -1303,6 +1324,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
         else:
             container_status_list = self._extract_container_status(response=response)
+            rail = None
             for container_status in container_status_list:
                 yield ContainerStatusItem(
                     task_id=task_id,
@@ -1311,6 +1333,14 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                     local_date_time=container_status["timestamp"],
                     location=LocationItem(name=container_status["location_name"]),
                     transport=container_status["transport"] or None,
+                )
+                if "Rail" in container_status["transport"]:
+                    rail = container_status["location_name"]
+            if rail:
+                yield ContainerItem(
+                    task_id=task_id,
+                    container_key=container_no,
+                    railway=rail,
                 )
 
     @staticmethod

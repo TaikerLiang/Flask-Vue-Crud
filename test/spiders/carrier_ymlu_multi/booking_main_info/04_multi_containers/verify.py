@@ -21,6 +21,7 @@ def verify(results: List):
         customs_release_status=None,
         customs_release_date=None,
         task_id=1,
+        berthing_time="2021/11/20 04:00",
     )
 
     assert results[1] == ContainerItem(
@@ -28,6 +29,7 @@ def verify(results: List):
         container_no="FSCU8038064",
         last_free_day=None,
         task_id=1,
+        terminal=LocationItem(name=None),
     )
 
     assert results[5] == ContainerItem(
@@ -35,4 +37,5 @@ def verify(results: List):
         container_no="TEMU8505289",
         last_free_day=None,
         task_id=1,
+        terminal=LocationItem(name=None),
     )

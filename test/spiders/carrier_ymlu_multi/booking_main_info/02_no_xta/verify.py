@@ -21,6 +21,7 @@ def verify(results: List):
         customs_release_status=None,
         customs_release_date=None,
         task_id=1,
+        berthing_time=None,
     )
 
     assert results[1] == ContainerItem(
@@ -28,4 +29,5 @@ def verify(results: List):
         container_no="BSIU9772466",
         last_free_day=None,
         task_id=1,
+        terminal=LocationItem(name=None),
     )

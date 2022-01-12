@@ -21,6 +21,7 @@ def verify(results: List):
         customs_release_status='Customs Release',
         customs_release_date='2020/11/25 20:15',
         task_id=1,
+        berthing_time=None,
     )
 
     assert results[1] == ContainerItem(
@@ -28,6 +29,7 @@ def verify(results: List):
         container_no='YMMU6022283',
         last_free_day=None,
         task_id=1,
+        terminal=LocationItem(name='Y258'),
     )
 
     assert isinstance(results[2], RequestOption)

@@ -20,12 +20,14 @@ def verify(results: List):
         carrier_release_date=None,
         customs_release_status=None,
         customs_release_date=None,
+        berthing_time='2019/10/04 16:00',
     )
 
     assert results[1] == ContainerItem(
         container_key='TGHU5309509',
         container_no='TGHU5309509',
         last_free_day=None,
+        terminal=LocationItem(name=None),
     )
 
     assert isinstance(results[2], RequestOption)
