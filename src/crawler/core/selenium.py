@@ -1,13 +1,17 @@
 import random
 from typing import Dict
 
-from selenium import webdriver
+# from selenium import webdriver
+from seleniumwire import webdriver
 
 from crawler.core.defines import BaseContentGetter
 
 
 class SeleniumContentGetter(BaseContentGetter):
-    def __init__(self):
+    def __init__(self, proxy_manager: None, is_headless: bool = False):
+        self._is_first = True
+        self.is_headless = is_headless
+        self._proxy_manager = proxy_manager
         self._driver = None
 
     def get_current_url(self):
@@ -43,13 +47,16 @@ class SeleniumContentGetter(BaseContentGetter):
 
 
 class ChromeContentGetter(SeleniumContentGetter):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, proxy_manager: None, is_headless: bool = False):
+        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
 
         options = webdriver.ChromeOptions()
+
+        if self.is_headless:
+            options.add_argument("--headless")
+
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-notifications")
-        options.add_argument("--headless")
         options.add_argument("--enable-javascript")
         options.add_argument("--disable-gpu")
         options.add_argument(
@@ -61,7 +68,14 @@ class ChromeContentGetter(SeleniumContentGetter):
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--disable-blink-features=AutomationControlled")
 
-        self._driver = webdriver.Chrome(chrome_options=options)
+        seleniumwire_options = {
+            "proxy": {
+                "http": "http://gofr13759lcdh32673:17r6FJjK3x8IQKP3@isp2.hydraproxy.com:9989",
+                "https": "https://gofr13759lcdh32673:17r6FJjK3x8IQKP3@isp2.hydraproxy.com:9989",
+            }
+        }
+
+        self._driver = webdriver.Chrome(chrome_options=options, seleniumwire_options=seleniumwire_options)
         self._driver.execute_cdp_cmd(
             "Network.setBlockedURLs", {"urls": ["facebook.net/*", "www.google-analytics.com/*"]}
         )
@@ -76,9 +90,12 @@ class FirefoxContentGetter(SeleniumContentGetter):
         profile = webdriver.FirefoxProfile()
         profile.set_preference("general.useragent.override", useragent)
         options = webdriver.FirefoxOptions()
+
+        if self.is_headless:
+            options.add_argument("--headless")
+
         options.set_preference("dom.webnotifications.serviceworker.enabled", False)
         options.set_preference("dom.webnotifications.enabled", False)
-        options.add_argument("--headless")
 
         self._driver = webdriver.Firefox(firefox_profile=profile, options=options, service_log_path=service_log_path)
 
