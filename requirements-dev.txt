@@ -361,7 +361,7 @@ selenium==4.0.0
     # via
     #   -r src/requirements-app.txt
     #   selenium-wire
-selenium-wire==4.5.3
+selenium-wire==4.5.6
     # via -r src/requirements-app.txt
 service-identity==21.1.0
     # via
