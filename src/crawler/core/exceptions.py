@@ -27,4 +27,7 @@ class ProxyMaxRetryError(BaseError):
 
 class FormatError(BaseError):
     def build_error_data(self, detail: str = ""):
-        return ExportErrorData(status=self.status, detail=detail)
+        if self.mbl_no:
+            return ExportErrorData(status=self.status, detail=detail, task_id=self.task_id, mbl_no=self.mbl_no)
+        elif self.booking_no:
+            return ExportErrorData(status=self.status, detail=detail, task_id=self.task_id, booking_no=self.booking_no)

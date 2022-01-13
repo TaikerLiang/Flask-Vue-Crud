@@ -1,4 +1,5 @@
 import re
+import dataclasses
 from typing import List, Dict
 
 import scrapy
@@ -23,6 +24,14 @@ from crawler.core.exceptions import FormatError
 from crawler.core.items import BaseItem
 
 URL = "https://www.msc.com"
+MAX_RETRY_COUNT = 3
+
+
+@dataclasses.dataclass
+class Restart:
+    search_nos: list
+    task_ids: list
+    reason: str = ""
 
 
 class CarrierMscuSpider(BaseMultiCarrierSpider):
@@ -32,6 +41,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         super(CarrierMscuSpider, self).__init__(*args, **kwargs)
 
         self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
+        self._retry_count = 0
 
         bill_rules = [
             HomePageRoutingRule(search_type=SHIPMENT_TYPE_MBL),
@@ -74,7 +84,38 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
             if isinstance(result, BaseCarrierItem) or isinstance(result, BaseItem):
                 yield result
             elif isinstance(result, RequestOption):
-                yield self._build_request_by(option=result)
+                if result.rule_name == "NEXT_ROUND":
+                    self._retry_count = 0
+
+                proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
+                yield self._build_request_by(option=proxy_option)
+            elif isinstance(result, Restart):
+                search_nos = result.search_nos
+                task_ids = result.task_ids
+
+                if self._retry_count >= MAX_RETRY_COUNT:
+                    if self.search_type == SHIPMENT_TYPE_MBL:
+                        yield ExportErrorData(
+                            mbl_no=search_nos[0],
+                            task_id=task_ids[0],
+                            status=CARRIER_RESULT_STATUS_ERROR,
+                            detail="Data was not found",
+                        )
+                    elif self.search_type == SHIPMENT_TYPE_BOOKING:
+                        yield ExportErrorData(
+                            mbl_no=search_nos[0],
+                            task_id=task_ids[0],
+                            status=CARRIER_RESULT_STATUS_ERROR,
+                            detail="Data was not found",
+                        )
+                    option = NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+                    proxy_option = self._proxy_manager.apply_proxy_to_request_option(option)
+                    yield self._build_request_by(proxy_option)
+                else:
+                    self._retry_count += 1
+                    self.logger.warning(f"----- {result.reason}, try new proxy and restart")
+                    option = self._prepare_start(search_nos=self.search_nos, task_ids=self.task_ids)
+                    yield self._build_request_by(option=option)
             else:
                 raise RuntimeError()
 
@@ -209,7 +250,7 @@ class MainRoutingRule(BaseRoutingRule):
         try:
             container_selector_map_list = extractor.locate_container_selector(response=response)
         except CarrierResponseFormatError as e:
-            yield f_err.build_error_data(detail=e.reason)
+            yield Restart(reason=e.reason, search_nos=search_nos, task_ids=task_ids)
             return
 
         for container_selector_map in container_selector_map_list:
@@ -248,12 +289,13 @@ class MainRoutingRule(BaseRoutingRule):
             place_of_deliv = list(place_of_deliv_set)[0] or None
         else:
             yield f_err.build_error_data(detail=f"Different place_of_deliv: `{place_of_deliv_set}`")
+            yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
             return
 
         try:
             main_info = extractor.extract_main_info(response=response)
         except CarrierResponseFormatError as e:
-            yield f_err.build_error_data(detail=e.reason)
+            yield Restart(reason=e.reason, search_nos=search_nos, task_ids=task_ids)
             return
 
         latest_update = extractor.extract_latest_update(response=response)
