@@ -117,7 +117,7 @@ class MainRoutingRule(BaseRoutingRule):
         company_info = response.meta["company_info"]
         container_no_list = response.meta["container_no_list"]
 
-        content_getter = ContentGetter()
+        content_getter = ContentGetter(proxy_manager=None, is_headless=True)
         content_getter.login(company_info.email, company_info.password, company_info.url)
 
         while True:

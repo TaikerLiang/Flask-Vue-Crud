@@ -1,13 +1,11 @@
-import random
 import time
 from typing import List
-import asyncio
+from crawler.core.selenium import ChromeContentGetter
 
 import scrapy
-from pyppeteer import launch, logging
-from pyppeteer.errors import PageError
+from selenium.common.exceptions import TimeoutException
 
-from crawler.core.proxy import ApifyProxyManager, ProxyManager
+from crawler.core.proxy import ApifyProxyManager
 from crawler.core_rail.base_spiders import BaseMultiRailSpider
 from crawler.core_rail.exceptions import RailResponseFormatError, DriverMaxRetryError
 from crawler.core_rail.items import BaseRailItem, RailItem, DebugItem, InvalidContainerNoItem
@@ -17,7 +15,6 @@ from crawler.extractors.table_extractors import BaseTableCellExtractor
 from crawler.core.table import BaseTable, TableExtractor
 
 
-BASE_URL = "https://accessns.nscorp.com"
 MAX_RETRY_COUNT = 3
 
 
@@ -128,12 +125,11 @@ class ContainerRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_nos = response.meta["container_nos"]
         event_code_mapper = EventCodeMapper()
-        content_getter = ContentGetter(proxy_manager=self._proxy_manager)
+        content_getter = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
+
         try:
-            response_text = asyncio.get_event_loop().run_until_complete(
-                content_getter.search(container_nos=container_nos)
-            )
-        except PageError:
+            response_text = content_getter.search(container_nos=container_nos)
+        except TimeoutException:
             yield Restart()
             return
         response = scrapy.Selector(text=response_text)
@@ -209,78 +205,39 @@ class ContainerRoutingRule(BaseRoutingRule):
         return full_invalid_container_nos
 
 
-class ContentGetter:
+class ContentGetter(ChromeContentGetter):
     USER_NAME = "hvv26"
     PASS_WORD = "Goft0108"
+    LOGIN_URL = "https://accessns.web.ocp01.nscorp.com/auth/login"
 
-    def __init__(self, proxy_manager: ProxyManager):
-        logging.disable(logging.DEBUG)
+    def _login(self):
+        self._proxy_manager.renew_proxy()
+        self._driver.get(self.LOGIN_URL)
+        self._driver.wait_for_request(self.LOGIN_URL, timeout=60)
 
-        self._is_first = True
-        self._proxy_manager = proxy_manager
+        username = self._driver.find_element_by_xpath("//*[@id='mat-input-0']")
+        username.send_keys(self.USER_NAME)
+        password = self._driver.find_element_by_xpath("//*[@id='mat-input-1']")
+        password.send_keys(self.PASS_WORD)
+        time.sleep(3)
 
-    async def _login(self):
-        # self._proxy_manager.renew_proxy()
+        login_btn = self._driver.find_element_by_css_selector("button.mat-flat-button")
+        login_btn.click()
+        time.sleep(30)
 
-        browser_args = [
-            "--no-sandbox",
-            "--disable-gpu",
-            "--disable-blink-features",
-            "--disable-infobars",
-            "--window-size=1920,1080",
-            # f"--proxy-server={self._proxy_manager.PROXY_DOMAIN}",
-        ]
-
-        self._browser = await launch(headless=True, dumpio=True, slowMo=20, defaultViewport=None, args=browser_args)
-        page = await self._browser.newPage()
-
-        # auth = {
-        #     "username": self._proxy_manager._proxy_username,
-        #     "password": self._proxy_manager.PROXY_PASSWORD,
-        # }
-        # await page.authenticate(auth)
-
-        await page.setUserAgent(
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36"
-        )
-
-        expire_time = int(1000 * time.time())
-        cookie = {
-            "name": "_dd_s",
-            "value": f"rum=1&id=9959af0d-0be5-42bf-857d-183807c04f97&created=1633071368042&expire={expire_time}",
-            "domain": "accessns.web.ocp01.nscorp.com",
-        }
-
-        await page.setCookie(cookie)
-        await page.goto("https://accessns.nscorp.com/accessNS/nextgen/#loginwithcredentials", timeout=60000)
-
-        await page.type("#mat-input-0", self.USER_NAME)
-        await page.type("#mat-input-1", self.PASS_WORD)
-        await page.waitFor(random.randint(2000, 4000))
-
-        await page.click("button.mat-flat-button")
-        await page.waitFor(30000)
-
-        return page
-
-    async def search(self, container_nos):
+    def search(self, container_nos):
         if self._is_first:
-            self._page = await self._login()
+            self._login()
             self._is_first = False
 
         # search
-        await self._page.waitFor(30000)
-        await self._page.type("textarea.mat-input-element", ",".join(container_nos))
-        await self._page.waitFor(random.randint(3000, 5000))
-        await self._page.click('button[aria-label="Search button"]')
+        self._driver.find_element_by_xpath('//*[@id="mat-input-2"]').send_keys(",".join(container_nos))
+        time.sleep(3)
+        search_btn = self._driver.find_element_by_css_selector('button[aria-label="Search button"]')
+        search_btn.click()
+        time.sleep(30)
 
-        # wait for result
-        await self._page.waitFor(5000)
-
-        page_source = await self._page.content()
-        await self._browser.close()
-
-        return page_source
+        return self.get_page_source()
 
 
 class TrackAndTraceTableLocator(BaseTable):
@@ -289,7 +246,8 @@ class TrackAndTraceTableLocator(BaseTable):
         titles = [t.strip() for t in titles]
 
         content_divs = table.css(".ag-center-cols-container > div")
-        for div in content_divs:
+
+        for row_num, div in enumerate(content_divs):
             data_divs = div.css("div")[1:]
 
             for data_id, data_div in enumerate(data_divs):
@@ -298,7 +256,7 @@ class TrackAndTraceTableLocator(BaseTable):
 
                 self._td_map.setdefault(title, [])
                 self._td_map[title].append(data_div)
-                self.add_left_header_set(data_id)
+                self.add_left_header_set(row_num)
 
 
 class DivCellExtractor(BaseTableCellExtractor):

@@ -46,7 +46,7 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
 
     def __init__(self, *args, **kwargs):
         super(CarrierOoluSpider, self).__init__(*args, **kwargs)
-        self._content_getter = ContentGetter()
+        self._content_getter = ContentGetter(proxy_manager=None, is_headless=True)
 
         self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
@@ -108,12 +108,11 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
 
 
 class ContentGetter(ChromeContentGetter):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, proxy_manager, is_headless=False):
+        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
 
         self._driver.get("http://www.oocl.com/eng/Pages/default.aspx")
         time.sleep(3)
-        self._is_first = True
 
     def search_and_return(self, search_no, search_type):
         self._search(search_no=search_no, search_type=search_type)

@@ -125,7 +125,7 @@ class ContainerRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_nos = response.meta["container_nos"]
 
-        content_getter = ContentGetter()
+        content_getter = ContentGetter(proxy_manager=None, is_headless=True)
         try:
             response_text = content_getter.search(container_nos=container_nos)
         except StaleElementReferenceException:
@@ -337,12 +337,8 @@ class ContentGetter(ChromeContentGetter):
     USER_NAME = "gftracking"
     PASS_WORD = "Hardcore20221"
 
-    def __init__(self):
-        super(ContentGetter, self).__init__()
-        self._driver.get("https://www8.cpr.ca/cx/sap/bc/ui5_ui5/ui2/ushell/shells/abap/Fiorilaunchpad.html?#Shell-home")
-        self._is_first = True
-
     def _login(self):
+        self._driver.get("https://www8.cpr.ca/cx/sap/bc/ui5_ui5/ui2/ushell/shells/abap/Fiorilaunchpad.html?#Shell-home")
         # login
         username_input = WebDriverWait(self._driver, 20).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "input#username"))

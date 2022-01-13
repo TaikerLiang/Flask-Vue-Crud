@@ -68,7 +68,12 @@ class CookieHelper:
 
 class TrapacShareSpider(BaseMultiTerminalSpider):
     name = ""
-    company_info = CompanyInfo(lower_short="", upper_short="", email="", password="",)
+    company_info = CompanyInfo(
+        lower_short="",
+        upper_short="",
+        email="",
+        password="",
+    )
 
     def __init__(self, *args, **kwargs):
         super(TrapacShareSpider, self).__init__(*args, **kwargs)
@@ -111,7 +116,10 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
         }
 
         if option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(url=option.url, meta=meta,)
+            return scrapy.Request(
+                url=option.url,
+                meta=meta,
+            )
 
         elif option.method == RequestOption.METHOD_POST_BODY:
             return scrapy.Request(
@@ -138,7 +146,10 @@ class MainRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
-            meta={"container_no_list": container_no_list, "company_info": company_info,},
+            meta={
+                "container_no_list": container_no_list,
+                "company_info": company_info,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -205,7 +216,7 @@ class MainRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _build_container_response(company_info: CompanyInfo, container_no_list: List):
-        content_getter = ContentGetter(company_info=company_info)
+        content_getter = ContentGetter(proxy_manager=None, is_headless=True, company_info=company_info)
         is_g_captcha, res, cookies = content_getter.get_content(search_no=",".join(container_no_list))
         content_getter.quit()
 
@@ -261,7 +272,9 @@ class ContentRoutingRule(BaseRoutingRule):
             url=f"https://{company_info.lower_short}.trapac.com/wp-admin/admin-ajax.php",
             headers=headers,
             body=urlencode(query=form_data),
-            meta={"numbers": len(container_no_list),},
+            meta={
+                "numbers": len(container_no_list),
+            },
         )
 
     def handle(self, response):
@@ -296,11 +309,8 @@ class ContentRoutingRule(BaseRoutingRule):
 
 # ------------------------------------------------------------------------
 class ContentGetter(ChromeContentGetter):
-    PROXY_URL = "proxy.apify.com:8000"
-    PROXY_PASSWORD = "XZTBLpciyyTCFb3378xWJbuYY"
-
-    def __init__(self, company_info: CompanyInfo):
-        super().__init__()
+    def __init__(self, proxy_manager, is_headless, company_info: CompanyInfo):
+        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
         self._company = company_info
 
     def find_ua(self):
@@ -328,6 +338,7 @@ class ContentGetter(ChromeContentGetter):
             url=f"https://{self._company.lower_short}.trapac.com/quick-check/?terminal={self._company.upper_short}&transaction=availability"
         )
         self.accept_cookie()
+        time.sleep(2)
         self.key_in_search_bar(search_no=search_no)
         cookies = self.get_cookies()
         self.press_search_button()

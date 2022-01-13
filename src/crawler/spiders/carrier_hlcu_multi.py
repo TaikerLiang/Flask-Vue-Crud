@@ -45,7 +45,7 @@ class CarrierHlcuSpider(BaseMultiCarrierSpider):
 
         self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
-        self._content_getter = ContentGetter()
+        self._content_getter = ContentGetter(proxy_manager=None, is_headless=True)
         self._content_getter.connect()
 
         rules = [
@@ -369,8 +369,8 @@ class ContainerStatusTableLocator(BaseTable):
 
 
 class ContentGetter(ChromeContentGetter):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, proxy_manager, is_headless=False):
+        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
         self.retry_count = 0
 
     def connect(self):

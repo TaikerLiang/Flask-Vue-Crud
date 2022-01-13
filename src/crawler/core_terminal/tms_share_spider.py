@@ -108,7 +108,7 @@ class SeleniumRoutingRule(BaseRoutingRule):
         terminal_id = response.meta["terminal_id"]
         company_info = response.meta["company_info"]
 
-        content_getter = ContentGetter()
+        content_getter = ContentGetter(proxy_manager=None, is_headless=True)
         content_getter.login(company_info.email, company_info.password)
         content_getter.select_terminal(terminal_id)
 
