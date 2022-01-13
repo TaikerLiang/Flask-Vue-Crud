@@ -5,7 +5,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_terminal.ets_share_spider import MainPageRoutingRule
-from crawler.spiders.terminal_ets_berth import TerminalEtsBerthSpider
+from crawler.spiders.terminal_ets_y124 import TerminalEtsBerthSpider
 from test.spiders.terminal_ets import main_page
 
 
