@@ -119,7 +119,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_nos = response.meta["mbl_nos"]
         task_ids = response.meta["task_ids"]
-        content_getter = ContentGetter()
+        content_getter = ContentGetter(is_headless=True)
 
         response_text = content_getter.search_and_return(search_no=mbl_nos[0], is_booking=False)
         response_selector = scrapy.Selector(text=response_text)
@@ -698,13 +698,11 @@ class OnlyContentTableCellExtractor(BaseTableCellExtractor):
 
 
 class ContentGetter(FirefoxContentGetter):
-    def __init__(self):
-        super().__init__(service_log_path="/dev/null")
+    def __init__(self, is_headless):
+        super().__init__(service_log_path="/dev/null", is_headless=is_headless)
         self._driver.get("https://elines.coscoshipping.com/ebusiness/cargoTracking")
-        self._is_first = True
 
     def search_and_return(self, search_no: str, is_booking: bool = True):
-
         if self._is_first:
             self._is_first = False
             self._handle_cookie()
