@@ -90,8 +90,8 @@ class ChromeContentGetter(SeleniumContentGetter):
 
 
 class FirefoxContentGetter(SeleniumContentGetter):
-    def __init__(self, service_log_path=None):
-        super().__init__()
+    def __init__(self, service_log_path=None, is_headless: bool = False):
+        super().__init__(is_headless=is_headless)
 
         useragent = self._random_choose_user_agent()
         profile = selenium.webdriver.FirefoxProfile()
