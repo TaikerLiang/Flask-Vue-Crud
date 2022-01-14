@@ -2,8 +2,8 @@ import random
 from typing import Dict, Optional
 from crawler.core.proxy import ProxyManager
 
-# from selenium import webdriver
-from seleniumwire import webdriver
+import selenium.webdriver
+import seleniumwire.webdriver
 
 from crawler.core.defines import BaseContentGetter
 
@@ -51,7 +51,7 @@ class ChromeContentGetter(SeleniumContentGetter):
     def __init__(self, proxy_manager: Optional[ProxyManager] = None, is_headless: bool = False):
         super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
 
-        options = webdriver.ChromeOptions()
+        options = selenium.webdriver.ChromeOptions()
 
         if self.is_headless:
             options.add_argument("--headless")
@@ -69,7 +69,8 @@ class ChromeContentGetter(SeleniumContentGetter):
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--disable-blink-features=AutomationControlled")
 
-        seleniumwire_options = {}
+        self._driver = selenium.webdriver.Chrome(chrome_options=options)
+
         if proxy_manager:
             proxy_manager.renew_proxy()
             seleniumwire_options = {
@@ -78,8 +79,10 @@ class ChromeContentGetter(SeleniumContentGetter):
                     "https": f"https://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_URL}",
                 }
             }
+            self._driver = seleniumwire.webdriver.Chrome(
+                chrome_options=options, seleniumwire_options=seleniumwire_options
+            )
 
-        self._driver = webdriver.Chrome(chrome_options=options, seleniumwire_options=seleniumwire_options)
         self._driver.execute_cdp_cmd(
             "Network.setBlockedURLs", {"urls": ["facebook.net/*", "www.google-analytics.com/*"]}
         )
@@ -91,9 +94,9 @@ class FirefoxContentGetter(SeleniumContentGetter):
         super().__init__()
 
         useragent = self._random_choose_user_agent()
-        profile = webdriver.FirefoxProfile()
+        profile = selenium.webdriver.FirefoxProfile()
         profile.set_preference("general.useragent.override", useragent)
-        options = webdriver.FirefoxOptions()
+        options = selenium.webdriver.FirefoxOptions()
 
         if self.is_headless:
             options.add_argument("--headless")
@@ -101,7 +104,9 @@ class FirefoxContentGetter(SeleniumContentGetter):
         options.set_preference("dom.webnotifications.serviceworker.enabled", False)
         options.set_preference("dom.webnotifications.enabled", False)
 
-        self._driver = webdriver.Firefox(firefox_profile=profile, options=options, service_log_path=service_log_path)
+        self._driver = selenium.webdriver.Firefox(
+            firefox_profile=profile, options=options, service_log_path=service_log_path
+        )
 
     @staticmethod
     def _random_choose_user_agent():
