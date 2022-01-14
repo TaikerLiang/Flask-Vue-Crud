@@ -1,5 +1,6 @@
 import random
 from typing import Dict
+from crawler.core.proxy import ProxyManager
 
 # from selenium import webdriver
 from seleniumwire import webdriver
@@ -47,7 +48,7 @@ class SeleniumContentGetter(BaseContentGetter):
 
 
 class ChromeContentGetter(SeleniumContentGetter):
-    def __init__(self, proxy_manager: None, is_headless: bool = False):
+    def __init__(self, proxy_manager: ProxyManager = None, is_headless: bool = False):
         super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
 
         options = webdriver.ChromeOptions()
@@ -68,12 +69,14 @@ class ChromeContentGetter(SeleniumContentGetter):
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--disable-blink-features=AutomationControlled")
 
-        seleniumwire_options = {
-            "proxy": {
-                "http": "http://gofr13759lcdh32673:17r6FJjK3x8IQKP3@isp2.hydraproxy.com:9989",
-                "https": "https://gofr13759lcdh32673:17r6FJjK3x8IQKP3@isp2.hydraproxy.com:9989",
+        seleniumwire_options = {}
+        if proxy_manager:
+            seleniumwire_options = {
+                "proxy": {
+                    "http": f"http://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_URL}",
+                    "https": f"https://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_URL}",
+                }
             }
-        }
 
         self._driver = webdriver.Chrome(chrome_options=options, seleniumwire_options=seleniumwire_options)
         self._driver.execute_cdp_cmd(
