@@ -1,5 +1,5 @@
 import random
-from typing import Dict
+from typing import Dict, Optional
 from crawler.core.proxy import ProxyManager
 
 # from selenium import webdriver
@@ -9,7 +9,7 @@ from crawler.core.defines import BaseContentGetter
 
 
 class SeleniumContentGetter(BaseContentGetter):
-    def __init__(self, proxy_manager: None, is_headless: bool = False):
+    def __init__(self, proxy_manager: Optional[ProxyManager] = None, is_headless: bool = False):
         self._is_first = True
         self.is_headless = is_headless
         self._proxy_manager = proxy_manager
@@ -48,7 +48,7 @@ class SeleniumContentGetter(BaseContentGetter):
 
 
 class ChromeContentGetter(SeleniumContentGetter):
-    def __init__(self, proxy_manager: ProxyManager = None, is_headless: bool = False):
+    def __init__(self, proxy_manager: Optional[ProxyManager] = None, is_headless: bool = False):
         super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
 
         options = webdriver.ChromeOptions()
@@ -71,6 +71,7 @@ class ChromeContentGetter(SeleniumContentGetter):
 
         seleniumwire_options = {}
         if proxy_manager:
+            proxy_manager.renew_proxy()
             seleniumwire_options = {
                 "proxy": {
                     "http": f"http://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_URL}",
