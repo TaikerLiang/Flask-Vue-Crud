@@ -108,7 +108,7 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
 
 
 class ContentGetter(ChromeContentGetter):
-    def __init__(self, proxy_manager, is_headless=False):
+    def __init__(self, proxy_manager, is_headless):
         super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
 
         self._driver.get("http://www.oocl.com/eng/Pages/default.aspx")

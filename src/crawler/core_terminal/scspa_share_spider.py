@@ -23,7 +23,7 @@ class ScspaShareSpider(BaseMultiTerminalSpider):
         super().__init__(*args, **kwargs)
         self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
-        self._content_getter = ContentGetter(proxy_manager=None, is_headless=False)
+        self._content_getter = ContentGetter(proxy_manager=None, is_headless=True)
 
         rules = [
             ContainerRoutingRule(content_getter=self._content_getter),
