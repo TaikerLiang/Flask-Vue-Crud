@@ -72,6 +72,16 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         return proxy_option
 
+    def _prepare_restart(self, search_nos: List, task_ids: List, reason: str):
+        if self._retry_count >= MAX_RETRY_COUNT:
+            self._retry_count = 0
+            option = NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+            return self._proxy_manager.apply_proxy_to_request_option(option)
+        else:
+            self._retry_count += 1
+            self.logger.warning(f"----- {reason}, try new proxy and restart")
+            return self._prepare_start(search_nos=search_nos, task_ids=task_ids)
+
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
 
@@ -92,30 +102,10 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
             elif isinstance(result, Restart):
                 search_nos = result.search_nos
                 task_ids = result.task_ids
-
                 if self._retry_count >= MAX_RETRY_COUNT:
-                    if self.search_type == SHIPMENT_TYPE_MBL:
-                        yield ExportErrorData(
-                            mbl_no=search_nos[0],
-                            task_id=task_ids[0],
-                            status=CARRIER_RESULT_STATUS_ERROR,
-                            detail="Data was not found",
-                        )
-                    elif self.search_type == SHIPMENT_TYPE_BOOKING:
-                        yield ExportErrorData(
-                            mbl_no=search_nos[0],
-                            task_id=task_ids[0],
-                            status=CARRIER_RESULT_STATUS_ERROR,
-                            detail="Data was not found",
-                        )
-                    option = NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
-                    proxy_option = self._proxy_manager.apply_proxy_to_request_option(option)
-                    yield self._build_request_by(proxy_option)
-                else:
-                    self._retry_count += 1
-                    self.logger.warning(f"----- {result.reason}, try new proxy and restart")
-                    option = self._prepare_start(search_nos=self.search_nos, task_ids=self.task_ids)
-                    yield self._build_request_by(option=option)
+                    yield self._build_error_data(search_no=search_nos[0], task_id=task_ids[0])
+                option = self._prepare_restart(search_nos=search_nos, task_ids=task_ids, reason=result.reason)
+                yield self._build_request_by(option=option)
             else:
                 raise RuntimeError()
 
@@ -141,6 +131,22 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
             )
         else:
             raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
+
+    def _build_error_data(self, search_no: str, task_id: str):
+        if self.search_type == SHIPMENT_TYPE_MBL:
+            return ExportErrorData(
+                mbl_no=search_no,
+                task_id=task_id,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
+        elif self.search_type == SHIPMENT_TYPE_BOOKING:
+            return ExportErrorData(
+                mbl_no=search_no,
+                task_id=task_id,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
 
 
 # -------------------------------------------------------------------------------
@@ -247,6 +253,9 @@ class MainRoutingRule(BaseRoutingRule):
 
         extractor = Extractor()
         place_of_deliv_set = set()
+        yield Restart(reason="test", search_nos=search_nos, task_ids=task_ids)
+        return
+
         try:
             container_selector_map_list = extractor.locate_container_selector(response=response)
         except CarrierResponseFormatError as e:
@@ -334,6 +343,8 @@ class MainRoutingRule(BaseRoutingRule):
 
 
 class NextRoundRoutingRule(BaseRoutingRule):
+    name = "NEXT_ROUND"
+
     @classmethod
     def build_request_option(cls, search_nos: List, task_ids: List) -> RequestOption:
         return RequestOption(
