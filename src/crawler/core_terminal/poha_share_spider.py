@@ -93,7 +93,7 @@ class ConfigureSettingsRule(BaseRoutingRule):
         task_ids = response.meta.get("task_ids")
         container_nos = response.meta.get("container_nos")
 
-        browser = ContentGetter()
+        browser = ContentGetter(proxy_manager=None, is_headless=True)
         browser.configure()
         cookies = browser.get_cookies_dict()
         browser.close()

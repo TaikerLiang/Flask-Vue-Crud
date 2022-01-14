@@ -23,7 +23,7 @@ class ScspaShareSpider(BaseMultiTerminalSpider):
         super().__init__(*args, **kwargs)
         self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
-        self._content_getter = ContentGetter()
+        self._content_getter = ContentGetter(proxy_manager=None, is_headless=True)
 
         rules = [
             ContainerRoutingRule(content_getter=self._content_getter),
@@ -156,10 +156,6 @@ class ContentGetter(ChromeContentGetter):
     PASSWORD = "Hardc0re"
     URL = "https://goport.scspa.com/scspa/index"
 
-    def __init__(self):
-        super().__init__()
-        self.is_first = True
-
     def login(self):
         self._driver.get(self.URL)
 
@@ -173,11 +169,11 @@ class ContentGetter(ChromeContentGetter):
         button.click()
 
     def _search_and_return(self, container_no_list):
-        if self.is_first:
+        if self._is_first:
             self.login()
             self._close_popup()
             self._to_search_page()
-            self.is_first = False
+            self._is_first = False
         else:
             self._back_to_search_page()
 
@@ -202,7 +198,7 @@ class ContentGetter(ChromeContentGetter):
                 close_button.click()
 
     def _to_search_page(self):
-        WebDriverWait(self._driver, 20).until(
+        WebDriverWait(self._driver, 60).until(
             EC.presence_of_element_located((By.XPATH, "//a[@class='x-menu-item-link']"))
         )
         reports = self._driver.find_element(By.XPATH, "//a[text()='REPORTS']")

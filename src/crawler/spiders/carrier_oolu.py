@@ -45,7 +45,7 @@ class CarrierOoluSpider(BaseCarrierSpider):
 
     def __init__(self, *args, **kwargs):
         super(CarrierOoluSpider, self).__init__(*args, **kwargs)
-        self._content_getter = ContentGetter()
+        self._content_getter = ContentGetter(proxy_manager=None, is_headless=True)
 
         bill_rules = [
             CargoTrackingRule(self._content_getter, search_type=SHIPMENT_TYPE_MBL),
@@ -104,8 +104,8 @@ class CarrierOoluSpider(BaseCarrierSpider):
 
 
 class ContentGetter(ChromeContentGetter):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, proxy_manager, is_headless):
+        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
 
         self._driver.get("http://www.oocl.com/eng/Pages/default.aspx")
         time.sleep(3)

@@ -113,7 +113,7 @@ class LoginRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_no_list = response.meta.get("container_no_list")
-        browser = ContentGetter()
+        browser = ContentGetter(proxy_manager=None, is_headless=True)
         browser.login()
         cookies = browser.get_cookies_dict()
         browser.close()

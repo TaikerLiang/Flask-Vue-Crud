@@ -181,7 +181,7 @@ class SearchRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_no_list = response.meta["container_no_list"]
 
-        content_getter = MaherContentGetter()
+        content_getter = MaherContentGetter(proxy_manager=None, is_headless=True)
         content_getter.login()
         response_text = content_getter.search(container_no_list[:MAX_PAGE_NUM])
         time.sleep(3)

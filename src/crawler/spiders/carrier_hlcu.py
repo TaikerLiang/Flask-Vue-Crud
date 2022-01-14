@@ -47,7 +47,7 @@ class CarrierHlcuSpider(BaseCarrierSpider):
         self._request_queue = RequestOptionQueue()
 
     def start(self):
-        cookies_getter = ContentGetter()
+        cookies_getter = ContentGetter(proxy_manager=None, is_headless=True)
         cookies = cookies_getter.get_cookies()
 
         request_option = TracingRoutingRule.build_request_option(mbl_no=self.mbl_no, cookies=cookies)
@@ -324,19 +324,20 @@ class ContainerInfoTableLocator(BaseTable):
     | Data    |         |     |         | <tr><td>
     +---------+---------+-----+---------+ </tbody>
     """
+
     def parse(self, table: scrapy.Selector):
         top_header_list = []
 
-        for th in table.css('thead th'):
-            raw_top_header = th.css('::text').get()
-            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ''
+        for th in table.css("thead th"):
+            raw_top_header = th.css("::text").get()
+            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ""
             top_header_list.append(top_header)
             self._td_map[top_header] = []
 
-        data_tr_list = table.css('tbody tr')
+        data_tr_list = table.css("tbody tr")
         for index, tr in enumerate(data_tr_list):
             self._left_header_set.add(index)
-            for top, td in zip(top_header_list, tr.css('td')):
+            for top, td in zip(top_header_list, tr.css("td")):
                 self._td_map[top].append(td)
 
 
@@ -355,13 +356,13 @@ class ContainerStatusTableLocator(BaseTable):
             title_list.append(title)
             self._td_map[title] = []
 
-        data_tr_list = table.css('tbody tr')
+        data_tr_list = table.css("tbody tr")
         for index, data_tr in enumerate(data_tr_list):
             self._left_header_set.add(index)
             tr_class_set = set()
-            data_td_list = data_tr.css('td')
+            data_td_list = data_tr.css("td")
             for title, data_td in zip(title_list, data_td_list):
-                data_td_class = data_td.css('td::attr(class)').get()
+                data_td_class = data_td.css("td::attr(class)").get()
                 tr_class_set.add(data_td_class)
 
                 self._td_map[title].append(data_td)

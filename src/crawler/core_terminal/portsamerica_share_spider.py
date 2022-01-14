@@ -106,7 +106,7 @@ class SearchContainerRule(BaseRoutingRule):
         company_info = response.meta["company_info"]
         container_no_list = response.meta["container_no_list"]
 
-        content_getter = ContentGetter()
+        content_getter = ContentGetter(proxy_manager=None, is_headless=True)
         content_getter.login(company_info.email, company_info.password, company_info.site_name)
 
         while True:
@@ -174,8 +174,8 @@ class SearchContainerRule(BaseRoutingRule):
 
 
 class ContentGetter(ChromeContentGetter):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, proxy_manager, is_headless):
+        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
         self.search_url = None
 
     def login(self, username, password, site_name):
