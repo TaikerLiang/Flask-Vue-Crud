@@ -211,7 +211,6 @@ class ContentGetter(ChromeContentGetter):
     LOGIN_URL = "https://accessns.web.ocp01.nscorp.com/auth/login"
 
     def _login(self):
-        self._proxy_manager.renew_proxy()
         self._driver.get(self.LOGIN_URL)
         self._driver.wait_for_request(self.LOGIN_URL, timeout=60)
 
