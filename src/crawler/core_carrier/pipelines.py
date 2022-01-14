@@ -72,7 +72,7 @@ class CarrierItemPipeline(BaseItemPipeline):
                 res = self._send_result_back_to_edi_engine()
                 return {"status": "CLOSE", "result": res}
             elif isinstance(item, carrier_items.ExportErrorData):
-                return self._collector.build_error_data(item)
+                self._collector.collect_error_item(item=item)
             elif isinstance(item, carrier_items.DebugItem):
                 return self._collector.build_debug_data(item)
             else:
@@ -92,7 +92,11 @@ class CarrierItemPipeline(BaseItemPipeline):
 
     def _send_result_back_to_edi_engine(self):
         res = []
-        item_result = self._collector.build_final_data()
+        if self._collector.has_error():
+            item_result = self._collector.get_error_item()
+        else:
+            item_result = self._collector.build_final_data()
+
         task_id = item_result.get("request_args", {}).get("task_id")
         if task_id:
             status_code, text = self.edi_client.send_provider_result_back(
