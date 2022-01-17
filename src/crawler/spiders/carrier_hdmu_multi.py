@@ -676,6 +676,19 @@ class MainRoutingRule(BaseRoutingRule):
             yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, cookies=cookies)
             return
 
+        if self._search_type == SHIPMENT_TYPE_BOOKING and self._no_tracking_results(response=response):
+            if not current_item_recorder_map.is_item_recorded(key=(MBL, current_search_no)):
+                booking_info = self._extract_booking_info(response=response)
+                mbl_item = MblItem(**booking_info, task_id=current_task_id)
+                current_item_recorder_map.record_item(key=(MBL, current_search_no), item=mbl_item)
+
+            if not current_item_recorder_map.is_item_recorded(key=(VESSEL, current_search_no)):
+                vessel_info = self._extract_movement_info(response=response)
+                vessel_item = VesselItem(**vessel_info, task_id=current_task_id, vessel_key=vessel_info["vessel"])
+                current_item_recorder_map.record_item(key=(VESSEL, current_search_no), item=vessel_item)
+            yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, cookies=cookies)
+            return
+
         if not current_item_recorder_map.is_item_recorded(key=(MBL, current_search_no)):
             try:
                 tracking_results = self._extract_tracking_results(response=response)
@@ -784,6 +797,13 @@ class MainRoutingRule(BaseRoutingRule):
             and "number is invalid.  Please try it again with correct number." in err_message
             or err_message_underline == "This page is not valid anymore."
         ):
+            return True
+        return False
+
+    @staticmethod
+    def _no_tracking_results(response):
+        table_titles = response.css("h4::text").getall()
+        if "Tracking Results" not in table_titles:
             return True
         return False
 
@@ -948,6 +968,47 @@ class MainRoutingRule(BaseRoutingRule):
         container_table = find_selector_from(selectors=tables, rule=rule)
 
         return container_table
+
+    @staticmethod
+    def _extract_booking_info(response):
+        tables = response.css("#trackingForm div.base_table01")
+
+        rule = SpecificThTextExistMatchRule(text="Booking No")
+        table_selector = find_selector_from(selectors=tables, rule=rule)
+        table_locator = BookingInfoTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
+
+        return {
+            "booking_no": table.extract_cell("Booking No"),
+            "por": LocationItem(name=table.extract_cell("Place of Receipt")),
+            "pol": LocationItem(name=table.extract_cell("Port of Loading")),
+            "pod": LocationItem(name=table.extract_cell("Place of Discharing")),
+            "place_of_deliv": table.extract_cell("Place of Delivery"),
+        }
+
+    @staticmethod
+    def _extract_movement_info(response):
+        tables = response.css("#trackingForm div.base_table01")
+        rule = SpecificThTextExistMatchRule(text="Vessel/Voyage")
+        table_selector = find_selector_from(selectors=tables, rule=rule)
+        table_locator = TopHeaderTableLocator()
+        table_locator.parse(table=table_selector)
+        table = TableExtractor(table_locator=table_locator)
+
+        vessel_voyage_str = table.extract_cell("Vessel/Voyage", 0).split()
+        vessel = " ".join(vessel_voyage_str[:-1])
+        voyage = vessel_voyage_str[-1]
+        return {
+            "vessel": vessel,
+            "voyage": voyage,
+            "pol": LocationItem(name=table.extract_cell("From Location", 0)),
+            "pod": LocationItem(name=table.extract_cell("To Location", 0)),
+            "ata": None,
+            "eta": table.extract_cell("Arrival Date", 0),
+            "atd": None,
+            "etd": table.extract_cell("Departure Date", 0),
+        }
 
 
 # -------------------------------------------------------------------------------
@@ -1400,3 +1461,24 @@ class LeftHeaderTableLocator(BaseTable):
             for top_index, td in enumerate(tr.css("td")):
                 td_dict = self._td_map.setdefault(top_index, {})
                 td_dict[left_header] = td
+
+
+class BookingInfoTableLocator(BaseTable):
+    """
+    +---------+---------+---------------+ <tbody>
+    | title   |         |               | <tr><th>
+    +---------+---------+---------------+
+    | Data    |         |               | <tr><td>
+    +---------+---------+-----+---------+
+    | title   |         |     |         | <tr><th>
+    +---------+---------+-----+---------+
+    | Data    |         |     |         | <tr><td>
+    +---------+---------+-----+---------+ </tbody>
+    """
+
+    def parse(self, table: Selector):
+        for th, td in zip(table.css("tbody th"), table.css("tbody td")):
+            raw_top_header = th.css("::text").get()
+            top_header = raw_top_header.strip() if isinstance(raw_top_header, str) else ""
+            self._td_map[top_header] = []
+            self._td_map[top_header].append(td)
