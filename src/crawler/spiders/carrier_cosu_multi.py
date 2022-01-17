@@ -220,7 +220,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_ids = response.meta["task_ids"]
         booking_nos = response.meta["booking_nos"]
-        content_getter = ContentGetter()
+        content_getter = ContentGetter(is_headless=True)
 
         response_text = content_getter.search_and_return(search_no=booking_nos[0], is_booking=True)
         response_selector = scrapy.Selector(text=response_text)
