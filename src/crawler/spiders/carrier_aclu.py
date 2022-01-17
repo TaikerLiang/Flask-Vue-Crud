@@ -91,7 +91,7 @@ class TrackRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, mbl_no: str) -> RequestOption:
-        url = "https://www.aclcargo.com/content/themes/acl/library/parse-cargo-track.php"
+        url = f"{BASE_URL}/content/themes/acl/library/parse-cargo-track.php"
         pattern = re.compile(r"^SA(?P<search_no>.+)")
         m = pattern.match(mbl_no)
         if m is None:
@@ -105,7 +105,10 @@ class TrackRoutingRule(BaseRoutingRule):
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
             },
-            form_data={"request": request_data},
+            form_data={
+                "data[request]": request_data,
+                "nonce": "a0b31a0d48",
+            },
             meta={
                 "mbl_no": mbl_no,
                 "request_data": request_data,
@@ -118,7 +121,7 @@ class TrackRoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_no = response.meta["mbl_no"]
         request_data = response.meta["request_data"]
-        response_dict = json.loads(response.text)
+        response_dict = eval(response.text)
         response = scrapy.Selector(text=response_dict["response"])
 
         if self._is_mbl_no_invalid(response):
