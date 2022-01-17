@@ -364,7 +364,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
             headers=headers,
             form_data=form_data,
             meta={
-                "booking_nos": booking_nos,
+                "search_nos": booking_nos,
                 "headers": headers,
                 "task_ids": task_ids,
             },
@@ -376,7 +376,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_ids = response.meta["task_ids"]
         headers = response.meta["headers"]
-        search_nos = response.meta["booking_nos"]
+        search_nos = response.meta["search_nos"]
 
         if check_ip_error(response=response):
             yield Restart(reason="IP block")
@@ -386,9 +386,12 @@ class BookingInfoRoutingRule(BaseRoutingRule):
             yield Restart(reason="Search Fail")
             return
 
-        if self._search_by_booking_and_mbl_no(response=response):
+        booking_no_with_url_list = self._extract_booking_nos_and_urls(response=response)
+
+        if self._is_last_info_page(response=response):
             follow_url = self._get_page_follow_url(response=response)
-            mbl_no = response.xpath('//*[@id="ContentPlaceHolder1_rptBLNo_lblBLNo_0"]/text()').get().strip()
+            mbl_no = response.xpath('//*[@id="ContentPlaceHolder1_rptBLNo_lblBLNo_0"]/text()').get(default="").strip()
+
             yield BookingMainInfoPageRoutingRule().build_request_option(
                 task_id=task_ids[0],
                 follow_url=follow_url,
@@ -398,9 +401,18 @@ class BookingInfoRoutingRule(BaseRoutingRule):
             )
             return
 
-        booking_nos = self._extract_booking_nos(response=response)
+        if self._is_all_invalid(response=response):
+            for index, (booking_no, _) in enumerate(booking_no_with_url_list):
+                yield ExportErrorData(
+                    task_id=task_ids[index],
+                    booking_no=booking_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+            return
 
-        for index, booking_no in enumerate(booking_nos):
+        mbl_no_with_url_list = self._extract_mbl_nos_and_urls(response=response)
+        for index, (booking_no, booking_url) in enumerate(booking_no_with_url_list):
             if self._is_booking_no_invalid(response=response, index=index):
                 yield ExportErrorData(
                     task_id=task_ids[index],
@@ -408,16 +420,29 @@ class BookingInfoRoutingRule(BaseRoutingRule):
                     status=CARRIER_RESULT_STATUS_ERROR,
                     detail="Data was not found",
                 )
-                continue
             else:
-                mbl_nos, follow_urls = self._extract_booking_info(response=response, index=index)
-                for mbl_no, follow_url in zip(mbl_nos, follow_urls):
+                mbl_no, mbl_url = mbl_no_with_url_list[index]
+                if mbl_no and mbl_url:
                     yield BookingMainInfoPageRoutingRule().build_request_option(
                         task_id=task_ids[index],
-                        follow_url=follow_url,
+                        follow_url=mbl_url,
                         mbl_no=mbl_no,
                         booking_no=booking_no,
                         headers=headers,
+                    )
+                elif booking_url and not mbl_no:
+                    yield BookingMainInfoPageRoutingRule().build_request_option(
+                        task_id=task_ids[index],
+                        follow_url=booking_url,
+                        mbl_no=mbl_no,
+                        booking_no=booking_no,
+                        headers=headers,
+                    )
+                else:  # without mbl_no and without booking_url
+                    yield MainPageRoutingRule().build_request_option(
+                        search_nos=[booking_no],
+                        search_type=SHIPMENT_TYPE_BOOKING,
+                        task_ids=[task_ids[index]],
                     )
 
         yield NextRoundRoutingRule.build_request_option(
@@ -432,11 +457,19 @@ class BookingInfoRoutingRule(BaseRoutingRule):
         return False
 
     @staticmethod
-    def _search_by_booking_and_mbl_no(response: Selector):
-        title = response.css("h2.greent_rwd::text").get().strip()
-        if title == "Result of Tracking by Booking No. and B/L no.":
-            return True
-        return False
+    def _is_all_invalid(response: Selector):
+        content_divs = response.css("[id^=ContentPlaceHolder1_rptBKNo_divContent_]")
+        for div in content_divs:
+            if not "display:none" in div.css("::attr(style)").get():
+                return False
+        return True
+
+    @staticmethod
+    def _is_last_info_page(response: Selector):
+        title = response.css("h2.greent_rwd::text").get(default="").strip()
+        return "B/L no." in title or not bool(
+            response.css("[id^=ContentPlaceHolder1_rptBKNo_divContent_][style='display:none;']")
+        )
 
     @staticmethod
     def _get_page_follow_url(response: Selector):
@@ -456,16 +489,20 @@ class BookingInfoRoutingRule(BaseRoutingRule):
         return True
 
     @staticmethod
-    def _extract_booking_nos(response: Selector):
-        booking_nos = response.css("span[id^=ContentPlaceHolder1_rptBKNo_lblBKNo_]::text").getall()
-        return [booking_no.strip() for booking_no in booking_nos]
+    def _extract_booking_nos_and_urls(response: Selector):
+        booking_no_elems = response.css("div.bluefont3_rwd :first-child")
+        booking_nos = [elem.css("::text").get() for elem in booking_no_elems]
+        booking_urls = [elem.css("::attr(href)").get() for elem in booking_no_elems]
+
+        return list(zip(booking_nos, booking_urls))
 
     @staticmethod
-    def _extract_booking_info(response: Selector, index: int):
-        mbl_nos = response.css(f"a[id^=ContentPlaceHolder1_rptBKNo_rptBLNo_{index}_LinkBL_]::text").getall()
-        follow_urls = response.css(f"a[id^=ContentPlaceHolder1_rptBKNo_rptBLNo_{index}_LinkBL_]::attr(href)").getall()
+    def _extract_mbl_nos_and_urls(response: Selector):
+        content_divs = response.css("div[id^=ContentPlaceHolder1_rptBKNo_divContent_]")
+        mbl_nos = [content_div.css("a[target]:not([title])::text").get() for content_div in content_divs]
+        mbl_urls = [content_div.css("a[target]:not([title])::attr(href)").get() for content_div in content_divs]
 
-        return mbl_nos, follow_urls
+        return list(zip(mbl_nos, mbl_urls))
 
 
 class BookingMainInfoPageRoutingRule(BaseRoutingRule):
@@ -488,8 +525,9 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
         )
 
     def get_save_name(self, response) -> str:
+        booking_no = response.meta["booking_no"]
         mbl_no = response.meta["mbl_no"]
-        return f"{self.name}_{mbl_no}.html"
+        return f"{self.name}_{booking_no}_{mbl_no}.html"
 
     def handle(self, response):
         task_id = response.meta["task_id"]
@@ -568,18 +606,21 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _search_success(response: Selector):
-        if response.css("div#ContentPlaceHolder1_divResult"):
+        if response.css("h2.greent_rwd"):
             return True
         return False
 
     @staticmethod
     def _extract_mbl_no(response: Selector):
         mbl_no = response.css("span#ContentPlaceHolder1_rptBLNo_lblBLNo_0::text").get()
-        return mbl_no.strip()
+        if mbl_no:
+            return mbl_no.strip()
 
     @staticmethod
     def _extract_basic_info(response: Selector):
-        table_selector = response.css(f"table[id=ContentPlaceHolder1_rptBLNo_gvBasicInformation_0]")
+        table_selector = response.css("table[id=ContentPlaceHolder1_rptBLNo_gvBasicInformation_0]") or response.css(
+            "table[id=ContentPlaceHolder1_rptBKNo_gvBasicInformation_0]"
+        )
         if not table_selector:
             CarrierResponseFormatError("Can not found basic info table !!!")
 
@@ -735,7 +776,7 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
         discharged_port_terminal_text = response.css(
             f"span#ContentPlaceHolder1_rptBLNo_lblDischarged_0 ::text"
         ).getall()
-        if len(discharged_port_terminal_text) == 1:
+        if len(discharged_port_terminal_text) <= 1:
             return None
         elif len(discharged_port_terminal_text) > 2:
             error_message = f"Discharged Port Terminal format error: `{discharged_port_terminal_text}`"
@@ -923,7 +964,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _search_success(response: Selector):
-        if response.css("div#ContentPlaceHolder1_divResult"):
+        if response.css("h2.greent_rwd"):
             return True
         logging.warning(response.text)
         return False
@@ -1108,7 +1149,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         discharged_port_terminal_text = response.css(
             f"span[id^=ContentPlaceHolder1_rptBLNo_lblDischarged_{index}] ::text"
         ).getall()
-        if len(discharged_port_terminal_text) == 1:
+        if len(discharged_port_terminal_text) <= 1:
             return None
         elif len(discharged_port_terminal_text) > 2:
             error_message = f"Discharged Port Terminal format error: `{discharged_port_terminal_text}`"
