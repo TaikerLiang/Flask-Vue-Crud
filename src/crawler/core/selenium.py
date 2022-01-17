@@ -75,8 +75,8 @@ class ChromeContentGetter(SeleniumContentGetter):
             proxy_manager.renew_proxy()
             seleniumwire_options = {
                 "proxy": {
-                    "http": f"http://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_URL}",
-                    "https": f"https://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_URL}",
+                    "http": f"http://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_DOMAIN}",
+                    "https": f"https://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_DOMAIN}",
                 }
             }
             self._driver = seleniumwire.webdriver.Chrome(

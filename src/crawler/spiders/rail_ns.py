@@ -5,7 +5,7 @@ from crawler.core.selenium import ChromeContentGetter
 import scrapy
 from selenium.common.exceptions import TimeoutException
 
-from crawler.core.proxy import ApifyProxyManager
+from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_rail.base_spiders import BaseMultiRailSpider
 from crawler.core_rail.exceptions import RailResponseFormatError, DriverMaxRetryError
 from crawler.core_rail.items import BaseRailItem, RailItem, DebugItem, InvalidContainerNoItem
@@ -35,7 +35,7 @@ class RailNSSpider(BaseMultiRailSpider):
         self._rule_manager = RuleManager(rules=rules)
         self._retry_count = 0
 
-        self._proxy_manager = ApifyProxyManager(session="railns", logger=self.logger)
+        self._proxy_manager = HydraproxyProxyManager(session="railns", logger=self.logger)
 
     def start(self):
         yield self._prepare_restart()
@@ -109,7 +109,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, container_nos, proxy_manager) -> RequestOption:
-        url = "https://www.google.com"
+        url = "https://api.myip.com"
 
         cls._proxy_manager = proxy_manager
         return RequestOption(
@@ -212,8 +212,7 @@ class ContentGetter(ChromeContentGetter):
 
     def _login(self):
         self._driver.get(self.LOGIN_URL)
-        self._driver.wait_for_request(self.LOGIN_URL, timeout=60)
-
+        time.sleep(60)
         username = self._driver.find_element_by_xpath("//*[@id='mat-input-0']")
         username.send_keys(self.USER_NAME)
         password = self._driver.find_element_by_xpath("//*[@id='mat-input-1']")
@@ -234,7 +233,7 @@ class ContentGetter(ChromeContentGetter):
         time.sleep(3)
         search_btn = self._driver.find_element_by_css_selector('button[aria-label="Search button"]')
         search_btn.click()
-        time.sleep(30)
+        time.sleep(60)
 
         return self.get_page_source()
 

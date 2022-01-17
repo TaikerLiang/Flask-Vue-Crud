@@ -1,3 +1,4 @@
+import abc
 from logging import Logger
 from typing import Dict
 import random
@@ -53,8 +54,7 @@ class ProxyOption:
 
 
 class ProxyManager:
-    PROXY_URL = "proxy.apify.com:8000"
-    PROXY_PASSWORD = "XZTBLpciyyTCFb3378xWJbuYY"
+    PROXY_DOMAIN = ""
     MAX_RETRY = 30
 
     def __init__(self, logger: Logger):
@@ -85,6 +85,14 @@ class ProxyManager:
     @property
     def proxy_password(self):
         return self._proxy_password
+
+    @property
+    def proxy_domain(self):
+        return self.PROXY_DOMAIN
+
+    @abc.abstractmethod
+    def renew_proxy(self):
+        pass
 
 
 class ApifyProxyManager(ProxyManager):
