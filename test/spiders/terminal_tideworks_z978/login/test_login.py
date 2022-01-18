@@ -17,13 +17,13 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub,container_no',
+    "sub,container_no",
     [
-        ('01_basic', 'DFSU7596831'),
+        ("01_basic", "DFSU7596831"),
     ],
 )
 def test_login_handle(sub, container_no, sample_loader):
-    html_text = sample_loader.read_file(sub, 'sample.html')
+    html_text = sample_loader.read_file(sub, "sample.html")
 
     option = LoginRoutingRule.build_request_option(
         container_nos=[container_no],
@@ -33,7 +33,7 @@ def test_login_handle(sub, container_no, sample_loader):
     response = TextResponse(
         url=option.url,
         body=html_text,
-        encoding='utf-8',
+        encoding="utf-8",
         request=Request(
             url=option.url,
             headers={"Cookie": "test_cookie"},
@@ -44,5 +44,5 @@ def test_login_handle(sub, container_no, sample_loader):
     rule = LoginRoutingRule()
     results = list(rule.handle(response=response))
 
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
+    verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
