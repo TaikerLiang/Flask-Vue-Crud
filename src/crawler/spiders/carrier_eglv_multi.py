@@ -996,9 +996,9 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
         for container_info in container_infos:
             yield ContainerItem(
                 task_id=task_ids[0],
-                container_key=container_info["container_no"],
-                container_no=container_info["container_no"],
-                full_pickup_date=container_info["full_pickup_date"],
+                container_key=container_info.get("container_no", ""),
+                container_no=container_info.get("container_no", ""),
+                full_pickup_date=container_info.get("full_pickup_date", ""),
             )
 
             for item in self.handle_container_status(
@@ -1118,11 +1118,14 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
         date_pattern = re.compile(r"\w+-\d+-\d+\s\d+:\d+")  # "MAY-10-2021 16:31"
 
         for left in table_locator.iter_left_header():
-            full_date_cell = table_extractor.extract_cell(top="Empty Out", left=left)
+            # there are no Empty Out info in some of the bookings
+            # full_date_cell = table_extractor.extract_cell(top="Empty Out", left=left)
             empty_date_cell = table_extractor.extract_cell(top="Full return to", left=left)
 
-            full_pickup_date_search = date_pattern.search(full_date_cell)
-            full_pickup_date = full_pickup_date_search.group(0) if full_pickup_date_search else ""
+            full_pickup_date = None
+            # if full_date_cell:
+            #     full_pickup_date_search = date_pattern.search(full_date_cell)
+            #     full_pickup_date = full_pickup_date_search.group(0) if full_pickup_date_search else ""
 
             empty_pickup_date_search = date_pattern.search(empty_date_cell)
             empty_pickup_date = empty_pickup_date_search.group(0) if empty_pickup_date_search else ""
