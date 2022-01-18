@@ -175,7 +175,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://google.com",
+            url="https://api.myip.com/",
             meta={"container_nos": container_nos, "terminal_id": terminal_id},
         )
 
