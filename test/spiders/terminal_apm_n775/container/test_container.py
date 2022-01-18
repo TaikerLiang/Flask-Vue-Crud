@@ -40,6 +40,7 @@ def test_container_handle(sub, container_no, terminal_id, sample_loader):
             url=option.url,
             meta={
                 'container_nos': [container_no],
+                'terminal_id': "cfc387ee-e47e-400a-80c5-85d4316f1af9",
             }
         ),
     )

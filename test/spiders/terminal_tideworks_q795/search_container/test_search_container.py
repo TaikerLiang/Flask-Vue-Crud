@@ -27,7 +27,7 @@ def test_search_container(sub, container_no, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
     option = SearchContainerRoutingRule.build_request_option(
-        container_nos=[container_no],
+        container_no=container_no,
         company_info=TerminalTideworksNolSpider.company_info,
         cookies={},
         token="",

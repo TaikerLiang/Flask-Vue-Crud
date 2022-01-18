@@ -36,11 +36,9 @@ def test_login_handle(sub, container_no, sample_loader):
         encoding="utf-8",
         request=Request(
             url=option.url,
+            headers={"Cookie": "test_cookie"},
             meta=option.meta,
         ),
-        headers={
-            "Set-Cookie": ["BNI_JSESSIONID=0000000000000000000000000cb012ac0000921f; Path=/; HttpOnly"],
-        },
     )
 
     rule = LoginRoutingRule()
