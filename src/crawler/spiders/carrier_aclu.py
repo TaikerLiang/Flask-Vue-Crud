@@ -1,15 +1,18 @@
 import abc
 import dataclasses
-import re
 import json
+import re
+from urllib.parse import urlencode
 from typing import List, Pattern, Match, Dict, Union
 
 import scrapy
 
+from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
     SuspiciousOperationError,
+    AccessDeniedError,
 )
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
@@ -23,8 +26,14 @@ from crawler.core_carrier.items import (
 )
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
+from scrapy.selector.unified import Selector
 
 BASE_URL = "http://www.aclcargo.com"
+MAX_RETRY_COUNT = 3
+
+
+class Restart:
+    pass
 
 
 class CarrierAcluSpider(BaseCarrierSpider):
@@ -34,15 +43,27 @@ class CarrierAcluSpider(BaseCarrierSpider):
         super(CarrierAcluSpider, self).__init__(*args, **kwargs)
 
         rules = [
+            CheckIpRule(),
             TrackRoutingRule(),
             DetailTrackingRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
+        self._proxy_manager = HydraproxyProxyManager(session="maeu_mccq_safm_share", logger=self.logger)
+        self._retry_count = 0
 
     def start(self):
-        option = TrackRoutingRule.build_request_option(mbl_no=self.mbl_no)
-        yield self._build_request_by(option=option)
+        yield self._prepare_restart()
+
+    def _prepare_restart(self):
+        if self._retry_count > MAX_RETRY_COUNT:
+            raise AccessDeniedError()
+
+        self._retry_count += 1
+        self._proxy_manager.renew_proxy()
+        option = CheckIpRule.build_request_option(mbl_no=self.mbl_no)
+        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
+        return self._build_request_by(option=proxy_option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -57,6 +78,8 @@ class CarrierAcluSpider(BaseCarrierSpider):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
+            elif isinstance(result, Restart):
+                yield self._prepare_restart()
             else:
                 raise RuntimeError()
 
@@ -69,18 +92,45 @@ class CarrierAcluSpider(BaseCarrierSpider):
         if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
                 url=option.url,
-                meta=meta,
-            )
-        elif option.method == RequestOption.METHOD_POST_FORM:
-            return scrapy.FormRequest(
-                url=option.url,
-                formdata=option.form_data,
                 headers=option.headers,
                 meta=meta,
                 dont_filter=True,
             )
+        elif option.method == RequestOption.METHOD_POST_BODY:
+            return scrapy.Request(
+                method="POST",
+                url=option.url,
+                headers=option.headers,
+                body=option.body,
+                meta=meta,
+            )
         else:
             raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
+
+
+class CheckIpRule(BaseRoutingRule):
+    name = "IP"
+
+    @classmethod
+    def build_request_option(cls, mbl_no: str):
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=f"https://api.myip.com",
+            meta={
+                "mbl_no": mbl_no,
+            },
+        )
+
+    def get_save_name(self, response) -> str:
+        return f"{self.name}.html"
+
+    def handle(self, response):
+        mbl_no = response.meta["mbl_no"]
+        response_json = json.loads(response.text)
+        ip = response_json["ip"]
+
+        yield TrackRoutingRule.build_request_option(mbl_no=mbl_no, ip=ip)
 
 
 # -------------------------------------------------------------------------------
@@ -90,40 +140,28 @@ class TrackRoutingRule(BaseRoutingRule):
     name = "TRACK"
 
     @classmethod
-    def build_request_option(cls, mbl_no: str) -> RequestOption:
-        url = f"{BASE_URL}/content/themes/acl/library/parse-cargo-track.php"
-        pattern = re.compile(r"^SA(?P<search_no>.+)")
-        m = pattern.match(mbl_no)
-        if m is None:
-            request_data = f"SA-{mbl_no}"
-        else:
-            request_data = f"SA-{m.group('search_no')}"
+    def build_request_option(cls, mbl_no: str, ip: str) -> RequestOption:
+        url = f"https://myacl.aclcargo.com/servlet/ActionMultiplexer?the_action=trackcontainercurrentstatus&trackIP={ip}&acl_track={ip}|{mbl_no}"
+
         return RequestOption(
-            method=RequestOption.METHOD_POST_FORM,
+            method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=url,
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
             },
-            form_data={
-                "data[request]": request_data,
-                "nonce": "a0b31a0d48",
-            },
             meta={
                 "mbl_no": mbl_no,
-                "request_data": request_data,
             },
         )
 
     def get_save_name(self, response) -> str:
-        return f"{self.name}.json"
+        return f"{self.name}.html"
 
     def handle(self, response):
         mbl_no = response.meta["mbl_no"]
-        request_data = response.meta["request_data"]
-        response_dict = eval(response.text)
-        response = scrapy.Selector(text=response_dict["response"])
 
+        response = scrapy.Selector(text=response.text)
         if self._is_mbl_no_invalid(response):
             yield ExportErrorData(mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found")
             return
@@ -131,7 +169,7 @@ class TrackRoutingRule(BaseRoutingRule):
         container_infos = self._extract_container_infos(response=response)
         for container_info in container_infos:
             yield DetailTrackingRoutingRule.build_request_option(
-                route=container_info["route"], request_data=request_data, container_no=container_info["container_no"]
+                route=container_info["route"], container_no=container_info["container_no"]
             )
 
     @staticmethod
@@ -327,27 +365,27 @@ class DetailTrackingRoutingRule(BaseRoutingRule):
         self.status_transformer = StatusTransformer(parsers=self.parsers)
 
     @classmethod
-    def build_request_option(cls, route: Dict, request_data: str, container_no: str) -> RequestOption:
-        url = "https://www.aclcargo.com/content/themes/acl/library/parse-cargo-track.php"
-        form_data = {"request": request_data, **route}
+    def build_request_option(cls, route: Dict, container_no: str) -> RequestOption:
+        url = f"https://myacl.aclcargo.com/trackCargo.php?{urlencode(route)}"
         return RequestOption(
-            method=RequestOption.METHOD_POST_FORM,
+            method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=url,
             headers={
                 "Content-Type": "application/x-www-form-urlencoded",
             },
-            form_data=form_data,
             meta={"container_no": container_no},
         )
 
     def get_save_name(self, response) -> str:
         container_no = response.meta["container_no"]
-        return f"{self.name}_{container_no}.json"
+        return f"{self.name}_{container_no}.html"
 
     def handle(self, response):
-        response_dict = json.loads(response.text)
-        response = scrapy.Selector(text=response_dict["response"])
+        if self._is_search_failed(response=response):
+            yield Restart()
+            return
+
         container_no = self._extract_container_no(response=response)
         yield ContainerItem(
             container_key=container_no,
@@ -363,6 +401,11 @@ class DetailTrackingRoutingRule(BaseRoutingRule):
                 location=LocationItem(name=status_info.location or None),
                 vessel=status_info.vessel or None,
             )
+
+    @staticmethod
+    def _is_search_failed(response: Selector) -> bool:
+        msg = response.css("div[role=main] div.row b::text").get()
+        return bool(msg)
 
     def _extract_container_no(self, response: scrapy.Selector) -> str:
         container_no_text = response.css("span.subheader::text").get()
