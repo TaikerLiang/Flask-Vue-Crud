@@ -105,7 +105,7 @@ class BaseMultiAirSpider(scrapy.Spider):
         self.request_args = kwargs
 
         self.task_ids = [task_id.strip() for task_id in kwargs["task_ids"].split(",")]
-        self.mawb_nos = [mawb_no.strip() for mawb_no in kwargs["awb_nos"].split(",")]
+        self.mawb_nos = [mawb_no.strip() for mawb_no in kwargs["mawb_nos"].split(",")]
         self.mno_tid_map = {}  # mawb_no: [task_ids]
         for m_no, t_id in zip(self.mawb_nos, self.task_ids):
             self.mno_tid_map.setdefault(m_no, [])
