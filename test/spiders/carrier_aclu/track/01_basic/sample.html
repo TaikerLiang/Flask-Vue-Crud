@@ -1,0 +1,117 @@
+
+
+
+
+
+
+<!--
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<html>
+<head>
+	<title>Untitled</title>
+
+-->
+<style type="text/css">
+.Bsbttn
+{
+	font-family:tahoma,sans-serif;
+	font-size:13px;
+	background: #0063CE;
+	border-bottom: 1px solid #104A7B;
+	border-right: 1px solid #104A7B;
+	border-left: 1px solid #AFC4D5;
+	border-top:1px solid #AFC4D5;
+	color: White;
+	text-decoration:none;
+	cursor: hand;
+}
+.gray  {
+	font-family : Verdana, Arial, Helvetica, sans-serif;
+	font-size : 11px;
+	font-style : normal;
+	font-weight : normal;
+	color : #000000;
+	text-decoration : none;
+}
+
+</style>
+	<script language="JavaScript1.2">
+
+	 function getHistory(nextURL)
+	{
+
+//		var nextURL = "/servlet/ActionMultiplexer?the_action=trackcontainerhistory";
+		window.open(nextURL,"_self");
+	}
+	</script>
+	<!--
+</head>
+
+<body>
+-->
+
+
+<table cellspacing="2" cellpadding="2" border="0">
+<tr><td>
+
+<table cellspacing="2" cellpadding="2" border="0">
+<tr class="subheader">
+    <td>Equip No.</td>
+    <td>Status</td>
+</tr>
+<tr class="gray">
+
+    <td rowspan="3" valign="top" ><b>ACLU9700046</b></td>
+    <td>Received empty at Port Newark, Nj-B51 (Pnct),New Jersey,U.S.A. 07114 On 11/06/21 08:15 </td>
+</tr>
+
+<tr class="gray">
+    <td>SHIPMENT : SA-00715282</td>
+</tr>
+
+<tr class="gray">
+
+    <td ><input type="button" id='DetailedTrack' value="Detailed Tracking" onclick="getHistory('/trackCargo.php?EquiPk=11779178450&ShipFk=17769882100&EmoFk=0&acl_track=ACLU9700046&Equino=ACLU9700046&verbosity=detail');" class="Bsbttn"></td>
+
+</tr>
+</table>
+
+
+<table cellspacing="2" cellpadding="2" border="0">
+<tr class="subheader">
+    <td>Equip No.</td>
+    <td>Status</td>
+</tr>
+<tr class="gray">
+
+    <td rowspan="3" valign="top" ><b>ACLU9685173</b></td>
+    <td>Received empty at Port Newark, Nj-B51 (Pnct),New Jersey,U.S.A. 07114 On 11/09/21 16:25 </td>
+</tr>
+
+<tr class="gray">
+    <td>SHIPMENT : SA-00715282</td>
+</tr>
+
+<tr class="gray">
+
+    <td ><input type="button" id='DetailedTrack' value="Detailed Tracking" onclick="getHistory('/trackCargo.php?EquiPk=11739028889&ShipFk=17769882100&EmoFk=0&acl_track=ACLU9685173&Equino=ACLU9685173&verbosity=detail');" class="Bsbttn"></td>
+
+</tr>
+</table>
+
+
+</td>
+</tr>
+</table>
+
+<script language="JavaScript1.2">
+	 var equipNo = 'ACLU9685173'
+	 if ( equipNo == null ||  equipNo == '')
+		document.getElementById("DetailedTrack").style.visibility = "hidden";
+
+	</script>
+<!--
+</body>
+</html>
+-->

@@ -16,16 +16,16 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    "sub,mbl_no,",
+    "sub,mbl_no,ip",
     [
-        ("01_basic", "SA00715282"),
-        ("02_invalid_mbl_no", "SA007152822"),
+        ("01_basic", "SA00715282", "1.200.40.75"),
+        ("02_invalid_mbl_no", "SA007152822", "1.200.40.75"),
     ],
 )
-def test_track_routing_rule(sub, mbl_no, sample_loader):
-    httptext = sample_loader.read_file(sub, "sample.json")
+def test_track_routing_rule(sub, mbl_no, ip, sample_loader):
+    httptext = sample_loader.read_file(sub, "sample.html")
 
-    option = TrackRoutingRule.build_request_option(mbl_no=mbl_no)
+    option = TrackRoutingRule.build_request_option(mbl_no=mbl_no, ip=ip)
 
     response = TextResponse(
         url=option.url,

@@ -22,8 +22,8 @@ def sample_loader(sample_loader):
     ],
 )
 def test_detail_tracking_info_routing_rule(sub, container_no, sample_loader):
-    httptext = sample_loader.read_file(sub, "sample.json")
-    option = DetailTrackingRoutingRule.build_request_option(route={}, request_data="", container_no=container_no)
+    httptext = sample_loader.read_file(sub, "sample.html")
+    option = DetailTrackingRoutingRule.build_request_option(route={}, container_no=container_no)
 
     response = TextResponse(
         url=option.url,
