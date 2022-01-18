@@ -9,7 +9,7 @@ from crawler.core_carrier.oney_smlm_multi_share_spider import (
 
 
 def verify(results):
-    assert results[0] == MblItem(mbl_no="SZPVF2740514", task_id=1, final_dest="PUSAN, KOREA REPUBLIC OF")
+    assert results[0] == MblItem(mbl_no="SZPVF2740514", task_id=1, final_dest={"name": "PUSAN, KOREA REPUBLIC OF"})
 
     assert isinstance(results[1], RequestOption)
     assert results[1].rule_name == VesselRoutingRule.name
