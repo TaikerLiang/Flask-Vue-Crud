@@ -20,14 +20,14 @@ def sample_loader(sample_loader):
     "sub,container_no",
     [
         ("01_basic", "TGHU6027388"),
-        ("02_invalid_container_no", "invalid_container_no"),
+        ("02_invalid_container_no", "ZCSU7745227"),
     ],
 )
 def test_search_container(sub, container_no, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
     option = SearchContainerRoutingRule.build_request_option(
-        container_nos=[container_no],
+        container_no=container_no,
         company_info=TerminalPomtocSpider.company_info,
         cookies={},
         token="",
