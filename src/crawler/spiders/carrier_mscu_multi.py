@@ -253,8 +253,6 @@ class MainRoutingRule(BaseRoutingRule):
 
         extractor = Extractor()
         place_of_deliv_set = set()
-        yield Restart(reason="test", search_nos=search_nos, task_ids=task_ids)
-        return
 
         try:
             container_selector_map_list = extractor.locate_container_selector(response=response)
