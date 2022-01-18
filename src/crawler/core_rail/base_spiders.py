@@ -19,8 +19,12 @@ RAIL_DEFAULT_ITEM_PIPELINES = {
 }
 
 RAIL_DEFAULT_SETTINGS = {
-    "SPIDER_MIDDLEWARES": {**RAIL_DEFAULT_SPIDER_MIDDLEWARES,},
-    "ITEM_PIPELINES": {**RAIL_DEFAULT_ITEM_PIPELINES,},
+    "SPIDER_MIDDLEWARES": {
+        **RAIL_DEFAULT_SPIDER_MIDDLEWARES,
+    },
+    "ITEM_PIPELINES": {
+        **RAIL_DEFAULT_ITEM_PIPELINES,
+    },
 }
 
 
@@ -86,8 +90,12 @@ class BaseMultiRailSpider(scrapy.Spider):
 
     custom_settings = {
         "CLOSESPIDER_TIMEOUT": CLOSESPIDER_TIMEOUT,
-        "SPIDER_MIDDLEWARES": {**RAIL_DEFAULT_SPIDER_MIDDLEWARES,},
-        "ITEM_PIPELINES": {**RAIL_MULTI_ITEM_PIPELINES,},
+        "SPIDER_MIDDLEWARES": {
+            **RAIL_DEFAULT_SPIDER_MIDDLEWARES,
+        },
+        "ITEM_PIPELINES": {
+            **RAIL_MULTI_ITEM_PIPELINES,
+        },
     }
 
     def __init__(self, name=None, **kwargs):
@@ -95,8 +103,8 @@ class BaseMultiRailSpider(scrapy.Spider):
 
         self.request_args = kwargs
 
-        self.task_ids = [task_id.strip() for task_id in kwargs["task_id_list"].split(",")]
-        self.container_nos = [container_no.strip() for container_no in kwargs["container_no_list"].split(",")]
+        self.task_ids = [task_id.strip() for task_id in kwargs["task_ids"].split(",")]
+        self.container_nos = [container_no.strip() for container_no in kwargs["container_nos"].split(",")]
         self.cno_tid_map = {}  # container_no: [task_ids]
         for c_no, t_id in zip(self.container_nos, self.task_ids):
             self.cno_tid_map.setdefault(c_no, [])

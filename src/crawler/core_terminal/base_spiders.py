@@ -19,8 +19,12 @@ TERMINAL_DEFAULT_ITEM_PIPELINES = {
 }
 
 TERMINAL_DEFAULT_SETTINGS = {
-    "SPIDER_MIDDLEWARES": {**TERMINAL_DEFAULT_SPIDER_MIDDLEWARES,},
-    "ITEM_PIPELINES": {**TERMINAL_DEFAULT_ITEM_PIPELINES,},
+    "SPIDER_MIDDLEWARES": {
+        **TERMINAL_DEFAULT_SPIDER_MIDDLEWARES,
+    },
+    "ITEM_PIPELINES": {
+        **TERMINAL_DEFAULT_ITEM_PIPELINES,
+    },
 }
 
 
@@ -87,8 +91,12 @@ class BaseMultiTerminalSpider(scrapy.Spider):
 
     custom_settings = {
         "CLOSESPIDER_TIMEOUT": CLOSESPIDER_TIMEOUT,
-        "SPIDER_MIDDLEWARES": {**TERMINAL_DEFAULT_SPIDER_MIDDLEWARES,},
-        "ITEM_PIPELINES": {**TERMINAL_MULTI_ITEM_PIPELINES,},
+        "SPIDER_MIDDLEWARES": {
+            **TERMINAL_DEFAULT_SPIDER_MIDDLEWARES,
+        },
+        "ITEM_PIPELINES": {
+            **TERMINAL_MULTI_ITEM_PIPELINES,
+        },
     }
 
     def __init__(self, name=None, **kwargs):
@@ -96,8 +104,8 @@ class BaseMultiTerminalSpider(scrapy.Spider):
 
         self.request_args = kwargs
 
-        self.task_ids = [task_id.strip() for task_id in kwargs["task_id_list"].split(",")]
-        self.container_nos = [container_no.strip() for container_no in kwargs["container_no_list"].split(",")]
+        self.task_ids = [task_id.strip() for task_id in kwargs["task_ids"].split(",")]
+        self.container_nos = [container_no.strip() for container_no in kwargs["container_nos"].split(",")]
         self.mbl_no = kwargs.get("mbl_no", "")
         self.cno_tid_map = {}  # container_no: [task_ids]
         for c_no, t_id in zip(self.container_nos, self.task_ids):

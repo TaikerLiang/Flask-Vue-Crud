@@ -20,8 +20,12 @@ AIR_DEFAULT_ITEM_PIPELINES = {
 }
 
 AIR_DEFAULT_SETTINGS = {
-    "SPIDER_MIDDLEWARES": {**AIR_DEFAULT_SPIDER_MIDDLEWARES,},
-    "ITEM_PIPELINES": {**AIR_DEFAULT_ITEM_PIPELINES,},
+    "SPIDER_MIDDLEWARES": {
+        **AIR_DEFAULT_SPIDER_MIDDLEWARES,
+    },
+    "ITEM_PIPELINES": {
+        **AIR_DEFAULT_ITEM_PIPELINES,
+    },
 }
 
 
@@ -87,8 +91,12 @@ class BaseMultiAirSpider(scrapy.Spider):
 
     custom_settings = {
         "CLOSESPIDER_TIMEOUT": CLOSESPIDER_TIMEOUT,
-        "SPIDER_MIDDLEWARES": {**AIR_DEFAULT_SPIDER_MIDDLEWARES,},
-        "ITEM_PIPELINES": {**AIR_MULTI_ITEM_PIPELINES,},
+        "SPIDER_MIDDLEWARES": {
+            **AIR_DEFAULT_SPIDER_MIDDLEWARES,
+        },
+        "ITEM_PIPELINES": {
+            **AIR_MULTI_ITEM_PIPELINES,
+        },
     }
 
     def __init__(self, name=None, **kwargs):
@@ -96,8 +104,8 @@ class BaseMultiAirSpider(scrapy.Spider):
 
         self.request_args = kwargs
 
-        self.task_ids = [task_id.strip() for task_id in kwargs["task_id_list"].split(",")]
-        self.mawb_nos = [mawb_no.strip() for mawb_no in kwargs["mawb_no_list"].split(",")]
+        self.task_ids = [task_id.strip() for task_id in kwargs["task_ids"].split(",")]
+        self.mawb_nos = [mawb_no.strip() for mawb_no in kwargs["awb_nos"].split(",")]
         self.mno_tid_map = {}  # mawb_no: [task_ids]
         for m_no, t_id in zip(self.mawb_nos, self.task_ids):
             self.mno_tid_map.setdefault(m_no, [])
