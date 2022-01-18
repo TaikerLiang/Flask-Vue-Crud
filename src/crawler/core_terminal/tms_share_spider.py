@@ -210,7 +210,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=DUMMY_URL_DICT["google"],
+            url="https://api.myip.com/",
             meta={
                 "container_nos": container_nos,
                 "terminal_id": terminal_id,
