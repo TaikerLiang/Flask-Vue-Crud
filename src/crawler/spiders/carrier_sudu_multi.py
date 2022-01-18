@@ -483,7 +483,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://google.com",
+            url="https://api.myip.com/",
             meta={"mbl_nos": mbl_nos, "task_ids": task_ids},
         )
 

@@ -414,7 +414,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://www.google.com",
+            url="https://api.myip.com/",
             meta={
                 "base_url": base_url,
                 "search_nos": search_nos,
