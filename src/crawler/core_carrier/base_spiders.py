@@ -22,8 +22,12 @@ CARRIER_DEFAULT_ITEM_PIPELINES = {
 }
 
 CARRIER_DEFAULT_SETTINGS = {
-    "SPIDER_MIDDLEWARES": {**CARRIER_DEFAULT_SPIDER_MIDDLEWARES,},
-    "ITEM_PIPELINES": {**CARRIER_DEFAULT_ITEM_PIPELINES,},
+    "SPIDER_MIDDLEWARES": {
+        **CARRIER_DEFAULT_SPIDER_MIDDLEWARES,
+    },
+    "ITEM_PIPELINES": {
+        **CARRIER_DEFAULT_ITEM_PIPELINES,
+    },
 }
 
 DISABLE_DUPLICATE_REQUEST_FILTER = {"DUPEFILTER_CLASS": "scrapy.dupefilters.BaseDupeFilter"}
@@ -43,6 +47,7 @@ class BaseCarrierSpider(scrapy.Spider):
 
         self.booking_no = kwargs.get("booking_no", "")
         self.mbl_no = kwargs.get("mbl_no", "")
+        self.task_id = kwargs.get("task_id", "")
         self.container_no_list = kwargs.get("container_no_list", "").split(",")
 
         to_save = "save" in kwargs
@@ -93,8 +98,12 @@ class BaseMultiCarrierSpider(scrapy.Spider):
 
     custom_settings = {
         "CLOSESPIDER_TIMEOUT": CLOSESPIDER_TIMEOUT,
-        "SPIDER_MIDDLEWARES": {**CARRIER_DEFAULT_SPIDER_MIDDLEWARES,},
-        "ITEM_PIPELINES": {**CARRIER_MULTI_ITEM_PIPELINES,},
+        "SPIDER_MIDDLEWARES": {
+            **CARRIER_DEFAULT_SPIDER_MIDDLEWARES,
+        },
+        "ITEM_PIPELINES": {
+            **CARRIER_MULTI_ITEM_PIPELINES,
+        },
     }
 
     def __init__(self, name=None, **kwargs):
