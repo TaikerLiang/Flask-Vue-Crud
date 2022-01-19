@@ -5,7 +5,7 @@ from typing import List, Dict
 
 import scrapy
 from scrapy import Selector
-from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException
+from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException, UnexpectedAlertPresentException
 
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core.selenium import FirefoxContentGetter
@@ -172,7 +172,7 @@ class MblRoutingRule(BaseRoutingRule):
                 detail="Data was not found",
             )
             return
-        except NoAlertPresentException:
+        except (NoAlertPresentException, UnexpectedAlertPresentException):
             pass
 
         response_selector = Selector(text=driver.get_page_source())
@@ -577,19 +577,16 @@ class ContentGetter(FirefoxContentGetter):
         self._driver.switch_to.window(self._driver.window_handles[-1])
 
     def go_detail_page(self, idx: int):
-        print("=========== go_detail_page ===========")
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u').click()
         time.sleep(5)
         self._driver.switch_to.window(self._driver.window_handles[-1])
 
     def go_history_page(self, idx: int):
-        print("=========== go_history_page ===========")
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[11]/u').click()
         time.sleep(15)
         self._driver.switch_to.window(self._driver.window_handles[-1])
 
     def go_booking_history_page(self, idx: int):
-        print("=========== go_booking_history_page ===========")
         # '/html/body/div[2]/div[1]/div/form/table[5]/tbody/tr[2]/td[2]/a'
         self._driver.find_element_by_xpath(
             f"/html/body/div[2]/div[1]/div/form/table[5]/tbody/tr[{idx}]/td[2]/a"
@@ -600,10 +597,6 @@ class ContentGetter(FirefoxContentGetter):
     def switch_to_last(self):
         self._driver.switch_to.window(self._driver.window_handles[-1])
         time.sleep(1)
-
-    def check_alert(self):
-        alert = self._driver.switch_to.alert
-        text = alert.text
 
     @staticmethod
     def _transformat_to_dict(cookies: List[Dict]) -> Dict:

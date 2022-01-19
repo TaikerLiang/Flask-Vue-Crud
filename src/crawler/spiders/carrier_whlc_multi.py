@@ -8,7 +8,12 @@ from scrapy import Selector
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException, TimeoutException
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    NoAlertPresentException,
+    UnexpectedAlertPresentException,
+    TimeoutException,
+)
 
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core.selenium import FirefoxContentGetter
@@ -157,6 +162,16 @@ class MblRoutingRule(BaseRoutingRule):
             driver.multi_search(search_nos=mbl_nos, search_type=self._search_type)
         except ReadTimeoutError:
             raise LoadWebsiteTimeOutError(url=WHLC_BASE_URL)
+
+        try:
+            driver.check_alert()
+            for mbl_no, task_id in zip(mbl_nos, task_ids):
+                yield ExportErrorData(
+                    task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found"
+                )
+            return
+        except (NoAlertPresentException, UnexpectedAlertPresentException):
+            pass
 
         response_selector = Selector(text=driver.get_page_source())
         container_list = self.extract_container_info(response_selector)
@@ -433,7 +448,23 @@ class BookingRoutingRule(BaseRoutingRule):
         search_nos = response.meta["search_nos"]
         driver = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
         cookies = driver.get_cookies_dict_from_main_page()
-        driver.multi_search(search_nos=search_nos, search_type=self._search_type)
+        try:
+            driver.multi_search(search_nos=search_nos, search_type=self._search_type)
+        except ReadTimeoutError:
+            raise LoadWebsiteTimeOutError(url=WHLC_BASE_URL)
+
+        try:
+            driver.check_alert()
+            for booking_no, task_id in zip(search_nos, task_ids):
+                yield ExportErrorData(
+                    task_id=task_id,
+                    booking_no=booking_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+            return
+        except (NoAlertPresentException, UnexpectedAlertPresentException):
+            pass
 
         response_selector = Selector(text=driver.get_page_source())
         if self.is_search_no_invalid(response=response_selector):
@@ -715,16 +746,8 @@ class ContentGetter(FirefoxContentGetter):
             time.sleep(0.5)
         time.sleep(3)
         self._driver.find_element_by_xpath('//*[@id="Query"]').click()
-        time.sleep(1)
-
+        time.sleep(10)
         self._driver.switch_to.window(self._driver.window_handles[-1])
-        try:
-            alert = self._driver.switch_to.alert
-            text = alert.text
-            raise CarrierInvalidSearchNoError(search_type=search_type)
-        except NoAlertPresentException:
-            WebDriverWait(self._driver, 30).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "table.tbl-list")))
-            time.sleep(5)
 
     def go_detail_page(self, idx: int):
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u').click()
