@@ -43,6 +43,7 @@ from crawler.extractors.selector_finder import (
     BaseMatchRule,
 )
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
+from scrapy.selector.unified import Selector
 
 MAX_RETRY_COUNT = 5
 EGLV_INFO_URL = "https://ct.shipmentlink.com/servlet/TDB1_CargoTracking.do"
@@ -208,6 +209,10 @@ class ContentRule(BaseRoutingRule):
                 meta=meta,
             ),
         )
+
+    @staticmethod
+    def _is_mbl_no_invalid(response: Selector):
+        return not bool(response.css('table[cellpadding="2"]'))
 
 
 class MainInfoRoutingRule(BaseRoutingRule):
@@ -635,7 +640,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        task_id = response.meta["task_id"]
+        task_id = response.meta["task_ids"][0]
         release_status = self._extract_release_status(response=response)
 
         yield MblItem(
