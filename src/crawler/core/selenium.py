@@ -90,8 +90,8 @@ class ChromeContentGetter(SeleniumContentGetter):
 
 
 class FirefoxContentGetter(SeleniumContentGetter):
-    def __init__(self, service_log_path=None, is_headless: bool = False):
-        super().__init__(is_headless=is_headless)
+    def __init__(self, service_log_path=None, proxy_manager: Optional[ProxyManager] = None, is_headless: bool = False):
+        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
 
         useragent = self._random_choose_user_agent()
         profile = selenium.webdriver.FirefoxProfile()
@@ -107,6 +107,21 @@ class FirefoxContentGetter(SeleniumContentGetter):
         self._driver = selenium.webdriver.Firefox(
             firefox_profile=profile, options=options, service_log_path=service_log_path
         )
+
+        if proxy_manager:
+            proxy_manager.renew_proxy()
+            seleniumwire_options = {
+                "proxy": {
+                    "http": f"http://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_DOMAIN}",
+                    "https": f"https://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_DOMAIN}",
+                }
+            }
+            self._driver = seleniumwire.webdriver.Firefox(
+                firefox_profile=profile,
+                options=options,
+                seleniumwire_options=seleniumwire_options,
+                service_log_path=service_log_path,
+            )
 
     @staticmethod
     def _random_choose_user_agent():
