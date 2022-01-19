@@ -11,6 +11,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException, UnexpectedAlertPresentException
+import scrapy
+from scrapy import Selector
+from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException
 
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core.selenium import FirefoxContentGetter
@@ -160,7 +163,7 @@ class MblRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta["mbl_no"]
-        driver = ContentGetter(proxy_manager=self._proxy_manager, is_headless=False)
+        driver = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
         cookies = driver.get_cookies_dict_from_main_page()
         try:
             driver.search_mbl(mbl_no)
@@ -612,16 +615,19 @@ class ContentGetter(FirefoxContentGetter):
         WebDriverWait(self._driver, 30).until(
             ec.element_to_be_clickable((By.XPATH, f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u'))
         )
+        print("=========== go_detail_page ===========")
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u').click()
         time.sleep(5)
         self._driver.switch_to.window(self._driver.window_handles[-1])
 
     def go_history_page(self, idx: int):
+        print("=========== go_history_page ===========")
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[11]/u').click()
         time.sleep(15)
         self._driver.switch_to.window(self._driver.window_handles[-1])
 
     def go_booking_history_page(self, idx: int):
+        print("=========== go_booking_history_page ===========")
         # '/html/body/div[2]/div[1]/div/form/table[5]/tbody/tr[2]/td[2]/a'
         self._driver.find_element_by_xpath(
             f"/html/body/div[2]/div[1]/div/form/table[5]/tbody/tr[{idx}]/td[2]/a"
@@ -632,6 +638,10 @@ class ContentGetter(FirefoxContentGetter):
     def switch_to_last(self):
         self._driver.switch_to.window(self._driver.window_handles[-1])
         time.sleep(1)
+
+    def check_alert(self):
+        alert = self._driver.switch_to.alert
+        text = alert.text
 
     @staticmethod
     def _transformat_to_dict(cookies: List[Dict]) -> Dict:

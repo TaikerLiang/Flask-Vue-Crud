@@ -40,7 +40,6 @@ from crawler.core_carrier.exceptions import (
     CarrierInvalidSearchNoError,
     CARRIER_RESULT_STATUS_ERROR,
 )
-
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
@@ -48,23 +47,7 @@ from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatch
 WHLC_BASE_URL = "https://www.wanhai.com/views/Main.xhtml"
 COOKIES_RETRY_LIMIT = 3
 WHLC_BASE_URL = "https://www.wanhai.com/views/cargoTrack/CargoTrack.xhtml"
-MAX_RETRY_COUNT = 10
-POSSIBLE_ERROR_TUPLE = (
-    ReadTimeoutError,
-    NetworkError,
-    ConnectionError,
-    TimeoutError,
-    PageError,
-    FormatError,
-    IndexError,
-)
-
-
-@dataclasses.dataclass
-class Restart:
-    search_nos: list
-    task_ids: list
-    reason: str = ""
+COOKIES_RETRY_LIMIT = 3
 
 
 class CarrierWhlcSpider(BaseMultiCarrierSpider):
@@ -79,8 +62,6 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
 
         self._retry_count = 0
         bill_rules = [MblRoutingRule()]
-
-
         booking_rules = [BookingRoutingRule()]
 
         if self.search_type == SEARCH_TYPE_MBL:
@@ -102,7 +83,6 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
                 search_nos=self.search_nos, task_ids=self.task_ids, proxy_manager=self._proxy_manager
             )
             yield self._build_request_by(option=request_option)
-
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -168,7 +148,6 @@ class MblRoutingRule(BaseRoutingRule):
         self._container_patt = re.compile(r"^(?P<container_no>\w+)")
         self._j_idt_patt = re.compile(r"'(?P<j_idt>j_idt[^,]+)':'(?P=j_idt)'")
         self._search_type = SHIPMENT_TYPE_MBL
-
 
     @classmethod
     def build_request_option(cls, mbl_nos, task_ids, proxy_manager):
@@ -300,6 +279,7 @@ class MblRoutingRule(BaseRoutingRule):
                 driver.close()
                 driver.switch_to_last()
             driver.close()
+
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
@@ -817,6 +797,7 @@ class ContentGetter(FirefoxContentGetter):
         input_ele.send_keys(search_no)
         time.sleep(3)
         WebDriverWait(self._driver, 30).until(ec.element_to_be_clickable((By.XPATH, "//*[@id='quick_ctnr_query']")))
+
         self._driver.find_element_by_xpath('//*[@id="quick_ctnr_query"]').click()
         time.sleep(10)
         self._driver.switch_to.window(self._driver.window_handles[-1])
@@ -987,7 +968,6 @@ class ContainerListTableLocator(BaseTableLocator):
         data_tr_list = table.css("tr")[self.TR_DATA_BEGIN_INDEX :]
 
         title_text_list = title_tr.css("th::text").getall()
-
         for title_index, title_text in enumerate(title_text_list):
             data_index = title_index
 
@@ -1058,6 +1038,8 @@ class LocationLeftTableLocator(BaseTableLocator):
     def has_header(self, top=None, left=None) -> bool:
         return (top is None) and (left in self._left_header_set)
 
+    def has_header(self, top=None, left=None) -> bool:
+        return (top is None) and (left in self._left_header_set)
 
 class DateLeftTableLocator(BaseTableLocator):
     """
