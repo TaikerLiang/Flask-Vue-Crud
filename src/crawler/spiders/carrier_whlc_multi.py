@@ -1,19 +1,17 @@
 import re
-import asyncio
 import time
-
 from urllib3.exceptions import ReadTimeoutError
 from typing import List, Dict
-import logging
 
 import scrapy
 from scrapy import Selector
-from pyppeteer.errors import TimeoutError, ElementHandleError, PageError
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as ec
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException, TimeoutException
 
-from crawler.core.table import BaseTable, TableExtractor
-from crawler.core.defines import BaseContentGetter
-from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
-from crawler.core.pyppeteer import PyppeteerContentGetter
+from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.selenium import FirefoxContentGetter
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
@@ -30,21 +28,18 @@ from crawler.core_carrier.items import (
 )
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
+    LoadWebsiteTimeOutError,
     BaseCarrierError,
     SuspiciousOperationError,
     CarrierInvalidSearchNoError,
     CARRIER_RESULT_STATUS_ERROR,
-    DriverMaxRetryError,
 )
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
+from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
 WHLC_BASE_URL = "https://www.wanhai.com/views/cargoTrack/CargoTrack.xhtml"
-MAX_RETRY_COUNT = 5
-
-
-class Restart:
-    pass
+COOKIES_RETRY_LIMIT = 3
 
 
 class CarrierWhlcSpider(BaseMultiCarrierSpider):
@@ -53,35 +48,29 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
     def __init__(self, *args, **kwargs):
         super(CarrierWhlcSpider, self).__init__(*args, **kwargs)
 
-        self._driver = WhlcContentGetter(proxy_manager=HydraproxyProxyManager(session="whlc", logger=self.logger))
-        self._retry_count = 0
+        bill_rules = [MblRoutingRule()]
 
-        bill_rules = [MblRoutingRule(content_getter=self._driver)]
-
-        booking_rules = [BookingRoutingRule(content_getter=self._driver)]
+        booking_rules = [BookingRoutingRule()]
 
         if self.search_type == SHIPMENT_TYPE_MBL:
             self._rule_manager = RuleManager(rules=bill_rules)
         elif self.search_type == SHIPMENT_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
 
+        self._proxy_manager = HydraproxyProxyManager(session="whlc", logger=self.logger)
         self._request_queue = RequestOptionQueue()
 
     def start(self):
-        yield self._prepare_restart()
-
-    def _prepare_restart(self):
-        if self._retry_count > MAX_RETRY_COUNT:
-            raise DriverMaxRetryError()
-
-        self._retry_count += 1
-
         if self.search_type == SHIPMENT_TYPE_MBL:
-            request_option = MblRoutingRule.build_request_option(mbl_nos=self.search_nos, task_ids=self.task_ids)
+            request_option = MblRoutingRule.build_request_option(
+                mbl_nos=self.search_nos, task_ids=self.task_ids, proxy_manager=self._proxy_manager
+            )
+            yield self._build_request_by(option=request_option)
         else:
-            request_option = BookingRoutingRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids)
-
-        return self._build_request_by(option=request_option)
+            request_option = BookingRoutingRule.build_request_option(
+                search_nos=self.search_nos, task_ids=self.task_ids, proxy_manager=self._proxy_manager
+            )
+            yield self._build_request_by(option=request_option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -94,8 +83,6 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, BaseCarrierItem):
                 yield result
-            elif isinstance(result, Restart):
-                yield self._prepare_restart()
             elif isinstance(result, RequestOption):
                 self._request_queue.add_request(result)
             else:
@@ -146,14 +133,14 @@ class CarrierIpBlockError(BaseCarrierError):
 class MblRoutingRule(BaseRoutingRule):
     name = "MBL_RULE"
 
-    def __init__(self, content_getter: BaseContentGetter):
+    def __init__(self):
         self._container_patt = re.compile(r"^(?P<container_no>\w+)")
         self._j_idt_patt = re.compile(r"'(?P<j_idt>j_idt[^,]+)':'(?P=j_idt)'")
         self._search_type = SHIPMENT_TYPE_MBL
-        self.driver = content_getter
 
     @classmethod
-    def build_request_option(cls, mbl_nos, task_ids):
+    def build_request_option(cls, mbl_nos, task_ids, proxy_manager):
+        cls._proxy_manager = proxy_manager
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
@@ -164,15 +151,14 @@ class MblRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_ids = response.meta["task_ids"]
         mbl_nos = response.meta["mbl_nos"]
+        driver = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
+        cookies = driver.get_cookies_dict_from_main_page()
         try:
-            page_source = asyncio.get_event_loop().run_until_complete(
-                self.driver.multi_search(search_nos=mbl_nos, search_type=self._search_type)
-            )
-        except (ReadTimeoutError, TimeoutError, PageError, CarrierResponseFormatError, IndexError):
-            yield Restart()
-            return
+            driver.multi_search(search_nos=mbl_nos, search_type=self._search_type)
+        except ReadTimeoutError:
+            raise LoadWebsiteTimeOutError(url=WHLC_BASE_URL)
 
-        response_selector = Selector(text=page_source)
+        response_selector = Selector(text=driver.get_page_source())
         container_list = self.extract_container_info(response_selector)
         mbl_no_set = self.get_mbl_no_set_from(container_list=container_list)
 
@@ -199,87 +185,76 @@ class MblRoutingRule(BaseRoutingRule):
 
             # detail page
             try:
-                for item in self.handle_detail_page(task_id, idx):
-                    yield item
-            except (CarrierResponseFormatError, IndexError) as e:
-                logging.error("CarrierResponseFormatError or IndexError", str(e))
-                return
+                driver.go_detail_page(idx + 2)
+                detail_selector = Selector(text=driver.get_page_source())
+                date_information = self.extract_date_information(detail_selector)
+
+                yield VesselItem(
+                    task_id=task_id,
+                    vessel_key=f"{date_information['pol_vessel']} / {date_information['pol_voyage']}",
+                    vessel=date_information["pol_vessel"],
+                    voyage=date_information["pol_voyage"],
+                    pol=LocationItem(un_lo_code=date_information["pol_un_lo_code"]),
+                    etd=date_information["pol_etd"],
+                )
+
+                yield VesselItem(
+                    task_id=task_id,
+                    vessel_key=f"{date_information['pod_vessel']} / {date_information['pod_voyage']}",
+                    vessel=date_information["pod_vessel"],
+                    voyage=date_information["pod_voyage"],
+                    pod=LocationItem(un_lo_code=date_information["pod_un_lo_code"]),
+                    eta=date_information["pod_eta"],
+                )
+
+                driver.close()
+                driver.switch_to_last()
+            except NoSuchElementException:
+                pass
+            except TimeoutException:
+                yield ExportErrorData(
+                    task_id=task_id,
+                    mbl_no=mbl_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Load detail page timeout",
+                )
+                driver.close()
+                driver.switch_to_last()
+                continue
 
             # history page
             try:
-                for item in self.handle_history_page(task_id, container_no, idx):
-                    yield item
-            except (CarrierResponseFormatError, IndexError) as e:
-                logging.error("CarrierResponseFormatError or IndexError", str(e))
-                return
-            except TimeoutError:
+                driver.go_history_page(idx + 2)
+                history_selector = Selector(text=driver.get_page_source())
+                container_status_list = self.extract_container_status(history_selector)
+
+                for container_status in container_status_list:
+                    yield ContainerStatusItem(
+                        task_id=task_id,
+                        container_key=container_no,
+                        local_date_time=container_status["local_date_time"],
+                        description=container_status["description"],
+                        location=LocationItem(name=container_status["location_name"]),
+                    )
+            except NoSuchElementException:
+                pass
+            except TimeoutException:
                 yield ExportErrorData(
                     task_id=task_id,
                     mbl_no=mbl_no,
                     status=CARRIER_RESULT_STATUS_ERROR,
                     detail="Load status page timeout",
                 )
-                self.driver.close_page_and_switch_last()
-                return
+                driver.close()
+                driver.switch_to_last()
+                continue
 
-            time.sleep(3)
-            self.driver.close_page_and_switch_last()
-        asyncio.get_event_loop().run_until_complete(self.driver.close_page())
+            driver.close()
+            driver.switch_to_last()
+        driver.close()
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
-
-    def handle_detail_page(self, task_id, idx):
-        page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(idx + 2))
-
-        if not page_source:
-            return
-
-        detail_selector = Selector(text=page_source)
-        date_information = self.extract_date_information(detail_selector)
-
-        yield VesselItem(
-            task_id=task_id,
-            vessel_key=f"{date_information['pol_vessel']} / {date_information['pol_voyage']}",
-            vessel=date_information["pol_vessel"],
-            voyage=date_information["pol_voyage"],
-            pol=LocationItem(un_lo_code=date_information["pol_un_lo_code"]),
-            etd=date_information["pol_etd"],
-        )
-
-        yield VesselItem(
-            task_id=task_id,
-            vessel_key=f"{date_information['pod_vessel']} / {date_information['pod_voyage']}",
-            vessel=date_information["pod_vessel"],
-            voyage=date_information["pod_voyage"],
-            pod=LocationItem(un_lo_code=date_information["pod_un_lo_code"]),
-            eta=date_information["pod_eta"],
-        )
-
-        self.driver.close_page_and_switch_last()
-
-    def handle_history_page(self, task_id, container_no, idx):
-        try:
-            page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_history_page(idx + 2))
-        except TimeoutError:
-            self.driver.close_page_and_switch_last()
-            yield Restart()
-            return
-
-        if not page_source:
-            return
-
-        history_selector = Selector(text=page_source)
-        container_status_list = self.extract_container_status(history_selector)
-
-        for container_status in container_status_list:
-            yield ContainerStatusItem(
-                task_id=task_id,
-                container_key=container_no,
-                local_date_time=container_status["local_date_time"],
-                description=container_status["description"],
-                location=LocationItem(name=container_status["location_name"]),
-            )
 
     def extract_container_info(self, response: scrapy.Selector) -> List:
         table_selector = response.css("table.tbl-list")[0]
@@ -287,7 +262,7 @@ class MblRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
         return_list = []
-        for left in table_locator.iter_left_header():
+        for left in table_locator.iter_left_headers():
             container_no_text = table.extract_cell("Ctnr No.", left)
             container_no = self._parse_container_no_from(text=container_no_text)
 
@@ -381,12 +356,8 @@ class MblRoutingRule(BaseRoutingRule):
 
         pod_vessel_voyage = location_table.extract_cell(top=vessel_voyage_index, left="Discharging Port")
         pod_m = pattern.match(pod_vessel_voyage)
-        if pod_m:
-            pod_vessel = pod_m.group("vessel")
-            pod_voyage = pod_m.group("voyage")
-        else:
-            pod_vessel = None
-            pod_voyage = None
+        pod_vessel = pod_m.group("vessel")
+        pod_voyage = pod_m.group("voyage")
 
         return {
             "pol_un_lo_code": location_table.extract_cell(top=un_lo_code_index, left="Loading Port"),
@@ -411,7 +382,7 @@ class MblRoutingRule(BaseRoutingRule):
         table = TableExtractor(table_locator=table_locator)
 
         return_list = []
-        for left in table_locator.iter_left_header():
+        for left in table_locator.iter_left_headers():
             description = table.extract_cell(top="Status Name", left=left, extractor=DescriptionTdExtractor())
             local_date_time = table.extract_cell(top="Ctnr Date", left=left, extractor=LocalDateTimeTdExtractor())
             location_name = table.extract_cell(top="Ctnr Depot Name", left=left, extractor=LocationNameTdExtractor())
@@ -437,13 +408,13 @@ class MblRoutingRule(BaseRoutingRule):
 class BookingRoutingRule(BaseRoutingRule):
     name = "BOOKING"
 
-    def __init__(self, content_getter: BaseContentGetter):
+    def __init__(self):
         self._search_type = SHIPMENT_TYPE_BOOKING
         self._container_patt = re.compile(r"^(?P<container_no>\w+)")
-        self.driver = content_getter
 
     @classmethod
-    def build_request_option(cls, search_nos, task_ids):
+    def build_request_option(cls, search_nos, task_ids, proxy_manager):
+        cls._proxy_manager = proxy_manager
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
@@ -460,15 +431,11 @@ class BookingRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
-        try:
-            page_source = asyncio.get_event_loop().run_until_complete(
-                self.driver.multi_search(search_nos=search_nos, search_type=self._search_type)
-            )
-        except (ReadTimeoutError, TimeoutError, PageError, CarrierResponseFormatError, IndexError):
-            yield Restart()
-            return
+        driver = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
+        cookies = driver.get_cookies_dict_from_main_page()
+        driver.multi_search(search_nos=search_nos, search_type=self._search_type)
 
-        response_selector = Selector(text=page_source)
+        response_selector = Selector(text=driver.get_page_source())
         if self.is_search_no_invalid(response=response_selector):
             raise CarrierInvalidSearchNoError(search_type=self._search_type)
         booking_list = self.extract_booking_list(response_selector)
@@ -488,87 +455,80 @@ class BookingRoutingRule(BaseRoutingRule):
             index = search_nos.index(search_no)
             task_id = task_ids[index]
             try:
-                page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(b_idx + 2))
-            except TimeoutError:
+                driver.go_detail_page(b_idx + 2)  # only one booking_no to click
+            except TimeoutException:
                 yield ExportErrorData(
                     task_id=task_id,
                     booking_no=search_no,
                     status=CARRIER_RESULT_STATUS_ERROR,
                     detail="Load detail page timeout",
                 )
-                self.driver.close_page_and_switch_last()
+                driver.close()
+                driver.switch_to_last()
                 continue
-            for item in self.handle_booking_detail_page(response=page_source, task_id=task_id, search_no=search_no):
-                yield item
+            basic_info = self.extract_basic_info(Selector(text=driver.get_page_source()))
+            vessel_info = self.extract_vessel_info(Selector(text=driver.get_page_source()))
 
-            for item in self.handle_booking_history_page(response=page_source, task_id=task_id, search_no=search_no):
-                yield item
-
-            self.driver.close_page_and_switch_last()
-
-    def handle_booking_detail_page(self, response, task_id, search_no):
-        basic_info = self.extract_basic_info(Selector(text=response))
-        vessel_info = self.extract_vessel_info(Selector(text=response))
-
-        yield MblItem(
-            task_id=task_id,
-            booking_no=search_no,
-        )
-
-        yield VesselItem(
-            task_id=task_id,
-            vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
-            vessel=basic_info["vessel"],
-            voyage=basic_info["voyage"],
-            pol=LocationItem(name=vessel_info["pol"]),
-            etd=vessel_info["etd"],
-        )
-
-        yield VesselItem(
-            task_id=task_id,
-            vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
-            vessel=basic_info["vessel"],
-            voyage=basic_info["voyage"],
-            pod=LocationItem(name=vessel_info["pod"]),
-            eta=vessel_info["eta"],
-        )
-
-    def handle_booking_history_page(self, response, task_id, search_no):
-        container_nos = self.extract_container_no_and_status_links(Selector(text=response))
-
-        for idx in range(len(container_nos)):
-            container_no = container_nos[idx]
-            # history page
-            try:
-                page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_booking_history_page(idx + 2))
-            except TimeoutError:
-                yield ExportErrorData(
-                    task_id=task_id,
-                    booking_no=search_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail="Load status page timeout",
-                )
-                self.driver.close_page_and_switch_last()
-                continue
-
-            if not page_source:
-                continue
-
-            history_selector = Selector(text=page_source)
-
-            event_list = self.extract_container_status(response=history_selector)
-            container_status_items = self.make_container_status_items(task_id, container_no, event_list)
-
-            yield ContainerItem(
+            yield MblItem(
                 task_id=task_id,
-                container_key=container_no,
-                container_no=container_no,
+                booking_no=search_no,
             )
 
-            for item in container_status_items:
-                yield item
+            yield VesselItem(
+                task_id=task_id,
+                vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
+                vessel=basic_info["vessel"],
+                voyage=basic_info["voyage"],
+                pol=LocationItem(name=vessel_info["pol"]),
+                etd=vessel_info["etd"],
+            )
 
-            self.driver.close_page_and_switch_last()
+            yield VesselItem(
+                task_id=task_id,
+                vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
+                vessel=basic_info["vessel"],
+                voyage=basic_info["voyage"],
+                pod=LocationItem(name=vessel_info["pod"]),
+                eta=vessel_info["eta"],
+            )
+
+            container_nos = self.extract_container_no_and_status_links(Selector(text=driver.get_page_source()))
+
+            for idx in range(len(container_nos)):
+                container_no = container_nos[idx]
+                # history page
+                try:
+                    driver.go_booking_history_page(idx + 2)
+                except TimeoutException:
+                    yield ExportErrorData(
+                        task_id=task_id,
+                        booking_no=search_no,
+                        status=CARRIER_RESULT_STATUS_ERROR,
+                        detail="Load status page timeout",
+                    )
+                    driver.close()
+                    driver.switch_to_last()
+                    continue
+                history_selector = Selector(text=driver.get_page_source())
+
+                event_list = self.extract_container_status(response=history_selector)
+                container_status_items = self.make_container_status_items(task_id, container_no, event_list)
+
+                yield ContainerItem(
+                    task_id=task_id,
+                    container_key=container_no,
+                    container_no=container_no,
+                )
+
+                for item in container_status_items:
+                    yield item
+
+                driver.close()
+                driver.switch_to_last()
+
+            driver.close()
+            driver.switch_to_last()
+        driver.quit()
 
     @staticmethod
     def is_search_no_invalid(response):
@@ -582,7 +542,7 @@ class BookingRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
         return_list = []
-        for left in table_locator.iter_left_header():
+        for left in table_locator.iter_left_headers():
             booking_no_text = table.extract_cell("Book No.", left)
             booking_no = self._parse_booking_no_from(text=booking_no_text)
 
@@ -635,8 +595,8 @@ class BookingRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table)
 
         return {
-            "vessel": table_locator.get_cell(left="Vessel Name"),
-            "voyage": table_locator.get_cell(left="Voyage"),
+            "vessel": table_locator.get_cell("Vessel Name"),
+            "voyage": table_locator.get_cell("Voyage"),
         }
 
     @staticmethod
@@ -648,12 +608,12 @@ class BookingRoutingRule(BaseRoutingRule):
         table_locator.parse(table=table)
 
         return {
-            "por": table_locator.get_cell(left="Place of Receipt").replace("\xa0", " "),
-            "pol": table_locator.get_cell(left="Port of Loading").replace("\xa0", " "),
-            "pod": table_locator.get_cell(left="Port of Discharge").replace("\xa0", " "),
-            "place_of_deliv": table_locator.get_cell(left="Place of Delivery").replace("\xa0", " "),
-            "eta": table_locator.get_cell(left="Estimated Departure Date"),
-            "etd": table_locator.get_cell(left="Estimated Arrival Date"),
+            "por": table_locator.get_cell("Place of Receipt").replace("\xa0", " "),
+            "pol": table_locator.get_cell("Port of Loading").replace("\xa0", " "),
+            "pod": table_locator.get_cell("Port of Discharge").replace("\xa0", " "),
+            "place_of_deliv": table_locator.get_cell("Place of Delivery").replace("\xa0", " "),
+            "eta": table_locator.get_cell("Estimated Departure Date"),
+            "etd": table_locator.get_cell("Estimated Arrival Date"),
         }
 
     @staticmethod
@@ -693,7 +653,7 @@ class BookingRoutingRule(BaseRoutingRule):
         table = TableExtractor(table_locator=table_locator)
 
         return_list = []
-        for left in table_locator.iter_left_header():
+        for left in table_locator.iter_left_headers():
             description = table.extract_cell(top="Status Name", left=left, extractor=DescriptionTdExtractor())
             local_date_time = table.extract_cell(top="Ctnr Date", left=left, extractor=LocalDateTimeTdExtractor())
             location_name = table.extract_cell(top="Ctnr Depot Name", left=left, extractor=LocationNameTdExtractor())
@@ -709,170 +669,239 @@ class BookingRoutingRule(BaseRoutingRule):
         return return_list
 
 
-class WhlcContentGetter(PyppeteerContentGetter):
-    def __init__(self, proxy_manager: ProxyManager = None):
-        super().__init__(proxy_manager, is_headless=True)
-        pyppeteer_logger = logging.getLogger("pyppeteer")
-        pyppeteer_logger.setLevel(logging.WARNING)
-        self._type_select_num_map = {
-            SHIPMENT_TYPE_MBL: "2",
-            SHIPMENT_TYPE_BOOKING: "4",
+class ContentGetter(FirefoxContentGetter):
+    def __init__(self, proxy_manager, is_headless):
+        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
+
+        self._type_select_text_map = {
+            SHIPMENT_TYPE_MBL: "BL no.",
+            SHIPMENT_TYPE_BOOKING: "Book No.",
         }
 
-    async def multi_search(self, search_nos, search_type):
-        await self.page.goto(WHLC_BASE_URL, options={"timeout": 60000})
-        await asyncio.sleep(3)
-        select_num = self._type_select_num_map[search_type]
-        await self.page.waitForSelector("#cargoType")
-        await self.page.select("#cargoType", select_num)
-        await asyncio.sleep(1)
-        for i, search_no in enumerate(search_nos, start=1):
-            await self.page.type(f"#q_ref_no{i}", search_no)
-            await asyncio.sleep(0.5)
-        await asyncio.sleep(3)
-        await self.page.click("#Query")
-        await asyncio.sleep(10)
-        await self.switch_to_last()
-        await self.page.waitForSelector("table.tbl-list")
-        await asyncio.sleep(5)
-        return await self.page.content()
+    def get_cookies_dict_from_main_page(self):
+        self._driver.get(f"{WHLC_BASE_URL}")
+        time.sleep(5)
+        # self._driver.get_screenshot_as_file("output-1.png")
+        cookies = self._driver.get_cookies()
 
-    async def go_detail_page(self, idx: int) -> str:
+        return self._transformat_to_dict(cookies=cookies)
+
+    def get_view_state(self):
+        view_state_elem = self._driver.find_element_by_css_selector('input[name="javax.faces.ViewState"]')
+        view_state = view_state_elem.get_attribute("value")
+        return view_state
+
+    def search(self, search_no, search_type):
+        select_text = self._type_select_text_map[search_type]
+
+        self._driver.find_element_by_xpath(f"//*[@id='cargoType']/option[text()='{select_text}']").click()
+        time.sleep(1)
+        input_ele = self._driver.find_element_by_xpath('//*[@id="q_ref_no1"]')
+        input_ele.send_keys(search_no)
+        time.sleep(3)
+        self._driver.find_element_by_xpath('//*[@id="quick_ctnr_query"]').click()
+        time.sleep(10)
+        self._driver.switch_to.window(self._driver.window_handles[-1])
+
+    def multi_search(self, search_nos, search_type):
+        select_text = self._type_select_text_map[search_type]
+
+        self._driver.find_element_by_xpath(f"//*[@id='cargoType']/option[text()='{select_text}']").click()
+        time.sleep(1)
+
+        for i, search_no in enumerate(search_nos):
+            input_ele = self._driver.find_element_by_xpath(f'//*[@id="q_ref_no{i+1}"]')
+            input_ele.send_keys(search_no)
+            time.sleep(0.5)
+        time.sleep(3)
+        self._driver.find_element_by_xpath('//*[@id="Query"]').click()
+        time.sleep(1)
+
+        self._driver.switch_to.window(self._driver.window_handles[-1])
         try:
-            await self.page.waitForSelector(
-                f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u",
-                options={"timeout": 60000},
-            )
-            await self.page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u")
-            await asyncio.sleep(10)
-            await self.switch_to_last()
-            await self.page.waitForSelector("table.tbl-list")
-            await asyncio.sleep(3)
-            await self.scroll_down()
-            return await self.page.content()
-        except (PageError, TimeoutError):
-            return ""
+            alert = self._driver.switch_to.alert
+            text = alert.text
+            raise CarrierInvalidSearchNoError(search_type=search_type)
+        except NoAlertPresentException:
+            WebDriverWait(self._driver, 30).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "table.tbl-list")))
+            time.sleep(5)
 
-    async def go_history_page(self, idx: int) -> str:
-        try:
-            await self.page.waitForSelector(
-                f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u",
-                options={"timeout": 60000},
-            )
-            await self.page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u"),
-            await asyncio.sleep(10)
-            await self.switch_to_last()
-            await self.page.waitForSelector("table.tbl-list")
-            await asyncio.sleep(3)
-            await self.scroll_down()
-            return await self.page.content()
-        except PageError:
-            return ""
+    def go_detail_page(self, idx: int):
+        self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u').click()
+        time.sleep(2)
+        self._driver.switch_to.window(self._driver.window_handles[-1])
+        WebDriverWait(self._driver, 30).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "table.tbl-list")))
+        time.sleep(3)
 
-    async def go_booking_history_page(self, idx: int) -> str:
-        try:
-            await self.page.waitForSelector(
-                f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a",
-                options={"timeout": 60000},
-            )
-            await self.page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"),
-            await asyncio.sleep(10),
-            await self.switch_to_last()
-            await self.page.waitForSelector("table.tbl-list")
-            await asyncio.sleep(3)
-            await self.scroll_down()
-            return await self.page.content()
-        except PageError:
-            return ""
+    def go_history_page(self, idx: int):
+        self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[11]/u').click()
+        time.sleep(2)
+        self._driver.switch_to.window(self._driver.window_handles[-1])
+        WebDriverWait(self._driver, 30).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "table.tbl-list")))
+        time.sleep(3)
 
-    async def switch_to_last(self):
-        pages = await self.browser.pages()
-        self.page = pages[-1]
-        await asyncio.sleep(3)
+    def go_booking_history_page(self, idx: int):
+        # '/html/body/div[2]/div[1]/div/form/table[5]/tbody/tr[2]/td[2]/a'
+        self._driver.find_element_by_xpath(
+            f"/html/body/div[2]/div[1]/div/form/table[5]/tbody/tr[{idx}]/td[2]/a"
+        ).click()
+        time.sleep(2)
+        self._driver.switch_to.window(self._driver.window_handles[-1])
+        WebDriverWait(self._driver, 30).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "table.tbl-list")))
+        time.sleep(3)
 
-    async def close_page(self):
-        pages = await self.browser.pages()
-        if len(pages) > 2:
-            await self.page.close()
-            await asyncio.sleep(1)
+    def switch_to_last(self):
+        self._driver.switch_to.window(self._driver.window_handles[-1])
+        time.sleep(1)
 
-    def close_page_and_switch_last(self):
-        asyncio.get_event_loop().run_until_complete(self.close_page())
-        asyncio.get_event_loop().run_until_complete(self.switch_to_last())
+    @staticmethod
+    def _transformat_to_dict(cookies: List[Dict]) -> Dict:
+        return_cookies = {}
+
+        for d in cookies:
+            return_cookies[d["name"]] = d["value"]
+
+        return return_cookies
 
 
-class BookingBasicTableLocator(BaseTable):
+class BookingBasicTableLocator(BaseTableLocator):
+    def __init__(self):
+        self._td_map = {}
+
     def parse(self, table: Selector, numbers: int = 1):
-        title_list = [th.css("strong::text").get().strip() for th in table.css("tbody th")]
-        data_td_list = table.css("tbody tr td")
+        tr_list = table.css("tbody tr")
 
-        for title, data_td in zip(title_list, data_td_list):
-            self.add_left_header_set(title)
+        for tr in tr_list:
+            # the value will be emtpy
+            titles = tr.css("th")
+            values = tr.css("td")
 
-            data = (data_td.css("::text").get() or "").strip()
-            self.add_td_map(data, top=0, left=title)
+            for i in range(len(titles)):
+                title = titles[i].css("strong::text").get().strip()
+                value = (values[i].css("::text").get() or "").strip()
+                self._td_map[title] = value
+
+    def get_cell(self, top, left=None) -> Selector:
+        return self._td_map[top]
+
+    def has_header(self, top=None, left=None) -> bool:
+        pass
 
 
-class BookingVesselTableLocator(BaseTable):
+class BookingVesselTableLocator(BaseTableLocator):
+    def __init__(self):
+        self._td_map = {}
+
     def parse(self, table: Selector, numbers: int = 1):
-        title_list = [th.css("strong::text").get().strip() for th in table.css("tbody th")]
-        data_td_list = table.css("tbody tr td")
+        tr_list = table.css("tbody tr")
 
-        for title, data_td in zip(title_list, data_td_list):
-            self.add_left_header_set(title)
+        for tr in tr_list:
+            # the value will be emtpy
+            titles = tr.css("th")
+            values = tr.css("td")
 
-            data = (data_td.css("::text").get() or "").strip()
-            self.add_td_map(data, top=0, left=title)
+            for i in range(len(titles)):
+                title = titles[i].css("strong::text").get().strip()
+                value = (values[i].css("::text").get() or "").strip()
+                self._td_map[title] = value
+
+    def get_cell(self, top, left=None) -> Selector:
+        return self._td_map[top]
+
+    def has_header(self, top=None, left=None) -> bool:
+        pass
 
 
-class BookingContainerListTableLocator(BaseTable):
+class BookingContainerListTableLocator(BaseTableLocator):
 
     TR_TITLE_INDEX = 0
     TR_DATA_BEGIN_INDEX = 1
+
+    def __init__(self):
+        self._td_map = []
+        self._data_len = 0
 
     def parse(self, table: Selector):
         title_tr = table.css("tbody tr")[self.TR_TITLE_INDEX]
         data_tr_list = table.css("tbody tr")[self.TR_DATA_BEGIN_INDEX :]
 
-        title_text_list = [title.strip() for title in title_tr.css("th strong::text").getall()]
+        title_text_list = title_tr.css("th strong::text").getall()
         title_text_list[0] = "ID"
 
-        for index, data_tr in enumerate(data_tr_list):
-            data_td_list = data_tr.css("td")
-            if len(data_td_list) == 1:
+        for data_tr in data_tr_list:
+            if len(data_tr.css("td")) == 1:
                 break
+            row = {}
+            for title_index, title_text in enumerate(title_text_list):
+                title_text = title_text.strip()
+                container_no = data_tr.css("td a::text").get().strip()
+                tds = data_tr.css("td")
+                row[title_text] = (tds[title_index].css("::text").get() or "").strip()
+                if title_text == "Ctnr No.":
+                    row[title_text] = container_no
 
-            self.add_left_header_set(index)
-
-            for title, data_td in zip(title_text_list, data_td_list):
-                data = (data_td.css("::text").get() or "").strip()
-                if title == "Ctnr No.":
-                    data = data_td.css("a::text").get().strip()
-                self.add_td_map(data, top=title, left=index)
+            self._td_map.append(row)
 
     def get_container_no_list(self) -> List:
-        return [self.get_cell(top="Ctnr No.", left=i) for i in self.iter_left_header()]
+        return [row["Ctnr No."] for row in self._td_map]
+
+    def get_cell(self, top, left) -> scrapy.Selector:
+        try:
+            return self._td_map[top][left]
+        except KeyError as err:
+            raise HeaderMismatchError(repr(err))
+
+    def has_header(self, top=None, left=None) -> bool:
+        return (top in self._td_map) and (left is None)
+
+    def iter_left_headers(self):
+        for index in range(self._data_len):
+            yield index
 
 
-class ContainerListTableLocator(BaseTable):
+class ContainerListTableLocator(BaseTableLocator):
     TR_TITLE_INDEX = 0
     TR_DATA_BEGIN_INDEX = 1
 
+    def __init__(self):
+        self._td_map = {}
+        self._data_len = 0
+
     def parse(self, table: Selector):
         title_tr = table.css("tr")[self.TR_TITLE_INDEX]
-        title_text_list = [title.strip() for title in title_tr.css("th::text").getall()]
         data_tr_list = table.css("tr")[self.TR_DATA_BEGIN_INDEX :]
 
-        for index, data_tr in enumerate(data_tr_list):
-            self.add_left_header_set(index)
+        title_text_list = title_tr.css("th::text").getall()
 
-            data_td_list = data_tr.css("td")
-            for title, data_td in zip(title_text_list, data_td_list):
-                self._td_map.setdefault(title, [])
-                self._td_map[title].append(data_td)
+        for title_index, title_text in enumerate(title_text_list):
+            data_index = title_index
+
+            title_text = title_text.strip()
+            self._td_map[title_text] = []
+
+            for data_tr in data_tr_list:
+                data_td = data_tr.css("td")[data_index]
+
+                self._td_map[title_text].append(data_td)
+
+        first_title_text = title_text_list[0]
+        self._data_len = len(self._td_map[first_title_text])
+
+    def get_cell(self, top, left) -> scrapy.Selector:
+        try:
+            return self._td_map[top][left]
+        except KeyError as err:
+            raise HeaderMismatchError(repr(err))
+
+    def has_header(self, top=None, left=None) -> bool:
+        return (top in self._td_map) and (left is None)
+
+    def iter_left_headers(self):
+        for index in range(self._data_len):
+            yield index
 
 
-class LocationLeftTableLocator(BaseTable):
+class LocationLeftTableLocator(BaseTableLocator):
     """
     +------------------------------------------------+ <tbody>
     | Title 1 | Data 1  | Data 2 | Title    | Data   | <tr>
@@ -887,20 +916,35 @@ class LocationLeftTableLocator(BaseTable):
     TD_DATA_INDEX_BEGIN = 0
     TD_DATA_INDEX_END = 2
 
+    def __init__(self):
+        self._td_map = {}
+        self._left_header_set = set()
+
     def parse(self, table: Selector):
+        top_index_set = set()
         tr_list = table.css("tr")[self.TR_TITLE_INDEX_BEGIN :]
 
         for tr in tr_list:
-            title = tr.css("th::text")[self.TH_TITLE_INDEX].get().strip()
-            self.add_left_header_set(title)
+            left_header = tr.css("th::text")[self.TH_TITLE_INDEX].get().strip()
+            self._left_header_set.add(left_header)
 
             data_td_list = tr.css("td")[self.TD_DATA_INDEX_BEGIN : self.TD_DATA_INDEX_END]
             for top_index, td in enumerate(data_td_list):
+                top_index_set.add(top_index)
                 td_dict = self._td_map.setdefault(top_index, {})
-                td_dict[title] = td
+                td_dict[left_header] = td
+
+    def get_cell(self, top, left) -> Selector:
+        try:
+            return self._td_map[top][left]
+        except KeyError as err:
+            raise HeaderMismatchError(repr(err))
+
+    def has_header(self, top=None, left=None) -> bool:
+        return (top is None) and (left in self._left_header_set)
 
 
-class DateLeftTableLocator(BaseTable):
+class DateLeftTableLocator(BaseTableLocator):
     """
     +------------------------------------------------+ <tbody>
     | Title   | Data    | Data   | Title 1  | Data   | <tr>
@@ -915,20 +959,35 @@ class DateLeftTableLocator(BaseTable):
     TD_DATA_INDEX_BEGIN = 2
     TD_DATA_INDEX_END = 3
 
+    def __init__(self):
+        self._td_map = {}
+        self._left_header_set = set()
+
     def parse(self, table: Selector):
+        top_index_set = set()
         tr_list = table.css("tr")[self.TR_TITLE_INDEX_BEGIN :]
 
         for tr in tr_list:
-            title = tr.css("th::text")[self.TH_TITLE_INDEX].get().strip()
-            self.add_left_header_set(title)
+            left_header = tr.css("th::text")[self.TH_TITLE_INDEX].get().strip()
+            self._left_header_set.add(left_header)
 
             data_td_list = tr.css("td")[self.TD_DATA_INDEX_BEGIN : self.TD_DATA_INDEX_END]
             for top_index, td in enumerate(data_td_list):
+                top_index_set.add(top_index)
                 td_dict = self._td_map.setdefault(top_index, {})
-                td_dict[title] = td
+                td_dict[left_header] = td
+
+    def get_cell(self, top, left) -> Selector:
+        try:
+            return self._td_map[top][left]
+        except KeyError as err:
+            raise HeaderMismatchError(repr(err))
+
+    def has_header(self, top=None, left=None) -> bool:
+        return (top is None) and (left in self._left_header_set)
 
 
-class ContainerStatusTableLocator(BaseTable):
+class ContainerStatusTableLocator(BaseTableLocator):
     """
     +-----------------------------------+ <tbody>
     | Title 1 | Title 2 | ... | Title N | <tr>
@@ -946,19 +1005,41 @@ class ContainerStatusTableLocator(BaseTable):
     TR_TITLE_INDEX = 0
     TR_DATA_BEGIN_INDEX = 1
 
+    def __init__(self):
+        self._td_map = {}
+        self._data_len = 0
+
     def parse(self, table: Selector):
         title_tr = table.css("tr")[self.TR_TITLE_INDEX]
         data_tr_list = table.css("tr")[self.TR_DATA_BEGIN_INDEX :]
 
-        title_text_list = [title.strip() for title in title_tr.css("th::text").getall()]
+        title_text_list = title_tr.css("th::text").getall()
 
-        for index, data_tr in enumerate(data_tr_list):
-            self.add_left_header_set(index)
+        for title_index, title_text in enumerate(title_text_list):
+            data_index = title_index
 
-            data_td_list = data_tr.css("td")
-            for title, data_td in zip(title_text_list, data_td_list):
-                self._td_map.setdefault(title, [])
-                self._td_map[title].append(data_td)
+            title_text = title_text.strip()
+            self._td_map[title_text] = []
+
+            for data_tr in data_tr_list:
+                data_td = data_tr.css("td")[data_index]
+
+                self._td_map[title_text].append(data_td)
+
+        self._data_len = len(data_tr_list)
+
+    def get_cell(self, top, left) -> Selector:
+        try:
+            return self._td_map[top][left]
+        except KeyError as err:
+            raise HeaderMismatchError(repr(err))
+
+    def has_header(self, top=None, left=None) -> bool:
+        return (top in self._td_map) and (left is None)
+
+    def iter_left_headers(self):
+        for index in range(self._data_len):
+            yield index
 
 
 class DescriptionTdExtractor(BaseTableCellExtractor):
