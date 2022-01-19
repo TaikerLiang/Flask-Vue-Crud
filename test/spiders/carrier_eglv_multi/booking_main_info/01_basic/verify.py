@@ -1,44 +1,34 @@
-from crawler.core_carrier.items import MblItem, LocationItem, ContainerItem
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.spiders.carrier_eglv import ContainerStatusRoutingRule, FilingStatusRoutingRule, ReleaseStatusRoutingRule
-
-
 class Verifier:
-    def verify(self, results):
-        assert results[0] == MblItem(
-            booking_no='456110381786',
-            vessel='EVER FAME',
-            voyage='1203-003W',
-            por=LocationItem(name='OAKLAND, CA (US)'),
-            pol=LocationItem(name='OAKLAND, CA (US)'),
-            pod=LocationItem(name='TAIPEI (TW)'),
-            place_of_deliv=LocationItem(name='KEELUNG (TW)'),
-            etd='SEP-10-2021',
-            eta='SEP-22-2021',
-            cargo_cutoff_date='SEP-01-2021',
-            est_onboard_date='SEP-10-2021',
-            us_filing_date=None,
-            us_filing_status=None,
-            task_id='1',
-        )
-
-        assert results[1] == ContainerItem(
-            container_key='EITU1980829',
-            container_no='EITU1980829',
-            full_pickup_date='AUG-24-2021 13:55',
-            task_id='1',
-        )
-
-        assert isinstance(results[2], RequestOption)
-        assert results[2].rule_name == ContainerStatusRoutingRule.name
-        assert results[2].meta == {
-            'container_no': 'EITU1980829',
-            'task_id': '1',
+    def verify_booking_no_and_vessel_voyage(self, results):
+        assert results == {
+            "booking_no": "456110381786",
+            "vessel": "EVER FAME",
+            "voyage": "1203-003W",
         }
-        assert results[2].form_data == {
-            'bl_no': '456110381786',
-            'cntr_no': 'EITU1980829',
-            'onboard_date': '20210910',
-            'pol': 'OAKLAND, CA (US)',
-            'TYPE': 'CntrMove',
+
+    def verify_basic(self, results):
+        assert results == {
+            "por_name": "OAKLAND, CA (US)",
+            "pol_name": "OAKLAND, CA (US)",
+            "pod_name": "TAIPEI (TW)",
+            "place_of_deliv_name": "KEELUNG (TW)",
+            "cargo_cutoff_date": "SEP-01-2021",
+            "etd": "SEP-10-2021",
+            "eta": "SEP-22-2021",
+            "onboard_date": "SEP-10-2021",
         }
+
+    def verify_filing_info(self, results):
+        assert results == {
+            "filing_status": None,
+            "filing_date": None,
+        }
+
+    def verify_container_infos(self, results):
+        assert results == [
+            {
+                "container_no": "EITU1980829",
+                "full_pickup_date": None,
+                "empty_pickup_date": "AUG-27-2021 10:46",
+            }
+        ]
