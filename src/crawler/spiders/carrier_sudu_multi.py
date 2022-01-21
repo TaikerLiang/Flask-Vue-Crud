@@ -1,6 +1,5 @@
 import dataclasses
 import re
-import logging
 import asyncio
 import time
 from typing import Tuple, List, Optional
@@ -152,7 +151,7 @@ class MblRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://google.com",
+            url=f"https://api.myip.com/",
             meta={"mbl_nos": mbl_nos, "task_ids": task_ids},
         )
 
@@ -196,6 +195,9 @@ class MblRoutingRule(BaseRoutingRule):
                             yield result
                         else:
                             raise RuntimeError()
+                    if not voyage_contents:
+                        asyncio.get_event_loop().run_until_complete(self.driver.find_and_scroll())  # search again
+                        continue
                     asyncio.get_event_loop().run_until_complete(self.driver.go_back_from_container_detail_page())
             else:
                 voyage_contents = asyncio.get_event_loop().run_until_complete(self.driver.get_voyage_contents())
@@ -508,15 +510,18 @@ class ContentGetter(PyppeteerContentGetter):
         super().__init__(proxy_manager, is_headless=is_headless)
 
     async def search(self, search_no: str):
-        await self.page.goto(BASE_URL)
-        await asyncio.sleep(40)
+        await self.page.goto(BASE_URL, options={"waitUntil": "networkidle0", "timeout": 30000})
+        await asyncio.sleep(5)
         await self.page.type("textarea[id$=inputReferences]", search_no)
         await asyncio.sleep(2)
+        await self.find_and_scroll()
+
+        return await self.page.content()
+
+    async def find_and_scroll(self):
         await self.page.click("button[id$=search-submit]")
         await asyncio.sleep(5)
         await self.scroll_down()
-
-        return await self.page.content()
 
     async def get_voyage_contents(self):
         # the voyage pages in different container status are the same
