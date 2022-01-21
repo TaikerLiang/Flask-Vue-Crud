@@ -304,7 +304,6 @@ class MblRoutingRule(BaseRoutingRule):
             for voyage_spec in [departure_voyage_spec, arrival_voyage_spec]:
                 if not voyage_spec:
                     continue
-
                 voyage_routing = self._extract_voyage_routing(
                     voyage_routing_responses=voyage_content_selectors,
                     location=voyage_spec.location.strip(),
@@ -329,34 +328,31 @@ class MblRoutingRule(BaseRoutingRule):
         # voyage part
         departure_voyages = []
         arrival_voyages = []
+
         for container_status in container_statuses:
             vessel = container_status["vessel"]
             location = container_status["location"]
+            location = location.replace("Place ", "").strip()
 
-            for container_status in container_statuses:
-                vessel = container_status["vessel"]
-                location = container_status["location"]
-                location = location.replace("Place ", "").strip()
+            if vessel and location == por:
+                voyage_spec = VoyageSpec(
+                    direction="Departure",
+                    container_key=container_key,
+                    voyage_key=container_status["voyage_css_id"],
+                    location=por,
+                    container_no=container_no,
+                )
+                departure_voyages.append(voyage_spec)
 
-                if vessel and location == por:
-                    voyage_spec = VoyageSpec(
-                        direction="Departure",
-                        container_key=container_key,
-                        voyage_key=container_status["voyage_css_id"],
-                        location=por,
-                        container_no=container_no,
-                    )
-                    departure_voyages.append(voyage_spec)
-
-                elif vessel and location == final_dest:
-                    voyage_spec = VoyageSpec(
-                        direction="Arrival",
-                        container_key=container_key,
-                        voyage_key=container_status["voyage_css_id"],
-                        location=final_dest,
-                        container_no=container_no,
-                    )
-                    arrival_voyages.append(voyage_spec)
+            elif vessel and location == final_dest:
+                voyage_spec = VoyageSpec(
+                    direction="Arrival",
+                    container_key=container_key,
+                    voyage_key=container_status["voyage_css_id"],
+                    location=final_dest,
+                    container_no=container_no,
+                )
+                arrival_voyages.append(voyage_spec)
 
         first_departure_voyage = None
         if departure_voyages:
@@ -547,9 +543,17 @@ class ContentGetter(PyppeteerContentGetter):
         return contents
 
     async def _get_distinct_voyage_links(self):
-        links = await self.page.querySelectorAll("a[id*='voyageDetailsLink']")
-        voyage_num_link_map = {await self._get_voyage_link_text(link): link for link in links}
-        return list(voyage_num_link_map.values())
+        vessel_links = await self.page.querySelectorAll("a[onclick*='vesselInfo']")
+        voyage_links = await self.page.querySelectorAll("a[id*='voyageDetailsLink']")
+
+        vessel_voyage_link_map = {}  # use (vessel name, voyage number) pair as key
+        for vessel_link, voyage_link in zip(vessel_links, voyage_links):
+            vessel_text = await self._get_voyage_link_text(vessel_link)
+            voyage_text = await self._get_voyage_link_text(voyage_link)
+            map_key = f"{vessel_text} - {voyage_text}"
+            vessel_voyage_link_map[map_key] = voyage_link
+
+        return list(vessel_voyage_link_map.values())
 
     async def _get_voyage_link_text(self, link_elem_handle):
         return await self.page.evaluate("""e => e.textContent""", link_elem_handle)
