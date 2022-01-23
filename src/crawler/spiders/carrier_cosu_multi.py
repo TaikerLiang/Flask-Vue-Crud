@@ -278,6 +278,7 @@ class ItemExtractor:
 
         content_getter.go_container_info_page()
         content_getter.scroll_to_bottom_of_page()
+        button_table = content_getter.get_container_status_buttons()
         for c_i, c_item in enumerate(container_items):
             try:
                 response_text = content_getter.click_railway_button(c_i)
@@ -293,7 +294,9 @@ class ItemExtractor:
 
             yield ContainerItem(**c_item, terminal=LocationItem(name=terminal), railway=railway)
 
-            response_text = content_getter.click_container_status_button(c_i)
+            response_text = content_getter.click_container_status_button(
+                button_table=button_table, container_no=c_item["container_no"]
+            )
             response_selector = scrapy.Selector(text=response_text)
 
             container_status_items = self._make_container_status_items(
@@ -718,6 +721,7 @@ class ContentGetter(FirefoxContentGetter):
 
         try:
             time.sleep(10)
+            self.scroll_to_bottom_of_page()
             return self._driver.page_source
         except TimeoutException:
             raise LoadWebsiteTimeOutFatal()
@@ -735,14 +739,23 @@ class ContentGetter(FirefoxContentGetter):
         accept_btn.click()
         time.sleep(1)
 
-    def click_container_status_button(self, idx: int):
-        repeat_three_times_buttons = self._driver.find_elements_by_css_selector(
-            "div.containerSearchBody i[class='ivu-icon ivu-icon-ios-information']"
+    def get_container_status_buttons(self):
+        button_table = {}
+        container_rows = self._driver.find_elements_by_css_selector(
+            "div[class='containerSearchBody'] tbody[class='ivu-table-tbody'] tr"
         )
-        button = repeat_three_times_buttons[idx]
+        for row in container_rows:
+            contents = row.find_elements(By.CSS_SELECTOR, "span[class='content']")
+            button = row.find_elements(By.CSS_SELECTOR, "i[class='ivu-icon ivu-icon-ios-information']")[0]
+            button_table[str(contents[0].text)] = button
 
+        return button_table
+
+    def click_container_status_button(self, button_table: Dict, container_no: str):
+        button = button_table[container_no]
         button.click()
         time.sleep(8)
+
         return self._driver.page_source
 
     def go_container_info_page(self):
