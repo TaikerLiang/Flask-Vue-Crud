@@ -9,7 +9,9 @@ from crawler.core_carrier.oney_smlm_multi_share_spider import (
 
 
 def verify(results):
-    assert results[0] == MblItem(mbl_no="RICBDW223900", task_id=1, final_dest="LOS ANGELES, CA, UNITED STATES")
+    assert results[0] == MblItem(
+        mbl_no="RICBDW223900", task_id=1, final_dest={"name": "LOS ANGELES, CA, UNITED STATES"}
+    )
 
     assert isinstance(results[1], RequestOption)
     assert results[1].rule_name == VesselRoutingRule.name
@@ -18,7 +20,7 @@ def verify(results):
         "bkg_no": "RICBDW223900",
     }
 
-    assert results[2] == MblItem(mbl_no="RICBDK658400", task_id=2, final_dest="SHANGHAI, SHANGHAI, CHINA")
+    assert results[2] == MblItem(mbl_no="RICBDK658400", task_id=2, final_dest={"name": "SHANGHAI, SHANGHAI, CHINA"})
 
     assert isinstance(results[3], RequestOption)
     assert results[3].rule_name == VesselRoutingRule.name
@@ -27,7 +29,9 @@ def verify(results):
         "bkg_no": "RICBDK658400",
     }
 
-    assert results[4] == MblItem(mbl_no="RICBAR817500", task_id=3, final_dest="LOS ANGELES, CA, UNITED STATES")
+    assert results[4] == MblItem(
+        mbl_no="RICBAR817500", task_id=3, final_dest={"name": "LOS ANGELES, CA, UNITED STATES"}
+    )
 
     assert isinstance(results[5], RequestOption)
     assert results[5].rule_name == VesselRoutingRule.name

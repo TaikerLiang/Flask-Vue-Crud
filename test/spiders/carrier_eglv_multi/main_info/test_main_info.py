@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
 
 from crawler.spiders.carrier_eglv_multi import BillMainInfoRoutingRule
 from test.spiders.carrier_eglv_multi import main_info
@@ -24,15 +23,15 @@ def sample_loader(sample_loader):
         ("03_different_vessel_voyage", "142901393381"),
         ("04_without_filing_status", "100980089898"),
         ("05_without_container_info_table", "003903689108"),
-        ("06_invalid_mbl_no", "003901796617"),
-        ("07_invalid_mbl_no_format", "0039030726400"),
     ],
 )
-def test_main_info_handler(sub, mbl_no, sample_loader):
+def test_hidden_info(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
     option = BillMainInfoRoutingRule.build_request_option(
-        mbl_nos=[mbl_no], verification_code="", task_ids=["1"], search_type=SHIPMENT_TYPE_MBL
+        search_nos=[mbl_no],
+        verification_code="",
+        task_ids=["1"],
     )
 
     response = TextResponse(
@@ -42,12 +41,80 @@ def test_main_info_handler(sub, mbl_no, sample_loader):
         request=Request(url=option.url, meta=option.meta),
     )
 
-    rule = BillMainInfoRoutingRule()
-    results = list(rule.handle(response=response))
+    rule = BillMainInfoRoutingRule(content_getter=None)
+    results = rule._extract_hidden_info(response=response)
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
     verifier = verify_module.Verifier()
-    verifier.verify(results=results)
+    verifier.verify_hidden_info(results=results)
+
+
+@pytest.mark.parametrize(
+    "sub,mbl_no,",
+    [
+        ("01_3_containers_not_arrive", "003902245109"),
+        ("02_2_containers_arrived", "003901793951"),
+        ("03_different_vessel_voyage", "142901393381"),
+        ("04_without_filing_status", "100980089898"),
+        ("05_without_container_info_table", "003903689108"),
+    ],
+)
+def test_basic_info(sub, mbl_no, sample_loader):
+    httptext = sample_loader.read_file(sub, "sample.html")
+
+    option = BillMainInfoRoutingRule.build_request_option(
+        search_nos=[mbl_no],
+        verification_code="",
+        task_ids=["1"],
+    )
+
+    response = TextResponse(
+        url=option.url,
+        body=httptext,
+        encoding="utf-8",
+        request=Request(url=option.url, meta=option.meta),
+    )
+
+    rule = BillMainInfoRoutingRule(content_getter=None)
+    results = rule._extract_basic_info(response=response)
+
+    verify_module = sample_loader.load_sample_module(sub, "verify")
+    verifier = verify_module.Verifier()
+    verifier.verify_basic_info(results=results)
+
+
+@pytest.mark.parametrize(
+    "sub,mbl_no,pod",
+    [
+        ("01_3_containers_not_arrive", "003902245109", "BOSTON, MA (US)"),
+        ("02_2_containers_arrived", "003901793951", "BALTIMORE, MD (US)"),
+        ("03_different_vessel_voyage", "142901393381", "LONG BEACH, CA (US)"),
+        ("04_without_filing_status", "100980089898", "LOS ANGELES, CA (US)"),
+        ("05_without_container_info_table", "003903689108", "BOSTON, MA (US)"),
+    ],
+)
+def test_vessel_info(sub, mbl_no, pod, sample_loader):
+    httptext = sample_loader.read_file(sub, "sample.html")
+
+    option = BillMainInfoRoutingRule.build_request_option(
+        search_nos=[mbl_no],
+        verification_code="",
+        task_ids=["1"],
+    )
+
+    response = TextResponse(
+        url=option.url,
+        body=httptext,
+        encoding="utf-8",
+        request=Request(url=option.url, meta=option.meta),
+    )
+
+    rule = BillMainInfoRoutingRule(content_getter=None)
+    results = rule._extract_vessel_info(response=response, pod=pod)
+
+    verify_module = sample_loader.load_sample_module(sub, "verify")
+    verifier = verify_module.Verifier()
+    verifier.verify_vessel_info(results=results)
 
 
 # @pytest.mark.parametrize(

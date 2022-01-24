@@ -1,0 +1,124 @@
+
+
+
+
+
+
+<!--
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<html>
+<head>
+	<title>Untitled</title>
+
+-->
+<style type="text/css">
+.Bsbttn
+{
+	font-family:tahoma,sans-serif;
+	font-size:13px;
+	background: #0063CE;
+	border-bottom: 1px solid #104A7B;
+	border-right: 1px solid #104A7B;
+	border-left: 1px solid #AFC4D5;
+	border-top:1px solid #AFC4D5;
+	color: White;
+	text-decoration:none;
+	cursor: hand;
+}
+.gray  {
+	font-family : Verdana, Arial, Helvetica, sans-serif;
+	font-size : 11px;
+	font-style : normal;
+	font-weight : normal;
+	color : #000000;
+	text-decoration : none;
+}
+
+</style>
+	<script language="JavaScript1.2">
+
+	 function getHistory(nextURL)
+	{
+
+//		var nextURL = "/servlet/ActionMultiplexer?the_action=trackcontainerhistory";
+		window.open(nextURL,"_self");
+	}
+	</script>
+	<!--
+</head>
+
+<body>
+-->
+
+
+	<span class="subheader">An Error Occured:</span>
+	<span class="bodytext">
+	Sorry! The query returned an error. Please check the accuracy of your tracking numbers, and re-enter them again. If you have entered a <b>valid container number</b> or a <b>valid Booking number</b>, and are still seeing this message, then we may be experiencing technical difficulties, and are unable to establish a connection with our tracking database.
+	<p>
+        Please visit us later, or <a href="/contact.php">contact ACL</a>.
+	<p>
+	</span>
+	<span class="subheader">
+
+Instructions on how to use the track and trace:</span><br>
+<ul>
+  <li><span class="bodytext">Enter one container or shipment number per line.</span></li>
+  <li><span class="bodytext">When entering a Shipment Number:</span><br>
+    <table border="0" cellspacing="0" cellpadding="1">
+      <tr bgcolor="#000066">
+        <td class="bodytext">
+          <table border="0" cellspacing="1" cellpadding="2">
+            <tr bgcolor="#FFFFFF">
+              <td class="bodytext" nowrap><span class="subheader"><font size="3"></font></span>
+                The simplest way is to enter just the digits of the shipment number, so for :<br>SA-00123456, you can use just 123456
+				</td>
+            </tr>
+			<tr bgcolor="#FFFFFF">
+              <td class="bodytext" nowrap>
+                SA-123456, SA123456 will work.
+				</td>
+            </tr>
+			<tr bgcolor="#FFFFFF">
+              <td class="bodytext" nowrap>
+                SA-12345678, SA12345678 will work.
+				</td>
+            </tr>
+			<tr bgcolor="#FFFFFF">
+              <td class="bodytext" nowrap>
+                It is not case sensitive
+				</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </li>
+  <li><span class="bodytext">When entering a container number:</span><br>
+    <table border="0" cellspacing="0" cellpadding="1">
+      <tr bgcolor="#000066">
+        <td class="bodytext">
+          <table border="0" cellspacing="1" cellpadding="2">
+            <tr bgcolor="#FFFFFF">
+              <td class="bodytext" nowrap>
+               ACLU123456, ACLU1234567 with or without the check digit will work
+				</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </li>
+</ul>
+
+
+<script language="JavaScript1.2">
+	 var equipNo = ''
+	 if ( equipNo == null ||  equipNo == '')
+		document.getElementById("DetailedTrack").style.visibility = "hidden";
+
+	</script>
+<!--
+</body>
+</html>
+-->

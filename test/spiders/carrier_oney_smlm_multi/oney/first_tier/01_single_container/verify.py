@@ -9,7 +9,7 @@ from crawler.core_carrier.oney_smlm_multi_share_spider import (
 
 
 def verify(results):
-    assert results[0] == MblItem(mbl_no="SH9FSK690300", task_id=1, final_dest="SHANGHAI, SHANGHAI, CHINA")
+    assert results[0] == MblItem(mbl_no="SH9FSK690300", task_id=1, final_dest={"name": "SHANGHAI, SHANGHAI, CHINA"})
 
     assert isinstance(results[1], RequestOption)
     assert results[1].url == "https://ecomm.one-line.com/ecom/CUP_HOM_3301GS.do"
