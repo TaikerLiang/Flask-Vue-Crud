@@ -1,5 +1,6 @@
 import abc
 from pathlib import Path
+from typing import List
 
 import scrapy
 
@@ -172,6 +173,6 @@ class BaseMultiCarrierSpider(scrapy.Spider):
         self._error = True
 
     @staticmethod
-    def remove_duplicates(search_nos):
+    def remove_duplicates(numbers: List):
         seen = set()
-        return [search_no for search_no in search_nos if not (search_no in seen or seen.add(search_no))]
+        return [number for number in numbers if not (number in seen or seen.add(number))]
