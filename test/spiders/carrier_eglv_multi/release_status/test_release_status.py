@@ -40,7 +40,7 @@ def test_release_status_handler(sub, mbl_no, sample_loader):
         ),
     )
 
-    rule = ReleaseStatusRoutingRule()
+    rule = ReleaseStatusRoutingRule(task_id="1")
     results = list(rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
