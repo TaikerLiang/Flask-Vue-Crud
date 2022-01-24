@@ -102,7 +102,7 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
                 task_ids = result.task_ids
 
                 if self._retry_count > MAX_RETRY_COUNT:
-                    for search_no, task_id in zip(search_nos, task_ids):
+                    for search_no, task_id in zip(search_nos[:MAX_PAGE_NUM], task_ids[:MAX_PAGE_NUM]):
                         if self.search_type == SHIPMENT_TYPE_MBL:
                             yield ExportErrorData(
                                 mbl_no=search_no,
@@ -117,6 +117,12 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
                                 status=CARRIER_RESULT_STATUS_ERROR,
                                 detail="Data was not found",
                             )
+
+                    option = NextRoundRoutingRule.build_request_option(
+                        search_nos=search_nos, task_ids=task_ids, base_url=self.base_url
+                    )
+                    proxy_option = self._proxy_manager.apply_proxy_to_request_option(option)
+                    yield self._build_request_by(proxy_option)
                     return
 
                 self._retry_count += 1
