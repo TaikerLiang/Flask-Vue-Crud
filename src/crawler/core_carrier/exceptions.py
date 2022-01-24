@@ -12,6 +12,18 @@ class BaseCarrierError(Exception):
         pass
 
 
+class CarrierSearchNoLengthUnmatchedError(BaseCarrierError):
+    status = CARRIER_RESULT_STATUS_ERROR
+
+    def __init__(self, search_type):
+        self._search_type = search_type
+
+    def build_error_data(self):
+        return ExportErrorData(
+            status=self.status, detail=f"<search-no-length-unmatched> search type: `{self._search_type}`"
+        )
+
+
 class CarrierInvalidSearchNoError(BaseCarrierError):
     status = CARRIER_RESULT_STATUS_ERROR
 

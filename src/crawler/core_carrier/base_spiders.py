@@ -8,6 +8,7 @@ from crawler.core.base import CLOSESPIDER_TIMEOUT
 from .middlewares import CarrierSpiderMiddleware
 from .pipelines import CarrierItemPipeline, CarrierMultiItemsPipeline
 from .base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from .exceptions import CarrierSearchNoLengthUnmatchedError
 from ..general.savers import BaseSaver, FileSaver, NullSaver
 from ..utils.local_files.local_file_helpers import build_local_file_uri, LOCAL_PING_HTML
 
@@ -122,6 +123,11 @@ class BaseMultiCarrierSpider(scrapy.Spider):
             self.search_type = SHIPMENT_TYPE_BOOKING
             self.search_nos = self.booking_nos
 
+        self.task_ids = self.remove_duplicates(self.task_ids)
+        self.search_nos = self.remove_duplicates(self.search_nos)
+        if len(self.task_ids) != len(self.search_nos):
+            raise CarrierSearchNoLengthUnmatchedError(self.search_type)
+
         for s_no, t_id in zip(self.search_nos, self.task_ids):
             self.search_no_tasks_map.setdefault(s_no, [])
             self.search_no_tasks_map[s_no].append(t_id)
@@ -164,3 +170,8 @@ class BaseMultiCarrierSpider(scrapy.Spider):
 
     def mark_error(self):
         self._error = True
+
+    @staticmethod
+    def remove_duplicates(search_nos):
+        seen = set()
+        return [search_no for search_no in search_nos if not (search_no in seen or seen.add(search_no))]
