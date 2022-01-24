@@ -455,7 +455,7 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
                 response = self.get_response_selector(
                     url=EGLV_INFO_URL, httptext=httptext, meta={"mbl_no": search_nos[0], "task_id": task_ids[0]}
                 )
-                rule = FilingStatusRoutingRule()
+                rule = FilingStatusRoutingRule(task_id=task_ids[0])
 
                 for item in rule.handle(response):
                     yield item
@@ -469,7 +469,7 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
                 response = self.get_response_selector(
                     url=EGLV_INFO_URL, httptext=httptext, meta={"task_id": task_ids[0]}
                 )
-                rule = ReleaseStatusRoutingRule()
+                rule = ReleaseStatusRoutingRule(task_id=task_ids[0])
 
                 for item in rule.handle(response):
                     yield item
@@ -551,6 +551,9 @@ class RightBasicInfoTableLocator(BaseTable):
 class FilingStatusRoutingRule(BaseRoutingRule):
     name = "FILING_STATUS"
 
+    def __init__(self, task_id: str):
+        self.task_id = task_id
+
     @classmethod
     def build_request_option(cls, search_no: str, task_id: str, first_container_no: str, pod: str) -> RequestOption:
         form_data = {
@@ -576,10 +579,10 @@ class FilingStatusRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         status = self._extract_filing_status(response=response)
-        task_id = response.meta["task_id"]
+        # task_id = response.meta["task_id"]
 
         yield MblItem(
-            task_id=task_id,
+            task_id=self.task_id,
             us_filing_status=status["filing_status"],
             us_filing_date=status["filing_date"],
         )
@@ -617,6 +620,9 @@ class FilingStatusRoutingRule(BaseRoutingRule):
 class ReleaseStatusRoutingRule(BaseRoutingRule):
     name = "RELEASE_STATUS"
 
+    def __init__(self, task_id: str):
+        self.task_id = task_id
+
     @classmethod
     def build_request_option(cls, search_nos: List, task_ids: List) -> RequestOption:
         form_data = {
@@ -640,11 +646,11 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        task_id = response.meta["task_ids"][0]
+        # task_id = response.meta["task_ids"][0]
         release_status = self._extract_release_status(response=response)
 
         yield MblItem(
-            task_id=task_id,
+            task_id=self.task_id,
             carrier_status=release_status["carrier_status"],
             carrier_release_date=release_status["carrier_release_date"],
             us_customs_status=release_status["us_customs_status"],
@@ -1282,7 +1288,6 @@ class NextRoundRoutingRule(BaseRoutingRule):
 
 
 class CaptchaAnalyzer:
-
     SERVICE_URL = "https://nymnwfny58.execute-api.us-west-2.amazonaws.com/dev/captcha-eglv"
     headers = {
         "x-api-key": "jzeitRn28t5UMxRA31Co46PfseW9hTK43DLrBtb6",
