@@ -3,7 +3,7 @@ from typing import List
 from crawler.core.selenium import ChromeContentGetter
 
 import scrapy
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_rail.base_spiders import BaseMultiRailSpider
@@ -104,8 +104,8 @@ class RailNSSpider(BaseMultiRailSpider):
 class ContainerRoutingRule(BaseRoutingRule):
     name = "CONTAINER"
 
-    ERROR_BTN_XPATH = "/html/body/div[16]/div[2]/div[2]/div/div/a[1]"
-    ERROR_P_XPATH = "/html/body/div[16]/div[2]/div[1]/div/div/div[1]/div/div/div[2]/div/div/div[1]/p"
+    ERROR_BTN_CSS = "button[aria-label='No Results Found']"
+    ERROR_H5_CSS = "h5.d-inline-block"
 
     @classmethod
     def build_request_option(cls, container_nos, proxy_manager) -> RequestOption:
@@ -127,6 +127,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         event_code_mapper = EventCodeMapper()
         content_getter = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
 
+        response_text = ""
         try:
             response_text = content_getter.search(container_nos=container_nos)
         except TimeoutException:
@@ -184,17 +185,17 @@ class ContainerRoutingRule(BaseRoutingRule):
         return container_info
 
     def _is_some_container_nos_invalid(self, response: scrapy.Selector) -> bool:
-        error_btn = response.xpath(self.ERROR_BTN_XPATH)
+        error_btn = response.css(self.ERROR_BTN_CSS)
 
         return bool(error_btn)
 
     def _extract_invalid_container_nos(self, response: scrapy.Selector, container_nos: List) -> List:
         # should map to original input container_no
-        error_p = response.xpath(self.ERROR_P_XPATH)
-        if not error_p:
-            raise RailResponseFormatError(reason=f"xpath: `{self.ERROR_P_XPATH}` can't find error text")
+        error_h5 = response.css(self.ERROR_H5_CSS)
+        if not error_h5:
+            raise RailResponseFormatError(reason=f"css: `{self.ERROR_H5_CSS}` can't find error text")
 
-        raw_invalid_container_nos = error_p.css("::text").getall()[1:-1]  # 0: title, -1: space
+        raw_invalid_container_nos = error_h5.css("::text").getall()
         invalid_container_nos = [cno.replace(" ", "") for cno in raw_invalid_container_nos]
 
         full_invalid_container_nos = []
@@ -213,9 +214,9 @@ class ContentGetter(ChromeContentGetter):
     def _login(self):
         self._driver.get(self.LOGIN_URL)
         time.sleep(60)
-        username = self._driver.find_element_by_xpath("//*[@id='mat-input-0']")
+        username = self._driver.find_element_by_css_selector("input[formcontrolname='username']")
         username.send_keys(self.USER_NAME)
-        password = self._driver.find_element_by_xpath("//*[@id='mat-input-1']")
+        password = self._driver.find_element_by_css_selector("input[formcontrolname='password']")
         password.send_keys(self.PASS_WORD)
         time.sleep(3)
 
@@ -229,11 +230,20 @@ class ContentGetter(ChromeContentGetter):
             self._is_first = False
 
         # search
-        self._driver.find_element_by_xpath('//*[@id="mat-input-2"]').send_keys(",".join(container_nos))
+        self._driver.find_element_by_css_selector("textarea[formcontrolname='equipments']").send_keys(
+            ",".join(container_nos)
+        )
         time.sleep(3)
         search_btn = self._driver.find_element_by_css_selector('button[aria-label="Search button"]')
         search_btn.click()
         time.sleep(60)
+
+        error_btn = None
+        try:
+            error_btn = self._driver.find_element_by_css_selector("button[aria-label='No Results Found']")
+            error_btn.click()
+        except NoSuchElementException:  # all container_nos are valid
+            pass
 
         return self.get_page_source()
 
