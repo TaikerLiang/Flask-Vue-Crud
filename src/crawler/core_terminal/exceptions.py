@@ -16,14 +16,14 @@ class TerminalInvalidMblNoError(BaseTerminalError):
     status = TERMINAL_RESULT_STATUS_ERROR
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail='<invalid-mbl-no>')
+        return ExportErrorData(status=self.status, detail="<invalid-mbl-no>")
 
 
 class TerminalInvalidContainerNoError(BaseTerminalError):
     status = TERMINAL_RESULT_STATUS_ERROR
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail='<invalid-container-no>')
+        return ExportErrorData(status=self.status, detail="<invalid-container-no>")
 
 
 class TerminalResponseFormatError(BaseTerminalError):
@@ -33,21 +33,21 @@ class TerminalResponseFormatError(BaseTerminalError):
         self.reason = reason
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail=f'<format-error> {self.reason}')
+        return ExportErrorData(status=self.status, detail=f"<format-error> {self.reason}")
 
 
 class ProxyMaxRetryError(BaseTerminalError):
     status = TERMINAL_RESULT_STATUS_FATAL
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail='<proxy-max-retry-error>')
+        return ExportErrorData(status=self.status, detail="<proxy-max-retry-error>")
 
 
 class LoadWebsiteTimeOutFatal(BaseTerminalError):
     status = TERMINAL_RESULT_STATUS_FATAL
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail='<load-website-timeout-fatal>')
+        return ExportErrorData(status=self.status, detail="<load-website-timeout-fatal>")
 
 
 class LoginNotSuccessFatal(BaseTerminalError):
@@ -57,4 +57,11 @@ class LoginNotSuccessFatal(BaseTerminalError):
         self.status = success_status
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail=f'<login-not-success-fatal> status: `{self.status}`')
+        return ExportErrorData(status=self.status, detail=f"<login-not-success-fatal> status: `{self.status}`")
+
+
+class DriverMaxRetryError(BaseTerminalError):
+    status = TERMINAL_RESULT_STATUS_FATAL
+
+    def build_error_data(self):
+        return ExportErrorData(status=self.status, detail="<driver-max-retry-error>")

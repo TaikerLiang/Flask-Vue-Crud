@@ -13,6 +13,7 @@ from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
+from crawler.core_terminal.exceptions import DriverMaxRetryError
 from crawler.core.proxy import HydraproxyProxyManager
 
 
@@ -23,6 +24,11 @@ class CompanyInfo:
 
 
 BASE_URL = "https://www.etslink.com"
+MAX_RETRY_COUNT = 3
+
+
+class Restart:
+    pass
 
 
 class EtsShareSpider(BaseMultiTerminalSpider):
@@ -44,20 +50,24 @@ class EtsShareSpider(BaseMultiTerminalSpider):
         ]
         self._proxy_manager = HydraproxyProxyManager(session="share", logger=self.logger)
         self._rule_manager = RuleManager(rules=rules)
+        self._retry_count = 0
 
     def start(self):
+        yield self._prepare_start()
+
+    def _prepare_start(self):
+        if self._retry_count > MAX_RETRY_COUNT:
+            raise DriverMaxRetryError()
+
+        self._retry_count += 1
+
         self._proxy_manager.renew_proxy()
         unique_container_nos = list(self.cno_tid_map.keys())
-        option = self._prepare_start(unique_container_nos=unique_container_nos)
-        yield self._build_request_by(option=option)
-
-    def _prepare_start(self, unique_container_nos: List):
-        self._proxy_manager.renew_proxy()
         option = MainPageRoutingRule.build_request_option(
             container_no_list=unique_container_nos, company_info=self.company_info
         )
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
-        return proxy_option
+        return self._build_request_by(option=proxy_option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -77,6 +87,8 @@ class EtsShareSpider(BaseMultiTerminalSpider):
                         yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
+            elif isinstance(result, Restart):
+                yield self._prepare_start()
             else:
                 raise RuntimeError()
 
@@ -234,7 +246,10 @@ class LoginRoutingRule(BaseRoutingRule):
         container_no_list = response.meta["container_no_list"]
 
         response_dict = json.loads(response.text)
-        sk = response_dict["_sk"]
+        sk = response_dict.get("_sk")
+        if not sk:
+            yield Restart()
+            return
 
         yield ContainerRoutingRule.build_request_option(container_no_list=container_no_list, sk=sk)
 
@@ -281,6 +296,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         for container_info in container_info_list:
             if self._is_container_no_invalid_with_term_name(container_info=container_info):
                 c_no = re.sub("<.*?>", "", container_info["PO_CNTR_NO"])
+                print(f"========================== {c_no} is invalid ================================")
                 yield InvalidContainerNoItem(
                     container_no=c_no,
                 )
