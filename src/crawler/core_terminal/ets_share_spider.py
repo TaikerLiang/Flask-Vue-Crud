@@ -296,7 +296,6 @@ class ContainerRoutingRule(BaseRoutingRule):
         for container_info in container_info_list:
             if self._is_container_no_invalid_with_term_name(container_info=container_info):
                 c_no = re.sub("<.*?>", "", container_info["PO_CNTR_NO"])
-                print(f"========================== {c_no} is invalid ================================")
                 yield InvalidContainerNoItem(
                     container_no=c_no,
                 )
