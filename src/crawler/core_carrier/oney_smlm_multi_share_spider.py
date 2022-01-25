@@ -412,8 +412,8 @@ class VesselRoutingRule(BaseRoutingRule):
         response_dict = json.loads(response.text)
 
         if self._is_vessel_empty(response_dict=response_dict):
-            yield VesselItem(vessel_key="", task_id=task_id)
             return
+            yield VesselItem(vessel_key="", task_id=task_id)
 
         vessel_info_list = self._extract_vessel_info_list(response_dict=response_dict)
         for vessel_info in vessel_info_list:
