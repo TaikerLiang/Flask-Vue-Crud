@@ -1,0 +1,872 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en-US">
+<head>
+    <meta charset="utf-8">
+    <meta name="keywords" content=""/>
+    <meta name="description" content=""/>
+    <meta name="author" content="Tideworks Technology"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+
+    <title>Paul W. Conley Marine Terminal - Forecast&reg; by Tideworks</title>
+
+    <link rel="shortcut icon" href="/fc-MCT/favicon.ico">
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<link rel="stylesheet" href="/fc-MCT/css/TableTools.css">
+<link rel="stylesheet" href="/fc-MCT/css/datatable.css">
+<link rel="stylesheet" href="/fc-MCT/css/sticky-footer.css">
+<link rel="stylesheet" href="/fc-MCT/css/base.css?version=95013077061620211824" type="text/css" media="screen, projection, print">
+<link rel="stylesheet" href="/fc-MCT/css/flick/jquery-ui-1.8.6.custom.css" type="text/css">
+<link rel="stylesheet" href="/fc-MCT/css/print.css?version=95013077061620211824" type="text/css" media="print">
+<link rel="stylesheet" href="/fc-MCT/js/shadowbox-3.0.3/shadowbox.css?version=95013077061620211824" type="text/css">
+<link rel="stylesheet" href="/fc-MCT/css/font-awesome-4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="/fc-MCT/css/sweet-alert/sweetalert.css">
+<link href="https://fonts.googleapis.com/css?family=Roboto:400,700" rel="stylesheet">
+
+    <link type="text/css" rel="stylesheet" href="/fc-MCT/css/equipment.css"/>
+
+
+
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" src="/fc-MCT/js/main.js?version=95013077061620211824"></script>
+<script type="text/javascript" src="/fc-MCT/js/scripts.jsp?version=95013077061620211824"></script>
+<script type="text/javascript" src="/fc-MCT/js/ajax.jsp?version=95013077061620211824"></script>
+<script type="text/javascript" src="/fc-MCT/js/EqptService.js?version=95013077061620211824"></script>
+
+<script type="text/javascript" src="/fc-MCT/js/jquery-1.9.1.min.js"></script>
+<script type="text/javascript" src="/fc-MCT/js/jquery.alert.js"></script>
+<script type="text/javascript" src="/fc-MCT/js/jquery.cookie.js"></script>
+<script type="text/javascript" src="/fc-MCT/js/jquery.dropdownPlain.js"></script>
+<script type="text/javascript" src="/fc-MCT/js/jquery.easing.1.3.js"></script>
+<script type="text/javascript" src="/fc-MCT/js/jquery.form.js"></script>
+<script type="text/javascript" src="/fc-MCT/js/jquery-ui-1.10.3.custom.min.js"></script>
+<script type="text/javascript" src="/fc-MCT/js/jquery.ui.datepicker-en-GB.js"></script>
+<script type="text/javascript" src="/fc-MCT/js/jquery.ui.datepicker-da-DK.js"></script>
+<script type="text/javascript" src="/fc-MCT/js/jquery.ui.datepicker-es.js"></script>
+<script type="text/javascript" src="/fc-MCT/js/jquery.backstretch.min.js"></script>
+<script type="text/javascript" src="/fc-MCT/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="/fc-MCT/js/TableTools.min.js"></script>
+<script type="text/javascript" src="/fc-MCT/js/datatable.js"></script>
+
+<script type="text/javascript" src="/fc-MCT/js/shadowbox-3.0.3/shadowbox.js"></script>
+
+<script type="text/javascript" src="/fc-MCT/js/customFormElements.js"></script>
+
+<script type="text/javascript" src="/fc-MCT/js/typeahead.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+
+
+<script type="text/javascript" src="/fc-MCT/js/moment-with-locales.js"></script>
+
+<script type="text/javascript" src="/fc-MCT/js/sweet-alert/sweetalert.min.js"></script>
+
+
+<!-- IE Fix -->
+<script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
+
+<script type="text/javascript" src="/fc-MCT/js/startswith.js"></script>
+
+
+
+
+    <script type="text/javascript">
+    $().ready(function () {
+        Shadowbox.init({modal: true, onClose: clearAlert});
+        $.datepicker.setDefaults($.datepicker.regional[""]);
+        $.datepicker.setDefaults({changeMonth: true, changeYear: true });
+        $('[data-toggle="tooltip"]').tooltip();
+
+        $("#endDate").datepicker($.datepicker.regional["en_US"]={dateFormat:datepickerFormat('MM/dd/yyyy')});
+        $("#changedDate").val($("#endDate").val());
+        $("#changedDate").val($("#endDate").val());
+
+        findEquipmentImage("40DH", "F", "CTR");
+
+        $("#payment").click(function(e){
+            e.preventDefault();
+            var queryParams = $.param({
+                "numbers": "MSDU7655308",
+                "scac": "",
+                "searchBy": "CTR",
+                "feeAction": "PAY"
+            });
+            window.location = '/fc-MCT/fees/default.do?method=defaultSearch&changedDate=&' + queryParams;
+        });
+
+        $("#endDate").change(function() {
+            $("#changedDate").val($("#endDate").val());
+            $("#calculator").empty();
+            var queryParams = $.param ({
+                'endDate': $("#endDate").val(),
+                'eqptNbr': "MSDU7655308"
+            });
+            $.ajax({
+                type: "post",
+                url: "/fc-MCT/fees/default.do?method=calculateFees",
+                cache: false,
+                data: queryParams,
+                success: function(data) {
+                    $("#calculator").html("<h4 class='go'>" + data.totalChargesDue + "</h4>");
+                },
+                error: function(){
+                    $("#calculator").html('Not available');
+                }
+            });
+            return false;
+        });
+
+
+        moment.locale('en');
+
+        if($.trim($("#unload-date").html()).length > 0) {
+            $("#unload-date-diff").html(" <small class='text-muted text-uppercase'> (" + moment($("#unload-date").html(), "MM/DD/YYYY hh:mm a").fromNow() + ")</small>");
+        }
+        if($.trim($("#line-rel-date").html()).length > 0) {
+            $("#line-rel-date-diff").html(" <small class='text-muted text-uppercase'> (" + moment($("#line-rel-date").html(), "MM/DD/YYYY hh:mm a").fromNow() + ")</small>");
+        }
+        if($.trim($("#cust-rel-date").html()).length > 0) {
+            $("#cust-rel-date-diff").html(" <small class='text-muted text-uppercase'> (" + moment($("#cust-rel-date").html(), "MM/DD/YYYY hh:mm a").fromNow() + ")</small>");
+        }
+            }
+            );
+    </script>
+
+</head>
+<body>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script src="/fc-MCT/js/bootstrap-hover-dropdown.js"></script>
+
+<script type="text/javascript">
+$().ready(function() {
+
+    $('.js-activated').dropdownHover().dropdown();
+
+    $('[data-toggle="tooltip"]').tooltip();
+
+    if($(window).width() <= 768) {
+        $('ul.nav li.dropdown a').removeClass("disabled");
+        //console.log("remove class " + $(window).width());
+    } else {
+        $('ul.nav li.dropdown a').addClass("disabled");
+        //console.log("add class " + $(window).width());
+    }
+
+    $(window).resize(function() {
+        if($(window).width() <= 768) {
+            $('ul.nav li.dropdown a').removeClass("disabled");
+            //console.log("remove class " + $(window).width());
+        } else {
+            $('ul.nav li.dropdown a').addClass("disabled");
+            //console.log("add class " + $(window).width());
+        }
+    });
+
+    // we need this variable to hold the value that the user selects.
+    var selectedItem = quickSearchCookie();
+
+    $(".dropdown-menu li a").click(function(){
+        var selText = $(this).text();
+
+
+        $(this).parents('.input-group-btn').find('.dropdown-toggle').html(selText+' <span class="caret"></span>');
+        quickSearchCookie(this.id);
+
+        // set the variable value to what the user selected.
+        selectedItem = this.id;
+    });
+
+    var $linkToSelect = $("#"+selectedItem);
+    //if we have such link in menu (different user roles may have different set of links)
+    if ($linkToSelect.length) {
+        $linkToSelect.parents('.input-group-btn').find('.dropdown-toggle').html($linkToSelect.text()+' <span class="caret"></span>');
+    } else {
+        //if we have have items in the list, click on the first item.
+        if ($("#quickSearchForm ul.dropdown-menu li a").length) $("#quickSearchForm ul.dropdown-menu li a").first().click();
+    }
+
+    $("#quickSearchForm").submit(function(){
+
+        // create a new array to determine which functional area to send the user to.
+        var searchTypeList = new Array();
+
+
+
+
+                searchTypeList['CONTAINER'] = '/equipment/default.do?method=equipmentSubmit&f=qs&equipClass=CTR&number=';
+                searchTypeList['CHASSIS'] = '/equipment/default.do?method=equipmentSubmit&f=qs&equipClass=CHS&number=';
+
+
+
+        // get the search criteria
+        var number = $("#quickSearch").val().toUpperCase();
+
+        // make sure we have data
+        if(hasData(number) == false ){
+            twitterAlertMessage('Please enter all search criteria before continuing.');
+            $("#quickSearch").focus();
+            return false;
+        }
+
+        // do some basic client side validation of the value entered.
+        switch(selectedItem){
+        case 'CONTAINER':
+            if(invalidChars(number) == false ) {
+                twitterAlertMessage("Invalid Container Number (it should consist of 4 alpha and 6 or 7 numeric).");
+                $("#quickSearch").focus();
+                return false;
+            }
+            break;
+        case 'CHASSIS':
+            if(invalidChars(number) == false ) {
+                $("#quickSearch").focus();
+                return false;
+            }
+            break;
+        }
+
+        // set a cookie value of what the user last searched by.
+        $.cookie('quick_search', selectedItem,{path: '/'});
+
+        // determine which item the user selected.
+        var url = searchTypeList[selectedItem];
+
+        // turn that into a url to send them to.
+        window.location = '/fc-MCT' + url + number;
+        return false;
+    });
+
+
+});
+
+</script>
+
+<div id="headerAlert"></div>
+
+<div class="navbar navbar-inverse navbar-static-top">
+
+    <div class="container hidden-xs">
+
+        <div class="nav navbar-nav navbar-left">
+
+            <a href="/fc-MCT/home/default.do" class="terminalname-responsive">
+
+                <img src="/fc-MCT/images/logo-50x50.png" class="pull-left">
+
+                <h2 class="pull-left">Paul W. Conley Marine Terminal</h2>
+
+                <div class="clearfix"></div>
+
+            </a>
+
+        </div>
+
+        <div class="navbar-text navbar-right text-right">
+            <div><small>You are signed in as CHARLEY&#32;LI | <a href="/fc-MCT/myaccount/default.do" class="headerlink">My Account</a> | <a href="/fc-MCT/j_spring_security_logout" class="headerlink" id="signOut" title="Click here to sign out">Sign Out</a></small></div>
+            <div><small>Broker/Freight Forwarder Company Admin (43369)</small></div>
+        </div>
+
+    </div>
+
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <i class="fa fa-bars fa-lg" aria-hidden="true" title="Toggle navigation"></i>
+            <span class="sr-only">Toggle navigation</span>
+        </button>
+        <h4><a class="navbar-brand hidden-lg hidden-md hidden-sm terminalname" href="/fc-MCT/home/default.do">Paul W. Conley Marine Terminal</a></h4>
+    </div>
+
+    <div class="container navbar-collapse collapse">
+
+
+
+
+
+
+
+
+
+                <ul class="nav navbar-nav">
+
+                    <li class="dropdown" id="menu-home">
+                        <a href="/fc-MCT/home/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Home <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/fc-MCT/home/default.do?method=contacts">Contacts</a></li>
+
+                                <li><a href="/fc-MCT/home/default.do?method=directions">Directions</a></li>
+
+
+                                <li><a href="/fc-MCT/home/default.do?method=cameras">Gate Cameras</a></li>
+
+                            <li><a href="/fc-MCT/home/default.do?method=hours">Hours</a></li>
+                            <li><a href="/fc-MCT/home/default.do?method=schedule">Vessel Schedule</a></li>
+                        </ul>
+                    </li>
+
+
+
+
+
+                            <li class="dropdown" id="menu-equipment">
+                                <a href="/fc-MCT/equipment/default.do?method=equipment" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Equipment</a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="/fc-MCT/equipment/default.do?method=equipment">Search</a></li>
+
+
+                                    <li><a href="/fc-MCT/equipment/default.do?method=massUpdate">Mass Update</a></li>
+
+                                        <li><a href="/fc-MCT/equipment/default.do?method=massVgm">Verified Gross Mass</a></li>
+
+
+                                </ul>
+                            </li>
+
+
+
+
+
+
+
+
+
+
+
+
+                    <li class="dropdown" id="menu-import">
+                        <a href="/fc-MCT/import/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Import <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/fc-MCT/import/default.do">Availability</a></li>
+
+                        </ul>
+                    </li>
+
+
+
+
+
+
+
+                            <li class="dropdown" id="menu-export">
+                                <a href="/fc-MCT/export/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Export <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="/fc-MCT/export/default.do">Booking</a></li>
+                                    <li><a href="/fc-MCT/export/default.do?method=edo">EDO</a></li>
+                                </ul>
+                            </li>
+
+
+
+
+
+
+
+                            <li class="dropdown" id="menu-fees">
+                                <a href="/fc-MCT/fees/default.do" class="dropdown-toggle js-activated" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Fees <span class="caret hidden-lg hidden-md hidden-sm"></span></a>
+                                <ul class="dropdown-menu">
+                                    <li><a href="/fc-MCT/fees/default.do">Pay Fees</a></li>
+                                    <li><a href="/fc-MCT/fees/default.do?method=history">Transaction History</a></li>
+                                </ul>
+                            </li>
+
+
+
+
+
+
+
+                </ul>
+
+
+
+
+                <ul class="nav navbar-nav navbar-right">
+
+
+
+
+
+
+
+
+
+
+
+
+
+                </ul>
+
+
+    </div>
+
+</div>
+
+<div class="container">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            <div class="page-header">
+                <h2>Container - MSDU7655308</h2>
+            </div>
+
+            <div class="row south_20">
+
+                <div class="col-xs-2 hidden-xs">
+                    <img src="/fc-MCT/images/equipment/CONTAINER.png" id="equipmentImage" class="img-responsive img-equipment" data-toggle="tooltip" data-placement="top" alt="40' HIGH CUBE DRY CONTAINER" title="40' HIGH CUBE DRY CONTAINER"/>
+                </div>
+
+                <div class="col-sm-4">
+                    <div>Available for pickup: <strong class="go">Available</strong></div>
+                    <div>Size/Type: <strong>40DH</strong> <span class="text-muted">40' HIGH CUBE DRY CONTAINER</span></div>
+                    <div>Weight: <strong>19&nbsp;MT</strong></div>
+                </div>
+
+                <div class="col-sm-4">
+                    <div>
+                        Location: <strong>YARD</strong>
+
+                    </div>
+                    <div>Vessel/Voyage: <strong>MSC VAISHNAVI R./151W</strong></div>
+                    <div>Unload Date: <strong><span id="unload-date">01/23/2022 10:18 PM</span></strong><span class="hidden-sm" id="unload-date-diff"></span></div>
+                    <div>Line: <strong>MSC</strong></div>
+
+
+
+                            <div><span class="hidden-md hidden-lg">Del. Order</span><span class="hidden-xs hidden-sm">Delivery Order</span>: <strong>NONE&nbsp;</strong></div>
+
+
+
+
+                    <div>Required Accessory: <strong>NONE</strong></div>
+
+                </div>
+
+            </div>
+
+            <div class="row south_20">
+
+                <div class="col-xs-12">
+                    <div class="subtitle pagebreak">Holds/Fees</div>
+                </div>
+
+                <div class="col-sm-6">
+                    <div>
+                        Customs Release Status: <strong><span class="go">CLEARED</span> <span id="cust-rel-date">01/24/2022 10:33 AM</span></strong><span class="hidden-sm" id="cust-rel-date-diff"></span>
+                    </div>
+                    <div>
+                        Line Release Status: <strong><span class="go">PAID</span> <span id="line-rel-date">01/08/2022 9:15 AM</span></strong><span class="hidden-sm" id="line-rel-date-diff"></span>
+                    </div>
+                </div>
+
+                <div class="col-sm-6">
+                    <div>
+                        Holds:
+
+
+
+
+
+                                <strong class="go text-uppercase">None</strong>
+
+
+
+
+
+
+
+                    </div>
+
+                    <div>
+                        Add'l Holds Info:
+
+                        <strong>
+
+
+
+
+
+                                    <strong class="go text-uppercase">None</strong>
+
+
+
+
+
+
+
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+
+                    <div class="col-xs-12 north_20">
+
+                        <div class="row">
+
+                            <div class="col-sm-2">
+                                <div class="text-uppercase">Satisfied Thru: <strong>01/30/2022</strong></div>
+                            </div>
+
+
+
+
+
+
+                                    <div class="col-sm-3">
+                                        <div class="text-uppercase">LINE DEMURRAGE Due:
+                                        <strong>
+
+
+                                                    <span class="go">$0.00</span>
+
+
+
+                                        </strong>
+                                        </div>
+
+
+
+                                    </div>
+
+                                    <div class="col-sm-3">
+                                        <div class="text-uppercase">PORT DEMURRAGE Due:
+                                            <strong>
+
+
+                                                        <span class="go">$0.00</span>
+
+
+
+                                            </strong>
+                                        </div>
+
+
+                                    </div>
+
+
+
+
+
+                            <div class="col-sm-2">
+                                <div class="text-uppercase">Other Fees Due:
+                                    <strong>
+
+
+                                                <span class="go">$0.00</span>
+
+
+
+                                    </strong>
+                                </div>
+                            </div>
+
+                            <div class="col-sm-2 text-center">
+                                <div class="text-uppercase">Total Fees:</div>
+                                <div>
+
+
+
+                                            <h4><strong class="go">$0.00</strong></h4>
+
+
+
+                                    <a href="#" id="chargeDetails" rel="shadowbox;height=400;width=600" title="Charges Summary">Details</a>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div class="row south">
+
+                            <div class="col-sm-10 col-md-10 form-group hidden-xs">
+
+
+
+                                    <div class="form-inline">
+                                        <div class="form-group pad-10" style="background-color:#eee">
+                                            <label for="endDate">Calculate fees for</label>
+                                            <input type="text" name="endDate" id="endDate" maxlength="10" value="01/26/2022" class="form-control input-sm"/>
+                                        </div>
+                                        <div class="form-group" id="calculator"></div>
+                                    </div>
+
+
+
+                            </div>
+
+                            <div class="col-sm-2 col-md-2 form-group text-center">
+
+
+
+
+                                        <form action="/fc-MCT/fees/default.do?method=defaultSearch" method="post" id="paymentForm">
+                                            <input type="hidden" name="numbers" value="MSDU7655308"/>
+                                            <input type="hidden" name="searchBy" value="CTR"/>
+                                            <input type="hidden" name="feeAction" value="PAY"/>
+                                            <button type="button" id="payment" class="btn btn-success north"><i class="fa fa-usd go"></i> Pay Fees</button>
+                                        </form>
+
+
+
+
+                            </div>
+
+                        </div>
+
+                        <div class="row">
+
+                            <div class="col-xs-12 warning text-center">
+
+                                <h5>
+                                    <strong>
+                                        <i class="fa fa-exclamation-triangle"></i> Please Note:
+
+
+
+
+
+
+                                                        The total displayed is the amount due less any payments, waivers, adjustments or guarantees.
+
+
+
+
+                                    </strong>
+                                </h5>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+
+            </div>
+
+            <div class="row south_20">
+
+                <div class="col-xs-12">
+                    <div class="subtitle pagebreak">Notifications</div>
+                </div>
+
+                <div class="col-xs-12">
+
+
+
+
+                            None
+
+
+
+
+
+
+                </div>
+
+                <div class="col-xs-12">
+                    <a rel="shadowbox;height=600;width=800" href="/fc-MCT/equipment/default.do?method=addNotifications&eqptNbr=MSDU7655308&eqType=CTR&eqLocation=YARD&gkey=20952097&refreshRequired=true" class="button add">Edit Notifications</a>
+                </div>
+
+            </div>
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<footer class="footer">
+
+    <div class="container">
+
+        <div class="col-xs-12 col-sm-9 pad-10">
+            <span class="hidden-xs">
+                <a href="/fc-MCT/footer/default.do?method=requirements">Site Requirements</a> |
+                <a href="/fc-MCT/footer/default.do?method=gdpr">General Data Protection Statement</a> |
+                <a href="/fc-MCT/footer/default.do?method=privacy">Privacy Policy</a> |
+                <a href="/fc-MCT/footer/default.do?method=terms">Terms of Service</a>
+                 | <a href="/fc-MCT/footer/default.do?method=contactUs">Contact Us</a><br>
+            </span>
+
+            &copy;2022&nbsp;Tideworks Technology. All Rights Reserved. <span class="hidden-xs">Forecast&reg; by Tideworks version 9.5.0.13077 (06162021-1824)<br>
+            Generated: 01/26/2022 1:04 AM</span>
+        </div>
+
+        <div class="col-sm-3 pad-10 hidden-xs hidden-sm">
+
+            <form name="pageFooter" id="pageFooter" action='/fc-MCT/import/default.do?method=container&eqptNbr=MSDU7655308' method="post">
+            <input type="hidden" name="siteLanguage"/>
+
+                <div class="world">
+
+                    <select name="language" id="lang" onchange="checkSelectedLanguage();" class="form-control input-sm">
+
+                        <option value="en_US" selected>English (United States)</option>
+
+                        <option value="es_MX" >Spanish (Mexico)</option>
+
+                        <option value="es_PA" >Spanish (Panama)</option>
+
+                        <option value="vi_VN" >Vietnamese</option>
+
+                    </select>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</footer>
+
+<script type="text/javascript">
+    var msg = "Are you sure you want to switch languages?\nIf you are in the middle of a task you may have to start over.";
+
+    function checkSelectedLanguage() {
+        if (false === true) {
+            if(confirm(msg) !== true) {
+                document.all["lang"].value = 'en_US';
+                return false;
+            }
+        }
+        document.pageFooter.siteLanguage.value = document.pageFooter.lang.value;
+        document.pageFooter.submit();
+    }
+
+
+        var userType = "CO_BROKER_FORWARDING (43369)";
+        var _gaq = _gaq || [];
+        _gaq.push(
+            ['_setAccount', 'UA-11978469-34'],
+            ['_setCustomVar',1,'forecastUserType',userType.substr(3, userType.length),2],
+            ['_trackPageview'],
+            ['b._setAccount', 'UA-11978469-31'],
+            ['b._setCustomVar',1,'forecastUserType',userType.substr(3, userType.length),2],
+            ['b._trackPageview']
+        );
+
+        (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' === document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+        })();
+
+</script>
+
+</body>
+</html>

@@ -8,6 +8,7 @@ from crawler.core_terminal.tideworks_share_spider import ContainerDetailRoutingR
 from test.spiders.terminal_tideworks_a295 import container_detail
 from crawler.spiders.terminal_tideworks_a295 import TerminalTideworksConleySpider
 
+
 @pytest.fixture
 def sample_loader(sample_loader):
     sample_path = Path(__file__).parent
@@ -18,7 +19,8 @@ def sample_loader(sample_loader):
 @pytest.mark.parametrize(
     'sub,container_no,',
     [
-        ('01_basic', 'MEDU7322906'),
+        ("01_basic", "MEDU7322906"),
+        ("02_punct_in_vessel_name", "MSDU7655308"),
     ],
 )
 def test_container_detail_routing_rule(sub, container_no, sample_loader):
