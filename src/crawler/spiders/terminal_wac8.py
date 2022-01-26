@@ -8,6 +8,7 @@ from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
+from crawler.core.proxy import HydraproxyProxyManager
 
 
 BASE_URL = "https://www.lbct.com"
@@ -21,6 +22,8 @@ class TerminalLbctSpider(BaseMultiTerminalSpider):
     def __init__(self, *args, **kwargs):
         super(TerminalLbctSpider, self).__init__(*args, **kwargs)
 
+        self._proxy_manager = HydraproxyProxyManager(session="wac8", logger=self.logger)
+
         rules = [
             ContainerRoutingRule(),
             NextRoundRoutingRule(),
@@ -29,9 +32,15 @@ class TerminalLbctSpider(BaseMultiTerminalSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
+        yield self._prepare_start()
+
+    def _prepare_start(self):
+        self._proxy_manager.renew_proxy()
+
         unique_container_nos = list(self.cno_tid_map.keys())
         option = ContainerRoutingRule.build_request_option(container_no_list=unique_container_nos)
-        yield self._build_request_by(option=option)
+        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
+        return self._build_request_by(option=proxy_option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -49,7 +58,8 @@ class TerminalLbctSpider(BaseMultiTerminalSpider):
                     result["task_id"] = t_id
                     yield result
             elif isinstance(result, RequestOption):
-                yield self._build_request_by(option=result)
+                proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
+                yield self._build_request_by(option=proxy_option)
             else:
                 raise RuntimeError()
 
