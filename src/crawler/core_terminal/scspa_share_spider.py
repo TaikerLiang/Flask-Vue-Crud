@@ -153,7 +153,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
 
 class ContentGetter(ChromeContentGetter):
     USERNAME = "tk@hardcoretech.co"
-    PASSWORD = "Goft@220125"
+    PASSWORD = "Goft@220126"
     URL = "https://goport.scspa.com/scspa/index"
 
     def login(self):
