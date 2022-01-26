@@ -5,7 +5,7 @@ def verify(results: List):
     results.pop(0)
 
     expect_url_fmt = (
-        'http://www.apl.com/ebusiness/tracking/detail/{container_no}?SearchCriteria=BL&SearchByReference={mbl_no}'
+        "http://www.apl.com/ebusiness/tracking/detail/{container_no}?SearchCriteria=Booking&SearchByReference={mbl_no}"
     )
 
     expect_url = expect_url_fmt.format(container_no='TCNU1868370', mbl_no='SHSE015942')
@@ -16,11 +16,12 @@ def verify(results: List):
 
     assert results[1].url == expect_url
 
+
 def multi_verify(results: List):
     results.pop(0)
 
     expect_url_fmt = (
-        'http://www.apl.com/ebusiness/tracking/detail/{container_no}?SearchCriteria=BL&SearchByReference={mbl_no}'
+        "http://www.apl.com/ebusiness/tracking/detail/{container_no}?SearchCriteria=Booking&SearchByReference={mbl_no}"
     )
 
     expect_url = expect_url_fmt.format(container_no='TCNU1868370', mbl_no='SHSE015942')

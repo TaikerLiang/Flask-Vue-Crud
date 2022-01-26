@@ -182,7 +182,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
         current_search_no = search_nos[0]
         form_data = {
             "g-recaptcha-response": "",
-            "SearchBy": "BL" if search_type == SHIPMENT_TYPE_MBL else "Booking",
+            "SearchBy": "Booking",
             "Reference": current_search_no,
             "search": "Search",
         }
@@ -292,12 +292,11 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     def build_request_option(
         cls, container_no: str, base_url: str, search_no: str, search_type: str, task_id: str
     ) -> RequestOption:
-        search_criteria = "BL" if search_type == SHIPMENT_TYPE_MBL else "Booking"
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=(
-                f"{base_url}/ebusiness/tracking/detail/{container_no}?SearchCriteria={search_criteria}&"
+                f"{base_url}/ebusiness/tracking/detail/{container_no}?SearchCriteria=Booking&"
                 f"SearchByReference={search_no}"
             ),
             meta={
