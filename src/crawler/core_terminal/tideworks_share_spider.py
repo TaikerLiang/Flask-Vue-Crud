@@ -239,7 +239,7 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         return container_no
 
     def _extract_container_info(self, response: scrapy.Selector):
-        pattern = re.compile(r"^(?P<vessel>[\w\s]+)/")
+        pattern = re.compile(r"^(?P<vessel>.+)/")
         container_info = {}
 
         div_selectors = response.css("div.col-sm-4 div")
