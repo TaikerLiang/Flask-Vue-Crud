@@ -1,49 +1,51 @@
 import asyncio
-import re
 import dataclasses
+import re
+import time
 from typing import Dict, List
 
-from scrapy import Request
-from scrapy.http import TextResponse
-from pyppeteer.errors import TimeoutError, PageError, NetworkError
 from pyppeteer.dialog import Dialog
+from pyppeteer.errors import NetworkError, PageError, TimeoutError
 import requests
 import scrapy
+from scrapy import Request
+from scrapy.http import TextResponse
+from scrapy.selector.unified import Selector
 
+from crawler.core.defines import BaseContentGetter
+from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
+from crawler.core.pyppeteer import PyppeteerContentGetter
+from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base import (
     CARRIER_RESULT_STATUS_ERROR,
-    SHIPMENT_TYPE_MBL,
     SHIPMENT_TYPE_BOOKING,
+    SHIPMENT_TYPE_MBL,
 )
+from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
     DriverMaxRetryError,
     SuspiciousOperationError,
 )
 from crawler.core_carrier.items import (
-    ContainerStatusItem,
-    LocationItem,
-    ContainerItem,
-    MblItem,
     BaseCarrierItem,
-    ExportErrorData,
+    ContainerItem,
+    ContainerStatusItem,
     DebugItem,
+    ExportErrorData,
+    LocationItem,
+    MblItem,
 )
-from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core.table import BaseTable, TableExtractor
-from crawler.core.pyppeteer import PyppeteerContentGetter
-from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
-from crawler.core.defines import BaseContentGetter
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.selector_finder import (
-    find_selector_from,
+    BaseMatchRule,
     CssQueryExistMatchRule,
     CssQueryTextStartswithMatchRule,
-    BaseMatchRule,
+    find_selector_from,
 )
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
-from scrapy.selector.unified import Selector
+
 
 MAX_RETRY_COUNT = 5
 EGLV_INFO_URL = "https://ct.shipmentlink.com/servlet/TDB1_CargoTracking.do"
@@ -89,15 +91,16 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
         yield self._build_request_by(option=option)
 
     def _prepare_restart(self, search_nos: List, task_ids: List):
-        if self._retry_count > MAX_RETRY_COUNT:
+        if self._retry_count >= MAX_RETRY_COUNT:
             raise DriverMaxRetryError()
 
         self._retry_count += 1
         self._driver.quit()
+        time.sleep(10)
         self._driver = EglvContentGetter(
             proxy_manager=HydraproxyProxyManager(session="eglv", logger=self.logger), is_headless=True
         )
-        rule = ContentRule(content_getter=self._driver, search_type=SHIPMENT_TYPE_BOOKING)
+        rule = ContentRule(content_getter=self._driver, search_type=self.search_type)
         rule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
     def parse(self, response):
@@ -182,8 +185,8 @@ class ContentRule(BaseRoutingRule):
                 )
                 yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
                 return
-        except (TimeoutError, NetworkError):
-            yield Restart(search_nos=search_nos, task_ids=task_ids, reason="TimeoutError/PageError")
+        except (TimeoutError, NetworkError, PageError):
+            yield Restart(search_nos=search_nos, task_ids=task_ids, reason="TimeoutError/NetworkError/PageError")
             return
 
         response = self.get_response_selector(
@@ -223,18 +226,15 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle_container_status(self, container_no, search_nos: List, task_ids: List):
-        try:
-            httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.container_page(container_no))
-            if httptext:
-                response = self.get_response_selector(
-                    url=EGLV_INFO_URL, httptext=httptext, meta={"container_no": container_no, "task_id": task_ids[0]}
-                )
-                rule = ContainerStatusRoutingRule()
+        httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.container_page(container_no))
+        if httptext:
+            response = self.get_response_selector(
+                url=EGLV_INFO_URL, httptext=httptext, meta={"container_no": container_no, "task_id": task_ids[0]}
+            )
+            rule = ContainerStatusRoutingRule()
 
-                for item in rule.handle(response):
-                    yield item
-        except (TimeoutError, NetworkError):
-            yield Restart(search_nos=search_nos, task_ids=task_ids, reason="handle_filing_status timeout")
+            for item in rule.handle(response):
+                yield item
 
     @staticmethod
     def get_response_selector(url, httptext, meta):
@@ -317,10 +317,14 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
 
         container_list = self._extract_container_info(response=response)
         for container in container_list:
-            for item in self.handle_container_status(
-                container_no=container["container_no"], search_nos=search_nos, task_ids=task_ids
-            ):
-                yield item
+            try:
+                for item in self.handle_container_status(
+                    container_no=container["container_no"], search_nos=search_nos, task_ids=task_ids
+                ):
+                    yield item
+            except (TimeoutError, NetworkError, PageError):
+                yield Restart(search_nos=search_nos, task_ids=task_ids, reason="handle_filing_status timeout")
+                return
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
@@ -459,7 +463,7 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
 
                 for item in rule.handle(response):
                     yield item
-        except (TimeoutError, NetworkError):
+        except (TimeoutError, NetworkError, PageError):
             yield Restart(search_nos=search_nos, task_ids=task_ids, reason="handle_filing_status timeout")
 
     def handle_release_status(self, search_nos: List, task_ids: List):
@@ -473,7 +477,7 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
 
                 for item in rule.handle(response):
                     yield item
-        except (TimeoutError, NetworkError):
+        except (TimeoutError, NetworkError, PageError):
             yield Restart(search_nos=search_nos, task_ids=task_ids, reason="handle_release_status timeout")
 
 
@@ -1012,10 +1016,14 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
                 full_pickup_date=container_info.get("full_pickup_date", ""),
             )
 
-            for item in self.handle_container_status(
-                container_no=container_info["container_no"], search_nos=search_nos, task_ids=task_ids
-            ):
-                yield item
+            try:
+                for item in self.handle_container_status(
+                    container_no=container_info["container_no"], search_nos=search_nos, task_ids=task_ids
+                ):
+                    yield item
+            except (TimeoutError, NetworkError, PageError):
+                yield Restart(search_nos=search_nos, task_ids=task_ids, reason="handle_filing_status timeout")
+                return
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
