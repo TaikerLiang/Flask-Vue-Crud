@@ -735,6 +735,7 @@ class WhlcContentGetter(PyppeteerContentGetter):
         await self.switch_to_last()
         await self.page.waitForSelector("table.tbl-list")
         await asyncio.sleep(5)
+        await self.scroll_down()
         return await self.page.content()
 
     async def go_detail_page(self, idx: int) -> str:
