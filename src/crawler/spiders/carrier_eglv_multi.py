@@ -1328,11 +1328,15 @@ class EglvContentGetter(PyppeteerContentGetter):
         await self.page.type("input#NO", search_no)
         await asyncio.sleep(2)
         await self.page.click("#quick input[type=button]")
-        await asyncio.sleep(5)
-        await self.scroll_down()
+
+        max_check_times = 2
+        while (max_check_times != 0) and (await self._check_data_exist()):
+            max_check_times -= 1
 
         is_exist = await self._check_data_exist()
         content = await self.page.content()
+        await self.scroll_down()
+
         return content, is_exist
 
     async def _check_data_exist(self):
@@ -1369,6 +1373,9 @@ class EglvContentGetter(PyppeteerContentGetter):
         try:
             await self.page.click("a[href=\"JavaScript:toggle('CustomsInfo');\"]")
             await asyncio.sleep(1)
+            while not await self.page.xpath("//div[@id='CustomsInfo' and contains(@style, 'display: block')]"):
+                await asyncio.sleep(1)
+
             await self.page.click("a[href=\"JavaScript:getDispInfo('AMTitle','AMInfo');\"]")
             await self.page.waitForSelector("div#AMInfo table")
             await asyncio.sleep(10)
