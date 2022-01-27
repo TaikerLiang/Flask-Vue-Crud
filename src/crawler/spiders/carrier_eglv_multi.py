@@ -47,7 +47,7 @@ from crawler.extractors.selector_finder import (
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 
 
-MAX_RETRY_COUNT = 5
+MAX_RETRY_COUNT = 10
 EGLV_INFO_URL = "https://ct.shipmentlink.com/servlet/TDB1_CargoTracking.do"
 EGLV_CAPTCHA_URL = "https://www.shipmentlink.com/servlet/TUF1_CaptchaUtils"
 
@@ -96,12 +96,15 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
 
         self._retry_count += 1
         self._driver.quit()
-        time.sleep(10)
+        time.sleep(3)
         self._driver = EglvContentGetter(
             proxy_manager=HydraproxyProxyManager(session="eglv", logger=self.logger), is_headless=True
         )
-        rule = ContentRule(content_getter=self._driver, search_type=self.search_type)
-        rule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+        self._driver.patch_pyppeteer()
+        self._rule_manager._rule_map["CONTENT"].driver = self._driver
+
+        option = ContentRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+        return self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -116,6 +119,7 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
             if isinstance(result, BaseCarrierItem):
                 yield result
             elif isinstance(result, Restart):
+                yield DebugItem(info=f"{result.reason}, Restarting...")
                 yield self._prepare_restart(search_nos=result.search_nos, task_ids=result.task_ids)
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -185,8 +189,8 @@ class ContentRule(BaseRoutingRule):
                 )
                 yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
                 return
-        except (TimeoutError, NetworkError, PageError):
-            yield Restart(search_nos=search_nos, task_ids=task_ids, reason="TimeoutError/NetworkError/PageError")
+        except (TimeoutError, NetworkError, PageError) as e:
+            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
             return
 
         response = self.get_response_selector(
@@ -322,8 +326,8 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
                     container_no=container["container_no"], search_nos=search_nos, task_ids=task_ids
                 ):
                     yield item
-            except (TimeoutError, NetworkError, PageError):
-                yield Restart(search_nos=search_nos, task_ids=task_ids, reason="handle_filing_status timeout")
+            except (TimeoutError, NetworkError, PageError) as e:
+                yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
                 return
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
@@ -463,8 +467,8 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
 
                 for item in rule.handle(response):
                     yield item
-        except (TimeoutError, NetworkError, PageError):
-            yield Restart(search_nos=search_nos, task_ids=task_ids, reason="handle_filing_status timeout")
+        except (TimeoutError, NetworkError, PageError) as e:
+            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
 
     def handle_release_status(self, search_nos: List, task_ids: List):
         try:
@@ -477,8 +481,8 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
 
                 for item in rule.handle(response):
                     yield item
-        except (TimeoutError, NetworkError, PageError):
-            yield Restart(search_nos=search_nos, task_ids=task_ids, reason="handle_release_status timeout")
+        except (TimeoutError, NetworkError, PageError) as e:
+            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
 
 
 class LeftBasicInfoTableLocator(BaseTable):
@@ -1021,8 +1025,8 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
                     container_no=container_info["container_no"], search_nos=search_nos, task_ids=task_ids
                 ):
                     yield item
-            except (TimeoutError, NetworkError, PageError):
-                yield Restart(search_nos=search_nos, task_ids=task_ids, reason="handle_filing_status timeout")
+            except (TimeoutError, NetworkError, PageError) as e:
+                yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
                 return
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
