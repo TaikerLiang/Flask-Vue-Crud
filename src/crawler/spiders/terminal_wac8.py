@@ -5,7 +5,8 @@ from typing import Dict, List
 import scrapy
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.core.proxy import HydraproxyProxyManager
@@ -51,7 +52,7 @@ class TerminalLbctSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
@@ -100,11 +101,14 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_no_list = response.meta["container_no_list"]
+        cur_container_no_list = container_no_list[:MAX_PAGE_NUM]
         response_dict = json.loads(response.text)
 
         for response in response_dict:
-            if not response["containerId"] in container_no_list:
+            if not response["containerId"] in cur_container_no_list:
                 continue
+            else:
+                cur_container_no_list.remove(response["containerId"])
 
             container_info = self._extract_container_info(response=response)
 
@@ -128,6 +132,13 @@ class ContainerRoutingRule(BaseRoutingRule):
                 # new field
                 owed=container_info["owed"],
                 full_empty=container_info["full/empty"],
+            )
+
+        for container_no in cur_container_no_list:
+            yield ExportErrorData(
+                container_no=container_no,
+                detail="Data was not found",
+                status=TERMINAL_RESULT_STATUS_ERROR,
             )
 
         yield NextRoundRoutingRule.build_request_option(container_no_list=container_no_list)
