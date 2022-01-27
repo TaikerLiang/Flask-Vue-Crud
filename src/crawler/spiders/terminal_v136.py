@@ -7,7 +7,8 @@ from typing import List
 from scrapy import Request, FormRequest
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 
 BASE_URL = "https://csp.poha.com"
@@ -42,7 +43,7 @@ class TerminalBayportMultiSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 if c_no:
                     t_ids = self.cno_tid_map[c_no]
@@ -143,7 +144,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         )
 
     def get_save_name(self, response) -> str:
-        return f"{self.name}.html"
+        return f"{self.name}.json"
 
     def handle(self, response):
         resp = json.loads(response.body)
@@ -156,6 +157,15 @@ class ContainerRoutingRule(BaseRoutingRule):
                 carrier_release=row[7],
                 last_free_day=self._get_last_free_day(row[9], row[10]),
             )
+
+        if "Error" in resp:
+            invalid_nos = resp["Error"].split(",")
+            for invalid_no in invalid_nos:
+                yield ExportErrorData(
+                    container_no=invalid_no.strip(),
+                    detail="Data was not found",
+                    status=TERMINAL_RESULT_STATUS_ERROR,
+                )
 
         container_no_list = response.meta["container_no_list"]
         yield NextRoundRoutingRule.build_request_option(container_no_list=container_no_list)
