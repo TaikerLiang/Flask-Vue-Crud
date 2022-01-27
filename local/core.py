@@ -4,6 +4,7 @@ import time
 import string
 import abc
 
+import undetected_chromedriver as uc
 from scrapy import Request
 from scrapy.http import TextResponse
 from selenium.webdriver import ActionChains
@@ -32,8 +33,11 @@ class BaseSeleniumContentGetter:
     PROXY_URL = PROXY_URL
     PROXY_PASSWORD = PROXY_PASSWORD
 
-    def __init__(self):
-        self.driver = None
+    def __init__(self, proxy_manager):
+        self.driver = uc.Chrome()
+        self.driver.get("https://nowsecure.nl")
+        time.sleep(3)
+        self.action = ActionChains(self.driver)
 
     def go_to(self, url: str, seconds: int):
         self.driver.get(url=url)
@@ -56,7 +60,7 @@ class BaseSeleniumContentGetter:
 
     def scroll_down(self):
         self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(2)
+        time.sleep(5)
 
     def back_to_previous(self):
         self.driver.back()
@@ -75,7 +79,6 @@ class BaseSeleniumContentGetter:
         actions = ActionChains(self.driver)
         x = random.randint(0, max_x)
         y = random.randint(0, max_y)
-        # print("move_mouse_to_random_position", x, y)
         actions.move_to_element_with_offset(body, x, y)
         actions.perform()
         time.sleep(0.5)
