@@ -17,7 +17,7 @@ logger = logging.getLogger("local-crawler")
 
 
 class LocalCrawler:
-    def __init__(self, _type: str, crawler: BaseLogstcalCrawler):
+    def __init__(self, _type: str, crawler: BaseLocalCrawler):
         self.helper = CrawlerHelper()
         self.handler = DataHandler()
         self.type = _type
