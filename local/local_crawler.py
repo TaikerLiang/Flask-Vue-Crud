@@ -153,7 +153,7 @@ def start():
                 )
                 logger.warning(f"Browser Closed")
                 local_crawler.reset()
-                time.sleep(60)
+                time.sleep(60 * 5)
             except DataNotFoundError as e:
                 logger.warning(
                     f"{ScreenColor.WARNING} (DataNotFoundError), time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"

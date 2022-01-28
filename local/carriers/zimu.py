@@ -1,6 +1,6 @@
 import dataclasses
 import random
-import asyncio
+import string
 import logging
 import time
 
@@ -42,24 +42,114 @@ class ZimuContentGetter(BaseSeleniumContentGetter):
         except (TimeoutException, NoSuchElementException):
             pass
 
-    def search_and_return(self, mbl_no: str):
+    def check_denied(self, res):
+        response = scrapy.Selector(text=res)
+
+        alter_msg = response.xpath("/html/body/h1")
+        if alter_msg:
+            return True
+        return False
+
+    def search(self, mbl_no: str):
         self.driver.get("https://api.myip.com/")
         time.sleep(5)
         self.driver.get("https://www.zim.com/tools/track-a-shipment")
-
+        time.sleep(5)
         self._accept_cookie()
 
         for i in range(random.randint(1, 3)):
             self.move_mouse_to_random_position()
 
+        if random.randint(1, 6) > 3:
+            icon = self.driver.find_element_by_xpath("/html/body/div[4]/header/div[3]/div/div[1]/a/img")
+            self.action.move_to_element(icon).click().perform()
+            time.sleep(2)
+            self.driver.back()
+            time.sleep(5)
+
         search_bar = self.driver.find_element_by_css_selector("input[name='consnumber']")
         self.action.move_to_element(search_bar).click().perform()
-        time.sleep(2)
-        search_bar.send_keys(mbl_no)
-        time.sleep(2)
+        self.slow_type(search_bar, mbl_no)
         search_bar.send_keys(Keys.RETURN)
-        time.sleep(10)
-        self.scroll_down()
+        time.sleep(7)
+
+        return self.driver.page_source
+
+    def get_random_string(self):
+        return "".join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))
+
+    def retry(self, mbl_no: str):
+        self.driver.back()
+        time.sleep(2)
+        for i in range(random.randint(1, 3)):
+            self.move_mouse_to_random_position()
+
+        if random.randint(1, 6) > 4:
+            icon = self.driver.find_element_by_xpath("/html/body/div[4]/header/div[3]/div/div[1]/a/img")
+            self.action.move_to_element(icon).click().perform()
+            time.sleep(2)
+            self.driver.back()
+            time.sleep(5)
+
+        if random.randint(1, 6) > 4:
+            small_icon = self.driver.find_element_by_xpath(
+                '//*[@id="main"]/div/div/div/div/div/div/div/div/div[1]/div/div[2]/button'
+            )
+            self.action.move_to_element(small_icon).click().perform()
+            time.sleep(5)
+
+        if random.randint(1, 6) > 4:
+            contact_us = self.driver.find_element_by_xpath("/html/body/div[4]/header/div[2]/ul/li[1]/ul/li[2]/a")
+            self.action.move_to_element(contact_us).click().perform()
+            time.sleep(5)
+            self.driver.back()
+            time.sleep(5)
+            self.scroll_down()
+
+        self.resting_mouse()
+        search_bar = self.driver.find_element_by_css_selector("input[name='consnumber']")
+
+        if random.randint(1, 6) > 4:
+            for _ in range(random.randint(15, 20)):
+                search_bar.send_keys(Keys.BACKSPACE)
+                time.sleep(float(random.uniform(0.05, 0.15)))
+            self.slow_type(search_bar, self.get_random_string())
+            search_bar.send_keys(Keys.RETURN)
+            time.sleep(2)
+            for _ in range(random.randint(6, 9)):
+                search_bar.send_keys(Keys.BACKSPACE)
+                time.sleep(float(random.uniform(0.05, 0.3)))
+            self.slow_type(search_bar, mbl_no)
+
+        search_bar.send_keys(Keys.RETURN)
+        time.sleep(5)
+
+    def search_and_return(self, mbl_no: str):
+        if self.check_denied(self.search(mbl_no=mbl_no)):
+            self.retry(mbl_no)
+        else:
+            rnd = random.randint(1, 8)
+            if rnd > 6:
+                new_icon = self.driver.find_element_by_xpath(
+                    '//*[@id="main"]/div/div/div/div/div/div/div/div/div[1]/div[2]/div[1]/div/dl[1]/dt[2]/a/span'
+                )
+                self.action.move_to_element(new_icon).click().perform()
+                time.sleep(2)
+            elif rnd > 3:
+                bus_icon = self.driver.find_element_by_xpath(
+                    '//*[@id="main"]/div/div/div/div/div/div/div/div/div[1]/div[2]/div[1]/div/dl[2]/dd/a'
+                )
+                self.action.move_to_element(bus_icon).click().perform()
+                time.sleep(3)
+                windows = self.driver.window_handles
+                if len(windows) > 1:
+                    self.driver.switch_to.window(windows[1])
+                    self.driver.close()
+                    self.driver.switch_to.window(windows[0])
+
+            self.resting_mouse()
+            time.sleep(1)
+            self.scroll_down()
 
         return self.driver.page_source
 
