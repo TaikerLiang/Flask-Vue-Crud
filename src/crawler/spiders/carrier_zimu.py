@@ -272,6 +272,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
             deliv_eta = ""
             eta = response.css("dt#etaDate::text").get() or ""
 
+        if not mbl_no:
+            return {}
+
         return {
             "mbl_no": mbl_no.strip(),
             "por": routing_schedule.get("Place of Receipt (POR)") or None,

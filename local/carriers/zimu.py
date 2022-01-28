@@ -2,16 +2,20 @@ import dataclasses
 import random
 import asyncio
 import logging
+import time
 
 import scrapy
 from pyppeteer.errors import TimeoutError
 from urllib3.exceptions import ReadTimeoutError
+from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
 from local.core import BaseLocalCrawler
 from local.proxy import HydraproxyProxyManager, ProxyManager
 from local.exceptions import AccessDeniedError, DataNotFoundError
 from src.crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
 from src.crawler.core.pyppeteer import PyppeteerContentGetter
+from local.core import BaseSeleniumContentGetter
 from src.crawler.spiders.carrier_zimu import MainInfoRoutingRule
 
 
@@ -24,46 +28,40 @@ class ProxyOption:
 logger = logging.getLogger("local-crawler-zimu")
 
 
-class ZimuContentGetter(PyppeteerContentGetter):
+class ZimuContentGetter(BaseSeleniumContentGetter):
     def __init__(self, proxy_manager: ProxyManager = None):
         super().__init__(proxy_manager)
+        self._is_first = True
 
-    async def _accept_cookie(self):
+    def _accept_cookie(self):
         accept_btn_css = "#onetrust-accept-btn-handler"
         try:
-            await self.page.waitForSelector(accept_btn_css, timeout=5000)
-        except (TimeoutError, ReadTimeoutError):
-            raise LoadWebsiteTimeOutError(url="https://www.zim.com/tools/track-a-shipment")
+            cookie_btn = self.driver.find_element_by_css_selector(accept_btn_css)
+            cookie_btn.click()
+            time.sleep(3)
+        except (TimeoutException, NoSuchElementException):
+            pass
 
-        await asyncio.sleep(1)
-        await self.page.click(accept_btn_css)
+    def search_and_return(self, mbl_no: str):
+        self.driver.get("https://api.myip.com/")
+        time.sleep(5)
+        self.driver.get("https://www.zim.com/tools/track-a-shipment")
 
-    async def search_and_return(self, mbl_no: str):
-        await self.page.goto("https://api.myip.com/")
-        await asyncio.sleep(5)
-        await self.page.goto("https://www.zim.com/tools/track-a-shipment", timeout=70000)
-
-        if self._is_first:
-            self._is_first = False
-            await self._accept_cookie()
-            await self.page.hover("a.location")
+        self._accept_cookie()
 
         for i in range(random.randint(1, 3)):
-            await self.move_mouse_to_random_position()
+            self.move_mouse_to_random_position()
 
-        search_bar = "input[name='consnumber']"
-        await self.page.hover(search_bar)
+        search_bar = self.driver.find_element_by_css_selector("input[name='consnumber']")
+        self.action.move_to_element(search_bar).click().perform()
+        time.sleep(2)
+        search_bar.send_keys(mbl_no)
+        time.sleep(2)
+        search_bar.send_keys(Keys.RETURN)
+        time.sleep(10)
+        self.scroll_down()
 
-        await self.page.click(search_bar)
-        await asyncio.sleep(2)
-        await self.page.type(search_bar, text=mbl_no)
-        await asyncio.sleep(2)
-        await self.page.keyboard.press("Enter")
-        await asyncio.sleep(30)
-        await self.scroll_down()
-
-        page_source = await self.page.content()
-        return page_source
+        return self.driver.page_source
 
 
 class ZimuLocalCrawler(BaseLocalCrawler):
@@ -80,7 +78,7 @@ class ZimuLocalCrawler(BaseLocalCrawler):
 
         for mbl_no, task_id in id_mbl_map.items():
             yield {"task_id": task_id}
-            res = asyncio.get_event_loop().run_until_complete(self.content_getter.search_and_return(mbl_no=mbl_no))
+            res = self.content_getter.search_and_return(mbl_no=mbl_no)
             response = scrapy.Selector(text=res)
 
             alter_msg = response.xpath("/html/body/h1")
@@ -95,6 +93,8 @@ class ZimuLocalCrawler(BaseLocalCrawler):
             main_rule.handle_item(response=response)
 
             for item in main_rule.handle_item(response=response):
+                if not item:
+                    return
                 yield item
 
     @staticmethod
