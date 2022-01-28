@@ -7,5 +7,5 @@ class TerminalPctSpider(TmsSharedSpider):
     terminal_id = 3
     company_info = CompanyInfo(
         email="HardcoreTK",
-        password="Hardc0re*",
+        password="Goft@220128",
     )
