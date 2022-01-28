@@ -47,5 +47,8 @@ class RequestOptionQueue:
     def add_request(self, request_option: RequestOption):
         self._queue.append(request_option)
 
+    def add_high_priority_request(self, request_option: RequestOption):
+        self._queue.insert(0, request_option)
+
     def get_next_request(self) -> Union[RequestOption, None]:
         return self._queue.pop(0)
