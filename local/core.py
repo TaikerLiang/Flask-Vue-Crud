@@ -35,7 +35,7 @@ class BaseSeleniumContentGetter:
     PROXY_PASSWORD = PROXY_PASSWORD
 
     def __init__(self, proxy_manager):
-        self.driver = uc.Chrome(version_main=92)
+        self.driver = uc.Chrome(version_main=97)
         self.driver.get("https://nowsecure.nl")
         time.sleep(5)
         self.action = ActionChains(self.driver)
@@ -94,7 +94,7 @@ class BaseSeleniumContentGetter:
         time.sleep(2)
         self.driver.switch_to.window(self.driver.window_handles[-1])
         time.sleep(2)
-        self.driver.get('chrome://settings/clearBrowserData')  # for old chromedriver versions use cleardriverData
+        self.driver.get("chrome://settings/clearBrowserData")  # for old chromedriver versions use cleardriverData
         time.sleep(2)
         actions = ActionChains(self.driver)
         actions.send_keys(Keys.TAB * 3 + Keys.DOWN * 3)  # send right combination
@@ -104,8 +104,6 @@ class BaseSeleniumContentGetter:
         actions.send_keys(Keys.TAB * 4 + Keys.ENTER)  # confirm
         actions.perform()
         time.sleep(5)  # wait some time to finish
-        self.driver.close()  # close this tab
-        self.driver.switch_to.window(self.driver.window_handles[0])  # switch back
 
     def reset(self):
         self.delete_cache()

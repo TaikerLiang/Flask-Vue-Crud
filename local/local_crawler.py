@@ -74,38 +74,38 @@ def run_spider(local_crawler, edi_client, task, start_time):
 
 
 def start():
-    carrier_edi_client = EdiClientService(
-        url=f"{config.EDI_DOMAIN}/api/tracking-carrier/local/", edi_user=config.EDI_USER, edi_token=config.EDI_TOKEN
-    )
-    local_tasks = carrier_edi_client.get_local_tasks()
-    logger.info(f"number of tasks: {len(local_tasks)}")
+    # carrier_edi_client = EdiClientService(
+    #     url=f"{config.EDI_DOMAIN}/api/tracking-carrier/local/", edi_user=config.EDI_USER, edi_token=config.EDI_TOKEN
+    # )
+    # local_tasks = carrier_edi_client.get_local_tasks()
+    # logger.info(f"number of tasks: {len(local_tasks)}")
 
-    # local_tasks = [
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '219992', 'mbl_no': 'ZIMUTPE8201344'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '220004', 'mbl_no': 'ZIMUSNH1651309'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '220034', 'mbl_no': 'ZIMUSHH30744766'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '220035', 'mbl_no': 'ZIMUSHH30754994'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '220115', 'mbl_no': 'ZIMUSHH30736982'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '220170', 'mbl_no': 'ZIMUSHH30751885'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233851', 'mbl_no': 'ZIMUNYC998979'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233850', 'mbl_no': 'ZIMUNYC998416'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233824', 'mbl_no': 'ZIMUXIA8237146'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233770', 'mbl_no': 'ZIMUSNH1565371'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233729', 'mbl_no': 'ZIMUNGB9886166'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233728', 'mbl_no': 'ZIMUNGB9886389'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233678', 'mbl_no': 'ZIMUHKG001655671'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233674', 'mbl_no': 'ZIMUSNH1565369'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233577', 'mbl_no': 'ZIMUXIA8240119'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233485', 'mbl_no': 'ZIMUNGB9815921'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233422', 'mbl_no': 'ZIMUHCM80225099'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233416', 'mbl_no': 'ZIMUSHH30759067'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233276', 'mbl_no': 'ZIMUSHH30744848'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233275', 'mbl_no': 'ZIMUSHH30769362'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233274', 'mbl_no': 'ZIMUSHH30762577'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233252', 'mbl_no': 'ZIMUNGB1119782'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233205', 'mbl_no': 'ZIMUNGB9749159'},
-    #     {'type': 'carrier', 'scac_code': 'ZIMU', 'task_id': '233175', 'mbl_no': 'ZIMUNGB1132028'},
-    # ]
+    local_tasks = [
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "219992", "mbl_no": "ZIMUTPE8201344"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "220004", "mbl_no": "ZIMUSNH1651309"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "220034", "mbl_no": "ZIMUSHH30744766"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "220035", "mbl_no": "ZIMUSHH30754994"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "220115", "mbl_no": "ZIMUSHH30736982"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "220170", "mbl_no": "ZIMUSHH30751885"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233851", "mbl_no": "ZIMUNYC998979"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233850", "mbl_no": "ZIMUNYC998416"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233824", "mbl_no": "ZIMUXIA8237146"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233770", "mbl_no": "ZIMUSNH1565371"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233729", "mbl_no": "ZIMUNGB9886166"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233728", "mbl_no": "ZIMUNGB9886389"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233678", "mbl_no": "ZIMUHKG001655671"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233674", "mbl_no": "ZIMUSNH1565369"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233577", "mbl_no": "ZIMUXIA8240119"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233485", "mbl_no": "ZIMUNGB9815921"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233422", "mbl_no": "ZIMUHCM80225099"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233416", "mbl_no": "ZIMUSHH30759067"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233276", "mbl_no": "ZIMUSHH30744848"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233275", "mbl_no": "ZIMUSHH30769362"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233274", "mbl_no": "ZIMUSHH30762577"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233252", "mbl_no": "ZIMUNGB1119782"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233205", "mbl_no": "ZIMUNGB9749159"},
+        {"type": "carrier", "scac_code": "ZIMU", "task_id": "233175", "mbl_no": "ZIMUNGB1132028"},
+    ]
 
     if len(local_tasks) == 0:
         logger.warning(f"sleep 10 minutes")
