@@ -17,7 +17,7 @@ logger = logging.getLogger("local-crawler")
 
 
 class LocalCrawler:
-    def __init__(self, _type: str, crawler: BaseLocalCrawler):
+    def __init__(self, _type: str, crawler: BaseLogstcalCrawler):
         self.helper = CrawlerHelper()
         self.handler = DataHandler()
         self.type = _type
@@ -54,6 +54,9 @@ class LocalCrawler:
         )
 
         return self.handler.update_error_message(result=init_items[task_id], err_msg=err_msg)
+
+    def reset(self):
+        self.crawler.reset()
 
     def quit(self):
         self.crawler.quit()
@@ -149,9 +152,8 @@ def start():
                     f"{ScreenColor.WARNING} (AccessDeniedError), time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"
                 )
                 logger.warning(f"Browser Closed")
-                local_crawler.quit()
+                local_crawler.reset()
                 time.sleep(60)
-                local_crawler = LocalCrawler(_type=_type, crawler=helper.get_crawler(code=_code))
             except DataNotFoundError as e:
                 logger.warning(
                     f"{ScreenColor.WARNING} (DataNotFoundError), time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"

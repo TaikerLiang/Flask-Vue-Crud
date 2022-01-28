@@ -11,6 +11,7 @@ from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.common.keys import Keys
 
 from local.config import PROXY_URL, PROXY_PASSWORD
 
@@ -88,6 +89,29 @@ class BaseSeleniumContentGetter:
         actions.perform()
         time.sleep(0.5)
 
+    def delete_cache(self):
+        self.driver.execute_script("window.open('');")
+        time.sleep(2)
+        self.driver.switch_to.window(self.driver.window_handles[-1])
+        time.sleep(2)
+        self.driver.get('chrome://settings/clearBrowserData')  # for old chromedriver versions use cleardriverData
+        time.sleep(2)
+        actions = ActionChains(self.driver)
+        actions.send_keys(Keys.TAB * 3 + Keys.DOWN * 3)  # send right combination
+        actions.perform()
+        time.sleep(2)
+        actions = ActionChains(self.driver)
+        actions.send_keys(Keys.TAB * 4 + Keys.ENTER)  # confirm
+        actions.perform()
+        time.sleep(5)  # wait some time to finish
+        self.driver.close()  # close this tab
+        self.driver.switch_to.window(self.driver.window_handles[0])  # switch back
+
+    def reset(self):
+        self.delete_cache()
+        self.delete_all_cookies()
+        time.sleep(3)
+
     @staticmethod
     def _generate_random_string():
         return "".join(random.choices(string.ascii_uppercase + string.digits, k=20))
@@ -122,5 +146,7 @@ class BaseLocalCrawler:
         )
 
     def quit(self):
-        self.content_getter.delete_all_cookies()
         self.content_getter.quit()
+
+    def reset(self):
+        self.content_getter.reset()
