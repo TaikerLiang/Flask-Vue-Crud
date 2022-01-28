@@ -10,8 +10,9 @@ import PIL.Image as Image
 from anticaptchaofficial.imagecaptcha import *
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
 from crawler.core_terminal.request_helpers import RequestOption
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.core_terminal.exceptions import DriverMaxRetryError
 from crawler.core.proxy import HydraproxyProxyManager
@@ -78,7 +79,7 @@ class EtsShareSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 if c_no:
                     t_ids = self.cno_tid_map[c_no]
@@ -246,6 +247,7 @@ class LoginRoutingRule(BaseRoutingRule):
         container_no_list = response.meta["container_no_list"]
 
         response_dict = json.loads(response.text)
+        print(response_dict)
         sk = response_dict.get("_sk")
         if not sk:
             yield Restart()
@@ -289,15 +291,19 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         if self._is_container_no_invalid_with_msg(container_info_list=container_info_list):
             for c_no in container_no_list[:20]:
-                yield InvalidContainerNoItem(
+                yield ExportErrorData(
                     container_no=c_no,
+                    detail="Data was not found",
+                    status=TERMINAL_RESULT_STATUS_ERROR,
                 )
 
         for container_info in container_info_list:
             if self._is_container_no_invalid_with_term_name(container_info=container_info):
                 c_no = re.sub("<.*?>", "", container_info["PO_CNTR_NO"])
-                yield InvalidContainerNoItem(
+                yield ExportErrorData(
                     container_no=c_no,
+                    detail="Data was not found",
+                    status=TERMINAL_RESULT_STATUS_ERROR,
                 )
             else:
                 yield TerminalItem(
@@ -362,7 +368,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url="https://www.gofreight.co/",
             meta={
                 "container_no_list": container_no_list,
                 "sk": sk,
