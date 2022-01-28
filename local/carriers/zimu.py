@@ -79,7 +79,6 @@ class ZimuLocalCrawler(BaseLocalCrawler):
         for mbl_no, task_id in id_mbl_map.items():
             yield {"task_id": task_id}
             res = self.content_getter.search_and_return(mbl_no=mbl_no)
-            # res = asyncio.get_event_loop().run_until_complete(self.content_getter.search_and_return(mbl_no=mbl_no))
             response = scrapy.Selector(text=res)
 
             alter_msg = response.xpath("/html/body/h1")
