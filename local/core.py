@@ -34,7 +34,7 @@ class BaseSeleniumContentGetter:
     PROXY_PASSWORD = PROXY_PASSWORD
 
     def __init__(self, proxy_manager):
-        self.driver = uc.Chrome(version_main=97)
+        self.driver = uc.Chrome(version_main=92)
         self.driver.get("https://nowsecure.nl")
         time.sleep(5)
         self.action = ActionChains(self.driver)
