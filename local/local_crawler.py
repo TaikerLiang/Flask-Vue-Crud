@@ -149,8 +149,9 @@ def start():
                     f"{ScreenColor.WARNING} (AccessDeniedError), time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"
                 )
                 logger.warning(f"Browser Closed")
+                local_crawler.delete_all_cookies()
                 local_crawler.quit()
-                time.sleep(10)
+                time.sleep(60)
                 local_crawler = LocalCrawler(_type=_type, crawler=helper.get_crawler(code=_code))
             except DataNotFoundError as e:
                 logger.warning(

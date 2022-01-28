@@ -34,14 +34,19 @@ class BaseSeleniumContentGetter:
     PROXY_PASSWORD = PROXY_PASSWORD
 
     def __init__(self, proxy_manager):
-        self.driver = uc.Chrome(version_main=92)
+        self.driver = uc.Chrome(version_main=97)
         self.driver.get("https://nowsecure.nl")
-        time.sleep(3)
+        time.sleep(5)
         self.action = ActionChains(self.driver)
+        self.delete_all_cookies()
+        time.sleep(5)
 
     def go_to(self, url: str, seconds: int):
         self.driver.get(url=url)
         time.sleep(seconds)
+
+    def delete_all_cookies(self):
+        self.driver.delete_all_cookies()
 
     def execute_script(self, script: str):
         self.driver.execute_script(script=script)
@@ -117,4 +122,5 @@ class BaseLocalCrawler:
         )
 
     def quit(self):
+        self.content_getter.delete_all_cookies()
         self.content_getter.quit()
