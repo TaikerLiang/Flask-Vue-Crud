@@ -6,23 +6,35 @@ from crawler.core.table import BaseTable, TableExtractor
 
 import scrapy
 from scrapy import Selector
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.support.wait import WebDriverWait
+from urllib3.exceptions import ReadTimeoutError
 
 from crawler.core.base import DUMMY_URL_DICT
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.exceptions import TerminalResponseFormatError
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.exceptions import TerminalResponseFormatError, DriverMaxRetryError
+from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 
 BASE_URL = "https://tms.itslb.com"
 MAX_PAGE_NUM = 20
+MAX_RETRY_COUNT = 3
 
 
 @dataclasses.dataclass
 class CompanyInfo:
     email: str
     password: str
+
+
+@dataclasses.dataclass
+class Restart:
+    container_nos: list
 
 
 class TmsSharedSpider(BaseMultiTerminalSpider):
@@ -42,6 +54,7 @@ class TmsSharedSpider(BaseMultiTerminalSpider):
         ]
 
         self._rule_manager = RuleManager(rules=rules)
+        self._retry_count = 0
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
@@ -59,7 +72,7 @@ class TmsSharedSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
@@ -67,6 +80,16 @@ class TmsSharedSpider(BaseMultiTerminalSpider):
                     yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
+            elif isinstance(result, Restart):
+                if self._retry_count < MAX_RETRY_COUNT:
+                    self._retry_count += 1
+                    container_nos = result.container_nos
+                    request_option = SeleniumRoutingRule.build_request_option(
+                        container_nos=container_nos, terminal_id=self.terminal_id, company_info=self.company_info
+                    )
+                    yield self._build_request_by(option=request_option)
+                else:
+                    raise DriverMaxRetryError()
             else:
                 raise RuntimeError()
 
@@ -109,14 +132,32 @@ class SeleniumRoutingRule(BaseRoutingRule):
         company_info = response.meta["company_info"]
 
         content_getter = ContentGetter(proxy_manager=None, is_headless=True)
-        content_getter.login(company_info.email, company_info.password)
-        content_getter.select_terminal(terminal_id)
+        try:
+            content_getter.login(company_info.email, company_info.password)
+            content_getter.select_terminal(terminal_id)
+
+        except TimeoutException:
+            yield Restart(container_nos=container_nos)
+            content_getter.close()
+            return
 
         # TODO: can improve here, send request one time
         for container_no in container_nos[:MAX_PAGE_NUM]:
-            page_source = content_getter.search(container_no)
+            try:
+                page_source = content_getter.search(container_no)
+
+            except (ReadTimeoutError, TimeoutException):
+                yield Restart(container_nos=container_nos)
+                content_getter.close()
+                return
+
             resp = Selector(text=page_source)
             if not resp.css("table.table-borderless"):
+                yield ExportErrorData(
+                    container_no=container_no,
+                    detail="Data was not found",
+                    status=TERMINAL_RESULT_STATUS_ERROR,
+                )
                 continue
 
             for item in self._handle_response(response=resp):
@@ -380,16 +421,22 @@ class ContentGetter(ChromeContentGetter):
 
     def select_terminal(self, terminal_id: int):
         if terminal_id == 1:
-            self._driver.find_element_by_xpath('//*[@id="loginTerminalId"]/option[1]').click()
+            # default terminal option
+            pass
         elif terminal_id == 3:
-            self._driver.find_element_by_xpath('//*[@id="loginTerminalId"]/option[2]').click()
+            option = WebDriverWait(self._driver, 20).until(
+                EC.element_to_be_clickable((By.XPATH, '//*[@id="loginTerminalId"]/option[2]'))
+            )
+            option.click()
         time.sleep(7)
 
     def search(self, container_no: str):
         self._driver.get("https://tms.itslb.com/tms2/Import/ContainerAvailability")
         time.sleep(3)
 
-        textarea = self._driver.find_element_by_xpath('//*[@id="refNums"]')
+        textarea = WebDriverWait(self._driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, '//*[@id="refNums"]'))
+        )
         textarea.send_keys(container_no)
         time.sleep(1)
 
