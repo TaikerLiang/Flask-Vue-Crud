@@ -5,7 +5,7 @@ from urllib.parse import urlencode
 import scrapy
 
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import SuspiciousOperationError
+from crawler.core_carrier.exceptions import SuspiciousOperationError, AccessDeniedError
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.items import (
     BaseCarrierItem,
@@ -17,11 +17,17 @@ from crawler.core_carrier.items import (
     ExportErrorData,
     DebugItem,
 )
+from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core.table import BaseTable, TableExtractor
 
+MAX_RETRY_COUNT = 3
 URL = "https://www.sethshipping.com"
+
+
+class Restart:
+    pass
 
 
 class SharedSpider(BaseCarrierSpider):
@@ -35,12 +41,22 @@ class SharedSpider(BaseCarrierSpider):
             AuthTokenRoutingRule(),
             MainInfoRoutingRule(),
         ]
-
+        self._retry_count = 0
         self._rule_manager = RuleManager(rules=rules)
+        self._proxy_manager = HydraproxyProxyManager(session="gosussph", logger=self.logger)
 
     def start(self):
-        request_option = GetCookieRoutingRule.build_request_option(mbl_no=self.mbl_no)
-        yield self._build_request_by(option=request_option)
+        yield self._prepare_restart()
+
+    def _prepare_restart(self):
+        if self._retry_count > MAX_RETRY_COUNT:
+            raise AccessDeniedError()
+
+        self._retry_count += 1
+        self._proxy_manager.renew_proxy()
+        option = GetCookieRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
+        return self._build_request_by(option=proxy_option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -54,7 +70,10 @@ class SharedSpider(BaseCarrierSpider):
             if isinstance(result, BaseCarrierItem):
                 yield result
             elif isinstance(result, RequestOption):
-                yield self._build_request_by(option=result)
+                proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
+                yield self._build_request_by(option=proxy_option)
+            elif isinstance(result, Restart):
+                yield self._prepare_restart()
             else:
                 raise RuntimeError()
 
@@ -107,6 +126,7 @@ class GetCookieRoutingRule(BaseRoutingRule):
             },
             meta={
                 "mbl_no": mbl_no,
+                "handle_httpstatus_list": [403],
             },
         )
 
@@ -115,7 +135,8 @@ class GetCookieRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta["mbl_no"]
-
+        if response.status == 403:
+            yield Restart()
         yield AuthTokenRoutingRule.build_request_option(mbl_no=mbl_no)
 
 
