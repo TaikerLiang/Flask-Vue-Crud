@@ -21,7 +21,7 @@ from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core.table import BaseTable, TableExtractor
 
-URL = "https://www.sethshipping.com/track_shipment_ajax"
+URL = "https://www.sethshipping.com"
 
 
 class SharedSpider(BaseCarrierSpider):
@@ -31,13 +31,15 @@ class SharedSpider(BaseCarrierSpider):
         super(SharedSpider, self).__init__(*args, **kwargs)
 
         rules = [
+            GetCookieRoutingRule(),
+            AuthTokenRoutingRule(),
             MainInfoRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        request_option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        request_option = GetCookieRoutingRule.build_request_option(mbl_no=self.mbl_no)
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -88,6 +90,70 @@ class CarrierGosuSpider(SharedSpider):
     name = "carrier_gosu"
 
 
+class GetCookieRoutingRule(BaseRoutingRule):
+    name = "COOKIE"
+
+    @classmethod
+    def build_request_option(cls, mbl_no) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=URL,
+            headers={
+                "Connection": "keep-alive",
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "Accept-Language": "en-US,en;q=0.9",
+            },
+            meta={
+                "mbl_no": mbl_no,
+            },
+        )
+
+    def get_save_name(self, response) -> str:
+        return f"{self.name}.html"
+
+    def handle(self, response):
+        mbl_no = response.meta["mbl_no"]
+
+        yield AuthTokenRoutingRule.build_request_option(mbl_no=mbl_no)
+
+
+class AuthTokenRoutingRule(BaseRoutingRule):
+    name = "TOKEN"
+
+    @classmethod
+    def build_request_option(cls, mbl_no) -> RequestOption:
+        form_data = {
+            "containerid": mbl_no,
+            "token": mbl_no,
+        }
+        body = urlencode(query=form_data)
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_BODY,
+            url=f"{URL}/site/landing/container_bl_validation",
+            headers={
+                "Connection": "keep-alive",
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "Referer": f"https://www.sethshipping.com/tracking_shipment?id={mbl_no}",
+                "Accept-Language": "en-US,en;q=0.9",
+            },
+            body=body,
+            meta={
+                "mbl_no": mbl_no,
+            },
+        )
+
+    def get_save_name(self, response) -> str:
+        return f"{self.name}.html"
+
+    def handle(self, response):
+        mbl_no = response.meta["mbl_no"]
+        yield MainInfoRoutingRule.build_request_option(mbl_no=mbl_no)
+
+
 class MainInfoRoutingRule(BaseRoutingRule):
     name = "MAIN_INFO"
 
@@ -98,12 +164,12 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url=URL,
+            url=f"{URL}/track_shipment_ajax",
             headers={
                 "Connection": "keep-alive",
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36",
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                "Referer": "https://www.sethshipping.com/tracking_shipment?id=SSPHAMD1234567",
+                "Referer": f"https://www.sethshipping.com/tracking_shipment?id={mbl_no}",
                 "Accept-Language": "en-US,en;q=0.9",
             },
             body=body,
