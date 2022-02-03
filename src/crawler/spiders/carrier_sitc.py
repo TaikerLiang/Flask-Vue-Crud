@@ -32,6 +32,9 @@ SITC_BASE_URL = "https://api.sitcline.com"
 class CarrierSitcSpider(BaseCarrierSpider):
     name = "carrier_sitc"
 
+    handle_httpstatus_list = [428, 502]
+    max_428_502_error_retry_times = 3
+
     def __init__(self, *args, **kwargs):
         super(CarrierSitcSpider, self).__init__(*args, **kwargs)
 
@@ -55,6 +58,15 @@ class CarrierSitcSpider(BaseCarrierSpider):
         yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
+
+        if response.status in CarrierSitcSpider.handle_httpstatus_list and self.max_428_502_error_retry_times != 0:
+            yield DebugItem(info=f"{response.status} error, remaining retry times {self.max_428_502_error_retry_times}")
+
+            self.max_428_502_error_retry_times -= 1
+            for request in self.start():
+                yield request
+
+            return
 
         if routing_rule.name != "CAPTCHA1" and routing_rule.name != "CAPTCHA2":
             save_name = routing_rule.get_save_name(response=response)
@@ -151,7 +163,7 @@ class LoginRoutingRule(BaseRoutingRule):
         mbl_no = response.meta["mbl_no"]
         response_dict = json.loads(response.text)
         token = f"{response_dict['token_type']} {response_dict['access_token']}"
-        print("token: ", token)
+        yield DebugItem(info=f"token: {token}")
 
         yield Captcha2RoutingRule.build_request_option(mbl_no=mbl_no, token=token)
 
@@ -193,13 +205,8 @@ class BasicInfoRoutingRule(BaseRoutingRule):
     def build_request_option(cls, mbl_no: str, rand_str: str, captcha_code: str, token: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_POST_BODY,
+            method=RequestOption.METHOD_GET,
             url=f"{SITC_BASE_URL}/doc/cargoTrack/search?blNo={mbl_no}&containerNo=&code={captcha_code}&randomStr={rand_str}",
-            headers={
-                "Content-Type": "application/json",
-                "authorization": token,
-                "TenantId": "2",
-            },
             meta={"mbl_no": mbl_no, "token": token},
         )
 
