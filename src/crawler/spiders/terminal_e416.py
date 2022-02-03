@@ -1,8 +1,8 @@
 import time
-from typing import List
-from crawler.core.table import BaseTable
+import json
+from typing import List, Dict
 
-from scrapy import Request, FormRequest, Selector
+from scrapy import Request, FormRequest
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -12,12 +12,15 @@ from crawler.core.table import HeaderMismatchError
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import LoadWebsiteTimeOutFatal
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
+from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
-from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 
 
-MAX_PAGE_NUM = 3
+MAX_PAGE_NUM = 20
+URL = "https://mahercsp.maherterminals.com"
+EMAIL = "hard202006010"
+PASSWORD = "hardc0re"
 
 
 class MaherContentGetter(ChromeContentGetter):
@@ -81,6 +84,7 @@ class TerminalMaherMultiSpider(BaseMultiTerminalSpider):
         super(TerminalMaherMultiSpider, self).__init__(*args, **kwargs)
 
         rules = [
+            LoginRoutingRule(),
             SearchRoutingRule(),
             NextRoundRoutingRule(),
         ]
@@ -90,7 +94,7 @@ class TerminalMaherMultiSpider(BaseMultiTerminalSpider):
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
-        option = SearchRoutingRule.build_request_option(container_no_list=unique_container_nos)
+        option = LoginRoutingRule.build_request_option(container_nos=unique_container_nos)
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -103,7 +107,7 @@ class TerminalMaherMultiSpider(BaseMultiTerminalSpider):
 
         try:
             for result in routing_rule.handle(response=response):
-                if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+                if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
                     c_no = result["container_no"]
                     t_ids = self.cno_tid_map[c_no]
                     for t_id in t_ids:
@@ -161,71 +165,84 @@ class TerminalMaherMultiSpider(BaseMultiTerminalSpider):
 # -------------------------------------------------------------------------------
 
 
+class LoginRoutingRule(BaseRoutingRule):
+    name = "LOGIN"
+
+    @classmethod
+    def build_request_option(cls, container_nos: List[str]) -> RequestOption:
+        form_data = {"user": {"username": "HARD202006010", "password": "hardc0re"}, "requestData": []}
+
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_BODY,
+            url=f"{URL}/cspgateway/rest/services/userService/loginUser",
+            headers={"Content-Type": "application/json"},
+            body=json.dumps(form_data),
+            meta={"container_nos": container_nos},
+        )
+
+    def handle(self, response):
+        container_nos = response.meta["container_nos"]
+        user_data = json.loads(response.text)
+        token = response.headers.get("Authorization").decode("utf-8")
+
+        yield SearchRoutingRule.build_request_option(container_nos=container_nos, user_data=user_data, token=token)
+
+
 class SearchRoutingRule(BaseRoutingRule):
     name = "SEARCH"
 
     @classmethod
-    def build_request_option(cls, container_no_list: List[str]) -> RequestOption:
-        url = "https://www.google.com"
+    def build_request_option(cls, container_nos: List[str], user_data: Dict, token: str) -> RequestOption:
+        form_data = {"user": user_data, "requestData": [{"container": ct} for ct in container_nos]}
 
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=url,
-            meta={"container_no_list": container_no_list},
+            method=RequestOption.METHOD_POST_BODY,
+            url=f"{URL}/cspgateway/rest/services/importInquiryService/getContainers",
+            headers={
+                "Content-Type": "application/json",
+                "Referer": "https://mahercsp.maherterminals.com/CSP/importContainers",
+                "Authorization": token,
+            },
+            body=json.dumps(form_data),
+            meta={
+                "container_nos": container_nos,
+                "user_data": user_data,
+                "token": token,
+            },
         )
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
     def handle(self, response):
-        container_no_list = response.meta["container_no_list"]
+        container_nos = response.meta["container_nos"]
+        user_data = response.meta["user_data"]
+        token = response.meta["token"]
+        containers_resp = json.loads(response.text)
 
-        content_getter = MaherContentGetter(proxy_manager=None, is_headless=True)
-        content_getter.login()
-        response_text = content_getter.search(container_no_list[:MAX_PAGE_NUM])
-        time.sleep(3)
-        response = Selector(text=response_text)
+        print(containers_resp)
 
-        for item in self._handle_response(response, container_no_list[:MAX_PAGE_NUM]):
-            yield item
+        for resp in containers_resp:
+            if resp.get("maherError", ""):
+                yield ExportErrorData(
+                    container_no=resp["container"],
+                    status=TERMINAL_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+                continue
 
-        yield NextRoundRoutingRule.build_request_option(container_no_list=container_no_list)
-
-    @classmethod
-    def _handle_response(cls, response, container_no_list):
-        container_info_list = cls.extract_container_info(response=response, container_no_list=container_no_list)
-        for container_info in container_info_list:
-            yield TerminalItem(**container_info)
-
-    @staticmethod
-    def _is_container_no_invalid(response: Selector) -> bool:
-        tables = response.css("table")
-        rule = SpecificClassTdContainTextMatchRule(td_class="clsBlackBold", text="Not On File")
-        return bool(find_selector_from(selectors=tables, rule=rule))
-
-    @staticmethod
-    def extract_container_info(response: Selector, container_no_list: List):
-        table = response.xpath('//*[@id="sortTable"]')
-
-        table_locator = MaherLeftHeadTableLocator()
-        table_locator.parse(table=table, numbers=len(container_no_list))
-
-        res = []
-        for i in range(len(set(container_no_list))):
-            res.append(
-                {
-                    "container_no": table_locator.get_cell(left=i, top="Container"),
-                    "container_spec": table_locator.get_cell(left=i, top="LHT"),
-                    "available": table_locator.get_cell(left=i, top="Available"),
-                    "customs_release": table_locator.get_cell(left=i, top="Customs Released"),
-                    "discharge_date": table_locator.get_cell(left=i, top="Date Discharged"),
-                    "last_free_day": table_locator.get_cell(left=i, top="Last Free Date"),
-                    "carrier_release": table_locator.get_cell(left=i, top="Freight Released"),
-                }
+            yield TerminalItem(
+                container_no=resp["container"],
+                available=resp.get("available", ""),
+                customs_release=resp.get("customs_released_description", ""),
+                discharge_date=resp.get("received_date_fmt", ""),
+                last_free_day=resp.get("fte_date_fmt", ""),
+                carrier_release=("Yes" if resp.get("freight_released", "") == "1" else "No"),
             )
 
-        return res
+        yield NextRoundRoutingRule.build_request_option(container_nos=container_nos, user_data=user_data, token=token)
 
 
 # -------------------------------------------------------------------------------
@@ -235,66 +252,27 @@ class NextRoundRoutingRule(BaseRoutingRule):
     name = "NEXT_ROUND"
 
     @classmethod
-    def build_request_option(cls, container_no_list: List) -> RequestOption:
+    def build_request_option(cls, container_nos: List, user_data: Dict, token: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url="http://tracking.hardcoretech.co:18110",
             meta={
-                "container_no_list": container_no_list,
+                "container_nos": container_nos,
+                "user_data": user_data,
+                "token": token,
+                "handle_httpstatus_list": [404],
             },
         )
 
     def handle(self, response):
-        container_no_list = response.meta["container_no_list"]
+        container_nos = response.meta["container_nos"]
+        user_data = response.meta["user_data"]
+        token = response.meta["token"]
 
-        if len(container_no_list) <= MAX_PAGE_NUM:
+        if len(container_nos) <= MAX_PAGE_NUM:
             return
 
-        container_no_list = container_no_list[MAX_PAGE_NUM:]
+        container_nos = container_nos[MAX_PAGE_NUM:]
 
-        yield SearchRoutingRule.build_request_option(container_no_list=container_no_list)
-
-
-class SpecificClassTdContainTextMatchRule(BaseMatchRule):
-    def __init__(self, td_class: str, text: str):
-        self._td_class = td_class
-        self._text = text
-
-    def check(self, selector: Selector) -> bool:
-        sub_headings = selector.xpath(f'./tbody/tr/td[@class="{self._td_class}"]') or selector.xpath(
-            f'./tr/td[@class="{self._td_class}"]'
-        )
-
-        for sub_heading in sub_headings:
-            sub_heading_text = sub_heading.css("::text").get().strip()
-            if self._text in sub_heading_text:
-                return True
-
-        return False
-
-
-class MaherLeftHeadTableLocator(BaseTable):
-    def parse(self, table: Selector, numbers: int = 1):
-        titles = self._get_titles(table)
-        trs = table.css("tbody tr")
-
-        for index, tr in enumerate(trs):
-            data_tds = tr.css("td a::text").getall() + tr.css("td::text").getall()
-            data_tds = [v.strip() for v in data_tds]
-            if len(data_tds) > len(titles):
-                data_tds = data_tds[:1] + data_tds[3:]
-            elif len(data_tds) == 2:
-                data_tds = data_tds + [""] * 9
-            else:
-                continue
-
-            self._left_header_set.add(index)
-
-            for title, td in zip(titles, data_tds):
-                self._td_map.setdefault(title, [])
-                self._td_map[title].append(td)
-
-    def _get_titles(self, table: Selector):
-        titles = table.css("th::text").getall()
-        return [title.strip() for title in titles]
+        yield SearchRoutingRule.build_request_option(container_nos=container_nos, user_data=user_data, token=token)

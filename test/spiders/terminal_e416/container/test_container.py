@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -5,7 +6,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_terminal.items import InvalidContainerNoItem
-from crawler.spiders.terminal_e416 import SearchRoutingRule
+from crawler.spiders.terminal_e416 import LoginRoutingRule, SearchRoutingRule
 from test.spiders.terminal_e416 import container
 
 
@@ -17,55 +18,71 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    "sub,container_no",
+    "sub,container_nos",
     [
-        ("01_basic", "EISU9407701"),
-        ("02_available", "CSNU7920778"),
+        ("01_login", "ECMU8065005,UETU5115112,APHU7007894,TRHU6046630,OOLU6811996"),
     ],
 )
-def test_search_routing_rule(sub, container_no, sample_loader):
-    httptext = sample_loader.read_file(sub, "sample.html")
-
-    request_option = SearchRoutingRule.build_request_option(container_no_list=[container_no])
+def test_login_rule(sub, container_nos, sample_loader):
+    # arrange
+    json_text = sample_loader.read_file(sub, "login.json")
+    token = "TOKEN"
+    containers_nos = container_nos.split(",")
+    option = LoginRoutingRule.build_request_option(container_nos=containers_nos)
 
     response = TextResponse(
-        url=request_option.url,
-        body=httptext,
+        url=option.url,
+        body=json_text,
+        headers={"Content": "application/json", "Authorization": token},
         encoding="utf-8",
         request=Request(
-            url=request_option.url,
-            meta=request_option.meta,
+            url=option.url,
+            meta={
+                "container_nos": containers_nos,
+            },
         ),
     )
 
-    results = list(SearchRoutingRule._handle_response(response=response, container_no_list=[container_no]))
+    # action
+    results = list(LoginRoutingRule().handle(response=response))
 
+    # assert
     verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
 
 
-@pytest.mark.skip
 @pytest.mark.parametrize(
-    "sub,container_no,invalid_no_item",
+    "sub,container_nos",
     [
-        ("e01_invalid_container_no", "EISU9487741", InvalidContainerNoItem),
+        ("02_search", "ECMU8065005,UETU5115112,APHU7007894,TRHU6046630,OOLU6811996"),
     ],
 )
-def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader):
-    httptext = sample_loader.read_file(sub, "sample.html")
-
-    request_option = SearchRoutingRule.build_request_option(container_no_list=[container_no])
+def test_search_rule(sub, container_nos, sample_loader):
+    # arrange
+    json_text = sample_loader.read_file(sub, "resp.json")
+    user_data = {}
+    token = "TOKEN"
+    containers_nos = container_nos.split(",")
+    option = SearchRoutingRule.build_request_option(container_nos=containers_nos, user_data=user_data, token=token)
 
     response = TextResponse(
-        url=request_option.url,
-        body=httptext,
+        url=option.url,
+        body=json_text,
+        headers={"Content": "application/json", "Authorization": token},
         encoding="utf-8",
         request=Request(
-            url=request_option.url,
-            meta=request_option.meta,
+            url=option.url,
+            meta={
+                "container_nos": containers_nos,
+                "user_data": user_data,
+                "token": token,
+            },
         ),
     )
 
-    assert list(SearchRoutingRule._handle_response(response=response, container_no_list=[container_no])) == [
-        invalid_no_item(container_no=container_no)
-    ]
+    # action
+    results = list(SearchRoutingRule().handle(response=response))
+
+    # assert
+    verify_module = sample_loader.load_sample_module(sub, "verify")
+    verify_module.verify(results=results)
