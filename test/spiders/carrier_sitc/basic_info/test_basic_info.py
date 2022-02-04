@@ -26,7 +26,7 @@ def sample_loader(sample_loader):
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
     json_text = sample_loader.read_file(sub, "sample.json")
 
-    option = BasicInfoRoutingRule.build_request_option(mbl_no=mbl_no, rand_str="", captcha_code="", token="")
+    option = BasicInfoRoutingRule.build_request_option(mbl_no=mbl_no, token="")
 
     response = TextResponse(
         url=option.url,

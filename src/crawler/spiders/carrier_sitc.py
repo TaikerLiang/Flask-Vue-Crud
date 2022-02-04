@@ -41,7 +41,7 @@ class CarrierSitcSpider(BaseCarrierSpider):
         rules = [
             Captcha1RoutingRule(),
             LoginRoutingRule(),
-            Captcha2RoutingRule(),
+            # Captcha2RoutingRule(),
             BasicInfoRoutingRule(),
             ContainerStatusRoutingRule(),
         ]
@@ -165,48 +165,49 @@ class LoginRoutingRule(BaseRoutingRule):
         token = f"{response_dict['token_type']} {response_dict['access_token']}"
         yield DebugItem(info=f"token: {token}")
 
-        yield Captcha2RoutingRule.build_request_option(mbl_no=mbl_no, token=token)
+        yield BasicInfoRoutingRule.build_request_option(mbl_no=mbl_no, token=token)
 
 
 # -------------------------------------------------------------------------------
 
 
-class Captcha2RoutingRule(BaseRoutingRule):
-    name = "CAPTCHA2"
-
-    @classmethod
-    def build_request_option(cls, mbl_no, token: str) -> RequestOption:
-        rand_str = "".join(random.choice(string.digits) for _ in range(17))
-
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=f"{SITC_BASE_URL}/code?randomStr={rand_str}",
-            headers={"Content-Type": "application/text"},
-            meta={"mbl_no": mbl_no, "rand_str": rand_str, "token": token},
-        )
-
-    def handle(self, response):
-        mbl_no = response.meta["mbl_no"]
-        rand_str = response.meta["rand_str"]
-        token = response.meta["token"]
-        captcha_solver = CaptchaSolverService()
-        captcha_code = captcha_solver.solve_image(image_content=response.body)
-
-        yield BasicInfoRoutingRule.build_request_option(
-            mbl_no=mbl_no, rand_str=rand_str, captcha_code=captcha_code, token=token
-        )
+# class Captcha2RoutingRule(BaseRoutingRule):
+#     name = "CAPTCHA2"
+#
+#     @classmethod
+#     def build_request_option(cls, mbl_no, token: str) -> RequestOption:
+#         print('Captcha2RoutingRule, Paul')
+#         rand_str = "".join(random.choice(string.digits) for _ in range(17))
+#
+#         return RequestOption(
+#             rule_name=cls.name,
+#             method=RequestOption.METHOD_GET,
+#             url=f"{SITC_BASE_URL}/code?randomStr={rand_str}",
+#             headers={"Content-Type": "application/text"},
+#             meta={"mbl_no": mbl_no, "rand_str": rand_str, "token": token},
+#         )
+#
+#     def handle(self, response):
+#         mbl_no = response.meta["mbl_no"]
+#         rand_str = response.meta["rand_str"]
+#         token = response.meta["token"]
+#         captcha_solver = CaptchaSolverService()
+#         captcha_code = captcha_solver.solve_image(image_content=response.body)
+#
+#         yield BasicInfoRoutingRule.build_request_option(
+#             mbl_no=mbl_no, rand_str=rand_str, captcha_code=captcha_code, token=token
+#         )
 
 
 class BasicInfoRoutingRule(BaseRoutingRule):
     name = "BASIC_INFO"
 
     @classmethod
-    def build_request_option(cls, mbl_no: str, rand_str: str, captcha_code: str, token: str) -> RequestOption:
+    def build_request_option(cls, mbl_no: str, token: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=f"{SITC_BASE_URL}/doc/cargoTrack/search?blNo={mbl_no}&containerNo=&code={captcha_code}&randomStr={rand_str}",
+            method=RequestOption.METHOD_POST_BODY,
+            url=f"{SITC_BASE_URL}/doc/cargoTrack/searchTrack?blNo={mbl_no}&containerNo=&randomStr=",
             meta={"mbl_no": mbl_no, "token": token},
         )
 
