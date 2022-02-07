@@ -463,10 +463,15 @@ class BookingInfoRoutingRule(BaseRoutingRule):
         }
 
     @staticmethod
-    def _parse_time_status(time_status) -> Tuple[str, str]:
+    def _parse_time_status(time_status: str) -> Tuple[str, str]:
         """
         time_status = 'YYYY/MM/DD HH:mm (Actual/Estimated)'
         """
+
+        # empty <date_time> case
+        if time_status.startswith("("):
+            return None, None
+
         patt = re.compile(r"^(?P<date_time>\d{4}/\d{2}/\d{2} \d{2}:\d{2}) [(](?P<status>Actual|Estimated)[)]$")
 
         m = patt.match(time_status)
@@ -796,10 +801,15 @@ class MainInfoRoutingRule(BaseRoutingRule):
         }
 
     @staticmethod
-    def _parse_time_status(time_status) -> Tuple[str, str]:
+    def _parse_time_status(time_status: str) -> Tuple[str, str]:
         """
         time_status = 'YYYY/MM/DD HH:mm (Actual/Estimated)'
         """
+
+        # empty <date_time> case
+        if time_status.startswith("("):
+            return None, None
+
         patt = re.compile(r"^(?P<date_time>\d{4}/\d{2}/\d{2} \d{2}:\d{2}) [(](?P<status>Actual|Estimated)[)]$")
 
         m = patt.match(time_status)
