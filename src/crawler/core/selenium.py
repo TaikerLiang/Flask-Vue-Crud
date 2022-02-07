@@ -30,6 +30,10 @@ class SeleniumContentGetter(BaseContentGetter):
     def get_cookies_dict(self) -> Dict:
         return {cookie_obj.get("name"): cookie_obj.get("value") for cookie_obj in self._driver.get_cookies()}
 
+    def switch_to_last_window(self):
+        windows = self._driver.window_handles
+        self._driver.switch_to.window(windows[-1])
+
     def execute_script(self, script: str):
         self._driver.execute_script(script)
 
@@ -75,8 +79,8 @@ class ChromeContentGetter(SeleniumContentGetter):
             proxy_manager.renew_proxy()
             seleniumwire_options = {
                 "proxy": {
-                    "http": f"http://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_DOMAIN}",
-                    "https": f"https://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_DOMAIN}",
+                    "http": f"http://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.proxy_domain}",
+                    "https": f"https://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.proxy_domain}",
                 }
             }
             self._driver = seleniumwire.webdriver.Chrome(
