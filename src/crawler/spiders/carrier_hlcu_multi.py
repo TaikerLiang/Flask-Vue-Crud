@@ -145,10 +145,8 @@ class TracingRoutingRule(BaseRoutingRule):
             yield NextRoundRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
             return
 
-        container_nos = []
-        if self._is_container_nos_exist(selector):
-            container_nos = self._extract_container_nos(response=selector)
-        else:
+        container_nos = self._extract_container_nos(response=selector)
+        if not container_nos:
             yield ExportErrorData(
                 mbl_no=current_mbl_no,
                 task_id=current_task_id,
@@ -197,15 +195,10 @@ class TracingRoutingRule(BaseRoutingRule):
         error_message.strip()
         return error_message.startswith("DOCUMENT does not exist.")
 
-    def _is_container_nos_exist(self, response):
-        table_selector = response.css("table[id='tracing_by_booking_f:hl27']")
-        if table_selector:
-            return True
-        else:
-            return False
-
     def _extract_container_nos(self, response):
         table_selector = response.css("table[id='tracing_by_booking_f:hl27']")
+        if not table_selector:
+            return []
 
         table_locator = ContainerInfoTableLocator()
         table_locator.parse(table=table_selector)
@@ -215,6 +208,9 @@ class TracingRoutingRule(BaseRoutingRule):
         container_list = []
         for left in table_locator.iter_left_header():
             container_no_text = table.extract_cell(top="Container No.", left=left, extractor=span_extractor)
+            if not container_no_text:
+                continue
+
             company, no = container_no_text.split()
             container_list.append(company + no)
 
