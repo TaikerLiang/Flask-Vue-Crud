@@ -1211,6 +1211,10 @@ class ContainerRoutingRule(BaseRoutingRule):
         rule = SpecificThTextExistMatchRule(text="Date")
         table_selector = find_selector_from(selectors=tables, rule=rule)
 
+        msg = table_selector.css("tbody td::text").get().strip()
+        if msg == "No information found":
+            return []
+
         table_locator = TopHeaderTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
