@@ -2,7 +2,7 @@ import os
 import re
 import time
 import base64
-from typing import Dict
+from typing import Dict, List
 from io import BytesIO
 
 import scrapy
@@ -52,12 +52,12 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
 
         bill_rules = [
             CargoTrackingRule(self._content_getter, search_type=SHIPMENT_TYPE_MBL),
-            ContainerStatusRule(self._content_getter),
+            NextRoundRoutingRule(),
         ]
 
         booking_rules = [
             CargoTrackingRule(self._content_getter, search_type=SHIPMENT_TYPE_BOOKING),
-            ContainerStatusRule(self._content_getter),
+            NextRoundRoutingRule(),
         ]
 
         if self.search_type == SHIPMENT_TYPE_MBL:
@@ -68,9 +68,8 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
         self._proxy_manager = HydraproxyProxyManager(session="oolu", logger=self.logger)
 
     def start(self):
-        for s_no, t_id in zip(self.search_nos, self.task_ids):
-            option = CargoTrackingRule.build_request_option(search_no=s_no, task_id=t_id)
-            yield self._build_request_by(option=option)
+        option = CargoTrackingRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids)
+        yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -351,14 +350,14 @@ class CargoTrackingRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, search_no: str, task_id: str) -> RequestOption:
+    def build_request_option(cls, search_nos, task_ids) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://www.google.com",
+            url="https://api.myip.com/",
             meta={
-                "search_no": search_no,
-                "task_id": task_id,
+                "search_nos": search_nos,
+                "task_ids": task_ids,
             },
         )
 
@@ -366,8 +365,8 @@ class CargoTrackingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        search_no = response.meta["search_no"]
-        task_id = response.meta["task_id"]
+        search_nos = response.meta["search_nos"]
+        task_ids = response.meta["task_ids"]
 
         try:
             windows = self._content_getter.get_window_handles()
@@ -375,11 +374,13 @@ class CargoTrackingRule(BaseRoutingRule):
                 self._content_getter.close()
                 self._content_getter.switch_to_first()
 
-            res = self._content_getter.search_and_return(search_no=search_no, search_type=self._search_type)
+            res = self._content_getter.search_and_return(search_no=search_nos[0], search_type=self._search_type)
             response = Selector(text=res)
 
             while self._no_response(response=response):
-                res = self._content_getter.search_again_and_return(search_no=search_no, search_type=self._search_type)
+                res = self._content_getter.search_again_and_return(
+                    search_no=search_nos[0], search_type=self._search_type
+                )
                 response = Selector(text=res)
 
         except ReadTimeoutError:
@@ -393,9 +394,11 @@ class CargoTrackingRule(BaseRoutingRule):
             os.remove("./slider01.jpg")
 
         for item in self._handle_response(
-            task_id=task_id, search_no=search_no, response=response, search_type=self._search_type
+            task_id=task_ids[0], search_no=search_nos[0], response=response, search_type=self._search_type
         ):
             yield item
+
+        yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
     @staticmethod
     def _no_response(response: Selector) -> bool:
@@ -719,6 +722,31 @@ class CargoTrackingRule(BaseRoutingRule):
         return container_status_list
 
 
+class NextRoundRoutingRule(BaseRoutingRule):
+    name = "NEXT_ROUND"
+
+    @classmethod
+    def build_request_option(cls, search_nos: List, task_ids: List) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://api.myip.com/",
+            meta={"search_nos": search_nos, "task_ids": task_ids},
+        )
+
+    def handle(self, response):
+        task_ids = response.meta["task_ids"]
+        search_nos = response.meta["search_nos"]
+
+        if len(search_nos) == 1 and len(task_ids) == 1:
+            return
+
+        task_ids = task_ids[1:]
+        search_nos = search_nos[1:]
+
+        yield CargoTrackingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+
+
 class SummaryRightTableLocator(BaseTable):
     TD_TITLE_INDEX = 0
     TD_DATA_INDEX = 1
@@ -886,149 +914,6 @@ class DelivTdExtractor(BaseTableCellExtractor):
             "time_str": text_list[1].strip(),
             "status": text_list[2].strip(),
         }
-
-
-class ContainerStatusRule(BaseRoutingRule):
-    name = "CONTAINER_STATUS"
-
-    def __init__(self, content_getter: ContentGetter):
-        self._content_getter = content_getter
-
-    @classmethod
-    def build_request_option(
-        cls, is_last: bool, task_id: str, container_no: str, click_element_css: str
-    ) -> RequestOption:
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url="https://www.google.com",
-            meta={
-                "is_last": is_last,
-                "task_id": task_id,
-                "container_no": container_no,
-                "click_element_css": click_element_css,
-            },
-        )
-
-    @staticmethod
-    def transform_cookies_to_str(cookies: Dict):
-        cookies_str = ""
-        for key, value in cookies.items():
-            cookies_str += f"{key}={value}; "
-
-        return cookies_str[:-2]
-
-    def get_save_name(self, response) -> str:
-        container_no = response.meta["container_no"]
-        return f"{self.name}_{container_no}.html"
-
-    def handle(self, response):
-        task_id = response.meta["task_id"]
-        container_no = response.meta["container_no"]
-        click_element_css = response.meta["click_element_css"]
-
-        try:
-            self._content_getter.find_container_btn_and_click(container_btn_css=click_element_css)
-            time.sleep(10)
-        except ReadTimeoutError:
-            url = self._content_getter.get_current_url()
-            self._content_getter.quit()
-            raise LoadWebsiteTimeOutError(url=url)
-
-        response = Selector(text=self._content_getter.get_page_source())
-
-        for item in self._handle_response(task_id=task_id, response=response, container_no=container_no):
-            yield item
-
-    @classmethod
-    def _handle_response(cls, task_id, response, container_no):
-        locator = _PageLocator()
-        selectors_map = locator.locate_selectors(response=response)
-        detention_info = cls._extract_detention_info(selectors_map)
-
-        yield ContainerItem(
-            task_id=task_id,
-            container_key=container_no,
-            container_no=container_no,
-            last_free_day=detention_info["last_free_day"] or None,
-            det_free_time_exp_date=detention_info["det_free_time_exp_date"] or None,
-        )
-
-        container_status_list = cls._extract_container_status_list(selectors_map)
-        for container_status in container_status_list:
-            event = container_status["event"].strip()
-            facility = container_status["facility"]
-
-            if facility:
-                description = f"{event} ({facility})"
-            else:
-                description = event
-
-            yield ContainerStatusItem(
-                task_id=task_id,
-                container_key=container_no,
-                description=description,
-                location=LocationItem(name=container_status["location"]),
-                transport=container_status["transport"],
-                local_date_time=container_status["local_date_time"],
-            )
-
-    @staticmethod
-    def _extract_detention_info(selectors_map: Dict[str, scrapy.Selector]):
-        table = selectors_map.get("detail:detention_right_table", None)
-        if table is None:
-            return {
-                "last_free_day": "",
-                "det_free_time_exp_date": "",
-            }
-
-        table_locator = DestinationTableLocator()
-        table_locator.parse(table=table)
-        table_extractor = TableExtractor(table_locator=table_locator)
-        td_extractor = DetentionDateTdExtractor()
-
-        if table_locator.has_header(left="Demurrage Last Free Date:"):
-            lfd_info = table_extractor.extract_cell(left="Demurrage Last Free Date:", extractor=td_extractor)
-            _, lfd = _get_est_and_actual(status=lfd_info["status"], time_str=lfd_info["time_str"])
-        else:
-            lfd = ""
-
-        if table_locator.has_header(left="Detention Last Free Date:"):
-            det_lfd_info = table_extractor.extract_cell(left="Detention Last Free Date:", extractor=td_extractor)
-            _, det_lfd = _get_est_and_actual(status=det_lfd_info["status"], time_str=det_lfd_info["time_str"])
-        else:
-            det_lfd = ""
-
-        return {
-            "last_free_day": lfd,
-            "det_free_time_exp_date": det_lfd,
-        }
-
-    @staticmethod
-    def _extract_container_status_list(selectors_map: Dict[str, scrapy.Selector]):
-        table = selectors_map.get("detail:container_status_table", None)
-        if table is None:
-            return []
-
-        table_locator = ContainerStatusTableLocator()
-        table_locator.parse(table=table)
-        table_extractor = TableExtractor(table_locator=table_locator)
-        first_text_extractor = FirstTextTdExtractor()
-        span_extractor = FirstTextTdExtractor(css_query="span::text")
-
-        container_status_list = []
-        for left in table_locator.iter_left_header():
-            container_status_list.append(
-                {
-                    "event": table_extractor.extract_cell(top="Event", left=left, extractor=first_text_extractor),
-                    "facility": table_extractor.extract_cell(top="Facility", left=left, extractor=first_text_extractor),
-                    "location": table_extractor.extract_cell(top="Location", left=left, extractor=span_extractor),
-                    "transport": table_extractor.extract_cell(top="Mode", left=left, extractor=first_text_extractor)
-                    or None,
-                    "local_date_time": table_extractor.extract_cell(top="Time", left=left, extractor=span_extractor),
-                }
-            )
-        return container_status_list
 
 
 class ContainerStatusTableLocator(BaseTable):
