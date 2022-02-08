@@ -4,8 +4,7 @@ from crawler.core_terminal.items import ExportErrorData
 
 def verify(results):
     assert results[0] == ExportErrorData(
-        container_no='KOCU9871987',
+        container_no="KOCU9871987",
         detail="Data was not found",
         status=TERMINAL_RESULT_STATUS_ERROR,
     )
-    
