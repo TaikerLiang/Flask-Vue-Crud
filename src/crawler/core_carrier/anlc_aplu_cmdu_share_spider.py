@@ -55,7 +55,7 @@ class ContentGetter(ChromeContentGetter):
 
     def search(self, search_no: str):
         self._driver.get("https://www.apl.com/ebusiness/tracking")
-        WebDriverWait(self._driver, 40).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Reference"]')))
+        WebDriverWait(self._driver, 30).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Reference"]')))
         self.scroll_to_bottom_of_page()
         time.sleep(2)
         ref = self._driver.find_element_by_xpath('//*[@id="Reference"]')
@@ -69,7 +69,7 @@ class ContentGetter(ChromeContentGetter):
 
     def handle_muti_container(self):
         page_contents = []
-        WebDriverWait(self._driver, 40).until(
+        WebDriverWait(self._driver, 30).until(
             EC.presence_of_element_located((By.XPATH, '//*[@id="multiresultssection"]/div/div/ul/li'))
         )
         cards = self._driver.find_elements_by_xpath('//*[@id="multiresultssection"]/div/div/ul/li')
@@ -276,6 +276,7 @@ class MainRule(BaseRoutingRule):
                 voyage=container_status["voyage"],
                 location=LocationItem(name=container_status["location"]),
                 facility=container_status["facility"],
+                est_or_actual="A",
             )
 
     @staticmethod
@@ -343,7 +344,7 @@ class MainRule(BaseRoutingRule):
 
         for index in table_locator.iter_left_header():
             yield {
-                "local_date_time": table.extract_cell("Date", index),
+                "local_date_time": table.extract_cell("Date", index).replace(',', ''),
                 "description": table.extract_cell("Moves", index),
                 "location": table.extract_cell("Location", index, LocationTdExtractor()),
                 "vessel": table.extract_cell("Vessel", index),
