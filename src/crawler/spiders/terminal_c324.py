@@ -4,7 +4,8 @@ from typing import List
 from scrapy import Request
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 
 BASE_URL = "https://twpapi.pachesapeake.com"
@@ -39,7 +40,7 @@ class TerminalSeagirtSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 if c_no:
                     t_ids = self.cno_tid_map[c_no]
@@ -119,7 +120,11 @@ class ContainerRoutingRule(BaseRoutingRule):
             container_nos.remove(container_no)
 
         for container_no in container_nos:
-            yield InvalidContainerNoItem(container_no=container_no)
+            yield ExportErrorData(
+                container_no=container_no,
+                detail="Data was not found",
+                status=TERMINAL_RESULT_STATUS_ERROR,
+            )
 
         yield NextRoundRoutingRule.build_request_option(response.meta["container_nos"])
 
