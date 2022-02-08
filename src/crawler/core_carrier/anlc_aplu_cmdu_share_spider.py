@@ -2,13 +2,14 @@ from typing import Optional, List, Dict
 import re
 import time
 import dataclasses
+import logging
 
 import scrapy
 from scrapy import Selector
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, WebDriverException
 from urllib3.exceptions import ReadTimeoutError
 
 from crawler.core.table import BaseTable, TableExtractor
@@ -33,6 +34,7 @@ from crawler.core.proxy import ProxyManager, HydraproxyProxyManager
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.core.selenium import ChromeContentGetter
+from crawler.core.defines import BaseContentGetter
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 
 STATUS_ONE_CONTAINER = "STATUS_ONE_CONTAINER"
@@ -106,15 +108,16 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
         self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         self._proxy_manager = HydraproxyProxyManager(session="cmdushare", logger=self.logger)
+        self._content_getter = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
         self._retry_count = 0
 
         bill_rules = [
-            MainRule(proxy_manager=self._proxy_manager),
+            CargoTrackingRule(content_getter=self._content_getter),
             NextRoundRoutingRule(),
         ]
 
         booking_rules = [
-            MainRule(proxy_manager=self._proxy_manager),
+            CargoTrackingRule(content_getter=self._content_getter),
             NextRoundRoutingRule(),
         ]
 
@@ -123,15 +126,20 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
         elif self.search_type == SHIPMENT_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
 
-        self._proxy_manager = HydraproxyProxyManager(session="cmdushare", logger=self.logger)
-
     def start(self):
-        option = self._prepare_start(search_nos=self.search_nos, task_ids=self.task_ids)
-        yield self._build_request_by(option=option)
+        self._proxy_manager.renew_proxy()
+        option = CargoTrackingRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids)
+        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
+        yield self._build_request_by(option=proxy_option)
 
     def _prepare_start(self, search_nos: List, task_ids: List):
+        self._content_getter.quit()
         self._proxy_manager.renew_proxy()
-        option = MainRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+        self._content_getter = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
+        self._rule_manager.get_rule_by_name(CargoTrackingRule.name).assign_content_getter(
+            content_getter=self._content_getter
+        )
+        option = CargoTrackingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         return proxy_option
 
@@ -150,7 +158,6 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
                 yield self._build_request_by(option=proxy_option)
             elif isinstance(result, Restart):
                 self._retry_count += 1
-                print("self._retry_count", self._retry_count)
                 search_nos = result.search_nos
                 task_ids = result.task_ids
                 if self._retry_count > MAX_RETRY_COUNT:
@@ -186,11 +193,14 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
             raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
 
-class MainRule(BaseRoutingRule):
-    name = "CONTENT"
+class CargoTrackingRule(BaseRoutingRule):
+    name = "CARGO_TRACKING"
 
-    def __init__(self, proxy_manager: ProxyManager):
-        self._proxy_manager = proxy_manager
+    def __init__(self, content_getter: BaseContentGetter):
+        self.content_getter = content_getter
+
+    def assign_content_getter(self, content_getter: BaseContentGetter):
+        self.content_getter = content_getter
 
     @classmethod
     def build_request_option(cls, search_nos: List, task_ids: List):
@@ -211,9 +221,8 @@ class MainRule(BaseRoutingRule):
         search_nos = response.meta["search_nos"]
         task_ids = response.meta["task_ids"]
 
-        content_getter = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
         try:
-            page_source = content_getter.search(search_nos[0])
+            page_source = self.content_getter.search(search_nos[0])
             resp_selector = Selector(text=page_source)
 
             if not self._is_result_exist(response=resp_selector):
@@ -226,7 +235,7 @@ class MainRule(BaseRoutingRule):
             else:
                 container_list = self._extract_container_list(response=resp_selector)
                 if len(container_list) > 0:
-                    page_contents = content_getter.handle_muti_container()
+                    page_contents = self.content_getter.handle_muti_container()
                     for content in page_contents:
                         resp_selector = Selector(text=content)
                         for item in self.process_single_container_case(
@@ -244,8 +253,8 @@ class MainRule(BaseRoutingRule):
                 task_ids=task_ids,
             )
 
-        except (TimeoutException, ReadTimeoutError):
-            content_getter.quit()
+        except (TimeoutException, ReadTimeoutError, WebDriverException) as e:
+            logging.error(str(e))
             yield Restart(reason="TimeoutException", search_nos=search_nos, task_ids=task_ids)
 
     def process_single_container_case(self, response: Selector, search_no: str, task_id: str):
@@ -344,7 +353,7 @@ class MainRule(BaseRoutingRule):
 
         for index in table_locator.iter_left_header():
             yield {
-                "local_date_time": table.extract_cell("Date", index).replace(',', ''),
+                "local_date_time": table.extract_cell("Date", index).replace(",", ""),
                 "description": table.extract_cell("Moves", index),
                 "location": table.extract_cell("Location", index, LocationTdExtractor()),
                 "vessel": table.extract_cell("Vessel", index),
@@ -379,7 +388,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         task_ids = task_ids[1:]
         search_nos = search_nos[1:]
 
-        yield MainRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+        yield CargoTrackingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
 
 class ContainerStatusTableLocator(BaseTable):
