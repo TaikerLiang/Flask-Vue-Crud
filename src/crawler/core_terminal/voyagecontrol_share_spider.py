@@ -5,14 +5,13 @@ from typing import Dict
 
 from scrapy import Request
 
-from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_FATAL
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR, TERMINAL_RESULT_STATUS_FATAL
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import BaseTerminalError, TerminalResponseFormatError
 from crawler.core_terminal.items import (
     DebugItem,
     TerminalItem,
     ExportErrorData,
-    InvalidContainerNoItem,
 )
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 
@@ -70,7 +69,7 @@ class VoyagecontrolShareSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 if c_no:
                     t_ids = self.cno_tid_map[c_no]
@@ -353,7 +352,12 @@ class AddContainerToTraceRoutingRule(BaseRoutingRule):
         # 502: add invalid container_no into container_traced_list
         # 200: add valid container_no into container_traced_list
         if response.status == 502:
-            return InvalidContainerNoItem()
+            for container_no in container_nos:
+                yield ExportErrorData(
+                    container_no=container_no,
+                    detail="Data was not found",
+                    status=TERMINAL_RESULT_STATUS_ERROR,
+                )
         elif response.status != 200:
             raise VoyagecontrolResponseStatusCodeError(
                 reason=f"AddContainerToTraceRoutingRule: Unexpected status code: `{response.status}`"

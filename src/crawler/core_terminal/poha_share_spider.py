@@ -4,13 +4,12 @@ import scrapy
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 
-from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_FATAL
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR, TERMINAL_RESULT_STATUS_FATAL
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import (
     DebugItem,
     TerminalItem,
     ExportErrorData,
-    InvalidContainerNoItem,
 )
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
@@ -46,7 +45,7 @@ class PohaShareSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if True in [isinstance(result, item) for item in [TerminalItem, InvalidContainerNoItem, ExportErrorData]]:
+            if True in [isinstance(result, item) for item in [TerminalItem, ExportErrorData]]:
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -153,9 +152,10 @@ class ContainerRoutingRule(BaseRoutingRule):
                     detail="Target container_no does not meet the container_no that website shows",
                 )
         else:
-            yield InvalidContainerNoItem(
-                task_id=response.meta.get("task_id"),
+            yield ExportErrorData(
                 container_no=response.meta.get("container_no"),
+                detail="Data was not found",
+                status=TERMINAL_RESULT_STATUS_ERROR,
             )
 
 

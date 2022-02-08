@@ -1,7 +1,8 @@
 import scrapy
 
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.core.table import BaseTable, TableExtractor
@@ -38,7 +39,7 @@ class TerminalImperialCfsSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
@@ -85,7 +86,11 @@ class ContainerRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_no = response.meta["container_no"]
         if self._is_container_no_invalid(response):
-            yield InvalidContainerNoItem(container_no=container_no)
+            yield ExportErrorData(
+                container_no=container_no,
+                detail="Data was not found",
+                status=TERMINAL_RESULT_STATUS_ERROR,
+            )
             return
 
         table_selector = response.xpath("//*[@id='info']/div[1]/div[2]/table")

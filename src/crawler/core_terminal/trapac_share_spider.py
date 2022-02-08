@@ -21,7 +21,7 @@ from crawler.core.selenium import ChromeContentGetter
 from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError, DataNotFoundError
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.items import DebugItem, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
@@ -96,7 +96,7 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, TerminalItem):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:

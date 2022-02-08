@@ -3,7 +3,7 @@ import json
 from scrapy import Request, FormRequest, Selector
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 

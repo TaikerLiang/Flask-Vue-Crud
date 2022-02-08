@@ -8,7 +8,7 @@ from scrapy import Selector
 from crawler.core.selenium import ChromeContentGetter
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.items import DebugItem, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError
@@ -62,7 +62,7 @@ class PortsamericaShareSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, TerminalItem):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:

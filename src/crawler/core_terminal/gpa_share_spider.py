@@ -10,9 +10,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem, InvalidDataFieldItem
+from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData, InvalidDataFieldItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.core.selenium import ChromeContentGetter
@@ -58,7 +59,7 @@ class GpaShareSpider(BaseMultiTerminalSpider):
                     for t_id in t_ids:
                         result["task_id"] = t_id
                         yield result
-            elif isinstance(result, InvalidContainerNoItem):
+            elif isinstance(result, ExportErrorData):
                 result["task_id"] = self.task_ids
                 yield result
             elif isinstance(result, RequestOption):
@@ -183,7 +184,12 @@ class ContainerRoutingRule(BaseRoutingRule):
         try:
             table = self._get_table_list(response)
         except TerminalInvalidContainerNoError:
-            yield InvalidContainerNoItem(container_no=container_no_list[:MAX_PAGE_NUM])
+            for container_no in container_no_list:
+                yield ExportErrorData(
+                    container_no=container_no,
+                    detail="Data was not found",
+                    status=TERMINAL_RESULT_STATUS_ERROR,
+                )
         else:
             info_list = self._extract_info_list(table)
             for info in info_list:
