@@ -13,7 +13,7 @@ from crawler.core.proxy import HydraproxyProxyManager
 
 
 BASE_URL = "https://www.lbct.com"
-MAX_PAGE_NUM = 20
+MAX_PAGE_NUM = 10
 
 
 class TerminalLbctSpider(BaseMultiTerminalSpider):
