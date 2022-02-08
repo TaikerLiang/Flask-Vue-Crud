@@ -675,8 +675,8 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
         patt = re.compile(r"^(?P<date_time>\d{4}/\d{2}/\d{2} \d{2}:\d{2}) [(](?P<status>Actual|Estimated)[)]$")
 
         m = patt.match(time_status)
-        if not m:
-            raise CarrierResponseFormatError(reason=f"Routing Schedule time format error: {time_status}")
+        if not m:  # empty <date_time> case
+            return None, None
 
         time, status = m.group("date_time"), m.group("status")
         actual_time = time if status == "Actual" else None
@@ -1044,8 +1044,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
         patt = re.compile(r"^(?P<date_time>\d{4}/\d{2}/\d{2} \d{2}:\d{2}) [(](?P<status>Actual|Estimated)[)]$")
 
         m = patt.match(time_status)
-        if not m:
-            raise CarrierResponseFormatError(reason=f"Routing Schedule time format error: {time_status}")
+        if not m:  # empty <date_time> case
+            return None, None
 
         time, status = m.group("date_time"), m.group("status")
         actual_time = time if status == "Actual" else None
