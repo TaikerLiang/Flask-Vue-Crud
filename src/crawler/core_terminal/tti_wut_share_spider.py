@@ -1,6 +1,6 @@
 import time
 import dataclasses
-from typing import Dict, List
+from typing import List
 from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError
 
 import scrapy
@@ -11,8 +11,9 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoAlertPresentException
 
 from crawler.core.selenium import ChromeContentGetter
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem
+from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.core.table import BaseTable
@@ -62,7 +63,7 @@ class TtiWutShareSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem):
+            if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
@@ -102,7 +103,7 @@ class MainRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, container_no_list: List, company_info: CompanyInfo) -> RequestOption:
-        url = "https://www.google.com"
+        url = "https://api.myip.com/"
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
@@ -121,7 +122,19 @@ class MainRoutingRule(BaseRoutingRule):
         content_getter.login(company_info.email, company_info.password, company_info.url)
 
         while True:
-            resp = content_getter.search(container_no_list[:MAX_PAGE_NUM], company_info.upper_short)
+            resp = None
+
+            try:
+                resp = content_getter.search(container_no_list[:MAX_PAGE_NUM], company_info.upper_short)
+            except TerminalInvalidContainerNoError:  # all input container_no is invalid
+                for container_no in container_no_list[:MAX_PAGE_NUM]:
+                    yield ExportErrorData(
+                        container_no=container_no,
+                        detail="Data was not found",
+                        status=TERMINAL_RESULT_STATUS_ERROR,
+                    )
+                return
+
             resp = Selector(text=resp)
 
             for item in self._handle_response(resp, container_no_list[:MAX_PAGE_NUM]):
@@ -139,6 +152,14 @@ class MainRoutingRule(BaseRoutingRule):
         for container in containers:
             yield TerminalItem(
                 **container,
+            )
+            container_no_list.remove(container["container_no"])
+
+        for container_no in container_no_list:
+            yield ExportErrorData(
+                container_no=container_no,
+                detail="Data was not found",
+                status=TERMINAL_RESULT_STATUS_ERROR,
             )
 
     @staticmethod
@@ -208,7 +229,6 @@ class ContentGetter(ChromeContentGetter):
 
         # handle alert if there is any
         if self.is_alert_present():
-            # yield InvalidContainerNoItem(container_no=container_no_list[0])
             raise TerminalInvalidContainerNoError
 
         return self._driver.page_source

@@ -48,7 +48,6 @@ def test_search_container_handle(sub, container_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.skip
 @pytest.mark.parametrize(
     "sub, container_no",
     [
