@@ -34,6 +34,9 @@ class JaxTrapacLocalCrawler(BaseLocalCrawler):
         for container_info in MainRoutingRule.extract_container_result_table(
             response=scrapy.Selector(text=res), numbers=len(container_nos)
         ):
+            container_no = container_info["container_no"]
+            container_nos.remove(container_no)
+
             yield TerminalItem(  # html field
                 task_id=id_container_map.get(container_info["container_no"], ""),
                 container_no=container_info["container_no"],  # number
