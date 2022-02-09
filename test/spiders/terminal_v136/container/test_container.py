@@ -4,7 +4,6 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_terminal.items import InvalidContainerNoItem
 from crawler.spiders.terminal_v136 import ContainerRoutingRule
 from test.spiders.terminal_v136 import container
 

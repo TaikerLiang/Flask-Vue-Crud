@@ -1,10 +1,12 @@
 from typing import List
 
-from crawler.core_terminal.items import InvalidContainerNoItem
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
+from crawler.core_terminal.items import ExportErrorData
 
 
 def verify(results: List):
-    assert results[0] == InvalidContainerNoItem(
-        task_id=1,
+    assert results[0] == ExportErrorData(
         container_no="QQQQQQQQQQQ",
+        detail="Data was not found",
+        status=TERMINAL_RESULT_STATUS_ERROR,
     )

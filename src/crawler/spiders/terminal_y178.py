@@ -2,9 +2,10 @@ import requests
 from scrapy import Request, FormRequest, Selector
 from urllib.parse import urlencode
 
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core.table import BaseTable, HeaderMismatchError
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 
 
@@ -38,7 +39,7 @@ class TerminalGlobalMultiSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
@@ -118,7 +119,11 @@ class ContainerRoutingRule(BaseRoutingRule):
         # invalid container no handling
         if self._is_container_no_invalid(resp_selector):
             for container_no in container_no_list:
-                yield InvalidContainerNoItem(container_no=container_no)
+                yield ExportErrorData(
+                    container_no=container_no,
+                    detail="Data was not found",
+                    status=TERMINAL_RESULT_STATUS_ERROR,
+                )
             return
 
         # extract
