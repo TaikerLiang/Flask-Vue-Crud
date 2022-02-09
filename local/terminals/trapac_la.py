@@ -48,7 +48,7 @@ class LaTrapacLocalCrawler(BaseLocalCrawler):
 
         for container_no in container_nos:  # with invalid no left
             yield ExportErrorData(
-                task_id=id_container_map.get(container_info["container_no"], ""),
+                task_id=id_container_map.get(container_no, ""),
                 container_no=container_no,
                 detail="Data was not found",
                 status=TERMINAL_RESULT_STATUS_ERROR,
