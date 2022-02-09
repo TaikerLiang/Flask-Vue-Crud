@@ -1,6 +1,6 @@
 import dataclasses
+import json
 import re
-from typing import Dict
 
 import scrapy
 
@@ -327,6 +327,11 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
     def _extract_extra_container_info_div_text_colsm6(div: scrapy.Selector):
         div_text_list = div.css("::text").getall()
         div_text_list = [r.strip() for r in div_text_list if r.strip()]
+        if div_text_list[0][:6] == "Holds:":
+            lambda_sub = lambda text: re.sub(r"\r\n\s*", "\n", text)
+            div_text_list = [lambda_sub(r) for r in div_text_list if lambda_sub(r)]
+            div_text = "\n".join(div_text_list)
+            return div_text[:5], div_text[6:]
 
         if len(div_text_list) >= 2:
             return div_text_list[0].replace(":", ""), div_text_list[1]
