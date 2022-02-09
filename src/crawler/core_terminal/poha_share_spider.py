@@ -154,6 +154,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         else:
             yield ExportErrorData(
                 container_no=response.meta.get("container_no"),
+                task_id=response.meta.get("task_id"),
                 detail="Data was not found",
                 status=TERMINAL_RESULT_STATUS_ERROR,
             )
