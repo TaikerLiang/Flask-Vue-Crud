@@ -72,12 +72,12 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
         self._driver.patch_pyppeteer()
 
         bill_rules = [
-            ContentRule(content_getter=self._driver, search_type=SHIPMENT_TYPE_MBL),
+            CargoTrackingRoutingRule(content_getter=self._driver, search_type=SHIPMENT_TYPE_MBL),
             NextRoundRoutingRule(),
         ]
 
         booking_rules = [
-            ContentRule(content_getter=self._driver, search_type=SHIPMENT_TYPE_BOOKING),
+            CargoTrackingRoutingRule(content_getter=self._driver, search_type=SHIPMENT_TYPE_BOOKING),
             NextRoundRoutingRule(),
         ]
 
@@ -87,7 +87,7 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
             self._rule_manager = RuleManager(rules=booking_rules)
 
     def start(self):
-        option = ContentRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids)
+        option = CargoTrackingRoutingRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids)
         yield self._build_request_by(option=option)
 
     def _prepare_restart(self, search_nos: List, task_ids: List):
@@ -101,9 +101,8 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
             proxy_manager=HydraproxyProxyManager(session="eglv", logger=self.logger), is_headless=True
         )
         self._driver.patch_pyppeteer()
-        self._rule_manager._rule_map["CONTENT"].driver = self._driver
-
-        option = ContentRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+        self._rule_manager.get_rule_by_name(CargoTrackingRoutingRule.name).driver = self._driver
+        option = CargoTrackingRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
         return self._build_request_by(option=option)
 
     def parse(self, response):
@@ -152,8 +151,8 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
 # -------------------------------------------------------------------------------
 
 
-class ContentRule(BaseRoutingRule):
-    name = "CONTENT"
+class CargoTrackingRoutingRule(BaseRoutingRule):
+    name = "CARGO_TRACKING"
 
     def __init__(self, content_getter: BaseContentGetter, search_type: str):
         self._search_type = search_type
@@ -1296,7 +1295,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         task_ids = task_ids[1:]
         search_nos = search_nos[1:]
 
-        yield ContentRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+        yield CargoTrackingRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
 
 class CaptchaAnalyzer:

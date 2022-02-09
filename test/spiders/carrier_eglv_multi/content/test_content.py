@@ -4,7 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.spiders.carrier_eglv_multi import ContentRule
+from crawler.spiders.carrier_eglv_multi import CargoTrackingRoutingRule
 from test.spiders.carrier_eglv_multi import content
 
 
@@ -37,7 +37,7 @@ def test_invalid_mbl(sub, mbl_no, sample_loader):
         request=Request(url=option.url, meta=option.meta),
     )
 
-    results = [ContentRule._is_mbl_no_invalid(response=response)]
+    results = [CargoTrackingRoutingRule._is_mbl_no_invalid(response=response)]
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
     verifier = verify_module.Verifier()
