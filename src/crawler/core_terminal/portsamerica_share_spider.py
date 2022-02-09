@@ -8,7 +8,8 @@ from scrapy import Selector
 from crawler.core.selenium import ChromeContentGetter
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem
+from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError
@@ -62,7 +63,7 @@ class PortsamericaShareSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem):
+            if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
@@ -124,8 +125,20 @@ class SearchContainerRule(BaseRoutingRule):
     def _handle_response(cls, response, container_no_list):
         containers = cls._extract_container_info(response, len(container_no_list))
         for container in containers:
-            yield TerminalItem(
-                **container,
+            for container_no in container_no_list:
+                if container_no[:10] == container.get("container_no")[:10]:
+                    container_no_list.remove(container_no)
+                    container["container_no"] = container_no
+
+                    yield TerminalItem(
+                        **container,
+                    )
+
+        for container_no in container_no_list:
+            yield ExportErrorData(
+                container_no=container_no,
+                detail="Data was not found",
+                status=TERMINAL_RESULT_STATUS_ERROR,
             )
 
     @staticmethod

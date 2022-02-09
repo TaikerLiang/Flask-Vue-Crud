@@ -48,7 +48,6 @@ def test_container_handle(sub, container_no, sample_loader):
     verify_module.verify(results=results)
 
 
-@pytest.mark.skip
 @pytest.mark.parametrize(
     "sub,container_no",
     [
@@ -80,4 +79,7 @@ def test_invalid_container_no(sub, container_no, sample_loader):
         ),
     )
 
-    assert list(SearchContainerRule.handle(response=response)) == expect_data_list
+    assert (
+        list(SearchContainerRule._handle_response(response=response, container_no_list=[container_no]))
+        == expect_data_list
+    )
