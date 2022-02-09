@@ -52,16 +52,13 @@ class GpaShareSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if True in [isinstance(result, item) for item in [TerminalItem, InvalidDataFieldItem]]:
+            if True in [isinstance(result, item) for item in [TerminalItem, InvalidDataFieldItem, ExportErrorData]]:
                 c_no = result.get("container_no")
                 t_ids = self.cno_tid_map.get(c_no)
                 if t_ids != None:
                     for t_id in t_ids:
                         result["task_id"] = t_id
                         yield result
-            elif isinstance(result, ExportErrorData):
-                result["task_id"] = self.task_ids
-                yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
             else:
@@ -180,11 +177,12 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_no_list = response.meta.get("container_no_list")
+        container_nos_in_paging = container_no_list[:MAX_PAGE_NUM]
         cookies = response.meta.get("cookies")
         try:
             table = self._get_table_list(response)
         except TerminalInvalidContainerNoError:
-            for container_no in container_no_list:
+            for container_no in container_nos_in_paging:
                 yield ExportErrorData(
                     container_no=container_no,
                     detail="Data was not found",
@@ -194,8 +192,12 @@ class ContainerRoutingRule(BaseRoutingRule):
             info_list = self._extract_info_list(table)
             for info in info_list:
                 if info.get("invalid"):
+                    if info.get("invalid").get("container_no") in container_nos_in_paging:
+                        container_nos_in_paging.remove(info.get("invalid").get("container_no"))
                     yield info.get("invalid")
                 else:
+                    if info.get("container_no") in container_nos_in_paging:
+                        container_nos_in_paging.remove(info.get("container_no"))
                     yield TerminalItem(
                         container_no=info.get("container_no"),
                         available=info.get("available"),
@@ -203,7 +205,14 @@ class ContainerRoutingRule(BaseRoutingRule):
                         carrier_release=info.get("line_release"),
                         customs_release=info.get("customs_release"),
                     )
-            yield NextRoundRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
+            for container_no in container_nos_in_paging:
+                yield ExportErrorData(
+                    container_no=container_no,
+                    detail="Data was not found",
+                    status=TERMINAL_RESULT_STATUS_ERROR,
+                )
+
+        yield NextRoundRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
 
     def _get_table_list(self, response: Response) -> List[List]:
         tr_selector = response.css("tbody[class='tablebody1'] tr")
