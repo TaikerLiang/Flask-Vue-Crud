@@ -20,8 +20,9 @@ from anticaptchaofficial.recaptchav2proxyless import *
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError, DataNotFoundError
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem
+from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
@@ -96,7 +97,7 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem):
+            if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
@@ -174,8 +175,11 @@ class MainRoutingRule(BaseRoutingRule):
             for container_info in self.extract_container_result_table(
                 response=container_response, numbers=len(container_no_list)
             ):
+                container_no = container_info["container_no"]
+                container_no_list.remove(container_no)
+
                 yield TerminalItem(  # html field
-                    container_no=container_info["container_no"],  # number
+                    container_no=container_no,  # number
                     last_free_day=container_info["last_free_day"],  # demurrage-lfd
                     customs_release=container_info.get("custom_release"),  # holds-customs
                     demurrage=container_info["demurrage"],  # demurrage-amt
@@ -184,6 +188,13 @@ class MainRoutingRule(BaseRoutingRule):
                     cy_location=container_info["cy_location"],  # yard status
                     vessel=container_info["vessel"],  # vsl / voy
                     voyage=container_info["voyage"],  # vsl / voy
+                )
+
+            for container_no in container_no_list:
+                yield ExportErrorData(
+                    container_no=container_no,
+                    detail="Data was not found",
+                    status=TERMINAL_RESULT_STATUS_ERROR,
                 )
 
     @staticmethod
