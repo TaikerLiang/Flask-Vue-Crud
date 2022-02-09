@@ -100,10 +100,10 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
         self._driver.patch_pyppeteer()
 
         if self.search_type == SHIPMENT_TYPE_MBL:
-            self._rule_manager._rule_map["MBL_RULE"].driver = self._driver
+            self._rule_manager.get_rule_by_name(MblRoutingRule.name).driver = self._driver
             request_option = MblRoutingRule.build_request_option(mbl_nos=search_nos, task_ids=task_ids)
         else:
-            self._rule_manager._rule_map["BOOKING"].driver = self._driver
+            self._rule_manager.get_rule_by_name(BookingRoutingRule).driver = self._driver
             request_option = BookingRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
         self._request_queue.add_high_priority_request(request_option=request_option)
