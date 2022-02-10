@@ -285,7 +285,7 @@ class CargoTrackingRule(BaseRoutingRule):
                 voyage=container_status["voyage"],
                 location=LocationItem(name=container_status["location"]),
                 facility=container_status["facility"],
-                est_or_actual="A",
+                est_or_actual=container_status["est_or_actual"],
             )
 
     @staticmethod
@@ -359,6 +359,9 @@ class CargoTrackingRule(BaseRoutingRule):
                 "vessel": table.extract_cell("Vessel", index),
                 "voyage": table.extract_cell("Voyage", index),
                 "facility": table.extract_cell("Location", index, FacilityTextExtractor()),
+                "est_or_actual": table_locator.get_cell(
+                    "est_or_actual", index
+                ),  # self-defined string, not a HTML element
             }
 
 
@@ -395,10 +398,13 @@ class ContainerStatusTableLocator(BaseTable):
     def parse(self, table: Selector):
         title_th_list = table.css("thead th")
         title_text_list = [title.strip() for title in title_th_list.css("::text").getall()]
+        title_text_list.append("est_or_actual")  # self-defined title
         data_tr_list = table.css("tbody tr[class]")
 
         for index, tr in enumerate(data_tr_list):
             tds = tr.css("td")
+            tds.append("E" if ("inactive" in tr.attrib["class"]) else "A")  # est_or_actual
+
             self._left_header_set.add(index)
             for title_index, (title, td) in enumerate(zip(title_text_list, tds)):
                 self._td_map.setdefault(title, [])
