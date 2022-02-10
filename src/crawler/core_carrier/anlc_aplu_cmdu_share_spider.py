@@ -52,18 +52,23 @@ class Restart:
 
 
 class ContentGetter(ChromeContentGetter):
-    def __init__(self, proxy_manager: Optional[ProxyManager] = None, is_headless: bool = False):
-        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
+    def __init__(
+        self, proxy_manager: Optional[ProxyManager] = None, is_headless: bool = False, load_image: bool = True
+    ):
+        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless, load_image=load_image)
 
     def search(self, search_no: str):
-        self._driver.get("https://www.apl.com/ebusiness/tracking")
-        WebDriverWait(self._driver, 30).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Reference"]')))
-        self.scroll_to_bottom_of_page()
+        self._driver.get("https://www.apl.com/")
+        WebDriverWait(self._driver, 30).until(
+            EC.presence_of_element_located((By.XPATH, '//*[@id="wrapper"]/div/div[2]/div/div[1]/nav/ul/li[2]/a/span'))
+        )
         time.sleep(2)
-        ref = self._driver.find_element_by_xpath('//*[@id="Reference"]')
+        self._driver.find_element_by_xpath('//*[@id="wrapper"]/div/div[2]/div/div[1]/nav/ul/li[2]/a/span').click()
+        time.sleep(2)
+        ref = self._driver.find_element_by_xpath('//*[@id="track-number"]')
         ref.send_keys(search_no)
         time.sleep(2)
-        submit_btn = self._driver.find_element_by_xpath('//*[@id="btnTracking"]')
+        submit_btn = self._driver.find_element_by_xpath('//*[@id="searchTracking"]')
         submit_btn.click()
         time.sleep(20)
 
@@ -108,7 +113,7 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
         self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         self._proxy_manager = HydraproxyProxyManager(session="cmdushare", logger=self.logger)
-        self._content_getter = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
+        self._content_getter = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True, load_image=False)
         self._retry_count = 0
 
         bill_rules = [
@@ -135,7 +140,7 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
     def _prepare_start(self, search_nos: List, task_ids: List):
         self._content_getter.quit()
         self._proxy_manager.renew_proxy()
-        self._content_getter = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
+        self._content_getter = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True, load_image=False)
         self._rule_manager.get_rule_by_name(CargoTrackingRule.name).assign_content_getter(
             content_getter=self._content_getter
         )
