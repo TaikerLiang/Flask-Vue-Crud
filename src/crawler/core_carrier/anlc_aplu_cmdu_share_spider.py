@@ -1,6 +1,8 @@
 import re
 import json
+import time
 from typing import Dict, List
+from random import randint
 
 import scrapy
 from scrapy import Selector
@@ -50,15 +52,15 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
         self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         bill_rules = [
-            RecaptchaRule(search_type=SHIPMENT_TYPE_MBL),
-            SearchRoutingRule(search_type=SHIPMENT_TYPE_MBL),
+            RecaptchaRule(),
+            SearchRoutingRule(),
             ContainerStatusRoutingRule(),
             NextRoundRoutingRule(),
         ]
 
         booking_rules = [
-            RecaptchaRule(search_type=SHIPMENT_TYPE_BOOKING),
-            SearchRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
+            RecaptchaRule(),
+            SearchRoutingRule(),
             ContainerStatusRoutingRule(),
             NextRoundRoutingRule(),
         ]
@@ -76,7 +78,10 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
 
     def _prepare_start(self, search_nos: List, task_ids: List):
         self._proxy_manager.renew_proxy()
-        option = RecaptchaRule.build_request_option(base_url=self.base_url, search_nos=search_nos, task_ids=task_ids)
+        option = RecaptchaRule.build_request_option(
+            base_url=self.base_url, search_nos=search_nos, task_ids=task_ids, search_type=self.search_type
+        )
+
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         return proxy_option
 
@@ -130,11 +135,8 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
 class RecaptchaRule(BaseRoutingRule):
     name = "RECAPTCHA"
 
-    def __init__(self, search_type):
-        self._search_type = search_type
-
     @classmethod
-    def build_request_option(cls, base_url: str, search_nos: List, task_ids: List):
+    def build_request_option(cls, base_url: str, search_nos: List, task_ids: List, search_type: str):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
@@ -143,6 +145,7 @@ class RecaptchaRule(BaseRoutingRule):
                 "base_url": base_url,
                 "search_nos": search_nos,
                 "task_ids": task_ids,
+                "search_type": search_type,
             },
         )
 
@@ -153,12 +156,13 @@ class RecaptchaRule(BaseRoutingRule):
         base_url = response.meta["base_url"]
         search_nos = response.meta["search_nos"]
         task_ids = response.meta["task_ids"]
+        search_type = response.meta["search_type"]
 
         g_recaptcha_res = response.css("#recaptcha-token ::attr(value)").get()
         yield SearchRoutingRule.build_request_option(
             base_url=base_url,
             search_nos=search_nos,
-            search_type=self._search_type,
+            search_type=search_type,
             task_ids=task_ids,
             g_recaptcha_res=g_recaptcha_res,
         )
@@ -166,9 +170,6 @@ class RecaptchaRule(BaseRoutingRule):
 
 class SearchRoutingRule(BaseRoutingRule):
     name = "SEARCH"
-
-    def __init__(self, search_type):
-        self._search_type = search_type
 
     @classmethod
     def build_request_option(
@@ -209,16 +210,17 @@ class SearchRoutingRule(BaseRoutingRule):
         base_url = response.meta["base_url"]
         search_nos = response.meta["search_nos"]
         task_ids = response.meta["task_ids"]
+        search_type = response.meta["search_type"]
 
         current_search_no = search_nos[0]
         current_task_id = task_ids[0]
 
-        if not self._search_type == SHIPMENT_TYPE_CONTAINER:
+        if search_type != SHIPMENT_TYPE_CONTAINER:
             mbl_status = self._extract_mbl_status(response=response)
 
-            if self._search_type == SHIPMENT_TYPE_MBL:
+            if search_type == SHIPMENT_TYPE_MBL:
                 basic_mbl_item = MblItem(task_id=current_task_id, mbl_no=current_search_no)
-            elif self._search_type == SHIPMENT_TYPE_BOOKING:
+            elif search_type == SHIPMENT_TYPE_BOOKING:
                 basic_mbl_item = MblItem(task_id=current_task_id, booking_no=current_search_no)
 
             if mbl_status == STATUS_ONE_CONTAINER:
@@ -232,22 +234,25 @@ class SearchRoutingRule(BaseRoutingRule):
                 container_list = self._extract_container_list(response=response)
 
                 for container_no in container_list:
-                    yield RecaptchaRule(search_type=SHIPMENT_TYPE_CONTAINER).build_request_option(
-                        base_url=base_url, search_nos=[container_no], task_ids=task_ids
+                    yield RecaptchaRule.build_request_option(
+                        base_url=base_url,
+                        search_nos=[container_no],
+                        task_ids=task_ids,
+                        search_type=SHIPMENT_TYPE_CONTAINER,
                     )
 
             elif mbl_status == STATUS_WEBSITE_SUSPEND:
                 raise DataNotFoundError()
 
             else:  # STATUS_MBL_NOT_EXIST
-                if self._search_type == SHIPMENT_TYPE_MBL:
+                if search_type == SHIPMENT_TYPE_MBL:
                     yield ExportErrorData(
                         task_id=current_task_id,
                         mbl_no=current_search_no,
                         status=CARRIER_RESULT_STATUS_ERROR,
                         detail="Data was not found",
                     )
-                elif self._search_type == SHIPMENT_TYPE_BOOKING:
+                elif search_type == SHIPMENT_TYPE_BOOKING:
                     yield ExportErrorData(
                         task_id=current_task_id,
                         booking_no=current_search_no,
@@ -259,6 +264,7 @@ class SearchRoutingRule(BaseRoutingRule):
                 base_url=base_url,
                 search_nos=search_nos,
                 task_ids=task_ids,
+                search_type=search_type,
             )
 
         else:
@@ -336,7 +342,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             yield ContainerStatusItem(
                 task_id=task_id,
                 container_key=container_no,
-                local_date_time=container_status["local_date_time"],
+                local_date_time=container_status["local_date_time"].replace(",", ""),
                 description=container_status["description"],
                 location=LocationItem(name=container_status["location"]),
                 est_or_actual=container_status["est_or_actual"],
@@ -419,7 +425,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
     name = "NEXT_ROUND"
 
     @classmethod
-    def build_request_option(cls, base_url: str, search_nos: List, task_ids: List) -> RequestOption:
+    def build_request_option(cls, base_url: str, search_nos: List, task_ids: List, search_type: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
@@ -428,6 +434,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
                 "base_url": base_url,
                 "search_nos": search_nos,
                 "task_ids": task_ids,
+                "search_type": search_type,
             },
         )
 
@@ -435,14 +442,17 @@ class NextRoundRoutingRule(BaseRoutingRule):
         base_url = response.meta["base_url"]
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
+        search_type = response.meta["search_type"]
 
         if len(search_nos) == 1 and len(task_ids) == 1:
             return
 
         task_ids = task_ids[1:]
         search_nos = search_nos[1:]
-
-        yield RecaptchaRule.build_request_option(base_url=base_url, search_nos=search_nos, task_ids=task_ids)
+        time.sleep(randint(1, 3))
+        yield RecaptchaRule.build_request_option(
+            base_url=base_url, search_nos=search_nos, task_ids=task_ids, search_type=search_type
+        )
 
 
 class SpecificSpanTextExistMatchRule(BaseMatchRule):
