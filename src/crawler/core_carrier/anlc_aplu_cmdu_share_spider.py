@@ -1,25 +1,17 @@
-from typing import Optional, List, Dict
 import re
-import time
-import dataclasses
-import logging
+import json
+from typing import Dict, List
 
 import scrapy
 from scrapy import Selector
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException, WebDriverException
-from urllib3.exceptions import ReadTimeoutError
 
-from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
     SuspiciousOperationError,
-    DriverMaxRetryError,
-    ExportErrorData,
+    DataNotFoundError,
 )
+
 from crawler.core_carrier.items import (
     BaseCarrierItem,
     MblItem,
@@ -27,80 +19,25 @@ from crawler.core_carrier.items import (
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
+    ExportErrorData,
 )
+from crawler.extractors.selector_finder import find_selector_from, BaseMatchRule
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core.proxy import ProxyManager, HydraproxyProxyManager
+from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
-from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
-from crawler.core.selenium import ChromeContentGetter
-from crawler.core.defines import BaseContentGetter
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 
 STATUS_ONE_CONTAINER = "STATUS_ONE_CONTAINER"
 STATUS_MULTI_CONTAINER = "STATUS_MULTI_CONTAINER"
 STATUS_MBL_NOT_EXIST = "STATUS_MBL_NOT_EXIST"
 STATUS_WEBSITE_SUSPEND = "STATUS_WEBSITE_SUSPEND"
-MAX_RETRY_COUNT = 5
+
+SHIPMENT_TYPE_CONTAINER = "CONTAINER"
 
 
-@dataclasses.dataclass
-class Restart:
-    search_nos: list
-    task_ids: list
-    reason: str = ""
-
-
-class ContentGetter(ChromeContentGetter):
-    def __init__(
-        self, proxy_manager: Optional[ProxyManager] = None, is_headless: bool = False, load_image: bool = True
-    ):
-        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless, load_image=load_image)
-
-    def search(self, search_no: str):
-        self._driver.get("https://www.apl.com/")
-        WebDriverWait(self._driver, 30).until(
-            EC.presence_of_element_located((By.XPATH, '//*[@id="wrapper"]/div/div[2]/div/div[1]/nav/ul/li[2]/a/span'))
-        )
-        time.sleep(2)
-        self._driver.find_element_by_xpath('//*[@id="wrapper"]/div/div[2]/div/div[1]/nav/ul/li[2]/a/span').click()
-        time.sleep(2)
-        ref = self._driver.find_element_by_xpath('//*[@id="track-number"]')
-        ref.send_keys(search_no)
-        time.sleep(2)
-        submit_btn = self._driver.find_element_by_xpath('//*[@id="searchTracking"]')
-        submit_btn.click()
-        time.sleep(20)
-
-        return self._driver.page_source
-
-    def handle_muti_container(self):
-        page_contents = []
-        WebDriverWait(self._driver, 30).until(
-            EC.presence_of_element_located((By.XPATH, '//*[@id="multiresultssection"]/div/div/ul/li'))
-        )
-        cards = self._driver.find_elements_by_xpath('//*[@id="multiresultssection"]/div/div/ul/li')
-        for card in cards:
-            self._driver.execute_script("window.open('','_blank');")
-            time.sleep(3)
-            link = card.find_element_by_tag_name("a").get_attribute("href")
-            self.switch_to_last_window()
-            self._driver.get(link)
-            time.sleep(30)
-            self.scroll_to_bottom_of_page()
-            time.sleep(2)
-            page_contents.append(self._driver.page_source)
-            self.close_current_window_and_jump_to_origin()
-
-        return page_contents
-
-    def close_current_window_and_jump_to_origin(self):
-        self._driver.close()
-
-        # jump back to origin window
-        windows = self._driver.window_handles
-        assert len(windows) == 1
-        self._driver.switch_to.window(windows[0])
+class ForceRestart:
+    pass
 
 
 class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
@@ -112,17 +49,17 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
 
         self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
-        self._proxy_manager = HydraproxyProxyManager(session="cmdushare", logger=self.logger)
-        self._content_getter = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True, load_image=False)
-        self._retry_count = 0
-
         bill_rules = [
-            CargoTrackingRule(content_getter=self._content_getter),
+            RecaptchaRule(search_type=SHIPMENT_TYPE_MBL),
+            SearchRoutingRule(search_type=SHIPMENT_TYPE_MBL),
+            ContainerStatusRoutingRule(),
             NextRoundRoutingRule(),
         ]
 
         booking_rules = [
-            CargoTrackingRule(content_getter=self._content_getter),
+            RecaptchaRule(search_type=SHIPMENT_TYPE_BOOKING),
+            SearchRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
+            ContainerStatusRoutingRule(),
             NextRoundRoutingRule(),
         ]
 
@@ -131,20 +68,15 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
         elif self.search_type == SHIPMENT_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
 
+        self._proxy_manager = HydraproxyProxyManager(session="share", logger=self.logger)
+
     def start(self):
-        self._proxy_manager.renew_proxy()
-        option = CargoTrackingRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids)
-        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
-        yield self._build_request_by(option=proxy_option)
+        option = self._prepare_start(search_nos=self.search_nos, task_ids=self.task_ids)
+        yield self._build_request_by(option=option)
 
     def _prepare_start(self, search_nos: List, task_ids: List):
-        self._content_getter.quit()
         self._proxy_manager.renew_proxy()
-        self._content_getter = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True, load_image=False)
-        self._rule_manager.get_rule_by_name(CargoTrackingRule.name).assign_content_getter(
-            content_getter=self._content_getter
-        )
-        option = CargoTrackingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+        option = RecaptchaRule.build_request_option(base_url=self.base_url, search_nos=search_nos, task_ids=task_ids)
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         return proxy_option
 
@@ -161,12 +93,9 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
             elif isinstance(result, RequestOption):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
                 yield self._build_request_by(option=proxy_option)
-            elif isinstance(result, Restart):
-                self._retry_count += 1
-                search_nos = result.search_nos
-                task_ids = result.task_ids
-                if self._retry_count > MAX_RETRY_COUNT:
-                    raise DriverMaxRetryError()
+            elif isinstance(result, ForceRestart):
+                search_nos = response.meta["search_nos"]
+                task_ids = response.meta["task_ids"]
                 proxy_option = self._prepare_start(search_nos=search_nos, task_ids=task_ids)
                 yield self._build_request_by(option=proxy_option)
             else:
@@ -198,22 +127,20 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
             raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
 
 
-class CargoTrackingRule(BaseRoutingRule):
-    name = "CARGO_TRACKING"
+class RecaptchaRule(BaseRoutingRule):
+    name = "RECAPTCHA"
 
-    def __init__(self, content_getter: BaseContentGetter):
-        self.content_getter = content_getter
-
-    def assign_content_getter(self, content_getter: BaseContentGetter):
-        self.content_getter = content_getter
+    def __init__(self, search_type):
+        self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, search_nos: List, task_ids: List):
+    def build_request_option(cls, base_url: str, search_nos: List, task_ids: List):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://api.myip.com",
+            url="https://www.recaptcha.net/recaptcha/enterprise/anchor?ar=1&k=6Lf1iyUaAAAAAJ2mA_9rBiiGtkxBCfO0ItCm7t-x&co=aHR0cHM6Ly93d3cuY21hLWNnbS5jb206NDQz&hl=zh-TW&size=invisible",
             meta={
+                "base_url": base_url,
                 "search_nos": search_nos,
                 "task_ids": task_ids,
             },
@@ -223,150 +150,268 @@ class CargoTrackingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
+        base_url = response.meta["base_url"]
         search_nos = response.meta["search_nos"]
         task_ids = response.meta["task_ids"]
 
-        try:
-            page_source = self.content_getter.search(search_nos[0])
-            resp_selector = Selector(text=page_source)
+        g_recaptcha_res = response.css("#recaptcha-token ::attr(value)").get()
+        yield SearchRoutingRule.build_request_option(
+            base_url=base_url,
+            search_nos=search_nos,
+            search_type=self._search_type,
+            task_ids=task_ids,
+            g_recaptcha_res=g_recaptcha_res,
+        )
 
-            if not self._is_result_exist(response=resp_selector):
-                yield ExportErrorData(
-                    task_id=task_ids[0],
-                    booking_no=search_nos[0],
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail="Data was not found",
-                )
-            else:
-                container_list = self._extract_container_list(response=resp_selector)
-                if len(container_list) > 0:
-                    page_contents = self.content_getter.handle_muti_container()
-                    for content in page_contents:
-                        resp_selector = Selector(text=content)
-                        for item in self.process_single_container_case(
-                            response=resp_selector, search_no=search_nos[0], task_id=task_ids[0]
-                        ):
-                            yield item
-                else:
-                    for item in self.process_single_container_case(
-                        response=resp_selector, search_no=search_nos[0], task_id=task_ids[0]
-                    ):
-                        yield item
+
+class SearchRoutingRule(BaseRoutingRule):
+    name = "SEARCH"
+
+    def __init__(self, search_type):
+        self._search_type = search_type
+
+    @classmethod
+    def build_request_option(
+        cls, base_url: str, search_nos: List, search_type: str, task_ids: List, g_recaptcha_res: str
+    ) -> RequestOption:
+        current_search_no = search_nos[0]
+
+        search_by = "Booking" if not search_type == SHIPMENT_TYPE_CONTAINER else "Container"
+
+        form_data = {
+            "g-recaptcha-response": g_recaptcha_res,
+            "SearchViewModel.SearchBy": search_by,
+            "SearchViewModel.Reference": current_search_no,
+            "SearchViewModel.FromHome": "true",
+        }
+
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_POST_FORM,
+            url=f"{base_url}/ebusiness/tracking/search",
+            form_data=form_data,
+            headers={
+                "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.80 Safari/537.36",
+                "referer": "https://www.cma-cgm.com/ebusiness/tracking",
+            },
+            meta={
+                "base_url": base_url,
+                "search_nos": search_nos,
+                "search_type": search_type,
+                "task_ids": task_ids,
+            },
+        )
+
+    def get_save_name(self, response) -> str:
+        return f"{self.name}.html"
+
+    def handle(self, response):
+        base_url = response.meta["base_url"]
+        search_nos = response.meta["search_nos"]
+        task_ids = response.meta["task_ids"]
+
+        current_search_no = search_nos[0]
+        current_task_id = task_ids[0]
+
+        if not self._search_type == SHIPMENT_TYPE_CONTAINER:
+            mbl_status = self._extract_mbl_status(response=response)
+
+            if self._search_type == SHIPMENT_TYPE_MBL:
+                basic_mbl_item = MblItem(task_id=current_task_id, mbl_no=current_search_no)
+            elif self._search_type == SHIPMENT_TYPE_BOOKING:
+                basic_mbl_item = MblItem(task_id=current_task_id, booking_no=current_search_no)
+
+            if mbl_status == STATUS_ONE_CONTAINER:
+                yield basic_mbl_item
+                routing_rule = ContainerStatusRoutingRule()
+                for item in routing_rule.handle(response=response):
+                    yield item
+
+            elif mbl_status == STATUS_MULTI_CONTAINER:
+                yield basic_mbl_item
+                container_list = self._extract_container_list(response=response)
+
+                for container_no in container_list:
+                    yield RecaptchaRule(search_type=SHIPMENT_TYPE_CONTAINER).build_request_option(
+                        base_url=base_url, search_nos=[container_no], task_ids=task_ids
+                    )
+
+            elif mbl_status == STATUS_WEBSITE_SUSPEND:
+                raise DataNotFoundError()
+
+            else:  # STATUS_MBL_NOT_EXIST
+                if self._search_type == SHIPMENT_TYPE_MBL:
+                    yield ExportErrorData(
+                        task_id=current_task_id,
+                        mbl_no=current_search_no,
+                        status=CARRIER_RESULT_STATUS_ERROR,
+                        detail="Data was not found",
+                    )
+                elif self._search_type == SHIPMENT_TYPE_BOOKING:
+                    yield ExportErrorData(
+                        task_id=current_task_id,
+                        booking_no=current_search_no,
+                        status=CARRIER_RESULT_STATUS_ERROR,
+                        detail="Data was not found",
+                    )
 
             yield NextRoundRoutingRule.build_request_option(
+                base_url=base_url,
                 search_nos=search_nos,
                 task_ids=task_ids,
             )
 
-        except (TimeoutException, ReadTimeoutError, WebDriverException) as e:
-            logging.error(str(e))
-            yield Restart(reason="TimeoutException", search_nos=search_nos, task_ids=task_ids)
+        else:
+            routing_rule = ContainerStatusRoutingRule()
+            for item in routing_rule.handle(response=response):
+                yield item
 
-    def process_single_container_case(self, response: Selector, search_no: str, task_id: str):
-        main_info = self._extract_basic_status(response=response)
-        yield MblItem(
-            task_id=task_id,
-            pol=LocationItem(name=main_info["pol"]),
-            pod=LocationItem(name=main_info["pod"]),
-            eta=main_info["pod_eta"],
-            ata=main_info["pod_ata"],
-            container_quantity=main_info["container_quantity"],
+    @staticmethod
+    def _extract_mbl_status(response: Selector):
+        invalid = bool(response.css("div.no-result"))
+        single = bool(response.css("#trackingsearchsection"))
+        multi = bool(response.css("#multiresultssection"))
+
+        if invalid:
+            return STATUS_MBL_NOT_EXIST
+        if single:
+            return STATUS_ONE_CONTAINER
+        if multi:
+            return STATUS_MULTI_CONTAINER
+        return STATUS_WEBSITE_SUSPEND
+
+    @staticmethod
+    def _extract_container_list(response: Selector):
+        container_list = response.css("dl.container-ref a::text").getall()
+        return container_list
+
+
+class ContainerStatusRoutingRule(BaseRoutingRule):
+    name = "CONTAINER_STATUS"
+
+    @classmethod
+    def build_request_option(cls, container_no: str, search_no: str, task_id: str) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://api.myip.com/",
+            meta={
+                "search_no": search_no,
+                "container_no": container_no,
+                "task_id": task_id,
+            },
         )
 
-        container_no = main_info["container_no"]
+    def get_save_name(self, response) -> str:
+        container_no = response.meta["container_no"]
+        return f"container_status_{container_no}.json"
+
+    def handle(self, response):
+        task_id = response.meta.get("task_id")
+        if not task_id:
+            task_id = response.meta["task_ids"][0]
+
+        container_no = self._extract_container_no(response=response)
+        main_info = self._extract_tracking_no_map(response=response)
+
+        yield MblItem(
+            task_id=task_id,
+            por=LocationItem(name=main_info["por"]),
+            pol=LocationItem(name=main_info["pol"]),
+            pod=LocationItem(name=main_info["pod"]),
+            final_dest=LocationItem(name=main_info["dest"]),
+            eta=main_info["pod_eta"],
+            ata=main_info["pod_ata"],
+        )
 
         yield ContainerItem(
             task_id=task_id,
             container_key=container_no,
             container_no=container_no,
         )
-        for container_status in self._extract_container_status(response=response):
+
+        response_dict = self._get_response_dict(response=response)
+        container_status_list = self._extract_container_status(response_dict=response_dict)
+        for container_status in container_status_list:
             yield ContainerStatusItem(
                 task_id=task_id,
                 container_key=container_no,
                 local_date_time=container_status["local_date_time"],
                 description=container_status["description"],
-                vessel=container_status["vessel"],
-                voyage=container_status["voyage"],
                 location=LocationItem(name=container_status["location"]),
-                facility=container_status["facility"],
                 est_or_actual=container_status["est_or_actual"],
+                facility=container_status["facility"],
             )
 
     @staticmethod
-    def _is_result_exist(response: Selector):
-        result_msg = response.css(
-            "#shipmenttracking > section.tracking-details > div > div > div.left > span::text"
-        ).get()
-        if result_msg and result_msg.strip() == "No results found":
-            return False
-        return True
+    def _extract_container_no(response: Selector):
+        return response.css("ul.resume-filter strong::text").get()
 
     @staticmethod
-    def _extract_basic_status(response: Selector):
-        container_no = response.css(
-            "#trackingsearchsection > header > div > div > div > ul > li:nth-child(1) > strong::text"
-        ).get()
-        container_quantity = response.css(
-            "#trackingsearchsection > header > div > div > div > ul > li.ico-container > strong::text"
-        ).get()
-        pol = response.css("#pol > div.timeline--item-description > span > strong::text").get()
-        pod = response.css(
-            "#trackingsearchsection > div > section > div > ul > li.timeline--item.arrival > div.timeline--item-description > span > strong::text"
-        ).get()
-        status = response.css(
-            "#trackingsearchsection > div > section > div > div > div > div.status > span::text"
-        ).get()
-        arrive_time_list = response.css(
-            "#trackingsearchsection > div > section > div > div > div > div.status > span > strong::text"
-        ).getall()
-        arrive_time = " ".join(arrive_time_list)
-        pod_eta = None
-        pod_ata = None
+    def _extract_tracking_no_map(response: Selector):
+        status = response.css("div.status span::text").get()
+        pod_time = " ".join(response.css("div.status span strong::text").getall())
 
-        if not status:
-            pod_eta = None
-        elif status.strip() == "ETA Berth at POD":
-            pod_eta = arrive_time.strip()
+        pod_eta, pod_ata = None, None
+
+        if status.strip() == "ETA Berth at POD":
+            pod_eta = pod_time.strip()
         elif status.strip() == "Arrived at POD":
             pod_eta = None
-            pod_ata = arrive_time.strip()
+            pod_ata = pod_time.strip()
         elif status.strip() == "Remaining":
             pod_eta = None
         else:
             raise CarrierResponseFormatError(reason=f"Unknown status {status!r}")
 
+        pod, dest = None, None
+
+        timeline_divs = response.css("div.timeline--item-description")
+        pod_rule = SpecificSpanTextExistMatchRule("POD")
+        pod_div = find_selector_from(selectors=timeline_divs, rule=pod_rule)
+        if pod_div:
+            pod = pod_div.css("strong::text").get()
+
+        dest_rule = SpecificSpanTextExistMatchRule("FPD")
+        dest_div = find_selector_from(selectors=timeline_divs, rule=dest_rule)
+        if dest_div:
+            dest = dest_div.css("strong::text").get()
+
         return {
-            "container_no": container_no,
-            "container_quantity": container_quantity,
-            "pol": pol,
+            "por": response.css("li#prepol strong::text").get(),
+            "pol": response.css("li#pol strong::text").get(),
             "pod": pod,
+            "dest": dest,
             "pod_eta": pod_eta,
             "pod_ata": pod_ata,
         }
 
     @staticmethod
-    def _extract_container_list(response: Selector) -> List:
-        return response.css("#multiresultssection > div > div > ul > li").getall()
+    def _get_response_dict(response) -> Dict:
+        response_text = response.text
+        match = re.search(r"options\.responseData = \'(?P<response_data>.*)\'", response_text)
+        response_data = match.group("response_data")
+        return json.loads(response_data)
 
-    @staticmethod
-    def _extract_container_status(response) -> Dict:
-        table_selector = response.css("#gridTrackingDetails")
-        table_locator = ContainerStatusTableLocator()
-        table_locator.parse(table=table_selector)
-        table = TableExtractor(table_locator=table_locator)
+    def _extract_container_status(self, response_dict: Dict) -> Dict:
+        moves = (
+            response_dict.get("PastMoves", [])
+            + response_dict.get("CurrentMoves", [])
+            + response_dict.get("ProvisionalMoves", [])
+        )
 
-        for index in table_locator.iter_left_header():
+        for move in moves:
+            local_date_time = f"{move['DateString']} {move['TimeString']}"
+            est_or_actual = "E" if move["State"] == "NONE" else "A"
+
             yield {
-                "local_date_time": table.extract_cell("Date", index).replace(",", ""),
-                "description": table.extract_cell("Moves", index),
-                "location": table.extract_cell("Location", index, LocationTdExtractor()),
-                "vessel": table.extract_cell("Vessel", index),
-                "voyage": table.extract_cell("Voyage", index),
-                "facility": table.extract_cell("Location", index, FacilityTextExtractor()),
-                "est_or_actual": table_locator.get_cell(
-                    "est_or_actual", index
-                ),  # self-defined string, not a HTML element
+                "local_date_time": local_date_time,
+                "description": move["StatusDescription"],
+                "location": move["Location"],
+                "vessel": move["Vessel"],
+                "voyage": move["Voyage"],
+                "est_or_actual": est_or_actual,
+                "facility": move["LocationTerminal"],
             }
 
 
@@ -374,19 +419,20 @@ class NextRoundRoutingRule(BaseRoutingRule):
     name = "NEXT_ROUND"
 
     @classmethod
-    def build_request_option(cls, search_nos: List, task_ids: List) -> RequestOption:
+    def build_request_option(cls, base_url: str, search_nos: List, task_ids: List) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="http://tracking.hardcoretech.co:18110",
+            url="https://api.myip.com/",
             meta={
+                "base_url": base_url,
                 "search_nos": search_nos,
                 "task_ids": task_ids,
-                "handle_httpstatus_list": [404],
             },
         )
 
     def handle(self, response):
+        base_url = response.meta["base_url"]
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
 
@@ -396,41 +442,14 @@ class NextRoundRoutingRule(BaseRoutingRule):
         task_ids = task_ids[1:]
         search_nos = search_nos[1:]
 
-        yield CargoTrackingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+        yield RecaptchaRule.build_request_option(base_url=base_url, search_nos=search_nos, task_ids=task_ids)
 
 
-class ContainerStatusTableLocator(BaseTable):
-    def parse(self, table: Selector):
-        title_th_list = table.css("thead th")
-        title_text_list = [title.strip() for title in title_th_list.css("::text").getall()]
-        title_text_list.append("est_or_actual")  # self-defined title
-        data_tr_list = table.css("tbody tr[class]")
+class SpecificSpanTextExistMatchRule(BaseMatchRule):
+    def __init__(self, text):
+        self._text = text
 
-        for index, tr in enumerate(data_tr_list):
-            tds = tr.css("td")
-            tds.append("E" if ("inactive" in tr.attrib["class"]) else "A")  # est_or_actual
-
-            self._left_header_set.add(index)
-            for title_index, (title, td) in enumerate(zip(title_text_list, tds)):
-                self._td_map.setdefault(title, [])
-                self._td_map[title].append(td)
-
-
-class ActualIconTdExtractor(BaseTableCellExtractor):
-    def extract(self, cell: Selector):
-        td_i = cell.css("i").get()
-        return td_i
-
-
-class LocationTdExtractor(BaseTableCellExtractor):
-    def extract(self, cell: Selector):
-        td_i = cell.css("td::text").get().strip()
-        return td_i
-
-
-class FacilityTextExtractor(BaseTableCellExtractor):
-    def extract(self, cell: Selector):
-        TAG_RE = re.compile(r"<[^>]+>")
-        i_text = cell.css("script#location__1::text").get(default="").strip()
-        facility = TAG_RE.sub("", i_text)
-        return facility
+    def check(self, selector: Selector) -> bool:
+        raw_span_text = selector.css("span::text").get()
+        span_text = raw_span_text.strip() if isinstance(raw_span_text, str) else raw_span_text
+        return self._text == span_text
