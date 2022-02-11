@@ -5,14 +5,15 @@ import re
 
 import scrapy
 from scrapy import Selector
-from crawler.core.selenium import ChromeContentGetter
 
+from crawler.core.selenium import ChromeContentGetter
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
-from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError
+from crawler.utility import ContainerNoChecker
 
 BASE_URL = "https://voyagertrack.portsamerica.com"
 MAX_PAGE_NUM = 20
@@ -126,7 +127,7 @@ class SearchContainerRule(BaseRoutingRule):
         containers = cls._extract_container_info(response, len(container_no_list))
         for container in containers:
             for container_no in container_no_list:
-                if container_no[:10] == container.get("container_no")[:10]:
+                if container["container_no"] == ContainerNoChecker.get_checked_no(container_no):
                     container_no_list.remove(container_no)
                     container["container_no"] = container_no
 
