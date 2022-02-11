@@ -95,6 +95,7 @@ class RailNSSpider(BaseMultiRailSpider):
             return scrapy.Request(
                 url=option.url,
                 meta=meta,
+                dont_filter=True,
             )
 
         else:
@@ -130,8 +131,9 @@ class ContainerRoutingRule(BaseRoutingRule):
         response_text = ""
         try:
             response_text = content_getter.search(container_nos=container_nos)
-        except TimeoutException:
+        except (TimeoutException, NoSuchElementException):
             yield Restart()
+            content_getter.close()
             return
         response = scrapy.Selector(text=response_text)
 
