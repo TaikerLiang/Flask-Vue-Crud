@@ -4,6 +4,9 @@ from crawler.core.selenium import ChromeContentGetter
 
 import scrapy
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_rail.base_spiders import BaseMultiRailSpider
@@ -216,6 +219,9 @@ class ContentGetter(ChromeContentGetter):
     def _login(self):
         self._driver.get(self.LOGIN_URL)
         time.sleep(60)
+        WebDriverWait(self._driver, 30).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "input[formcontrolname='username']"))
+        )
         username = self._driver.find_element_by_css_selector("input[formcontrolname='username']")
         username.send_keys(self.USER_NAME)
         password = self._driver.find_element_by_css_selector("input[formcontrolname='password']")
@@ -232,6 +238,9 @@ class ContentGetter(ChromeContentGetter):
             self._is_first = False
 
         # search
+        WebDriverWait(self._driver, 30).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "textarea[formcontrolname='equipments']"))
+        )
         self._driver.find_element_by_css_selector("textarea[formcontrolname='equipments']").send_keys(
             ",".join(container_nos)
         )
