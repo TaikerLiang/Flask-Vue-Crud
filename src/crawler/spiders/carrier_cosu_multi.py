@@ -56,7 +56,7 @@ class CarrierCosuSpider(BaseMultiCarrierSpider):
             yield self._build_request_by(option=option)
         else:
             # option = BookingInfoRoutingRule.build_request_option(booking_nos=[self.booking_no], task_id=t_id)
-            option = BookingInfoRoutingRule.build_request_option(booking_nos=self.booking_nos, task_ids=self.task_ids)
+            option = BookingInfoRoutingRule.build_request_option(booking_nos=self.search_nos, task_ids=self.task_ids)
             yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -101,7 +101,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, mbl_nos, task_ids) -> RequestOption:
-        url = f"https://www.google.com"
+        url = "https://api.myip.com"
 
         return RequestOption(
             method=RequestOption.METHOD_GET,
@@ -202,7 +202,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, task_ids: str, booking_nos: str) -> RequestOption:
-        url = f"https://www.google.com"
+        url = "https://api.myip.com"
 
         return RequestOption(
             method=RequestOption.METHOD_GET,

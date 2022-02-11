@@ -1,6 +1,5 @@
-import asyncio
-import dataclasses
 import re
+import asyncio
 import time
 
 from urllib3.exceptions import ReadTimeoutError
@@ -9,7 +8,7 @@ import logging
 
 import scrapy
 from scrapy import Selector
-from pyppeteer.errors import NetworkError, PageError, TimeoutError
+from pyppeteer.errors import TimeoutError, ElementHandleError, PageError
 
 from crawler.core.table import BaseTable, TableExtractor
 from crawler.core.defines import BaseContentGetter
@@ -41,23 +40,11 @@ from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 
 WHLC_BASE_URL = "https://www.wanhai.com/views/cargoTrack/CargoTrack.xhtml"
-MAX_RETRY_COUNT = 10
-POSSIBLE_ERROR_TUPLE = (
-    ReadTimeoutError,
-    NetworkError,
-    ConnectionError,
-    TimeoutError,
-    PageError,
-    CarrierResponseFormatError,
-    IndexError,
-)
+MAX_RETRY_COUNT = 5
 
 
-@dataclasses.dataclass
 class Restart:
-    search_nos: list
-    task_ids: list
-    reason: str = ""
+    pass
 
 
 class CarrierWhlcSpider(BaseMultiCarrierSpider):
@@ -65,10 +52,9 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
 
     def __init__(self, *args, **kwargs):
         super(CarrierWhlcSpider, self).__init__(*args, **kwargs)
-        self._retry_count = 0
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
+
         self._driver = WhlcContentGetter(proxy_manager=HydraproxyProxyManager(session="whlc", logger=self.logger))
-        self._driver.patch_pyppeteer()
+        self._retry_count = 0
 
         bill_rules = [MblRoutingRule(content_getter=self._driver)]
 
@@ -82,31 +68,20 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
         self._request_queue = RequestOptionQueue()
 
     def start(self):
+        yield self._prepare_restart()
+
+    def _prepare_restart(self):
+        if self._retry_count > MAX_RETRY_COUNT:
+            raise DriverMaxRetryError()
+
+        self._retry_count += 1
+
         if self.search_type == SHIPMENT_TYPE_MBL:
             request_option = MblRoutingRule.build_request_option(mbl_nos=self.search_nos, task_ids=self.task_ids)
         else:
             request_option = BookingRoutingRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids)
 
-        yield self._build_request_by(option=request_option)
-
-    def _prepare_restart(self, search_nos: List, task_ids: List):
-        if self._retry_count >= MAX_RETRY_COUNT:
-            raise DriverMaxRetryError()
-
-        self._retry_count += 1
-        self._driver.quit()
-        time.sleep(3)
-        self._driver = WhlcContentGetter(proxy_manager=HydraproxyProxyManager(session="whlc", logger=self.logger))
-        self._driver.patch_pyppeteer()
-
-        if self.search_type == SHIPMENT_TYPE_MBL:
-            self._rule_manager.get_rule_by_name(MblRoutingRule.name).driver = self._driver
-            request_option = MblRoutingRule.build_request_option(mbl_nos=search_nos, task_ids=task_ids)
-        else:
-            self._rule_manager.get_rule_by_name(BookingRoutingRule).driver = self._driver
-            request_option = BookingRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
-
-        self._request_queue.add_high_priority_request(request_option=request_option)
+        return self._build_request_by(option=request_option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -120,8 +95,7 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
             if isinstance(result, BaseCarrierItem):
                 yield result
             elif isinstance(result, Restart):
-                yield DebugItem(info=f"{result.reason}, Restarting...")
-                self._prepare_restart(search_nos=result.search_nos, task_ids=result.task_ids)
+                yield self._prepare_restart()
             elif isinstance(result, RequestOption):
                 self._request_queue.add_request(result)
             else:
@@ -194,8 +168,8 @@ class MblRoutingRule(BaseRoutingRule):
             page_source = asyncio.get_event_loop().run_until_complete(
                 self.driver.multi_search(search_nos=mbl_nos, search_type=self._search_type)
             )
-        except POSSIBLE_ERROR_TUPLE as e:
-            yield Restart(search_nos=mbl_nos, task_ids=task_ids, reason=str(e))
+        except (ReadTimeoutError, TimeoutError, PageError, CarrierResponseFormatError, IndexError):
+            yield Restart()
             return
 
         response_selector = Selector(text=page_source)
@@ -207,10 +181,7 @@ class MblRoutingRule(BaseRoutingRule):
                 yield MblItem(task_id=task_id, mbl_no=mbl_no)
             else:
                 yield ExportErrorData(
-                    task_id=task_id,
-                    mbl_no=mbl_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail="Data was not found",
+                    task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found"
                 )
                 continue
 
@@ -230,21 +201,30 @@ class MblRoutingRule(BaseRoutingRule):
             try:
                 for item in self.handle_detail_page(task_id, idx):
                     yield item
-            except POSSIBLE_ERROR_TUPLE as e:
-                yield Restart(search_nos=mbl_nos[index:], task_ids=task_ids[index:], reason=str(e))
+            except (CarrierResponseFormatError, IndexError) as e:
+                logging.error("CarrierResponseFormatError or IndexError", str(e))
                 return
 
             # history page
             try:
                 for item in self.handle_history_page(task_id, container_no, idx):
                     yield item
-            except POSSIBLE_ERROR_TUPLE as e:
-                yield Restart(search_nos=mbl_nos[index:], task_ids=task_ids[index:], reason=str(e))
+            except (CarrierResponseFormatError, IndexError) as e:
+                logging.error("CarrierResponseFormatError or IndexError", str(e))
+                return
+            except TimeoutError:
+                yield ExportErrorData(
+                    task_id=task_id,
+                    mbl_no=mbl_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Load status page timeout",
+                )
+                self.driver.close_page_and_switch_last()
                 return
 
             time.sleep(3)
-
-        self.driver.close_page_and_switch_last()
+            self.driver.close_page_and_switch_last()
+        asyncio.get_event_loop().run_until_complete(self.driver.close_page())
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
@@ -253,7 +233,7 @@ class MblRoutingRule(BaseRoutingRule):
         page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(idx + 2))
 
         if not page_source:
-            raise CarrierResponseFormatError(reason="Detail page source empty")
+            return
 
         detail_selector = Selector(text=page_source)
         date_information = self.extract_date_information(detail_selector)
@@ -279,10 +259,15 @@ class MblRoutingRule(BaseRoutingRule):
         self.driver.close_page_and_switch_last()
 
     def handle_history_page(self, task_id, container_no, idx):
-        page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_history_page(idx + 2))
+        try:
+            page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_history_page(idx + 2))
+        except TimeoutError:
+            self.driver.close_page_and_switch_last()
+            yield Restart()
+            return
 
         if not page_source:
-            raise CarrierResponseFormatError(reason="History page source empty")
+            return
 
         history_selector = Selector(text=page_source)
         container_status_list = self.extract_container_status(history_selector)
@@ -295,8 +280,6 @@ class MblRoutingRule(BaseRoutingRule):
                 description=container_status["description"],
                 location=LocationItem(name=container_status["location_name"]),
             )
-
-        self.driver.close_page_and_switch_last()
 
     def extract_container_info(self, response: scrapy.Selector) -> List:
         table_selector = response.css("table.tbl-list")[0]
@@ -481,14 +464,13 @@ class BookingRoutingRule(BaseRoutingRule):
             page_source = asyncio.get_event_loop().run_until_complete(
                 self.driver.multi_search(search_nos=search_nos, search_type=self._search_type)
             )
-        except POSSIBLE_ERROR_TUPLE as e:
-            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
+        except (ReadTimeoutError, TimeoutError, PageError, CarrierResponseFormatError, IndexError):
+            yield Restart()
             return
 
         response_selector = Selector(text=page_source)
         if self.is_search_no_invalid(response=response_selector):
             raise CarrierInvalidSearchNoError(search_type=self._search_type)
-
         booking_list = self.extract_booking_list(response_selector)
         book_no_set = self.get_book_no_set_from(booking_list=booking_list)
 
@@ -505,26 +487,28 @@ class BookingRoutingRule(BaseRoutingRule):
             search_no = booking_list[b_idx]["booking_no"]
             index = search_nos.index(search_no)
             task_id = task_ids[index]
-
             try:
-                for item in self.handle_booking_detail_history_page(task_id=task_id, search_no=search_no):
-                    yield item
-            except POSSIBLE_ERROR_TUPLE as e:
-                yield Restart(search_nos=search_no[index:], task_ids=task_ids[index:], reason=str(e))
-                return
+                page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(b_idx + 2))
+            except TimeoutError:
+                yield ExportErrorData(
+                    task_id=task_id,
+                    booking_no=search_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Load detail page timeout",
+                )
+                self.driver.close_page_and_switch_last()
+                continue
+            for item in self.handle_booking_detail_page(response=page_source, task_id=task_id, search_no=search_no):
+                yield item
 
-            time.sleep(3)
+            for item in self.handle_booking_history_page(response=page_source, task_id=task_id, search_no=search_no):
+                yield item
 
-        self.driver.close_page_and_switch_last()
+            self.driver.close_page_and_switch_last()
 
-    def handle_booking_detail_history_page(self, task_id, search_no):
-        page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(b_idx + 2))
-
-        if not page_source:
-            raise CarrierResponseFormatError(reason="Detail page source empty")
-
-        basic_info = self.extract_basic_info(Selector(text=page_source))
-        vessel_info = self.extract_vessel_info(Selector(text=page_source))
+    def handle_booking_detail_page(self, response, task_id, search_no):
+        basic_info = self.extract_basic_info(Selector(text=response))
+        vessel_info = self.extract_vessel_info(Selector(text=response))
 
         yield MblItem(
             task_id=task_id,
@@ -549,21 +533,26 @@ class BookingRoutingRule(BaseRoutingRule):
             eta=vessel_info["eta"],
         )
 
-        for item in self.handle_booking_history_page(detail_page=page_source, task_id=task_id, search_no=search_no):
-            yield item
-
-        self.driver.close_page_and_switch_last()
-
-    def handle_booking_history_page(self, detail_page, task_id, search_no):
-        container_nos = self.extract_container_no_and_status_links(Selector(text=detail_page))
+    def handle_booking_history_page(self, response, task_id, search_no):
+        container_nos = self.extract_container_no_and_status_links(Selector(text=response))
 
         for idx in range(len(container_nos)):
             container_no = container_nos[idx]
             # history page
-            page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_booking_history_page(idx + 2))
+            try:
+                page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_booking_history_page(idx + 2))
+            except TimeoutError:
+                yield ExportErrorData(
+                    task_id=task_id,
+                    booking_no=search_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Load status page timeout",
+                )
+                self.driver.close_page_and_switch_last()
+                continue
 
             if not page_source:
-                raise CarrierResponseFormatError(reason="History page source empty")
+                continue
 
             history_selector = Selector(text=page_source)
 
@@ -733,66 +722,69 @@ class WhlcContentGetter(PyppeteerContentGetter):
     async def multi_search(self, search_nos, search_type):
         await self.page.goto(WHLC_BASE_URL, options={"timeout": 60000})
         await asyncio.sleep(3)
-
         select_num = self._type_select_num_map[search_type]
         await self.page.waitForSelector("#cargoType")
         await self.page.select("#cargoType", select_num)
         await asyncio.sleep(1)
-
         for i, search_no in enumerate(search_nos, start=1):
             await self.page.type(f"#q_ref_no{i}", search_no)
             await asyncio.sleep(0.5)
         await asyncio.sleep(3)
-
-        click_selector = "#Query"
-        wait_for_selector = "table.tbl-list"
-        await self.click_button_and_wait_for(click_selector=click_selector, wait_for_selector=wait_for_selector)
+        await self.page.click("#Query")
+        await asyncio.sleep(10)
+        await self.switch_to_last()
+        await self.page.waitForSelector("table.tbl-list")
         await asyncio.sleep(5)
-
         await self.scroll_down()
         return await self.page.content()
 
     async def go_detail_page(self, idx: int) -> str:
-        await self.page.waitForSelector(
-            f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u",
-            options={"timeout": 60000},
-        )
-
-        click_selector = f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u"
-        wait_for_selector = "table.tbl-list"
-        await self.click_button_and_wait_for(click_selector=click_selector, wait_for_selector=wait_for_selector)
-        await asyncio.sleep(3)
-
-        await self.scroll_down()
-        return await self.page.content()
+        try:
+            await self.page.waitForSelector(
+                f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u",
+                options={"timeout": 60000},
+            )
+            await self.page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u")
+            await asyncio.sleep(10)
+            await self.switch_to_last()
+            await self.page.waitForSelector("table.tbl-list")
+            await asyncio.sleep(3)
+            await self.scroll_down()
+            return await self.page.content()
+        except (PageError, TimeoutError):
+            return ""
 
     async def go_history_page(self, idx: int) -> str:
-        await self.page.waitForSelector(
-            f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u",
-            options={"timeout": 60000},
-        )
-
-        click_selector = f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u"
-        wait_for_selector = "table.tbl-list"
-        await self.click_button_and_wait_for(click_selector=click_selector, wait_for_selector=wait_for_selector)
-        await asyncio.sleep(3)
-
-        await self.scroll_down()
-        return await self.page.content()
+        try:
+            await self.page.waitForSelector(
+                f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u",
+                options={"timeout": 60000},
+            )
+            await self.page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u"),
+            await asyncio.sleep(10)
+            await self.switch_to_last()
+            await self.page.waitForSelector("table.tbl-list")
+            await asyncio.sleep(3)
+            await self.scroll_down()
+            return await self.page.content()
+        except PageError:
+            return ""
 
     async def go_booking_history_page(self, idx: int) -> str:
-        await self.page.waitForSelector(
-            f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a",
-            options={"timeout": 60000},
-        )
-
-        click_selector = f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"
-        wait_for_selector = "table.tbl-list"
-        await self.click_button_and_wait_for(click_selector=click_selector, wait_for_selector=wait_for_selector)
-        await asyncio.sleep(3)
-
-        await self.scroll_down()
-        return await self.page.content()
+        try:
+            await self.page.waitForSelector(
+                f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a",
+                options={"timeout": 60000},
+            )
+            await self.page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"),
+            await asyncio.sleep(10),
+            await self.switch_to_last()
+            await self.page.waitForSelector("table.tbl-list")
+            await asyncio.sleep(3)
+            await self.scroll_down()
+            return await self.page.content()
+        except PageError:
+            return ""
 
     async def switch_to_last(self):
         pages = await self.browser.pages()
@@ -808,31 +800,6 @@ class WhlcContentGetter(PyppeteerContentGetter):
     def close_page_and_switch_last(self):
         asyncio.get_event_loop().run_until_complete(self.close_page())
         asyncio.get_event_loop().run_until_complete(self.switch_to_last())
-
-    async def click_button_and_wait_for(self, click_selector: str, wait_for_selector: str):
-        max_prevent_redirection_count = 3
-        while max_prevent_redirection_count != 0:
-            max_prevent_redirection_count -= 1
-
-            await self.page.click(click_selector)
-            await asyncio.sleep(10)
-
-            await self.switch_to_last()
-            try:
-                await self.page.waitForSelector(wait_for_selector)
-                return
-            except TimeoutError as e:
-                if (await self.page.querySelector("div#indexpanel table > tbody > tr td#tabs-member_login > h3")) or (
-                    await self.page.querySelector(".container-inner .main-inner .error-headline .headline-inner p")
-                ):
-                    self.close_page_and_switch_last()
-                    if max_prevent_redirection_count == 0:
-                        raise CarrierResponseFormatError(
-                            reason=f"Prevent redirection fail, while click {click_selector} "
-                            f"and wait for selector {wait_for_selector}"
-                        )
-                else:
-                    raise e
 
 
 class BookingBasicTableLocator(BaseTable):

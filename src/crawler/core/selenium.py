@@ -9,10 +9,13 @@ from crawler.core.defines import BaseContentGetter
 
 
 class SeleniumContentGetter(BaseContentGetter):
-    def __init__(self, proxy_manager: Optional[ProxyManager] = None, is_headless: bool = False):
+    def __init__(
+        self, proxy_manager: Optional[ProxyManager] = None, is_headless: bool = False, load_image: bool = True
+    ):
         self._is_first = True
         self.is_headless = is_headless
         self._proxy_manager = proxy_manager
+        self.load_image = load_image
         self._driver = None
 
     def get_current_url(self):
@@ -52,23 +55,29 @@ class SeleniumContentGetter(BaseContentGetter):
 
 
 class ChromeContentGetter(SeleniumContentGetter):
-    def __init__(self, proxy_manager: Optional[ProxyManager] = None, is_headless: bool = False):
-        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
+    def __init__(
+        self, proxy_manager: Optional[ProxyManager] = None, is_headless: bool = False, load_image: bool = True
+    ):
+        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless, load_image=load_image)
 
         options = selenium.webdriver.ChromeOptions()
 
         if self.is_headless:
             options.add_argument("--headless")
 
+        if not load_image:
+            options.add_argument("blink-settings=imagesEnabled=false")  # 不加載圖片提高效率
+
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-notifications")
         options.add_argument("--enable-javascript")
-        options.add_argument("--disable-gpu")
+        options.add_argument("--auto-open-devtools-for-tabs")
+        options.add_argument("--disable-gpu")  # 規避部分chrome gpu bug
         options.add_argument(
             f"user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
             f"Chrome/88.0.4324.96 Safari/537.36"
         )
-        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-dev-shm-usage")  # 使用共享內存RAM
         options.add_argument("--no-sandbox")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--disable-blink-features=AutomationControlled")
