@@ -25,7 +25,6 @@ def test_container_handle_available(sub, container_no, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
     option = ContainerRoutingRule.build_request_option(
-        task_id=1,
         container_no=container_no,
         cookies={},
     )
@@ -55,7 +54,6 @@ def test_container_handle_unavailable(sub, container_no, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
     option = ContainerRoutingRule.build_request_option(
-        task_id=1,
         container_no=container_no,
         cookies={},
     )
@@ -85,7 +83,6 @@ def test_invalid_container_no(sub, container_no, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
     option = ContainerRoutingRule.build_request_option(
-        task_id=1,
         container_no=container_no,
         cookies={},
     )
@@ -115,7 +112,6 @@ def test_container_no_not_meet(sub, container_no, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
     option = ContainerRoutingRule.build_request_option(
-        task_id=1,
         container_no=container_no,
         cookies={},
     )
