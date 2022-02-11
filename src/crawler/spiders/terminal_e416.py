@@ -17,7 +17,7 @@ from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 
 
-MAX_PAGE_NUM = 20
+MAX_PAGE_NUM = 10
 URL = "https://mahercsp.maherterminals.com"
 EMAIL = "hard202006010"
 PASSWORD = "hardc0re"
@@ -194,7 +194,7 @@ class SearchRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, container_nos: List[str], user_data: Dict, token: str) -> RequestOption:
-        form_data = {"user": user_data, "requestData": [{"container": ct} for ct in container_nos]}
+        form_data = {"user": user_data, "requestData": [{"container": ct} for ct in container_nos[:MAX_PAGE_NUM]]}
 
         return RequestOption(
             rule_name=cls.name,
