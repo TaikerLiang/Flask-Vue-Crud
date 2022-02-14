@@ -101,7 +101,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, mbl_nos, task_ids) -> RequestOption:
-        url = "https://api.myip.com"
+        url = "https://eval.edi.hardcoretech.co/c/livez"
 
         return RequestOption(
             method=RequestOption.METHOD_GET,
@@ -202,7 +202,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, task_ids: str, booking_nos: str) -> RequestOption:
-        url = "https://api.myip.com"
+        url = "https://eval.edi.hardcoretech.co/c/livez"
 
         return RequestOption(
             method=RequestOption.METHOD_GET,
@@ -604,7 +604,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={"search_nos": search_nos, "task_ids": task_ids, "search_type": search_type},
         )
 

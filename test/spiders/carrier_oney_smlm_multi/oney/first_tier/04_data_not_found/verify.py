@@ -40,7 +40,7 @@ def verify(results):
 
     assert isinstance(results[41], RequestOption)
     assert results[41].rule_name == NextRoundRoutingRule.name
-    assert results[41].url == "https://api.myip.com/"
+    assert results[41].url == "https://eval.edi.hardcoretech.co/c/livez"
     assert results[41].meta == {
         "search_nos": ["RICBDW223900", "RICBDK658400", "DALA35925000"],
         "task_ids": [1, 2, 3],

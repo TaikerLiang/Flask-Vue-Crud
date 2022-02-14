@@ -33,7 +33,8 @@ class PohaShareSpider(BaseMultiTerminalSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        option = ConfigureSettingsRule.build_request_option(task_ids=self.task_ids, container_nos=self.container_nos)
+        unique_container_nos = list(self.cno_tid_map.keys())
+        option = ConfigureSettingsRule.build_request_option(container_nos=unique_container_nos)
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -46,7 +47,12 @@ class PohaShareSpider(BaseMultiTerminalSpider):
 
         for result in routing_rule.handle(response=response):
             if True in [isinstance(result, item) for item in [TerminalItem, ExportErrorData]]:
-                yield result
+                c_no = result["container_no"]
+                if c_no:
+                    t_ids = self.cno_tid_map[c_no]
+                    for t_id in t_ids:
+                        result["task_id"] = t_id
+                        yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
             else:
@@ -65,6 +71,7 @@ class PohaShareSpider(BaseMultiTerminalSpider):
                 headers=option.headers,
                 meta=meta,
                 cookies=option.cookies,
+                dont_filter=True,
             )
         else:
             raise RuntimeError()
@@ -77,19 +84,18 @@ class ConfigureSettingsRule(BaseRoutingRule):
     name = "Configure"
 
     @classmethod
-    def build_request_option(cls, task_ids, container_nos) -> RequestOption:
+    def build_request_option(cls, container_nos) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://www.google.com",
-            meta={"task_ids": task_ids, "container_nos": container_nos},
+            meta={"container_nos": container_nos},
         )
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.json"
 
     def handle(self, response):
-        task_ids = response.meta.get("task_ids")
         container_nos = response.meta.get("container_nos")
 
         browser = ContentGetter(proxy_manager=None, is_headless=True)
@@ -97,8 +103,8 @@ class ConfigureSettingsRule(BaseRoutingRule):
         cookies = browser.get_cookies_dict()
         browser.close()
 
-        for task_id, container_no in zip(task_ids, container_nos):
-            yield ContainerRoutingRule.build_request_option(task_id=task_id, container_no=container_no, cookies=cookies)
+        for container_no in container_nos:
+            yield ContainerRoutingRule.build_request_option(container_no=container_no, cookies=cookies)
 
 
 # -------------------------------------------------------------------------------
@@ -108,13 +114,13 @@ class ContainerRoutingRule(BaseRoutingRule):
     name = "Container"
 
     @classmethod
-    def build_request_option(cls, task_id, container_no, cookies: Dict) -> RequestOption:
+    def build_request_option(cls, container_no, cookies: Dict) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f"{BASE_URL}-details?number={container_no}",
             cookies=cookies,
-            meta={"task_id": task_id, "container_no": container_no},
+            meta={"container_no": container_no},
         )
 
     def get_save_name(self, response) -> str:
@@ -136,7 +142,6 @@ class ContainerRoutingRule(BaseRoutingRule):
 
             if info.get("Container #") == response.meta.get("container_no"):
                 yield TerminalItem(
-                    task_id=response.meta.get("task_id"),
                     container_no=info.get("Container #"),
                     available=info.get("Available").strip(),
                     carrier_release=info.get("Line Status"),
@@ -154,7 +159,6 @@ class ContainerRoutingRule(BaseRoutingRule):
         else:
             yield ExportErrorData(
                 container_no=response.meta.get("container_no"),
-                task_id=response.meta.get("task_id"),
                 detail="Data was not found",
                 status=TERMINAL_RESULT_STATUS_ERROR,
             )
