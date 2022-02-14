@@ -113,7 +113,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, container_nos, proxy_manager) -> RequestOption:
-        url = "https://api.myip.com"
+        url = "https://eval.edi.hardcoretech.co/c/livez"
 
         cls._proxy_manager = proxy_manager
         return RequestOption(

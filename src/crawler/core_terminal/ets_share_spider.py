@@ -368,11 +368,10 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="http://tracking.hardcoretech.co:18110",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "container_no_list": container_no_list,
                 "sk": sk,
-                "handle_httpstatus_list": [404],
             },
         )
 

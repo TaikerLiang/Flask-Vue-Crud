@@ -103,11 +103,10 @@ class MainRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, container_no_list: List, company_info: CompanyInfo) -> RequestOption:
-        url = "https://api.myip.com/"
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=url,
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "container_no_list": container_no_list,
                 "company_info": company_info,

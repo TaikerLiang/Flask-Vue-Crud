@@ -281,7 +281,7 @@ class CheckIpRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://api.myip.com/",
+            url=f"https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "search_no": search_no,
             },

@@ -32,7 +32,7 @@ from crawler.core_carrier.items import (
     DebugItem,
     ExportErrorData,
 )
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, LoadWebsiteTimeOutError
+from crawler.core_carrier.exceptions import CarrierResponseFormatError, LoadWebsiteTimeOutError, DriverMaxRetryError
 from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
 from crawler.core.table import BaseTable, TableExtractor
@@ -250,8 +250,12 @@ class ContentGetter(ChromeContentGetter):
             return None
 
     def _handle_with_slide(self):
-
+        max_retry_times = 5
+        retry_times = 0
         while True:
+            if retry_times > max_retry_times:
+                raise DriverMaxRetryError
+
             if not self.pass_verification_or_not():
                 break
             try:
@@ -271,6 +275,7 @@ class ContentGetter(ChromeContentGetter):
             self.move_to_gap(slider_ele, track)
 
             time.sleep(5)
+            retry_times += 1
 
     def get_slider(self):
         WebDriverWait(self._driver, 15).until(
@@ -354,7 +359,7 @@ class CargoTrackingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,
@@ -730,7 +735,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={"search_nos": search_nos, "task_ids": task_ids},
         )
 
