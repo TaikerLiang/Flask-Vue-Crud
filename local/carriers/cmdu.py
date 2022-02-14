@@ -13,9 +13,10 @@ from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.items import BaseCarrierItem
 from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
-from crawler.core_carrier.anlc_aplu_cmdu_share_spider import FirstTierRoutingRule, ContainerStatusRoutingRule
 
-CMDU_BASE_URL = 'https://www.cma-cgm.com/ebusiness/tracking'
+# from crawler.core_carrier.anlc_aplu_cmdu_share_spider import FirstTierRoutingRule, ContainerStatusRoutingRule
+
+CMDU_BASE_URL = "https://www.cma-cgm.com/ebusiness/tracking"
 
 
 @dataclasses.dataclass
@@ -37,9 +38,9 @@ class ContentGetter(PyppeteerContentGetter):
             await self.page.goto(CMDU_BASE_URL, {"timeout": 60000})
         except TimeoutError:
             raise LoadWebsiteTimeOutError(url=CMDU_BASE_URL)
-        await self.page.type('#Reference', search_no)
+        await self.page.type("#Reference", search_no)
         await asyncio.sleep(3)
-        await self.page.click('#btnTracking')
+        await self.page.click("#btnTracking")
         await asyncio.sleep(3)
         await self.page.waitForSelector("div > h1"),
         await asyncio.sleep(3)
@@ -76,20 +77,20 @@ class CmduLocalCrawler(BaseLocalCrawler):
         response = self.get_response_selector(
             url=CMDU_BASE_URL,
             httptext=httptext,
-            meta={"search_no": search_no, "base_url": CMDU_BASE_URL, "task_id": task_id}
+            meta={"search_no": search_no, "base_url": CMDU_BASE_URL, "task_id": task_id},
         )
-        first_tier_rule = FirstTierRoutingRule(search_type=self._search_type)
-        container_rule = ContainerStatusRoutingRule()
-        for result in first_tier_rule.handle(response):
-            if isinstance(result, BaseCarrierItem):
-                yield result
-            elif isinstance(result, RequestOption):
-                container_no = result.meta['container_no']
-                httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.search(search_no=container_no))
-                response = self.get_response_selector(
-                    url=CMDU_BASE_URL,
-                    httptext=httptext,
-                    meta={"search_no": search_no, "container_no": container_no, "task_id": task_id}
-                )
-                for container_item in container_rule.handle(response):
-                    yield container_item
+        # first_tier_rule = FirstTierRoutingRule(search_type=self._search_type)
+        # container_rule = ContainerStatusRoutingRule()
+        # for result in first_tier_rule.handle(response):
+        #     if isinstance(result, BaseCarrierItem):
+        #         yield result
+        #     elif isinstance(result, RequestOption):
+        #         container_no = result.meta['container_no']
+        #         httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.search(search_no=container_no))
+        #         response = self.get_response_selector(
+        #             url=CMDU_BASE_URL,
+        #             httptext=httptext,
+        #             meta={"search_no": search_no, "container_no": container_no, "task_id": task_id}
+        #         )
+        #         for container_item in container_rule.handle(response):
+        #             yield container_item

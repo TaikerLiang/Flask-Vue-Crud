@@ -71,7 +71,6 @@ class ChromeContentGetter(SeleniumContentGetter):
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-notifications")
         options.add_argument("--enable-javascript")
-        options.add_argument("--auto-open-devtools-for-tabs")
         options.add_argument("--disable-gpu")  # 規避部分chrome gpu bug
         options.add_argument(
             f"user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -81,8 +80,6 @@ class ChromeContentGetter(SeleniumContentGetter):
         options.add_argument("--no-sandbox")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--disable-blink-features=AutomationControlled")
-
-        self._driver = selenium.webdriver.Chrome(chrome_options=options)
 
         if proxy_manager:
             proxy_manager.renew_proxy()
@@ -95,6 +92,8 @@ class ChromeContentGetter(SeleniumContentGetter):
             self._driver = seleniumwire.webdriver.Chrome(
                 chrome_options=options, seleniumwire_options=seleniumwire_options
             )
+        else:
+            self._driver = selenium.webdriver.Chrome(chrome_options=options)
 
         self._driver.execute_cdp_cmd(
             "Network.setBlockedURLs", {"urls": ["facebook.net/*", "www.google-analytics.com/*"]}

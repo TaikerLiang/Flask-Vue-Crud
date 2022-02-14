@@ -200,6 +200,7 @@ class SearchRoutingRule(BaseRoutingRule):
                 "search_nos": search_nos,
                 "search_type": search_type,
                 "task_ids": task_ids,
+                "handle_httpstatus_list": [418],
             },
         )
 
@@ -300,7 +301,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "search_no": search_no,
                 "container_no": container_no,
@@ -359,14 +360,15 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         pod_time = " ".join(response.css("div.status span strong::text").getall())
 
         pod_eta, pod_ata = None, None
-
-        if status.strip() == "ETA Berth at POD":
+        if status and status.strip() == "ETA Berth at POD":
             pod_eta = pod_time.strip()
-        elif status.strip() == "Arrived at POD":
+        elif status and status.strip() == "Arrived at POD":
             pod_eta = None
             pod_ata = pod_time.strip()
-        elif status.strip() == "Remaining":
+        elif status and status.strip() == "Remaining":
             pod_eta = None
+        elif status and status.strip() == "None":
+            pass
         else:
             raise CarrierResponseFormatError(reason=f"Unknown status {status!r}")
 
@@ -429,7 +431,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "base_url": base_url,
                 "search_nos": search_nos,
@@ -449,7 +451,6 @@ class NextRoundRoutingRule(BaseRoutingRule):
 
         task_ids = task_ids[1:]
         search_nos = search_nos[1:]
-        time.sleep(randint(1, 3))
         yield RecaptchaRule.build_request_option(
             base_url=base_url, search_nos=search_nos, task_ids=task_ids, search_type=search_type
         )
