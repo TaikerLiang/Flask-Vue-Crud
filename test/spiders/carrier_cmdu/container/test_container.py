@@ -29,9 +29,7 @@ def sample_loader(sample_loader):
 def test_container_status_routing_rule(sample_loader, sub, mbl_no, container_no):
     html_text = sample_loader.read_file(sub, "container.html")
 
-    option = ContainerStatusRoutingRule.build_request_option(
-        container_no=container_no, search_no=mbl_no, search_type=SHIPMENT_TYPE_MBL, base_url=CarrierCmduSpider.base_url
-    )
+    option = ContainerStatusRoutingRule.build_request_option(container_no=container_no, search_no=mbl_no)
 
     response = TextResponse(
         url=option.url,
@@ -62,8 +60,7 @@ def test_multi_container_status_routing_rule(sample_loader, sub, mbl_no, contain
     option = MultiContainerStatusRoutingRule.build_request_option(
         container_no=container_no,
         search_no=mbl_no,
-        search_type=SHIPMENT_TYPE_MBL,
-        base_url=MultiCarrierCmduSpider.base_url,
+        # base_url=MultiCarrierCmduSpider.base_url,
         task_id=1,
     )
 

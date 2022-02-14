@@ -13,7 +13,7 @@ from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError
-from crawler.utility import ContainerNoChecker
+from crawler.utils.container_no_checker import ContainerNoChecker
 
 BASE_URL = "https://voyagertrack.portsamerica.com"
 MAX_PAGE_NUM = 20
