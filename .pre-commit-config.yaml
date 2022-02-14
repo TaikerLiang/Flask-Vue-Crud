@@ -24,8 +24,9 @@ repos:
     rev: 5.10.1
     hooks:
       - id: isort
+        args: ["--profile", "black"]
   - repo: https://github.com/psf/black
-    rev: stable
+    rev: 22.1.0
     hooks:
       - id: black
         args:
