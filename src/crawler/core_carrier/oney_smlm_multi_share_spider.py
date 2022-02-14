@@ -671,7 +671,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={"search_nos": search_nos, "task_ids": task_ids, "base_url": base_url},
         )
 

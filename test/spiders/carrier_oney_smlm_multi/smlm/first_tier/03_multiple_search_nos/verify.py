@@ -14,7 +14,7 @@ def verify(results):
     )
 
     assert isinstance(results[19], RequestOption)
-    assert results[19].url == "https://api.myip.com/"
+    assert results[19].url == "https://eval.edi.hardcoretech.co/c/livez"
     assert results[19].rule_name == NextRoundRoutingRule.name
     assert results[19].meta == {
         "search_nos": ["SHSB1FY71701", "NJBH1A243500"],
