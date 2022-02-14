@@ -1,34 +1,36 @@
-import re
 import json
+import re
 import time
-from typing import Dict, List
 from random import randint
+from typing import Dict, List
 
 import scrapy
 from scrapy import Selector
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core_carrier.base import (
+    CARRIER_RESULT_STATUS_ERROR,
+    SHIPMENT_TYPE_BOOKING,
+    SHIPMENT_TYPE_MBL,
+)
+from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
-    SuspiciousOperationError,
     DataNotFoundError,
+    SuspiciousOperationError,
 )
-
 from crawler.core_carrier.items import (
     BaseCarrierItem,
-    MblItem,
-    LocationItem,
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
     ExportErrorData,
+    LocationItem,
+    MblItem,
 )
-from crawler.extractors.selector_finder import find_selector_from, BaseMatchRule
-from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core.proxy import HydraproxyProxyManager
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
-from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
+from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 
 STATUS_ONE_CONTAINER = "STATUS_ONE_CONTAINER"
 STATUS_MULTI_CONTAINER = "STATUS_MULTI_CONTAINER"
@@ -173,7 +175,13 @@ class SearchRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(
-        cls, base_url: str, search_nos: List, search_type: str, task_ids: List, g_recaptcha_res: str
+        cls,
+        base_url: str,
+        search_nos: List,
+        search_type: str,
+        task_ids: List,
+        g_recaptcha_res: str,
+        research_times: int = 0,
     ) -> RequestOption:
         current_search_no = search_nos[0]
 
@@ -200,6 +208,8 @@ class SearchRoutingRule(BaseRoutingRule):
                 "search_nos": search_nos,
                 "search_type": search_type,
                 "task_ids": task_ids,
+                "g_recaptcha_res": g_recaptcha_res,
+                "research_times": research_times,
             },
         )
 
@@ -242,7 +252,23 @@ class SearchRoutingRule(BaseRoutingRule):
                     )
 
             elif mbl_status == STATUS_WEBSITE_SUSPEND:
-                raise DataNotFoundError()
+                research_times = response.meta["research_times"]
+                if research_times < 3:
+                    yield DebugItem(info=f"Website suspend {research_times} times, researching ...")
+                    yield self.build_request_option(
+                        base_url=base_url,
+                        search_nos=search_nos,
+                        search_type=search_type,
+                        task_ids=task_ids,
+                        g_recaptcha_res=response.meta["g_recaptcha_res"],
+                        research_times=research_times + 1,
+                    )
+                else:
+                    yield DebugItem(info=f"Website suspend {research_times} times, give up ...")
+                    yield DebugItem(info=f"response:\n{response.text}")
+                    raise DataNotFoundError()
+
+                return
 
             else:  # STATUS_MBL_NOT_EXIST
                 if search_type == SHIPMENT_TYPE_MBL:
@@ -360,15 +386,16 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
         pod_eta, pod_ata = None, None
 
-        if status.strip() == "ETA Berth at POD":
-            pod_eta = pod_time.strip()
-        elif status.strip() == "Arrived at POD":
-            pod_eta = None
-            pod_ata = pod_time.strip()
-        elif status.strip() == "Remaining":
-            pod_eta = None
-        else:
-            raise CarrierResponseFormatError(reason=f"Unknown status {status!r}")
+        if status:
+            if status.strip() == "ETA Berth at POD":
+                pod_eta = pod_time.strip()
+            elif status.strip() == "Arrived at POD":
+                pod_eta = None
+                pod_ata = pod_time.strip()
+            elif status.strip() == "Remaining":
+                pod_eta = None
+            else:
+                raise CarrierResponseFormatError(reason=f"Unknown status {repr(status)}")
 
         pod, dest = None, None
 
