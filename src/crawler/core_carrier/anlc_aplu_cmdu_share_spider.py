@@ -1,7 +1,5 @@
 import json
 import re
-import time
-from random import randint
 from typing import Dict, List
 
 import scrapy
@@ -138,7 +136,9 @@ class RecaptchaRule(BaseRoutingRule):
     name = "RECAPTCHA"
 
     @classmethod
-    def build_request_option(cls, base_url: str, search_nos: List, task_ids: List, search_type: str):
+    def build_request_option(
+        cls, base_url: str, search_nos: List, task_ids: List, search_type: str, research_times: int = 0
+    ):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
@@ -148,6 +148,7 @@ class RecaptchaRule(BaseRoutingRule):
                 "search_nos": search_nos,
                 "task_ids": task_ids,
                 "search_type": search_type,
+                "research_times": research_times,
             },
         )
 
@@ -159,6 +160,7 @@ class RecaptchaRule(BaseRoutingRule):
         search_nos = response.meta["search_nos"]
         task_ids = response.meta["task_ids"]
         search_type = response.meta["search_type"]
+        research_times = response.meta["research_times"]
 
         g_recaptcha_res = response.css("#recaptcha-token ::attr(value)").get()
         yield SearchRoutingRule.build_request_option(
@@ -167,6 +169,7 @@ class RecaptchaRule(BaseRoutingRule):
             search_type=search_type,
             task_ids=task_ids,
             g_recaptcha_res=g_recaptcha_res,
+            research_times=research_times,
         )
 
 
@@ -181,7 +184,7 @@ class SearchRoutingRule(BaseRoutingRule):
         search_type: str,
         task_ids: List,
         g_recaptcha_res: str,
-        research_times: int = 0,
+        research_times: int,
     ) -> RequestOption:
         current_search_no = search_nos[0]
 
@@ -208,7 +211,6 @@ class SearchRoutingRule(BaseRoutingRule):
                 "search_nos": search_nos,
                 "search_type": search_type,
                 "task_ids": task_ids,
-                "g_recaptcha_res": g_recaptcha_res,
                 "research_times": research_times,
             },
         )
@@ -255,12 +257,11 @@ class SearchRoutingRule(BaseRoutingRule):
                 research_times = response.meta["research_times"]
                 if research_times < 3:
                     yield DebugItem(info=f"Website suspend {research_times} times, researching ...")
-                    yield self.build_request_option(
+                    yield RecaptchaRule.build_request_option(
                         base_url=base_url,
                         search_nos=search_nos,
                         search_type=search_type,
                         task_ids=task_ids,
-                        g_recaptcha_res=response.meta["g_recaptcha_res"],
                         research_times=research_times + 1,
                     )
                 else:
