@@ -195,7 +195,7 @@ class MblRoutingRule(BaseRoutingRule):
                 self.driver.multi_search(search_nos=mbl_nos, search_type=self._search_type)
             )
         except POSSIBLE_ERROR_TUPLE as e:
-            yield Restart(search_nos=mbl_nos, task_ids=task_ids, reason=str(e))
+            yield Restart(search_nos=mbl_nos, task_ids=task_ids, reason=repr(e))
             return
 
         response_selector = Selector(text=page_source)
@@ -231,7 +231,7 @@ class MblRoutingRule(BaseRoutingRule):
                 for item in self.handle_detail_page(task_id, idx):
                     yield item
             except POSSIBLE_ERROR_TUPLE as e:
-                yield Restart(search_nos=mbl_nos[index:], task_ids=task_ids[index:], reason=str(e))
+                yield Restart(search_nos=mbl_nos[index:], task_ids=task_ids[index:], reason=repr(e))
                 return
 
             # history page
@@ -239,7 +239,7 @@ class MblRoutingRule(BaseRoutingRule):
                 for item in self.handle_history_page(task_id, container_no, idx):
                     yield item
             except POSSIBLE_ERROR_TUPLE as e:
-                yield Restart(search_nos=mbl_nos[index:], task_ids=task_ids[index:], reason=str(e))
+                yield Restart(search_nos=mbl_nos[index:], task_ids=task_ids[index:], reason=repr(e))
                 return
 
             time.sleep(3)
@@ -482,7 +482,7 @@ class BookingRoutingRule(BaseRoutingRule):
                 self.driver.multi_search(search_nos=search_nos, search_type=self._search_type)
             )
         except POSSIBLE_ERROR_TUPLE as e:
-            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
+            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=repr(e))
             return
 
         response_selector = Selector(text=page_source)
@@ -510,7 +510,7 @@ class BookingRoutingRule(BaseRoutingRule):
                 for item in self.handle_booking_detail_history_page(task_id=task_id, search_no=search_no):
                     yield item
             except POSSIBLE_ERROR_TUPLE as e:
-                yield Restart(search_nos=search_no[index:], task_ids=task_ids[index:], reason=str(e))
+                yield Restart(search_nos=search_no[index:], task_ids=task_ids[index:], reason=repr(e))
                 return
 
             time.sleep(3)
