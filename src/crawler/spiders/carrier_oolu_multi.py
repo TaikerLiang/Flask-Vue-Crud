@@ -886,6 +886,12 @@ class VesselVoyageTdExtractor(BaseTableCellExtractor):
         if len(text_list) != 2:
             CarrierResponseFormatError(reason=f"Unknown Vessel Voyage td format: `{text_list}`")
 
+        if text_list[0].strip() == "":
+            return {
+                "vessel": "",
+                "voyage": "",
+            }
+
         vessel = self._parse_vessel(text_list[0])
 
         return {
