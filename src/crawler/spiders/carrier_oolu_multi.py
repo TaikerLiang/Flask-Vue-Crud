@@ -39,6 +39,7 @@ from crawler.core_carrier.items import (
     ExportErrorData,
     LocationItem,
     MblItem,
+    VesselItem,
 )
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
@@ -442,7 +443,20 @@ class CargoTrackingRule(BaseRoutingRule):
         selector_map = locator.locate_selectors(response=response)
 
         custom_release_info = self._extract_custom_release_info(selector_map=selector_map)
-        routing_info = self._extract_routing_info(selectors_map=selector_map)
+        routing_info, vessel_list = self._extract_routing_info(selectors_map=selector_map)
+        for vessel in vessel_list:
+            yield VesselItem(
+                task_id=task_id,
+                vessel_key=vessel["vessel"] or None,
+                vessel=vessel["vessel"] or None,
+                voyage=vessel["voyage"] or None,
+                pol=LocationItem(name=vessel["pol"] or None),
+                pod=LocationItem(name=vessel["pod"] or None),
+                etd=vessel["etd"] or None,
+                atd=vessel["atd"] or None,
+                eta=vessel["eta"] or None,
+                ata=vessel["ata"] or None,
+            )
 
         mbl_item = MblItem(
             task_id=task_id,
@@ -608,15 +622,43 @@ class CargoTrackingRule(BaseRoutingRule):
                 "deliv_ata": "",
                 "vessel": "",
                 "voyage": "",
-            }
+            }, []
 
         table_locator = RoutingTableLocator()
         table_locator.parse(table=table)
         table_extractor = TableExtractor(table_locator=table_locator)
         span_extractor = FirstTextTdExtractor("span::text")
 
-        # vessel_voyage
         vessel_voyage_extractor = VesselVoyageTdExtractor()
+        vessel_list = []
+        for left in table_locator.iter_left_header():
+            vessel_voyage = table_extractor.extract_cell(
+                top="Vessel Voyage", left=left, extractor=vessel_voyage_extractor
+            )
+
+            # pol / pod
+            pol_pod_extractor = PolPodTdExtractor()
+
+            pol_info = table_extractor.extract_cell(top="Port of Load", left=left, extractor=pol_pod_extractor)
+            etd, atd = _get_est_and_actual(status=pol_info["status"], time_str=pol_info["time_str"])
+
+            pod_info = table_extractor.extract_cell(top="Port of Discharge", left=left, extractor=pol_pod_extractor)
+            eta, ata = _get_est_and_actual(status=pod_info["status"], time_str=pod_info["time_str"])
+
+            vessel_list.append(
+                {
+                    "pol": pol_info["port"],
+                    "pod": pod_info["port"],
+                    "etd": etd,
+                    "atd": atd,
+                    "eta": eta,
+                    "ata": ata,
+                    "vessel": vessel_voyage["vessel"],
+                    "voyage": vessel_voyage["voyage"],
+                }
+            )
+
+        # vessel_voyage
         vessel_voyage = table_extractor.extract_cell(
             top="Vessel Voyage", left=table_locator.LAST_LEFT_HEADER, extractor=vessel_voyage_extractor
         )
@@ -649,7 +691,7 @@ class CargoTrackingRule(BaseRoutingRule):
             top="Destination", left=table_locator.LAST_LEFT_HEADER, extractor=span_extractor
         )
 
-        return {
+        routing_info = {
             "por": por,
             "pol": pol_info["port"],
             "pod": pod_info["port"],
@@ -664,6 +706,8 @@ class CargoTrackingRule(BaseRoutingRule):
             "vessel": vessel_voyage["vessel"],
             "voyage": vessel_voyage["voyage"],
         }
+
+        return routing_info, vessel_list
 
     @staticmethod
     def _extract_container_list(selector_map: Dict[str, scrapy.Selector]):
