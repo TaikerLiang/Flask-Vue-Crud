@@ -1,16 +1,14 @@
 from pathlib import Path
+from test.spiders.carrier_cmdu import container
 
 import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
-from crawler.spiders.carrier_anlc_aplu_cmdu import ContainerStatusRoutingRule, CarrierCmduSpider
 from crawler.core_carrier.anlc_aplu_cmdu_share_spider import (
     ContainerStatusRoutingRule as MultiContainerStatusRoutingRule,
 )
-from crawler.spiders.carrier_cmdu_multi import CarrierCmduSpider as MultiCarrierCmduSpider
-from test.spiders.carrier_cmdu import container
+from crawler.spiders.carrier_anlc_aplu_cmdu import ContainerStatusRoutingRule
 
 
 @pytest.fixture
@@ -60,7 +58,6 @@ def test_multi_container_status_routing_rule(sample_loader, sub, mbl_no, contain
     option = MultiContainerStatusRoutingRule.build_request_option(
         container_no=container_no,
         search_no=mbl_no,
-        # base_url=MultiCarrierCmduSpider.base_url,
         task_id=1,
     )
 
