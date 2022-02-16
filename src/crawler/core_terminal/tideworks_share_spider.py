@@ -331,7 +331,7 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
             lambda_sub = lambda text: re.sub(r"\r\n\s*", "\n", text)
             div_text_list = [lambda_sub(r) for r in div_text_list if lambda_sub(r)]
             div_text = "\n".join(div_text_list)
-            return div_text[:5], div_text[6:]
+            return div_text[:5], div_text[7:]  # fix index error
 
         if len(div_text_list) >= 2:
             return div_text_list[0].replace(":", ""), div_text_list[1]
