@@ -1,6 +1,11 @@
 from typing import List
 
-from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusItem, LocationItem
+from crawler.core_carrier.items import (
+    ContainerItem,
+    ContainerStatusItem,
+    LocationItem,
+    MblItem,
+)
 
 
 def verify(results: List):
@@ -9,33 +14,33 @@ def verify(results: List):
     assert results[0] == MblItem(
         por=LocationItem(name=None),
         pol=LocationItem(name="KAOHSIUNG (TW)"),
-        pod=LocationItem(name="WELLINGTON (NZ)"),
+        pod=LocationItem(name="MELBOURNE (AU)"),
         final_dest=LocationItem(name=None),
-        eta="Thu 21 Nov 2019 14:30",
+        eta="Friday 04-MAR-2022 06:00",
         ata=None,
     )
 
     assert results[1] == ContainerItem(
-        container_key="TCLU7705557",
-        container_no="TCLU7705557",
+        container_key="TCLU7704930",
+        container_no="TCLU7704930",
     )
 
     assert results[2] == ContainerStatusItem(
-        container_key="TCLU7705557",
-        local_date_time="Fri 18 Oct 2019 09:14",
+        container_key="TCLU7704930",
+        local_date_time="Thursday 10-Feb-2022 17:08",
         description="Empty to shipper",
         location=LocationItem(name="KAOHSIUNG"),
-        facility="",
         est_or_actual="A",
+        facility="",
     )
 
-    assert results[7] == ContainerStatusItem(
-        container_key="TCLU7705557",
-        local_date_time="Thu 21 Nov 2019 14:30",
+    assert results[5] == ContainerStatusItem(
+        container_key="TCLU7704930",
+        local_date_time="Friday 04-Mar-2022 06:00",
         description="Arrival final port of discharge",
-        location=LocationItem(name="WELLINGTON"),
-        facility="",
+        location=LocationItem(name="MELBOURNE"),
         est_or_actual="E",
+        facility="",
     )
 
 
@@ -45,35 +50,35 @@ def multi_verify(results: List):
     assert results[0] == MblItem(
         por=LocationItem(name=None),
         pol=LocationItem(name="KAOHSIUNG (TW)"),
-        pod=LocationItem(name="WELLINGTON (NZ)"),
+        pod=LocationItem(name="MELBOURNE (AU)"),
         final_dest=LocationItem(name=None),
-        eta="Thu 21 Nov 2019 14:30",
+        eta="Friday 04-MAR-2022 06:00",
         ata=None,
         task_id=1,
     )
 
     assert results[1] == ContainerItem(
-        container_key="TCLU7705557",
-        container_no="TCLU7705557",
+        container_key="TCLU7704930",
+        container_no="TCLU7704930",
         task_id=1,
     )
 
     assert results[2] == ContainerStatusItem(
-        container_key="TCLU7705557",
-        local_date_time="Fri 18 Oct 2019 09:14",
+        container_key="TCLU7704930",
+        local_date_time="Thursday 10-Feb-2022 17:08",
         description="Empty to shipper",
         location=LocationItem(name="KAOHSIUNG"),
-        facility="",
         est_or_actual="A",
+        facility="",
         task_id=1,
     )
 
-    assert results[7] == ContainerStatusItem(
-        container_key="TCLU7705557",
-        local_date_time="Thu 21 Nov 2019 14:30",
+    assert results[5] == ContainerStatusItem(
+        container_key="TCLU7704930",
+        local_date_time="Friday 04-Mar-2022 06:00",
         description="Arrival final port of discharge",
-        location=LocationItem(name="WELLINGTON"),
-        facility="",
+        location=LocationItem(name="MELBOURNE"),
         est_or_actual="E",
+        facility="",
         task_id=1,
     )
