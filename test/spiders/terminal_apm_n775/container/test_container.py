@@ -1,4 +1,5 @@
 from pathlib import Path
+from test.spiders.terminal_apm_n775 import container
 
 import pytest
 from scrapy import Request
@@ -6,7 +7,6 @@ from scrapy.http import TextResponse
 
 from crawler.core_terminal.apm_share_spider import ContainerRoutingRule
 from crawler.spiders.terminal_apm_n775 import TerminalApmMASpider
-from test.spiders.terminal_apm_n775 import container
 
 
 @pytest.fixture
@@ -17,18 +17,20 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    "sub,container_no,terminal_id",
+    "sub,container_no,terminal_id,data_source_id",
     [
-        ("01", "CBHU8755221", TerminalApmMASpider.terminal_id),
-        ("02_holds_empty", "GLDU9857654", TerminalApmMASpider.terminal_id),
-        ("03_lfd_exist", "TEMU2925237", TerminalApmMASpider.terminal_id),
-        ("04_data_not_found", "EISU9133921", TerminalApmMASpider.terminal_id),
+        ("01", "CBHU8755221", TerminalApmMASpider.terminal_id, TerminalApmMASpider.data_source_id),
+        ("02_holds_empty", "GLDU9857654", TerminalApmMASpider.terminal_id, TerminalApmMASpider.data_source_id),
+        ("03_lfd_exist", "TEMU2925237", TerminalApmMASpider.terminal_id, TerminalApmMASpider.data_source_id),
+        ("04_data_not_found", "EISU9133921", TerminalApmMASpider.terminal_id, TerminalApmMASpider.data_source_id),
     ],
 )
-def test_container_handle(sub, container_no, terminal_id, sample_loader):
+def test_container_handle(sub, container_no, terminal_id, data_source_id, sample_loader):
     json_text = sample_loader.read_file(sub, "sample.json")
 
-    option = ContainerRoutingRule.build_request_option(container_nos=[container_no], terminal_id=terminal_id)
+    option = ContainerRoutingRule.build_request_option(
+        container_nos=[container_no], terminal_id=terminal_id, data_source_id=data_source_id
+    )
 
     response = TextResponse(
         url=option.url,
@@ -39,6 +41,7 @@ def test_container_handle(sub, container_no, terminal_id, sample_loader):
             meta={
                 "container_nos": [container_no],
                 "terminal_id": "cfc387ee-e47e-400a-80c5-85d4316f1af9",
+                "data_source_id": "ccaa9cf5-ece3-4bab-83a4-a6d2aed83b05",
             },
         ),
     )

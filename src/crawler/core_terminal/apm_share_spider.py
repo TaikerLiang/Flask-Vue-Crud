@@ -3,19 +3,25 @@ from typing import List
 
 import scrapy
 
+from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import TerminalResponseFormatError
-from crawler.core_terminal.items import BaseTerminalItem, TerminalItem, DebugItem, ExportErrorData
+from crawler.core_terminal.items import (
+    BaseTerminalItem,
+    DebugItem,
+    ExportErrorData,
+    TerminalItem,
+)
 from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
-from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 
 BASE_URL = "https://www.apmterminals.com"
 
 
 class ApmShareSpider(BaseMultiTerminalSpider):
     terminal_id = ""
+    data_source_id = ""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -35,7 +41,9 @@ class ApmShareSpider(BaseMultiTerminalSpider):
     def _prepare_start(self, unique_container_nos: List):
         self._proxy_manager.renew_proxy()
         option = ContainerRoutingRule.build_request_option(
-            container_nos=unique_container_nos, terminal_id=self.terminal_id
+            container_nos=unique_container_nos,
+            terminal_id=self.terminal_id,
+            data_source_id=self.data_source_id,
         )
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         return proxy_option
@@ -93,13 +101,14 @@ class ContainerRoutingRule(BaseRoutingRule):
     name = "CONTAINER"
 
     @classmethod
-    def build_request_option(cls, container_nos, terminal_id) -> RequestOption:
+    def build_request_option(cls, container_nos, terminal_id, data_source_id) -> RequestOption:
         url = f"{BASE_URL}/apm/api/trackandtrace/import-availability"
 
         form_data = {
             "DateFormat": "dd/MM/yy",
             "Ids": container_nos[:20],  # page size == 20
             "TerminalId": terminal_id,
+            "DatasourceId": data_source_id,
         }
 
         return RequestOption(
@@ -111,6 +120,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             meta={
                 "container_nos": container_nos,
                 "terminal_id": terminal_id,
+                "data_source_id": data_source_id,
             },
         )
 
@@ -120,6 +130,7 @@ class ContainerRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_nos = response.meta["container_nos"]
         terminal_id = response.meta["terminal_id"]
+        data_source_id = response.meta["data_source_id"]
 
         cur_container_nos = container_nos[:20]
         response_json = json.loads(response.text)
@@ -154,7 +165,9 @@ class ContainerRoutingRule(BaseRoutingRule):
                 status=TERMINAL_RESULT_STATUS_ERROR,
             )
 
-        yield NextRoundRoutingRule.build_request_option(container_nos=container_nos, terminal_id=terminal_id)
+        yield NextRoundRoutingRule.build_request_option(
+            container_nos=container_nos, terminal_id=terminal_id, data_source_id=data_source_id
+        )
 
     @staticmethod
     def _is_all_container_nos_invalid(response_json):
@@ -176,21 +189,28 @@ class ContainerRoutingRule(BaseRoutingRule):
 
 class NextRoundRoutingRule(BaseRoutingRule):
     @classmethod
-    def build_request_option(cls, container_nos: List, terminal_id: str) -> RequestOption:
+    def build_request_option(cls, container_nos: List, terminal_id: str, data_source_id: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://eval.edi.hardcoretech.co/c/livez",
-            meta={"container_nos": container_nos, "terminal_id": terminal_id},
+            meta={
+                "container_nos": container_nos,
+                "terminal_id": terminal_id,
+                "data_source_id": data_source_id,
+            },
         )
 
     def handle(self, response):
         container_nos = response.meta["container_nos"]
         terminal_id = response.meta["terminal_id"]
+        data_source_id = response.meta["data_source_id"]
 
         if len(container_nos) <= 20:  # page size == 20
             return
 
         container_nos = container_nos[20:]
 
-        yield ContainerRoutingRule.build_request_option(container_nos=container_nos, terminal_id=terminal_id)
+        yield ContainerRoutingRule.build_request_option(
+            container_nos=container_nos, terminal_id=terminal_id, data_source_id=data_source_id
+        )
