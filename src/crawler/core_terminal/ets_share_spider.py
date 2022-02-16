@@ -1,21 +1,22 @@
-from typing import List, Dict
-import io
-import random
 import dataclasses
+import io
+import json
+import random
 import re
+from typing import Dict, List
 
-import scrapy
-from scrapy.http import HtmlResponse
 import PIL.Image as Image
-from anticaptchaofficial.imagecaptcha import *
+import scrapy
+from anticaptchaofficial.imagecaptcha import imagecaptcha
+from scrapy.http import HtmlResponse
 
-from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
-from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
-from crawler.core_terminal.exceptions import DriverMaxRetryError
 from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
+from crawler.core_terminal.exceptions import DriverMaxRetryError
+from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
+from crawler.core_terminal.request_helpers import RequestOption
+from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 
 
 @dataclasses.dataclass
@@ -26,6 +27,7 @@ class CompanyInfo:
 
 BASE_URL = "https://www.etslink.com"
 MAX_RETRY_COUNT = 3
+MAX_PAGE_NUM = 20
 
 
 class Restart:
@@ -266,7 +268,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             "PI_TMNL_ID": "?cma_env_loc",
             "PI_CTRY_CODE": "?cma_env_ctry",
             "PI_STATE_CODE": "?cma_env_state",
-            "PI_CNTR_NO": "\n".join(container_no_list[:20]),
+            "PI_CNTR_NO": "\n".join(container_no_list[:MAX_PAGE_NUM]),
             "_sk": sk,
             "page": "1",
             "start": "0",
@@ -289,8 +291,21 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         container_info_list = self._extract_container_info(response=response)
 
+        if self._is_container_no_error(container_info_list=container_info_list):
+            if len(container_no_list) > 1:
+                yield DebugItem(
+                    info="Contains abnormal container_no in this round of paging, search each container_no individually"
+                )
+                sk = response.meta["sk"]
+                for c_no in container_no_list[:MAX_PAGE_NUM]:
+                    yield ContainerRoutingRule.build_request_option(container_no_list=[c_no], sk=sk)
+
+                yield NextRoundRoutingRule.build_request_option(container_no_list=container_no_list, sk=sk)
+
+            return
+
         if self._is_container_no_invalid_with_msg(container_info_list=container_info_list):
-            for c_no in container_no_list[:20]:
+            for c_no in container_no_list[:MAX_PAGE_NUM]:
                 yield ExportErrorData(
                     container_no=c_no,
                     detail="Data was not found",
@@ -359,9 +374,13 @@ class ContainerRoutingRule(BaseRoutingRule):
         if len(container_info_list) == 1:
             return container_info_list[0]["PO_MSG"] == "No data found."
 
+    def _is_container_no_error(self, container_info_list: List):
+        if len(container_info_list) == 1:
+            return (container_info_list[0]["PO_MSG"] or "").split(".")[0] == "Search condition error"
+
 
 class NextRoundRoutingRule(BaseRoutingRule):
-    name = "NEXY_ROUND"
+    name = "NEXT_ROUND"
 
     @classmethod
     def build_request_option(cls, container_no_list: List, sk) -> RequestOption:
@@ -379,9 +398,9 @@ class NextRoundRoutingRule(BaseRoutingRule):
         container_no_list = response.meta["container_no_list"]
         sk = response.meta["sk"]
 
-        if len(container_no_list) <= 20:  # page size == 20
+        if len(container_no_list) <= MAX_PAGE_NUM:
             return
 
-        container_no_list = container_no_list[20:]
+        container_no_list = container_no_list[MAX_PAGE_NUM:]
 
         yield ContainerRoutingRule.build_request_option(container_no_list=container_no_list, sk=sk)
