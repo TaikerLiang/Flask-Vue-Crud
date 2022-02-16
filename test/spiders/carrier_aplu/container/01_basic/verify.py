@@ -1,47 +1,43 @@
-from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusItem, LocationItem
+from crawler.core_carrier.items import (
+    ContainerItem,
+    ContainerStatusItem,
+    LocationItem,
+    MblItem,
+)
 
 
 def verify(results):
 
     assert results[0] == MblItem(
         por=LocationItem(name=None),
-        pol=LocationItem(name="SHANGHAI (CN)"),
+        pol=LocationItem(name="QINGDAO (CN)"),
         pod=LocationItem(name="LOS ANGELES, CA (US)"),
-        final_dest=LocationItem(name="HOUSTON, TX (US)"),
+        final_dest=LocationItem(name="ST LOUIS, MO (US)"),
         eta=None,
-        ata="Mon 17 Jun 2019 00:36",
+        ata="Saturday 18-DEC-2021 16:17",
     )
 
     assert results[1] == ContainerItem(
-        container_key="TCNU1868370",
-        container_no="TCNU1868370",
+        container_key="APZU4632334",
+        container_no="APZU4632334",
     )
 
     assert results[2] == ContainerStatusItem(
-        container_key="TCNU1868370",
-        local_date_time="Wed 29 May 2019 03:06",
+        container_key="APZU4632334",
+        local_date_time="Monday 15-Nov-2021 17:53",
         description="Empty to shipper",
-        location=LocationItem(name="SHANGHAI"),
+        location=LocationItem(name="QINGDAO"),
+        est_or_actual="A",
         facility="",
-        est_or_actual="A",
     )
 
-    assert results[5] == ContainerStatusItem(
-        container_key="TCNU1868370",
-        local_date_time="Mon 17 Jun 2019 00:36",
-        description="Discharged",
-        location=LocationItem(name="LOS ANGELES, CA"),
-        facility="FENIX MARINE TERMINAL",
+    assert results[10] == ContainerStatusItem(
+        container_key="APZU4632334",
+        local_date_time="Monday 27-Dec-2021 09:24",
+        description="Container on rail for import",
+        location=LocationItem(name="GORHAM, IL"),
         est_or_actual="A",
-    )
-
-    assert results[11] == ContainerStatusItem(
-        container_key="TCNU1868370",
-        local_date_time="Mon 24 Jun 2019 17:15",
-        description="Train arrival for import",
-        location=LocationItem(name="HOUSTON, TX"),
-        facility="UP- ENGLEWOOD",
-        est_or_actual="A",
+        facility="GORHAM, IL - PASS THRU",
     )
 
 
@@ -49,46 +45,36 @@ def multi_verify(results):
 
     assert results[0] == MblItem(
         por=LocationItem(name=None),
-        pol=LocationItem(name="SHANGHAI (CN)"),
+        pol=LocationItem(name="QINGDAO (CN)"),
         pod=LocationItem(name="LOS ANGELES, CA (US)"),
-        final_dest=LocationItem(name="HOUSTON, TX (US)"),
+        final_dest=LocationItem(name="ST LOUIS, MO (US)"),
         eta=None,
-        ata="Mon 17 Jun 2019 00:36",
+        ata="Saturday 18-DEC-2021 16:17",
         task_id=1,
     )
 
     assert results[1] == ContainerItem(
-        container_key="TCNU1868370",
-        container_no="TCNU1868370",
+        container_key="APZU4632334",
+        container_no="APZU4632334",
         task_id=1,
     )
 
     assert results[2] == ContainerStatusItem(
-        container_key="TCNU1868370",
-        local_date_time="Wed 29 May 2019 03:06",
+        container_key="APZU4632334",
+        local_date_time="Monday 15-Nov-2021 17:53",
         description="Empty to shipper",
-        location=LocationItem(name="SHANGHAI"),
+        location=LocationItem(name="QINGDAO"),
+        est_or_actual="A",
         facility="",
-        est_or_actual="A",
         task_id=1,
     )
 
-    assert results[5] == ContainerStatusItem(
-        container_key="TCNU1868370",
-        local_date_time="Mon 17 Jun 2019 00:36",
-        description="Discharged",
-        location=LocationItem(name="LOS ANGELES, CA"),
-        facility="FENIX MARINE TERMINAL",
+    assert results[10] == ContainerStatusItem(
+        container_key="APZU4632334",
+        local_date_time="Monday 27-Dec-2021 09:24",
+        description="Container on rail for import",
+        location=LocationItem(name="GORHAM, IL"),
         est_or_actual="A",
-        task_id=1,
-    )
-
-    assert results[11] == ContainerStatusItem(
-        container_key="TCNU1868370",
-        local_date_time="Mon 24 Jun 2019 17:15",
-        description="Train arrival for import",
-        location=LocationItem(name="HOUSTON, TX"),
-        facility="UP- ENGLEWOOD",
-        est_or_actual="A",
+        facility="GORHAM, IL - PASS THRU",
         task_id=1,
     )
