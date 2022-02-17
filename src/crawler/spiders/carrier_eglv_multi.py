@@ -4,10 +4,10 @@ import re
 import time
 from typing import Dict, List
 
-from pyppeteer.dialog import Dialog
-from pyppeteer.errors import NetworkError, PageError, TimeoutError
 import requests
 import scrapy
+from pyppeteer.dialog import Dialog
+from pyppeteer.errors import NetworkError, PageError, TimeoutError
 from scrapy import Request
 from scrapy.http import TextResponse
 from scrapy.selector.unified import Selector
@@ -37,7 +37,7 @@ from crawler.core_carrier.items import (
     MblItem,
 )
 from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.selector_finder import (
     BaseMatchRule,
     CssQueryExistMatchRule,
@@ -45,7 +45,6 @@ from crawler.extractors.selector_finder import (
     find_selector_from,
 )
 from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
-
 
 MAX_RETRY_COUNT = 10
 EGLV_INFO_URL = "https://ct.shipmentlink.com/servlet/TDB1_CargoTracking.do"
@@ -163,7 +162,7 @@ class CargoTrackingRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://eval.edi.hardcoretech.co/c/livez",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,
@@ -283,9 +282,6 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
         )
 
     def handle(self, response):
-        task_ids = response.meta["task_ids"]
-        search_nos = response.meta["search_nos"]
-
         for item in self._handle_main_info_page(response=response):
             yield item
 
@@ -312,11 +308,14 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
             cargo_cutoff_date=basic_info["cargo_cutoff_date"],
         )
 
-        for item in self.handle_filing_status(search_nos=search_nos, task_ids=task_ids):
-            yield item
-
-        for item in self.handle_release_status(search_nos=search_nos, task_ids=task_ids):
-            yield item
+        try:
+            for item in self.handle_filing_status(search_nos=search_nos, task_ids=task_ids):
+                yield item
+            for item in self.handle_release_status(search_nos=search_nos, task_ids=task_ids):
+                yield item
+        except (TimeoutError, NetworkError, PageError) as e:
+            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
+            return
 
         container_list = self._extract_container_info(response=response)
         for container in container_list:
@@ -456,32 +455,24 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
         return container_list[0]["container_no"]
 
     def handle_filing_status(self, search_nos: List, task_ids: List):
-        try:
-            httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.custom_info_page())
-            if httptext:
-                response = self.get_response_selector(
-                    url=EGLV_INFO_URL, httptext=httptext, meta={"mbl_no": search_nos[0], "task_id": task_ids[0]}
-                )
-                rule = FilingStatusRoutingRule(task_id=task_ids[0])
+        httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.custom_info_page())
+        if httptext:
+            response = self.get_response_selector(
+                url=EGLV_INFO_URL, httptext=httptext, meta={"mbl_no": search_nos[0], "task_id": task_ids[0]}
+            )
+            rule = FilingStatusRoutingRule(task_id=task_ids[0])
 
-                for item in rule.handle(response):
-                    yield item
-        except (TimeoutError, NetworkError, PageError) as e:
-            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
+            for item in rule.handle(response):
+                yield item
 
     def handle_release_status(self, search_nos: List, task_ids: List):
-        try:
-            httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.release_status_page())
-            if httptext:
-                response = self.get_response_selector(
-                    url=EGLV_INFO_URL, httptext=httptext, meta={"task_id": task_ids[0]}
-                )
-                rule = ReleaseStatusRoutingRule(task_id=task_ids[0])
+        httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.release_status_page())
+        if httptext:
+            response = self.get_response_selector(url=EGLV_INFO_URL, httptext=httptext, meta={"task_id": task_ids[0]})
+            rule = ReleaseStatusRoutingRule(task_id=task_ids[0])
 
-                for item in rule.handle(response):
-                    yield item
-        except (TimeoutError, NetworkError, PageError) as e:
-            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
+            for item in rule.handle(response):
+                yield item
 
 
 class LeftBasicInfoTableLocator(BaseTable):
@@ -1355,7 +1346,7 @@ class EglvContentGetter(PyppeteerContentGetter):
                         var ctx = canvas.getContext("2d");
                         ctx.drawImage(img, 0, 0);
                         var dataURL = canvas.toDataURL("image/png");
-                        return dataURL.replace(/^data:image\/(png|jpg);base64,/, "");
+                        return dataURL.replace(/^data:image/(png|jpg);base64,/, "");
                     }
                     """
         captcha_base64 = await self.page.evaluate(get_base64_func, element)
