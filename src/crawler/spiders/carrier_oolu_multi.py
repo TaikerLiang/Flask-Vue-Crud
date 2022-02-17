@@ -1,42 +1,56 @@
+import base64
 import os
 import re
 import time
-import base64
-from typing import Dict, List
 from io import BytesIO
+from typing import Dict, List
 
-import scrapy
 import cv2
 import numpy as np
+import scrapy
+from PIL import Image
 from scrapy import Selector
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.support.wait import WebDriverWait
 from urllib3.exceptions import ReadTimeoutError
-from PIL import Image
 
-from crawler.core.selenium import ChromeContentGetter
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_ERROR
-from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core.proxy import HydraproxyProxyManager
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
+from crawler.core.selenium import ChromeContentGetter
+from crawler.core.table import BaseTable, TableExtractor
+from crawler.core_carrier.base import (
+    CARRIER_RESULT_STATUS_ERROR,
+    SHIPMENT_TYPE_BOOKING,
+    SHIPMENT_TYPE_MBL,
+)
+from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError,
+    DriverMaxRetryError,
+    LoadWebsiteTimeOutError,
+)
 from crawler.core_carrier.items import (
     BaseCarrierItem,
-    MblItem,
-    LocationItem,
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
     ExportErrorData,
+    LocationItem,
+    MblItem,
+    VesselItem,
 )
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, LoadWebsiteTimeOutError, DriverMaxRetryError
-from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
-from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
-from crawler.core.table import BaseTable, TableExtractor
-
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
+from crawler.extractors.selector_finder import (
+    CssQueryTextStartswithMatchRule,
+    find_selector_from,
+)
+from crawler.extractors.table_cell_extractors import (
+    BaseTableCellExtractor,
+    FirstTextTdExtractor,
+)
 
 BASE_URL = "http://moc.oocl.com"
 
@@ -429,7 +443,20 @@ class CargoTrackingRule(BaseRoutingRule):
         selector_map = locator.locate_selectors(response=response)
 
         custom_release_info = self._extract_custom_release_info(selector_map=selector_map)
-        routing_info = self._extract_routing_info(selectors_map=selector_map)
+        routing_info, vessel_list = self._extract_routing_info(selectors_map=selector_map)
+        for vessel in vessel_list:
+            yield VesselItem(
+                task_id=task_id,
+                vessel_key=vessel["vessel"] or None,
+                vessel=vessel["vessel"] or None,
+                voyage=vessel["voyage"] or None,
+                pol=LocationItem(name=vessel["pol"] or None),
+                pod=LocationItem(name=vessel["pod"] or None),
+                etd=vessel["etd"] or None,
+                atd=vessel["atd"] or None,
+                eta=vessel["eta"] or None,
+                ata=vessel["ata"] or None,
+            )
 
         mbl_item = MblItem(
             task_id=task_id,
@@ -476,6 +503,10 @@ class CargoTrackingRule(BaseRoutingRule):
 
     @classmethod
     def _handle_container_response(cls, task_id, response, container_no):
+        title_container_no = cls._extract_container_no(response)
+        if title_container_no != container_no:
+            raise CarrierResponseFormatError(reason=f"Container no mismatch: {title_container_no} / {container_no}")
+
         locator = _PageLocator()
         selectors_map = locator.locate_selectors(response=response)
         detention_info = cls._extract_detention_info(selectors_map)
@@ -591,15 +622,43 @@ class CargoTrackingRule(BaseRoutingRule):
                 "deliv_ata": "",
                 "vessel": "",
                 "voyage": "",
-            }
+            }, []
 
         table_locator = RoutingTableLocator()
         table_locator.parse(table=table)
         table_extractor = TableExtractor(table_locator=table_locator)
         span_extractor = FirstTextTdExtractor("span::text")
 
-        # vessel_voyage
         vessel_voyage_extractor = VesselVoyageTdExtractor()
+        vessel_list = []
+        for left in table_locator.iter_left_header():
+            vessel_voyage = table_extractor.extract_cell(
+                top="Vessel Voyage", left=left, extractor=vessel_voyage_extractor
+            )
+
+            # pol / pod
+            pol_pod_extractor = PolPodTdExtractor()
+
+            pol_info = table_extractor.extract_cell(top="Port of Load", left=left, extractor=pol_pod_extractor)
+            etd, atd = _get_est_and_actual(status=pol_info["status"], time_str=pol_info["time_str"])
+
+            pod_info = table_extractor.extract_cell(top="Port of Discharge", left=left, extractor=pol_pod_extractor)
+            eta, ata = _get_est_and_actual(status=pod_info["status"], time_str=pod_info["time_str"])
+
+            vessel_list.append(
+                {
+                    "pol": pol_info["port"],
+                    "pod": pod_info["port"],
+                    "etd": etd,
+                    "atd": atd,
+                    "eta": eta,
+                    "ata": ata,
+                    "vessel": vessel_voyage["vessel"],
+                    "voyage": vessel_voyage["voyage"],
+                }
+            )
+
+        # vessel_voyage
         vessel_voyage = table_extractor.extract_cell(
             top="Vessel Voyage", left=table_locator.LAST_LEFT_HEADER, extractor=vessel_voyage_extractor
         )
@@ -632,7 +691,7 @@ class CargoTrackingRule(BaseRoutingRule):
             top="Destination", left=table_locator.LAST_LEFT_HEADER, extractor=span_extractor
         )
 
-        return {
+        routing_info = {
             "por": por,
             "pol": pol_info["port"],
             "pod": pod_info["port"],
@@ -647,6 +706,8 @@ class CargoTrackingRule(BaseRoutingRule):
             "vessel": vessel_voyage["vessel"],
             "voyage": vessel_voyage["voyage"],
         }
+
+        return routing_info, vessel_list
 
     @staticmethod
     def _extract_container_list(selector_map: Dict[str, scrapy.Selector]):
@@ -725,6 +786,16 @@ class CargoTrackingRule(BaseRoutingRule):
                 }
             )
         return container_status_list
+
+    @staticmethod
+    def _extract_container_no(response: Selector):
+        container_no_text = response.css("td.groupTitle.fullByDraftCntNumber::text").get()
+        pattern = re.compile(r"^Detail\s+of\s+OOCL\s+Container\s+(?P<container_id>\w+)-(?P<check_no>\d+)\s+$")
+        match = pattern.match(container_no_text)
+        if not match:
+            raise CarrierResponseFormatError(reason=f"Unknown container_no_text: `{container_no_text}`")
+
+        return match.group("container_id") + match.group("check_no")
 
 
 class NextRoundRoutingRule(BaseRoutingRule):
@@ -858,6 +929,12 @@ class VesselVoyageTdExtractor(BaseTableCellExtractor):
 
         if len(text_list) != 2:
             CarrierResponseFormatError(reason=f"Unknown Vessel Voyage td format: `{text_list}`")
+
+        if text_list[0].strip() == "":
+            return {
+                "vessel": "",
+                "voyage": "",
+            }
 
         vessel = self._parse_vessel(text_list[0])
 
