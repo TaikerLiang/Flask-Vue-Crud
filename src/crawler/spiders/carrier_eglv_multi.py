@@ -282,9 +282,6 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
         )
 
     def handle(self, response):
-        response.meta["task_ids"]
-        response.meta["search_nos"]
-
         for item in self._handle_main_info_page(response=response):
             yield item
 
