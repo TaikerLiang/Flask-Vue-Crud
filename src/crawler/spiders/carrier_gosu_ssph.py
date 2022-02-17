@@ -4,23 +4,23 @@ from urllib.parse import urlencode
 
 import scrapy
 
-from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import SuspiciousOperationError, AccessDeniedError
+from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
+from crawler.core_carrier.base_spiders import BaseCarrierSpider
+from crawler.core_carrier.exceptions import AccessDeniedError, SuspiciousOperationError
 from crawler.core_carrier.items import (
     BaseCarrierItem,
-    MblItem,
     ContainerItem,
     ContainerStatusItem,
-    LocationItem,
-    VesselItem,
-    ExportErrorData,
     DebugItem,
+    ExportErrorData,
+    LocationItem,
+    MblItem,
+    VesselItem,
 )
-from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
 from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
-from crawler.core.table import BaseTable, TableExtractor
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 
 MAX_RETRY_COUNT = 3
 URL = "https://www.sethshipping.com"
@@ -137,6 +137,7 @@ class GetCookieRoutingRule(BaseRoutingRule):
         mbl_no = response.meta["mbl_no"]
         if response.status == 403:
             yield Restart()
+            return
         yield AuthTokenRoutingRule.build_request_option(mbl_no=mbl_no)
 
 
