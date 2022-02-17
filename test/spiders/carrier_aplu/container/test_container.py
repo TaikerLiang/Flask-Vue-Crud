@@ -1,16 +1,14 @@
 from pathlib import Path
+from test.spiders.carrier_aplu import container
 
 import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
-from crawler.spiders.carrier_anlc_aplu_cmdu import ContainerStatusRoutingRule, CarrierApluSpider
 from crawler.core_carrier.anlc_aplu_cmdu_share_spider import (
     ContainerStatusRoutingRule as MultiContainerStatusRoutingRule,
 )
-from crawler.spiders.carrier_aplu_multi import CarrierApluSpider as MultiCarrierApluSpider
-from test.spiders.carrier_aplu import container
+from crawler.spiders.carrier_anlc_aplu_cmdu import ContainerStatusRoutingRule
 
 
 @pytest.fixture
@@ -23,8 +21,7 @@ def sample_loader(sample_loader):
 @pytest.mark.parametrize(
     "sub,mbl_no,container_no",
     [
-        ("01_basic", "SHSE015942", "SHSE015942"),
-        ("02_no_pod_time_and_status", "AYU0320031", "AYU0320031"),
+        ("01_basic", "QDGA385860", "APZU4632334"),
     ],
 )
 def test_container_status_routing_rule(sample_loader, sub, mbl_no, container_no):
@@ -52,8 +49,7 @@ def test_container_status_routing_rule(sample_loader, sub, mbl_no, container_no)
 @pytest.mark.parametrize(
     "sub,mbl_no,container_no",
     [
-        ("01_basic", "SHSE015942", "SHSE015942"),
-        ("02_no_pod_time_and_status", "AYU0320031", "AYU0320031"),
+        ("01_basic", "QDGA385860", "APZU4632334"),
     ],
 )
 def test_multi_container_status_routing_rule(sample_loader, sub, mbl_no, container_no):
@@ -62,7 +58,6 @@ def test_multi_container_status_routing_rule(sample_loader, sub, mbl_no, contain
     option = MultiContainerStatusRoutingRule.build_request_option(
         container_no=container_no,
         search_no=mbl_no,
-        # base_url=CarrierApluSpider.base_url,
         task_id=1,
     )
 
