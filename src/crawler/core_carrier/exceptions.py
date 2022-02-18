@@ -1,6 +1,6 @@
 import abc
 
-from .base import CARRIER_RESULT_STATUS_FATAL, CARRIER_RESULT_STATUS_ERROR
+from .base import CARRIER_RESULT_STATUS_ERROR, CARRIER_RESULT_STATUS_FATAL
 from .items import ExportErrorData
 
 
@@ -54,6 +54,9 @@ class CarrierResponseFormatError(BaseCarrierError):
     def __init__(self, reason: str):
         self.reason = reason
 
+    def __repr__(self) -> str:
+        return f"CarrierResponseFormatError({self.reason})"
+
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail=f"<format-error> {self.reason}")
 
@@ -103,7 +106,7 @@ class AntiCaptchaError(BaseCarrierError):
     status = CARRIER_RESULT_STATUS_ERROR
 
     def build_error_data(self):
-        return ExportErrorData(status=self.status, detail=f"<anti-captcha-error>")
+        return ExportErrorData(status=self.status, detail="<anti-captcha-error>")
 
 
 class DataNotFoundError(BaseCarrierError):
