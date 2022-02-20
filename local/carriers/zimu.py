@@ -1,3 +1,4 @@
+from typing import Optional
 import dataclasses
 import random
 import string
@@ -5,13 +6,10 @@ import logging
 import time
 
 import scrapy
-from pyppeteer.errors import TimeoutError
-from urllib3.exceptions import ReadTimeoutError
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
 from local.core import BaseLocalCrawler
-from local.proxy import HydraproxyProxyManager, ProxyManager
 from local.exceptions import AccessDeniedError, DataNotFoundError
 from src.crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
 from src.crawler.core.pyppeteer import PyppeteerContentGetter
@@ -29,8 +27,8 @@ logger = logging.getLogger("local-crawler-zimu")
 
 
 class ZimuContentGetter(BaseSeleniumContentGetter):
-    def __init__(self, proxy_manager: ProxyManager = None):
-        super().__init__(proxy_manager)
+    def __init__(self, proxy: bool):
+        super().__init__(proxy=proxy)
         self._is_first = True
 
     def _accept_cookie(self):
@@ -52,26 +50,33 @@ class ZimuContentGetter(BaseSeleniumContentGetter):
 
     def search(self, mbl_no: str):
         self.driver.get("https://api.myip.com/")
-        time.sleep(5)
+        time.sleep(3)
         self.driver.get("https://www.zim.com/tools/track-a-shipment")
-        time.sleep(5)
+        if self.proxy:
+            time.sleep(20)
+        else:
+            time.sleep(5)
+
         self._accept_cookie()
 
         for i in range(random.randint(1, 3)):
             self.move_mouse_to_random_position()
-
-        if random.randint(1, 6) > 3:
-            icon = self.driver.find_element_by_xpath("/html/body/div[4]/header/div[3]/div/div[1]/a/img")
-            self.action.move_to_element(icon).click().perform()
-            time.sleep(2)
-            self.driver.back()
-            time.sleep(5)
+        if not self.proxy:
+            if random.randint(1, 6) > 3:
+                icon = self.driver.find_element_by_xpath("/html/body/div[4]/header/div[3]/div/div[1]/a/img")
+                self.action.move_to_element(icon).click().perform()
+                time.sleep(2)
+                self.driver.back()
+                time.sleep(5)
 
         search_bar = self.driver.find_element_by_css_selector("input[name='consnumber']")
         self.action.move_to_element(search_bar).click().perform()
         self.slow_type(search_bar, mbl_no)
         search_bar.send_keys(Keys.RETURN)
-        time.sleep(7)
+        if self.proxy:
+            time.sleep(16)
+        else:
+            time.sleep(7)
 
         return self.driver.page_source
 
@@ -125,8 +130,10 @@ class ZimuContentGetter(BaseSeleniumContentGetter):
         time.sleep(5)
 
     def search_and_return(self, mbl_no: str):
-        if self.check_denied(self.search(mbl_no=mbl_no)):
+        if self.check_denied(self.search(mbl_no=mbl_no)) and not self.proxy:
             self.retry(mbl_no)
+        elif self.proxy:
+            pass
         else:
             rnd = random.randint(1, 8)
             if rnd > 6:
@@ -157,9 +164,9 @@ class ZimuContentGetter(BaseSeleniumContentGetter):
 class ZimuLocalCrawler(BaseLocalCrawler):
     code = "ZIMU"
 
-    def __init__(self):
-        super().__init__()
-        self.content_getter = ZimuContentGetter(proxy_manager=HydraproxyProxyManager(logger=logger))
+    def __init__(self, proxy: bool):
+        super().__init__(proxy=proxy)
+        self.content_getter = ZimuContentGetter(proxy=proxy)
 
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):
         task_ids = task_ids.split(",")

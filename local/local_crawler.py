@@ -1,17 +1,24 @@
 import time
+import click
+import datetime
 import logging.config
 
-from selenium.common.exceptions import NoSuchElementException, TimeoutException, StaleElementReferenceException
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    TimeoutException,
+    StaleElementReferenceException,
+)
 
 import config
 from config import ScreenColor
-from src.crawler.services.edi_service import EdiClientService
 from local.helpers import CrawlerHelper
 from local.defines import LocalTask
 from local.core import BaseLocalCrawler
 from local.services import DataHandler, TaskAggregator
 from local.exceptions import AccessDeniedError, DataNotFoundError, TimeoutError
 from local.utility import timeout
+from generator import TaskGenerator
+from src.crawler.services.edi_service import EdiClientService
 
 logger = logging.getLogger("local-crawler")
 
@@ -62,78 +69,89 @@ class LocalCrawler:
         self.crawler.quit()
 
 
-@timeout(180, "Function slow; aborted")
-def run_spider(local_crawler, edi_client, task, start_time):
+@timeout(240, "Function slow; aborted")
+def run_spider(local_crawler, edi_client, task, start_time: datetime, mode: str):
     for result in local_crawler.run(task=task):
-        code, resp = edi_client.send_provider_result_back(
-            task_id=result["task_id"], provider_code="local", item_result=result
-        )
-        logger.info(
-            f"{ScreenColor.SUCCESS} SUCCESS, time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids} {code}"
-        )
+        if mode != "dev":
+            code, resp = edi_client.send_provider_result_back(
+                task_id=result["task_id"], provider_code="local", item_result=result
+            )
+            logger.info(
+                f"{ScreenColor.SUCCESS} SUCCESS, time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids} response_code: {code}"
+            )
+        else:
+            logger.info(
+                f"{ScreenColor.SUCCESS} SUCCESS, time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"
+            )
 
 
-def start():
-    carrier_edi_client = EdiClientService(
-        url=f"{config.EDI_DOMAIN}/api/tracking-carrier/local/", edi_user=config.EDI_USER, edi_token=config.EDI_TOKEN
-    )
-    local_tasks = carrier_edi_client.get_local_tasks()
-    logger.info(f"number of tasks: {len(local_tasks)}")
-
-    # local_tasks = [
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "219992", "mbl_no": "ZIMUTPE8201344"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "220004", "mbl_no": "ZIMUSNH1651309"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "220034", "mbl_no": "ZIMUSHH30744766"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "220035", "mbl_no": "ZIMUSHH30754994"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "220115", "mbl_no": "ZIMUSHH30736982"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "220170", "mbl_no": "ZIMUSHH30751885"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233851", "mbl_no": "ZIMUNYC998979"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233850", "mbl_no": "ZIMUNYC998416"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233824", "mbl_no": "ZIMUXIA8237146"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233770", "mbl_no": "ZIMUSNH1565371"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233729", "mbl_no": "ZIMUNGB9886166"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233728", "mbl_no": "ZIMUNGB9886389"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233678", "mbl_no": "ZIMUHKG001655671"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233674", "mbl_no": "ZIMUSNH1565369"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233577", "mbl_no": "ZIMUXIA8240119"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233485", "mbl_no": "ZIMUNGB9815921"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233422", "mbl_no": "ZIMUHCM80225099"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233416", "mbl_no": "ZIMUSHH30759067"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233276", "mbl_no": "ZIMUSHH30744848"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233275", "mbl_no": "ZIMUSHH30769362"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233274", "mbl_no": "ZIMUSHH30762577"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233252", "mbl_no": "ZIMUNGB1119782"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233205", "mbl_no": "ZIMUNGB9749159"},
-    #     {"type": "carrier", "scac_code": "ZIMU", "task_id": "233175", "mbl_no": "ZIMUNGB1132028"},
-    # ]
-
-    if len(local_tasks) == 0:
-        logger.warning(f"sleep 10 minutes")
-        time.sleep(10 * 60)
-
+@click.command()
+@click.option(
+    "-m",
+    "--mode",
+    required=True,
+    type=click.Choice(["dev", "prd"], case_sensitive=False),
+    default="dev",
+    show_default=True,
+    help="get the tasks from",
+)
+@click.option(
+    "-t",
+    "--task_type",
+    required=False,
+    type=click.Choice(["carrier", "terminal", "rail"], case_sensitive=False),
+    default="carrier",
+    show_default=True,
+    help="which type of tasks (prd mode doesn't need it)",
+)
+@click.option(
+    "-n",
+    "--num",
+    required=False,
+    default=20,
+    type=int,
+    show_default=True,
+    help="how many tasks do you want to take",
+)
+@click.option(
+    "--proxy/--no-proxy",
+    default=False,
+    type=bool,
+    show_default=True,
+    help="with proxy or not",
+)
+def start(mode: str, task_type: str, num: int, proxy: bool):
+    task_generator = TaskGenerator(mode=mode, task_type=task_type)
+    local_tasks = task_generator.get_local_tasks(num)
     task_aggregator = TaskAggregator()
-    _map = task_aggregator.aggregate_tasks(tasks=local_tasks)
+    task_mapper = task_aggregator.aggregate_tasks(tasks=local_tasks)
     helper = CrawlerHelper()
 
-    for key, local_tasks in _map.items():
+    print("proxy", proxy)
+
+    for key, local_tasks in task_mapper.items():
         _type, _code = key.split("-")
-        crawler = helper.get_crawler(code=_code)
+        crawler = helper.get_crawler(code=_code, proxy=proxy)
         if not crawler:
             continue
 
-        if _type == "terminal":
-            url = f"{config.EDI_DOMAIN}/api/tracking-terminal/local/"
-        else:
-            url = f"{config.EDI_DOMAIN}/api/tracking-carrier/local/"
-        edi_client = EdiClientService(url=url, edi_user=config.EDI_USER, edi_token=config.EDI_TOKEN)
-
         local_crawler = LocalCrawler(_type=_type, crawler=crawler)
-        logger.warning(f"Browser Opened {local_crawler}")
         start_time = time.time()
+        logger.warning(f"{start_time}: Browser Opened {local_crawler}")
 
         for task in local_tasks:
             try:
-                run_spider(local_crawler=local_crawler, edi_client=edi_client, task=task, start_time=start_time)
+                run_spider(
+                    local_crawler=local_crawler,
+                    edi_client=EdiClientService(
+                        url=f"{config.EDI_DOMAIN}/api/tracking-{_type}/local/",
+                        edi_user=config.EDI_USER,
+                        edi_token=config.EDI_TOKEN,
+                    ),
+                    task=task,
+                    start_time=start_time,
+                    mode=mode,
+                )
             except (TimeoutException, TimeoutError):
                 logger.warning(
                     f"{ScreenColor.WARNING} (TimeoutException), time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"
@@ -141,7 +159,7 @@ def start():
                 logger.warning(f"Browser Closed")
                 local_crawler.quit()
                 time.sleep(1)
-                local_crawler = LocalCrawler(_type=_type, crawler=helper.get_crawler(code=_code))
+                local_crawler = LocalCrawler(_type=_type, crawler=helper.get_crawler(code=_code, proxy=True))
             except (NoSuchElementException, StaleElementReferenceException):
                 logger.warning(
                     f"{ScreenColor.WARNING} (NoSuchElementException, StaleElementReferenceException), time consuming: {(time.time() - start_time):.2f}, code: {task.code} task_ids: {task.task_ids}"
@@ -152,8 +170,9 @@ def start():
                     f"{ScreenColor.WARNING} (AccessDeniedError), time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"
                 )
                 logger.warning(f"Browser Closed")
-                local_crawler.reset()
-                time.sleep(60 * 5)
+                local_crawler.quit()
+                time.sleep(1)
+                local_crawler = LocalCrawler(_type=_type, crawler=helper.get_crawler(code=_code, proxy=True))
             except DataNotFoundError as e:
                 logger.warning(
                     f"{ScreenColor.WARNING} (DataNotFoundError), time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"
@@ -165,7 +184,7 @@ def start():
                 )
                 local_crawler.quit()
                 time.sleep(1)
-                local_crawler = LocalCrawler(_type=_type, crawler=helper.get_crawler(code=_code))
+                local_crawler = LocalCrawler(_type=_type, crawler=helper.get_crawler(code=_code, proxy=False))
             finally:
                 start_time = time.time()
                 print()
@@ -176,5 +195,4 @@ def start():
 
 if __name__ == "__main__":
     logging.config.fileConfig(fname="log.conf", disable_existing_loggers=False)
-    while True:
-        start()
+    start()

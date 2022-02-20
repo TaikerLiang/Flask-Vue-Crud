@@ -1,6 +1,8 @@
-from typing import List
+from typing import List, Optional
 import time
 import random
+
+from local.proxy import ProxyManager
 
 
 from selenium import webdriver
@@ -15,13 +17,13 @@ class TrapacContentGetter(BaseSeleniumContentGetter):
     EMAIL = ""
     PASSWORD = ""
 
-    def __init__(self):
-        super().__init__(proxy_manager=None)
+    def __init__(self, proxy: bool):
+        super().__init__(proxy=proxy)
 
     def search_and_return(self, container_no_list: List):
         self.go_to(
             url=f"https://{self.LOWER_SHORT}.trapac.com/quick-check/?terminal={self.UPPER_SHORT}&transaction=availability",
-            seconds=10,
+            seconds=30,
         )
         # self.accept_cookie()
         self.key_in_search_bar(search_no=",".join(container_no_list))

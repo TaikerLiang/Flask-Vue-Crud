@@ -13,16 +13,16 @@ class OakTrapacContentGetter(TrapacContentGetter):
     EMAIL = ""
     PASSWORD = ""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, proxy: bool):
+        super().__init__(proxy=proxy)
 
 
 class OakTrapacLocalCrawler(BaseLocalCrawler):
     code = "Y549"
 
-    def __init__(self):
-        super().__init__()
-        self.content_getter = OakTrapacContentGetter()
+    def __init__(self, proxy: bool):
+        super().__init__(proxy=proxy)
+        self.content_getter = OakTrapacContentGetter(proxy=proxy)
 
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):
         task_ids = task_ids.split(",")

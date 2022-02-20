@@ -1,10 +1,11 @@
+from typing import Optional
 import dataclasses
 import random
 import time
 import string
 import abc
+import logging
 
-import undetected_chromedriver as uc
 from scrapy import Request
 from scrapy.http import TextResponse
 from selenium.webdriver import ActionChains
@@ -17,6 +18,11 @@ import bezier
 import numpy as np
 
 from local.config import PROXY_URL, PROXY_PASSWORD
+from local.proxy import HydraproxyProxyManager
+from local.seleniumwire.seleniumwire.undetected_chromedriver.v2 import Chrome
+
+logger = logging.getLogger("seleniumwire")
+logger.setLevel(logging.ERROR)
 
 
 @dataclasses.dataclass
@@ -37,10 +43,21 @@ class BaseSeleniumContentGetter:
     PROXY_URL = PROXY_URL
     PROXY_PASSWORD = PROXY_PASSWORD
 
-    def __init__(self, proxy_manager):
-        self.driver = uc.Chrome(version_main=92)
-        self.driver.get("https://nowsecure.nl")
-        time.sleep(5)
+    def __init__(self, proxy: bool):
+        options = {}
+        self.proxy = proxy
+        if self.proxy:
+            proxy_manager = HydraproxyProxyManager(logger=logger)
+            proxy_manager.renew_proxy()
+            options = {
+                "proxy": {
+                    "http": f"http://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_DOMAIN}",
+                    "https": f"https://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_DOMAIN}",
+                }
+            }
+        self.driver = Chrome(seleniumwire_options=options)
+        # self.driver.get("https://nowsecure.nl")
+        # time.sleep(5)
         self.action = ActionChains(self.driver)
 
     def go_to(self, url: str, seconds: int):
@@ -167,7 +184,8 @@ class BaseSeleniumContentGetter:
 
 
 class BaseLocalCrawler:
-    def __init__(self):
+    def __init__(self, proxy: bool):
+        self.proxy = proxy
         self.content_getter = None
 
     @abc.abstractmethod

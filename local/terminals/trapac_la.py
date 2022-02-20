@@ -13,13 +13,16 @@ class LaTrapacContentGetter(TrapacContentGetter):
     EMAIL = ""
     PASSWORD = ""
 
+    def __init__(self, proxy: bool):
+        super().__init__(proxy=proxy)
+
 
 class LaTrapacLocalCrawler(BaseLocalCrawler):
     code = "Y258"
 
-    def __init__(self):
-        super().__init__()
-        self.content_getter = LaTrapacContentGetter()
+    def __init__(self, proxy: bool):
+        super().__init__(proxy=proxy)
+        self.content_getter = LaTrapacContentGetter(proxy=proxy)
 
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):
         task_ids = task_ids.split(",")
