@@ -183,7 +183,7 @@ class MblRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://api.myip.com",
+            url=f"https://eval.edi.hardcoretech.co/c/livez",
             meta={"mbl_nos": mbl_nos, "task_ids": task_ids},
         )
 
@@ -464,7 +464,7 @@ class BookingRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://api.myip.com",
+            url=f"https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,
