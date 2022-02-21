@@ -1,20 +1,18 @@
-import pprint
 import os
+import pprint
 import traceback
 from collections import OrderedDict
-from typing import Dict, Union
-from scrapy import item
+from typing import Dict, Optional
 
 from scrapy.exceptions import DropItem
 
-from . import items as carrier_items
-from .base import (
+from crawler.core_carrier import items as carrier_items
+from crawler.core_carrier.base import (
     CARRIER_RESULT_STATUS_DATA,
     CARRIER_RESULT_STATUS_DEBUG,
     CARRIER_RESULT_STATUS_FATAL,
     SHIPMENT_TYPE_BOOKING,
     SHIPMENT_TYPE_MBL,
-    CARRIER_RESULT_STATUS_ERROR,
 )
 from crawler.services.edi_service import EdiClientService
 
@@ -78,7 +76,7 @@ class CarrierItemPipeline(BaseItemPipeline):
             else:
                 raise DropItem(f"unknown item: {item}")
 
-        except:
+        except Exception:
             spider.mark_error()
             status = CARRIER_RESULT_STATUS_FATAL
             detail = traceback.format_exc()
@@ -167,7 +165,7 @@ class CarrierMultiItemsPipeline(BaseItemPipeline):
                 return debug_data
             else:
                 raise DropItem(f"unknown item: {item}")
-        except:
+        except Exception:
             spider.mark_error()
             status = CARRIER_RESULT_STATUS_FATAL
             detail = traceback.format_exc()
@@ -267,7 +265,7 @@ class CarrierResultCollector:
             "rail_status": [],
         }
 
-    def build_final_data(self) -> Union[Dict, None]:
+    def build_final_data(self) -> Optional[Dict]:
         # remove task_id, task_id is just for link different items in same task
         if "task_id" in self._basic:
             del self._basic["task_id"]

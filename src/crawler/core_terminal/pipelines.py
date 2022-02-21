@@ -1,16 +1,16 @@
 import os
 import pprint
 import traceback
-from typing import Dict, Union
+from typing import Dict, Optional
 
 from scrapy.exceptions import DropItem
 
-from . import items as terminal_items
-from .base import (
+from crawler.core_terminal import items as terminal_items
+from crawler.core_terminal.base import (
     TERMINAL_RESULT_STATUS_DATA,
-    TERMINAL_RESULT_STATUS_FATAL,
     TERMINAL_RESULT_STATUS_DEBUG,
     TERMINAL_RESULT_STATUS_ERROR,
+    TERMINAL_RESULT_STATUS_FATAL,
 )
 from crawler.services.edi_service import EdiClientService
 
@@ -61,8 +61,6 @@ class TerminalItemPipeline(BaseItemPipeline):
                 self._collector.collect_terminal_item(item=item)
             elif isinstance(item, terminal_items.InvalidItem):
                 self._collector.collect_invalid_data(item=item)
-            elif isinstance(item, terminal_items.ExportErrorData):
-                return self._collector.build_error_data(item)
             elif isinstance(item, terminal_items.ExportFinalData):
                 res = self._send_result_back_to_edi_engine()
                 return {"status": "CLOSE", "result": res}
@@ -71,7 +69,7 @@ class TerminalItemPipeline(BaseItemPipeline):
             else:
                 raise DropItem(f"unknown item: {item}")
 
-        except:
+        except Exception:
             spider.mark_error()
             status = TERMINAL_RESULT_STATUS_FATAL
             detail = traceback.format_exc()
@@ -151,7 +149,7 @@ class TerminalMultiItemsPipeline(BaseItemPipeline):
                 return debug_data
             else:
                 raise DropItem(f"unknown item: {item}")
-        except:
+        except Exception:
             spider.mark_error()
             status = TERMINAL_RESULT_STATUS_FATAL
             detail = traceback.format_exc()
@@ -212,7 +210,7 @@ class TerminalResultCollector:
         clean_dict = self._clean_item(item)
         self._error.update(clean_dict)
 
-    def build_final_data(self) -> Union[Dict, None]:
+    def build_final_data(self) -> Optional[Dict]:
         if self._terminal:
             return {
                 "status": TERMINAL_RESULT_STATUS_DATA,
