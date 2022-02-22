@@ -126,7 +126,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
         return f"{self.name}.json"
 
     def handle(self, response: Response):
-        if self._is_awb_not_exist(response):
+        if self._is_mawb_not_exist(response):
             mawb_no = response.meta["mawb_no"]
             yield ExportErrorData(
                 mawb_no=mawb_no,
@@ -216,9 +216,9 @@ class AirInfoRoutingRule(BaseRoutingRule):
         return info_list
 
     @staticmethod
-    def _is_awb_not_exist(response) -> bool:
+    def _is_mawb_not_exist(response) -> bool:
         error_info = response.css("span[id='ctl00_ContentPlaceHolder1_lblErrorInfo'] font::text").get()
-        if error_info == "Awb information does not exist":
+        if error_info == "Mawb information does not exist":
             return True
         else:
             return False
