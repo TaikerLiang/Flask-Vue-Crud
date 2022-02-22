@@ -1,29 +1,31 @@
+import base64
+import random
 import re
 import string
-import random
 from typing import Dict, List
 
+import Crypto.Cipher.AES
 import scrapy
 from anticaptchaofficial.imagecaptcha import *
 
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
-from crawler.core_carrier.items import (
-    BaseCarrierItem,
-    ExportErrorData,
-    MblItem,
-    LocationItem,
-    VesselItem,
-    ContainerItem,
-    ContainerStatusItem,
-    DebugItem,
-)
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
     SuspiciousOperationError,
 )
-from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
+from crawler.core_carrier.items import (
+    BaseCarrierItem,
+    ContainerItem,
+    ContainerStatusItem,
+    DebugItem,
+    ExportErrorData,
+    LocationItem,
+    MblItem,
+    VesselItem,
+)
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.services.captcha_service import CaptchaSolverService
 
 SITC_BASE_URL = "https://api.sitcline.com"
@@ -207,7 +209,7 @@ class BasicInfoRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url=f"{SITC_BASE_URL}/doc/cargoTrack/searchTrack?blNo={mbl_no}&containerNo=&randomStr=",
+            url=f"{SITC_BASE_URL}/doc/cargoTrack/searchTrack04?blNo={Cipher_AES().encrypt(mbl_no)}&containerNo=&randomStr=",
             meta={"mbl_no": mbl_no, "token": token},
         )
 
@@ -337,7 +339,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url=f"{SITC_BASE_URL}/doc/cargoTrack/detail?blNo={mbl_no}&containerNo={container_no}",
+            url=f"{SITC_BASE_URL}/doc/cargoTrack/movementDetail?blNo={mbl_no}&containerNo={Cipher_AES().encrypt(container_no)}",
             headers={
                 "Content-Type": "application/json",
                 "authorization": token,
@@ -378,3 +380,30 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             )
 
         return container_status_list
+
+
+class Cipher_AES:
+    def __init__(self, key="sitc20220228sitc", iv="sitc20220228sitc"):
+        self.__key = key
+        self.__iv = iv
+        self.set_cipher()
+
+    def set_cipher(self):
+        self.__cipher = Crypto.Cipher.AES.new(
+            self.__key.encode("latin-1"), Crypto.Cipher.AES.MODE_CBC, self.__iv.encode("latin-1")
+        )
+
+    def encrypt(self, text):
+        cipher_text = b"".join([self.__cipher.encrypt(i) for i in self.pad(text.encode("latin-1"))])
+        encrypted_text = base64.b64encode(cipher_text).decode("latin-1").rstrip()
+
+        return self.reformat(encrypted_text)
+
+    def pad(self, text):
+        yield text + b"\0" * (len(self.__key) - len(text))
+
+    @staticmethod
+    def reformat(text):
+        text = text.replace("+", "%2B")
+        text = text.replace("=", "%3D")
+        return text
