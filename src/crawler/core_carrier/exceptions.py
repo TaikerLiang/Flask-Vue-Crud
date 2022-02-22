@@ -54,6 +54,9 @@ class CarrierResponseFormatError(BaseCarrierError):
     def __init__(self, reason: str):
         self.reason = reason
 
+    def __repr__(self) -> str:
+        return f"CarrierResponseFormatError({self.reason})"
+
     def build_error_data(self):
         return ExportErrorData(status=self.status, detail=f"<format-error> {self.reason}")
 
