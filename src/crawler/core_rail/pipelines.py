@@ -4,23 +4,28 @@ from typing import Dict
 
 from scrapy.exceptions import DropItem
 
-from . import items as rail_items
-from .base import RAIL_RESULT_STATUS_DATA, RAIL_RESULT_STATUS_FATAL, RAIL_RESULT_STATUS_DEBUG, RAIL_RESULT_STATUS_ERROR
+from crawler.core_rail import items as rail_items
+from crawler.core_rail.base import (
+    RAIL_RESULT_STATUS_DATA,
+    RAIL_RESULT_STATUS_DEBUG,
+    RAIL_RESULT_STATUS_ERROR,
+    RAIL_RESULT_STATUS_FATAL,
+)
 
 
 class RailItemPipeline:
     @classmethod
     def get_setting_name(cls):
-        return f'{__name__}.{cls.__name__}'
+        return f"{__name__}.{cls.__name__}"
 
     def open_spider(self, spider):
-        spider.logger.info(f'[{self.__class__.__name__}] ----- open_spider -----')
+        spider.logger.info(f"[{self.__class__.__name__}] ----- open_spider -----")
 
         self._collector = RailResultCollector(request_args=spider.request_args)
 
     def process_item(self, item, spider):
-        spider.logger.info(f'[{self.__class__.__name__}] ----- process_item -----')
-        spider.logger.info(f'item : {pprint.pformat(item)}')
+        spider.logger.info(f"[{self.__class__.__name__}] ----- process_item -----")
+        spider.logger.info(f"item : {pprint.pformat(item)}")
 
         try:
             if isinstance(item, rail_items.RailItem):
@@ -32,16 +37,16 @@ class RailItemPipeline:
             elif isinstance(item, rail_items.DebugItem):
                 return self._collector.build_debug_data(item)
             else:
-                raise DropItem(f'unknown item: {item}')
+                raise DropItem(f"unknown item: {item}")
 
-        except:
+        except Exception:
             spider.mark_error()
             status = RAIL_RESULT_STATUS_FATAL
             detail = traceback.format_exc()
             err_item = rail_items.ExportErrorData(status=status, detail=detail)
             return self._collector.build_error_data(err_item)
 
-        raise DropItem('item processed')
+        raise DropItem("item processed")
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -53,10 +58,10 @@ class RailMultiItemsPipeline:
 
     @classmethod
     def get_setting_name(cls):
-        return f'{__name__}.{cls.__name__}'
+        return f"{__name__}.{cls.__name__}"
 
     def open_spider(self, spider):
-        spider.logger.info(f'[{self.__class__.__name__}] ----- open_spider -----')
+        spider.logger.info(f"[{self.__class__.__name__}] ----- open_spider -----")
 
         self._default_collector = RailResultCollector(request_args=spider.request_args)
         for task_id, container_no in zip(spider.task_ids, spider.container_nos):
@@ -64,16 +69,16 @@ class RailMultiItemsPipeline:
                 task_id,
                 RailResultCollector(
                     request_args={
-                        'task_id': task_id,
-                        'container_no': container_no,
-                        'save': spider.request_args.get('save'),
+                        "task_id": task_id,
+                        "container_no": container_no,
+                        "save": spider.request_args.get("save"),
                     }
                 ),
             )
 
     def process_item(self, item, spider):
-        spider.logger.info(f'[{self.__class__.__name__}] ----- process_item -----')
-        spider.logger.info(f'item : {pprint.pformat(item)}')
+        spider.logger.info(f"[{self.__class__.__name__}] ----- process_item -----")
+        spider.logger.info(f"item : {pprint.pformat(item)}")
 
         try:
             if isinstance(item, rail_items.RailItem):
@@ -83,19 +88,19 @@ class RailMultiItemsPipeline:
             elif isinstance(item, rail_items.InvalidContainerNoItem):
                 return self._default_collector.build_invalid_no_data(item=item)
             elif isinstance(item, rail_items.ExportFinalData):
-                return {'status': 'CLOSE'}
+                return {"status": "CLOSE"}
             elif isinstance(item, rail_items.ExportErrorData):
                 results = self._default_collector.build_error_data(item)
                 collector_results = self._get_results_of_collectors()
                 results = [results] + collector_results if collector_results else results
-                return {'results': results}
+                return {"results": results}
             elif isinstance(item, rail_items.DebugItem):
                 debug_data = self._default_collector.build_debug_data(item)
                 return debug_data
             else:
-                raise DropItem(f'unknown item: {item}')
+                raise DropItem(f"unknown item: {item}")
 
-        except:
+        except Exception:
             spider.mark_error()
             status = RAIL_RESULT_STATUS_FATAL
             detail = traceback.format_exc()
@@ -106,7 +111,7 @@ class RailMultiItemsPipeline:
             results = [results] + collector_results if collector_results else results
             return results
 
-        raise DropItem('item processed')
+        raise DropItem("item processed")
 
     def _get_results_of_collectors(self):
         results = []
@@ -129,17 +134,17 @@ class RailResultCollector:
 
     def build_final_data(self) -> Dict:
         return {
-            'status': RAIL_RESULT_STATUS_DATA,
-            'request_args': self._request_args,
-            'rail': self._rail,
+            "status": RAIL_RESULT_STATUS_DATA,
+            "request_args": self._request_args,
+            "rail": self._rail,
         }
 
     def build_error_data(self, item: rail_items.ExportErrorData) -> Dict:
         clean_dict = self._clean_item(item)
 
         return {
-            'status': RAIL_RESULT_STATUS_FATAL,  # default status
-            'request_args': self._request_args,
+            "status": RAIL_RESULT_STATUS_FATAL,  # default status
+            "request_args": self._request_args,
             **clean_dict,
         }
 
@@ -147,17 +152,17 @@ class RailResultCollector:
         clean_dict = self._clean_item(item)
 
         return {
-            'status': RAIL_RESULT_STATUS_DEBUG,
+            "status": RAIL_RESULT_STATUS_DEBUG,
             **clean_dict,
         }
 
     def build_invalid_no_data(self, item: rail_items.InvalidContainerNoItem) -> Dict:
 
         return {
-            'status': RAIL_RESULT_STATUS_ERROR,  # default status
-            'request_args': self._request_args,
-            'invalid_container_no': item['container_no'],
-            'task_id': item['task_id'],
+            "status": RAIL_RESULT_STATUS_ERROR,  # default status
+            "request_args": self._request_args,
+            "invalid_container_no": item["container_no"],
+            "task_id": item["task_id"],
         }
 
     @staticmethod
@@ -165,7 +170,7 @@ class RailResultCollector:
         """
         drop private keys (startswith '_')
         """
-        return {k: v for k, v in item.items() if not k.startswith('_')}
+        return {k: v for k, v in item.items() if not k.startswith("_")}
 
     def is_item_empty(self) -> bool:
         return not bool(self._rail)
