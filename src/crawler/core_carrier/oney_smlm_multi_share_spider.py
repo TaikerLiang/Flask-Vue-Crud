@@ -1,14 +1,17 @@
+import dataclasses
 import json
 import time
-import dataclasses
-from typing import List, Dict, Set
+from typing import Dict, List, Set
 
 import scrapy
 
-from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core.exceptions import ProxyMaxRetryError
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core_carrier.base import (
+    CARRIER_RESULT_STATUS_ERROR,
+    SHIPMENT_TYPE_BOOKING,
+    SHIPMENT_TYPE_MBL,
+)
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
@@ -16,16 +19,16 @@ from crawler.core_carrier.exceptions import (
 )
 from crawler.core_carrier.items import (
     BaseCarrierItem,
-    ExportErrorData,
+    ContainerItem,
+    ContainerStatusItem,
     DebugItem,
+    ExportErrorData,
     LocationItem,
     MblItem,
     VesselItem,
-    ContainerItem,
-    ContainerStatusItem,
 )
-from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 
 MAX_PAGE_NUM = 10
 MAX_RETRY_COUNT = 3
@@ -643,7 +646,7 @@ class RailInfoRoutingRule(BaseRoutingRule):
             container_key=container_key,
             ready_for_pick_up=rail_info.get("ready_for_pick_up", "") or None,
             railway=rail_info.get("railway", ""),
-            final_dest_eta=rail_info.get("final_dest_eta", ""),
+            final_dest_eta=rail_info.get("final_dest_eta") or None,
         )
 
     def _extract_rail_info(self, response_dict: Dict) -> Dict:
