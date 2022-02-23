@@ -15,7 +15,7 @@ BASE_URL = "https://www.airchinacargo.com"
 
 
 class AirAirChinaSpider(BaseMultiAirSpider):
-    awb_prefix = "999"
+    mawb_prefix = "999"
     name = "air_air_china"
 
     def __init__(self, *args, **kwargs):

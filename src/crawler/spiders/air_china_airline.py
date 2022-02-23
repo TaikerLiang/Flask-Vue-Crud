@@ -10,7 +10,7 @@ from crawler.core_air.rules import RuleManager, BaseRoutingRule, RequestOption
 
 
 class AirChinaAirlineSpider(BaseMultiAirSpider):
-    awb_prefix = "297"
+    mawb_prefix = "297"
     name = "air_china_airline"
 
     def __init__(self, *args, **kwargs):
@@ -134,7 +134,7 @@ class SearchRoutingRule(BaseRoutingRule):
             "ctl00$txtCompanyId": "",
             "ctl00$txtUserId": "",
             "ctl00$txtPassword": "",
-            "ctl00$ContentPlaceHolder1$txtAwbPfx": AirChinaAirlineSpider.awb_prefix,
+            "ctl00$ContentPlaceHolder1$txtAwbPfx": AirChinaAirlineSpider.mawb_prefix,
             "ctl00$ContentPlaceHolder1$txtAwbNum": mawb_no,
             "ctl00$ContentPlaceHolder1$btnSearch": "查詢",
             "ctl00$hdnLogPath": "/ccnetv2/content/home/addLog.ashx",
