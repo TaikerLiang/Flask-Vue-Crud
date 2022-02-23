@@ -1,6 +1,6 @@
 import json
 import re
-from typing import List, Dict
+from typing import Dict, List
 
 import scrapy
 
@@ -9,15 +9,15 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import SuspiciousOperationError
 from crawler.core_carrier.items import (
     BaseCarrierItem,
-    MblItem,
     ContainerItem,
     ContainerStatusItem,
-    LocationItem,
-    ExportErrorData,
     DebugItem,
+    ExportErrorData,
+    LocationItem,
+    MblItem,
 )
 from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 
 URL = "https://www.matson.com"
 
@@ -110,6 +110,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 pol=LocationItem(name=main_info["pol_name"]),
                 pod=LocationItem(name=main_info["pod_name"]),
                 place_of_deliv=LocationItem(name=main_info["place_of_deliv_name"]),
+                eta=main_info["eta"],
             )
 
             yield ContainerItem(
@@ -143,6 +144,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             "pol_name": container["loadPort"],
             "pod_name": container["dischargePort"],
             "place_of_deliv_name": container["destPort"],
+            "eta": container["vesselETA"] or None,
         }
 
     @staticmethod
