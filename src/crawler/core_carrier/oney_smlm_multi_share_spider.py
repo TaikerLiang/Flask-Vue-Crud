@@ -585,7 +585,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
             task_id=task_id,
             container_key=container_key,
             last_free_day=release_info.get("last_free_day") or None,
-            terminal=LocationItem(name=release_info.get("terminal")),
+            terminal=LocationItem(name=release_info.get("terminal") or None),
         )
 
     def _extract_release_info(self, response_dict: Dict) -> Dict:
@@ -645,7 +645,7 @@ class RailInfoRoutingRule(BaseRoutingRule):
             task_id=task_id,
             container_key=container_key,
             ready_for_pick_up=rail_info.get("ready_for_pick_up", "") or None,
-            railway=rail_info.get("railway"),
+            railway=rail_info.get("railway") or None,
             final_dest_eta=rail_info.get("final_dest_eta", ""),
         )
 
