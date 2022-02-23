@@ -1,21 +1,20 @@
-import time
 import json
-from typing import List, Dict
+import time
+from typing import Dict, List
 
-from scrapy import Request, FormRequest
+from scrapy import FormRequest, Request
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-from crawler.core.table import HeaderMismatchError
 from crawler.core.selenium import ChromeContentGetter
+from crawler.core.table import HeaderMismatchError
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import LoadWebsiteTimeOutFatal
-from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
-from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
-
+from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
+from crawler.core_terminal.rules import BaseRoutingRule, RequestOption, RuleManager
 
 MAX_PAGE_NUM = 10
 URL = "https://mahercsp.maherterminals.com"
@@ -117,7 +116,7 @@ class TerminalMaherMultiSpider(BaseMultiTerminalSpider):
                     yield self._build_request_by(option=result)
                 else:
                     raise RuntimeError()
-        except HeaderMismatchError as e:
+        except HeaderMismatchError:
             self._max_retry_times -= 1
 
             # retry searching
@@ -221,8 +220,6 @@ class SearchRoutingRule(BaseRoutingRule):
         user_data = response.meta["user_data"]
         token = response.meta["token"]
         containers_resp = json.loads(response.text)
-
-        print(containers_resp)
 
         for resp in containers_resp:
             if resp.get("maherError", ""):
