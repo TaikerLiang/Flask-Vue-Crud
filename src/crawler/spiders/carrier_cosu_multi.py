@@ -1,32 +1,46 @@
 import time
-from typing import List, Dict
+from typing import Dict, List
 
 import scrapy
 from scrapy import Selector
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 from urllib3.exceptions import ReadTimeoutError
+
 from crawler.core.selenium import FirefoxContentGetter
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_ERROR
-from crawler.core_carrier.exceptions import SuspiciousOperationError, LoadWebsiteTimeOutFatal
+from crawler.core.table import BaseTable, TableExtractor
+from crawler.core_carrier.base import (
+    CARRIER_RESULT_STATUS_ERROR,
+    SHIPMENT_TYPE_BOOKING,
+    SHIPMENT_TYPE_MBL,
+)
+from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
+from crawler.core_carrier.exceptions import (
+    LoadWebsiteTimeOutFatal,
+    SuspiciousOperationError,
+)
 from crawler.core_carrier.items import (
+    BaseCarrierItem,
+    ContainerItem,
+    ContainerStatusItem,
+    DebugItem,
+    ExportErrorData,
     LocationItem,
     MblItem,
     VesselItem,
-    ContainerStatusItem,
-    ContainerItem,
-    BaseCarrierItem,
-    DebugItem,
-    ExportErrorData,
 )
-from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
-from crawler.extractors.selector_finder import CssQueryExistMatchRule, find_selector_from
-from crawler.extractors.table_cell_extractors import FirstTextTdExtractor, BaseTableCellExtractor
-from crawler.core.table import BaseTable, TableExtractor
+from crawler.extractors.selector_finder import (
+    CssQueryExistMatchRule,
+    find_selector_from,
+)
+from crawler.extractors.table_cell_extractors import (
+    BaseTableCellExtractor,
+    FirstTextTdExtractor,
+)
 
 
 class CarrierCosuSpider(BaseMultiCarrierSpider):
@@ -325,6 +339,7 @@ class ItemExtractor:
                 name=mbl_data.get("final_dest_name", None),
                 firms_code=mbl_data.get("final_dest_firms_code", None),
             ),
+            place_of_deliv=LocationItem(name=mbl_data.get("final_dest_name", None)),
             etd=mbl_data.get("etd", None),
             atd=mbl_data.get("atd", None),
             eta=mbl_data.get("eta", None),
