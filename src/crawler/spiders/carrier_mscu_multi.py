@@ -1,27 +1,34 @@
-import re
 import dataclasses
-from typing import List, Dict
+import re
+from typing import Dict, List
 
 import scrapy
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_ERROR
-from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, SuspiciousOperationError
-from crawler.core_carrier.items import (
-    ContainerItem,
-    ContainerStatusItem,
-    LocationItem,
-    MblItem,
-    DebugItem,
-    ExportErrorData,
-    BaseCarrierItem,
-)
-from crawler.core.proxy import HydraproxyProxyManager
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
-from crawler.core.table import BaseTable, TableExtractor
 from crawler.core.exceptions import FormatError
 from crawler.core.items import BaseItem
+from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.table import BaseTable, TableExtractor
+from crawler.core_carrier.base import (
+    CARRIER_RESULT_STATUS_ERROR,
+    SHIPMENT_TYPE_BOOKING,
+    SHIPMENT_TYPE_MBL,
+)
+from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError,
+    SuspiciousOperationError,
+)
+from crawler.core_carrier.items import (
+    BaseCarrierItem,
+    ContainerItem,
+    ContainerStatusItem,
+    DebugItem,
+    ExportErrorData,
+    LocationItem,
+    MblItem,
+)
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 
 URL = "https://www.msc.com"
 MAX_RETRY_COUNT = 3
@@ -284,8 +291,8 @@ class MainRoutingRule(BaseRoutingRule):
                         est_or_actual=container_status["est_or_actual"],
                     )
 
-                place_of_deliv = extractor.extract_place_of_deliv(container_selector_map)
-                place_of_deliv_set.add(place_of_deliv)
+                container_info = extractor.extract_container_info(container_selector_map)
+                place_of_deliv_set.add(container_info["place_of_deliv"])
 
             except CarrierResponseFormatError as e:
                 yield f_err.build_error_data(detail=e.reason)
@@ -312,6 +319,7 @@ class MainRoutingRule(BaseRoutingRule):
             pol=LocationItem(name=main_info["pol"]),
             pod=LocationItem(name=main_info["pod"]),
             etd=main_info["etd"],
+            eta=container_info["eta"],
             vessel=main_info["vessel"],
             place_of_deliv=LocationItem(name=place_of_deliv),
             latest_update=latest_update,
@@ -455,14 +463,19 @@ class Extractor:
         return m.group("container_no")
 
     @staticmethod
-    def extract_place_of_deliv(container_selector_map: Dict[str, scrapy.Selector]):
+    def extract_container_info(container_selector_map: Dict[str, scrapy.Selector]):
         table_selector = container_selector_map["container_stats_table"]
 
         table_locator = ContainerInfoTableLocator()
         table_locator.parse(table=table_selector)
         table_extractor = TableExtractor(table_locator=table_locator)
 
-        return table_extractor.extract_cell(top="Shipped to")
+        return {
+            "place_of_deliv": table_extractor.extract_cell(top="Shipped to"),
+            "eta": table_extractor.extract_cell(top="Final POD ETA")
+            if table_locator.has_header(top="Final POD ETA")
+            else None,
+        }
 
     @staticmethod
     def extract_container_status_list(container_selector_map: Dict[str, scrapy.Selector]):
