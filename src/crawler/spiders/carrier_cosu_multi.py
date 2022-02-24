@@ -339,7 +339,10 @@ class ItemExtractor:
                 name=mbl_data.get("final_dest_name", None),
                 firms_code=mbl_data.get("final_dest_firms_code", None),
             ),
-            place_of_deliv=LocationItem(name=mbl_data.get("final_dest_name", None)),
+            place_of_deliv=LocationItem(
+                name=mbl_data.get("final_dest_name", None),
+                firms_code=mbl_data.get("final_dest_firms_code", None),
+            ),
             etd=mbl_data.get("etd", None),
             atd=mbl_data.get("atd", None),
             eta=mbl_data.get("eta", None),
