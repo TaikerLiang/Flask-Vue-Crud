@@ -1,4 +1,9 @@
-from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusItem, LocationItem
+from crawler.core_carrier.items import (
+    ContainerItem,
+    ContainerStatusItem,
+    LocationItem,
+    MblItem,
+)
 
 
 def verify(results):
@@ -42,6 +47,7 @@ def verify(results):
         pol=LocationItem(name="TANJUNG PELEPAS, MY"),
         pod=LocationItem(name="LOS ANGELES, US"),
         etd="17/09/2019",
+        eta=None,
         vessel="GUDRUN MAERSK",
         place_of_deliv=LocationItem(name="LOS ANGELES, US"),
         latest_update="05.11.2021 at 03:30 Central Europe Standard Time",
