@@ -22,7 +22,12 @@ def verify(item):
                     "firms_code": None,
                 }
             ),
-            "place_of_deliv": {"name": "Los Angeles ,California ,United States-American President Line"},
+            "place_of_deliv": LocationItem(
+                **{
+                    "name": "Los Angeles ,California ,United States-American President Line",
+                    "firms_code": None,
+                }
+            ),
             "etd": None,
             "atd": "2019-05-08 08:03",
             "eta": None,
