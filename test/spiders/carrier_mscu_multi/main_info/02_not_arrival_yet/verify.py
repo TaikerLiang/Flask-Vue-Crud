@@ -1,8 +1,17 @@
-from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusItem, LocationItem
+from crawler.core_carrier.items import (
+    ContainerItem,
+    ContainerStatusItem,
+    LocationItem,
+    MblItem,
+)
 
 
 def verify(results):
-    assert results[0] == ContainerItem(task_id="1", container_key="FSCU4872850", container_no="FSCU4872850",)
+    assert results[0] == ContainerItem(
+        task_id="1",
+        container_key="FSCU4872850",
+        container_no="FSCU4872850",
+    )
 
     assert results[1] == ContainerStatusItem(
         task_id="1",
@@ -32,6 +41,7 @@ def verify(results):
         pol=LocationItem(name="NINGBO, CN"),
         pod=LocationItem(name="SUAPE, BR"),
         etd="26/02/2020",
+        eta=None,
         vessel="MSC JADE",
         place_of_deliv=LocationItem(name="SUAPE, BR"),
         latest_update="05.11.2021 at 03:30 Central Europe Standard Time",
