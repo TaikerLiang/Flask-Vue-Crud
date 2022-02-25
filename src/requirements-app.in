@@ -12,3 +12,4 @@ Scrapy==2.4.1
 pyppeteer
 pyppeteer_stealth
 undetected-chromedriver
+pycryptodome
