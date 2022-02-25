@@ -210,7 +210,7 @@ class BasicInfoRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url=f"{SITC_BASE_URL}/doc/cargoTrack/searchTrack04?blNo={urllib.parse.quote_plus(Cipher_AES().encrypt(mbl_no))}&containerNo=&randomStr=",
+            url=f"{SITC_BASE_URL}/doc/cargoTrack/searchTrack1oo86?blNo={urllib.parse.quote_plus(CipherAES().encrypt(mbl_no))}&containerNo=&randomStr=",
             meta={"mbl_no": mbl_no, "token": token},
         )
 
@@ -340,7 +340,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url=f"{SITC_BASE_URL}/doc/cargoTrack/movementDetail?blNo={mbl_no}&containerNo={urllib.parse.quote_plus(Cipher_AES().encrypt(container_no))}",
+            url=f"{SITC_BASE_URL}/doc/cargoTrack/movementDetail?blNo={mbl_no}&containerNo={urllib.parse.quote_plus(CipherAES().encrypt(container_no))}",
             headers={
                 "Content-Type": "application/json",
                 "authorization": token,
@@ -383,16 +383,17 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         return container_status_list
 
 
-class Cipher_AES:
+class CipherAES:
     KEY = "sitc20220228sitc"
     IV = "sitc20220228sitc"
 
-    def encrypt(self, text):
-        cipher = Crypto.Cipher.AES.new(
+    def __init__(self):
+        self.cipher = Crypto.Cipher.AES.new(
             self.KEY.encode("latin-1"), Crypto.Cipher.AES.MODE_CBC, self.IV.encode("latin-1")
         )
 
-        cipher_text = b"".join([cipher.encrypt(i) for i in self._pad(text.encode("latin-1"))])
+    def encrypt(self, text):
+        cipher_text = b"".join([self.cipher.encrypt(i) for i in self._pad(text.encode("latin-1"))])
         encrypted_text = base64.b64encode(cipher_text).decode("latin-1").rstrip()
 
         return encrypted_text
