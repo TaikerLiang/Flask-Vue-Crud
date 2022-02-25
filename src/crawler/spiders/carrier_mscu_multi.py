@@ -4,26 +4,17 @@ from typing import Dict, List
 
 import scrapy
 
-from crawler.core.exceptions import FormatError
-from crawler.core.items import BaseItem
+from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_BOOKING, SEARCH_TYPE_MBL
+from crawler.core.exceptions import FormatError, SuspiciousOperationError
+from crawler.core.items import BaseItem, DataNotFoundItem
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.base import (
-    CARRIER_RESULT_STATUS_ERROR,
-    SHIPMENT_TYPE_BOOKING,
-    SHIPMENT_TYPE_MBL,
-)
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    SuspiciousOperationError,
-)
 from crawler.core_carrier.items import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
-    ExportErrorData,
     LocationItem,
     MblItem,
 )
@@ -51,20 +42,20 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         self._retry_count = 0
 
         bill_rules = [
-            HomePageRoutingRule(search_type=SHIPMENT_TYPE_MBL),
-            MainRoutingRule(search_type=SHIPMENT_TYPE_MBL),
+            HomePageRoutingRule(search_type=SEARCH_TYPE_MBL),
+            MainRoutingRule(search_type=SEARCH_TYPE_MBL),
             NextRoundRoutingRule(),
         ]
 
         booking_rules = [
-            HomePageRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
-            MainRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
+            HomePageRoutingRule(search_type=SEARCH_TYPE_BOOKING),
+            MainRoutingRule(search_type=SEARCH_TYPE_BOOKING),
             NextRoundRoutingRule(),
         ]
 
-        if self.search_type == SHIPMENT_TYPE_MBL:
+        if self.search_type == SEARCH_TYPE_MBL:
             self._rule_manager = RuleManager(rules=bill_rules)
-        elif self.search_type == SHIPMENT_TYPE_BOOKING:
+        elif self.search_type == SEARCH_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
 
         self._proxy_manager = HydraproxyProxyManager(session="mscu", logger=self.logger)
@@ -110,7 +101,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
                 search_nos = result.search_nos
                 task_ids = result.task_ids
                 if self._retry_count >= MAX_RETRY_COUNT:
-                    yield self._build_error_data(search_no=search_nos[0], task_id=task_ids[0])
+                    yield self._build_data_not_found_item(search_no=search_nos[0], task_id=task_ids[0])
                 option = self._prepare_restart(search_nos=search_nos, task_ids=task_ids, reason=result.reason)
                 yield self._build_request_by(option=option)
             else:
@@ -137,23 +128,18 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
             )
         else:
-            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
+            raise SuspiciousOperationError(
+                search_type=self.search_type, reason=f"Unexpected request method: `{option.method}`"
+            )
 
-    def _build_error_data(self, search_no: str, task_id: str):
-        if self.search_type == SHIPMENT_TYPE_MBL:
-            return ExportErrorData(
-                mbl_no=search_no,
-                task_id=task_id,
-                status=CARRIER_RESULT_STATUS_ERROR,
-                detail="Data was not found",
-            )
-        elif self.search_type == SHIPMENT_TYPE_BOOKING:
-            return ExportErrorData(
-                mbl_no=search_no,
-                task_id=task_id,
-                status=CARRIER_RESULT_STATUS_ERROR,
-                detail="Data was not found",
-            )
+    def _build_data_not_found_item(self, search_no: str, task_id: str):
+        return DataNotFoundItem(
+            search_type=self.search_type,
+            search_no=search_no,
+            task_id=task_id,
+            status=RESULT_STATUS_ERROR,
+            detail="Data was not found",
+        )
 
 
 # -------------------------------------------------------------------------------
@@ -209,7 +195,7 @@ class MainRoutingRule(BaseRoutingRule):
     def build_request_option(
         cls, search_nos: List, task_ids: List, view_state, validation, search_type
     ) -> RequestOption:
-        if search_type == SHIPMENT_TYPE_MBL:
+        if search_type == SEARCH_TYPE_MBL:
             drop_down_field = "containerbilloflading"
         else:
             drop_down_field = "bookingnumber"
@@ -241,18 +227,20 @@ class MainRoutingRule(BaseRoutingRule):
         f_err = self._build_error_format(task_id=task_ids[0], search_no=search_nos[0])
 
         if self._is_search_no_invalid(response=response):
-            if self._search_type == SHIPMENT_TYPE_MBL:
-                yield ExportErrorData(
+            if self._search_type == SEARCH_TYPE_MBL:
+                yield DataNotFoundItem(
                     task_id=task_ids[0],
-                    mbl_no=search_nos[0],
-                    status=CARRIER_RESULT_STATUS_ERROR,
+                    search_type=SEARCH_TYPE_MBL,
+                    search_no=search_nos[0],
+                    status=RESULT_STATUS_ERROR,
                     detail="Data was not found",
                 )
             else:
-                yield ExportErrorData(
+                yield DataNotFoundItem(
                     task_id=task_ids[0],
-                    booking_no=search_nos[0],
-                    status=CARRIER_RESULT_STATUS_ERROR,
+                    search_type=SEARCH_TYPE_BOOKING,
+                    search_no=search_nos[0],
+                    status=RESULT_STATUS_ERROR,
                     detail="Data was not found",
                 )
             yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
@@ -263,7 +251,7 @@ class MainRoutingRule(BaseRoutingRule):
 
         try:
             container_selector_map_list = extractor.locate_container_selector(response=response)
-        except CarrierResponseFormatError as e:
+        except FormatError as e:
             yield Restart(reason=e.reason, search_nos=search_nos, task_ids=task_ids)
             return
 
@@ -294,21 +282,21 @@ class MainRoutingRule(BaseRoutingRule):
                 container_info = extractor.extract_container_info(container_selector_map)
                 place_of_deliv_set.add(container_info["place_of_deliv"])
 
-            except CarrierResponseFormatError as e:
-                yield f_err.build_error_data(detail=e.reason)
+            except FormatError as e:
+                yield f_err.build_error_data(reason=e.reason)
 
         if not place_of_deliv_set:
             place_of_deliv = None
         elif len(place_of_deliv_set) == 1:
             place_of_deliv = list(place_of_deliv_set)[0] or None
         else:
-            yield f_err.build_error_data(detail=f"Different place_of_deliv: `{place_of_deliv_set}`")
+            yield f_err.build_error_data(reason=f"Different place_of_deliv: `{place_of_deliv_set}`")
             yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
             return
 
         try:
             main_info = extractor.extract_main_info(response=response)
-        except CarrierResponseFormatError as e:
+        except FormatError as e:
             yield Restart(reason=e.reason, search_nos=search_nos, task_ids=task_ids)
             return
 
@@ -324,7 +312,7 @@ class MainRoutingRule(BaseRoutingRule):
             place_of_deliv=LocationItem(name=place_of_deliv),
             latest_update=latest_update,
         )
-        if self._search_type == SHIPMENT_TYPE_MBL:
+        if self._search_type == SEARCH_TYPE_MBL:
             mbl_item["mbl_no"] = search_nos[0]
         else:
             mbl_item["booking_no"] = search_nos[0]
@@ -342,10 +330,10 @@ class MainRoutingRule(BaseRoutingRule):
         return False
 
     def _build_error_format(self, task_id: str, search_no: str):
-        if self._search_type == SHIPMENT_TYPE_MBL:
-            return FormatError(task_id=task_id, mbl_no=search_no)
+        if self._search_type == SEARCH_TYPE_MBL:
+            return FormatError(task_id=task_id, search_no=search_no, search_type=SEARCH_TYPE_MBL)
         else:
-            return FormatError(task_id=task_id, booking_no=search_no)
+            return FormatError(task_id=task_id, search_no=search_no, search_type=SEARCH_TYPE_BOOKING)
 
 
 class NextRoundRoutingRule(BaseRoutingRule):
@@ -392,7 +380,7 @@ class Extractor:
             "Can not find main information frame by css `div#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00" "_pnlBOLContent`"
         )
         if not main_outer:
-            raise CarrierResponseFormatError(reason=error_message)
+            raise FormatError(reason=error_message)
 
         table_selector = main_outer.xpath('./table[@class="resultTable singleRowTable"]')
         if not table_selector:
@@ -422,16 +410,16 @@ class Extractor:
         for container_content in container_content_list:
             container_no_bar = container_content.css("a.containerToggle")
             if not container_no_bar:
-                raise CarrierResponseFormatError(reason="Can not find container_no_bar !!!")
+                raise FormatError(reason="Can not find container_no_bar !!!")
 
             container_stats_table = container_content.css("table.singleRowTable")
 
             if not container_stats_table:
-                raise CarrierResponseFormatError(reason="Can not find container_stats_table !!!")
+                raise FormatError(reason="Can not find container_stats_table !!!")
 
             movements_table = container_content.css("table[class='resultTable']")
             if not movements_table:
-                raise CarrierResponseFormatError(reason="Can not find movements_table !!!")
+                raise FormatError(reason="Can not find movements_table !!!")
 
             map_list.append(
                 {
@@ -458,7 +446,7 @@ class Extractor:
         m = self._container_no_pattern.match(container_no_text)
 
         if not m:
-            raise CarrierResponseFormatError(reason=f"Unknown container no format: `{container_no_text}`")
+            raise FormatError(reason=f"Unknown container no format: `{container_no_text}`")
 
         return m.group("container_no")
 
@@ -494,7 +482,7 @@ class Extractor:
             elif schedule_status == "future":
                 est_or_actual = "E"
             else:
-                raise CarrierResponseFormatError(reason=f"Unknown schedule_status: `{schedule_status}`")
+                raise FormatError(reason=f"Unknown schedule_status: `{schedule_status}`")
 
             container_status_list.append(
                 {
@@ -520,7 +508,7 @@ class Extractor:
         """
         m = self._latest_update_pattern.match(latest_update_message)
         if not m:
-            raise CarrierResponseFormatError(reason=f"Unknown latest update message format: `{latest_update_message}`")
+            raise FormatError(reason=f"Unknown latest update message format: `{latest_update_message}`")
 
         return m.group("latest_update").strip()
 

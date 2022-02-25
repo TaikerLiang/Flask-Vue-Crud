@@ -3,23 +3,16 @@ from typing import Dict, List
 
 import scrapy
 
+from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_BOOKING, SEARCH_TYPE_MBL
+from crawler.core.exceptions import FormatError, SuspiciousOperationError
+from crawler.core.items import DataNotFoundItem
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.base import (
-    CARRIER_RESULT_STATUS_ERROR,
-    SHIPMENT_TYPE_BOOKING,
-    SHIPMENT_TYPE_MBL,
-)
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    SuspiciousOperationError,
-)
 from crawler.core_carrier.items import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
-    ExportErrorData,
     LocationItem,
     MblItem,
 )
@@ -36,13 +29,13 @@ class CarrierMscuSpider(BaseCarrierSpider):
         super(CarrierMscuSpider, self).__init__(*args, **kwargs)
 
         bill_rules = [
-            HomePageRoutingRule(search_type=SHIPMENT_TYPE_MBL),
-            MainRoutingRule(search_type=SHIPMENT_TYPE_MBL),
+            HomePageRoutingRule(search_type=SEARCH_TYPE_MBL),
+            MainRoutingRule(search_type=SEARCH_TYPE_MBL),
         ]
 
         booking_rules = [
-            HomePageRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
-            MainRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
+            HomePageRoutingRule(search_type=SEARCH_TYPE_BOOKING),
+            MainRoutingRule(search_type=SEARCH_TYPE_BOOKING),
         ]
 
         if self.mbl_no:
@@ -91,7 +84,7 @@ class CarrierMscuSpider(BaseCarrierSpider):
                 meta=meta,
             )
         else:
-            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
+            raise SuspiciousOperationError(reason=f"Unexpected request method: `{option.method}`")
 
 
 # -------------------------------------------------------------------------------
@@ -139,7 +132,7 @@ class MainRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, search_no, view_state, validation, search_type) -> RequestOption:
-        if search_type == SHIPMENT_TYPE_MBL:
+        if search_type == SEARCH_TYPE_MBL:
             drop_down_field = "containerbilloflading"
         else:
             drop_down_field = "bookingnumber"
@@ -166,18 +159,12 @@ class MainRoutingRule(BaseRoutingRule):
         search_no = response.meta["search_no"]
 
         if self._is_search_no_invalid(response=response):
-            if self._search_type == SHIPMENT_TYPE_MBL:
-                yield ExportErrorData(
-                    mbl_no=search_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail="Data was not found",
-                )
-            else:
-                yield ExportErrorData(
-                    booking_no=search_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail="Data was not found",
-                )
+            yield DataNotFoundItem(
+                search_type=self._search_type,
+                search_no=search_no,
+                status=RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
             return
 
         extractor = Extractor()
@@ -211,7 +198,12 @@ class MainRoutingRule(BaseRoutingRule):
         elif len(place_of_deliv_set) == 1:
             place_of_deliv = list(place_of_deliv_set)[0] or None
         else:
-            raise CarrierResponseFormatError(reason=f"Different place_of_deliv: `{place_of_deliv_set}`")
+            yield DebugItem(info=repr(FormatError))
+            raise FormatError(
+                search_type=self._search_type,
+                search_no=search_no,
+                reason=f"Different place_of_deliv: `{place_of_deliv_set}`",
+            )
 
         search_no = extractor.extract_search_no(response=response)
         main_info = extractor.extract_main_info(response=response)
@@ -226,7 +218,7 @@ class MainRoutingRule(BaseRoutingRule):
             place_of_deliv=LocationItem(name=place_of_deliv),
             latest_update=latest_update,
         )
-        if self._search_type == SHIPMENT_TYPE_MBL:
+        if self._search_type == SEARCH_TYPE_MBL:
             mbl_item["mbl_no"] = search_no
         else:
             mbl_item["booking_no"] = search_no
@@ -267,7 +259,7 @@ class Extractor:
         """
         m = self._mbl_no_pattern.match(mbl_no_text)
         if not m:
-            raise CarrierResponseFormatError(reason=f"Unknown mbl no format: `{mbl_no_text}`")
+            raise FormatError(reason=f"Unknown mbl no format: `{mbl_no_text}`")
 
         return m.group("mbl_no")
 
@@ -278,7 +270,7 @@ class Extractor:
             "Can not find main information frame by css `div#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00" "_pnlBOLContent`"
         )
         if not main_outer:
-            raise CarrierResponseFormatError(reason=error_message)
+            raise FormatError(reason=error_message)
 
         table_selector = main_outer.xpath('./table[@class="resultTable singleRowTable"]')
         if not table_selector:
@@ -308,15 +300,15 @@ class Extractor:
         for container_content in container_content_list:
             container_no_bar = container_content.css("a.containerToggle")
             if not container_no_bar:
-                raise CarrierResponseFormatError(reason="Can not find container_no_bar !!!")
+                raise FormatError(reason="Can not find container_no_bar !!!")
 
             container_stats_table = container_content.css("table.singleRowTable")
             if not container_stats_table:
-                raise CarrierResponseFormatError(reason="Can not find container_stats_table !!!")
+                raise FormatError(reason="Can not find container_stats_table !!!")
 
             movements_table = container_content.css("table[class='resultTable']")
             if not movements_table:
-                raise CarrierResponseFormatError(reason="Can not find movements_table !!!")
+                raise FormatError(reason="Can not find movements_table !!!")
 
             map_list.append(
                 {
@@ -343,7 +335,7 @@ class Extractor:
         m = self._container_no_pattern.match(container_no_text)
 
         if not m:
-            raise CarrierResponseFormatError(reason=f"Unknown container no format: `{container_no_text}`")
+            raise FormatError(reason=f"Unknown container no format: `{container_no_text}`")
 
         return m.group("container_no")
 
@@ -379,7 +371,7 @@ class Extractor:
             elif schedule_status == "future":
                 est_or_actual = "E"
             else:
-                raise CarrierResponseFormatError(reason=f"Unknown schedule_status: `{schedule_status}`")
+                raise FormatError(reason=f"Unknown schedule_status: `{schedule_status}`")
 
             container_status_list.append(
                 {
@@ -405,7 +397,7 @@ class Extractor:
         """
         m = self._latest_update_pattern.match(latest_update_message)
         if not m:
-            raise CarrierResponseFormatError(reason=f"Unknown latest update message format: `{latest_update_message}`")
+            raise FormatError(reason=f"Unknown latest update message format: `{latest_update_message}`")
 
         return m.group("latest_update").strip()
 
