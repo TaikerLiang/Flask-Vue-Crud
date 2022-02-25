@@ -1,12 +1,12 @@
 from pathlib import Path
+from test.spiders.carrier_mscu_multi import main_info
 
 import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
+from crawler.core.base import SEARCH_TYPE_MBL
 from crawler.spiders.carrier_mscu_multi import MainRoutingRule
-from test.spiders.carrier_mscu_multi import main_info
 
 
 @pytest.fixture
@@ -33,10 +33,16 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
         url=url,
         body=http_text,
         encoding="utf-8",
-        request=Request(url=url, meta={"search_nos": [mbl_no], "task_ids": ["1"],},),
+        request=Request(
+            url=url,
+            meta={
+                "search_nos": [mbl_no],
+                "task_ids": ["1"],
+            },
+        ),
     )
 
-    rule = MainRoutingRule(search_type=SHIPMENT_TYPE_MBL)
+    rule = MainRoutingRule(search_type=SEARCH_TYPE_MBL)
     results = list(rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
