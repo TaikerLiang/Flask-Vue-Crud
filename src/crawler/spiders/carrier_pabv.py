@@ -3,35 +3,37 @@ from typing import Dict
 
 import scrapy
 from scrapy import Selector
+from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.support.ui import WebDriverWait
 from urllib3.exceptions import ReadTimeoutError
 
-from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core.proxy import ApifyProxyManager
-from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
+from crawler.core_carrier.base_spiders import BaseCarrierSpider
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError,
+    LoadWebsiteTimeOutError,
+    SuspiciousOperationError,
+)
 from crawler.core_carrier.items import (
     BaseCarrierItem,
-    ExportErrorData,
-    MblItem,
-    LocationItem,
-    VesselItem,
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
+    ExportErrorData,
+    LocationItem,
+    MblItem,
+    VesselItem,
 )
-from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    SuspiciousOperationError,
-    LoadWebsiteTimeOutError,
-)
-
-from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import TimeoutException
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
-
+from crawler.extractors.table_extractors import (
+    BaseTableLocator,
+    HeaderMismatchError,
+    TableExtractor,
+)
 
 PABV_BASE_URL = "https://www.pilship.com"
 
@@ -117,6 +119,10 @@ class TrackRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_GET,
             url=f"{PABV_BASE_URL}/shared/ajax/?fn=get_tracktrace_bl&ref_num={mbl_no}",
             cookies=cookies,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.80 Safari/537.36",
+                "Referer": "https://www.pilship.com/en-our-track-and-trace-pil-pacific-international-lines/120.html",
+            },
             meta={
                 "cookies": cookies,
                 "mbl_no": mbl_no,
@@ -324,8 +330,8 @@ class CookiesGetter:
         options.add_argument("--enable-javascript")
         options.add_argument("--disable-gpu")
         options.add_argument(
-            f"user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
-            f"Chrome/88.0.4324.96 Safari/537.36"
+            "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/88.0.4324.96 Safari/537.36"
         )
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--no-sandbox")
