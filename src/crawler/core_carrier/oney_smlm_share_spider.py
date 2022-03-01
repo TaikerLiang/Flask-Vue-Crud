@@ -7,7 +7,7 @@ import scrapy
 
 from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_BOOKING, SEARCH_TYPE_MBL
 from crawler.core.exceptions import FormatError, MaxRetryError, SuspiciousOperationError
-from crawler.core.items import DataNotFoundItem
+from crawler.core.items import BaseItem, DataNotFoundItem
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.items import (
@@ -74,7 +74,7 @@ class OneySmlmSharedSpider(BaseCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem):
+            if isinstance(result, BaseCarrierItem) or isinstance(result, BaseItem):
                 yield result
             elif isinstance(result, RequestOption):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)

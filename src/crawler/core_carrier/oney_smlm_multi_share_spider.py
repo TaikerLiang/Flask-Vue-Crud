@@ -5,9 +5,14 @@ from typing import Dict, List, Set
 
 import scrapy
 
-from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_BOOKING, SEARCH_TYPE_MBL
+from crawler.core.base import (
+    DUMMY_URL_DICT,
+    RESULT_STATUS_ERROR,
+    SEARCH_TYPE_BOOKING,
+    SEARCH_TYPE_MBL,
+)
 from crawler.core.exceptions import FormatError, MaxRetryError, SuspiciousOperationError
-from crawler.core.items import DataNotFoundItem
+from crawler.core.items import BaseItem, DataNotFoundItem
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.items import (
@@ -84,7 +89,7 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem):
+            if isinstance(result, BaseCarrierItem) or isinstance(result, BaseItem):
                 yield result
             elif isinstance(result, RequestOption):
                 if result.rule_name == "NEXT_ROUND":
@@ -158,9 +163,11 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
             )
         else:
+            task_ids_str = f" task_ids: {','.join(meta.get('task_ids'))}" if "task_ids" in meta else ""
             raise SuspiciousOperationError(
+                task_id=meta.get("task_id") or None,
                 search_type=self.search_type,
-                reason=f"Unexpected request method: `{option.method}`, task_ids:`{','.join(meta.get('task_ids'))}`",
+                reason=f"Unexpected request method: `{option.method}`" + task_ids_str,
             )
 
 
@@ -661,7 +668,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://eval.edi.hardcoretech.co/c/livez",
+            url=DUMMY_URL_DICT["eval_edi"],
             meta={"search_nos": search_nos, "task_ids": task_ids, "base_url": base_url},
         )
 
