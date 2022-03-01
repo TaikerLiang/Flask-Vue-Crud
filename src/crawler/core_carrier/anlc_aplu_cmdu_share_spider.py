@@ -5,24 +5,22 @@ from typing import Dict, List
 import scrapy
 from scrapy import Selector
 
+from crawler.core.base import (
+    DUMMY_URL_DICT,
+    RESULT_STATUS_ERROR,
+    SEARCH_TYPE_BOOKING,
+    SEARCH_TYPE_CONTAINER,
+    SEARCH_TYPE_MBL,
+)
+from crawler.core.exceptions import FormatError, SuspiciousOperationError
+from crawler.core.items import DataNotFoundItem
 from crawler.core.proxy import HydraproxyProxyManager
-from crawler.core_carrier.base import (
-    CARRIER_RESULT_STATUS_ERROR,
-    SHIPMENT_TYPE_BOOKING,
-    SHIPMENT_TYPE_MBL,
-)
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    DataNotFoundError,
-    SuspiciousOperationError,
-)
 from crawler.core_carrier.items import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
-    ExportErrorData,
     LocationItem,
     MblItem,
 )
@@ -34,8 +32,6 @@ STATUS_ONE_CONTAINER = "STATUS_ONE_CONTAINER"
 STATUS_MULTI_CONTAINER = "STATUS_MULTI_CONTAINER"
 STATUS_MBL_NOT_EXIST = "STATUS_MBL_NOT_EXIST"
 STATUS_WEBSITE_SUSPEND = "STATUS_WEBSITE_SUSPEND"
-
-SHIPMENT_TYPE_CONTAINER = "CONTAINER"
 
 
 class ForceRestart:
@@ -65,9 +61,9 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
             NextRoundRoutingRule(),
         ]
 
-        if self.search_type == SHIPMENT_TYPE_MBL:
+        if self.search_type == SEARCH_TYPE_MBL:
             self._rule_manager = RuleManager(rules=bill_rules)
-        elif self.search_type == SHIPMENT_TYPE_BOOKING:
+        elif self.search_type == SEARCH_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
 
         self._proxy_manager = HydraproxyProxyManager(session="share", logger=self.logger)
@@ -129,7 +125,12 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
             )
         else:
-            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
+            raise SuspiciousOperationError(
+                task_id=meta.get("task_id") or meta["task_ids"][0],
+                search_no=meta.get("search_no") or meta["search_nos"][0],
+                search_type=self.search_type,
+                reason=f"Unexpected request method: `{option.method}`",
+            )
 
 
 class RecaptchaRule(BaseRoutingRule):
@@ -188,7 +189,7 @@ class SearchRoutingRule(BaseRoutingRule):
     ) -> RequestOption:
         current_search_no = search_nos[0]
 
-        search_by = "Booking" if not search_type == SHIPMENT_TYPE_CONTAINER else "Container"
+        search_by = "Booking" if not search_type == SEARCH_TYPE_CONTAINER else "Container"
 
         form_data = {
             "g-recaptcha-response": g_recaptcha_res,
@@ -227,12 +228,18 @@ class SearchRoutingRule(BaseRoutingRule):
         current_search_no = search_nos[0]
         current_task_id = task_ids[0]
 
-        if search_type != SHIPMENT_TYPE_CONTAINER:
+        info_pack = {
+            "task_id": current_task_id,
+            "search_no": current_search_no,
+            "search_type": search_type,
+        }
+
+        if search_type != SEARCH_TYPE_CONTAINER:
             mbl_status = self._extract_mbl_status(response=response)
 
-            if search_type == SHIPMENT_TYPE_MBL:
+            if search_type == SEARCH_TYPE_MBL:
                 basic_mbl_item = MblItem(task_id=current_task_id, mbl_no=current_search_no)
-            elif search_type == SHIPMENT_TYPE_BOOKING:
+            else:
                 basic_mbl_item = MblItem(task_id=current_task_id, booking_no=current_search_no)
 
             if mbl_status == STATUS_ONE_CONTAINER:
@@ -250,7 +257,7 @@ class SearchRoutingRule(BaseRoutingRule):
                         base_url=base_url,
                         search_nos=[container_no],
                         task_ids=task_ids,
-                        search_type=SHIPMENT_TYPE_CONTAINER,
+                        search_type=SEARCH_TYPE_CONTAINER,
                     )
 
             elif mbl_status == STATUS_WEBSITE_SUSPEND:
@@ -267,25 +274,16 @@ class SearchRoutingRule(BaseRoutingRule):
                 else:
                     yield DebugItem(info=f"Website suspend {research_times} times, give up ...")
                     yield DebugItem(info=f"response:\n{response.text}")
-                    raise DataNotFoundError()
+                    raise FormatError(**info_pack, reason="Website suspend")
 
                 return
 
             else:  # STATUS_MBL_NOT_EXIST
-                if search_type == SHIPMENT_TYPE_MBL:
-                    yield ExportErrorData(
-                        task_id=current_task_id,
-                        mbl_no=current_search_no,
-                        status=CARRIER_RESULT_STATUS_ERROR,
-                        detail="Data was not found",
-                    )
-                elif search_type == SHIPMENT_TYPE_BOOKING:
-                    yield ExportErrorData(
-                        task_id=current_task_id,
-                        booking_no=current_search_no,
-                        status=CARRIER_RESULT_STATUS_ERROR,
-                        detail="Data was not found",
-                    )
+                yield DataNotFoundItem(
+                    **info_pack,
+                    status=RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
 
             yield NextRoundRoutingRule.build_request_option(
                 base_url=base_url,
@@ -327,7 +325,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://eval.edi.hardcoretech.co/c/livez",
+            url=DUMMY_URL_DICT["eval_edi"],
             meta={
                 "search_no": search_no,
                 "container_no": container_no,
@@ -341,11 +339,22 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         task_id = response.meta.get("task_id")
+        search_no = response.meta.get("search_no")
+
         if not task_id:
             task_id = response.meta["task_ids"][0]
 
+        if not search_no:
+            search_no = response.meta["search_nos"][0]
+
+        info_pack = {
+            "task_id": task_id,
+            "search_no": search_no,
+            "search_type": SEARCH_TYPE_CONTAINER,
+        }
+
         container_no = self._extract_container_no(response=response)
-        main_info = self._extract_tracking_no_map(response=response)
+        main_info = self._extract_tracking_no_map(response=response, info_pack=info_pack)
 
         yield MblItem(
             task_id=task_id,
@@ -381,7 +390,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         return response.css("ul.resume-filter strong::text").get()
 
     @staticmethod
-    def _extract_tracking_no_map(response: Selector):
+    def _extract_tracking_no_map(response: Selector, info_pack: Dict):
         status = response.css("div.status span::text").get()
         pod_time = " ".join(response.css("div.status span strong::text").getall())
 
@@ -395,7 +404,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             elif status.strip() == "Remaining":
                 pod_eta = None
             else:
-                raise CarrierResponseFormatError(reason=f"Unknown status {repr(status)}")
+                raise FormatError(**info_pack, reason=f"Unknown status {repr(status)}")
 
         pod, dest = None, None
 
@@ -426,7 +435,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         response_data = match.group("response_data")
         return json.loads(response_data)
 
-    def _extract_container_status(self, response_dict: Dict) -> Dict:
+    def _extract_container_status(self, response_dict: Dict):
         moves = (
             response_dict.get("PastMoves", [])
             + response_dict.get("CurrentMoves", [])
@@ -456,7 +465,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://eval.edi.hardcoretech.co/c/livez",
+            url=DUMMY_URL_DICT["eval_edi"],
             meta={
                 "base_url": base_url,
                 "search_nos": search_nos,
