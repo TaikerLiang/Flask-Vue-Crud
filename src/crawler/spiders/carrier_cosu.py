@@ -9,24 +9,22 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from urllib3.exceptions import ReadTimeoutError
 
+from crawler.core.base import (
+    DUMMY_URL_DICT,
+    RESULT_STATUS_ERROR,
+    SEARCH_TYPE_BOOKING,
+    SEARCH_TYPE_MBL,
+)
+from crawler.core.exceptions import SuspiciousOperationError, TimeOutError
+from crawler.core.items import DataNotFoundItem
 from crawler.core.selenium import FirefoxContentGetter
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.base import (
-    CARRIER_RESULT_STATUS_ERROR,
-    SHIPMENT_TYPE_BOOKING,
-    SHIPMENT_TYPE_MBL,
-)
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import (
-    LoadWebsiteTimeOutFatal,
-    SuspiciousOperationError,
-)
 from crawler.core_carrier.items import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
-    ExportErrorData,
     LocationItem,
     MblItem,
     VesselItem,
@@ -52,11 +50,11 @@ class CarrierCosuSpider(BaseCarrierSpider):
 
         bill_rules = [
             MainInfoRoutingRule(content_getter),
-            BookingInfoRoutingRule(content_getter, origin_search_type=SHIPMENT_TYPE_MBL),
+            BookingInfoRoutingRule(content_getter, origin_search_type=SEARCH_TYPE_MBL),
         ]
 
         booking_rules = [
-            BookingInfoRoutingRule(content_getter, origin_search_type=SHIPMENT_TYPE_BOOKING),
+            BookingInfoRoutingRule(content_getter, origin_search_type=SEARCH_TYPE_BOOKING),
         ]
 
         if self.mbl_no:
@@ -66,7 +64,7 @@ class CarrierCosuSpider(BaseCarrierSpider):
 
     def start(self):
         if self.mbl_no:
-            option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
+            option = MainInfoRoutingRule.build_request_option(task_id=self.task_id, mbl_no=self.mbl_no)
         else:
             option = BookingInfoRoutingRule.build_request_option(booking_nos=[self.booking_no])
         yield self._build_request_by(option=option)
@@ -80,7 +78,7 @@ class CarrierCosuSpider(BaseCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem):
+            if isinstance(result, BaseCarrierItem) or isinstance(result, DataNotFoundItem):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -99,7 +97,12 @@ class CarrierCosuSpider(BaseCarrierSpider):
                 dont_filter=True,
             )
         else:
-            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
+            raise SuspiciousOperationError(
+                task_id=self.task_id,
+                search_no=self.search_no,
+                search_type=self.search_type,
+                reason=f"Unexpected request method: `{option.method}`",
+            )
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -112,15 +115,16 @@ class MainInfoRoutingRule(BaseRoutingRule):
         self._content_getter = content_getter
 
     @classmethod
-    def build_request_option(cls, mbl_no) -> RequestOption:
-        url = "https://www.google.com"
+    def build_request_option(cls, task_id: str, mbl_no: str) -> RequestOption:
+        url = DUMMY_URL_DICT["eval_edi"]
 
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=url,
             meta={
-                "mbl_no": mbl_no,
+                "task_id": task_id,
+                "search_no": mbl_no,
             },
         )
 
@@ -128,28 +132,34 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        mbl_no = response.meta["mbl_no"]
+        task_id = response.meta["task_id"]
+        mbl_no = response.meta["search_no"]
+        info_pack = {
+            "task_id": task_id,
+            "search_no": mbl_no,
+            "search_type": SEARCH_TYPE_MBL,
+        }
 
-        response_text = self._content_getter.search_and_return(search_no=mbl_no, is_booking=False)
+        response_text = self._content_getter.search_and_return(info_pack=info_pack, is_booking=False)
         response_selector = scrapy.Selector(text=response_text)
 
         raw_booking_nos = response_selector.css("a.exitedBKNumber::text").getall()
         booking_nos = [raw_booking_no.strip() for raw_booking_no in raw_booking_nos]
 
         if self._is_mbl_no_invalid(response=response_selector) and not booking_nos:
-            yield ExportErrorData(mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found")
+            yield DataNotFoundItem(**info_pack, status=RESULT_STATUS_ERROR, detail="Data was not found")
             return
 
         elif not self._is_mbl_no_invalid(response=response_selector):
             item_extractor = ItemExtractor()
             for item in item_extractor.extract(
-                response=response_selector, content_getter=self._content_getter, search_type=SHIPMENT_TYPE_MBL
+                response=response_selector, content_getter=self._content_getter, search_type=SEARCH_TYPE_MBL
             ):
                 yield item
 
         elif booking_nos:
             yield MblItem(mbl_no=mbl_no)
-            yield BookingInfoRoutingRule.build_request_option(booking_nos=booking_nos)
+            yield BookingInfoRoutingRule.build_request_option(task_id=task_id, booking_nos=booking_nos)
 
     @staticmethod
     def _is_mbl_no_invalid(response: Selector) -> bool:
@@ -167,15 +177,16 @@ class BookingInfoRoutingRule(BaseRoutingRule):
         self._origin_search_type = origin_search_type
 
     @classmethod
-    def build_request_option(cls, booking_nos: List) -> RequestOption:
-        url = "https://www.google.com"
+    def build_request_option(cls, task_id: str, booking_nos: List) -> RequestOption:
+        url = DUMMY_URL_DICT["eval_edi"]
 
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=url,
             meta={
-                "booking_nos": booking_nos,
+                "task_id": task_id,
+                "search_nos": booking_nos,
             },
         )
 
@@ -183,16 +194,25 @@ class BookingInfoRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        booking_nos = response.meta["booking_nos"]
+        task_id = response.meta["task_id"]
+        booking_nos = response.meta["search_nos"]
 
         item_extractor = ItemExtractor()
         for booking_no in booking_nos:
-            response_text = self._content_getter.search_and_return(search_no=booking_no, is_booking=True)
+            info_pack = {
+                "task_id": task_id,
+                "search_no": booking_no,
+                "search_type": SEARCH_TYPE_BOOKING,
+            }
+
+            response_text = self._content_getter.search_and_return(info_pack=info_pack, is_booking=True)
             response_selector = scrapy.Selector(text=response_text)
 
             if self._is_booking_no_invalid(response=response_selector) and len(booking_nos) == 1:
-                yield ExportErrorData(
-                    booking_no=booking_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found"
+                yield DataNotFoundItem(
+                    **info_pack,
+                    status=RESULT_STATUS_ERROR,
+                    detail="Data was not found",
                 )
                 return
 
@@ -212,7 +232,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
 
 
 class ItemExtractor:
-    def extract(self, response: scrapy.Selector, content_getter, search_type) -> BaseCarrierItem:
+    def extract(self, response: scrapy.Selector, content_getter, search_type):
         mbl_item = self._make_main_item(response=response, search_type=search_type)
         vessel_items = self._make_vessel_items(response=response)
         container_items = self._make_container_items(response=response)
@@ -279,9 +299,9 @@ class ItemExtractor:
             # trans_eta=data.get('trans_eta', None),
             # container_quantity=data.get('container_quantity', None),
         )
-        if mbl_data["mbl_no"] and search_type == SHIPMENT_TYPE_MBL:
+        if mbl_data["mbl_no"] and search_type == SEARCH_TYPE_MBL:
             mbl_item["mbl_no"] = mbl_data["mbl_no"]
-        elif search_type == SHIPMENT_TYPE_BOOKING:
+        elif search_type == SEARCH_TYPE_BOOKING:
             mbl_item["booking_no"] = mbl_data["booking_no"]
 
         return mbl_item
@@ -618,11 +638,11 @@ class ContentGetter(FirefoxContentGetter):
         self._driver.get("https://elines.coscoshipping.com/ebusiness/cargoTracking")
         self._is_first = True
 
-    def search_and_return(self, search_no: str, is_booking: bool = True):
+    def search_and_return(self, info_pack: Dict, is_booking: bool = True):
 
         if self._is_first:
             self._is_first = False
-            self._handle_cookie()
+            self._handle_cookie(info_pack=info_pack)
 
         if is_booking:
             trackingType = "BOOKING"
@@ -630,22 +650,22 @@ class ContentGetter(FirefoxContentGetter):
             trackingType = "BILLOFLADING"
 
         self._driver.get(
-            f"https://elines.coscoshipping.com/ebusiness/cargoTracking?trackingType={trackingType}&number={search_no}"
+            f"https://elines.coscoshipping.com/ebusiness/cargoTracking?trackingType={trackingType}&number={info_pack['search_no']}"
         )
 
         try:
             time.sleep(10)
             return self._driver.page_source
         except TimeoutException:
-            raise LoadWebsiteTimeOutFatal()
+            raise TimeOutError(**info_pack, reason="Timeout during search_and_return()")
 
-    def _handle_cookie(self):
+    def _handle_cookie(self, info_pack: Dict):
         try:
             accept_btn = WebDriverWait(self._driver, 10).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, "button[class='ivu-btn ivu-btn-primary ivu-btn-large']"))
             )
         except (TimeoutException, ReadTimeoutError):
-            raise LoadWebsiteTimeOutFatal()
+            raise TimeOutError(**info_pack, reason="Timeout during _handle_cookie()")
 
         # accept cookie
         time.sleep(1)
