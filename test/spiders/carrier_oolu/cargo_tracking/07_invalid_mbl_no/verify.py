@@ -1,10 +1,12 @@
-from crawler.core_carrier.items import ExportErrorData
-from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
+from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_MBL
+from crawler.core.items import DataNotFoundItem
 
 
 def verify(results):
-    assert results[0] == ExportErrorData(
-        mbl_no="OOLU0000000000",
-        status=CARRIER_RESULT_STATUS_ERROR,
+    assert results[0] == DataNotFoundItem(
+        task_id="1",
+        search_no="OOLU0000000000",
+        search_type=SEARCH_TYPE_MBL,
+        status=RESULT_STATUS_ERROR,
         detail="Data was not found",
     )
