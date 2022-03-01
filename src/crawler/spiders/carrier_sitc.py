@@ -210,7 +210,7 @@ class BasicInfoRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url=f"{SITC_BASE_URL}/doc/cargoTrack/searchTrack1oo86?blNo={urllib.parse.quote_plus(CipherAES().encrypt(mbl_no))}&containerNo=&randomStr=",
+            url=f"{SITC_BASE_URL}/doc/cargoTrack/searchTrack16601?blNo={urllib.parse.quote_plus(CipherAES().encrypt(mbl_no))}&containerNo=&randomStr=",
             meta={"mbl_no": mbl_no, "token": token},
         )
 
