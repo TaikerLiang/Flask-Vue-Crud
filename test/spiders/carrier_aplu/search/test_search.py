@@ -5,10 +5,10 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
+from crawler.core.base import SEARCH_TYPE_MBL
 from crawler.core_carrier.anlc_aplu_cmdu_share_spider import (
     SearchRoutingRule as MultiSearchRoutingRule,
 )
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
 from crawler.spiders.carrier_anlc_aplu_cmdu import CarrierApluSpider, SearchRoutingRule
 from crawler.spiders.carrier_aplu_multi import (
     CarrierApluSpider as MultiCarrierApluSpider,
@@ -36,8 +36,9 @@ def test_search_routing_rule(sample_loader, sub, mbl_no):
     html_text = sample_loader.read_file(sub, "main_info.html")
 
     option = SearchRoutingRule.build_request_option(
+        task_id="1",
         search_no=mbl_no,
-        search_type=SHIPMENT_TYPE_MBL,
+        search_type=SEARCH_TYPE_MBL,
         base_url=CarrierApluSpider.base_url,
         g_recaptcha_res="",
     )
@@ -74,8 +75,8 @@ def test_multi_search_routing_rule(sample_loader, sub, mbl_no):
 
     option = MultiSearchRoutingRule.build_request_option(
         search_nos=[mbl_no],
-        task_ids=[1],
-        search_type=SHIPMENT_TYPE_MBL,
+        task_ids=["1"],
+        search_type=SEARCH_TYPE_MBL,
         base_url=MultiCarrierApluSpider.base_url,
         g_recaptcha_res="",
         research_times=0,

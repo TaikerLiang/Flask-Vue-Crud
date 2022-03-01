@@ -36,7 +36,7 @@ def multi_verify(results: List):
     assert results[0] == ContainerItem(
         container_key="CMAU0720010",
         container_no="CMAU0720010",
-        task_id=1,
+        task_id="1",
     )
 
     assert results[1] == ContainerStatusItem(
@@ -46,7 +46,7 @@ def multi_verify(results: List):
         location=LocationItem(name="MELBOURNE"),
         est_or_actual="A",
         facility="",
-        task_id=1,
+        task_id="1",
     )
 
     assert results[4] == ContainerStatusItem(
@@ -56,5 +56,5 @@ def multi_verify(results: List):
         location=LocationItem(name="LONG BEACH, CA"),
         est_or_actual="A",
         facility="SSA - LGB PIER A",
-        task_id=1,
+        task_id="1",
     )

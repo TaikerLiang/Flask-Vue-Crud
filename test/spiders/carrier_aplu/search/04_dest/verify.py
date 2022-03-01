@@ -54,13 +54,13 @@ def multi_verify(results: List):
         final_dest=LocationItem(name="CHICAGO, IL (US)"),
         eta=None,
         ata="Thursday 03-FEB-2022 15:57",
-        task_id=1,
+        task_id="1",
     )
 
     assert results[1] == ContainerItem(
         container_key="TLLU4400681",
         container_no="TLLU4400681",
-        task_id=1,
+        task_id="1",
     )
 
     assert results[2] == ContainerStatusItem(
@@ -70,7 +70,7 @@ def multi_verify(results: List):
         location=LocationItem(name="YANTIAN"),
         est_or_actual="A",
         facility="",
-        task_id=1,
+        task_id="1",
     )
 
     assert results[5] == ContainerStatusItem(
@@ -80,5 +80,5 @@ def multi_verify(results: List):
         location=LocationItem(name="OAKLAND, CA"),
         est_or_actual="A",
         facility="SSA BERTH 58 EAST GATE",
-        task_id=1,
+        task_id="1",
     )

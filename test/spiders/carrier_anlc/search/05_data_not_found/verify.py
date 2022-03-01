@@ -1,23 +1,27 @@
 from typing import List
 
-from crawler.core_carrier.exceptions import CARRIER_RESULT_STATUS_ERROR
-from crawler.core_carrier.items import ExportErrorData
+from crawler.core.base import SEARCH_TYPE_MBL
+from crawler.core.exceptions import RESULT_STATUS_ERROR
+from crawler.core.items import DataNotFoundItem
 
 
 def verify(results: List):
 
-    assert results[0] == ExportErrorData(
-        mbl_no="ATLHKN2119001",
-        status=CARRIER_RESULT_STATUS_ERROR,
+    assert results[0] == DataNotFoundItem(
+        task_id="1",
+        search_no="ATLHKN2119001",
+        search_type=SEARCH_TYPE_MBL,
+        status=RESULT_STATUS_ERROR,
         detail="Data was not found",
     )
 
 
 def multi_verify(results: List):
 
-    assert results[0] == ExportErrorData(
-        mbl_no="ATLHKN2119001",
-        status=CARRIER_RESULT_STATUS_ERROR,
+    assert results[0] == DataNotFoundItem(
+        task_id="1",
+        search_no="ATLHKN2119001",
+        search_type=SEARCH_TYPE_MBL,
+        status=RESULT_STATUS_ERROR,
         detail="Data was not found",
-        task_id=1,
     )

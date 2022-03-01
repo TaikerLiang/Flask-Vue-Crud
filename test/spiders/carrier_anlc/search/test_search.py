@@ -5,15 +5,11 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
+from crawler.core.base import SEARCH_TYPE_CONTAINER, SEARCH_TYPE_MBL
 from crawler.core_carrier.anlc_aplu_cmdu_share_spider import (
     SearchRoutingRule as MultiSearchRoutingRule,
 )
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
-from crawler.spiders.carrier_anlc_aplu_cmdu import (
-    SHIPMENT_TYPE_CONTAINER,
-    CarrierAnlcSpider,
-    SearchRoutingRule,
-)
+from crawler.spiders.carrier_anlc_aplu_cmdu import CarrierAnlcSpider, SearchRoutingRule
 from crawler.spiders.carrier_anlc_multi import (
     CarrierAnlcSpider as MultiCarrierAnlcSpider,
 )
@@ -29,17 +25,18 @@ def sample_loader(sample_loader):
 @pytest.mark.parametrize(
     "sub,search_no,search_type",
     [
-        ("01_not_finish", "AWT0167294", SHIPMENT_TYPE_MBL),
-        ("02_finish", "CMAU0720010", SHIPMENT_TYPE_CONTAINER),
-        ("03_por", "CSI0144188", SHIPMENT_TYPE_MBL),
-        ("04_dest", "TCLU7703472", SHIPMENT_TYPE_CONTAINER),
-        ("05_data_not_found", "ATLHKN2119001", SHIPMENT_TYPE_MBL),
+        ("01_not_finish", "AWT0167294", SEARCH_TYPE_MBL),
+        ("02_finish", "CMAU0720010", SEARCH_TYPE_CONTAINER),
+        ("03_por", "CSI0144188", SEARCH_TYPE_MBL),
+        ("04_dest", "TCLU7703472", SEARCH_TYPE_CONTAINER),
+        ("05_data_not_found", "ATLHKN2119001", SEARCH_TYPE_MBL),
     ],
 )
 def test_search_routing_rule(sample_loader, sub, search_no, search_type):
     html_text = sample_loader.read_file(sub, "main_info.html")
 
     option = SearchRoutingRule.build_request_option(
+        task_id="1",
         search_no=search_no,
         search_type=search_type,
         base_url=CarrierAnlcSpider.base_url,
@@ -66,11 +63,11 @@ def test_search_routing_rule(sample_loader, sub, search_no, search_type):
 @pytest.mark.parametrize(
     "sub,search_no,search_type",
     [
-        ("01_not_finish", "AWT0167294", SHIPMENT_TYPE_MBL),
-        ("02_finish", "CMAU0720010", SHIPMENT_TYPE_CONTAINER),
-        ("03_por", "CSI0144188", SHIPMENT_TYPE_MBL),
-        ("04_dest", "TCLU7703472", SHIPMENT_TYPE_CONTAINER),
-        ("05_data_not_found", "ATLHKN2119001", SHIPMENT_TYPE_MBL),
+        ("01_not_finish", "AWT0167294", SEARCH_TYPE_MBL),
+        ("02_finish", "CMAU0720010", SEARCH_TYPE_CONTAINER),
+        ("03_por", "CSI0144188", SEARCH_TYPE_MBL),
+        ("04_dest", "TCLU7703472", SEARCH_TYPE_CONTAINER),
+        ("05_data_not_found", "ATLHKN2119001", SEARCH_TYPE_MBL),
     ],
 )
 def test_multi_search_routing_rule(sample_loader, sub, search_no, search_type):
@@ -78,7 +75,7 @@ def test_multi_search_routing_rule(sample_loader, sub, search_no, search_type):
 
     option = MultiSearchRoutingRule.build_request_option(
         search_nos=[search_no],
-        task_ids=[1],
+        task_ids=["1"],
         search_type=search_type,
         base_url=MultiCarrierAnlcSpider.base_url,
         g_recaptcha_res="",
