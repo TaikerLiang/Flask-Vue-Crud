@@ -1,32 +1,26 @@
+import dataclasses
 import json
 import time
-import dataclasses
 from typing import List
 
 import scrapy
 
+from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_BOOKING, SEARCH_TYPE_MBL
+from crawler.core.exceptions import FormatError, MaxRetryError, SuspiciousOperationError
+from crawler.core.items import DataNotFoundItem
 from crawler.core.proxy import HydraproxyProxyManager
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    CarrierInvalidMblNoError,
-    ProxyMaxRetryError,
-    SuspiciousOperationError,
-    CarrierInvalidSearchNoError,
-)
 from crawler.core_carrier.items import (
     BaseCarrierItem,
-    ExportErrorData,
-    VesselItem,
-    ContainerStatusItem,
-    LocationItem,
     ContainerItem,
-    MblItem,
+    ContainerStatusItem,
     DebugItem,
+    LocationItem,
+    MblItem,
+    VesselItem,
 )
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 
 
 @dataclasses.dataclass
@@ -44,7 +38,7 @@ class OneySmlmSharedSpider(BaseCarrierSpider):
         self._proxy_manager = HydraproxyProxyManager(session="oneysmlm", logger=self.logger)
 
         bill_rules = [
-            FirstTierRoutingRule(search_type=SHIPMENT_TYPE_MBL),
+            FirstTierRoutingRule(search_type=SEARCH_TYPE_MBL),
             VesselRoutingRule(),
             ContainerStatusRoutingRule(),
             ReleaseStatusRoutingRule(),
@@ -52,7 +46,7 @@ class OneySmlmSharedSpider(BaseCarrierSpider):
         ]
 
         booking_rules = [
-            FirstTierRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
+            FirstTierRoutingRule(search_type=SEARCH_TYPE_BOOKING),
             VesselRoutingRule(),
             ContainerStatusRoutingRule(),
             ReleaseStatusRoutingRule(),
@@ -90,19 +84,13 @@ class OneySmlmSharedSpider(BaseCarrierSpider):
 
                 try:
                     self._proxy_manager.renew_proxy()
-                except ProxyMaxRetryError:
-                    if self.mbl_no:
-                        yield ExportErrorData(
-                            mbl_no=self.mbl_no,
-                            status=CARRIER_RESULT_STATUS_ERROR,
-                            detail="Data was not found",
-                        )
-                    else:
-                        yield ExportErrorData(
-                            booking_no=self.booking_no,
-                            status=CARRIER_RESULT_STATUS_ERROR,
-                            detail="Data was not found",
-                        )
+                except MaxRetryError:
+                    yield DataNotFoundItem(
+                        search_type=self.search_type,
+                        search_no=self.search_no,
+                        status=RESULT_STATUS_ERROR,
+                        detail="proxy max retry error",
+                    )
                     return
 
                 option = FirstTierRoutingRule.build_request_option(search_no=self.search_no, base_url=self.base_url)
@@ -132,7 +120,9 @@ class OneySmlmSharedSpider(BaseCarrierSpider):
                 # dont_filter=True,
             )
         else:
-            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
+            raise SuspiciousOperationError(
+                search_type=self.search_type, reason=f"Unexpected request method: `{option.method}`"
+            )
 
 
 class FirstTierRoutingRule(BaseRoutingRule):
@@ -191,7 +181,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
         booking_no = self._get_booking_no_from(container_list=container_info_list)
         mbl_no = self._get_mbl_no_from(container_list=container_info_list)
 
-        if self._search_type == SHIPMENT_TYPE_MBL:
+        if self._search_type == SEARCH_TYPE_MBL:
             yield MblItem(mbl_no=mbl_no)
         else:
             yield MblItem(booking_no=booking_no)
@@ -257,7 +247,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
         booking_no_set = set(booking_no_list)
 
         if len(booking_no_set) != 1:
-            raise CarrierResponseFormatError(reason=f"All the booking_no are not the same: `{booking_no_set}`")
+            raise FormatError(reason=f"All the booking_no are not the same: `{booking_no_set}`")
 
         return booking_no_list[0]
 
@@ -267,7 +257,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
         mbl_no_set = set(mbl_no_list)
 
         if len(mbl_no_set) != 1:
-            raise CarrierResponseFormatError(reason=f"All the mbl_no are not the same: `{mbl_no_set}`")
+            raise FormatError(reason=f"All the mbl_no are not the same: `{mbl_no_set}`")
 
         return mbl_no_list[0]
 
@@ -466,7 +456,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
 
         release_data_list = response_dict["list"]
         if len(release_data_list) != 1:
-            raise CarrierResponseFormatError(reason=f"Release information format error: `{release_data_list}`")
+            raise FormatError(reason=f"Release information format error: `{release_data_list}`")
 
         release_data = release_data_list[0]
 
@@ -522,7 +512,7 @@ class RailInfoRoutingRule(BaseRoutingRule):
 
         rail_data_list = response_dict["list"]
         if len(rail_data_list) >= 2:
-            raise CarrierResponseFormatError(f"Rail information format error: `{rail_data_list}`")
+            raise FormatError(f"Rail information format error: `{rail_data_list}`")
 
         return rail_data_list[0]["pickUpAvail"]
 
