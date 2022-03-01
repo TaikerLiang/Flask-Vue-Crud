@@ -12,27 +12,25 @@ from scrapy import Request
 from scrapy.http import TextResponse
 from scrapy.selector.unified import Selector
 
+from crawler.core.base import (
+    DUMMY_URL_DICT,
+    RESULT_STATUS_ERROR,
+    SEARCH_TYPE_BOOKING,
+    SEARCH_TYPE_CONTAINER,
+    SEARCH_TYPE_MBL,
+)
 from crawler.core.defines import BaseContentGetter
+from crawler.core.exceptions import FormatError, MaxRetryError, SuspiciousOperationError
+from crawler.core.items import DataNotFoundItem
 from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
 from crawler.core.pyppeteer import PyppeteerContentGetter
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.base import (
-    CARRIER_RESULT_STATUS_ERROR,
-    SHIPMENT_TYPE_BOOKING,
-    SHIPMENT_TYPE_MBL,
-)
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    DriverMaxRetryError,
-    SuspiciousOperationError,
-)
 from crawler.core_carrier.items import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
-    ExportErrorData,
     LocationItem,
     MblItem,
 )
@@ -71,18 +69,18 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
         self._driver.patch_pyppeteer()
 
         bill_rules = [
-            CargoTrackingRoutingRule(content_getter=self._driver, search_type=SHIPMENT_TYPE_MBL),
+            CargoTrackingRoutingRule(content_getter=self._driver, search_type=SEARCH_TYPE_MBL),
             NextRoundRoutingRule(),
         ]
 
         booking_rules = [
-            CargoTrackingRoutingRule(content_getter=self._driver, search_type=SHIPMENT_TYPE_BOOKING),
+            CargoTrackingRoutingRule(content_getter=self._driver, search_type=SEARCH_TYPE_BOOKING),
             NextRoundRoutingRule(),
         ]
 
-        if self.search_type == SHIPMENT_TYPE_MBL:
+        if self.search_type == SEARCH_TYPE_MBL:
             self._rule_manager = RuleManager(rules=bill_rules)
-        elif self.search_type == SHIPMENT_TYPE_BOOKING:
+        elif self.search_type == SEARCH_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
 
     def start(self):
@@ -91,7 +89,12 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
 
     def _prepare_restart(self, search_nos: List, task_ids: List):
         if self._retry_count >= MAX_RETRY_COUNT:
-            raise DriverMaxRetryError()
+            raise MaxRetryError(
+                task_id=task_ids[0],
+                search_no=search_nos[0],
+                search_type=self.search_type,
+                reason=f"Retry more than {MAX_RETRY_COUNT} times",
+            )
 
         self._retry_count += 1
         self._driver.quit()
@@ -114,7 +117,7 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
             self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem):
+            if isinstance(result, BaseCarrierItem) or isinstance(result, DataNotFoundItem):
                 yield result
             elif isinstance(result, Restart):
                 yield DebugItem(info=f"{result.reason}, Restarting...")
@@ -144,7 +147,12 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
                 meta=meta,
             )
         else:
-            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
+            raise SuspiciousOperationError(
+                task_id=meta["task_ids"][0],
+                search_no=meta.get("search_no") or meta["search_nos"][0],
+                search_type=self.search_type,
+                reason=f"Unexpected request method: `{option.method}`",
+            )
 
 
 # -------------------------------------------------------------------------------
@@ -162,7 +170,7 @@ class CargoTrackingRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://eval.edi.hardcoretech.co/c/livez",
+            url=DUMMY_URL_DICT["eval_edi"],
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,
@@ -172,6 +180,11 @@ class CargoTrackingRoutingRule(BaseRoutingRule):
     def handle(self, response):
         search_nos = response.meta["search_nos"]
         task_ids = response.meta["task_ids"]
+        info_pack = {
+            "task_id": task_ids[0],
+            "search_no": search_nos[0],
+            "search_type": self._search_type,
+        }
 
         try:
             page_source, is_exist = asyncio.get_event_loop().run_until_complete(
@@ -179,10 +192,9 @@ class CargoTrackingRoutingRule(BaseRoutingRule):
             )
 
             if not is_exist:
-                yield ExportErrorData(
-                    task_id=task_ids[0],
-                    booking_no=search_nos[0],
-                    status=CARRIER_RESULT_STATUS_ERROR,
+                yield DataNotFoundItem(
+                    **info_pack,
+                    status=RESULT_STATUS_ERROR,
                     detail="Data was not found",
                 )
                 yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
@@ -195,7 +207,7 @@ class CargoTrackingRoutingRule(BaseRoutingRule):
             url=EGLV_INFO_URL, httptext=page_source, meta={"search_nos": search_nos, "task_ids": task_ids}
         )
 
-        if self._search_type == SHIPMENT_TYPE_MBL:
+        if self._search_type == SEARCH_TYPE_MBL:
             rule = BillMainInfoRoutingRule(content_getter=self.driver)
         else:
             rule = BookingMainInfoRoutingRule(content_getter=self.driver)
@@ -231,7 +243,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
         httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.container_page(container_no))
         if httptext:
             response = self.get_response_selector(
-                url=EGLV_INFO_URL, httptext=httptext, meta={"container_no": container_no, "task_id": task_ids[0]}
+                url=EGLV_INFO_URL,
+                httptext=httptext,
+                meta={"search_no": container_no, "task_id": task_ids[0], "search_type": SEARCH_TYPE_CONTAINER},
             )
             rule = ContainerStatusRoutingRule()
 
@@ -288,9 +302,14 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
     def _handle_main_info_page(self, response):
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
+        info_pack = {
+            "task_id": task_ids[0],
+            "search_nos": search_nos[0],
+            "search_type": SEARCH_TYPE_MBL,
+        }
 
-        mbl_no_info = self._extract_hidden_info(response=response)
-        basic_info = self._extract_basic_info(response=response)
+        mbl_no_info = self._extract_hidden_info(response=response, info_pack=info_pack)
+        basic_info = self._extract_basic_info(response=response, info_pack=info_pack)
         vessel_info = self._extract_vessel_info(response=response, pod=basic_info["pod_name"])
 
         yield MblItem(
@@ -331,14 +350,14 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
     @staticmethod
-    def _extract_hidden_info(response: scrapy.Selector) -> Dict:
+    def _extract_hidden_info(response: scrapy.Selector, info_pack: Dict) -> Dict:
         tables = response.css("table table")
 
         hidden_form_query = "form[name=frmCntrMove]"
         rule = CssQueryExistMatchRule(css_query=hidden_form_query)
         table_selector = find_selector_from(selectors=tables, rule=rule)
         if table_selector is None:
-            raise CarrierResponseFormatError(reason="Can not found Basic Information table!!!")
+            raise FormatError(**info_pack, reason="Can not found Basic Information table")
 
         return {
             "mbl_no": table_selector.css("input[name=bl_no]::attr(value)").get(),
@@ -349,13 +368,13 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
         }
 
     @staticmethod
-    def _extract_basic_info(response: scrapy.Selector) -> Dict:
+    def _extract_basic_info(response: scrapy.Selector, info_pack: Dict) -> Dict:
         tables = response.css("table table")
 
         rule = CssQueryTextStartswithMatchRule(css_query="td.f13tabb2::text", startswith="Basic Information")
         table_selector = find_selector_from(selectors=tables, rule=rule)
         if table_selector is None:
-            raise CarrierResponseFormatError(reason="Can not found Basic Information table!!!")
+            raise FormatError(**info_pack, reason="Can not found Basic Information table!!!")
 
         left_table_locator = LeftBasicInfoTableLocator()
         left_table_locator.parse(table=table_selector)
@@ -458,7 +477,9 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
         httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.custom_info_page())
         if httptext:
             response = self.get_response_selector(
-                url=EGLV_INFO_URL, httptext=httptext, meta={"mbl_no": search_nos[0], "task_id": task_ids[0]}
+                url=EGLV_INFO_URL,
+                httptext=httptext,
+                meta={"search_no": search_nos[0], "task_id": task_ids[0], "search_type": SEARCH_TYPE_MBL},
             )
             rule = FilingStatusRoutingRule(task_id=task_ids[0])
 
@@ -468,7 +489,11 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
     def handle_release_status(self, search_nos: List, task_ids: List):
         httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.release_status_page())
         if httptext:
-            response = self.get_response_selector(url=EGLV_INFO_URL, httptext=httptext, meta={"task_id": task_ids[0]})
+            response = self.get_response_selector(
+                url=EGLV_INFO_URL,
+                httptext=httptext,
+                meta={"task_ids": task_ids, "search_nos": search_nos, "search_type": SEARCH_TYPE_MBL},
+            )
             rule = ReleaseStatusRoutingRule(task_id=task_ids[0])
 
             for item in rule.handle(response):
@@ -569,6 +594,7 @@ class FilingStatusRoutingRule(BaseRoutingRule):
             form_data=form_data,
             meta={
                 "task_id": task_id,
+                "search_no": search_no,
             },
         )
 
@@ -869,7 +895,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             url=EGLV_INFO_URL,
             form_data=form_data,
             meta={
-                "container_no": container_no,
+                "search_no": container_no,
                 "task_id": task_id,
             },
         )
@@ -880,7 +906,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         task_id = response.meta["task_id"]
-        container_no = response.meta["container_no"]
+        container_no = response.meta["search_no"]
 
         container_status_list = self._extract_container_status_list(response=response)
         for container_status in container_status_list:
@@ -978,8 +1004,15 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
     def _handle_main_info_page(self, response):
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
+        info_pack = {
+            "task_id": task_ids[0],
+            "search_nos": search_nos[0],
+            "search_type": SEARCH_TYPE_BOOKING,
+        }
 
-        booking_no_and_vessel_voyage = self._extract_booking_no_and_vessel_voyage(response=response)
+        booking_no_and_vessel_voyage = self._extract_booking_no_and_vessel_voyage(
+            response=response, info_pack=info_pack
+        )
         basic_info = self._extract_basic_info(response=response)
         filing_info = self._extract_filing_info(response=response)
 
@@ -1021,7 +1054,7 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
-    def _extract_booking_no_and_vessel_voyage(self, response: scrapy.Selector) -> Dict:
+    def _extract_booking_no_and_vessel_voyage(self, response: scrapy.Selector, info_pack: Dict) -> Dict:
         tables = response.css("table table")
         rule = CssQueryExistMatchRule(css_query="td.f12wrdb2")
         table = find_selector_from(selectors=tables, rule=rule)
@@ -1032,7 +1065,7 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
 
         booking_no = booking_no.css("::text").get().strip()
         raw_vessel_voyage = vessel_voyage_td.css("::text").get().strip()
-        vessel, voyage = self._re_parse_vessel_voyage(vessel_voyage=raw_vessel_voyage)
+        vessel, voyage = self._re_parse_vessel_voyage(vessel_voyage=raw_vessel_voyage, info_pack=info_pack)
 
         return {
             "booking_no": booking_no,
@@ -1041,7 +1074,7 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
         }
 
     @staticmethod
-    def _re_parse_vessel_voyage(vessel_voyage: str):
+    def _re_parse_vessel_voyage(vessel_voyage: str, info_pack: Dict):
         """
         ex:
         EVER LINKING 0950-041E\n\n\t\t\t\t\xa0(長連輪)
@@ -1049,7 +1082,7 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
         pattern = re.compile(r"(?P<vessel>[\D]+)\s(?P<voyage>[\w-]+)[^(]*(\(.+\))?")
         match = pattern.match(vessel_voyage)
         if not match:
-            raise CarrierResponseFormatError(reason=f"Unexpected vessel_voyage `{vessel_voyage}`")
+            raise FormatError(**info_pack, reason=f"Unexpected vessel_voyage `{vessel_voyage}`")
         return match.group("vessel"), match.group("voyage")
 
     @staticmethod
@@ -1269,7 +1302,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://eval.edi.hardcoretech.co/c/livez",
+            url=DUMMY_URL_DICT["eval_edi"],
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,
@@ -1307,7 +1340,7 @@ class EglvContentGetter(PyppeteerContentGetter):
         super().__init__(proxy_manager, is_headless=is_headless)
 
     async def search_and_return(self, search_no: str, search_type: str):
-        btn_value = "s_bl" if search_type == SHIPMENT_TYPE_MBL else "s_bk"
+        btn_value = "s_bl" if search_type == SEARCH_TYPE_MBL else "s_bk"
         self.page.on("dialog", lambda dialog: asyncio.ensure_future(self.close_dialog(dialog)))
 
         await self.page.goto(EGLV_INFO_URL)
