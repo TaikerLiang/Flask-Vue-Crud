@@ -1,8 +1,12 @@
-from crawler.core_carrier.items import MblItem, ExportErrorData, ContainerItem
+from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_MBL
+from crawler.core.items import DataNotFoundItem
+from crawler.core_carrier.items import ContainerItem, MblItem
+from crawler.core_carrier.oney_smlm_multi_share_spider import (
+    NextRoundRoutingRule,
+    VesselRoutingRule,
+)
 from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.oney_smlm_multi_share_spider import VesselRoutingRule, NextRoundRoutingRule
 from crawler.spiders.carrier_oney_multi import CarrierOneySpider
-from crawler.core_carrier.exceptions import CARRIER_RESULT_STATUS_ERROR
 
 
 def verify(results):
@@ -26,9 +30,10 @@ def verify(results):
         "bkg_no": "RICBDK658400",
     }
 
-    assert results[4] == ExportErrorData(
-        mbl_no="DALA35925000",
-        status=CARRIER_RESULT_STATUS_ERROR,
+    assert results[4] == DataNotFoundItem(
+        search_no="DALA35925000",
+        search_type=SEARCH_TYPE_MBL,
+        status=RESULT_STATUS_ERROR,
         detail="Data was not found",
         task_id=3,
     )

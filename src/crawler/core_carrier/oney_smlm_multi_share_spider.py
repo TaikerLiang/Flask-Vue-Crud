@@ -159,7 +159,8 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
             )
         else:
             raise SuspiciousOperationError(
-                search_type=self.search_type, reason=f"Unexpected request method: `{option.method}`"
+                search_type=self.search_type,
+                reason=f"Unexpected request method: `{option.method}`, task_ids:`{','.join(meta.get('task_ids'))}`",
             )
 
 
@@ -549,9 +550,12 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_id = response.meta["task_id"]
         container_key = response.meta["container_key"]
+        info_pack = {
+            "task_id": task_id,
+        }
         response_dict = json.loads(response.text)
 
-        release_info = self._extract_release_info(response_dict=response_dict)
+        release_info = self._extract_release_info(response_dict=response_dict, info_pack=info_pack)
 
         yield MblItem(
             task_id=task_id,
@@ -568,13 +572,13 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
             terminal=LocationItem(name=release_info.get("terminal") or None),
         )
 
-    def _extract_release_info(self, response_dict: Dict) -> Dict:
+    def _extract_release_info(self, response_dict: Dict, info_pack: Dict) -> Dict:
         if "list" not in response_dict:
             return {}
 
         release_data_list = response_dict["list"]
         if len(release_data_list) != 1:
-            raise FormatError(reason=f"Release information format error: `{release_data_list}`")
+            raise FormatError(**info_pack, reason=f"Release information format error: `{release_data_list}`")
 
         release_data = release_data_list[0]
 
@@ -617,9 +621,12 @@ class RailInfoRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_id = response.meta["task_id"]
         container_key = response.meta["container_key"]
+        info_pack = {
+            "task_id": task_id,
+        }
         response_dict = json.loads(response.text)
 
-        rail_info = self._extract_rail_info(response_dict=response_dict)
+        rail_info = self._extract_rail_info(response_dict=response_dict, info_pack=info_pack)
 
         yield ContainerItem(
             task_id=task_id,
@@ -629,13 +636,13 @@ class RailInfoRoutingRule(BaseRoutingRule):
             final_dest_eta=rail_info.get("final_dest_eta", "") or None,
         )
 
-    def _extract_rail_info(self, response_dict: Dict) -> Dict:
+    def _extract_rail_info(self, response_dict: Dict, info_pack: Dict) -> Dict:
         if "list" not in response_dict:
             return {}
 
         rail_data_list = response_dict["list"]
         if len(rail_data_list) != 1:
-            raise FormatError(reason=f"Rail information format error: `{rail_data_list}`")
+            raise FormatError(**info_pack, reason=f"Rail information format error: `{rail_data_list}`")
 
         rail_data = rail_data_list[0]
 
