@@ -6,7 +6,7 @@ import scrapy
 
 from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_BOOKING, SEARCH_TYPE_MBL
 from crawler.core.exceptions import FormatError, SuspiciousOperationError
-from crawler.core.items import BaseItem, DataNotFoundItem
+from crawler.core.items import DataNotFoundItem
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
@@ -89,7 +89,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem) or isinstance(result, BaseItem):
+            if isinstance(result, BaseCarrierItem) or isinstance(result, DataNotFoundItem):
                 yield result
             elif isinstance(result, RequestOption):
                 if result.rule_name == "NEXT_ROUND":
@@ -128,8 +128,11 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
             )
         else:
+            task_ids_str = f" task_ids: {','.join(meta.get('task_ids'))}"
             raise SuspiciousOperationError(
-                search_type=self.search_type, reason=f"Unexpected request method: `{option.method}`"
+                search_type=self.search_type,
+                search_no=meta.get("search_nos")[0],
+                reason=f"Unexpected request method: `{option.method}`" + task_ids_str,
             )
 
     def _build_data_not_found_item(self, search_no: str, task_id: str):
@@ -224,29 +227,25 @@ class MainRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
-        f_err = self._build_error_format(task_id=task_ids[0], search_no=search_nos[0])
+        info_pack = {
+            "task_id": task_ids[0],
+            "search_no": search_nos[0],
+            "search_type": self._search_type,
+        }
+        f_err = self._build_error_format(info_pack=info_pack)
 
         if self._is_search_no_invalid(response=response):
-            if self._search_type == SEARCH_TYPE_MBL:
-                yield DataNotFoundItem(
-                    task_id=task_ids[0],
-                    search_type=SEARCH_TYPE_MBL,
-                    search_no=search_nos[0],
-                    status=RESULT_STATUS_ERROR,
-                    detail="Data was not found",
-                )
-            else:
-                yield DataNotFoundItem(
-                    task_id=task_ids[0],
-                    search_type=SEARCH_TYPE_BOOKING,
-                    search_no=search_nos[0],
-                    status=RESULT_STATUS_ERROR,
-                    detail="Data was not found",
-                )
+            yield DataNotFoundItem(
+                task_id=task_ids[0],
+                search_type=self._search_type,
+                search_no=search_nos[0],
+                status=RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
             yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
             return
 
-        extractor = Extractor()
+        extractor = Extractor(info_pack=info_pack)
         place_of_deliv_set = set()
 
         try:
@@ -329,11 +328,8 @@ class MainRoutingRule(BaseRoutingRule):
                 return True
         return False
 
-    def _build_error_format(self, task_id: str, search_no: str):
-        if self._search_type == SEARCH_TYPE_MBL:
-            return FormatError(task_id=task_id, search_no=search_no, search_type=SEARCH_TYPE_MBL)
-        else:
-            return FormatError(task_id=task_id, search_no=search_no, search_type=SEARCH_TYPE_BOOKING)
+    def _build_error_format(self, info_pack: Dict):
+        return FormatError(**info_pack)
 
 
 class NextRoundRoutingRule(BaseRoutingRule):
@@ -368,19 +364,19 @@ class NextRoundRoutingRule(BaseRoutingRule):
 
 
 class Extractor:
-    def __init__(self):
+    def __init__(self, info_pack: Dict):
+        self._info_pack = info_pack
         self._mbl_no_pattern = re.compile(r"^Bill of lading: (?P<mbl_no>\S+) ([(]\d+ containers?[)])?$")
         self._container_no_pattern = re.compile(r"^Container: (?P<container_no>\S+)$")
         self._latest_update_pattern = re.compile(r"^Tracking results provided by MSC on (?P<latest_update>.+)$")
 
-    @staticmethod
-    def extract_main_info(response: scrapy.Selector):
+    def extract_main_info(self, response: scrapy.Selector):
         main_outer = response.css("div#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_pnlBOLContent")
         error_message = (
             "Can not find main information frame by css `div#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00" "_pnlBOLContent`"
         )
         if not main_outer:
-            raise FormatError(reason=error_message)
+            raise FormatError(**self._info_pack, reason=error_message)
 
         table_selector = main_outer.xpath('./table[@class="resultTable singleRowTable"]')
         if not table_selector:
@@ -402,24 +398,23 @@ class Extractor:
             "vessel": table_extractor.extract_cell(top="Vessel"),
         }
 
-    @staticmethod
-    def locate_container_selector(response) -> List[Dict]:
+    def locate_container_selector(self, response) -> List[Dict]:
         container_content_list = response.css("dl.containerAccordion dd")
         map_list = []
 
         for container_content in container_content_list:
             container_no_bar = container_content.css("a.containerToggle")
             if not container_no_bar:
-                raise FormatError(reason="Can not find container_no_bar !!!")
+                raise FormatError(**self._info_pack, reason="Can not find container_no_bar !!!")
 
             container_stats_table = container_content.css("table.singleRowTable")
 
             if not container_stats_table:
-                raise FormatError(reason="Can not find container_stats_table !!!")
+                raise FormatError(**self._info_pack, reason="Can not find container_stats_table !!!")
 
             movements_table = container_content.css("table[class='resultTable']")
             if not movements_table:
-                raise FormatError(reason="Can not find movements_table !!!")
+                raise FormatError(**self._info_pack, reason="Can not find movements_table !!!")
 
             map_list.append(
                 {
@@ -446,7 +441,7 @@ class Extractor:
         m = self._container_no_pattern.match(container_no_text)
 
         if not m:
-            raise FormatError(reason=f"Unknown container no format: `{container_no_text}`")
+            raise FormatError(**self._info_pack, reason=f"Unknown container no format: `{container_no_text}`")
 
         return m.group("container_no")
 
@@ -465,8 +460,7 @@ class Extractor:
             else None,
         }
 
-    @staticmethod
-    def extract_container_status_list(container_selector_map: Dict[str, scrapy.Selector]):
+    def extract_container_status_list(self, container_selector_map: Dict[str, scrapy.Selector]):
         table_selector = container_selector_map["movements_table"]
 
         table_locator = ContainerStatusTableLocator()
@@ -482,7 +476,7 @@ class Extractor:
             elif schedule_status == "future":
                 est_or_actual = "E"
             else:
-                raise FormatError(reason=f"Unknown schedule_status: `{schedule_status}`")
+                raise FormatError(**self._info_pack, reason=f"Unknown schedule_status: `{schedule_status}`")
 
             container_status_list.append(
                 {
@@ -508,7 +502,9 @@ class Extractor:
         """
         m = self._latest_update_pattern.match(latest_update_message)
         if not m:
-            raise FormatError(reason=f"Unknown latest update message format: `{latest_update_message}`")
+            raise FormatError(
+                **self._info_pack, reason=f"Unknown latest update message format: `{latest_update_message}`"
+            )
 
         return m.group("latest_update").strip()
 
