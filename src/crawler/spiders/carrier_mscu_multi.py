@@ -133,11 +133,15 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
             )
         else:
-            task_ids_str = f" task_ids: {','.join(meta.get('task_ids'))}"
+            info_pack = {
+                "task_id": meta["task_ids"][0],
+                "search_no": meta["search_nos"][0],
+                "search_type": self.search_type,
+            }
+            tid_sno_pairs = list(zip(meta["task_ids"], meta["search_nos"]))
             raise SuspiciousOperationError(
-                search_type=self.search_type,
-                search_no=meta.get("search_nos")[0],
-                reason=f"Unexpected request method: `{option.method}`" + task_ids_str,
+                **info_pack,
+                reason=f"Unexpected request method: `{option.method}` {tid_sno_pairs}",
             )
 
     def _build_data_not_found_item(self, search_no: str, task_id: str):
@@ -254,7 +258,11 @@ class MainRoutingRule(BaseRoutingRule):
             container_selector_map_list = extractor.locate_container_selector(response=response)
         except FormatError as e:
             yield DebugItem(info=repr(e))
-            yield Restart(reason=e.reason, search_nos=search_nos, task_ids=task_ids)
+            yield Restart(
+                search_nos=search_nos,
+                task_ids=task_ids,
+                reason="format error when locating container_selector_map_list",
+            )
             return
 
         for container_selector_map in container_selector_map_list:
@@ -284,8 +292,8 @@ class MainRoutingRule(BaseRoutingRule):
                 container_info = extractor.extract_container_info(container_selector_map)
                 place_of_deliv_set.add(container_info["place_of_deliv"])
 
-            except FormatError as e:
-                yield f_err.build_error_data(reason=e.reason)
+            except FormatError:
+                yield f_err.build_error_data(reason="format error extracting container info")
 
         if not place_of_deliv_set:
             place_of_deliv = None
@@ -300,7 +308,7 @@ class MainRoutingRule(BaseRoutingRule):
             main_info = extractor.extract_main_info(response=response)
         except FormatError as e:
             yield DebugItem(info=repr(e))
-            yield Restart(reason=e.reason, search_nos=search_nos, task_ids=task_ids)
+            yield Restart(search_nos=search_nos, task_ids=task_ids, reason="format error when extracting main info")
             return
 
         latest_update = extractor.extract_latest_update(response=response)

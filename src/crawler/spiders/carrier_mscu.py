@@ -82,10 +82,13 @@ class CarrierMscuSpider(BaseCarrierSpider):
                 meta=meta,
             )
         else:
+            info_pack = {
+                "task_id": self.task_id,
+                "search_no": self.search_no,
+                "search_type": self.search_type,
+            }
             raise SuspiciousOperationError(
-                search_type=self.search_type,
-                search_no=self.search_no,
-                task_id=self.task_id,
+                **info_pack,
                 reason=f"Unexpected request method: `{option.method}`",
             )
 
