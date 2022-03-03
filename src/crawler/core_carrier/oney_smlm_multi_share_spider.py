@@ -9,10 +9,11 @@ from crawler.core.base import (
     DUMMY_URL_DICT,
     RESULT_STATUS_ERROR,
     SEARCH_TYPE_BOOKING,
+    SEARCH_TYPE_CONTAINER,
     SEARCH_TYPE_MBL,
 )
 from crawler.core.exceptions import FormatError, MaxRetryError, SuspiciousOperationError
-from crawler.core.items import BaseItem, DataNotFoundItem
+from crawler.core.items import DataNotFoundItem
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.items import (
@@ -89,7 +90,7 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem) or isinstance(result, BaseItem):
+            if isinstance(result, BaseCarrierItem) or isinstance(result, DataNotFoundItem):
                 yield result
             elif isinstance(result, RequestOption):
                 if result.rule_name == "NEXT_ROUND":
@@ -108,7 +109,7 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
                             search_no=search_no,
                             task_id=task_id,
                             status=RESULT_STATUS_ERROR,
-                            detail="Data was not found",
+                            detail=f"<max-retry-error> {result.reason}",
                         )
 
                     option = NextRoundRoutingRule.build_request_option(
@@ -165,7 +166,8 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
         else:
             task_ids_str = f" task_ids: {','.join(meta.get('task_ids'))}" if "task_ids" in meta else ""
             raise SuspiciousOperationError(
-                task_id=meta.get("task_id") or None,
+                task_id=meta.get("task_id") or meta.get("task_ids")[0],
+                search_no=meta.get("search_no") or meta.get("search_nos")[0],
                 search_type=self.search_type,
                 reason=f"Unexpected request method: `{option.method}`" + task_ids_str,
             )
@@ -318,6 +320,8 @@ class FirstTierRoutingRule(BaseRoutingRule):
                 booking_no=container_info["booking_no"],
                 base_url=base_url,
                 task_id=task_id,
+                search_type=self._search_type,
+                search_no=search_no,
             )
 
             yield RailInfoRoutingRule.build_request_option(
@@ -532,7 +536,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
     f_cmd = "126"
 
     @classmethod
-    def build_request_option(cls, container_no, booking_no, base_url, task_id) -> RequestOption:
+    def build_request_option(cls, container_no, booking_no, base_url, task_id, search_type, search_no) -> RequestOption:
         form_data = {
             "f_cmd": cls.f_cmd,
             "cntr_no": container_no,
@@ -547,6 +551,8 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
             meta={
                 "container_key": container_no,
                 "task_id": task_id,
+                "search_type": search_type,
+                "search_no": search_no,
             },
         )
 
@@ -559,6 +565,8 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
         container_key = response.meta["container_key"]
         info_pack = {
             "task_id": task_id,
+            "search_type": response.meta["search_type"],
+            "search_no": response.meta["search_no"],
         }
         response_dict = json.loads(response.text)
 
@@ -618,6 +626,7 @@ class RailInfoRoutingRule(BaseRoutingRule):
             meta={
                 "container_key": container_no,
                 "task_id": task_id,
+                "search_type": SEARCH_TYPE_CONTAINER,
             },
         )
 
@@ -628,8 +637,11 @@ class RailInfoRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_id = response.meta["task_id"]
         container_key = response.meta["container_key"]
+        search_type = response.meta["search_type"]
         info_pack = {
             "task_id": task_id,
+            "search_no": container_key,
+            "search_type": search_type,
         }
         response_dict = json.loads(response.text)
 
