@@ -44,7 +44,7 @@ class CarrierMscuSpider(BaseCarrierSpider):
             self._rule_manager = RuleManager(rules=booking_rules)
 
     def start(self):
-        option = HomePageRoutingRule.build_request_option(search_no=self.search_no)
+        option = HomePageRoutingRule.build_request_option(search_no=self.search_no, task_id=self.task_id)
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -85,6 +85,7 @@ class CarrierMscuSpider(BaseCarrierSpider):
             raise SuspiciousOperationError(
                 search_type=self.search_type,
                 search_no=self.search_no,
+                task_id=self.task_id,
                 reason=f"Unexpected request method: `{option.method}`",
             )
 
@@ -99,13 +100,14 @@ class HomePageRoutingRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, search_no) -> RequestOption:
+    def build_request_option(cls, search_no, task_id) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://www.msc.com/track-a-shipment?agencyPath=twn",
             meta={
                 "search_no": search_no,
+                "task_id": task_id,
             },
         )
 
@@ -114,12 +116,17 @@ class HomePageRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         search_no = response.meta["search_no"]
+        task_id = response.meta["task_id"]
 
         view_state = response.css("input#__VIEWSTATE::attr(value)").get()
         validation = response.css("input#__EVENTVALIDATION::attr(value)").get()
 
         yield MainRoutingRule.build_request_option(
-            search_no=search_no, view_state=view_state, validation=validation, search_type=self._search_type
+            search_no=search_no,
+            task_id=task_id,
+            view_state=view_state,
+            validation=validation,
+            search_type=self._search_type,
         )
 
 
@@ -133,7 +140,7 @@ class MainRoutingRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, search_no, view_state, validation, search_type) -> RequestOption:
+    def build_request_option(cls, search_no, task_id, view_state, validation, search_type) -> RequestOption:
         if search_type == SEARCH_TYPE_MBL:
             drop_down_field = "containerbilloflading"
         else:
@@ -153,6 +160,7 @@ class MainRoutingRule(BaseRoutingRule):
             url="https://www.msc.com/track-a-shipment?agencyPath=twn",
             meta={
                 "search_no": search_no,
+                "task_id": task_id,
             },
         )
 
@@ -161,9 +169,11 @@ class MainRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         search_no = response.meta["search_no"]
+        task_id = response.meta["task_id"]
         info_pack = {
             "search_type": self._search_type,
             "search_no": search_no,
+            "task_id": task_id,
         }
 
         if self._is_search_no_invalid(response=response):
@@ -205,7 +215,6 @@ class MainRoutingRule(BaseRoutingRule):
         elif len(place_of_deliv_set) == 1:
             place_of_deliv = list(place_of_deliv_set)[0] or None
         else:
-            yield DebugItem(info=repr(FormatError))
             raise FormatError(
                 **info_pack,
                 reason=f"Different place_of_deliv: `{place_of_deliv_set}`",

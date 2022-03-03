@@ -4,7 +4,12 @@ from typing import Dict, List
 
 import scrapy
 
-from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_BOOKING, SEARCH_TYPE_MBL
+from crawler.core.base import (
+    DUMMY_URL_DICT,
+    RESULT_STATUS_ERROR,
+    SEARCH_TYPE_BOOKING,
+    SEARCH_TYPE_MBL,
+)
 from crawler.core.exceptions import FormatError, SuspiciousOperationError
 from crawler.core.items import DataNotFoundItem
 from crawler.core.proxy import HydraproxyProxyManager
@@ -198,10 +203,7 @@ class MainRoutingRule(BaseRoutingRule):
     def build_request_option(
         cls, search_nos: List, task_ids: List, view_state, validation, search_type
     ) -> RequestOption:
-        if search_type == SEARCH_TYPE_MBL:
-            drop_down_field = "containerbilloflading"
-        else:
-            drop_down_field = "bookingnumber"
+        drop_down_field = "containerbilloflading" if search_type == SEARCH_TYPE_MBL else "bookingnumber"
         form_data = {
             "__EVENTTARGET": "ctl00$ctl00$plcMain$plcMain$TrackSearch$hlkSearch",
             "__EVENTVALIDATION": validation,
@@ -251,6 +253,7 @@ class MainRoutingRule(BaseRoutingRule):
         try:
             container_selector_map_list = extractor.locate_container_selector(response=response)
         except FormatError as e:
+            yield DebugItem(info=repr(e))
             yield Restart(reason=e.reason, search_nos=search_nos, task_ids=task_ids)
             return
 
@@ -296,6 +299,7 @@ class MainRoutingRule(BaseRoutingRule):
         try:
             main_info = extractor.extract_main_info(response=response)
         except FormatError as e:
+            yield DebugItem(info=repr(e))
             yield Restart(reason=e.reason, search_nos=search_nos, task_ids=task_ids)
             return
 
@@ -340,7 +344,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://eval.edi.hardcoretech.co/c/livez",
+            url=DUMMY_URL_DICT["eval_edi"],
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,
