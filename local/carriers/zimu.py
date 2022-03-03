@@ -1,19 +1,15 @@
-from typing import Optional
 import dataclasses
+import logging
 import random
 import string
-import logging
 import time
 
 import scrapy
-from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.webdriver.common.keys import Keys
 
-from local.core import BaseLocalCrawler
+from local.core import BaseLocalCrawler, BaseSeleniumContentGetter
 from local.exceptions import AccessDeniedError, DataNotFoundError
-from src.crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
-from src.crawler.core.pyppeteer import PyppeteerContentGetter
-from local.core import BaseSeleniumContentGetter
 from src.crawler.spiders.carrier_zimu import MainInfoRoutingRule
 
 
@@ -58,6 +54,10 @@ class ZimuContentGetter(BaseSeleniumContentGetter):
             time.sleep(5)
 
         self._accept_cookie()
+        try:
+            self.driver.find_element_by_xpath('//*[@id="popup_module"]/div/div/button/span').click()
+        except NoSuchElementException:
+            pass
 
         for i in range(random.randint(1, 3)):
             self.move_mouse_to_random_position()
@@ -77,6 +77,11 @@ class ZimuContentGetter(BaseSeleniumContentGetter):
             time.sleep(16)
         else:
             time.sleep(7)
+
+        try:
+            self.driver.find_element_by_xpath('//*[@id="popup_module"]/div/div/button/span').click()
+        except NoSuchElementException:
+            pass
 
         return self.driver.page_source
 
@@ -130,11 +135,12 @@ class ZimuContentGetter(BaseSeleniumContentGetter):
         time.sleep(5)
 
     def search_and_return(self, mbl_no: str):
-        if self.check_denied(self.search(mbl_no=mbl_no)) and not self.proxy:
+        resp = self.search(mbl_no=mbl_no)
+
+        if self.check_denied(resp) and not self.proxy:
             self.retry(mbl_no)
-        elif self.proxy:
-            pass
-        else:
+
+        if not self.proxy:
             rnd = random.randint(1, 8)
             if rnd > 6:
                 new_icon = self.driver.find_element_by_xpath(
