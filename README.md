@@ -103,6 +103,21 @@ shub image upload [PROJECT-ID]
 ```
 
 
+## Local Solution
+
+```
+$ cd local
+# to check the detail arguments
+$ python local_crawler.py --help
+# for prd
+python local_crawler.py -m prd
+# for prd with proxy
+python local_crawler.py -m prd --proxy
+# for dev
+python local_crawler.py -m dev -t carrier -n 2
+```
+
+
 ## Generate Package Requirements
 
 Install `pip-tools`
@@ -138,3 +153,10 @@ Add commit message template:
 git config commit.template .git-commit-template
 ```
 
+## Q&A
+
+* Error: “chromedriver” cannot be opened because the developer cannot be verified. Unable to launch the chrome browser on Mac os
+
+```
+$ xattr -d com.apple.quarantine chromedriver
+```
