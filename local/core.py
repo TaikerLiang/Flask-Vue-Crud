@@ -1,23 +1,22 @@
-from typing import Optional
-import dataclasses
-import random
-import time
-import string
 import abc
+import dataclasses
 import logging
+import random
+import string
+import time
 
+import bezier
+import numpy as np
+import pyautogui
 from scrapy import Request
 from scrapy.http import TextResponse
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.common.keys import Keys
-import pyautogui
-import bezier
-import numpy as np
 
-from local.config import PROXY_URL, PROXY_PASSWORD
+from local.config import PROXY_PASSWORD, PROXY_URL
 from local.proxy import HydraproxyProxyManager
 from local.seleniumwire.seleniumwire.undetected_chromedriver.v2 import Chrome
 
@@ -55,7 +54,7 @@ class BaseSeleniumContentGetter:
                     "https": f"https://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_DOMAIN}",
                 }
             }
-        self.driver = Chrome(seleniumwire_options=options)
+        self.driver = Chrome(version_main=98, seleniumwire_options=options)
         # self.driver.get("https://nowsecure.nl")
         # time.sleep(5)
         self.action = ActionChains(self.driver)
@@ -109,8 +108,8 @@ class BaseSeleniumContentGetter:
         control2_X = (end[0] + x2) / 3
 
         # Two intermediate control points that may be adjusted to modify the curve.
-        control1 = control1_X, y2  ##combine midpoints to create perfect curve
-        control2 = control2_X, y2  ## using y2 for both to get a more linear curve
+        control1 = control1_X, y2  # combine midpoints to create perfect curve
+        control2 = control2_X, y2  # using y2 for both to get a more linear curve
 
         # Format points to use with bezier
         control_points = np.array([start, control1, control2, end])

@@ -61,13 +61,6 @@ class ZimuContentGetter(BaseSeleniumContentGetter):
 
         for i in range(random.randint(1, 3)):
             self.move_mouse_to_random_position()
-        if not self.proxy:
-            if random.randint(1, 6) > 3:
-                icon = self.driver.find_element_by_xpath("/html/body/div[4]/header/div[3]/div/div[1]/a/img")
-                self.action.move_to_element(icon).click().perform()
-                time.sleep(2)
-                self.driver.back()
-                time.sleep(5)
 
         search_bar = self.driver.find_element_by_css_selector("input[name='consnumber']")
         self.action.move_to_element(search_bar).click().perform()
