@@ -121,11 +121,11 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
             )
 
         else:
+            zip_list = list(zip(meta["task_ids"], meta["search_nos"]))
             raise SuspiciousOperationError(
                 task_id=meta["task_ids"][0],
-                search_no=meta["search_nos"][0],
                 search_type=self.search_type,
-                reason=f"Unexpected request method: `{option.method}`",
+                reason=f"Unexpected request method: `{option.method}`, on (task_id, search_no): {zip_list}",
             )
 
 
@@ -391,7 +391,7 @@ class CargoTrackingRule(BaseRoutingRule):
     def build_request_option(cls, search_nos, task_ids) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
+            method=RequestOption.METHOD_POST_BODY,
             url=DUMMY_URL_DICT["eval_edi"],
             meta={
                 "search_nos": search_nos,
