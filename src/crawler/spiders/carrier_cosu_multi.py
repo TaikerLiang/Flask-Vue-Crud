@@ -99,16 +99,11 @@ class CarrierCosuSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
             )
         else:
-            if self.search_nos == SEARCH_TYPE_MBL:
-                search_no = meta["mbl_nos"][0]
-            else:
-                search_no = meta["booking_nos"][0]
-
+            zip_list = list(zip(meta["task_ids"], meta["search_nos"]))
             raise SuspiciousOperationError(
                 task_id=meta["task_ids"][0],
-                search_no=search_no,
                 search_type=self.search_type,
-                reason=f"Unexpected request method: `{option.method}`",
+                reason=f"Unexpected request method: `{option.method}`, on (task_id, search_no): {zip_list}",
             )
 
 
