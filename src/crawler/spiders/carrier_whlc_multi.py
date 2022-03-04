@@ -166,6 +166,7 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
         else:
             zip_list = list(zip(meta["task_ids"], meta["search_nos"]))
             raise SuspiciousOperationError(
+                task_id=meta["task_ids"][0],
                 search_type=self.search_type,
                 reason=f"Unexpected request method: `{option.method}`, on (task_id, search_no): {zip_list}",
             )
