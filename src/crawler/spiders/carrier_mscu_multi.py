@@ -133,14 +133,9 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
             )
         else:
-            info_pack = {
-                "task_id": meta["task_ids"][0],
-                "search_no": meta["search_nos"][0],
-                "search_type": self.search_type,
-            }
             tid_sno_pairs = list(zip(meta["task_ids"], meta["search_nos"]))
             raise SuspiciousOperationError(
-                **info_pack,
+                task_id=meta["task_ids"][0],
                 reason=f"Unexpected request method: `{option.method}` {tid_sno_pairs}",
             )
 
@@ -238,7 +233,6 @@ class MainRoutingRule(BaseRoutingRule):
             "search_no": search_nos[0],
             "search_type": self._search_type,
         }
-        f_err = self._build_error_format(info_pack=info_pack)
 
         if self._is_search_no_invalid(response=response):
             yield DataNotFoundItem(
@@ -292,15 +286,15 @@ class MainRoutingRule(BaseRoutingRule):
                 container_info = extractor.extract_container_info(container_selector_map)
                 place_of_deliv_set.add(container_info["place_of_deliv"])
 
-            except FormatError:
-                yield f_err.build_error_data(reason="format error extracting container info")
+            except FormatError as e:
+                yield e.build_error_data()
 
         if not place_of_deliv_set:
             place_of_deliv = None
         elif len(place_of_deliv_set) == 1:
             place_of_deliv = list(place_of_deliv_set)[0] or None
         else:
-            yield f_err.build_error_data(reason=f"Different place_of_deliv: `{place_of_deliv_set}`")
+            yield FormatError(reason=f"Different place_of_deliv: `{place_of_deliv_set}`").build_error_data()
             yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
             return
 
@@ -339,9 +333,6 @@ class MainRoutingRule(BaseRoutingRule):
             if error_message and prefix in error_message:
                 return True
         return False
-
-    def _build_error_format(self, info_pack: Dict):
-        return FormatError(**info_pack)
 
 
 class NextRoundRoutingRule(BaseRoutingRule):
@@ -445,20 +436,7 @@ class Extractor:
 
         return self._parse_container_no(container_no_text)
 
-    def _parse_container_no(self, container_no_text):
-        """
-        Sample Text:
-            Container: GLDU7636572
-        """
-        m = self._container_no_pattern.match(container_no_text)
-
-        if not m:
-            raise FormatError(**self._info_pack, reason=f"Unknown container no format: `{container_no_text}`")
-
-        return m.group("container_no")
-
-    @staticmethod
-    def extract_container_info(container_selector_map: Dict[str, scrapy.Selector]):
+    def extract_container_info(self, container_selector_map: Dict[str, scrapy.Selector]):
         table_selector = container_selector_map["container_stats_table"]
 
         table_locator = ContainerInfoTableLocator()
@@ -506,6 +484,18 @@ class Extractor:
     def extract_latest_update(self, response: scrapy.Selector):
         latest_update_message = response.css("div#ctl00_ctl00_plcMain_plcMain_pnlTrackingResults > p::text").get()
         return self._parse_latest_update(latest_update_message)
+
+    def _parse_container_no(self, container_no_text):
+        """
+        Sample Text:
+            Container: GLDU7636572
+        """
+        m = self._container_no_pattern.match(container_no_text)
+
+        if not m:
+            raise FormatError(**self._info_pack, reason=f"Unknown container no format: `{container_no_text}`")
+
+        return m.group("container_no")
 
     def _parse_latest_update(self, latest_update_message: str):
         """

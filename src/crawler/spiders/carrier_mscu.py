@@ -82,13 +82,8 @@ class CarrierMscuSpider(BaseCarrierSpider):
                 meta=meta,
             )
         else:
-            info_pack = {
-                "task_id": self.task_id,
-                "search_no": self.search_no,
-                "search_type": self.search_type,
-            }
             raise SuspiciousOperationError(
-                **info_pack,
+                task_id=self.task_id,
                 reason=f"Unexpected request method: `{option.method}`",
             )
 
@@ -270,18 +265,6 @@ class Extractor:
 
         return self._parse_mbl_no(search_no_text)
 
-    def _parse_mbl_no(self, mbl_no_text: str):
-        """
-        Sample Text:
-            `Bill of lading: MEDUN4194175 (1 container)`
-            `Bill of lading: MEDUH3870035 `
-        """
-        m = self._mbl_no_pattern.match(mbl_no_text)
-        if not m:
-            raise FormatError(**self._info_pack, reason=f"Unknown mbl no format: `{mbl_no_text}`")
-
-        return m.group("mbl_no")
-
     def extract_main_info(self, response: scrapy.Selector):
         main_outer = response.css("div#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_pnlBOLContent")
         error_message = (
@@ -344,20 +327,7 @@ class Extractor:
 
         return self._parse_container_no(container_no_text)
 
-    def _parse_container_no(self, container_no_text):
-        """
-        Sample Text:
-            Container: GLDU7636572
-        """
-        m = self._container_no_pattern.match(container_no_text)
-
-        if not m:
-            raise FormatError(**self._info_pack, reason=f"Unknown container no format: `{container_no_text}`")
-
-        return m.group("container_no")
-
-    @staticmethod
-    def extract_container_info(container_selector_map: Dict[str, scrapy.Selector]):
+    def extract_container_info(self, container_selector_map: Dict[str, scrapy.Selector]):
         table_selector = container_selector_map["container_stats_table"]
 
         table_locator = ContainerInfoTableLocator()
@@ -405,6 +375,30 @@ class Extractor:
     def extract_latest_update(self, response: scrapy.Selector):
         latest_update_message = response.css("div#ctl00_ctl00_plcMain_plcMain_pnlTrackingResults > p::text").get()
         return self._parse_latest_update(latest_update_message)
+
+    def _parse_mbl_no(self, mbl_no_text: str):
+        """
+        Sample Text:
+            `Bill of lading: MEDUN4194175 (1 container)`
+            `Bill of lading: MEDUH3870035 `
+        """
+        m = self._mbl_no_pattern.match(mbl_no_text)
+        if not m:
+            raise FormatError(**self._info_pack, reason=f"Unknown mbl no format: `{mbl_no_text}`")
+
+        return m.group("mbl_no")
+
+    def _parse_container_no(self, container_no_text):
+        """
+        Sample Text:
+            Container: GLDU7636572
+        """
+        m = self._container_no_pattern.match(container_no_text)
+
+        if not m:
+            raise FormatError(**self._info_pack, reason=f"Unknown container no format: `{container_no_text}`")
+
+        return m.group("container_no")
 
     def _parse_latest_update(self, latest_update_message: str):
         """
