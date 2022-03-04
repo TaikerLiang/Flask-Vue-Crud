@@ -125,12 +125,20 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
             )
         else:
-            raise SuspiciousOperationError(
-                task_id=meta.get("task_id") or meta["task_ids"][0],
-                search_no=meta.get("search_no") or meta["search_nos"][0],
-                search_type=self.search_type,
-                reason=f"Unexpected request method: `{option.method}`",
-            )
+            if meta.get("task_ids"):
+                zip_list = list(zip(meta["task_ids"], meta["search_nos"]))
+                raise SuspiciousOperationError(
+                    task_id=meta["task_ids"][0],
+                    search_type=self.search_type,
+                    reason=f"Unexpected request method: `{option.method}`, on (task_id, search_no): {zip_list}",
+                )
+            else:
+                raise SuspiciousOperationError(
+                    task_id=meta["task_id"],
+                    search_no=meta["search_no"],
+                    search_type=self.search_type,
+                    reason=f"Unexpected request method: `{option.method}`",
+                )
 
 
 class RecaptchaRule(BaseRoutingRule):
