@@ -1,5 +1,4 @@
 from pathlib import Path
-from test.spiders.carrier_oney_smlm.oney import first_tier
 
 import pytest
 from scrapy import Request
@@ -8,6 +7,7 @@ from scrapy.http import TextResponse
 from crawler.core.base import SEARCH_TYPE_MBL
 from crawler.core_carrier.oney_smlm_share_spider import FirstTierRoutingRule
 from crawler.spiders.carrier_oney import CarrierOneySpider
+from test.spiders.carrier_oney_smlm.oney import first_tier
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def sample_loader(sample_loader):
 def test_first_tier_handle(sub, mbl_no, base_url, sample_loader):
     jsontext = sample_loader.read_file(sub, "sample.json")
 
-    option = FirstTierRoutingRule.build_request_option(search_no=mbl_no, base_url=base_url)
+    option = FirstTierRoutingRule.build_request_option(search_no=mbl_no, base_url=base_url, task_id="1")
 
     response = TextResponse(
         url=option.url,

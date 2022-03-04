@@ -1,5 +1,4 @@
 from pathlib import Path
-from test.spiders.carrier_oney_smlm_multi.oney import first_tier
 
 import pytest
 from scrapy import Request
@@ -8,6 +7,7 @@ from scrapy.http import TextResponse
 from crawler.core.base import SEARCH_TYPE_MBL
 from crawler.core_carrier.oney_smlm_multi_share_spider import FirstTierRoutingRule
 from crawler.spiders.carrier_oney_multi import CarrierOneySpider
+from test.spiders.carrier_oney_smlm_multi.oney import first_tier
 
 
 @pytest.fixture

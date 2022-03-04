@@ -204,9 +204,9 @@ class FirstTierRoutingRule(BaseRoutingRule):
         mbl_no = self._get_mbl_no_from(container_list=container_info_list)
 
         if self._search_type == SEARCH_TYPE_MBL:
-            yield MblItem(task_id=task_id, mbl_no=mbl_no)
+            yield MblItem(mbl_no=mbl_no)
         else:
-            yield MblItem(task_id=task_id, booking_no=booking_no)
+            yield MblItem(booking_no=booking_no)
 
         yield VesselRoutingRule.build_request_option(booking_no=booking_no, base_url=base_url, task_id=task_id)
 
@@ -214,7 +214,6 @@ class FirstTierRoutingRule(BaseRoutingRule):
             container_no = container_info["container_no"]
 
             yield ContainerItem(
-                task_id=task_id,
                 container_key=container_no,
                 container_no=container_no,
             )
@@ -325,7 +324,6 @@ class VesselRoutingRule(BaseRoutingRule):
         vessel_info_list = self._extract_vessel_info_list(response_dict=response_dict)
         for vessel_info in vessel_info_list:
             yield VesselItem(
-                task_id=task_id,
                 vessel_key=vessel_info["name"],
                 vessel=vessel_info["name"],
                 voyage=vessel_info["voyage"],
@@ -399,7 +397,6 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
 
         for container_status in container_status_list:
             yield ContainerStatusItem(
-                task_id=task_id,
                 container_key=container_key,
                 description=container_status["status"],
                 local_date_time=container_status["local_time"],
@@ -477,7 +474,6 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
         release_info = self._extract_release_info(response_dict=response_dict, info_pack=info_pack)
 
         yield MblItem(
-            task_id=task_id,
             freight_date=release_info["freight_date"] or None,
             us_customs_date=release_info["us_customs_date"] or None,
             us_filing_date=release_info["us_filing_date"] or None,
@@ -485,7 +481,6 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
         )
 
         yield ContainerItem(
-            task_id=task_id,
             container_key=container_key,
             last_free_day=release_info["last_free_day"] or None,
         )
@@ -557,7 +552,6 @@ class RailInfoRoutingRule(BaseRoutingRule):
         ready_for_pick_up = self._extract_ready_for_pick_up(response_dict=response_dict, info_pack=info_pack)
 
         yield ContainerItem(
-            task_id=task_id,
             container_key=container_key,
             ready_for_pick_up=ready_for_pick_up or None,
         )
