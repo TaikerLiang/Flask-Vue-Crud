@@ -2,6 +2,7 @@ import logging.config
 import time
 
 import config
+
 from src.crawler.services.edi_service import EdiClientService
 
 logger = logging.getLogger("local-generator")
@@ -35,14 +36,14 @@ CARRIER_TASKS = [
 
 
 TERMINAL_TASKS = [
-    {"type": "terminal", "firms_code": "Y258", "task_id": "234918", "container_no": "GLDU5716621"},
-    {"type": "terminal", "firms_code": "Y258", "task_id": "234919", "container_no": "KKTU8074738"},
-    {"type": "terminal", "firms_code": "Y258", "task_id": "234920", "container_no": "TCLU5100588"},
-    {"type": "terminal", "firms_code": "Y258", "task_id": "234921", "container_no": "BMOU1527596"},
-    {"type": "terminal", "firms_code": "Y258", "task_id": "234922", "container_no": "BMOU5272831"},
-    {"type": "terminal", "firms_code": "Y258", "task_id": "234923", "container_no": "TCLU4548900"},
-    {"type": "terminal", "firms_code": "Y258", "task_id": "234924", "container_no": "TLLU6090414"},
-    {"type": "terminal", "firms_code": "Y258", "task_id": "234925", "container_no": "TCLU6857956"},
+    {"type": "terminal", "firms_code": "Y258", "task_id": "234918", "container_no": "BEAU4697246"},
+    {"type": "terminal", "firms_code": "Y258", "task_id": "234919", "container_no": "TGCU0033364"},
+    {"type": "terminal", "firms_code": "Y258", "task_id": "234920", "container_no": "UACU5419949"},
+    {"type": "terminal", "firms_code": "Y258", "task_id": "234921", "container_no": "TCLU6958695"},
+    {"type": "terminal", "firms_code": "Y258", "task_id": "234922", "container_no": "SEGU5895356"},
+    {"type": "terminal", "firms_code": "Y258", "task_id": "234923", "container_no": "TWCU8035793"},
+    {"type": "terminal", "firms_code": "Y258", "task_id": "234924", "container_no": "UACU5419949"},
+    {"type": "terminal", "firms_code": "Y258", "task_id": "234925", "container_no": "NYKU4384665"},
     {"type": "terminal", "firms_code": "Y258", "task_id": "234926", "container_no": "KKTU7951262"},
     {"type": "terminal", "firms_code": "Y258", "task_id": "234927", "container_no": "TRHU3889360"},
     {"type": "terminal", "firms_code": "Y258", "task_id": "234930", "container_no": "TRHU3952903"},
@@ -81,7 +82,7 @@ class TaskGenerator:
             local_tasks = carrier_edi_client.get_local_tasks()
             logger.info(f"number of tasks: {len(local_tasks)}")
             if len(local_tasks) == 0:
-                logger.warning(f"sleep 10 minutes")
+                logger.warning("sleep 10 minutes")
                 time.sleep(10 * 60)
 
             return local_tasks

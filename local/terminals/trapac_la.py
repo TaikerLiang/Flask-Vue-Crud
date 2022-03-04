@@ -1,10 +1,10 @@
 import scrapy
 
-from local.terminals.share.trapac import TrapacContentGetter
 from local.core import BaseLocalCrawler
-from src.crawler.core_terminal.trapac_share_spider import MainRoutingRule
+from local.terminals.share.trapac import TrapacContentGetter
 from src.crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
-from src.crawler.core_terminal.items import TerminalItem, ExportErrorData
+from src.crawler.core_terminal.items import ExportErrorData, TerminalItem
+from src.crawler.core_terminal.trapac_share_spider import MainRoutingRule
 
 
 class LaTrapacContentGetter(TrapacContentGetter):
@@ -44,7 +44,7 @@ class LaTrapacLocalCrawler(BaseLocalCrawler):
                 demurrage=container_info["demurrage"],  # demurrage-amt
                 container_spec=container_info["container_spec"],  # dimensions
                 holds=container_info["holds"],  # demurrage-hold
-                cy_location=container_info["cy_location"],  # yard status
+                gate_out_date=container_info["cy_location"],  # yard status
                 vessel=container_info["vessel"],  # vsl / voy
                 voyage=container_info["voyage"],  # vsl / voy
             )
