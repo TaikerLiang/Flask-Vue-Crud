@@ -2,19 +2,21 @@ import asyncio
 import dataclasses
 from typing import Dict, List, Tuple, Union
 
-import scrapy
 from pyppeteer.errors import TimeoutError
+import scrapy
 
+from crawler.core.base import DUMMY_URL_DICT, RESULT_STATUS_ERROR, SEARCH_TYPE_MBL
+from crawler.core.exceptions import (
+    FormatError,
+    GeneralError,
+    SuspiciousOperationError,
+    TimeOutError,
+)
+from crawler.core.items import DataNotFoundItem
 from crawler.core.proxy import ProxyManager
 from crawler.core.pyppeteer import PyppeteerContentGetter
 from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.exceptions import (
-    CarrierInvalidMblNoError,
-    CarrierResponseFormatError,
-    LoadWebsiteTimeOutFatal,
-    SuspiciousOperationError,
-)
 from crawler.core_carrier.items import (
     BaseCarrierItem,
     ContainerItem,
@@ -45,7 +47,7 @@ class CarrierZimuSpider(BaseCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        option = MainInfoRoutingRule.build_request_option(mbl_no=self.mbl_no)
+        option = MainInfoRoutingRule.build_request_option(task_id=self.task_id, mbl_no=self.mbl_no)
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -78,7 +80,12 @@ class CarrierZimuSpider(BaseCarrierSpider):
                 callback=self.parse,
             )
         else:
-            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
+            raise SuspiciousOperationError(
+                task_id=self.task_id,
+                search_no=self.mbl_no,
+                search_type=self.search_type,
+                reason=f"Unexpected request method: `{option.method}`",
+            )
 
 
 # ---------------------------------------------------------------------------------
@@ -90,7 +97,7 @@ class ContentGetter(PyppeteerContentGetter):
         # pyppeteer_logger = logging.getLogger("pyppeteer")
         # pyppeteer_logger.setLevel(logging.WARNING)
 
-    async def search(self, mbl_no: str):
+    async def search(self, info_pack: Dict):
         await self.page.goto("https://www.zim.com/tools/track-a-shipment")
 
         accept_btn = "button#onetrust-accept-btn-handler"
@@ -98,18 +105,25 @@ class ContentGetter(PyppeteerContentGetter):
             await self.page.waitForSelector(accept_btn, timeout=10000)
             await asyncio.sleep(1)
         except TimeoutError:
-            raise LoadWebsiteTimeOutFatal()
+            raise TimeOutError(
+                **info_pack,
+                reason=f"Timeout during waiting for selector '{accept_btn}'",
+            )
 
         await self.page.click(accept_btn)
 
         await asyncio.sleep(1)
-        await self.page.type("input[name='consnumber']", text=mbl_no)
+        await self.page.type("input[name='consnumber']", text=info_pack["search_no"])
         await self.page.click("input[value='Track Shipment']")
 
+        bottom_row_div = "div[class='bottom row']"
         try:
-            await self.page.waitForSelector("div[class='bottom row']", timeout=20000)
+            await self.page.waitForSelector(bottom_row_div, timeout=20000)
         except TimeoutError:
-            raise LoadWebsiteTimeOutFatal()
+            raise TimeOutError(
+                **info_pack,
+                reason=f"Timeout during waiting for selector '{bottom_row_div}'",
+            )
 
         page_source = await self.page.content()
 
@@ -134,15 +148,16 @@ class MainInfoRoutingRule(BaseRoutingRule):
     name = "MAIN_INFO"
 
     @classmethod
-    def build_request_option(cls, mbl_no) -> RequestOption:
-        url = "https://www.google.com"
+    def build_request_option(cls, task_id: str, mbl_no: str) -> RequestOption:
+        url = DUMMY_URL_DICT["eval_edi"]
 
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=url,
             meta={
-                "mbl_no": mbl_no,
+                "task_id": task_id,
+                "search_no": mbl_no,
             },
         )
 
@@ -150,18 +165,36 @@ class MainInfoRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        mbl_no = response.meta["mbl_no"]
+        task_id = response.meta["task_id"]
+        mbl_no = response.meta["search_no"]
+        info_pack = {
+            "task_id": task_id,
+            "search_no": mbl_no,
+            "search_type": SEARCH_TYPE_MBL,
+        }
 
-        self._check_mbl_no(response=response)
+        if self._is_not_found(response=response):
+            yield DataNotFoundItem(
+                **info_pack,
+                status=RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
+            return
+
+        if self._is_mbl_no_format_error(response=response):
+            raise GeneralError(
+                **info_pack,
+                reason="There is format error on mbl_no",
+            )
 
         content_getter = ContentGetter()
-        response_text = asyncio.get_event_loop().run_until_complete(content_getter.search(mbl_no=mbl_no))
+        response_text = asyncio.get_event_loop().run_until_complete(content_getter.search(info_pack=info_pack))
         response_selector = scrapy.Selector(text=response_text)
 
-        for item in self.handle_item(response=response_selector):
+        for item in self._handle_item(response=response_selector, info_pack=info_pack):
             yield item
 
-    def handle_item(self, response):
+    def _handle_item(self, response, info_pack: Dict):
         main_info = self._extract_main_info(response=response)
 
         raw_vessel_list = self._extract_vessel_list(response=response)
@@ -170,15 +203,11 @@ class MainInfoRoutingRule(BaseRoutingRule):
         vessel_list = self._arrange_vessel_list(raw_vessel_list)
 
         schedule_list = self._arrange_schedule_list(
-            raw_schedule_list,
-            pol=main_info["pol"],
-            etd=main_info["etd"],
-            pod=main_info["pod"],
-            eta=main_info["eta"],
+            schedule_list=raw_schedule_list, main_info=main_info, info_pack=info_pack
         )
 
         if len(vessel_list) >= len(schedule_list):
-            raise CarrierResponseFormatError(reason=f"vessel_list: `{vessel_list}`, schedule_list: `{schedule_list}`")
+            raise FormatError(**info_pack, reason=f"vessel_list: `{vessel_list}`, schedule_list: `{schedule_list}`")
 
         for vessel_index, vessel in enumerate(vessel_list):
             departure_info = schedule_list[vessel_index]
@@ -238,15 +267,11 @@ class MainInfoRoutingRule(BaseRoutingRule):
                     location=LocationItem(name=container_status["location"]),
                 )
 
-    @staticmethod
-    def _check_mbl_no(response):
-        no_result_information = response.css("section#noResult p")
-        if no_result_information:
-            raise CarrierInvalidMblNoError()
+    def _is_not_found(self, response):
+        return bool(response.css("section#noResult p"))
 
-        wrong_format_message = response.css("span.field-validation-error")
-        if wrong_format_message:
-            raise CarrierInvalidMblNoError()
+    def _is_mbl_no_format_error(self, response):
+        return bool(response.css("span.field-validation-error"))
 
     def _extract_main_info(self, response: scrapy.Selector):
         mbl_no = response.css("dl.dl-inline dd::text").get()
@@ -327,8 +352,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         return schedule_list
 
-    @staticmethod
-    def _arrange_vessel_list(raw_vessel_list) -> List[VesselInfo]:
+    def _arrange_vessel_list(self, raw_vessel_list) -> List[VesselInfo]:
         vessel_list = []
         for raw_vessel in raw_vessel_list:
             if not raw_vessel:
@@ -339,10 +363,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         return vessel_list
 
-    @staticmethod
-    def _arrange_schedule_list(schedule_list, pol, etd, pod, eta) -> List[ScheduleInfo]:
+    def _arrange_schedule_list(self, schedule_list: List[Dict], main_info: Dict, info_pack: Dict) -> List[ScheduleInfo]:
         result = [
-            ScheduleInfo(port_type="POL", port_name=pol, eta="", etd=etd),  # POL
+            ScheduleInfo(port_type="POL", port_name=main_info["pol"], eta="", etd=main_info["etd"]),  # POL
         ]
         for schedule in schedule_list:
             if not schedule:
@@ -372,7 +395,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 pass
 
             else:
-                raise CarrierResponseFormatError(reason=f"Unknown port type of schedule: `{schedule}`")
+                raise FormatError(**info_pack, reason=f"Unknown port type of schedule: `{schedule}`")
 
         # add POD ?
         last_schedule = result[-1]
@@ -380,16 +403,15 @@ class MainInfoRoutingRule(BaseRoutingRule):
             result.append(
                 ScheduleInfo(
                     port_type="POD",
-                    port_name=pod,
-                    eta=eta,
+                    port_name=main_info["pod"],
+                    eta=main_info["eta"],
                     etd="",
                 )
             )
 
         return result
 
-    @staticmethod
-    def _find_to_pod_vessel(vessel_list, schedule_list) -> VesselInfo:
+    def _find_to_pod_vessel(self, vessel_list, schedule_list) -> VesselInfo:
         last_schedule_info = schedule_list[-1]
         assert last_schedule_info.port_type == "POD"
 
@@ -400,8 +422,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         else:
             return VesselInfo(vessel=None, voyage=None)
 
-    @staticmethod
-    def _extract_container_no_list(response) -> List[str]:
+    def _extract_container_no_list(self, response) -> List[str]:
         container_no_not_strip_list = response.css("div.opener h3::text").getall()
         container_no_list = []
 
@@ -409,8 +430,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             container_no_list.append(container_no_not_strip.strip())
         return container_no_list
 
-    @staticmethod
-    def _extract_container_status_list(response, container_no) -> List[Dict]:
+    def _extract_container_status_list(self, response, container_no) -> List[Dict]:
         table_css_query = f"div[data-cont-id='{container_no} '] + div.slide table"
         table_selector = response.css(table_css_query)
 
@@ -437,8 +457,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         return container_status_list
 
-    @staticmethod
-    def extract_dl(dl: scrapy.Selector, dt_extractor=None, dd_extractor=None) -> List[Tuple[str, str]]:
+    def extract_dl(self, dl: scrapy.Selector, dt_extractor=None, dd_extractor=None) -> List[Tuple[str, str]]:
         """
         <dl>
             <dt></dt> --+-- pair
