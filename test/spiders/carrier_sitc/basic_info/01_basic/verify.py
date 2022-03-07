@@ -1,13 +1,13 @@
-import scrapy
-
-from crawler.core_carrier.items import MblItem, LocationItem, VesselItem, ContainerItem
+from crawler.core_carrier.items import ContainerItem, LocationItem, MblItem, VesselItem
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.spiders.carrier_sitc import ContainerStatusRoutingRule
 
 
 def verify(results):
     assert results[0] == MblItem(
-        mbl_no="SITDSHSGZ02389", pol=LocationItem(name="上海"), final_dest=LocationItem(name="胡志明"),
+        mbl_no="SITDSHSGZ02389",
+        pol=LocationItem(name="上海"),
+        final_dest=LocationItem(name="胡志明"),
     )
     assert results[1] == VesselItem(
         ata="2021-07-24 11:00",
@@ -20,16 +20,24 @@ def verify(results):
         vessel_key="SITC JAKARTA",
         voyage="2114",
     )
-    assert results[2] == ContainerItem(container_key="TEXU1590148", container_no="TEXU1590148",)
+    assert results[2] == ContainerItem(
+        container_key="TEXU1590148",
+        container_no="TEXU1590148",
+    )
     assert isinstance(results[3], RequestOption)
     assert (
-        results[3].url == "https://api.sitcline.com/doc/cargoTrack/detail?blNo=SITDSHSGZ02389&containerNo=TEXU1590148"
+        results[3].url
+        == "https://api.sitcline.com/doc/cargoTrack/movementDetail?blNo=SITDSHSGZ02389&containerNo=iFzIffewMm0fb0piSneE%2Fg%3D%3D"
     )
     assert results[3].rule_name == ContainerStatusRoutingRule.name
 
-    assert results[8] == ContainerItem(container_key="SEGU7346329", container_no="SEGU7346329",)
+    assert results[8] == ContainerItem(
+        container_key="SEGU7346329",
+        container_no="SEGU7346329",
+    )
     assert isinstance(results[9], RequestOption)
     assert (
-        results[9].url == "https://api.sitcline.com/doc/cargoTrack/detail?blNo=SITDSHSGZ02389&containerNo=SEGU7346329"
+        results[9].url
+        == "https://api.sitcline.com/doc/cargoTrack/movementDetail?blNo=SITDSHSGZ02389&containerNo=TbSyXEYHia78BjAXkcC8BQ%3D%3D"
     )
     assert results[9].rule_name == ContainerStatusRoutingRule.name
