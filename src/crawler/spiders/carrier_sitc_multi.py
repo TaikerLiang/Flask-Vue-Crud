@@ -134,10 +134,11 @@ class TracingRoutingRule(BaseRoutingRule):
             yield NextRoundRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
             return
 
-        basic_info = self._extract_basic_info(page=mbl_page, task_id=current_task_id)
+        basic_info = self._extract_basic_info(page=mbl_page)
         if basic_info:
             yield MblItem(
                 mbl_no=basic_info["mbl_no"],
+                task_id=current_task_id,
                 pol=LocationItem(name=basic_info["pol_name"]),
                 final_dest=LocationItem(name=basic_info["final_dest_name"]),
             )
@@ -148,10 +149,11 @@ class TracingRoutingRule(BaseRoutingRule):
             yield NextRoundRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
             return
 
-        vessel_info_list = self._extract_vessel_info(page=mbl_page, task_id=current_task_id)
+        vessel_info_list = self._extract_vessel_info_list(page=mbl_page)
         for vessel in vessel_info_list:
             vessel_name = vessel["vessel"]
             yield VesselItem(
+                task_id=current_task_id,
                 vessel_key=vessel_name,
                 vessel=vessel_name,
                 voyage=vessel["voyage"],
@@ -163,19 +165,21 @@ class TracingRoutingRule(BaseRoutingRule):
                 ata=vessel["ata"] or None,
             )
 
-        container_info_list = self._extract_container_info(page=mbl_page, task_id=current_task_id)
+        container_info_list = self._extract_container_info_list(page=mbl_page)
         for container in container_info_list:
             container_no = container["container_no"]
             yield ContainerItem(
+                task_id=current_task_id,
                 container_key=container_no,
                 container_no=container_no,
             )
 
-            yield ContainerStatusRoutingRule.build_request_option(container_no=container_no)
+            yield ContainerStatusRoutingRule.build_request_option(container_no=container_no, task_id=current_task_id)
 
         yield NextRoundRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
 
-    def _extract_basic_info(self, page, task_id):
+    @staticmethod
+    def _extract_basic_info(page):
         selector = Selector(text=page)
         thead = selector.xpath("//table[@class='el-table__header']//thead")[0]
         tbody = selector.xpath("//table[@class='el-table__body']//tbody")[0]
@@ -190,7 +194,8 @@ class TracingRoutingRule(BaseRoutingRule):
             "final_dest_name": info["Final Destination"],
         }
 
-    def _extract_vessel_info(self, page, task_id):
+    @staticmethod
+    def _extract_vessel_info_list(page) -> List:
         selector = Selector(text=page)
         thead = selector.xpath("//table[@class='el-table__header']//thead")[1]
         tbody = selector.xpath("//table[@class='el-table__body']//tbody")[1]
@@ -216,7 +221,8 @@ class TracingRoutingRule(BaseRoutingRule):
 
         return info_list
 
-    def _extract_container_info(self, page, task_id):
+    @staticmethod
+    def _extract_container_info_list(page) -> List:
         selector = Selector(text=page)
         thead = selector.xpath("//table[@class='el-table__header']//thead")[2]
         tbody = selector.xpath("//table[@class='el-table__body']//tbody")[2]
@@ -231,28 +237,8 @@ class TracingRoutingRule(BaseRoutingRule):
 
         return info_list
 
-    def _extract_container_status(self, page, task_id):
-        selector = Selector(text=page)
-        thead = selector.xpath("//table[@class='el-table__header']//thead")[-1]
-        tbody = selector.xpath("//table[@class='el-table__body']//tbody")[-1]
-
-        headers = Extractor.extract_ths(thead)
-        entries = Extractor.extract_trs(tbody, ignore_1st_col=True)
-
-        info_list = []
-        status_list = Extractor.extract_table(headers, entries)
-        for status in status_list:
-            info_list.append(
-                {
-                    "local_date_time": status["Occurrence Time"],  # Occurence Time
-                    "description": status["Current Status"],  # Current Status
-                    "location_name": status["Local"],  # Local
-                }
-            )
-
-        return info_list
-
-    def _is_mbl_no_invalid(self, page):
+    @staticmethod
+    def _is_mbl_no_invalid(page):
         selector = Selector(text=page)
         error_message = selector.css("span.el-table__empty-text::text").get()
         if not error_message:
@@ -272,12 +258,12 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         self._content_getter = content_getter
 
     @classmethod
-    def build_request_option(cls, container_no: str) -> RequestOption:
+    def build_request_option(cls, container_no: str, task_id: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://eval.edi.hardcoretech.co/c/livez",
-            meta={"container_key": container_no},
+            meta={"container_key": container_no, "task_id": task_id},
         )
 
     def get_save_name(self, response) -> str:
@@ -285,12 +271,14 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         return f"{self.name}_{container_key}.json"
 
     def handle(self, response):
+        task_id = response.meta["task_id"]
         container_key = response.meta["container_key"]
 
         page = self._content_getter.get_container_status_page(container_key)
-        container_status_list = self._extract_container_status_list(page=page, task_id="")
+        container_status_list = self._extract_container_status_list(page=page)
         for container_status in container_status_list:
             yield ContainerStatusItem(
+                task_id=task_id,
                 container_key=container_key,
                 description=container_status["description"],
                 local_date_time=container_status["local_date_time"],
@@ -298,7 +286,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             )
 
     @staticmethod
-    def _extract_container_status_list(page, task_id) -> List:
+    def _extract_container_status_list(page) -> List:
         selector = Selector(text=page)
         thead = selector.xpath("//table[@class='el-table__header']//thead")[-1]
         tbody = selector.xpath("//table[@class='el-table__body']//tbody")[-1]
@@ -415,7 +403,6 @@ class ContentGetter(ChromeContentGetter):
             EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.el-dialog__body"))
         )
 
-        time.sleep(1)  # wait for captcha image
         login_window = self._driver.find_element(By.CSS_SELECTOR, "div.el-dialog__body")
         captcha_ele = login_window.find_element(By.XPATH, "//img[@class='login-code-img']")
 
@@ -475,13 +462,8 @@ class ContentGetter(ChromeContentGetter):
     def get_container_status_page(self, container_no: str):
         span = self._driver.find_element(By.XPATH, f"//span[contains(text(), '{container_no}')]")
         button = span.find_element(By.XPATH, "./..")
-        self._driver.execute_script("arguments[0].click();", button)  # open the dialog
-        time.sleep(1)
+        self._driver.execute_script("arguments[0].click();", button)  # display container status
 
-        WebDriverWait(self._driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.el-dialog__body")))
-        WebDriverWait(self._driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "div.el-dialog__body table.el-table__header"))
-        )
         WebDriverWait(self._driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "div.el-dialog__body table.el-table__body"))
         )
@@ -492,6 +474,5 @@ class ContentGetter(ChromeContentGetter):
         close_button = self._driver.find_element(By.CSS_SELECTOR, "button.el-dialog__headerbtn")
         page_src = self._driver.page_source
         self._driver.execute_script("arguments[0].click();", close_button)
-        time.sleep(1)
 
         return page_src
