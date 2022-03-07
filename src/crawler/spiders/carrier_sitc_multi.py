@@ -14,7 +14,7 @@ from crawler.core.selenium import ChromeContentGetter
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import (
-    LoadWebsiteTimeOutError,
+    DriverMaxRetryError,
     SuspiciousOperationError,
 )
 from crawler.core_carrier.items import (
@@ -43,8 +43,7 @@ class CarrierSitcSpider(BaseMultiCarrierSpider):
         super(CarrierSitcSpider, self).__init__(*args, **kwargs)
 
         self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
-        self._content_getter = ContentGetter(proxy_manager=None, is_headless=False)
-        # self._content_getter = ContentGetter(proxy_manager=None, is_headless=True)
+        self._content_getter = ContentGetter(proxy_manager=None, is_headless=True)
         self._content_getter.connect()
 
         rules = [
@@ -90,14 +89,6 @@ class CarrierSitcSpider(BaseMultiCarrierSpider):
             return scrapy.Request(
                 url=option.url,
                 cookies=option.cookies,
-                meta=meta,
-                dont_filter=True,
-            )
-        elif option.method == RequestOption.METHOD_POST_FORM:
-            return scrapy.FormRequest(
-                url=option.url,
-                cookies=option.cookies,
-                formdata=option.form_data,
                 meta=meta,
                 dont_filter=True,
             )
@@ -154,6 +145,8 @@ class TracingRoutingRule(BaseRoutingRule):
             yield ExportErrorData(
                 mbl_no=current_mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found"
             )
+            yield NextRoundRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
+            return
 
         vessel_info_list = self._extract_vessel_info(page=mbl_page, task_id=current_task_id)
         for vessel in vessel_info_list:
@@ -413,9 +406,6 @@ class ContentGetter(ChromeContentGetter):
             WebDriverWait(self._driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, login_button_sel)))
             self._driver.find_element(By.CSS_SELECTOR, login_button_sel).click()
             self._login()
-            # ==============================================
-            # ===== remember to handle captcha failure =====
-            # ==============================================
 
         except TimeoutException:
             self.restart()
@@ -454,7 +444,7 @@ class ContentGetter(ChromeContentGetter):
 
     def restart(self):
         if self.retry_count >= MAX_RETRY_COUNT:
-            raise LoadWebsiteTimeOutError(url=self._driver.current_url)
+            raise DriverMaxRetryError()
 
         self.retry_count += 1
         self._driver.close()
