@@ -206,7 +206,7 @@ class TimeRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, task_id: str, container_status: dict) -> RequestOption:
-        form_data = {"date[]": container_status["timestamp"]}
+        form_data = {"date": container_status["timestamp"]}
 
         return RequestOption(
             rule_name=cls.name,
@@ -226,7 +226,7 @@ class TimeRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_id = response.meta["task_id"]
         status = response.meta["status"]
-        local_date_time = json.loads(response.text)[0]
+        local_date_time = response.text
 
         yield ContainerStatusItem(
             task_id=task_id,
