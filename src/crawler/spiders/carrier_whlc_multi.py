@@ -3,7 +3,7 @@ import dataclasses
 import logging
 import re
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import scrapy
 from pyppeteer.errors import NetworkError, PageError, TimeoutError
@@ -205,14 +205,22 @@ class MblRoutingRule(BaseRoutingRule):
         mbl_nos = response.meta["search_nos"]
         try:
             page_source = asyncio.get_event_loop().run_until_complete(
-                self.driver.multi_search(search_nos=mbl_nos, search_type=self._search_type)
+                self.driver.multi_search(
+                    search_nos=mbl_nos,
+                    search_type=self._search_type,
+                    info_pack={
+                        "task_ids": task_ids,
+                        "search_nos": mbl_nos,
+                        "search_type": SEARCH_TYPE_MBL,
+                    },
+                )
             )
         except POSSIBLE_ERROR_TUPLE as e:
             yield Restart(search_nos=mbl_nos, task_ids=task_ids, reason=repr(e))
             return
 
         response_selector = Selector(text=page_source)
-        container_list = self.extract_container_info(response_selector)
+        container_list = self.extract_container_info(response=response_selector, task_ids=task_ids, mbl_nos=mbl_nos)
         mbl_no_set = self.get_mbl_no_set_from(container_list=container_list)
 
         for mbl_no, task_id in zip(mbl_nos, task_ids):
@@ -270,7 +278,12 @@ class MblRoutingRule(BaseRoutingRule):
             "search_type": SEARCH_TYPE_CONTAINER,
         }
 
-        page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(idx + 2))
+        page_source = asyncio.get_event_loop().run_until_complete(
+            self.driver.go_detail_page(
+                idx=idx + 2,
+                info_pack=info_pack,
+            )
+        )
 
         if not page_source:
             raise FormatError(
@@ -308,7 +321,12 @@ class MblRoutingRule(BaseRoutingRule):
             "search_type": SEARCH_TYPE_CONTAINER,
         }
 
-        page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_history_page(idx + 2))
+        page_source = asyncio.get_event_loop().run_until_complete(
+            self.driver.go_history_page(
+                idx=idx + 2,
+                info_pack=info_pack,
+            )
+        )
 
         if not page_source:
             raise FormatError(
@@ -332,7 +350,7 @@ class MblRoutingRule(BaseRoutingRule):
 
         self.driver.close_page_and_switch_last()
 
-    def extract_container_info(self, response: scrapy.Selector) -> List:
+    def extract_container_info(self, response: scrapy.Selector, task_ids: List[str], mbl_nos: List[str]) -> List:
         table_selector = response.css("table.tbl-list")[0]
         table_locator = ContainerListTableLocator()
         table_locator.parse(table=table_selector)
@@ -340,16 +358,16 @@ class MblRoutingRule(BaseRoutingRule):
         return_list = []
         for left in table_locator.iter_left_header():
             container_no_text = table.extract_cell("Ctnr No.", left)
-            container_no = self._parse_container_no_from(text=container_no_text)
+            container_no = self._parse_container_no_from(text=container_no_text, task_ids=task_ids, mbl_nos=mbl_nos)
 
             mbl_no_text = table.extract_cell("BL no.", left)
-            mbl_no = self._parse_mbl_no_from(text=mbl_no_text)
+            mbl_no = self._parse_mbl_no_from(text=mbl_no_text, task_ids=task_ids, mbl_nos=mbl_nos)
 
             detail_j_idt_text = table.extract_cell("More detail", left, JidtTdExtractor())
-            detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text)
+            detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text, task_ids=task_ids, mbl_nos=mbl_nos)
 
             history_j_idt_text = table.extract_cell("More History", left, JidtTdExtractor())
-            history_j_idt = self._parse_history_j_idt_from(text=history_j_idt_text)
+            history_j_idt = self._parse_history_j_idt_from(text=history_j_idt_text, task_ids=task_ids, mbl_nos=mbl_nos)
 
             return_list.append(
                 {
@@ -362,60 +380,72 @@ class MblRoutingRule(BaseRoutingRule):
 
         return return_list
 
-    def _parse_container_no_from(self, text):
+    def _parse_container_no_from(self, text: Optional[str], task_ids: List[str], mbl_nos: List[str]):
         if not text:
+            zip_list = list(zip(task_ids, mbl_nos))
             raise FormatError(
+                task_id=task_ids[0],
                 search_type=self._search_type,
-                reason="container_no not found",
+                reason=f"container_no not found, on (task_id, search_no): {zip_list}",
             )
 
         m = self._container_patt.match(text)
         if not m:
+            zip_list = list(zip(task_ids, mbl_nos))
             raise FormatError(
+                task_id=task_ids[0],
                 search_type=self._search_type,
-                reason="container_no not match",
+                reason=f"container_no not match, on (task_id, search_no): {zip_list}",
             )
 
         return m.group("container_no")
 
-    def _parse_mbl_no_from(self, text):
+    def _parse_mbl_no_from(self, text: Optional[str], task_ids: List[str], mbl_nos: List[str]):
         if not text:
+            zip_list = list(zip(task_ids, mbl_nos))
             raise FormatError(
+                task_id=task_ids[0],
                 search_type=self._search_type,
-                reason="mbl_no not found",
+                reason=f"mbl_no not found, on (task_id, search_no): {zip_list}",
             )
 
         m = self._container_patt.match(text)
         if not m:
+            zip_list = list(zip(task_ids, mbl_nos))
             raise FormatError(
+                task_id=task_ids[0],
                 search_type=self._search_type,
-                reason="mbl_no not match",
+                reason=f"mbl_no not match, on (task_id, search_no): {zip_list}",
             )
 
         return m.group("container_no")
 
-    def _parse_detail_j_idt_from(self, text: str) -> str:
+    def _parse_detail_j_idt_from(self, text: Optional[str], task_ids: List[str], mbl_nos: List[str]) -> str:
         if not text:
             return ""
 
         m = self._j_idt_patt.search(text)
         if not m:
+            zip_list = list(zip(task_ids, mbl_nos))
             raise FormatError(
+                task_id=task_ids[0],
                 search_type=self._search_type,
-                reason="detail_j_idt not match",
+                reason=f"detail_j_idt not match, on (task_id, search_no): {zip_list}",
             )
 
         return m.group("j_idt")
 
-    def _parse_history_j_idt_from(self, text: str) -> str:
+    def _parse_history_j_idt_from(self, text: Optional[str], task_ids: List[str], mbl_nos: List[str]) -> str:
         if not text:
             return ""
 
         m = self._j_idt_patt.search(text)
         if not m:
+            zip_list = list(zip(task_ids, mbl_nos))
             raise FormatError(
+                task_id=task_ids[0],
                 search_type=self._search_type,
-                reason="History_j_idt not match",
+                reason=f"History_j_idt not match, on (task_id, search_no): {zip_list}",
             )
 
         return m.group("j_idt")
@@ -537,7 +567,15 @@ class BookingRoutingRule(BaseRoutingRule):
         search_nos = response.meta["search_nos"]
         try:
             page_source = asyncio.get_event_loop().run_until_complete(
-                self.driver.multi_search(search_nos=search_nos, search_type=self._search_type)
+                self.driver.multi_search(
+                    search_nos=search_nos,
+                    search_type=self._search_type,
+                    info_pack={
+                        "task_ids": task_ids,
+                        "search_nos": search_nos,
+                        "search_type": SEARCH_TYPE_BOOKING,
+                    },
+                )
             )
         except POSSIBLE_ERROR_TUPLE as e:
             yield Restart(search_nos=search_nos, task_ids=task_ids, reason=repr(e))
@@ -545,12 +583,14 @@ class BookingRoutingRule(BaseRoutingRule):
 
         response_selector = Selector(text=page_source)
         if self.is_search_no_invalid(response=response_selector):
-            pairs = list(zip(task_ids, search_nos))
+            zip_list = list(zip(task_ids, search_nos))
             raise GeneralFatalError(
-                search_type=self._search_type, reason=f"Invalid search_nos, (task_id, search_no): {pairs}"
+                task_id=task_ids[0],
+                search_type=self._search_type,
+                reason=f"Invalid search_nos, on (task_id, search_no): {zip_list}",
             )
 
-        booking_list = self.extract_booking_list(response_selector)
+        booking_list = self.extract_booking_list(response=response_selector, task_ids=task_ids, search_nos=search_nos)
         book_no_set = self.get_book_no_set_from(booking_list=booking_list)
 
         for task_id, search_no in zip(task_ids, search_nos):
@@ -580,7 +620,16 @@ class BookingRoutingRule(BaseRoutingRule):
         self.driver.close_page_and_switch_last()
 
     def handle_booking_detail_history_page(self, task_id: str, search_no: str, b_idx: int):
-        page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(b_idx + 2))
+        page_source = asyncio.get_event_loop().run_until_complete(
+            self.driver.go_detail_page(
+                idx=b_idx + 2,
+                info_pack={
+                    "task_id": task_id,
+                    "search_no": search_no,
+                    "search_type": self._search_type,
+                },
+            )
+        )
 
         if not page_source:
             raise FormatError(
@@ -630,7 +679,12 @@ class BookingRoutingRule(BaseRoutingRule):
             }
 
             # history page
-            page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_booking_history_page(idx + 2))
+            page_source = asyncio.get_event_loop().run_until_complete(
+                self.driver.go_booking_history_page(
+                    idx=idx + 2,
+                    info_pack=info_pack,
+                )
+            )
 
             if not page_source:
                 raise FormatError(**info_pack, reason="History page source empty")
@@ -657,7 +711,7 @@ class BookingRoutingRule(BaseRoutingRule):
             return True
         return False
 
-    def extract_booking_list(self, response: scrapy.Selector) -> List:
+    def extract_booking_list(self, response: scrapy.Selector, task_ids: List[str], search_nos: List[str]) -> List:
         table_selector = response.css("table.tbl-list")[0]
         table_locator = ContainerListTableLocator()
         table_locator.parse(table=table_selector)
@@ -665,10 +719,12 @@ class BookingRoutingRule(BaseRoutingRule):
         return_list = []
         for left in table_locator.iter_left_header():
             booking_no_text = table.extract_cell("Book No.", left)
-            booking_no = self._parse_booking_no_from(text=booking_no_text)
+            booking_no = self._parse_booking_no_from(text=booking_no_text, task_ids=task_ids, search_nos=search_nos)
 
             detail_j_idt_text = table.extract_cell("More detail", left, JidtTdExtractor())
-            detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text)
+            detail_j_idt = self._parse_detail_j_idt_from(
+                text=detail_j_idt_text, task_ids=task_ids, search_nos=search_nos
+            )
 
             return_list.append(
                 {
@@ -679,33 +735,39 @@ class BookingRoutingRule(BaseRoutingRule):
 
         return return_list
 
-    def _parse_booking_no_from(self, text):
+    def _parse_booking_no_from(self, text: Optional[str], task_ids: List[str], search_nos: List[str]):
         if not text:
+            zip_list = list(zip(task_ids, search_nos))
             raise FormatError(
+                task_id=task_ids[0],
                 search_type=self._search_type,
-                reason="booking_no not found",
+                reason=f"booking_no not found, on (task_id, search_no): {zip_list}",
             )
 
         booking_patt = re.compile(r"^(?P<booking_no>\w+)")
         m = booking_patt.match(text)
         if not m:
+            zip_list = list(zip(task_ids, search_nos))
             raise FormatError(
+                task_id=task_ids[0],
                 search_type=self._search_type,
-                reason="booking_no not match",
+                reason=f"booking_no not match, on (task_id, search_no): {zip_list}",
             )
 
         return m.group("booking_no")
 
-    def _parse_detail_j_idt_from(self, text: str) -> str:
+    def _parse_detail_j_idt_from(self, text: Optional[str], task_ids: List[str], search_nos: List[str]) -> str:
         if not text:
             return ""
 
         j_idt_patt = re.compile(r"'(?P<j_idt>j_idt[^,]+)':'(?P=j_idt)'")
         m = j_idt_patt.search(text)
         if not m:
+            zip_list = list(zip(task_ids, search_nos))
             raise FormatError(
+                task_id=task_ids[0],
                 search_type=self._search_type,
-                reason="detail_j_idt not match",
+                reason=f"detail_j_idt not match, on (task_id, search_no): {zip_list}",
             )
 
         return m.group("j_idt")
@@ -809,7 +871,7 @@ class WhlcContentGetter(PyppeteerContentGetter):
             SEARCH_TYPE_BOOKING: "4",
         }
 
-    async def multi_search(self, search_nos, search_type):
+    async def multi_search(self, search_nos, search_type, info_pack: Dict):
         await self.page.goto(WHLC_BASE_URL, options={"timeout": 60000})
         await asyncio.sleep(3)
 
@@ -825,13 +887,15 @@ class WhlcContentGetter(PyppeteerContentGetter):
 
         click_selector = "#Query"
         wait_for_selector = "table.tbl-list"
-        await self.click_button_and_wait_for(click_selector=click_selector, wait_for_selector=wait_for_selector)
+        await self.click_button_and_wait_for(
+            click_selector=click_selector, wait_for_selector=wait_for_selector, info_pack=info_pack
+        )
         await asyncio.sleep(5)
 
         await self.scroll_down()
         return await self.page.content()
 
-    async def go_detail_page(self, idx: int) -> str:
+    async def go_detail_page(self, idx: int, info_pack: Dict) -> str:
         await self.page.waitForSelector(
             f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u",
             options={"timeout": 60000},
@@ -839,13 +903,15 @@ class WhlcContentGetter(PyppeteerContentGetter):
 
         click_selector = f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u"
         wait_for_selector = "table.tbl-list"
-        await self.click_button_and_wait_for(click_selector=click_selector, wait_for_selector=wait_for_selector)
+        await self.click_button_and_wait_for(
+            click_selector=click_selector, wait_for_selector=wait_for_selector, info_pack=info_pack
+        )
         await asyncio.sleep(3)
 
         await self.scroll_down()
         return await self.page.content()
 
-    async def go_history_page(self, idx: int) -> str:
+    async def go_history_page(self, idx: int, info_pack: Dict) -> str:
         await self.page.waitForSelector(
             f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u",
             options={"timeout": 60000},
@@ -853,13 +919,15 @@ class WhlcContentGetter(PyppeteerContentGetter):
 
         click_selector = f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u"
         wait_for_selector = "table.tbl-list"
-        await self.click_button_and_wait_for(click_selector=click_selector, wait_for_selector=wait_for_selector)
+        await self.click_button_and_wait_for(
+            click_selector=click_selector, wait_for_selector=wait_for_selector, info_pack=info_pack
+        )
         await asyncio.sleep(3)
 
         await self.scroll_down()
         return await self.page.content()
 
-    async def go_booking_history_page(self, idx: int) -> str:
+    async def go_booking_history_page(self, idx: int, info_pack: Dict) -> str:
         await self.page.waitForSelector(
             f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a",
             options={"timeout": 60000},
@@ -867,7 +935,9 @@ class WhlcContentGetter(PyppeteerContentGetter):
 
         click_selector = f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"
         wait_for_selector = "table.tbl-list"
-        await self.click_button_and_wait_for(click_selector=click_selector, wait_for_selector=wait_for_selector)
+        await self.click_button_and_wait_for(
+            click_selector=click_selector, wait_for_selector=wait_for_selector, info_pack=info_pack
+        )
         await asyncio.sleep(3)
 
         await self.scroll_down()
@@ -888,7 +958,7 @@ class WhlcContentGetter(PyppeteerContentGetter):
         asyncio.get_event_loop().run_until_complete(self.close_page())
         asyncio.get_event_loop().run_until_complete(self.switch_to_last())
 
-    async def click_button_and_wait_for(self, click_selector: str, wait_for_selector: str):
+    async def click_button_and_wait_for(self, click_selector: str, wait_for_selector: str, info_pack: Dict):
         max_prevent_redirection_count = 3
         while max_prevent_redirection_count != 0:
             max_prevent_redirection_count -= 1
@@ -906,10 +976,21 @@ class WhlcContentGetter(PyppeteerContentGetter):
                 ):
                     self.close_page_and_switch_last()
                     if max_prevent_redirection_count == 0:
-                        raise FormatError(
-                            reason=f"Prevent redirection fail, while click {click_selector} "
-                            f"and wait for selector {wait_for_selector}"
-                        )
+                        reason = f"Prevent redirection fail, while click {click_selector} and wait for selector {wait_for_selector}"
+                        if info_pack.get("task_id"):
+                            raise FormatError(
+                                task_id=info_pack["task_id"],
+                                search_no=info_pack["search_no"],
+                                search_type=info_pack["search_type"],
+                                reason=reason,
+                            )
+                        else:
+                            zip_list = list(zip(info_pack["task_ids"], info_pack["search_nos"]))
+                            raise FormatError(
+                                task_id=info_pack["task_ids"][0],
+                                search_type=info_pack["search_type"],
+                                reason=reason + f", on (task_id, search_no): {zip_list}",
+                            )
                 else:
                     raise e
 
