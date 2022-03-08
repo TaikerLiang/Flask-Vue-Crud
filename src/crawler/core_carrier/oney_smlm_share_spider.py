@@ -201,7 +201,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
 
         container_info_list = self._extract_container_info_list(response_dict=response_dict)
         booking_no = self._get_booking_no_from(container_list=container_info_list, info_pack=info_pack)
-        mbl_no = self._get_mbl_no_from(container_list=container_info_list)
+        mbl_no = self._get_mbl_no_from(container_list=container_info_list, info_pack=info_pack)
 
         if self._search_type == SEARCH_TYPE_MBL:
             yield MblItem(mbl_no=mbl_no)
@@ -279,12 +279,12 @@ class FirstTierRoutingRule(BaseRoutingRule):
         return booking_no_list[0]
 
     @staticmethod
-    def _get_mbl_no_from(container_list: List):
+    def _get_mbl_no_from(container_list: List, info_pack: Dict):
         mbl_no_list = [container["mbl_no"] for container in container_list]
         mbl_no_set = set(mbl_no_list)
 
         if len(mbl_no_set) != 1:
-            raise FormatError(reason=f"All the mbl_no are not the same: `{mbl_no_set}`")
+            raise FormatError(**info_pack, reason=f"All the mbl_no are not the same: `{mbl_no_set}`")
 
         return mbl_no_list[0]
 
@@ -314,7 +314,6 @@ class VesselRoutingRule(BaseRoutingRule):
         return f"{self.name}.json"
 
     def handle(self, response):
-        task_id = response.meta["task_id"]
         response_dict = json.loads(response.text)
 
         if self.__is_vessel_empty(response_dict=response_dict):
@@ -389,7 +388,6 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         return f"{self.name}_{container_key}.json"
 
     def handle(self, response):
-        task_id = response.meta["task_id"]
         container_key = response.meta["container_key"]
         response_dict = json.loads(response.text)
 

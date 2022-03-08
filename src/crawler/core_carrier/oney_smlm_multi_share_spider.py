@@ -164,13 +164,20 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
             )
         else:
-            task_ids_str = f" task_ids: {','.join(meta.get('task_ids'))}" if "task_ids" in meta else ""
-            raise SuspiciousOperationError(
-                task_id=meta.get("task_id") or meta.get("task_ids")[0],
-                search_no=meta.get("search_no") or meta.get("search_nos")[0],
-                search_type=self.search_type,
-                reason=f"Unexpected request method: `{option.method}`" + task_ids_str,
-            )
+            if meta.get("task_ids"):
+                zip_list = list(zip(meta["task_ids"], meta["search_nos"]))
+                raise SuspiciousOperationError(
+                    task_id=meta["task_ids"][0],
+                    search_type=self.search_type,
+                    reason=f"Unexpected request method: `{option.method}`, on (task_id, search_no): {zip_list}",
+                )
+            else:
+                raise SuspiciousOperationError(
+                    task_id=meta["task_id"],
+                    search_no=meta["search_no"],
+                    search_type=self.search_type,
+                    reason=f"Unexpected request method: `{option.method}`",
+                )
 
 
 class FirstTierRoutingRule(BaseRoutingRule):
