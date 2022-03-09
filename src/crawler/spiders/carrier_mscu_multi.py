@@ -8,6 +8,7 @@ from crawler.core.base import (
     DUMMY_URL_DICT,
     RESULT_STATUS_ERROR,
     SEARCH_TYPE_BOOKING,
+    SEARCH_TYPE_CONTAINER,
     SEARCH_TYPE_MBL,
 )
 from crawler.core.exceptions import FormatError, SuspiciousOperationError
@@ -286,15 +287,27 @@ class MainRoutingRule(BaseRoutingRule):
                 container_info = extractor.extract_container_info(container_selector_map)
                 place_of_deliv_set.add(container_info["place_of_deliv"])
 
-            except FormatError as e:
-                yield e.build_error_data()
+            except FormatError:
+                yield DataNotFoundItem(
+                    task_id=task_ids[0],
+                    search_type=SEARCH_TYPE_CONTAINER,
+                    search_no=search_nos[0],
+                    status=RESULT_STATUS_ERROR,
+                    detail="Format error in extracting container info",
+                )
 
         if not place_of_deliv_set:
             place_of_deliv = None
         elif len(place_of_deliv_set) == 1:
             place_of_deliv = list(place_of_deliv_set)[0] or None
         else:
-            yield FormatError(reason=f"Different place_of_deliv: `{place_of_deliv_set}`").build_error_data()
+            yield DataNotFoundItem(
+                task_id=task_ids[0],
+                search_type=SEARCH_TYPE_CONTAINER,
+                search_no=search_nos[0],
+                status=RESULT_STATUS_ERROR,
+                detail=f"Different place_of_deliv: `{place_of_deliv_set}`",
+            )
             yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
             return
 
