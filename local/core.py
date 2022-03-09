@@ -8,6 +8,7 @@ import time
 import bezier
 import numpy as np
 import pyautogui
+import selenium.webdriver
 from scrapy import Request
 from scrapy.http import TextResponse
 from selenium.webdriver import ActionChains
@@ -43,18 +44,24 @@ class BaseSeleniumContentGetter:
     PROXY_PASSWORD = PROXY_PASSWORD
 
     def __init__(self, proxy: bool):
-        options = {}
+        seleniumwire_options = {}
+        options = selenium.webdriver.ChromeOptions()
+
+        options.add_argument("--disable-dev-shm-usage")  # 使用共享內存RAM
+        options.add_argument("--no-sandbox")
+        options.add_argument("--window-size=1920,1080")
+        options.add_argument("--disable-blink-features=AutomationControlled")
         self.proxy = proxy
         if self.proxy:
             proxy_manager = HydraproxyProxyManager(logger=logger)
             proxy_manager.renew_proxy()
-            options = {
+            seleniumwire_options = {
                 "proxy": {
                     "http": f"http://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_DOMAIN}",
                     "https": f"https://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_DOMAIN}",
                 }
             }
-        self.driver = Chrome(version_main=98, seleniumwire_options=options)
+        self.driver = Chrome(version_main=98, seleniumwire_options=seleniumwire_options, options=options)
         # self.driver.get("https://nowsecure.nl")
         # time.sleep(5)
         self.action = ActionChains(self.driver)
@@ -83,6 +90,10 @@ class BaseSeleniumContentGetter:
 
     def scroll_down(self):
         self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(5)
+
+    def scroll_up(self):
+        self.driver.execute_script("window.scrollTo(0, 0);")
         time.sleep(5)
 
     def back_to_previous(self):

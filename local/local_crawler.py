@@ -69,7 +69,7 @@ class LocalCrawler:
         self.crawler.quit()
 
 
-@timeout(240, "Function slow; aborted")
+@timeout(300, "Function slow; aborted")
 def run_spider(local_crawler, edi_client, task, start_time: datetime, mode: str):
     for result in local_crawler.run(task=task):
         if mode != "dev":
