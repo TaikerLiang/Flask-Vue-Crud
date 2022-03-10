@@ -178,7 +178,7 @@ class MblRoutingRule(BaseRoutingRule):
             raise TimeOutError(**info_pack, reason="Timeout during driver.search()")
 
         response_selector = Selector(text=page_source)
-        container_list = self._extract_container_info(response_selector)
+        container_list = self._extract_container_info(response=response_selector, info_pack=info_pack)
 
         yield MblItem(mbl_no=mbl_no)
 
@@ -197,7 +197,7 @@ class MblRoutingRule(BaseRoutingRule):
 
             # detail page
             try:
-                for item in self.handle_detail_page(idx=idx, info_pack=info_pack):
+                for item in self._handle_detail_page(idx=idx, info_pack=info_pack):
                     yield item
             except ElementHandleError:
                 pass
@@ -212,7 +212,7 @@ class MblRoutingRule(BaseRoutingRule):
 
             # history page
             try:
-                for item in self.handle_history_page(idx=idx, info_pack=info_pack):
+                for item in self._handle_history_page(idx=idx, info_pack=info_pack):
                     yield item
             except ElementHandleError:
                 pass
@@ -231,7 +231,7 @@ class MblRoutingRule(BaseRoutingRule):
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
-    def handle_detail_page(self, idx: int, info_pack: Dict):
+    def _handle_detail_page(self, idx: int, info_pack: Dict):
         try:
             page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(idx + 2))
         except FormatError as e:
@@ -260,7 +260,7 @@ class MblRoutingRule(BaseRoutingRule):
 
         self.driver.close_page_and_switch_last()
 
-    def handle_history_page(self, idx: int, info_pack: Dict):
+    def _handle_history_page(self, idx: int, info_pack: Dict):
         container_no = info_pack["search_no"]
         page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_history_page(idx + 2))
         history_selector = Selector(text=page_source)
@@ -274,7 +274,7 @@ class MblRoutingRule(BaseRoutingRule):
                 location=LocationItem(name=container_status["location_name"]),
             )
 
-    def _extract_container_info(self, response: scrapy.Selector) -> List:
+    def _extract_container_info(self, response: scrapy.Selector, info_pack: Dict) -> List:
         table_selector = response.css("table.tbl-list")[0]
         table_locator = ContainerListTableLocator()
         table_locator.parse(table=table_selector)
@@ -282,13 +282,13 @@ class MblRoutingRule(BaseRoutingRule):
         return_list = []
         for left in table_locator.iter_left_headers():
             container_no_text = table.extract_cell("Ctnr No.", left)
-            container_no = self._parse_container_no_from(text=container_no_text)
+            container_no = self._parse_container_no_from(text=container_no_text, info_pack=info_pack)
 
             detail_j_idt_text = table.extract_cell("More detail", left, JidtTdExtractor())
-            detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text)
+            detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text, info_pack=info_pack)
 
             history_j_idt_text = table.extract_cell("More History", left, JidtTdExtractor())
-            history_j_idt = self._parse_history_j_idt_from(text=history_j_idt_text)
+            history_j_idt = self._parse_history_j_idt_from(text=history_j_idt_text, info_pack=info_pack)
 
             return_list.append(
                 {
@@ -300,50 +300,49 @@ class MblRoutingRule(BaseRoutingRule):
 
         return return_list
 
-    def _parse_container_no_from(self, text):
+    def _parse_container_no_from(self, text: str, info_pack: Dict):
         if not text:
             raise FormatError(
-                search_type=self._search_type,
+                **info_pack,
                 reason="container_no not found",
             )
 
         m = self._container_patt.match(text)
         if not m:
             raise FormatError(
-                search_type=self._search_type,
+                **info_pack,
                 reason="container_no not match",
             )
 
         return m.group("container_no")
 
-    def _parse_detail_j_idt_from(self, text: str) -> str:
+    def _parse_detail_j_idt_from(self, text: str, info_pack: Dict) -> str:
         if not text:
             return ""
 
         m = self._j_idt_patt.search(text)
         if not m:
             raise FormatError(
-                search_type=self._search_type,
+                **info_pack,
                 reason="detail_j_idt not match",
             )
 
         return m.group("j_idt")
 
-    def _parse_history_j_idt_from(self, text: str) -> str:
+    def _parse_history_j_idt_from(self, text: str, info_pack: Dict) -> str:
         if not text:
             return ""
 
         m = self._j_idt_patt.search(text)
         if not m:
             raise FormatError(
-                search_type=self._search_type,
+                **info_pack,
                 reason="History_j_idt not match",
             )
 
         return m.group("j_idt")
 
-    @staticmethod
-    def _extract_date_information(response, info_pack: Dict) -> Dict:
+    def _extract_date_information(self, response: scrapy.Selector, info_pack: Dict) -> Dict:
         pattern = re.compile(r"^(?P<vessel>[^/]+) / (?P<voyage>[^/]+)$")
 
         match_rule = NameOnTableMatchRule(name="2. Departure Date / Arrival Date Information")
@@ -389,8 +388,7 @@ class MblRoutingRule(BaseRoutingRule):
             "pol_etd": date_table.extract_cell(top=date_index, left="Departure Date"),
         }
 
-    @staticmethod
-    def _extract_container_status(response, info_pack: Dict) -> List:
+    def _extract_container_status(self, response: scrapy.Selector, info_pack: Dict) -> List:
         table_selector = response.css("table.tbl-list")
 
         if not table_selector:
@@ -470,15 +468,15 @@ class BookingRoutingRule(BaseRoutingRule):
             self.driver.quit()
             return
 
-        for item in self.handle_booking_detail_page(response=page_source, search_no=search_no):
+        for item in self._handle_booking_detail_page(response=page_source, search_no=search_no):
             yield item
 
-        for item in self.handle_booking_history_page(response=page_source, task_id=task_id):
+        for item in self._handle_booking_history_page(response=page_source, task_id=task_id):
             yield item
 
         self.driver.close_page_and_switch_last()
 
-    def handle_booking_detail_page(self, response, search_no):
+    def _handle_booking_detail_page(self, response, search_no):
         basic_info = self._extract_basic_info(Selector(text=response))
         vessel_info = self._extract_vessel_info(Selector(text=response))
 
@@ -502,7 +500,7 @@ class BookingRoutingRule(BaseRoutingRule):
             eta=vessel_info["eta"],
         )
 
-    def handle_booking_history_page(self, response, task_id: str):
+    def _handle_booking_history_page(self, response, task_id: str):
         container_nos = self._extract_container_no_and_status_links(Selector(text=response))
 
         for idx in range(len(container_nos)):
@@ -576,8 +574,7 @@ class BookingRoutingRule(BaseRoutingRule):
 
         return table_locator.get_container_no_list()
 
-    @classmethod
-    def _make_container_status_items(cls, container_no, event_list):
+    def _make_container_status_items(self, container_no, event_list):
         container_statuses = []
         for container_status in event_list:
             container_statuses.append(
@@ -590,8 +587,7 @@ class BookingRoutingRule(BaseRoutingRule):
             )
         return container_statuses
 
-    @staticmethod
-    def _extract_container_status(response, info_pack: Dict) -> List:
+    def _extract_container_status(self, response: scrapy.Selector, info_pack: Dict) -> List:
         table_selector = response.css("table.tbl-list")
 
         if not table_selector:
