@@ -4,8 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
-from crawler.core_terminal.items import ExportErrorData
+from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_CONTAINER
+from crawler.core.items import DataNotFoundItem
 from crawler.core_terminal.trapac_share_spider import MainRoutingRule
 from crawler.spiders.terminal_trapac_y549 import TerminalTrapacOakSpider
 from test.spiders.terminal_trapac_y549 import main
@@ -58,10 +58,11 @@ def test_main_routing_rule(sub, container_no, sample_loader):
 )
 def test_invalid_container_no(sub, container_no, sample_loader):
     expect_data_list = [
-        ExportErrorData(
-            container_no=container_no,
+        DataNotFoundItem(
+            search_no=container_no,
+            search_type=SEARCH_TYPE_CONTAINER,
             detail="Data was not found",
-            status=TERMINAL_RESULT_STATUS_ERROR,
+            status=RESULT_STATUS_ERROR,
         ),
     ]
 
