@@ -1,25 +1,30 @@
 import dataclasses
+from datetime import datetime, timedelta
 import random
 import string
 import time
-from datetime import datetime, timedelta
 from typing import Dict, List
 from urllib.parse import urlencode
 
 import scrapy
-import ujson as json
 from scrapy import Selector
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
+import ujson as json
 
+from crawler.core.base import DUMMY_URL_DICT, RESULT_STATUS_ERROR, SEARCH_TYPE_CONTAINER
+from crawler.core.exceptions import (
+    GeneralFatalError,
+    SuspiciousOperationError,
+    TimeOutError,
+)
+from crawler.core.items import DataNotFoundItem
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.exceptions import DataNotFoundError, LoadWebsiteTimeOutError
-from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
+from crawler.core_terminal.items import DebugItem, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
@@ -84,7 +89,7 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
         option = MainRoutingRule.build_request_option(
-            container_no_list=unique_container_nos, company_info=self.company_info
+            container_nos=unique_container_nos, cno_tid_map=self.cno_tid_map, company_info=self.company_info
         )
         yield self._build_request_by(option=option)
 
@@ -94,8 +99,14 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
+            if isinstance(result, TerminalItem):
                 c_no = result["container_no"]
+                t_ids = self.cno_tid_map[c_no]
+                for t_id in t_ids:
+                    result["task_id"] = t_id
+                    yield result
+            elif isinstance(result, DataNotFoundItem):
+                c_no = result["search_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
                     result["task_id"] = t_id
@@ -105,7 +116,7 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
             elif isinstance(result, SaveItem) and self._save:
                 self._saver.save(to=result.file_name, text=result.text)
             elif isinstance(result, SaveItem) and not self._save:
-                raise DataNotFoundError()
+                raise RuntimeError()
 
     def _build_request_by(self, option: RequestOption):
         meta = {
@@ -131,22 +142,27 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
             )
 
         else:
-            raise ValueError(f"Invalid option.method [{option.method}]")
+            map_dict = {search_no: self.cno_tid_map[search_no] for search_no in option.meta["search_nos"]}
+            raise SuspiciousOperationError(
+                task_id=self.cno_tid_map[option.meta["search_nos"][0]][0],
+                search_type=self.search_type,
+                reason=f"Unexpected request method: `{option.method}`, on (search_no: [task_id...]): {map_dict}",
+            )
 
 
 class MainRoutingRule(BaseRoutingRule):
     name = "MAIN"
 
     @classmethod
-    def build_request_option(cls, container_no_list: List, company_info: CompanyInfo) -> RequestOption:
-        url = "https://www.google.com"
+    def build_request_option(cls, container_nos: List, cno_tid_map: Dict, company_info: CompanyInfo) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=url,
+            url=DUMMY_URL_DICT["eval_edi"],
             meta={
-                "container_no_list": container_no_list,
                 "company_info": company_info,
+                "search_nos": container_nos,
+                "cno_tid_map": cno_tid_map,
             },
         )
 
@@ -155,25 +171,32 @@ class MainRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         company_info = response.meta["company_info"]
-        container_no_list = response.meta["container_no_list"]
+        container_nos = response.meta["search_nos"]
+        cno_tid_map = response.meta["cno_tid_map"]
 
         is_g_captcha, res, cookies = self._build_container_response(
-            company_info=company_info, container_no_list=container_no_list
+            company_info=company_info,
+            container_nos=container_nos,
+            cno_tid_map=cno_tid_map,
         )
         is_g_captcha = True
         if is_g_captcha:
             yield ContentRoutingRule.build_request_option(
-                container_no_list=container_no_list, company_info=company_info, g_token=res, cookies=cookies
+                container_nos=container_nos,
+                cno_tid_map=cno_tid_map,
+                company_info=company_info,
+                g_token=res,
+                cookies=cookies,
             )
         else:
             container_response = scrapy.Selector(text=res)
             yield SaveItem(file_name="container.html", text=container_response.get())
 
             for container_info in self.extract_container_result_table(
-                response=container_response, numbers=len(container_no_list)
+                response=container_response, numbers=len(container_nos)
             ):
                 container_no = container_info["container_no"]
-                container_no_list.remove(container_no)
+                container_nos.remove(container_no)
 
                 yield TerminalItem(  # html field
                     container_no=container_no,  # number
@@ -187,15 +210,15 @@ class MainRoutingRule(BaseRoutingRule):
                     voyage=container_info["voyage"],  # vsl / voy
                 )
 
-            for container_no in container_no_list:
-                yield ExportErrorData(
-                    container_no=container_no,
+            for container_no in container_nos:
+                yield DataNotFoundItem(
+                    search_no=container_no,
+                    search_type=SEARCH_TYPE_CONTAINER,
                     detail="Data was not found",
-                    status=TERMINAL_RESULT_STATUS_ERROR,
+                    status=RESULT_STATUS_ERROR,
                 )
 
-    @staticmethod
-    def extract_container_result_table(response: scrapy.Selector, numbers: int):
+    def extract_container_result_table(self, response: scrapy.Selector, numbers: int):
         table = response.css('div[class="transaction-result availability"] table')
 
         table_locator = ContainerTableLocator()
@@ -222,16 +245,23 @@ class MainRoutingRule(BaseRoutingRule):
                 "voyage": voyage,
             }
 
-    @staticmethod
-    def _build_container_response(company_info: CompanyInfo, container_no_list: List):
+    def _build_container_response(self, company_info: CompanyInfo, container_nos: List, cno_tid_map: Dict):
         content_getter = ContentGetter(proxy_manager=None, is_headless=True, company_info=company_info)
-        is_g_captcha, res, cookies = content_getter.get_content(search_no=",".join(container_no_list))
-        content_getter.quit()
+        try:
+            is_g_captcha, res, cookies = content_getter.get_content(search_no=",".join(container_nos))
+        except TimeOutError as e:
+            raise TimeOutError(
+                task_id=cno_tid_map[container_nos[0]][0],
+                search_no=container_nos[0],
+                search_type=SEARCH_TYPE_CONTAINER,
+                reason=e.reason,
+            )
+        finally:
+            content_getter.quit()
 
         return is_g_captcha, res, cookies
 
-    @staticmethod
-    def _is_search_no_invalid(response: scrapy.Selector) -> bool:
+    def _is_search_no_invalid(self, response: scrapy.Selector) -> bool:
         return bool(response.css("tr.error-row"))
 
 
@@ -240,14 +270,14 @@ class ContentRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(
-        cls, container_no_list: List, company_info: CompanyInfo, g_token: str, cookies: Dict
+        cls, container_nos: List, cno_tid_map: Dict, company_info: CompanyInfo, g_token: str, cookies: Dict
     ) -> RequestOption:
         form_data = {
             "action": "trapac_transaction",
             "recaptcha-token": g_token,
             "terminal": company_info.upper_short,
             "transaction": "availability",
-            "containers": ",".join(container_no_list),
+            "containers": ",".join(container_nos),
             "booking": "",
             "email": "",
             "equipment_type": "CT",
@@ -281,16 +311,25 @@ class ContentRoutingRule(BaseRoutingRule):
             headers=headers,
             body=urlencode(query=form_data),
             meta={
-                "numbers": len(container_no_list),
+                "search_nos": container_nos,
+                "cno_tid_map": cno_tid_map,
             },
         )
 
     def handle(self, response):
-        numbers = response.meta["numbers"]
+        container_nos = response.meta["search_nos"]
+        cno_tid_map = response.meta["cno_tid_map"]
+        numbers = len(container_nos)
+
         resp = json.loads(response.text)
 
         if "Please complete the reCAPTCHA check and submit your request again" in resp["html"]:
-            raise DataNotFoundError()
+            raise GeneralFatalError(
+                task_id=cno_tid_map[container_nos[0]][0],
+                search_no=container_nos[0],
+                search_type=SEARCH_TYPE_CONTAINER,
+                reason="reCAPTCHA check encountered",
+            )
 
         resp_html = Selector(text=resp["html"])
         table = resp_html.css('div[class="transaction-result availability"] table')
@@ -368,7 +407,7 @@ class ContentGetter(ChromeContentGetter):
         except TimeoutException:
             current_url = self.get_current_url()
             self._driver.quit()
-            raise LoadWebsiteTimeOutError(url=current_url)
+            raise TimeOutError(reason=current_url)
 
     def key_in_search_bar(self, search_no: str):
         text_area = self._driver.find_element_by_xpath('//*[@id="edit-containers"]')
@@ -396,8 +435,7 @@ class ContentGetter(ChromeContentGetter):
     def get_proxy_username(self, option: ProxyOption) -> str:
         return f"groups-{option.group},session-{option.session}"
 
-    @staticmethod
-    def _generate_random_string():
+    def _generate_random_string(self):
         return "".join(random.choices(string.ascii_uppercase + string.digits, k=20))
 
 
@@ -438,8 +476,7 @@ class ContainerTableLocator(BaseTable):
                 self._td_map.setdefault(title, [])
                 self._td_map[title].append(data_td)
 
-    @staticmethod
-    def _combine_title_list(main_title_ths: List[scrapy.Selector], second_title_ths: List[scrapy.Selector]):
+    def _combine_title_list(self, main_title_ths: List[scrapy.Selector], second_title_ths: List[scrapy.Selector]):
         main_title_list = []
         main_title_accumulated_col_span = []  # [(main_title, accumulated_col_span)]
 
