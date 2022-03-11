@@ -10,7 +10,7 @@ from pyppeteer.errors import NetworkError, PageError, TimeoutError
 from scrapy import Selector
 from urllib3.exceptions import ReadTimeoutError
 
-from crawler.core.base import (
+from crawler.core.base_new import (
     DUMMY_URL_DICT,
     RESULT_STATUS_ERROR,
     SEARCH_TYPE_BOOKING,
@@ -18,18 +18,18 @@ from crawler.core.base import (
     SEARCH_TYPE_MBL,
 )
 from crawler.core.defines import BaseContentGetter
-from crawler.core.exceptions import (
+from crawler.core.exceptions_new import (
     FormatError,
     GeneralFatalError,
     MaxRetryError,
     SuspiciousOperationError,
 )
-from crawler.core.items import DataNotFoundItem
-from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
+from crawler.core.items_new import DataNotFoundItem
+from crawler.core.proxy_new import HydraproxyProxyManager, ProxyManager
 from crawler.core.pyppeteer import PyppeteerContentGetter
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.items import (
+from crawler.core_carrier.base_spiders_new import BaseMultiCarrierSpider
+from crawler.core_carrier.items_new import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
@@ -38,7 +38,7 @@ from crawler.core_carrier.items import (
     MblItem,
     VesselItem,
 )
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.request_helpers_new import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RequestOptionQueue, RuleManager
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
@@ -173,13 +173,6 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
 
 
 # -------------------------------------------------------------------------------
-
-
-class CarrierIpBlockError(BaseCarrierError):
-    status = CARRIER_RESULT_STATUS_FATAL
-
-    def build_error_data(self):
-        return ExportErrorData(status=self.status, detail="<ip-block-error>")
 
 
 class MblRoutingRule(BaseRoutingRule):
