@@ -1,5 +1,5 @@
-from crawler.core_carrier.items import LocationItem, MblItem
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.items_new import LocationItem, MblItem
+from crawler.core_carrier.request_helpers_new import RequestOption
 from crawler.spiders.carrier_oolu import ContainerStatusRule
 
 

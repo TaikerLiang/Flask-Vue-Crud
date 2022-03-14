@@ -1,11 +1,11 @@
 from pathlib import Path
+from test.spiders.carrier_whlc import mbl_search
 
 import pytest
 from scrapy import Selector
 
-from crawler.core.base import SEARCH_TYPE_CONTAINER
+from crawler.core.base_new import SEARCH_TYPE_CONTAINER
 from crawler.spiders.carrier_whlc import MblRoutingRule
-from test.spiders.carrier_whlc import mbl_search
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def test_extract_container_info(sub, mbl_no, sample_loader):
     response_selector = Selector(text=html_text)
 
     routing_rule = MblRoutingRule(content_getter=None)
-    results = list(routing_rule._extract_container_info(response_selector))
+    results = list(routing_rule._extract_container_info(response_selector, info_pack={}))
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)

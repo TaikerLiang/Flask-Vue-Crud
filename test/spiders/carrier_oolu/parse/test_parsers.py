@@ -1,6 +1,6 @@
 import pytest
 
-from crawler.core.base import SEARCH_TYPE_MBL
+from crawler.core.base_new import SEARCH_TYPE_MBL
 from crawler.spiders.carrier_oolu import CargoTrackingRule
 
 

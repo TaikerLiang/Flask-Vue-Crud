@@ -1,12 +1,12 @@
 from pathlib import Path
+from test.spiders.carrier_oolu import cargo_tracking
 
 import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core.base import SEARCH_TYPE_MBL
+from crawler.core.base_new import SEARCH_TYPE_MBL
 from crawler.spiders.carrier_oolu import CargoTrackingRule
-from test.spiders.carrier_oolu import cargo_tracking
 
 
 @pytest.fixture

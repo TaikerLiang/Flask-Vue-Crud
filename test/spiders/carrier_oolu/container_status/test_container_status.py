@@ -1,12 +1,12 @@
 from pathlib import Path
+from test.spiders.carrier_oolu import container_status
 
 import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core.base import SEARCH_TYPE_CONTAINER
+from crawler.core.base_new import SEARCH_TYPE_CONTAINER
 from crawler.spiders.carrier_oolu import ContainerStatusRule
-from test.spiders.carrier_oolu import container_status
 
 
 @pytest.fixture
