@@ -75,6 +75,13 @@ class GeneralError(BaseError):
         return ExportErrorData(**self._param, detail=f"<general-error> {self.reason}")
 
 
+class DidNotEndError(BaseError):
+    status = RESULT_STATUS_ERROR
+
+    def build_error_data(self) -> ExportErrorData:
+        return ExportErrorData(**self._param, detail="<Task did not end>")
+
+
 class TimeOutError(BaseError):
     status = RESULT_STATUS_ERROR
 
