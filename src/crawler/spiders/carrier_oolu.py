@@ -17,19 +17,19 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from urllib3.exceptions import ReadTimeoutError
 
-from crawler.core.base import (
+from crawler.core.base_new import (
     DUMMY_URL_DICT,
     RESULT_STATUS_ERROR,
     SEARCH_TYPE_BOOKING,
     SEARCH_TYPE_CONTAINER,
     SEARCH_TYPE_MBL,
 )
-from crawler.core.exceptions import AccessDeniedError, FormatError, TimeOutError
-from crawler.core.items import DataNotFoundItem
+from crawler.core.exceptions_new import AccessDeniedError, FormatError, TimeOutError
+from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.items import (
+from crawler.core_carrier.base_spiders_new import BaseCarrierSpider
+from crawler.core_carrier.items_new import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
@@ -37,7 +37,7 @@ from crawler.core_carrier.items import (
     LocationItem,
     MblItem,
 )
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.request_helpers_new import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.selector_finder import (
     CssQueryTextStartswithMatchRule,
@@ -88,7 +88,7 @@ class CarrierOoluSpider(BaseCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem) or isinstance(result, DataNotFoundItem):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -409,6 +409,8 @@ class CargoTrackingRule(BaseRoutingRule):
             yield DataNotFoundItem(**info_pack, status=RESULT_STATUS_ERROR, detail="Data was not found")
             return
 
+        task_id = info_pack["task_id"]
+
         locator = _PageLocator(info_pack=info_pack)
         selector_map = locator.locate_selectors(response=response)
 
@@ -443,10 +445,12 @@ class CargoTrackingRule(BaseRoutingRule):
         container_list = self._extract_container_list(selector_map=selector_map)
         for i, container in enumerate(container_list):
             yield ContainerStatusRule.build_request_option(
-                task_id=info_pack["task_id"],
+                task_id=task_id,
                 container_no=container["container_no"].strip(),
                 click_element_css=f"a[id='form:link{i}']",
             )
+
+        yield EndItem(task_id=task_id)
 
     def _is_search_no_invalid(self, response):
         if response.css("span[class=noRecordBold]"):
@@ -1001,7 +1005,7 @@ class DestinationTableLocator(BaseTable):
     +---------+-----------+----------+ </tbody>
     """
 
-    TITEL_TD_INDEX = 0
+    TITLE_TD_INDEX = 0
     DATA_NEEDED_TD_INDEX = 2
 
     def parse(self, table: scrapy.Selector):
@@ -1010,7 +1014,7 @@ class DestinationTableLocator(BaseTable):
         for tr in tr_list:
             td_list = tr.css("td")
 
-            title_td = td_list[self.TITEL_TD_INDEX]
+            title_td = td_list[self.TITLE_TD_INDEX]
             title = title_td.css("::text").get()
             title = title.strip() if isinstance(title, str) else ""
             self.add_left_header_set(title)
