@@ -24,7 +24,7 @@ from crawler.core.exceptions_new import (
     MaxRetryError,
     SuspiciousOperationError,
 )
-from crawler.core.items_new import DataNotFoundItem
+from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.proxy_new import HydraproxyProxyManager, ProxyManager
 from crawler.core.pyppeteer import PyppeteerContentGetter
 from crawler.core.table import BaseTable, TableExtractor
@@ -125,7 +125,7 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem) or isinstance(result, DataNotFoundItem):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, Restart):
                 yield DebugItem(info=f"{result.reason}, Restarting...")
@@ -229,11 +229,18 @@ class MblRoutingRule(BaseRoutingRule):
                 )
                 continue
 
+        prev_task_id = ""
         for idx in range(len(container_list)):
             container_no = container_list[idx]["container_no"]
             mbl_no = container_list[idx]["mbl_no"]
             index = mbl_nos.index(mbl_no)
             task_id = task_ids[index]
+
+            if prev_task_id != task_id:
+                if prev_task_id:
+                    yield EndItem(task_id=prev_task_id)
+
+                prev_task_id = task_id
 
             yield ContainerItem(
                 task_id=task_id,
@@ -258,6 +265,9 @@ class MblRoutingRule(BaseRoutingRule):
                 return
 
             time.sleep(3)
+
+        if prev_task_id:
+            yield EndItem(task_id=prev_task_id)
 
         self.driver.close_page_and_switch_last()
 
@@ -591,10 +601,17 @@ class BookingRoutingRule(BaseRoutingRule):
                     detail="Data was not found",
                 )
 
+        prev_task_id = ""
         for b_idx in range(len(booking_list)):
             search_no = booking_list[b_idx]["booking_no"]
             index = search_nos.index(search_no)
             task_id = task_ids[index]
+
+            if prev_task_id != task_id:
+                if prev_task_id:
+                    yield EndItem(task_id=prev_task_id)
+
+                prev_task_id = task_id
 
             try:
                 for item in self._handle_booking_detail_history_page(task_id=task_id, search_no=search_no, b_idx=b_idx):
@@ -604,6 +621,9 @@ class BookingRoutingRule(BaseRoutingRule):
                 return
 
             time.sleep(3)
+
+        if prev_task_id:
+            yield EndItem(task_id=prev_task_id)
 
         self.driver.close_page_and_switch_last()
 

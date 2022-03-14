@@ -21,7 +21,7 @@ from crawler.core.exceptions_new import (
     SuspiciousOperationError,
     TimeOutError,
 )
-from crawler.core.items_new import DataNotFoundItem
+from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.proxy_new import HydraproxyProxyManager, ProxyManager
 from crawler.core.pyppeteer import PyppeteerContentGetter
 from crawler.core_carrier.base_spiders_new import (
@@ -94,7 +94,7 @@ class CarrierWhlcSpider(BaseCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, RequestOption):
                 self._request_queue.add_request(result)
@@ -222,6 +222,7 @@ class MblRoutingRule(BaseRoutingRule):
                 self.driver.close_page_and_switch_last()
                 continue
 
+            yield EndItem(task_id=task_id)
             self.driver.close_page_and_switch_last()
         asyncio.get_event_loop().run_until_complete(self.driver.close_page())
 
@@ -465,6 +466,7 @@ class BookingRoutingRule(BaseRoutingRule):
         for item in self._handle_booking_history_page(response=page_source, task_id=task_id):
             yield item
 
+        yield EndItem(task_id=task_id)
         self.driver.close_page_and_switch_last()
 
     def _handle_booking_detail_page(self, response, search_no):
