@@ -154,13 +154,17 @@ class ContentGetter(ChromeContentGetter):
         time.sleep(3)
         return self.search_and_return(search_no=search_no, search_type=search_type)
 
-    def close_current_window_and_jump_to_origin(self):
-        self._driver.close()
+    def find_container_btn_and_click(self, container_btn_css):
+        container_btn = self._driver.find_element_by_css_selector(container_btn_css)
+        container_btn.click()
 
-        # jump back to origin window
-        windows = self._driver.window_handles
-        assert len(windows) == 1
-        self._driver.switch_to.window(windows[0])
+    # def close_current_window_and_jump_to_origin(self):
+    #     self._driver.close()
+
+    #     # jump back to origin window
+    #     windows = self._driver.window_handles
+    #     assert len(windows) == 1
+    #     self._driver.switch_to.window(windows[0])
 
     def _search(self, search_no, search_type):
         if self._is_first:
@@ -186,19 +190,52 @@ class ContentGetter(ChromeContentGetter):
         search_btn = self._driver.find_element_by_css_selector("a#container_btn")
         search_btn.click()
 
-    @staticmethod
-    def _is_blocked(response):
+    def _is_blocked(self, response):
         res = response.xpath("/html/body/title/text()").extract()
         if res and str(res[0]) == "Error":
             return True
         else:
             return False
 
-    def find_container_btn_and_click(self, container_btn_css):
-        contaienr_btn = self._driver.find_element_by_css_selector(container_btn_css)
-        contaienr_btn.click()
+    def _handle_with_slide(self):
 
-    def get_element_slide_distance(self, slider_ele, background_ele, correct=0):
+        while True:
+            slider_ele = self._get_slider()
+            icon_ele = self._get_slider_icon_ele()
+            img_ele = self._get_bg_img_ele()
+
+            distance = self._get_element_slide_distance(icon_ele, img_ele, 0)
+
+            if distance <= 100:
+                self._refresh()
+                continue
+
+            track = self._get_track(distance)
+            self._move_to_gap(slider_ele, track)
+
+            time.sleep(5)
+            if not self._pass_verification_or_not():
+                break
+
+    def _get_slider(self):
+        WebDriverWait(self._driver, 15).until(
+            EC.presence_of_element_located(
+                (By.XPATH, "/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/i")
+            )
+        )
+        return self._driver.find_element_by_xpath("/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/i")
+
+    def _get_slider_icon_ele(self):
+        canvas = self._driver.find_element_by_xpath('//*[@id="bockCanvas"]')
+        canvas_base64 = self._driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
+        return canvas_base64
+
+    def _get_bg_img_ele(self):
+        canvas = self._driver.find_element_by_xpath('//*[@id="imgCanvas"]')
+        canvas_base64 = self._driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
+        return canvas_base64
+
+    def _get_element_slide_distance(self, slider_ele, background_ele, correct=0):
         """
         根据传入滑块，和背景的节点，计算滑块的距离
         ​
@@ -250,66 +287,14 @@ class ContentGetter(ChromeContentGetter):
 
         return cv2.cvtColor(np.array(_image), cv2.COLOR_RGB2BGR)
 
-    def refresh(self):
+    def _refresh(self):
         refresh_button = self._driver.find_element_by_xpath(
             "/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[1]/div/div/i"
         )
         refresh_button.click()
         time.sleep(5)
 
-    def pass_verification_or_not(self):
-        try:
-            return self._driver.find_element_by_id("recaptcha_div")
-        except NoSuchElementException:
-            return None
-
-    def _handle_with_slide(self):
-
-        while True:
-            slider_ele = self.get_slider()
-            icon_ele = self.get_slider_icon_ele()
-            img_ele = self.get_bg_img_ele()
-
-            distance = self.get_element_slide_distance(icon_ele, img_ele, 0)
-
-            if distance <= 100:
-                self.refresh()
-                continue
-
-            track = self.get_track(distance)
-            self.move_to_gap(slider_ele, track)
-
-            time.sleep(5)
-            if not self.pass_verification_or_not():
-                break
-
-    def get_slider(self):
-        WebDriverWait(self._driver, 15).until(
-            EC.presence_of_element_located(
-                (By.XPATH, "/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/i")
-            )
-        )
-        return self._driver.find_element_by_xpath("/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/i")
-
-    def get_slider_icon_ele(self):
-        canvas = self._driver.find_element_by_xpath('//*[@id="bockCanvas"]')
-        canvas_base64 = self._driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
-        return canvas_base64
-
-    def get_bg_img_ele(self):
-        canvas = self._driver.find_element_by_xpath('//*[@id="imgCanvas"]')
-        canvas_base64 = self._driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
-        return canvas_base64
-
-    def move_to_gap(self, slider, track):
-        ActionChains(self._driver).click_and_hold(slider).perform()
-
-        for x in track:
-            ActionChains(self._driver).move_by_offset(xoffset=x, yoffset=0).perform()
-        time.sleep(0.5)  # move to the right place and take a break
-        ActionChains(self._driver).release().perform()
-
-    def get_track(self, distance):
+    def _get_track(self, distance):
         """
         follow Newton's laws of motion
         ①v=v0+at
@@ -342,6 +327,20 @@ class ContentGetter(ChromeContentGetter):
             track.append(round(move))
 
         return track
+
+    def _move_to_gap(self, slider, track):
+        ActionChains(self._driver).click_and_hold(slider).perform()
+
+        for x in track:
+            ActionChains(self._driver).move_by_offset(xoffset=x, yoffset=0).perform()
+        time.sleep(0.5)  # move to the right place and take a break
+        ActionChains(self._driver).release().perform()
+
+    def _pass_verification_or_not(self):
+        try:
+            return self._driver.find_element_by_id("recaptcha_div")
+        except NoSuchElementException:
+            return None
 
 
 # -------------------------------------------------------------------------------
@@ -402,12 +401,11 @@ class CargoTrackingRule(BaseRoutingRule):
         for item in self._handle_response(response=response, info_pack=info_pack):
             yield item
 
-    @staticmethod
-    def _no_response(response: Selector) -> bool:
+    def _no_response(self, response: Selector) -> bool:
         return not bool(response.css("td.pageTitle"))
 
     def _handle_response(self, response, info_pack: Dict):
-        if self.is_search_no_invalid(response):
+        if self._is_search_no_invalid(response):
             yield DataNotFoundItem(**info_pack, status=RESULT_STATUS_ERROR, detail="Data was not found")
             return
 
@@ -450,7 +448,7 @@ class CargoTrackingRule(BaseRoutingRule):
                 click_element_css=f"a[id='form:link{i}']",
             )
 
-    def is_search_no_invalid(self, response):
+    def _is_search_no_invalid(self, response):
         if response.css("span[class=noRecordBold]"):
             return True
         return False
@@ -555,19 +553,19 @@ class CargoTrackingRule(BaseRoutingRule):
         pol_info = table_extractor.extract_cell(
             top="Port of Load", left=table_locator.FIRST_LEFT_HEADER, extractor=pol_pod_extractor
         )
-        etd, atd = _get_est_and_actual(status=pol_info["status"], time_str=pol_info["time_str"], info_pack=info_pack)
+        etd, atd = get_est_and_actual(status=pol_info["status"], time_str=pol_info["time_str"], info_pack=info_pack)
 
         pod_info = table_extractor.extract_cell(
             top="Port of Discharge", left=table_locator.LAST_LEFT_HEADER, extractor=pol_pod_extractor
         )
-        eta, ata = _get_est_and_actual(status=pod_info["status"], time_str=pod_info["time_str"], info_pack=info_pack)
+        eta, ata = get_est_and_actual(status=pod_info["status"], time_str=pod_info["time_str"], info_pack=info_pack)
 
         # place_of_deliv
         deliv_extractor = DelivTdExtractor(info_pack=info_pack)
         deliv_info = table_extractor.extract_cell(
             top="Final Destination Hub", left=table_locator.LAST_LEFT_HEADER, extractor=deliv_extractor
         )
-        deliv_eta, deliv_ata = _get_est_and_actual(
+        deliv_eta, deliv_ata = get_est_and_actual(
             status=deliv_info["status"], time_str=deliv_info["time_str"], info_pack=info_pack
         )
 
@@ -729,8 +727,7 @@ class VesselVoyageTdExtractor(BaseTableCellExtractor):
             "voyage": text_list[1].strip(),
         }
 
-    @staticmethod
-    def _parse_vessel(text):
+    def _parse_vessel(self, text):
         """
         Sample 1:
             text = (
@@ -817,14 +814,6 @@ class ContainerStatusRule(BaseRoutingRule):
             },
         )
 
-    @staticmethod
-    def transform_cookies_to_str(cookies: Dict):
-        cookies_str = ""
-        for key, value in cookies.items():
-            cookies_str += f"{key}={value}; "
-
-        return cookies_str[:-2]
-
     def get_save_name(self, response) -> str:
         container_no = response.meta["container_no"]
         return f"{self.name}_{container_no}.html"
@@ -895,6 +884,18 @@ class ContainerStatusRule(BaseRoutingRule):
                 local_date_time=container_status["local_date_time"],
             )
 
+    def _extract_container_no(self, response: Selector, info_pack: Dict):
+        container_no_text = response.css("td.groupTitle.fullByDraftCntNumber::text").get()
+        pattern = re.compile(r"^Detail\s+of\s+OOCL\s+Container\s+(?P<container_id>\w+)-(?P<check_no>\d+)\s+$")
+        match = pattern.match(container_no_text)
+        if not match:
+            raise FormatError(
+                **info_pack,
+                reason=f"Unknown container_no_text: `{container_no_text}`",
+            )
+
+        return match.group("container_id") + match.group("check_no")
+
     def _extract_detention_info(self, selectors_map: Dict[str, scrapy.Selector], info_pack: Dict):
         table = selectors_map.get("detail:detention_right_table", None)
         if table is None:
@@ -910,13 +911,13 @@ class ContainerStatusRule(BaseRoutingRule):
 
         if table_locator.has_header(left="Demurrage Last Free Date:"):
             lfd_info = table_extractor.extract_cell(left="Demurrage Last Free Date:", extractor=td_extractor)
-            _, lfd = _get_est_and_actual(status=lfd_info["status"], time_str=lfd_info["time_str"], info_pack=info_pack)
+            _, lfd = get_est_and_actual(status=lfd_info["status"], time_str=lfd_info["time_str"], info_pack=info_pack)
         else:
             lfd = ""
 
         if table_locator.has_header(left="Detention Last Free Date:"):
             det_lfd_info = table_extractor.extract_cell(left="Detention Last Free Date:", extractor=td_extractor)
-            _, det_lfd = _get_est_and_actual(
+            _, det_lfd = get_est_and_actual(
                 status=det_lfd_info["status"], time_str=det_lfd_info["time_str"], info_pack=info_pack
             )
         else:
@@ -951,18 +952,6 @@ class ContainerStatusRule(BaseRoutingRule):
                 }
             )
         return container_status_list
-
-    def _extract_container_no(self, response: Selector, info_pack: Dict):
-        container_no_text = response.css("td.groupTitle.fullByDraftCntNumber::text").get()
-        pattern = re.compile(r"^Detail\s+of\s+OOCL\s+Container\s+(?P<container_id>\w+)-(?P<check_no>\d+)\s+$")
-        match = pattern.match(container_no_text)
-        if not match:
-            raise FormatError(
-                **info_pack,
-                reason=f"Unknown container_no_text: `{container_no_text}`",
-            )
-
-        return match.group("container_id") + match.group("check_no")
 
 
 class ContainerStatusTableLocator(BaseTable):
@@ -1191,7 +1180,7 @@ class _PageLocator:
         return detention_tables
 
 
-def _get_est_and_actual(status, time_str, info_pack: Dict):
+def get_est_and_actual(status, time_str, info_pack: Dict):
     if status == "(Actual)":
         estimate, actual = None, time_str
     elif status == "(Estimated)":
@@ -1207,9 +1196,9 @@ def _get_est_and_actual(status, time_str, info_pack: Dict):
     return estimate, actual
 
 
-def get_multipart_body(form_data, boundary):
-    body = ""
-    for index, key in enumerate(form_data):
-        body += f"--{boundary}\r\n" f'Content-Disposition: form-data; name="{key}"\r\n' f"\r\n" f"{form_data[key]}\r\n"
-    body += f"--{boundary}--"
-    return body
+# def get_multipart_body(form_data, boundary):
+#     body = ""
+#     for index, key in enumerate(form_data):
+#         body += f"--{boundary}\r\n" f'Content-Disposition: form-data; name="{key}"\r\n' f"\r\n" f"{form_data[key]}\r\n"
+#     body += f"--{boundary}--"
+#     return body

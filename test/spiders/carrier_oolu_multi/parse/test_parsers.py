@@ -17,7 +17,8 @@ def test_parse_mbl_no_text(search_no_text, expect):
         "search_no": "",
         "search_type": SEARCH_TYPE_MBL,
     }
-    result = CargoTrackingRule._parse_search_no_text(search_no_text=search_no_text, info_pack=info_pack)
+    rule = CargoTrackingRule(content_getter=None, search_type=None)
+    result = rule._parse_search_no_text(search_no_text=search_no_text, info_pack=info_pack)
 
     assert result == expect
 
@@ -38,5 +39,6 @@ def test_parse_custom_release_info(custom_release_info, expect):
         "search_no": "",
         "search_type": SEARCH_TYPE_MBL,
     }
-    result = CargoTrackingRule._parse_custom_release_info(custom_release_info=custom_release_info, info_pack=info_pack)
+    rule = CargoTrackingRule(content_getter=None, search_type=None)
+    result = rule._parse_custom_release_info(custom_release_info=custom_release_info, info_pack=info_pack)
     assert result == expect
