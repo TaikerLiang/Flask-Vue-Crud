@@ -13,7 +13,8 @@ from crawler.core.base_new import (
     SEARCH_TYPE_BOOKING,
     SEARCH_TYPE_MBL,
 )
-from crawler.core.items_new import DataNotFoundItem, ExportErrorData
+from crawler.core.exceptions_new import DidNotEndError
+from crawler.core.items_new import DataNotFoundItem, EndItem, ExportErrorData
 from crawler.core_carrier import items_new as carrier_items
 from crawler.services.edi_service import EdiClientService
 
@@ -69,8 +70,11 @@ class CarrierItemPipeline(BaseItemPipeline):
                 self._collector.collect_rail_item(item=item)
             elif isinstance(item, DataNotFoundItem):
                 self._collector.collect_not_found_item(item=item)
+            elif isinstance(item, EndItem):
+                self._collector.set_is_end()
+            # TODO All kinds of ExportFinalData should be migrate to core/items.py
             elif isinstance(item, carrier_items.ExportFinalData):
-                res = self._send_result_back_to_edi_engine()
+                res = self._send_result_back_to_edi_engine(spider=spider)
                 return {"status": "CLOSE", "result": res}
             elif isinstance(item, ExportErrorData):
                 self._collector.collect_error_item(item=item)
@@ -91,12 +95,14 @@ class CarrierItemPipeline(BaseItemPipeline):
 
         raise DropItem("item processed")
 
-    def _send_result_back_to_edi_engine(self):
+    def _send_result_back_to_edi_engine(self, spider):
         res = []
         if self._collector.has_error():
             item_result = self._collector.get_error_item()
         elif self._collector.has_not_found():
             item_result = self._collector.get_not_found_item()
+        elif not self._collector.is_end():
+            item_result = dict(DidNotEndError(task_id=spider.task_id).build_error_data())
         else:
             item_result = self._collector.build_final_data()
 
@@ -164,6 +170,9 @@ class CarrierMultiItemsPipeline(BaseItemPipeline):
                 collector.collect_not_found_item(item=item)
             elif isinstance(item, ExportErrorData):
                 collector.collect_error_item(item=item)
+            elif isinstance(item, EndItem):
+                collector.set_is_end()
+            # TODO All kinds of ExportFinalData should be migrate to core/items.py
             elif isinstance(item, carrier_items.ExportFinalData):
                 res = self._send_result_back_to_edi_engine()
                 return {"status": "CLOSE", "result": res}
@@ -191,6 +200,8 @@ class CarrierMultiItemsPipeline(BaseItemPipeline):
                 item_result = collector.get_error_item()
             elif collector.has_not_found():
                 item_result = collector.get_not_found_item()
+            elif not collector.is_end():
+                item_result = dict(DidNotEndError(task_id=task_id).build_error_data())
             else:
                 item_result = collector.build_final_data()
 
@@ -213,6 +224,7 @@ class CarrierMultiItemsPipeline(BaseItemPipeline):
 
 class CarrierResultCollector:
     def __init__(self, request_args):
+        self._is_end = False
         self._request_args = dict(request_args)
         self._error = {}
         self._not_found = {}
@@ -357,6 +369,12 @@ class CarrierResultCollector:
                 res.update({k: v})
 
         return res
+
+    def set_is_end(self):
+        self._is_end = True
+
+    def is_end(self):
+        return self._is_end
 
     def is_default(self):
         return False if self._basic else True

@@ -5,6 +5,10 @@ class BaseItem(scrapy.Item):
     pass
 
 
+class EndItem(BaseItem):
+    task_id = scrapy.Field()
+
+
 class ExportErrorData(BaseItem):
     task_id = scrapy.Field()
     search_no = scrapy.Field()
