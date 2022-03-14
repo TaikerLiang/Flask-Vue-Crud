@@ -54,6 +54,7 @@ class ZimuContentGetter(BaseSeleniumContentGetter):
             time.sleep(5)
 
         self._accept_cookie()
+        self.close_questionnaire()
         try:
             self.driver.find_element_by_xpath('//*[@id="popup_module"]/div/div/button/span').click()
         except NoSuchElementException:
@@ -71,6 +72,8 @@ class ZimuContentGetter(BaseSeleniumContentGetter):
         else:
             time.sleep(7)
 
+        self.close_questionnaire()
+
         try:
             self.driver.find_element_by_xpath('//*[@id="popup_module"]/div/div/button/span').click()
         except NoSuchElementException:
@@ -80,6 +83,13 @@ class ZimuContentGetter(BaseSeleniumContentGetter):
 
     def get_random_string(self):
         return "".join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))
+
+    def close_questionnaire(self):
+        try:
+            self.driver.find_element_by_xpath('//*[@id="error-modal-newsletter-popup"]/div/div/button[1]').click()
+            time.sleep(2)
+        except:
+            pass
 
     def retry(self, mbl_no: str):
         self.driver.back()
@@ -123,8 +133,9 @@ class ZimuContentGetter(BaseSeleniumContentGetter):
                 search_bar.send_keys(Keys.BACKSPACE)
                 time.sleep(float(random.uniform(0.05, 0.3)))
             self.slow_type(search_bar, mbl_no)
-
+        self.close_questionnaire()
         search_bar.send_keys(Keys.RETURN)
+        self.close_questionnaire()
         time.sleep(5)
 
     def search_and_return(self, mbl_no: str):
