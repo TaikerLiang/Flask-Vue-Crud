@@ -1,11 +1,11 @@
 from pathlib import Path
+from test.spiders.carrier_whlc import booking_search
 
 import pytest
 from scrapy import Selector
 
-from crawler.core.base import SEARCH_TYPE_CONTAINER
+from crawler.core.base_new import SEARCH_TYPE_CONTAINER
 from crawler.spiders.carrier_whlc import BookingRoutingRule
-from test.spiders.carrier_whlc import booking_search
 
 
 @pytest.fixture

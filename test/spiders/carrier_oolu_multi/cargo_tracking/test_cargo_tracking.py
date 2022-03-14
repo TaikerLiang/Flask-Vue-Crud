@@ -4,7 +4,7 @@
 # from scrapy import Request
 # from scrapy.http import TextResponse
 
-# from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
+# from crawler.core_carrier.base_new import SHIPMENT_TYPE_MBL
 # from crawler.spiders.carrier_oolu_multi import CargoTrackingRule, ContentGetter, _PageLocator
 # from test.spiders.carrier_oolu_multi import cargo_tracking
 
