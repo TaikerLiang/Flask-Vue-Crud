@@ -384,7 +384,7 @@ class CargoTrackingRule(BaseRoutingRule):
     def build_request_option(cls, search_nos, task_ids) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_POST_BODY,
+            method=RequestOption.METHOD_GET,
             url=DUMMY_URL_DICT["eval_edi"],
             meta={
                 "search_nos": search_nos,
