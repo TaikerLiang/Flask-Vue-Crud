@@ -17,26 +17,26 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from urllib3.exceptions import ReadTimeoutError
 
-from crawler.core.base import (
+from crawler.core.base_new import (
     DUMMY_URL_DICT,
     RESULT_STATUS_ERROR,
     SEARCH_TYPE_BOOKING,
     SEARCH_TYPE_CONTAINER,
     SEARCH_TYPE_MBL,
 )
-from crawler.core.exceptions import (
+from crawler.core.exceptions_new import (
     AccessDeniedError,
     FormatError,
     MaxRetryError,
     SuspiciousOperationError,
     TimeOutError,
 )
-from crawler.core.items import DataNotFoundItem
-from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.items_new import DataNotFoundItem, EndItem
+from crawler.core.proxy_new import HydraproxyProxyManager
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.items import (
+from crawler.core_carrier.base_spiders_new import BaseMultiCarrierSpider
+from crawler.core_carrier.items_new import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
@@ -45,7 +45,7 @@ from crawler.core_carrier.items import (
     MblItem,
     VesselItem,
 )
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.request_helpers_new import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.selector_finder import (
     CssQueryTextStartswithMatchRule,
@@ -98,7 +98,7 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem) or isinstance(result, DataNotFoundItem):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -430,10 +430,7 @@ class CargoTrackingRule(BaseRoutingRule):
         if os.path.exists("./slider01.jpg"):
             os.remove("./slider01.jpg")
 
-        for item in self._handle_response(
-            response=response,
-            **info_pack,
-        ):
+        for item in self._handle_response(response=response, info_pack=info_pack):
             yield item
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
@@ -446,6 +443,10 @@ class CargoTrackingRule(BaseRoutingRule):
             yield DataNotFoundItem(**info_pack, status=RESULT_STATUS_ERROR, detail="Data was not found")
             return
 
+        task_id = info_pack["task_id"]
+        search_no = info_pack["search_no"]
+        search_type = info_pack["search_type"]
+
         locator = _PageLocator(info_pack=info_pack)
         selector_map = locator.locate_selectors(response=response)
 
@@ -453,7 +454,7 @@ class CargoTrackingRule(BaseRoutingRule):
         routing_info, vessel_list = self._extract_routing_info(selectors_map=selector_map, info_pack=info_pack)
         for vessel in vessel_list:
             yield VesselItem(
-                task_id=info_pack["task_id"],
+                task_id=task_id,
                 vessel_key=vessel["vessel"] or None,
                 vessel=vessel["vessel"] or None,
                 voyage=vessel["voyage"] or None,
@@ -466,7 +467,7 @@ class CargoTrackingRule(BaseRoutingRule):
             )
 
         mbl_item = MblItem(
-            task_id=info_pack["task_id"],
+            task_id=task_id,
             vessel=routing_info["vessel"] or None,
             voyage=routing_info["voyage"] or None,
             por=LocationItem(name=routing_info["por"] or None),
@@ -484,10 +485,10 @@ class CargoTrackingRule(BaseRoutingRule):
             customs_release_date=custom_release_info["date"] or None,
         )
 
-        if info_pack["search_type"] == SEARCH_TYPE_MBL:
-            mbl_item["mbl_no"] = info_pack["search_no"]
+        if search_type == SEARCH_TYPE_MBL:
+            mbl_item["mbl_no"] = search_no
         else:
-            mbl_item["booking_no"] = info_pack["search_no"]
+            mbl_item["booking_no"] = search_no
         yield mbl_item
 
         container_list = self._extract_container_list(selector_map=selector_map)
@@ -508,10 +509,10 @@ class CargoTrackingRule(BaseRoutingRule):
 
             response = Selector(text=self._content_getter.get_page_source())
 
-            for item in self._handle_container_response(
-                response=response, task_id=info_pack["task_id"], container_no=container_no
-            ):
+            for item in self._handle_container_response(response=response, task_id=task_id, container_no=container_no):
                 yield item
+
+        yield EndItem(task_id=task_id)
 
     def is_search_no_invalid(self, response):
         if response.css("span[class=noRecordBold]"):
@@ -1001,8 +1002,7 @@ class VesselVoyageTdExtractor(BaseTableCellExtractor):
             "voyage": text_list[1].strip(),
         }
 
-    @staticmethod
-    def _parse_vessel(text):
+    def _parse_vessel(self, text):
         """
         Sample 1:
             text = (
@@ -1117,7 +1117,7 @@ class DestinationTableLocator(BaseTable):
     +---------+-----------+----------+ </tbody>
     """
 
-    TITEL_TD_INDEX = 0
+    TITLE_TD_INDEX = 0
     DATA_NEEDED_TD_INDEX = 2
 
     def parse(self, table: scrapy.Selector):
@@ -1126,7 +1126,7 @@ class DestinationTableLocator(BaseTable):
         for tr in tr_list:
             td_list = tr.css("td")
 
-            title_td = td_list[self.TITEL_TD_INDEX]
+            title_td = td_list[self.TITLE_TD_INDEX]
             title = title_td.css("::text").get()
             title = title.strip() if isinstance(title, str) else ""
             self.add_left_header_set(title)
