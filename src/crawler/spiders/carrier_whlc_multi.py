@@ -250,7 +250,11 @@ class MblRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle_detail_page(self, task_id, idx):
-        page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(idx + 2))
+        try:
+            page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(idx + 2))
+        except CarrierResponseFormatError:
+            # This exception is used to notify that the link of detail page is disappeared, thus no handling continued
+            return
 
         if not page_source:
             raise CarrierResponseFormatError(reason="Detail page source empty")
@@ -518,7 +522,11 @@ class BookingRoutingRule(BaseRoutingRule):
         self.driver.close_page_and_switch_last()
 
     def handle_booking_detail_history_page(self, task_id, search_no):
-        page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(b_idx + 2))
+        try:
+            page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(b_idx + 2))
+        except CarrierResponseFormatError:
+            # This exception is used to notify that the link of detail page is disappeared, thus no handling continued
+            return
 
         if not page_source:
             raise CarrierResponseFormatError(reason="Detail page source empty")
@@ -753,13 +761,19 @@ class WhlcContentGetter(PyppeteerContentGetter):
         return await self.page.content()
 
     async def go_detail_page(self, idx: int) -> str:
+        row_selector = f"#cargoTrackListBean > table > tbody > tr:nth-child({idx})"
         await self.page.waitForSelector(
-            f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u",
+            f"{row_selector} > td:nth-child(1)",
             options={"timeout": 60000},
         )
 
-        click_selector = f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u"
+        click_selector = f"{row_selector} > td:nth-child(1) > u"
         wait_for_selector = "table.tbl-list"
+
+        # Sometimes the link of detail page is disappeared
+        if not await self.page.querySelector(click_selector):
+            raise CarrierResponseFormatError(reason="Link of detail page is disappeared")
+
         await self.click_button_and_wait_for(click_selector=click_selector, wait_for_selector=wait_for_selector)
         await asyncio.sleep(3)
 
