@@ -1,36 +1,43 @@
 import dataclasses
 import io
-import re
-from typing import Union, Tuple, List
 import logging
+import re
+from typing import List, Tuple, Union
 
 import scrapy
-from python_anticaptcha import AnticaptchaClient, ImageToTextTask, AnticaptchaException
+from python_anticaptcha import AnticaptchaClient, AnticaptchaException, ImageToTextTask
 from scrapy import Selector
 
+from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.table import BaseTable, TableExtractor
+from crawler.core_carrier.base import (
+    CARRIER_RESULT_STATUS_ERROR,
+    SHIPMENT_TYPE_BOOKING,
+    SHIPMENT_TYPE_MBL,
+)
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import (
+    AntiCaptchaError,
     CarrierResponseFormatError,
     ProxyMaxRetryError,
     SuspiciousOperationError,
-    AntiCaptchaError,
 )
 from crawler.core_carrier.items import (
     BaseCarrierItem,
-    ContainerStatusItem,
-    LocationItem,
-    MblItem,
     ContainerItem,
+    ContainerStatusItem,
     DebugItem,
     ExportErrorData,
+    LocationItem,
+    MblItem,
 )
-from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
-from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
-from crawler.core.table import BaseTable, TableExtractor
+from crawler.extractors.table_cell_extractors import (
+    BaseTableCellExtractor,
+    FirstTextTdExtractor,
+)
 from crawler.extractors.table_extractors import HeaderMismatchError
-from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
 
 BASE_URL = "https://www.yangming.com"
 MAX_PAGE_NUM = 10
@@ -795,7 +802,13 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
 
         m = pat.match(firms_code_text)
         if m is None:
-            raise CarrierResponseFormatError(reason=f"Firms Code format error: `{firms_code_text}`")
+            # firms_code_text = '(Firms code:)'
+            pat = re.compile(r".+:\)")
+            m = pat.match(firms_code_text)
+            if m is None:
+                raise CarrierResponseFormatError(reason=f"Firms Code format error: `{firms_code_text}`")
+            else:
+                return None
 
         return m.group("firms_code")
 
@@ -1169,7 +1182,13 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         m = pat.match(firms_code_text)
         if m is None:
-            raise CarrierResponseFormatError(reason=f"Firms Code format error: `{firms_code_text}`")
+            # firms_code_text = '(Firms code:)'
+            pat = re.compile(r".+:\)")
+            m = pat.match(firms_code_text)
+            if m is None:
+                raise CarrierResponseFormatError(reason=f"Firms Code format error: `{firms_code_text}`")
+            else:
+                return None
 
         return m.group("firms_code")
 
