@@ -594,16 +594,8 @@ class BookingInfoRoutingRule(BaseRoutingRule):
         pat = re.compile(r".+:(?P<firms_code>\w{4})")
 
         m = pat.match(firms_code_text)
-        if m is None:
-            # firms_code_text = '(Firms code:)'
-            pat = re.compile(r".+:\)")
-            m = pat.match(firms_code_text)
-            if m is None:
-                raise CarrierResponseFormatError(reason=f"Firms Code format error: `{firms_code_text}`")
-            else:
-                return None
-
-        return m.group("firms_code")
+        if m:
+            return m.group("firms_code")
 
     @staticmethod
     def _extract_last_free_day(response):
@@ -933,16 +925,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
         pat = re.compile(r".+:(?P<firms_code>\w{4})")
 
         m = pat.match(firms_code_text)
-        if m is None:
-            # firms_code_text = '(Firms code:)'
-            pat = re.compile(r".+:\)")
-            m = pat.match(firms_code_text)
-            if m is None:
-                raise CarrierResponseFormatError(reason=f"Firms Code format error: `{firms_code_text}`")
-            else:
-                return None
-
-        return m.group("firms_code")
+        if m:
+            return m.group("firms_code")
 
     @staticmethod
     def _extract_last_free_day(response):
