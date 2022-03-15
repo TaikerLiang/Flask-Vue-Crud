@@ -1,15 +1,11 @@
 from typing import List
 
-from crawler.core_carrier.items import ExportErrorData, MblItem, LocationItem, ContainerItem
-from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
+from crawler.core_carrier.items import ContainerItem, LocationItem, MblItem
+from crawler.core_carrier.request_helpers import RequestOption
 
 
 def verify(results: List):
-    assert results[0] == ExportErrorData(
-        task_id=1, booking_no="YHU731790", detail="Firms code parsing error", status=CARRIER_RESULT_STATUS_ERROR
-    )
-
-    assert results[1] == MblItem(
+    assert results[0] == MblItem(
         booking_no="YHU731790",
         por=LocationItem(name="CHARLESTON, SC (USCHS)"),
         pol=LocationItem(name="CHARLESTON, SC (USCHS)"),
@@ -28,7 +24,7 @@ def verify(results: List):
         berthing_time=None,
     )
 
-    assert results[2] == ContainerItem(
+    assert results[1] == ContainerItem(
         container_key="BMOU5687951",
         container_no="BMOU5687951",
         last_free_day=None,
@@ -36,10 +32,16 @@ def verify(results: List):
         terminal=LocationItem(name=None),
     )
 
-    assert results[6] == ContainerItem(
-        container_key="CAIU4283277",
-        container_no="CAIU4283277",
+    assert isinstance(results[2], RequestOption)
+
+    assert results[3] == ContainerItem(
+        container_key="BMOU5757067",
+        container_no="BMOU5757067",
         last_free_day=None,
         task_id=1,
         terminal=LocationItem(name=None),
     )
+
+    assert isinstance(results[4], RequestOption)
+
+    # More containers and their requests

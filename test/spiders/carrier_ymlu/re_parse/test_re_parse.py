@@ -39,6 +39,8 @@ def test_parse_carrier_status(carrier_status, expect_status, expect_time):
     [
         ("(Firms code:Y258)", "Y258"),
         ("(Firms code:AAA2)", "AAA2"),
+        ("(Firms code:)", None),
+        (" ", None),
     ],
 )
 def test_parse_firms_code(firms_code_text, expect_firms_code):
@@ -51,7 +53,6 @@ def test_parse_firms_code(firms_code_text, expect_firms_code):
     "time_status, func, expect_error",
     [
         ("Steamship Release 2019/09/19 15:0", ROUTING_RULE._parse_carrier_status, CarrierResponseFormatError),
-        ("(Firms code:Y25)", ROUTING_RULE._parse_firms_code, CarrierResponseFormatError),
     ],
 )
 def test_error(time_status, func, expect_error):
