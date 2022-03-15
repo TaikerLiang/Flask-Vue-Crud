@@ -1,40 +1,41 @@
+import asyncio
 import dataclasses
 import re
-import asyncio
 import time
-from typing import Tuple, List, Optional
+from typing import List, Optional, Tuple
 
-from scrapy import Selector, FormRequest, Request
-from pyppeteer.errors import TimeoutError, PageError
+from pyppeteer.errors import PageError, TimeoutError
+from scrapy import FormRequest, Request, Selector
 
-from crawler.core.table import BaseTable, TableExtractor
+from crawler.core.base import RESULT_STATUS_FATAL
 from crawler.core.defines import BaseContentGetter
 from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
+from crawler.core.pyppeteer import PyppeteerContentGetter
+from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
-from crawler.core.pyppeteer import PyppeteerContentGetter
-from crawler.core.base import RESULT_STATUS_FATAL
-
-from crawler.core_carrier.items import (
-    BaseCarrierItem,
-    MblItem,
-    LocationItem,
-    VesselItem,
-    ContainerItem,
-    ExportErrorData,
-    ContainerStatusItem,
-    DebugItem,
-)
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
-    SuspiciousOperationError,
     ProxyMaxRetryError,
+    SuspiciousOperationError,
 )
-from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
+from crawler.core_carrier.items import (
+    BaseCarrierItem,
+    ContainerItem,
+    ContainerStatusItem,
+    DebugItem,
+    ExportErrorData,
+    LocationItem,
+    MblItem,
+    VesselItem,
+)
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
+from crawler.extractors.selector_finder import (
+    CssQueryTextStartswithMatchRule,
+    find_selector_from,
+)
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
-
 
 BASE_URL = "https://www.hamburgsud-line.com/linerportal/pages/hsdg/tnt.xhtml"
 
@@ -151,7 +152,7 @@ class MblRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://eval.edi.hardcoretech.co/c/livez",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={"mbl_nos": mbl_nos, "task_ids": task_ids},
         )
 
@@ -619,8 +620,8 @@ class VesselVoyageTdExtractor(BaseTableCellExtractor):
         voyage_cell = a_list[1]
 
         return {
-            "vessel": vessel_cell.css("::text").get().strip(),
-            "voyage": voyage_cell.css("::text").get().strip(),
+            "vessel": vessel_cell.css("::text").get("").strip(),
+            "voyage": voyage_cell.css("::text").get("").strip(),
             "voyage_css_id": voyage_cell.css("::attr(id)").get(),
         }
 
