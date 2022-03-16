@@ -4,8 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.spiders.air_china_southern import AirInfoRoutingRule
-from crawler.spiders.air_china_southern import PREFIX
+from crawler.spiders.air_china_southern import PREFIX, AirInfoRoutingRule
 from test.spiders.air_china_southern import routing_rule
 
 
@@ -36,7 +35,7 @@ def test_routing_rule_handle(sub, mawb_no, sample_loader):
         encoding="utf-8",
         request=Request(
             url=url,
-            meta={"mawb_no": mawb_no, "task_id": "1"},
+            meta={"search_no": mawb_no, "task_id": "1"},
         ),
     )
 

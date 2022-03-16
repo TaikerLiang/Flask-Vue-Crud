@@ -4,16 +4,11 @@ import requests
 import scrapy
 from scrapy.http import Response
 
-from crawler.core_air.base import AIR_RESULT_STATUS_ERROR
+from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_AWB
+from crawler.core.exceptions import SuspiciousOperationError, TimeOutError
+from crawler.core.items import DataNotFoundItem
 from crawler.core_air.base_spiders import BaseAirSpider
-from crawler.core_air.exceptions import AirInvalidMawbNoError, LoadWebsiteTimeOutFatal
-from crawler.core_air.items import (
-    AirItem,
-    BaseAirItem,
-    DebugItem,
-    ExportErrorData,
-    HistoryItem,
-)
+from crawler.core_air.items import AirItem, BaseAirItem, DebugItem, HistoryItem
 from crawler.core_air.request_helpers import RequestOption
 from crawler.core_air.rules import BaseRoutingRule, RuleManager
 
@@ -68,7 +63,13 @@ class AirChinaSouthernSpider(BaseAirSpider):
                 dont_filter=True,
             )
         else:
-            raise ValueError(f"Invalid option.method [{option.method}]")
+            map_dict = {self.mawb_no: self.task_id}
+            raise SuspiciousOperationError(
+                task_id=self.task_id,
+                search_no=self.mawb_no,
+                search_type=self.search_type,
+                reason=f"Unexpected request method: `{option.method}`, on (search_no: task_id): {map_dict}",
+            )
 
 
 class AirInfoRoutingRule(BaseRoutingRule):
@@ -80,7 +81,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
         if response.status_code == 200:
             response_text = response.text
         else:
-            raise LoadWebsiteTimeOutFatal()
+            raise TimeOutError()
 
         prompt = 'value="'
         start_pos = response_text.find(prompt, response_text.find("__VIEWSTATE")) + len(prompt)
@@ -115,7 +116,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
             },
             meta={
                 "task_id": task_id,
-                "mawb_no": mawb_no,
+                "search_no": mawb_no,
             },
         )
 
@@ -124,20 +125,18 @@ class AirInfoRoutingRule(BaseRoutingRule):
 
     def handle(self, response: Response):
         if self._is_mawb_not_exist(response):
-            mawb_no = response.meta["mawb_no"]
-            yield ExportErrorData(
-                mawb_no=mawb_no,
-                status=AIR_RESULT_STATUS_ERROR,
+            yield DataNotFoundItem(
+                task_id=response.meta["task_id"],
+                search_no=response.meta["search_no"],
+                search_type=SEARCH_TYPE_AWB,
+                status=RESULT_STATUS_ERROR,
                 detail="Data was not found",
             )
         else:
-            try:
-                yield self._construct_air_item(response)
+            yield self._construct_air_item(response)
 
-                for history_item in self._construct_history_item_list(response):
-                    yield history_item
-            except AirInvalidMawbNoError as e:
-                yield e.build_error_data()
+            for history_item in self._construct_history_item_list(response):
+                yield history_item
 
     @staticmethod
     def _construct_air_item(response) -> AirItem:
@@ -147,11 +146,23 @@ class AirInfoRoutingRule(BaseRoutingRule):
             basic_info.append(info.xpath("normalize-space(text())").get())
 
         if not basic_info or basic_info[0] is None:
-            raise AirInvalidMawbNoError()
+            return DataNotFoundItem(
+                task_id=response.meta["task_id"],
+                search_no=response.meta["search_no"],
+                search_type=SEARCH_TYPE_AWB,
+                status=RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
 
         basic_info[0] = basic_info[0].split("-")[1]
-        if basic_info[0] != response.meta["mawb_no"]:
-            raise AirInvalidMawbNoError()
+        if basic_info[0] != response.meta["search_no"]:
+            return DataNotFoundItem(
+                task_id=response.meta["task_id"],
+                search_no=response.meta["search_no"],
+                search_type=SEARCH_TYPE_AWB,
+                status=RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
 
         routing_city = basic_info[2].split("--")
         basic_info[1] = routing_city[0].split("(")[0]
@@ -181,7 +192,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
         return AirItem(
             {
                 "task_id": response.meta["task_id"],
-                "mawb": response.meta["mawb_no"],
+                "mawb": response.meta["search_no"],
                 "origin": basic_info[1],
                 "destination": basic_info[2],
                 "pieces": basic_info[4],
