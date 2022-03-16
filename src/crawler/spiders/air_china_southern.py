@@ -81,7 +81,11 @@ class AirInfoRoutingRule(BaseRoutingRule):
         if response.status_code == 200:
             response_text = response.text
         else:
-            raise TimeOutError()
+            raise TimeOutError(
+                task_id=task_id,
+                search_no=mawb_no,
+                search_type=SEARCH_TYPE_AWB,
+            )
 
         prompt = 'value="'
         start_pos = response_text.find(prompt, response_text.find("__VIEWSTATE")) + len(prompt)
