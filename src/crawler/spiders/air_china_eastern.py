@@ -8,17 +8,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_AWB
+from crawler.core.exceptions import GeneralFatalError, SuspiciousOperationError
+from crawler.core.items import DataNotFoundItem
 from crawler.core.selenium import FirefoxContentGetter
-from crawler.core_air.base import AIR_RESULT_STATUS_ERROR, AIR_RESULT_STATUS_FATAL
 from crawler.core_air.base_spiders import BaseMultiAirSpider
-from crawler.core_air.exceptions import AntiCaptchaError
-from crawler.core_air.items import (
-    AirItem,
-    BaseAirItem,
-    DebugItem,
-    ExportErrorData,
-    HistoryItem,
-)
+from crawler.core_air.items import AirItem, BaseAirItem, DebugItem, HistoryItem
 from crawler.core_air.request_helpers import RequestOption
 from crawler.core_air.rules import BaseRoutingRule, RuleManager
 from crawler.services.captcha_service import ImageAntiCaptchaService
@@ -45,8 +40,8 @@ class AirChinaEasternSpider(BaseMultiAirSpider):
             driver.handle_cookie()
             token = driver.handle_captcha()
             driver.close()
-        except AntiCaptchaError:
-            yield ExportErrorData(status=AIR_RESULT_STATUS_FATAL, detail="<anti-captcha-error>")
+        except GeneralFatalError as e:
+            yield e
             driver.close()
             return
 
@@ -91,7 +86,13 @@ class AirChinaEasternSpider(BaseMultiAirSpider):
                 headers=option.headers,
             )
         else:
-            raise ValueError(f"Invalid option.method [{option.method}]")
+            map_dict = {option.meta["search_no"]: self.mno_tid_map[option.meta["search_no"]]}
+            raise SuspiciousOperationError(
+                task_id=self.mno_tid_map[option.meta["search_no"]][0],
+                search_no=option.meta["search_no"],
+                search_type=self.search_type,
+                reason=f"Unexpected request method: `{option.method}`, on (search_no: [task_id...]): {map_dict}",
+            )
 
 
 class AirInfoRoutingRule(BaseRoutingRule):
@@ -115,21 +116,25 @@ class AirInfoRoutingRule(BaseRoutingRule):
                 }
             ),
             meta={
-                "mawb_no": mawb_no,
+                "search_no": mawb_no,
                 "task_id": task_id,
             },
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name} {response.meta["mawb_no"]}.json'
+        return f'{self.name} {response.meta["search_no"]}.json'
 
     def handle(self, response):
-        mawb_no = response.meta["mawb_no"]
+        mawb_no = response.meta["search_no"]
         task_id = response.meta["task_id"]
         response_dict = json.loads(response.text)
         if self.is_mawb_no_invalid(response_dict):
-            yield ExportErrorData(
-                status=AIR_RESULT_STATUS_ERROR, detail="Data was not found", task_id=task_id, mawb_no=mawb_no
+            yield DataNotFoundItem(
+                status=RESULT_STATUS_ERROR,
+                detail="Data was not found",
+                task_id=task_id,
+                search_no=mawb_no,
+                search_type=SEARCH_TYPE_AWB,
             )
             return
         air_info = self.extract_air_info(response_dict)
@@ -192,7 +197,7 @@ class ContentGetter(FirefoxContentGetter):
                 )
                 return token
         self._driver.switch_to.default_content()
-        raise AntiCaptchaError()
+        raise GeneralFatalError(reason="<anti-captcha-error>")
 
     def _solve_captcha(self):
         response = scrapy.Selector(text=self.get_page_source())

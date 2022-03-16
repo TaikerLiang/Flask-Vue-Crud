@@ -1,11 +1,12 @@
-from crawler.core_air.items import ExportErrorData
-from crawler.core_air.exceptions import AIR_RESULT_STATUS_ERROR
+from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_AWB
+from crawler.core.items import DataNotFoundItem
 
 
 def verify(results):
-    assert results[0] == ExportErrorData(
+    assert results[0] == DataNotFoundItem(
         task_id="1",
-        mawb_no="81375673",
+        search_no="81375673",
+        search_type=SEARCH_TYPE_AWB,
         detail="Data was not found",
-        status=AIR_RESULT_STATUS_ERROR,
+        status=RESULT_STATUS_ERROR,
     )
