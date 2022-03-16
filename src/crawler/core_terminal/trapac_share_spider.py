@@ -1,7 +1,5 @@
 import dataclasses
 from datetime import datetime, timedelta
-import random
-import string
 import time
 from typing import Dict, List
 from urllib.parse import urlencode
@@ -250,11 +248,11 @@ class MainRoutingRule(BaseRoutingRule):
         try:
             is_g_captcha, res, cookies = content_getter.get_content(search_no=",".join(container_nos))
         except TimeOutError as e:
+            map_dict = {search_no: cno_tid_map[search_no] for search_no in container_nos}
             raise TimeOutError(
                 task_id=cno_tid_map[container_nos[0]][0],
-                search_no=container_nos[0],
                 search_type=SEARCH_TYPE_CONTAINER,
-                reason=e.reason,
+                reason=f"{e.reason} on (search_no: [task_id...]): {map_dict}",
             )
         finally:
             content_getter.quit()
@@ -324,11 +322,11 @@ class ContentRoutingRule(BaseRoutingRule):
         resp = json.loads(response.text)
 
         if "Please complete the reCAPTCHA check and submit your request again" in resp["html"]:
+            map_dict = {search_no: cno_tid_map[search_no] for search_no in container_nos}
             raise GeneralFatalError(
                 task_id=cno_tid_map[container_nos[0]][0],
-                search_no=container_nos[0],
                 search_type=SEARCH_TYPE_CONTAINER,
-                reason="reCAPTCHA check encountered",
+                reason=f"reCAPTCHA check encountered on (search_no: [task_id...]): {map_dict}",
             )
 
         resp_html = Selector(text=resp["html"])
@@ -360,39 +358,19 @@ class ContentGetter(ChromeContentGetter):
         super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
         self._company = company_info
 
-    def find_ua(self):
-        self._driver.get("https://www.whatsmyua.info")
-        time.sleep(15)
-
-        ua_selector = self._driver.find_element_by_css_selector(css="textarea#custom-ua-string")
-        print("find_ua:", ua_selector.text)
-
-    def find_ip(self):
-        self._driver.get("https://www.whatismyip.com.tw/")
-        time.sleep(5)
-
-        ip_selector = self._driver.find_element_by_css_selector("b span")
-        print("find_id", ip_selector.text)
-
-    def get_result_response_text(self):
-        result_table_css = "div#transaction-detail-result table"
-
-        self.wait_for_appear(css=result_table_css, wait_sec=15)
-        return self._driver.page_source
-
     def get_content(self, search_no):
         self._driver.get(
             url=f"https://{self._company.lower_short}.trapac.com/quick-check/?terminal={self._company.upper_short}&transaction=availability"
         )
-        self.accept_cookie()
+        self._accept_cookie()
         time.sleep(2)
-        self.key_in_search_bar(search_no=search_no)
+        self._key_in_search_bar(search_no=search_no)
         cookies = self.get_cookies()
-        self.press_search_button()
+        self._press_search_button()
 
         return False, self.get_result_response_text(), cookies
 
-    def accept_cookie(self):
+    def _accept_cookie(self):
         try:
             cookie_btn = self._driver.find_element_by_xpath('//*[@id="cn-accept-cookie"]')
             cookie_btn.click()
@@ -400,32 +378,17 @@ class ContentGetter(ChromeContentGetter):
         except Exception:
             pass
 
-    def wait_for_appear(self, css: str, wait_sec: int):
-        locator = (By.CSS_SELECTOR, css)
-        try:
-            WebDriverWait(self._driver, wait_sec).until(EC.presence_of_element_located(locator))
-        except TimeoutException:
-            current_url = self.get_current_url()
-            self._driver.quit()
-            raise TimeOutError(reason=current_url)
-
-    def key_in_search_bar(self, search_no: str):
+    def _key_in_search_bar(self, search_no: str):
         text_area = self._driver.find_element_by_xpath('//*[@id="edit-containers"]')
         text_area.send_keys(search_no)
         time.sleep(3)
 
-    def press_search_button(self):
+    def _press_search_button(self):
         search_btn = self._driver.find_element_by_xpath('//*[@id="transaction-form"]/div[3]/button')
         search_btn.click()
         time.sleep(10)
 
-    def save_screenshot(self):
-        self._driver.save_screenshot("screenshot.png")
-
-    def get_g_token(self):
-        return self._driver.find_element_by_xpath('//*[@id="transaction-form"]/input').get_attribute("value")
-
-    def get_google_recaptcha(self):
+    def _get_google_recaptcha(self):
         try:
             element = self._driver.find_element_by_xpath('//*[@id="recaptcha-backup"]')
             return element
@@ -435,8 +398,23 @@ class ContentGetter(ChromeContentGetter):
     def get_proxy_username(self, option: ProxyOption) -> str:
         return f"groups-{option.group},session-{option.session}"
 
-    def _generate_random_string(self):
-        return "".join(random.choices(string.ascii_uppercase + string.digits, k=20))
+    def _get_result_response_text(self):
+        result_table_css = "div#transaction-detail-result table"
+
+        self._wait_for_appear(css=result_table_css, wait_sec=15)
+        return self._driver.page_source
+
+    def _wait_for_appear(self, css: str, wait_sec: int):
+        locator = (By.CSS_SELECTOR, css)
+        try:
+            WebDriverWait(self._driver, wait_sec).until(EC.presence_of_element_located(locator))
+        except TimeoutException:
+            current_url = self.get_current_url()
+            self._driver.quit()
+            raise TimeOutError(reason=current_url)
+
+    def _save_screenshot(self):
+        self._driver.save_screenshot("screenshot.png")
 
 
 class VesselVoyageTdExtractor(BaseTableCellExtractor):
