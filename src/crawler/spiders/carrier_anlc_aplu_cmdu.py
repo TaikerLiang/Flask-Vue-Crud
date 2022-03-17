@@ -5,18 +5,18 @@ from typing import Dict
 import scrapy
 from scrapy import Selector
 
-from crawler.core.base import (
+from crawler.core.base_new import (
     DUMMY_URL_DICT,
     RESULT_STATUS_ERROR,
     SEARCH_TYPE_BOOKING,
     SEARCH_TYPE_CONTAINER,
     SEARCH_TYPE_MBL,
 )
-from crawler.core.exceptions import FormatError, SuspiciousOperationError
-from crawler.core.items import DataNotFoundItem
-from crawler.core.proxy import HydraproxyProxyManager
-from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.items import (
+from crawler.core.exceptions_new import FormatError, SuspiciousOperationError
+from crawler.core.items_new import DataNotFoundItem, EndItem
+from crawler.core.proxy_new import HydraproxyProxyManager
+from crawler.core_carrier.base_spiders_new import BaseCarrierSpider
+from crawler.core_carrier.items_new import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
@@ -24,7 +24,7 @@ from crawler.core_carrier.items import (
     LocationItem,
     MblItem,
 )
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.request_helpers_new import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 
@@ -66,6 +66,8 @@ class ShareSpider(BaseCarrierSpider):
 
         self._proxy_manager = HydraproxyProxyManager(session="share", logger=self.logger)
 
+        self._enditem_remaining_num_dict = {}
+
     def start(self):
         option = self._prepare_start()
         yield self._build_request_by(option=option)
@@ -88,8 +90,15 @@ class ShareSpider(BaseCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem) or isinstance(result, DataNotFoundItem):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem)):
                 yield result
+            elif isinstance(result, EndItem):
+                if result.get("remaining_num"):
+                    self._enditem_remaining_num_dict.setdefault(result["task_id"], result["remaining_num"])
+                else:
+                    self._enditem_remaining_num_dict[result["task_id"]] -= 1
+                    if self._enditem_remaining_num_dict[result["task_id"]] == 0:
+                        yield result
             elif isinstance(result, RequestOption):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
                 yield self._build_request_by(option=proxy_option)
@@ -246,6 +255,8 @@ class SearchRoutingRule(BaseRoutingRule):
                 for item in routing_rule.handle(response=response):
                     yield item
 
+                yield EndItem(task_id=task_id)
+
             elif mbl_status == STATUS_MULTI_CONTAINER:
                 yield basic_mbl_item
                 container_list = self._extract_container_list(response=response)
@@ -254,6 +265,8 @@ class SearchRoutingRule(BaseRoutingRule):
                     yield RecaptchaRule(search_type=SEARCH_TYPE_CONTAINER).build_request_option(
                         base_url=base_url, task_id=task_id, search_no=container_no
                     )
+
+                yield EndItem(task_id=task_id, remaining_num=len(container_list))
 
             elif mbl_status == STATUS_WEBSITE_SUSPEND:
                 raise FormatError(**info_pack, reason="Website suspend")
@@ -270,8 +283,9 @@ class SearchRoutingRule(BaseRoutingRule):
             for item in routing_rule.handle(response=response):
                 yield item
 
-    @staticmethod
-    def _extract_mbl_status(response: Selector):
+            yield EndItem(task_id=task_id)
+
+    def _extract_mbl_status(self, response: Selector):
         invalid = bool(response.css("div.no-result"))
         single = bool(response.css("#trackingsearchsection"))
         multi = bool(response.css("#multiresultssection"))
@@ -284,8 +298,7 @@ class SearchRoutingRule(BaseRoutingRule):
             return STATUS_MULTI_CONTAINER
         return STATUS_WEBSITE_SUSPEND
 
-    @staticmethod
-    def _extract_container_list(response: Selector):
+    def _extract_container_list(self, response: Selector):
         container_list = response.css("dl.container-ref a::text").getall()
         return container_list
 
@@ -348,12 +361,10 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 facility=container_status["facility"],
             )
 
-    @staticmethod
-    def _extract_container_no(response: Selector):
+    def _extract_container_no(self, response: Selector):
         return response.css("ul.resume-filter strong::text").get()
 
-    @staticmethod
-    def _extract_tracking_no_map(response: Selector, info_pack: Dict):
+    def _extract_tracking_no_map(self, response: Selector, info_pack: Dict):
         status = response.css("div.status span::text").get()
         pod_time = " ".join(response.css("div.status span strong::text").getall())
 
@@ -391,8 +402,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             "pod_ata": pod_ata,
         }
 
-    @staticmethod
-    def _get_response_dict(response) -> Dict:
+    def _get_response_dict(self, response) -> Dict:
         response_text = response.text
         match = re.search(r"options\.responseData = \'(?P<response_data>.*)\'", response_text)
         response_data = match.group("response_data")
