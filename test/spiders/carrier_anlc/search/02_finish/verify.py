@@ -1,6 +1,10 @@
 from typing import List
 
-from crawler.core_carrier.items import ContainerItem, ContainerStatusItem, LocationItem
+from crawler.core_carrier.items_new import (
+    ContainerItem,
+    ContainerStatusItem,
+    LocationItem,
+)
 
 
 def verify(results: List):

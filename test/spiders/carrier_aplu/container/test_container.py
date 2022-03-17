@@ -1,5 +1,4 @@
 from pathlib import Path
-from test.spiders.carrier_aplu import container
 
 import pytest
 from scrapy import Request
@@ -9,6 +8,7 @@ from crawler.core_carrier.anlc_aplu_cmdu_share_spider import (
     ContainerStatusRoutingRule as MultiContainerStatusRoutingRule,
 )
 from crawler.spiders.carrier_anlc_aplu_cmdu import ContainerStatusRoutingRule
+from test.spiders.carrier_aplu import container
 
 
 @pytest.fixture

@@ -1,8 +1,8 @@
 from typing import List
 
-from crawler.core.base import SEARCH_TYPE_MBL
-from crawler.core.exceptions import RESULT_STATUS_ERROR
-from crawler.core.items import DataNotFoundItem
+from crawler.core.base_new import SEARCH_TYPE_MBL
+from crawler.core.exceptions_new import RESULT_STATUS_ERROR
+from crawler.core.items_new import DataNotFoundItem
 
 
 def verify(results: List):

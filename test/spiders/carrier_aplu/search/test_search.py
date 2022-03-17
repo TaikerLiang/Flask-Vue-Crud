@@ -1,11 +1,10 @@
 from pathlib import Path
-from test.spiders.carrier_aplu import search
 
 import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core.base import SEARCH_TYPE_MBL
+from crawler.core.base_new import SEARCH_TYPE_MBL
 from crawler.core_carrier.anlc_aplu_cmdu_share_spider import (
     SearchRoutingRule as MultiSearchRoutingRule,
 )
@@ -13,6 +12,7 @@ from crawler.spiders.carrier_anlc_aplu_cmdu import CarrierApluSpider, SearchRout
 from crawler.spiders.carrier_aplu_multi import (
     CarrierApluSpider as MultiCarrierApluSpider,
 )
+from test.spiders.carrier_aplu import search
 
 
 @pytest.fixture
