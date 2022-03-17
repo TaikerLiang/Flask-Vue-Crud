@@ -187,36 +187,39 @@ class MainRoutingRule(BaseRoutingRule):
                 cookies=cookies,
             )
         else:
-            container_response = scrapy.Selector(text=res)
-            yield SaveItem(file_name="container.html", text=container_response.get())
+            self.handle_response(response=res, container_nos=container_nos)
 
-            for container_info in self.extract_container_result_table(
-                response=container_response, numbers=len(container_nos)
-            ):
-                container_no = container_info["container_no"]
-                container_nos.remove(container_no)
+    def handle_response(self, response, container_nos):
+        container_response = scrapy.Selector(text=response)
+        yield SaveItem(file_name="container.html", text=container_response.get())
 
-                yield TerminalItem(  # html field
-                    container_no=container_no,  # number
-                    last_free_day=container_info["last_free_day"],  # demurrage-lfd
-                    customs_release=container_info.get("custom_release"),  # holds-customs
-                    demurrage=container_info["demurrage"],  # demurrage-amt
-                    container_spec=container_info["container_spec"],  # dimensions
-                    holds=container_info["holds"],  # demurrage-hold
-                    cy_location=container_info["cy_location"],  # yard status
-                    vessel=container_info["vessel"],  # vsl / voy
-                    voyage=container_info["voyage"],  # vsl / voy
-                )
+        for container_info in self._extract_container_result_table(
+            response=container_response, numbers=len(container_nos)
+        ):
+            container_no = container_info["container_no"]
+            container_nos.remove(container_no)
 
-            for container_no in container_nos:
-                yield DataNotFoundItem(
-                    search_no=container_no,
-                    search_type=SEARCH_TYPE_CONTAINER,
-                    detail="Data was not found",
-                    status=RESULT_STATUS_ERROR,
-                )
+            yield TerminalItem(  # html field
+                container_no=container_no,  # number
+                last_free_day=container_info["last_free_day"],  # demurrage-lfd
+                customs_release=container_info.get("custom_release"),  # holds-customs
+                demurrage=container_info["demurrage"],  # demurrage-amt
+                container_spec=container_info["container_spec"],  # dimensions
+                holds=container_info["holds"],  # demurrage-hold
+                cy_location=container_info["cy_location"],  # yard status
+                vessel=container_info["vessel"],  # vsl / voy
+                voyage=container_info["voyage"],  # vsl / voy
+            )
 
-    def extract_container_result_table(self, response: scrapy.Selector, numbers: int):
+        for container_no in container_nos:
+            yield DataNotFoundItem(
+                search_no=container_no,
+                search_type=SEARCH_TYPE_CONTAINER,
+                detail="Data was not found",
+                status=RESULT_STATUS_ERROR,
+            )
+
+    def _extract_container_result_table(self, response: scrapy.Selector, numbers: int):
         table = response.css('div[class="transaction-result availability"] table')
 
         table_locator = ContainerTableLocator()
