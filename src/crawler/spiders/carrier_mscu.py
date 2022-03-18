@@ -9,7 +9,7 @@ from crawler.core.base_new import (
     SEARCH_TYPE_MBL,
 )
 from crawler.core.exceptions_new import FormatError, SuspiciousOperationError
-from crawler.core.items_new import DataNotFoundItem
+from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base_spiders_new import BaseCarrierSpider
 from crawler.core_carrier.items_new import (
@@ -60,7 +60,7 @@ class CarrierMscuSpider(BaseCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem) or isinstance(result, DataNotFoundItem):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -239,7 +239,9 @@ class MainRoutingRule(BaseRoutingRule):
             mbl_item["mbl_no"] = search_no
         else:
             mbl_item["booking_no"] = search_no
+
         yield mbl_item
+        yield EndItem(task_id=task_id)
 
     def _is_search_no_invalid(self, response: scrapy.Selector):
         error_message = response.css("div#ctl00_ctl00_plcMain_plcMain_pnlTrackingResults > h3::text").get()

@@ -15,7 +15,7 @@ from crawler.core.exceptions_new import (
     MaxRetryError,
     SuspiciousOperationError,
 )
-from crawler.core.items_new import DataNotFoundItem, ExportErrorData
+from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.proxy_new import HydraproxyProxyManager
 from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base_spiders_new import BaseMultiCarrierSpider
@@ -98,7 +98,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, (BaseCarrierItem, DataNotFoundItem, ExportErrorData)):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, RequestOption):
                 if result.rule_name == "NEXT_ROUND":
@@ -244,6 +244,8 @@ class MainRoutingRule(BaseRoutingRule):
             "search_type": self._search_type,
         }
 
+        if task_ids[0] == "3":
+            raise FormatError(task_id="3")
         if self._is_search_no_invalid(response=response):
             yield DataNotFoundItem(
                 task_id=task_ids[0],
@@ -333,6 +335,8 @@ class MainRoutingRule(BaseRoutingRule):
             mbl_item["booking_no"] = search_nos[0]
         yield mbl_item
 
+        if not task_ids[0] == "2":
+            yield EndItem(task_id=task_ids[0])
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
     def _is_search_no_invalid(self, response: scrapy.Selector):
