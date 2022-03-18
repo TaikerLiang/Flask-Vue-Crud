@@ -1,48 +1,52 @@
-import re
-from urllib3.exceptions import ReadTimeoutError
-from typing import List, Dict
 import asyncio
+import re
+from typing import Dict, List
 
 import scrapy
-from scrapy import Selector
 from pyppeteer import logging
-from pyppeteer.errors import TimeoutError, ElementHandleError
+from pyppeteer.errors import ElementHandleError, TimeoutError
+from scrapy import Selector
+from urllib3.exceptions import ReadTimeoutError
 
-from crawler.core.defines import BaseContentGetter
-from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
-from crawler.core.pyppeteer import PyppeteerContentGetter
-from crawler.core_carrier.base import (
-    CARRIER_RESULT_STATUS_ERROR,
-    CARRIER_RESULT_STATUS_FATAL,
-    SHIPMENT_TYPE_MBL,
-    SHIPMENT_TYPE_BOOKING,
+from crawler.core.base_new import (
+    DUMMY_URL_DICT,
+    RESULT_STATUS_ERROR,
+    SEARCH_TYPE_BOOKING,
+    SEARCH_TYPE_CONTAINER,
+    SEARCH_TYPE_MBL,
 )
-from crawler.core_carrier.base_spiders import (
-    BaseCarrierSpider,
+from crawler.core.defines import BaseContentGetter
+from crawler.core.exceptions_new import (
+    FormatError,
+    SuspiciousOperationError,
+    TimeOutError,
+)
+from crawler.core.items_new import DataNotFoundItem, EndItem
+from crawler.core.proxy_new import HydraproxyProxyManager, ProxyManager
+from crawler.core.pyppeteer import PyppeteerContentGetter
+from crawler.core_carrier.base_spiders_new import (
     CARRIER_DEFAULT_SETTINGS,
     DISABLE_DUPLICATE_REQUEST_FILTER,
+    BaseCarrierSpider,
 )
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
-from crawler.core_carrier.items import (
-    MblItem,
+from crawler.core_carrier.items_new import (
     BaseCarrierItem,
-    LocationItem,
-    VesselItem,
     ContainerItem,
     ContainerStatusItem,
-    ExportErrorData,
     DebugItem,
+    LocationItem,
+    MblItem,
+    VesselItem,
 )
-from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    LoadWebsiteTimeOutError,
-    BaseCarrierError,
-    SuspiciousOperationError,
-)
+from crawler.core_carrier.request_helpers_new import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RequestOptionQueue, RuleManager
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
+from crawler.extractors.table_extractors import (
+    BaseTableLocator,
+    HeaderMismatchError,
+    TableExtractor,
+)
 
 WHLC_BASE_URL = "https://www.wanhai.com/views/Main.xhtml"
 COOKIES_RETRY_LIMIT = 3
@@ -76,9 +80,9 @@ class CarrierWhlcSpider(BaseCarrierSpider):
 
     def start(self):
         if self.mbl_no:
-            request_option = MblRoutingRule.build_request_option(search_no=self.search_no)
+            request_option = MblRoutingRule.build_request_option(task_id=self.task_id, search_no=self.search_no)
         else:
-            request_option = BookingRoutingRule.build_request_option(search_no=self.search_no)
+            request_option = BookingRoutingRule.build_request_option(task_id=self.task_id, search_no=self.search_no)
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -90,7 +94,7 @@ class CarrierWhlcSpider(BaseCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, RequestOption):
                 self._request_queue.add_request(result)
@@ -124,54 +128,64 @@ class CarrierWhlcSpider(BaseCarrierSpider):
                 meta=meta,
             )
         else:
-            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
+            raise SuspiciousOperationError(
+                task_id=self.task_id,
+                search_no=self.search_no,
+                search_type=self.search_type,
+                reason=f"Unexpected request method: `{option.method}`",
+            )
 
 
 # -------------------------------------------------------------------------------
-
-
-class CarrierIpBlockError(BaseCarrierError):
-    status = CARRIER_RESULT_STATUS_FATAL
-
-    def build_error_data(self):
-        return ExportErrorData(status=self.status, detail="<ip-block-error>")
 
 
 class MblRoutingRule(BaseRoutingRule):
     name = "MBL_RULE"
 
     def __init__(self, content_getter: BaseContentGetter):
-        self._search_type = SHIPMENT_TYPE_MBL
+        self._search_type = SEARCH_TYPE_MBL
         self.driver = content_getter
         self._container_patt = re.compile(r"^(?P<container_no>\w+)")
         self._j_idt_patt = re.compile(r"'(?P<j_idt>j_idt[^,]+)':'(?P=j_idt)'")
 
     @classmethod
-    def build_request_option(cls, search_no):
+    def build_request_option(cls, task_id: str, search_no: str):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://google.com",
-            meta={"mbl_no": search_no},
+            url=DUMMY_URL_DICT["eval_edi"],
+            meta={"task_id": task_id, "search_no": search_no},
         )
 
     def handle(self, response):
-        mbl_no = response.meta["mbl_no"]
+        task_id = response.meta["task_id"]
+        mbl_no = response.meta["search_no"]
+        info_pack = {
+            "task_id": task_id,
+            "search_no": mbl_no,
+            "search_type": self._search_type,
+        }
+
         try:
             page_source = asyncio.get_event_loop().run_until_complete(
                 self.driver.search(search_no=mbl_no, search_type=self._search_type)
             )
         except (ReadTimeoutError, TimeoutError):
             # the case of invalid mbl_no is included in the case of TimeoutError
-            raise LoadWebsiteTimeOutError(url=WHLC_BASE_URL)
+            raise TimeOutError(**info_pack, reason="Timeout during driver.search()")
 
         response_selector = Selector(text=page_source)
-        container_list = self._extract_container_info(response_selector)
+        container_list = self._extract_container_info(response=response_selector, info_pack=info_pack)
 
         yield MblItem(mbl_no=mbl_no)
 
         for idx in range(len(container_list)):
             container_no = container_list[idx]["container_no"]
+            info_pack = {
+                "task_id": task_id,
+                "search_no": container_no,
+                "search_type": SEARCH_TYPE_CONTAINER,
+            }
 
             yield ContainerItem(
                 container_key=container_no,
@@ -180,14 +194,14 @@ class MblRoutingRule(BaseRoutingRule):
 
             # detail page
             try:
-                for item in self.handle_detail_page(idx):
+                for item in self._handle_detail_page(idx=idx, info_pack=info_pack):
                     yield item
             except ElementHandleError:
                 pass
             except TimeoutError:
-                yield ExportErrorData(
-                    mbl_no=mbl_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
+                yield DataNotFoundItem(
+                    **info_pack,
+                    status=RESULT_STATUS_ERROR,
                     detail="Load detail page timeout",
                 )
                 self.driver.close_page_and_switch_last()
@@ -195,34 +209,30 @@ class MblRoutingRule(BaseRoutingRule):
 
             # history page
             try:
-                for item in self.handle_history_page(container_no, idx):
+                for item in self._handle_history_page(idx=idx, info_pack=info_pack):
                     yield item
             except ElementHandleError:
                 pass
             except TimeoutError:
-                yield ExportErrorData(
-                    mbl_no=mbl_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
+                yield DataNotFoundItem(
+                    **info_pack,
+                    status=RESULT_STATUS_ERROR,
                     detail="Load status page timeout",
                 )
                 self.driver.close_page_and_switch_last()
                 continue
 
+            yield EndItem(task_id=task_id)
             self.driver.close_page_and_switch_last()
         asyncio.get_event_loop().run_until_complete(self.driver.close_page())
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
-    def handle_detail_page(self, idx):
-        try:
-            page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(idx + 2))
-        except CarrierResponseFormatError:
-            # This exception is used to notify that the link of detail page is disappeared, thus no handling continued
-            return
-
+    def _handle_detail_page(self, idx: int, info_pack: Dict):
+        page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(idx + 2))
         detail_selector = Selector(text=page_source)
-        date_information = self._extract_date_information(detail_selector)
+        date_information = self._extract_date_information(response=detail_selector, info_pack=info_pack)
 
         yield VesselItem(
             vessel_key=f"{date_information['pol_vessel']} / {date_information['pol_voyage']}",
@@ -242,10 +252,11 @@ class MblRoutingRule(BaseRoutingRule):
 
         self.driver.close_page_and_switch_last()
 
-    def handle_history_page(self, container_no, idx):
+    def _handle_history_page(self, idx: int, info_pack: Dict):
+        container_no = info_pack["search_no"]
         page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_history_page(idx + 2))
         history_selector = Selector(text=page_source)
-        container_status_list = self._extract_container_status(history_selector)
+        container_status_list = self._extract_container_status(response=history_selector, info_pack=info_pack)
 
         for container_status in container_status_list:
             yield ContainerStatusItem(
@@ -255,7 +266,7 @@ class MblRoutingRule(BaseRoutingRule):
                 location=LocationItem(name=container_status["location_name"]),
             )
 
-    def _extract_container_info(self, response: scrapy.Selector) -> List:
+    def _extract_container_info(self, response: scrapy.Selector, info_pack: Dict) -> List:
         table_selector = response.css("table.tbl-list")[0]
         table_locator = ContainerListTableLocator()
         table_locator.parse(table=table_selector)
@@ -263,13 +274,13 @@ class MblRoutingRule(BaseRoutingRule):
         return_list = []
         for left in table_locator.iter_left_headers():
             container_no_text = table.extract_cell("Ctnr No.", left)
-            container_no = self._parse_container_no_from(text=container_no_text)
+            container_no = self._parse_container_no_from(text=container_no_text, info_pack=info_pack)
 
             detail_j_idt_text = table.extract_cell("More detail", left, JidtTdExtractor())
-            detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text)
+            detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text, info_pack=info_pack)
 
             history_j_idt_text = table.extract_cell("More History", left, JidtTdExtractor())
-            history_j_idt = self._parse_history_j_idt_from(text=history_j_idt_text)
+            history_j_idt = self._parse_history_j_idt_from(text=history_j_idt_text, info_pack=info_pack)
 
             return_list.append(
                 {
@@ -281,38 +292,49 @@ class MblRoutingRule(BaseRoutingRule):
 
         return return_list
 
-    def _parse_container_no_from(self, text):
+    def _parse_container_no_from(self, text: str, info_pack: Dict):
         if not text:
-            raise CarrierResponseFormatError("container_no not found")
+            raise FormatError(
+                **info_pack,
+                reason="container_no not found",
+            )
 
         m = self._container_patt.match(text)
         if not m:
-            raise CarrierResponseFormatError("container_no not match")
+            raise FormatError(
+                **info_pack,
+                reason="container_no not match",
+            )
 
         return m.group("container_no")
 
-    def _parse_detail_j_idt_from(self, text: str) -> str:
+    def _parse_detail_j_idt_from(self, text: str, info_pack: Dict) -> str:
         if not text:
             return ""
 
         m = self._j_idt_patt.search(text)
         if not m:
-            raise CarrierResponseFormatError("detail_j_idt not match")
+            raise FormatError(
+                **info_pack,
+                reason="detail_j_idt not match",
+            )
 
         return m.group("j_idt")
 
-    def _parse_history_j_idt_from(self, text: str) -> str:
+    def _parse_history_j_idt_from(self, text: str, info_pack: Dict) -> str:
         if not text:
             return ""
 
         m = self._j_idt_patt.search(text)
         if not m:
-            raise CarrierResponseFormatError("History_j_idt not match")
+            raise FormatError(
+                **info_pack,
+                reason="History_j_idt not match",
+            )
 
         return m.group("j_idt")
 
-    @staticmethod
-    def _extract_date_information(response) -> Dict:
+    def _extract_date_information(self, response: scrapy.Selector, info_pack: Dict) -> Dict:
         pattern = re.compile(r"^(?P<vessel>[^/]+) / (?P<voyage>[^/]+)$")
 
         match_rule = NameOnTableMatchRule(name="2. Departure Date / Arrival Date Information")
@@ -320,7 +342,10 @@ class MblRoutingRule(BaseRoutingRule):
         table_selector = find_selector_from(selectors=response.css("table.tbl-list"), rule=match_rule)
 
         if table_selector is None:
-            raise CarrierResponseFormatError(reason="data information table not found")
+            raise FormatError(
+                **info_pack,
+                reason="data information table not found",
+            )
 
         location_table_locator = LocationLeftTableLocator()
         location_table_locator.parse(table=table_selector)
@@ -355,12 +380,14 @@ class MblRoutingRule(BaseRoutingRule):
             "pol_etd": date_table.extract_cell(top=date_index, left="Departure Date"),
         }
 
-    @staticmethod
-    def _extract_container_status(response) -> List:
+    def _extract_container_status(self, response: scrapy.Selector, info_pack: Dict) -> List:
         table_selector = response.css("table.tbl-list")
 
         if not table_selector:
-            raise CarrierResponseFormatError(reason="container status table not found")
+            raise FormatError(
+                **info_pack,
+                reason="container status table not found",
+            )
 
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table_selector)
@@ -387,52 +414,62 @@ class BookingRoutingRule(BaseRoutingRule):
     name = "BOOKING"
 
     def __init__(self, content_getter: BaseContentGetter):
-        self._search_type = SHIPMENT_TYPE_BOOKING
+        self._search_type = SEARCH_TYPE_BOOKING
         self.driver = content_getter
         self._container_patt = re.compile(r"^(?P<container_no>\w+)")
 
     @classmethod
-    def build_request_option(cls, search_no):
+    def build_request_option(cls, task_id: str, search_no: str):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://google.com",
-            meta={"search_no": search_no},
+            url=DUMMY_URL_DICT["eval_edi"],
+            meta={"task_id": task_id, "search_no": search_no},
         )
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
     def handle(self, response):
+        task_id = response.meta["task_id"]
         search_no = response.meta["search_no"]
+        info_pack = {
+            "task_id": task_id,
+            "search_no": search_no,
+            "search_type": SEARCH_TYPE_BOOKING,
+        }
+
         try:
             page_source = asyncio.get_event_loop().run_until_complete(
                 self.driver.search(search_no=search_no, search_type=self._search_type)
             )
         except (ReadTimeoutError, TimeoutError):
             # the case of invalid mbl_no is included in the case of TimeoutError
-            raise LoadWebsiteTimeOutError(url=WHLC_BASE_URL)
+            raise TimeOutError(**info_pack, reason="Timeout during driver.search()")
 
         try:
             page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(2))
         except TimeoutError:
-            yield ExportErrorData(
-                booking_no=search_no,
-                status=CARRIER_RESULT_STATUS_ERROR,
+            yield DataNotFoundItem(
+                task_id=task_id,
+                search_no=search_no,
+                search_type=SEARCH_TYPE_BOOKING,
+                status=RESULT_STATUS_ERROR,
                 detail="Load detail page timeout",
             )
             self.driver.quit()
             return
 
-        for item in self.handle_booking_detail_page(response=page_source, search_no=search_no):
+        for item in self._handle_booking_detail_page(response=page_source, search_no=search_no):
             yield item
 
-        for item in self.handle_booking_history_page(response=page_source, search_no=search_no):
+        for item in self._handle_booking_history_page(response=page_source, task_id=task_id):
             yield item
 
+        yield EndItem(task_id=task_id)
         self.driver.close_page_and_switch_last()
 
-    def handle_booking_detail_page(self, response, search_no):
+    def _handle_booking_detail_page(self, response, search_no):
         basic_info = self._extract_basic_info(Selector(text=response))
         vessel_info = self._extract_vessel_info(Selector(text=response))
 
@@ -456,25 +493,31 @@ class BookingRoutingRule(BaseRoutingRule):
             eta=vessel_info["eta"],
         )
 
-    def handle_booking_history_page(self, response, search_no):
+    def _handle_booking_history_page(self, response, task_id: str):
         container_nos = self._extract_container_no_and_status_links(Selector(text=response))
 
         for idx in range(len(container_nos)):
             container_no = container_nos[idx]
+            info_pack = {
+                "task_id": task_id,
+                "search_no": container_no,
+                "search_type": SEARCH_TYPE_CONTAINER,
+            }
+
             # history page
             try:
                 page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_booking_history_page(idx + 2))
             except TimeoutError:
-                yield ExportErrorData(
-                    booking_no=search_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
+                yield DataNotFoundItem(
+                    **info_pack,
+                    status=RESULT_STATUS_ERROR,
                     detail="Load status page timeout",
                 )
                 self.driver.close_page_and_switch_last()
                 continue
 
             history_selector = Selector(text=page_source)
-            event_list = self._extract_container_status(response=history_selector)
+            event_list = self._extract_container_status(response=history_selector, info_pack=info_pack)
             container_status_items = self._make_container_status_items(container_no, event_list)
 
             yield ContainerItem(
@@ -524,8 +567,7 @@ class BookingRoutingRule(BaseRoutingRule):
 
         return table_locator.get_container_no_list()
 
-    @classmethod
-    def _make_container_status_items(cls, container_no, event_list):
+    def _make_container_status_items(self, container_no, event_list):
         container_statuses = []
         for container_status in event_list:
             container_statuses.append(
@@ -538,12 +580,11 @@ class BookingRoutingRule(BaseRoutingRule):
             )
         return container_statuses
 
-    @staticmethod
-    def _extract_container_status(response) -> List:
+    def _extract_container_status(self, response: scrapy.Selector, info_pack: Dict) -> List:
         table_selector = response.css("table.tbl-list")
 
         if not table_selector:
-            raise CarrierResponseFormatError(reason="container status table not found")
+            raise FormatError(**info_pack, reason="container status table not found")
 
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table_selector)
@@ -572,8 +613,8 @@ class WhlcContentGetter(PyppeteerContentGetter):
         logging.disable(logging.DEBUG)
 
         self._type_select_num_map = {
-            SHIPMENT_TYPE_MBL: "2",
-            SHIPMENT_TYPE_BOOKING: "4",
+            SEARCH_TYPE_MBL: "2",
+            SEARCH_TYPE_BOOKING: "4",
         }
 
     async def search(self, search_no, search_type):
@@ -668,7 +709,7 @@ class BookingBasicTableLocator(BaseTableLocator):
     def get_cell(self, top, left=None) -> Selector:
         return self._td_map[top]
 
-    def has_header(self, top=None, left=None) -> bool:
+    def has_header(self, top=None, left=None):
         pass
 
 
@@ -692,7 +733,7 @@ class BookingVesselTableLocator(BaseTableLocator):
     def get_cell(self, top, left=None) -> Selector:
         return self._td_map[top]
 
-    def has_header(self, top=None, left=None) -> bool:
+    def has_header(self, top=None, left=None):
         pass
 
 

@@ -1,42 +1,45 @@
 import asyncio
 import dataclasses
+import logging
 import re
 import time
-
-from urllib3.exceptions import ReadTimeoutError
-from typing import List, Dict
-import logging
+from typing import Dict, List, Optional
 
 import scrapy
-from scrapy import Selector
 from pyppeteer.errors import NetworkError, PageError, TimeoutError
+from scrapy import Selector
+from urllib3.exceptions import ReadTimeoutError
 
-from crawler.core.table import BaseTable, TableExtractor
+from crawler.core.base_new import (
+    DUMMY_URL_DICT,
+    RESULT_STATUS_ERROR,
+    SEARCH_TYPE_BOOKING,
+    SEARCH_TYPE_CONTAINER,
+    SEARCH_TYPE_MBL,
+)
 from crawler.core.defines import BaseContentGetter
-from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
+from crawler.core.exceptions_new import (
+    FormatError,
+    GeneralFatalError,
+    MaxRetryError,
+    SuspiciousOperationError,
+)
+from crawler.core.items_new import DataNotFoundItem, EndItem
+from crawler.core.proxy_new import HydraproxyProxyManager, ProxyManager
 from crawler.core.pyppeteer import PyppeteerContentGetter
-from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
-from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
-from crawler.core_carrier.items import (
-    MblItem,
+from crawler.core.table import BaseTable, TableExtractor
+from crawler.core_carrier.base_spiders_new import BaseMultiCarrierSpider
+from crawler.core_carrier.items_new import (
     BaseCarrierItem,
-    LocationItem,
-    VesselItem,
     ContainerItem,
     ContainerStatusItem,
-    ExportErrorData,
     DebugItem,
+    LocationItem,
+    MblItem,
+    VesselItem,
 )
-from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    BaseCarrierError,
-    SuspiciousOperationError,
-    CarrierInvalidSearchNoError,
-    CARRIER_RESULT_STATUS_ERROR,
-    DriverMaxRetryError,
-)
+from crawler.core_carrier.request_helpers_new import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RequestOptionQueue, RuleManager
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 
@@ -48,7 +51,7 @@ POSSIBLE_ERROR_TUPLE = (
     ConnectionError,
     TimeoutError,
     PageError,
-    CarrierResponseFormatError,
+    FormatError,
     IndexError,
 )
 
@@ -74,15 +77,15 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
 
         booking_rules = [BookingRoutingRule(content_getter=self._driver)]
 
-        if self.search_type == SHIPMENT_TYPE_MBL:
+        if self.search_type == SEARCH_TYPE_MBL:
             self._rule_manager = RuleManager(rules=bill_rules)
-        elif self.search_type == SHIPMENT_TYPE_BOOKING:
+        elif self.search_type == SEARCH_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
 
         self._request_queue = RequestOptionQueue()
 
     def start(self):
-        if self.search_type == SHIPMENT_TYPE_MBL:
+        if self.search_type == SEARCH_TYPE_MBL:
             request_option = MblRoutingRule.build_request_option(mbl_nos=self.search_nos, task_ids=self.task_ids)
         else:
             request_option = BookingRoutingRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids)
@@ -91,7 +94,12 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
 
     def _prepare_restart(self, search_nos: List, task_ids: List):
         if self._retry_count >= MAX_RETRY_COUNT:
-            raise DriverMaxRetryError()
+            raise MaxRetryError(
+                task_id=task_ids[0],
+                search_no=search_nos[0],
+                search_type=self.search_type,
+                reason=f"Retry more than {MAX_RETRY_COUNT} times",
+            )
 
         self._retry_count += 1
         self._driver.quit()
@@ -99,7 +107,7 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
         self._driver = WhlcContentGetter(proxy_manager=HydraproxyProxyManager(session="whlc", logger=self.logger))
         self._driver.patch_pyppeteer()
 
-        if self.search_type == SHIPMENT_TYPE_MBL:
+        if self.search_type == SEARCH_TYPE_MBL:
             self._rule_manager.get_rule_by_name(MblRoutingRule.name).driver = self._driver
             request_option = MblRoutingRule.build_request_option(mbl_nos=search_nos, task_ids=task_ids)
         else:
@@ -117,7 +125,7 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, Restart):
                 yield DebugItem(info=f"{result.reason}, Restarting...")
@@ -156,17 +164,15 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
             )
         else:
-            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
+            zip_list = list(zip(meta["task_ids"], meta["search_nos"]))
+            raise SuspiciousOperationError(
+                task_id=meta["task_ids"][0],
+                search_type=self.search_type,
+                reason=f"Unexpected request method: `{option.method}`, on (task_id, search_no): {zip_list}",
+            )
 
 
 # -------------------------------------------------------------------------------
-
-
-class CarrierIpBlockError(BaseCarrierError):
-    status = CARRIER_RESULT_STATUS_FATAL
-
-    def build_error_data(self):
-        return ExportErrorData(status=self.status, detail="<ip-block-error>")
 
 
 class MblRoutingRule(BaseRoutingRule):
@@ -175,7 +181,7 @@ class MblRoutingRule(BaseRoutingRule):
     def __init__(self, content_getter: BaseContentGetter):
         self._container_patt = re.compile(r"^(?P<container_no>\w+)")
         self._j_idt_patt = re.compile(r"'(?P<j_idt>j_idt[^,]+)':'(?P=j_idt)'")
-        self._search_type = SHIPMENT_TYPE_MBL
+        self._search_type = SEARCH_TYPE_MBL
         self.driver = content_getter
 
     @classmethod
@@ -183,42 +189,58 @@ class MblRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://eval.edi.hardcoretech.co/c/livez",
-            meta={"mbl_nos": mbl_nos, "task_ids": task_ids},
+            url=DUMMY_URL_DICT["eval_edi"],
+            meta={"search_nos": mbl_nos, "task_ids": task_ids},
         )
 
     def handle(self, response):
         task_ids = response.meta["task_ids"]
-        mbl_nos = response.meta["mbl_nos"]
+        mbl_nos = response.meta["search_nos"]
         try:
             page_source = asyncio.get_event_loop().run_until_complete(
-                self.driver.multi_search(search_nos=mbl_nos, search_type=self._search_type)
+                self.driver.multi_search(
+                    search_nos=mbl_nos,
+                    search_type=self._search_type,
+                    info_pack={
+                        "task_ids": task_ids,
+                        "search_nos": mbl_nos,
+                        "search_type": SEARCH_TYPE_MBL,
+                    },
+                )
             )
         except POSSIBLE_ERROR_TUPLE as e:
             yield Restart(search_nos=mbl_nos, task_ids=task_ids, reason=repr(e))
             return
 
         response_selector = Selector(text=page_source)
-        container_list = self.extract_container_info(response_selector)
-        mbl_no_set = self.get_mbl_no_set_from(container_list=container_list)
+        container_list = self._extract_container_info(response=response_selector, task_ids=task_ids, mbl_nos=mbl_nos)
+        mbl_no_set = self._get_mbl_no_set_from(container_list=container_list)
 
         for mbl_no, task_id in zip(mbl_nos, task_ids):
             if mbl_no in mbl_no_set:
                 yield MblItem(task_id=task_id, mbl_no=mbl_no)
             else:
-                yield ExportErrorData(
+                yield DataNotFoundItem(
                     task_id=task_id,
-                    mbl_no=mbl_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
+                    search_no=mbl_no,
+                    search_type=self._search_type,
+                    status=RESULT_STATUS_ERROR,
                     detail="Data was not found",
                 )
                 continue
 
+        prev_task_id = ""
         for idx in range(len(container_list)):
             container_no = container_list[idx]["container_no"]
             mbl_no = container_list[idx]["mbl_no"]
             index = mbl_nos.index(mbl_no)
             task_id = task_ids[index]
+
+            if prev_task_id != task_id:
+                if prev_task_id:
+                    yield EndItem(task_id=prev_task_id)
+
+                prev_task_id = task_id
 
             yield ContainerItem(
                 task_id=task_id,
@@ -228,7 +250,7 @@ class MblRoutingRule(BaseRoutingRule):
 
             # detail page
             try:
-                for item in self.handle_detail_page(task_id, idx):
+                for item in self._handle_detail_page(task_id=task_id, container_no=container_no, idx=idx):
                     yield item
             except POSSIBLE_ERROR_TUPLE as e:
                 yield Restart(search_nos=mbl_nos[index:], task_ids=task_ids[index:], reason=repr(e))
@@ -236,7 +258,7 @@ class MblRoutingRule(BaseRoutingRule):
 
             # history page
             try:
-                for item in self.handle_history_page(task_id, container_no, idx):
+                for item in self._handle_history_page(task_id, container_no, idx):
                     yield item
             except POSSIBLE_ERROR_TUPLE as e:
                 yield Restart(search_nos=mbl_nos[index:], task_ids=task_ids[index:], reason=repr(e))
@@ -244,23 +266,36 @@ class MblRoutingRule(BaseRoutingRule):
 
             time.sleep(3)
 
+        if prev_task_id:
+            yield EndItem(task_id=prev_task_id)
+
         self.driver.close_page_and_switch_last()
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
-    def handle_detail_page(self, task_id, idx):
-        try:
-            page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(idx + 2))
-        except CarrierResponseFormatError:
-            # This exception is used to notify that the link of detail page is disappeared, thus no handling continued
-            return
+    def _handle_detail_page(self, task_id: str, container_no: str, idx: int):
+        info_pack = {
+            "task_id": task_id,
+            "search_no": container_no,
+            "search_type": SEARCH_TYPE_CONTAINER,
+        }
+
+        page_source = asyncio.get_event_loop().run_until_complete(
+            self.driver.go_detail_page(
+                idx=idx + 2,
+                info_pack=info_pack,
+            )
+        )
 
         if not page_source:
-            raise CarrierResponseFormatError(reason="Detail page source empty")
+            raise FormatError(
+                **info_pack,
+                reason="Detail page source empty",
+            )
 
         detail_selector = Selector(text=page_source)
-        date_information = self.extract_date_information(detail_selector)
+        date_information = self._extract_date_information(response=detail_selector, info_pack=info_pack)
 
         yield VesselItem(
             task_id=task_id,
@@ -282,14 +317,28 @@ class MblRoutingRule(BaseRoutingRule):
 
         self.driver.close_page_and_switch_last()
 
-    def handle_history_page(self, task_id, container_no, idx):
-        page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_history_page(idx + 2))
+    def _handle_history_page(self, task_id, container_no, idx):
+        info_pack = {
+            "task_id": task_id,
+            "search_no": container_no,
+            "search_type": SEARCH_TYPE_CONTAINER,
+        }
+
+        page_source = asyncio.get_event_loop().run_until_complete(
+            self.driver.go_history_page(
+                idx=idx + 2,
+                info_pack=info_pack,
+            )
+        )
 
         if not page_source:
-            raise CarrierResponseFormatError(reason="History page source empty")
+            raise FormatError(
+                **info_pack,
+                reason="History page source empty",
+            )
 
         history_selector = Selector(text=page_source)
-        container_status_list = self.extract_container_status(history_selector)
+        container_status_list = self._extract_container_status(response=history_selector, info_pack=info_pack)
 
         for container_status in container_status_list:
             yield ContainerStatusItem(
@@ -302,7 +351,7 @@ class MblRoutingRule(BaseRoutingRule):
 
         self.driver.close_page_and_switch_last()
 
-    def extract_container_info(self, response: scrapy.Selector) -> List:
+    def _extract_container_info(self, response: scrapy.Selector, task_ids: List[str], mbl_nos: List[str]) -> List:
         table_selector = response.css("table.tbl-list")[0]
         table_locator = ContainerListTableLocator()
         table_locator.parse(table=table_selector)
@@ -310,16 +359,16 @@ class MblRoutingRule(BaseRoutingRule):
         return_list = []
         for left in table_locator.iter_left_header():
             container_no_text = table.extract_cell("Ctnr No.", left)
-            container_no = self._parse_container_no_from(text=container_no_text)
+            container_no = self._parse_container_no_from(text=container_no_text, task_ids=task_ids, mbl_nos=mbl_nos)
 
             mbl_no_text = table.extract_cell("BL no.", left)
-            mbl_no = self._parse_mbl_no_from(text=mbl_no_text)
+            mbl_no = self._parse_mbl_no_from(text=mbl_no_text, task_ids=task_ids, mbl_nos=mbl_nos)
 
             detail_j_idt_text = table.extract_cell("More detail", left, JidtTdExtractor())
-            detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text)
+            detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text, task_ids=task_ids, mbl_nos=mbl_nos)
 
             history_j_idt_text = table.extract_cell("More History", left, JidtTdExtractor())
-            history_j_idt = self._parse_history_j_idt_from(text=history_j_idt_text)
+            history_j_idt = self._parse_history_j_idt_from(text=history_j_idt_text, task_ids=task_ids, mbl_nos=mbl_nos)
 
             return_list.append(
                 {
@@ -332,48 +381,77 @@ class MblRoutingRule(BaseRoutingRule):
 
         return return_list
 
-    def _parse_container_no_from(self, text):
+    def _parse_container_no_from(self, text: Optional[str], task_ids: List[str], mbl_nos: List[str]):
         if not text:
-            raise CarrierResponseFormatError("container_no not found")
+            zip_list = list(zip(task_ids, mbl_nos))
+            raise FormatError(
+                task_id=task_ids[0],
+                search_type=self._search_type,
+                reason=f"container_no not found, on (task_id, search_no): {zip_list}",
+            )
 
         m = self._container_patt.match(text)
         if not m:
-            raise CarrierResponseFormatError("container_no not match")
+            zip_list = list(zip(task_ids, mbl_nos))
+            raise FormatError(
+                task_id=task_ids[0],
+                search_type=self._search_type,
+                reason=f"container_no not match, on (task_id, search_no): {zip_list}",
+            )
 
         return m.group("container_no")
 
-    def _parse_mbl_no_from(self, text):
+    def _parse_mbl_no_from(self, text: Optional[str], task_ids: List[str], mbl_nos: List[str]):
         if not text:
-            raise CarrierResponseFormatError("mbl_no not found")
+            zip_list = list(zip(task_ids, mbl_nos))
+            raise FormatError(
+                task_id=task_ids[0],
+                search_type=self._search_type,
+                reason=f"mbl_no not found, on (task_id, search_no): {zip_list}",
+            )
 
         m = self._container_patt.match(text)
         if not m:
-            raise CarrierResponseFormatError("mbl_no not match")
+            zip_list = list(zip(task_ids, mbl_nos))
+            raise FormatError(
+                task_id=task_ids[0],
+                search_type=self._search_type,
+                reason=f"mbl_no not match, on (task_id, search_no): {zip_list}",
+            )
 
         return m.group("container_no")
 
-    def _parse_detail_j_idt_from(self, text: str) -> str:
+    def _parse_detail_j_idt_from(self, text: Optional[str], task_ids: List[str], mbl_nos: List[str]) -> str:
         if not text:
             return ""
 
         m = self._j_idt_patt.search(text)
         if not m:
-            raise CarrierResponseFormatError("detail_j_idt not match")
+            zip_list = list(zip(task_ids, mbl_nos))
+            raise FormatError(
+                task_id=task_ids[0],
+                search_type=self._search_type,
+                reason=f"detail_j_idt not match, on (task_id, search_no): {zip_list}",
+            )
 
         return m.group("j_idt")
 
-    def _parse_history_j_idt_from(self, text: str) -> str:
+    def _parse_history_j_idt_from(self, text: Optional[str], task_ids: List[str], mbl_nos: List[str]) -> str:
         if not text:
             return ""
 
         m = self._j_idt_patt.search(text)
         if not m:
-            raise CarrierResponseFormatError("History_j_idt not match")
+            zip_list = list(zip(task_ids, mbl_nos))
+            raise FormatError(
+                task_id=task_ids[0],
+                search_type=self._search_type,
+                reason=f"History_j_idt not match, on (task_id, search_no): {zip_list}",
+            )
 
         return m.group("j_idt")
 
-    @staticmethod
-    def extract_date_information(response) -> Dict:
+    def _extract_date_information(self, response, info_pack: Dict) -> Dict:
         pattern = re.compile(r"^(?P<vessel>[^/]+) / (?P<voyage>[^/]+)$")
 
         match_rule = NameOnTableMatchRule(name="2. Departure Date / Arrival Date Information")
@@ -381,7 +459,10 @@ class MblRoutingRule(BaseRoutingRule):
         table_selector = find_selector_from(selectors=response.css("table.tbl-list"), rule=match_rule)
 
         if table_selector is None:
-            raise CarrierResponseFormatError(reason="data information table not found")
+            raise FormatError(
+                **info_pack,
+                reason="data information table not found",
+            )
 
         location_table_locator = LocationLeftTableLocator()
         location_table_locator.parse(table=table_selector)
@@ -420,12 +501,14 @@ class MblRoutingRule(BaseRoutingRule):
             "pol_etd": date_table.extract_cell(top=date_index, left="Departure Date"),
         }
 
-    @staticmethod
-    def extract_container_status(response) -> List:
+    def _extract_container_status(self, response, info_pack: Dict) -> List:
         table_selector = response.css("table.tbl-list")
 
         if not table_selector:
-            raise CarrierResponseFormatError(reason="container status table not found")
+            raise FormatError(
+                **info_pack,
+                reason="container status table not found",
+            )
 
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table_selector)
@@ -447,8 +530,7 @@ class MblRoutingRule(BaseRoutingRule):
 
         return return_list
 
-    @staticmethod
-    def get_mbl_no_set_from(container_list: List):
+    def _get_mbl_no_set_from(self, container_list: List):
         mbl_no_list = [container["mbl_no"] for container in container_list]
         mbl_no_set = set(mbl_no_list)
 
@@ -459,7 +541,7 @@ class BookingRoutingRule(BaseRoutingRule):
     name = "BOOKING"
 
     def __init__(self, content_getter: BaseContentGetter):
-        self._search_type = SHIPMENT_TYPE_BOOKING
+        self._search_type = SEARCH_TYPE_BOOKING
         self._container_patt = re.compile(r"^(?P<container_no>\w+)")
         self.driver = content_getter
 
@@ -468,7 +550,7 @@ class BookingRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://eval.edi.hardcoretech.co/c/livez",
+            url=DUMMY_URL_DICT["eval_edi"],
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,
@@ -483,35 +565,56 @@ class BookingRoutingRule(BaseRoutingRule):
         search_nos = response.meta["search_nos"]
         try:
             page_source = asyncio.get_event_loop().run_until_complete(
-                self.driver.multi_search(search_nos=search_nos, search_type=self._search_type)
+                self.driver.multi_search(
+                    search_nos=search_nos,
+                    search_type=self._search_type,
+                    info_pack={
+                        "task_ids": task_ids,
+                        "search_nos": search_nos,
+                        "search_type": SEARCH_TYPE_BOOKING,
+                    },
+                )
             )
         except POSSIBLE_ERROR_TUPLE as e:
             yield Restart(search_nos=search_nos, task_ids=task_ids, reason=repr(e))
             return
 
         response_selector = Selector(text=page_source)
-        if self.is_search_no_invalid(response=response_selector):
-            raise CarrierInvalidSearchNoError(search_type=self._search_type)
+        if self._is_search_no_invalid(response=response_selector):
+            zip_list = list(zip(task_ids, search_nos))
+            raise GeneralFatalError(
+                task_id=task_ids[0],
+                search_type=self._search_type,
+                reason=f"Invalid search_nos, on (task_id, search_no): {zip_list}",
+            )
 
-        booking_list = self.extract_booking_list(response_selector)
-        book_no_set = self.get_book_no_set_from(booking_list=booking_list)
+        booking_list = self._extract_booking_list(response=response_selector, task_ids=task_ids, search_nos=search_nos)
+        book_no_set = self._get_book_no_set_from(booking_list=booking_list)
 
         for task_id, search_no in zip(task_ids, search_nos):
             if search_no not in book_no_set:
-                yield ExportErrorData(
+                yield DataNotFoundItem(
                     task_id=task_id,
-                    booking_no=search_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
+                    search_no=search_no,
+                    search_type=self._search_type,
+                    status=RESULT_STATUS_ERROR,
                     detail="Data was not found",
                 )
 
+        prev_task_id = ""
         for b_idx in range(len(booking_list)):
             search_no = booking_list[b_idx]["booking_no"]
             index = search_nos.index(search_no)
             task_id = task_ids[index]
 
+            if prev_task_id != task_id:
+                if prev_task_id:
+                    yield EndItem(task_id=prev_task_id)
+
+                prev_task_id = task_id
+
             try:
-                for item in self.handle_booking_detail_history_page(task_id=task_id, search_no=search_no):
+                for item in self._handle_booking_detail_history_page(task_id=task_id, search_no=search_no, b_idx=b_idx):
                     yield item
             except POSSIBLE_ERROR_TUPLE as e:
                 yield Restart(search_nos=search_no[index:], task_ids=task_ids[index:], reason=repr(e))
@@ -519,20 +622,30 @@ class BookingRoutingRule(BaseRoutingRule):
 
             time.sleep(3)
 
+        if prev_task_id:
+            yield EndItem(task_id=prev_task_id)
+
         self.driver.close_page_and_switch_last()
 
-    def handle_booking_detail_history_page(self, task_id, search_no):
-        try:
-            page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(b_idx + 2))
-        except CarrierResponseFormatError:
-            # This exception is used to notify that the link of detail page is disappeared, thus no handling continued
-            return
+    def _handle_booking_detail_history_page(self, task_id: str, search_no: str, b_idx: int):
+        page_source = asyncio.get_event_loop().run_until_complete(
+            self.driver.go_detail_page(
+                idx=b_idx + 2,
+                info_pack={
+                    "task_id": task_id,
+                    "search_no": search_no,
+                    "search_type": self._search_type,
+                },
+            )
+        )
 
         if not page_source:
-            raise CarrierResponseFormatError(reason="Detail page source empty")
+            raise FormatError(
+                task_id=task_id, search_no=search_no, search_type=self._search_type, reason="Detail page source empty"
+            )
 
-        basic_info = self.extract_basic_info(Selector(text=page_source))
-        vessel_info = self.extract_vessel_info(Selector(text=page_source))
+        basic_info = self._extract_basic_info(Selector(text=page_source))
+        vessel_info = self._extract_vessel_info(Selector(text=page_source))
 
         yield MblItem(
             task_id=task_id,
@@ -557,26 +670,37 @@ class BookingRoutingRule(BaseRoutingRule):
             eta=vessel_info["eta"],
         )
 
-        for item in self.handle_booking_history_page(detail_page=page_source, task_id=task_id, search_no=search_no):
+        for item in self._handle_booking_history_page(detail_page=page_source, task_id=task_id, search_no=search_no):
             yield item
 
         self.driver.close_page_and_switch_last()
 
-    def handle_booking_history_page(self, detail_page, task_id, search_no):
-        container_nos = self.extract_container_no_and_status_links(Selector(text=detail_page))
+    def _handle_booking_history_page(self, detail_page, task_id, search_no):
+        container_nos = self._extract_container_no_and_status_links(Selector(text=detail_page))
 
         for idx in range(len(container_nos)):
             container_no = container_nos[idx]
+            info_pack = {
+                "task_id": task_id,
+                "search_no": container_no,
+                "search_type": SEARCH_TYPE_CONTAINER,
+            }
+
             # history page
-            page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_booking_history_page(idx + 2))
+            page_source = asyncio.get_event_loop().run_until_complete(
+                self.driver.go_booking_history_page(
+                    idx=idx + 2,
+                    info_pack=info_pack,
+                )
+            )
 
             if not page_source:
-                raise CarrierResponseFormatError(reason="History page source empty")
+                raise FormatError(**info_pack, reason="History page source empty")
 
             history_selector = Selector(text=page_source)
 
-            event_list = self.extract_container_status(response=history_selector)
-            container_status_items = self.make_container_status_items(task_id, container_no, event_list)
+            event_list = self._extract_container_status(response=history_selector, info_pack=info_pack)
+            container_status_items = self._make_container_status_items(task_id, container_no, event_list)
 
             yield ContainerItem(
                 task_id=task_id,
@@ -589,13 +713,12 @@ class BookingRoutingRule(BaseRoutingRule):
 
             self.driver.close_page_and_switch_last()
 
-    @staticmethod
-    def is_search_no_invalid(response):
+    def _is_search_no_invalid(self, response):
         if response.css("input#q_ref_no1"):
             return True
         return False
 
-    def extract_booking_list(self, response: scrapy.Selector) -> List:
+    def _extract_booking_list(self, response: scrapy.Selector, task_ids: List[str], search_nos: List[str]) -> List:
         table_selector = response.css("table.tbl-list")[0]
         table_locator = ContainerListTableLocator()
         table_locator.parse(table=table_selector)
@@ -603,10 +726,12 @@ class BookingRoutingRule(BaseRoutingRule):
         return_list = []
         for left in table_locator.iter_left_header():
             booking_no_text = table.extract_cell("Book No.", left)
-            booking_no = self._parse_booking_no_from(text=booking_no_text)
+            booking_no = self._parse_booking_no_from(text=booking_no_text, task_ids=task_ids, search_nos=search_nos)
 
             detail_j_idt_text = table.extract_cell("More detail", left, JidtTdExtractor())
-            detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text)
+            detail_j_idt = self._parse_detail_j_idt_from(
+                text=detail_j_idt_text, task_ids=task_ids, search_nos=search_nos
+            )
 
             return_list.append(
                 {
@@ -617,36 +742,49 @@ class BookingRoutingRule(BaseRoutingRule):
 
         return return_list
 
-    def _parse_booking_no_from(self, text):
+    def _parse_booking_no_from(self, text: Optional[str], task_ids: List[str], search_nos: List[str]):
         if not text:
-            raise CarrierResponseFormatError("booking_no not found")
+            zip_list = list(zip(task_ids, search_nos))
+            raise FormatError(
+                task_id=task_ids[0],
+                search_type=self._search_type,
+                reason=f"booking_no not found, on (task_id, search_no): {zip_list}",
+            )
 
         booking_patt = re.compile(r"^(?P<booking_no>\w+)")
         m = booking_patt.match(text)
         if not m:
-            raise CarrierResponseFormatError("booking_no not match")
+            zip_list = list(zip(task_ids, search_nos))
+            raise FormatError(
+                task_id=task_ids[0],
+                search_type=self._search_type,
+                reason=f"booking_no not match, on (task_id, search_no): {zip_list}",
+            )
 
         return m.group("booking_no")
 
-    def _parse_detail_j_idt_from(self, text: str) -> str:
+    def _parse_detail_j_idt_from(self, text: Optional[str], task_ids: List[str], search_nos: List[str]) -> str:
         if not text:
             return ""
 
         j_idt_patt = re.compile(r"'(?P<j_idt>j_idt[^,]+)':'(?P=j_idt)'")
         m = j_idt_patt.search(text)
         if not m:
-            raise CarrierResponseFormatError("detail_j_idt not match")
+            zip_list = list(zip(task_ids, search_nos))
+            raise FormatError(
+                task_id=task_ids[0],
+                search_type=self._search_type,
+                reason=f"detail_j_idt not match, on (task_id, search_no): {zip_list}",
+            )
 
         return m.group("j_idt")
 
-    @staticmethod
-    def get_book_no_set_from(booking_list: List):
+    def _get_book_no_set_from(self, booking_list: List):
         book_no_list = [booking["booking_no"] for booking in booking_list]
         book_no_set = set(book_no_list)
         return book_no_set
 
-    @staticmethod
-    def extract_basic_info(response: scrapy.Selector):
+    def _extract_basic_info(self, response: scrapy.Selector):
         tables = response.css("table.tbl-list")
         table = tables[0]
 
@@ -658,8 +796,7 @@ class BookingRoutingRule(BaseRoutingRule):
             "voyage": table_locator.get_cell(left="Voyage"),
         }
 
-    @staticmethod
-    def extract_vessel_info(response: scrapy.Selector):
+    def _extract_vessel_info(self, response: scrapy.Selector):
         tables = response.css("table.tbl-list")
         table = tables[1]
 
@@ -675,8 +812,7 @@ class BookingRoutingRule(BaseRoutingRule):
             "etd": table_locator.get_cell(left="Estimated Arrival Date"),
         }
 
-    @staticmethod
-    def extract_container_no_and_status_links(response: scrapy.Selector) -> List:
+    def _extract_container_no_and_status_links(self, response: scrapy.Selector) -> List:
         tables = response.css("table.tbl-list")
         table = tables[-1]
 
@@ -685,8 +821,7 @@ class BookingRoutingRule(BaseRoutingRule):
 
         return table_locator.get_container_no_list()
 
-    @classmethod
-    def make_container_status_items(cls, task_id, container_no, event_list):
+    def _make_container_status_items(self, task_id, container_no, event_list):
         container_statuses = []
         for container_status in event_list:
             container_statuses.append(
@@ -700,12 +835,11 @@ class BookingRoutingRule(BaseRoutingRule):
             )
         return container_statuses
 
-    @staticmethod
-    def extract_container_status(response) -> List:
+    def _extract_container_status(self, response, info_pack: Dict) -> List:
         table_selector = response.css("table.tbl-list")
 
         if not table_selector:
-            raise CarrierResponseFormatError(reason="container status table not found")
+            raise FormatError(**info_pack, reason="container status table not found")
 
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table_selector)
@@ -734,11 +868,11 @@ class WhlcContentGetter(PyppeteerContentGetter):
         pyppeteer_logger = logging.getLogger("pyppeteer")
         pyppeteer_logger.setLevel(logging.WARNING)
         self._type_select_num_map = {
-            SHIPMENT_TYPE_MBL: "2",
-            SHIPMENT_TYPE_BOOKING: "4",
+            SEARCH_TYPE_MBL: "2",
+            SEARCH_TYPE_BOOKING: "4",
         }
 
-    async def multi_search(self, search_nos, search_type):
+    async def multi_search(self, search_nos, search_type, info_pack: Dict):
         await self.page.goto(WHLC_BASE_URL, options={"timeout": 60000})
         await asyncio.sleep(3)
 
@@ -754,14 +888,15 @@ class WhlcContentGetter(PyppeteerContentGetter):
 
         click_selector = "#Query"
         wait_for_selector = "table.tbl-list"
-        await self.click_button_and_wait_for(click_selector=click_selector, wait_for_selector=wait_for_selector)
+        await self.click_button_and_wait_for(
+            click_selector=click_selector, wait_for_selector=wait_for_selector, info_pack=info_pack
+        )
         await asyncio.sleep(5)
 
         await self.scroll_down()
         return await self.page.content()
 
-    async def go_detail_page(self, idx: int) -> str:
-        row_selector = f"#cargoTrackListBean > table > tbody > tr:nth-child({idx})"
+    async def go_detail_page(self, idx: int, info_pack: Dict) -> str:
         await self.page.waitForSelector(
             f"{row_selector} > td:nth-child(1)",
             options={"timeout": 60000},
@@ -769,18 +904,15 @@ class WhlcContentGetter(PyppeteerContentGetter):
 
         click_selector = f"{row_selector} > td:nth-child(1) > u"
         wait_for_selector = "table.tbl-list"
-
-        # Sometimes the link of detail page is disappeared
-        if not await self.page.querySelector(click_selector):
-            raise CarrierResponseFormatError(reason="Link of detail page is disappeared")
-
-        await self.click_button_and_wait_for(click_selector=click_selector, wait_for_selector=wait_for_selector)
+        await self.click_button_and_wait_for(
+            click_selector=click_selector, wait_for_selector=wait_for_selector, info_pack=info_pack
+        )
         await asyncio.sleep(3)
 
         await self.scroll_down()
         return await self.page.content()
 
-    async def go_history_page(self, idx: int) -> str:
+    async def go_history_page(self, idx: int, info_pack: Dict) -> str:
         await self.page.waitForSelector(
             f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u",
             options={"timeout": 60000},
@@ -788,13 +920,15 @@ class WhlcContentGetter(PyppeteerContentGetter):
 
         click_selector = f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u"
         wait_for_selector = "table.tbl-list"
-        await self.click_button_and_wait_for(click_selector=click_selector, wait_for_selector=wait_for_selector)
+        await self.click_button_and_wait_for(
+            click_selector=click_selector, wait_for_selector=wait_for_selector, info_pack=info_pack
+        )
         await asyncio.sleep(3)
 
         await self.scroll_down()
         return await self.page.content()
 
-    async def go_booking_history_page(self, idx: int) -> str:
+    async def go_booking_history_page(self, idx: int, info_pack: Dict) -> str:
         await self.page.waitForSelector(
             f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a",
             options={"timeout": 60000},
@@ -802,7 +936,9 @@ class WhlcContentGetter(PyppeteerContentGetter):
 
         click_selector = f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"
         wait_for_selector = "table.tbl-list"
-        await self.click_button_and_wait_for(click_selector=click_selector, wait_for_selector=wait_for_selector)
+        await self.click_button_and_wait_for(
+            click_selector=click_selector, wait_for_selector=wait_for_selector, info_pack=info_pack
+        )
         await asyncio.sleep(3)
 
         await self.scroll_down()
@@ -823,7 +959,7 @@ class WhlcContentGetter(PyppeteerContentGetter):
         asyncio.get_event_loop().run_until_complete(self.close_page())
         asyncio.get_event_loop().run_until_complete(self.switch_to_last())
 
-    async def click_button_and_wait_for(self, click_selector: str, wait_for_selector: str):
+    async def click_button_and_wait_for(self, click_selector: str, wait_for_selector: str, info_pack: Dict):
         max_prevent_redirection_count = 3
         while max_prevent_redirection_count != 0:
             max_prevent_redirection_count -= 1
@@ -841,10 +977,21 @@ class WhlcContentGetter(PyppeteerContentGetter):
                 ):
                     self.close_page_and_switch_last()
                     if max_prevent_redirection_count == 0:
-                        raise CarrierResponseFormatError(
-                            reason=f"Prevent redirection fail, while click {click_selector} "
-                            f"and wait for selector {wait_for_selector}"
-                        )
+                        reason = f"Prevent redirection fail, while click {click_selector} and wait for selector {wait_for_selector}"
+                        if info_pack.get("task_id"):
+                            raise FormatError(
+                                task_id=info_pack["task_id"],
+                                search_no=info_pack["search_no"],
+                                search_type=info_pack["search_type"],
+                                reason=reason,
+                            )
+                        else:
+                            zip_list = list(zip(info_pack["task_ids"], info_pack["search_nos"]))
+                            raise FormatError(
+                                task_id=info_pack["task_ids"][0],
+                                search_type=info_pack["search_type"],
+                                reason=reason + f", on (task_id, search_no): {zip_list}",
+                            )
                 else:
                     raise e
 
