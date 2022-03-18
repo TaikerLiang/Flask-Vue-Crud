@@ -1,9 +1,9 @@
-from crawler.core_carrier.items_new import LocationItem, MblItem
+from crawler.core_carrier.items import MblItem, LocationItem
 
 
 def verify(results):
     assert results[0] == MblItem(
-        mbl_no="2650422090",
+        mbl_no='2650422090',
         vessel=None,
         voyage=None,
         por=LocationItem(name=None),
@@ -17,6 +17,6 @@ def verify(results):
         deliv_eta=None,
         deliv_ata=None,
         final_dest=LocationItem(name=None),
-        customs_release_status="Cleared",
-        customs_release_date="25 Nov 2020, 19:30 GMT",
+        customs_release_status='Cleared',
+        customs_release_date='25 Nov 2020, 19:30 GMT',
     )

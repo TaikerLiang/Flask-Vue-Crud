@@ -17,27 +17,28 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from urllib3.exceptions import ReadTimeoutError
 
-from crawler.core.base_new import (
-    DUMMY_URL_DICT,
-    RESULT_STATUS_ERROR,
-    SEARCH_TYPE_BOOKING,
-    SEARCH_TYPE_CONTAINER,
-    SEARCH_TYPE_MBL,
-)
-from crawler.core.exceptions_new import AccessDeniedError, FormatError, TimeOutError
-from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.base_spiders_new import BaseCarrierSpider
-from crawler.core_carrier.items_new import (
+from crawler.core_carrier.base import (
+    CARRIER_RESULT_STATUS_ERROR,
+    SHIPMENT_TYPE_BOOKING,
+    SHIPMENT_TYPE_MBL,
+)
+from crawler.core_carrier.base_spiders import BaseCarrierSpider
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError,
+    LoadWebsiteTimeOutError,
+)
+from crawler.core_carrier.items import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
+    ExportErrorData,
     LocationItem,
     MblItem,
 )
-from crawler.core_carrier.request_helpers_new import RequestOption
+from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.selector_finder import (
     CssQueryTextStartswithMatchRule,
@@ -59,12 +60,12 @@ class CarrierOoluSpider(BaseCarrierSpider):
         self._content_getter = ContentGetter(proxy_manager=None, is_headless=True)
 
         bill_rules = [
-            CargoTrackingRule(self._content_getter, search_type=SEARCH_TYPE_MBL),
+            CargoTrackingRule(self._content_getter, search_type=SHIPMENT_TYPE_MBL),
             ContainerStatusRule(self._content_getter),
         ]
 
         booking_rules = [
-            CargoTrackingRule(self._content_getter, search_type=SEARCH_TYPE_BOOKING),
+            CargoTrackingRule(self._content_getter, search_type=SHIPMENT_TYPE_BOOKING),
             ContainerStatusRule(self._content_getter),
         ]
 
@@ -76,7 +77,7 @@ class CarrierOoluSpider(BaseCarrierSpider):
             self.search_no = self.booking_no
 
     def start(self):
-        option = CargoTrackingRule.build_request_option(task_id=self.task_id, search_no=self.search_no)
+        option = CargoTrackingRule.build_request_option(search_no=self.search_no)
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -88,7 +89,7 @@ class CarrierOoluSpider(BaseCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, (BaseCarrierItem, DataNotFoundItem, EndItem)):
+            if isinstance(result, BaseCarrierItem):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -111,12 +112,7 @@ class CarrierOoluSpider(BaseCarrierSpider):
             )
 
         else:
-            raise AccessDeniedError(
-                task_id=self.task_id,
-                search_no=self.search_no,
-                search_type=self.search_type,
-                reason=f"Unexpected request method: `{option.method}`",
-            )
+            raise ValueError(f"Invalid option.method [{option.method}]")
 
 
 class ContentGetter(ChromeContentGetter):
@@ -154,17 +150,13 @@ class ContentGetter(ChromeContentGetter):
         time.sleep(3)
         return self.search_and_return(search_no=search_no, search_type=search_type)
 
-    def find_container_btn_and_click(self, container_btn_css):
-        container_btn = self._driver.find_element_by_css_selector(container_btn_css)
-        container_btn.click()
+    def close_current_window_and_jump_to_origin(self):
+        self._driver.close()
 
-    # def close_current_window_and_jump_to_origin(self):
-    #     self._driver.close()
-
-    #     # jump back to origin window
-    #     windows = self._driver.window_handles
-    #     assert len(windows) == 1
-    #     self._driver.switch_to.window(windows[0])
+        # jump back to origin window
+        windows = self._driver.window_handles
+        assert len(windows) == 1
+        self._driver.switch_to.window(windows[0])
 
     def _search(self, search_no, search_type):
         if self._is_first:
@@ -175,7 +167,7 @@ class ContentGetter(ChromeContentGetter):
             cookie_accept_btn.click()
             time.sleep(2)
 
-        if self._is_first and search_type == SEARCH_TYPE_MBL:
+        if self._is_first and search_type == SHIPMENT_TYPE_MBL:
             drop_down_btn = self._driver.find_element_by_css_selector("button[data-id='ooclCargoSelector']")
             drop_down_btn.click()
             bl_select = self._driver.find_element_by_css_selector("a[tabindex='0']")
@@ -190,52 +182,19 @@ class ContentGetter(ChromeContentGetter):
         search_btn = self._driver.find_element_by_css_selector("a#container_btn")
         search_btn.click()
 
-    def _is_blocked(self, response):
+    @staticmethod
+    def _is_blocked(response):
         res = response.xpath("/html/body/title/text()").extract()
         if res and str(res[0]) == "Error":
             return True
         else:
             return False
 
-    def _handle_with_slide(self):
+    def find_container_btn_and_click(self, container_btn_css):
+        contaienr_btn = self._driver.find_element_by_css_selector(container_btn_css)
+        contaienr_btn.click()
 
-        while True:
-            slider_ele = self._get_slider()
-            icon_ele = self._get_slider_icon_ele()
-            img_ele = self._get_bg_img_ele()
-
-            distance = self._get_element_slide_distance(icon_ele, img_ele, 0)
-
-            if distance <= 100:
-                self._refresh()
-                continue
-
-            track = self._get_track(distance)
-            self._move_to_gap(slider_ele, track)
-
-            time.sleep(5)
-            if not self._pass_verification_or_not():
-                break
-
-    def _get_slider(self):
-        WebDriverWait(self._driver, 15).until(
-            EC.presence_of_element_located(
-                (By.XPATH, "/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/i")
-            )
-        )
-        return self._driver.find_element_by_xpath("/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/i")
-
-    def _get_slider_icon_ele(self):
-        canvas = self._driver.find_element_by_xpath('//*[@id="bockCanvas"]')
-        canvas_base64 = self._driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
-        return canvas_base64
-
-    def _get_bg_img_ele(self):
-        canvas = self._driver.find_element_by_xpath('//*[@id="imgCanvas"]')
-        canvas_base64 = self._driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
-        return canvas_base64
-
-    def _get_element_slide_distance(self, slider_ele, background_ele, correct=0):
+    def get_element_slide_distance(self, slider_ele, background_ele, correct=0):
         """
         根据传入滑块，和背景的节点，计算滑块的距离
         ​
@@ -287,14 +246,66 @@ class ContentGetter(ChromeContentGetter):
 
         return cv2.cvtColor(np.array(_image), cv2.COLOR_RGB2BGR)
 
-    def _refresh(self):
+    def refresh(self):
         refresh_button = self._driver.find_element_by_xpath(
             "/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[1]/div/div/i"
         )
         refresh_button.click()
         time.sleep(5)
 
-    def _get_track(self, distance):
+    def pass_verification_or_not(self):
+        try:
+            return self._driver.find_element_by_id("recaptcha_div")
+        except NoSuchElementException:
+            return None
+
+    def _handle_with_slide(self):
+
+        while True:
+            slider_ele = self.get_slider()
+            icon_ele = self.get_slider_icon_ele()
+            img_ele = self.get_bg_img_ele()
+
+            distance = self.get_element_slide_distance(icon_ele, img_ele, 0)
+
+            if distance <= 100:
+                self.refresh()
+                continue
+
+            track = self.get_track(distance)
+            self.move_to_gap(slider_ele, track)
+
+            time.sleep(5)
+            if not self.pass_verification_or_not():
+                break
+
+    def get_slider(self):
+        WebDriverWait(self._driver, 15).until(
+            EC.presence_of_element_located(
+                (By.XPATH, "/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/i")
+            )
+        )
+        return self._driver.find_element_by_xpath("/html/body/form[1]/div[4]/div[3]/div[2]/div[1]/div/div[2]/div/div/i")
+
+    def get_slider_icon_ele(self):
+        canvas = self._driver.find_element_by_xpath('//*[@id="bockCanvas"]')
+        canvas_base64 = self._driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
+        return canvas_base64
+
+    def get_bg_img_ele(self):
+        canvas = self._driver.find_element_by_xpath('//*[@id="imgCanvas"]')
+        canvas_base64 = self._driver.execute_script("return arguments[0].toDataURL('image/png').substring(21);", canvas)
+        return canvas_base64
+
+    def move_to_gap(self, slider, track):
+        ActionChains(self._driver).click_and_hold(slider).perform()
+
+        for x in track:
+            ActionChains(self._driver).move_by_offset(xoffset=x, yoffset=0).perform()
+        time.sleep(0.5)  # move to the right place and take a break
+        ActionChains(self._driver).release().perform()
+
+    def get_track(self, distance):
         """
         follow Newton's laws of motion
         ①v=v0+at
@@ -328,20 +339,6 @@ class ContentGetter(ChromeContentGetter):
 
         return track
 
-    def _move_to_gap(self, slider, track):
-        ActionChains(self._driver).click_and_hold(slider).perform()
-
-        for x in track:
-            ActionChains(self._driver).move_by_offset(xoffset=x, yoffset=0).perform()
-        time.sleep(0.5)  # move to the right place and take a break
-        ActionChains(self._driver).release().perform()
-
-    def _pass_verification_or_not(self):
-        try:
-            return self._driver.find_element_by_id("recaptcha_div")
-        except NoSuchElementException:
-            return None
-
 
 # -------------------------------------------------------------------------------
 
@@ -354,28 +351,19 @@ class CargoTrackingRule(BaseRoutingRule):
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, task_id: str, search_no: str) -> RequestOption:
+    def build_request_option(cls, search_no: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=DUMMY_URL_DICT["eval_edi"],
-            meta={
-                "task_id": task_id,
-                "search_no": search_no,
-            },
+            url="https://www.google.com",
+            meta={"search_no": search_no},
         )
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
     def handle(self, response):
-        task_id = response.meta["task_id"]
         search_no = response.meta["search_no"]
-        info_pack = {
-            "task_id": task_id,
-            "search_no": search_no,
-            "search_type": self._search_type,
-        }
 
         try:
             res = self._content_getter.search_and_return(search_no=search_no, search_type=self._search_type)
@@ -388,35 +376,43 @@ class CargoTrackingRule(BaseRoutingRule):
         except ReadTimeoutError:
             url = self._content_getter.get_current_url()
             self._content_getter.quit()
-            raise TimeOutError(
-                **info_pack,
-                reason=f"Timeout during connect to {url}",
-            )
+            raise LoadWebsiteTimeOutError(url=url)
 
         if os.path.exists("./background01.jpg"):
             os.remove("./background01.jpg")
         if os.path.exists("./slider01.jpg"):
             os.remove("./slider01.jpg")
 
-        for item in self._handle_response(response=response, info_pack=info_pack):
+        for item in self._handle_response(response=response, search_type=self._search_type, search_no=search_no):
             yield item
 
-    def _no_response(self, response: Selector) -> bool:
+    @staticmethod
+    def _no_response(response: Selector) -> bool:
         return not bool(response.css("td.pageTitle"))
 
-    def _handle_response(self, response, info_pack: Dict):
-        if self._is_search_no_invalid(response):
-            yield DataNotFoundItem(**info_pack, status=RESULT_STATUS_ERROR, detail="Data was not found")
+    @classmethod
+    def _handle_response(cls, response, search_type, search_no):
+        if cls.is_search_no_invalid(response):
+            if search_type == SHIPMENT_TYPE_MBL:
+                yield ExportErrorData(
+                    mbl_no=search_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+            else:
+                yield ExportErrorData(
+                    booking_no=search_no,
+                    status=CARRIER_RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
             return
 
-        task_id = info_pack["task_id"]
-
-        locator = _PageLocator(info_pack=info_pack)
+        locator = _PageLocator()
         selector_map = locator.locate_selectors(response=response)
 
-        search_no = self._extract_search_no(response, info_pack=info_pack)
-        custom_release_info = self._extract_custom_release_info(selector_map=selector_map, info_pack=info_pack)
-        routing_info = self._extract_routing_info(selectors_map=selector_map, info_pack=info_pack)
+        search_no = cls._extract_search_no(response)
+        custom_release_info = cls._extract_custom_release_info(selector_map=selector_map)
+        routing_info = cls._extract_routing_info(selectors_map=selector_map)
 
         mbl_item = MblItem(
             vessel=routing_info["vessel"] or None,
@@ -436,45 +432,43 @@ class CargoTrackingRule(BaseRoutingRule):
             customs_release_date=custom_release_info["date"] or None,
         )
 
-        if self._search_type == SEARCH_TYPE_MBL:
+        if search_type == SHIPMENT_TYPE_MBL:
             mbl_item["mbl_no"] = search_no
         else:
             mbl_item["booking_no"] = search_no
         yield mbl_item
 
-        container_list = self._extract_container_list(selector_map=selector_map)
+        container_list = cls._extract_container_list(selector_map=selector_map)
         for i, container in enumerate(container_list):
             yield ContainerStatusRule.build_request_option(
-                task_id=task_id,
                 container_no=container["container_no"].strip(),
                 click_element_css=f"a[id='form:link{i}']",
             )
 
-        yield EndItem(task_id=task_id)
-
-    def _is_search_no_invalid(self, response):
+    @staticmethod
+    def is_search_no_invalid(response):
         if response.css("span[class=noRecordBold]"):
             return True
         return False
 
-    def _extract_search_no(self, response, info_pack: Dict):
+    @classmethod
+    def _extract_search_no(cls, response):
         search_no_text = response.css("th.sectionTable::text").get()
-        search_no = self._parse_search_no_text(search_no_text, info_pack=info_pack)
+        search_no = cls._parse_search_no_text(search_no_text)
         return search_no
 
-    def _parse_search_no_text(self, search_no_text, info_pack: Dict):
+    @staticmethod
+    def _parse_search_no_text(search_no_text):
         # Search Result - Bill of Lading Number  2109051600
         # Search Result - Booking Number  2636035340
         pattern = re.compile(r"^Search\s+Result\s+-\s+(Bill\s+of\s+Lading|Booking)\s+Number\s+(?P<search_no>\d+)\s+$")
         match = pattern.match(search_no_text)
         if not match:
-            raise FormatError(
-                **info_pack,
-                reason=f"Unknown search_no_text: `{search_no_text}`",
-            )
+            raise CarrierResponseFormatError(reason=f"Unknown search_no_text: `{search_no_text}`")
         return match.group("search_no")
 
-    def _extract_custom_release_info(self, selector_map: Dict[str, scrapy.Selector], info_pack: Dict):
+    @classmethod
+    def _extract_custom_release_info(cls, selector_map: Dict[str, scrapy.Selector]):
         table = selector_map["summary:main_right_table"]
 
         table_locator = SummaryRightTableLocator()
@@ -491,16 +485,15 @@ class CargoTrackingRule(BaseRoutingRule):
         custom_release_info = table_extractor.extract_cell(
             left="Inbound Customs Clearance Status:", extractor=first_td_extractor
         )
-        custom_release_status, custom_release_date = self._parse_custom_release_info(
-            custom_release_info=custom_release_info, info_pack=info_pack
-        )
+        custom_release_status, custom_release_date = cls._parse_custom_release_info(custom_release_info)
 
         return {
             "status": custom_release_status.strip(),
             "date": custom_release_date.strip(),
         }
 
-    def _parse_custom_release_info(self, custom_release_info, info_pack: Dict):
+    @staticmethod
+    def _parse_custom_release_info(custom_release_info):
         """
         Sample 1: `Cleared (03 Nov 2019, 16:50 GMT)`
         Sample 2: `Not Applicable`
@@ -512,13 +505,11 @@ class CargoTrackingRule(BaseRoutingRule):
         pattern = re.compile(r"^(?P<status>[^(]+)(\s+[(](?P<date>[^)]+)[)])?$")
         match = pattern.match(custom_release_info)
         if not match:
-            raise FormatError(
-                **info_pack,
-                reason=f"Unknown custom_release_info: `{custom_release_info}`",
-            )
+            raise CarrierResponseFormatError(reason=f"Unknown custom_release_info: `{custom_release_info}`")
         return match.group("status").strip(), match.group("date") or ""
 
-    def _extract_routing_info(self, selectors_map: Dict[str, scrapy.Selector], info_pack: Dict):
+    @staticmethod
+    def _extract_routing_info(selectors_map: Dict[str, scrapy.Selector]):
         table = selectors_map.get("detail:routing_table", None)
         if table is None:
             return {
@@ -543,7 +534,7 @@ class CargoTrackingRule(BaseRoutingRule):
         span_extractor = FirstTextTdExtractor("span::text")
 
         # vessel_voyage
-        vessel_voyage_extractor = VesselVoyageTdExtractor(info_pack=info_pack)
+        vessel_voyage_extractor = VesselVoyageTdExtractor()
         vessel_voyage = table_extractor.extract_cell(
             top="Vessel Voyage", left=table_locator.LAST_LEFT_HEADER, extractor=vessel_voyage_extractor
         )
@@ -552,26 +543,24 @@ class CargoTrackingRule(BaseRoutingRule):
         por = table_extractor.extract_cell(top="Origin", left=table_locator.FIRST_LEFT_HEADER, extractor=span_extractor)
 
         # pol / pod
-        pol_pod_extractor = PolPodTdExtractor(info_pack=info_pack)
+        pol_pod_extractor = PolPodTdExtractor()
 
         pol_info = table_extractor.extract_cell(
             top="Port of Load", left=table_locator.FIRST_LEFT_HEADER, extractor=pol_pod_extractor
         )
-        etd, atd = get_est_and_actual(status=pol_info["status"], time_str=pol_info["time_str"], info_pack=info_pack)
+        etd, atd = _get_est_and_actual(status=pol_info["status"], time_str=pol_info["time_str"])
 
         pod_info = table_extractor.extract_cell(
             top="Port of Discharge", left=table_locator.LAST_LEFT_HEADER, extractor=pol_pod_extractor
         )
-        eta, ata = get_est_and_actual(status=pod_info["status"], time_str=pod_info["time_str"], info_pack=info_pack)
+        eta, ata = _get_est_and_actual(status=pod_info["status"], time_str=pod_info["time_str"])
 
         # place_of_deliv
-        deliv_extractor = DelivTdExtractor(info_pack=info_pack)
+        deliv_extractor = DelivTdExtractor()
         deliv_info = table_extractor.extract_cell(
             top="Final Destination Hub", left=table_locator.LAST_LEFT_HEADER, extractor=deliv_extractor
         )
-        deliv_eta, deliv_ata = get_est_and_actual(
-            status=deliv_info["status"], time_str=deliv_info["time_str"], info_pack=info_pack
-        )
+        deliv_eta, deliv_ata = _get_est_and_actual(status=deliv_info["status"], time_str=deliv_info["time_str"])
 
         # final_dest
         final_dest = table_extractor.extract_cell(
@@ -594,7 +583,8 @@ class CargoTrackingRule(BaseRoutingRule):
             "voyage": vessel_voyage["voyage"],
         }
 
-    def _extract_container_list(self, selector_map: Dict[str, scrapy.Selector]):
+    @staticmethod
+    def _extract_container_list(selector_map: Dict[str, scrapy.Selector]):
         table = selector_map["summary:container_table"]
 
         container_table_locator = ContainerTableLocator()
@@ -711,18 +701,11 @@ class ContainerTableLocator(BaseTable):
 
 
 class VesselVoyageTdExtractor(BaseTableCellExtractor):
-    def __init__(self, info_pack: Dict) -> None:
-        super().__init__()
-        self._info_pack = info_pack
-
     def extract(self, cell: Selector):
         text_list = cell.css("::text").getall()
 
         if len(text_list) != 2:
-            FormatError(
-                **self._info_pack,
-                reason=f"Unknown Vessel Voyage td format: `{text_list}`",
-            )
+            CarrierResponseFormatError(reason=f"Unknown Vessel Voyage td format: `{text_list}`")
 
         vessel = self._parse_vessel(text_list[0])
 
@@ -731,7 +714,8 @@ class VesselVoyageTdExtractor(BaseTableCellExtractor):
             "voyage": text_list[1].strip(),
         }
 
-    def _parse_vessel(self, text):
+    @staticmethod
+    def _parse_vessel(text):
         """
         Sample 1:
             text = (
@@ -758,18 +742,11 @@ class VesselVoyageTdExtractor(BaseTableCellExtractor):
 
 
 class PolPodTdExtractor(BaseTableCellExtractor):
-    def __init__(self, info_pack: Dict) -> None:
-        super().__init__()
-        self._info_pack = info_pack
-
     def extract(self, cell: Selector):
         text_list = cell.css("::text").getall()
 
         if len(text_list) < 4:
-            raise FormatError(
-                **self._info_pack,
-                reason=f"Unknown Pol or Pod td format: `{text_list}`",
-            )
+            raise CarrierResponseFormatError(reason=f"Unknown Pol or Pod td format: `{text_list}`")
 
         return {
             "port": text_list[0].strip(),
@@ -779,18 +756,11 @@ class PolPodTdExtractor(BaseTableCellExtractor):
 
 
 class DelivTdExtractor(BaseTableCellExtractor):
-    def __init__(self, info_pack: Dict) -> None:
-        super().__init__()
-        self._info_pack = info_pack
-
     def extract(self, cell: Selector):
         text_list = cell.css("::text").getall()
 
         if len(text_list) < 3:
-            raise FormatError(
-                **self._info_pack,
-                reason=f"Unknown Deliv td format: `{text_list}`",
-            )
+            raise CarrierResponseFormatError(reason=f"Unknown Deliv td format: `{text_list}`")
 
         return {
             "port": text_list[0].strip(),
@@ -806,32 +776,29 @@ class ContainerStatusRule(BaseRoutingRule):
         self._content_getter = content_getter
 
     @classmethod
-    def build_request_option(cls, task_id: str, container_no: str, click_element_css: str) -> RequestOption:
+    def build_request_option(cls, container_no: str, click_element_css: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=DUMMY_URL_DICT["eval_edi"],
-            meta={
-                "task_id": task_id,
-                "container_no": container_no,
-                "click_element_css": click_element_css,
-            },
+            url="https://www.google.com",
+            meta={"container_no": container_no, "click_element_css": click_element_css},
         )
+
+    @staticmethod
+    def transform_cookies_to_str(cookies: Dict):
+        cookies_str = ""
+        for key, value in cookies.items():
+            cookies_str += f"{key}={value}; "
+
+        return cookies_str[:-2]
 
     def get_save_name(self, response) -> str:
         container_no = response.meta["container_no"]
         return f"{self.name}_{container_no}.html"
 
     def handle(self, response):
-        task_id = response.meta["task_id"]
         container_no = response.meta["container_no"]
         click_element_css = response.meta["click_element_css"]
-
-        info_pack = {
-            "task_id": task_id,
-            "search_no": container_no,
-            "search_type": SEARCH_TYPE_CONTAINER,
-        }
 
         try:
             self._content_getter.find_container_btn_and_click(container_btn_css=click_element_css)
@@ -839,29 +806,22 @@ class ContainerStatusRule(BaseRoutingRule):
         except ReadTimeoutError:
             url = self._content_getter.get_current_url()
             self._content_getter.quit()
-            raise TimeOutError(
-                **info_pack,
-                reason=f"Timeout during connect to {url}",
-            )
+            raise LoadWebsiteTimeOutError(url=url)
 
         response = Selector(text=self._content_getter.get_page_source())
 
-        for item in self._handle_response(response=response, info_pack=info_pack):
+        for item in self._handle_response(response=response, container_no=container_no):
             yield item
 
-    def _handle_response(self, response, info_pack: Dict):
-        container_no = info_pack["search_no"]
-        title_container_no = self._extract_container_no(response, info_pack=info_pack)
-
+    @classmethod
+    def _handle_response(cls, response, container_no):
+        title_container_no = cls._extract_container_no(response)
         if title_container_no != container_no:
-            raise FormatError(
-                **info_pack,
-                reason=f"Container no mismatch: website={title_container_no}, ours={info_pack['search_no']}",
-            )
+            raise CarrierResponseFormatError(reason=f"Container no mismatch: {title_container_no} / {container_no}")
 
-        locator = _PageLocator(info_pack=info_pack)
+        locator = _PageLocator()
         selectors_map = locator.locate_selectors(response=response)
-        detention_info = self._extract_detention_info(selectors_map, info_pack=info_pack)
+        detention_info = cls._extract_detention_info(selectors_map)
 
         yield ContainerItem(
             container_key=container_no,
@@ -870,7 +830,7 @@ class ContainerStatusRule(BaseRoutingRule):
             det_free_time_exp_date=detention_info["det_free_time_exp_date"] or None,
         )
 
-        container_status_list = self._extract_container_status_list(selectors_map)
+        container_status_list = cls._extract_container_status_list(selectors_map)
         for container_status in container_status_list:
             event = container_status["event"].strip()
             facility = container_status["facility"]
@@ -888,19 +848,8 @@ class ContainerStatusRule(BaseRoutingRule):
                 local_date_time=container_status["local_date_time"],
             )
 
-    def _extract_container_no(self, response: Selector, info_pack: Dict):
-        container_no_text = response.css("td.groupTitle.fullByDraftCntNumber::text").get()
-        pattern = re.compile(r"^Detail\s+of\s+OOCL\s+Container\s+(?P<container_id>\w+)-(?P<check_no>\d+)\s+$")
-        match = pattern.match(container_no_text)
-        if not match:
-            raise FormatError(
-                **info_pack,
-                reason=f"Unknown container_no_text: `{container_no_text}`",
-            )
-
-        return match.group("container_id") + match.group("check_no")
-
-    def _extract_detention_info(self, selectors_map: Dict[str, scrapy.Selector], info_pack: Dict):
+    @staticmethod
+    def _extract_detention_info(selectors_map: Dict[str, scrapy.Selector]):
         table = selectors_map.get("detail:detention_right_table", None)
         if table is None:
             return {
@@ -911,19 +860,17 @@ class ContainerStatusRule(BaseRoutingRule):
         table_locator = DestinationTableLocator()
         table_locator.parse(table=table)
         table_extractor = TableExtractor(table_locator=table_locator)
-        td_extractor = DetentionDateTdExtractor(info_pack=info_pack)
+        td_extractor = DetentionDateTdExtractor()
 
         if table_locator.has_header(left="Demurrage Last Free Date:"):
             lfd_info = table_extractor.extract_cell(left="Demurrage Last Free Date:", extractor=td_extractor)
-            _, lfd = get_est_and_actual(status=lfd_info["status"], time_str=lfd_info["time_str"], info_pack=info_pack)
+            _, lfd = _get_est_and_actual(status=lfd_info["status"], time_str=lfd_info["time_str"])
         else:
             lfd = ""
 
         if table_locator.has_header(left="Detention Last Free Date:"):
             det_lfd_info = table_extractor.extract_cell(left="Detention Last Free Date:", extractor=td_extractor)
-            _, det_lfd = get_est_and_actual(
-                status=det_lfd_info["status"], time_str=det_lfd_info["time_str"], info_pack=info_pack
-            )
+            _, det_lfd = _get_est_and_actual(status=det_lfd_info["status"], time_str=det_lfd_info["time_str"])
         else:
             det_lfd = ""
 
@@ -932,7 +879,8 @@ class ContainerStatusRule(BaseRoutingRule):
             "det_free_time_exp_date": det_lfd,
         }
 
-    def _extract_container_status_list(self, selectors_map: Dict[str, scrapy.Selector]):
+    @staticmethod
+    def _extract_container_status_list(selectors_map: Dict[str, scrapy.Selector]):
         table = selectors_map.get("detail:container_status_table", None)
         if table is None:
             return []
@@ -956,6 +904,16 @@ class ContainerStatusRule(BaseRoutingRule):
                 }
             )
         return container_status_list
+
+    @staticmethod
+    def _extract_container_no(response: Selector):
+        container_no_text = response.css("td.groupTitle.fullByDraftCntNumber::text").get()
+        pattern = re.compile(r"^Detail\s+of\s+OOCL\s+Container\s+(?P<container_id>\w+)-(?P<check_no>\d+)\s+$")
+        match = pattern.match(container_no_text)
+        if not match:
+            raise CarrierResponseFormatError(reason=f"Unknown container_no_text: `{container_no_text}`")
+
+        return match.group("container_id") + match.group("check_no")
 
 
 class ContainerStatusTableLocator(BaseTable):
@@ -1005,7 +963,7 @@ class DestinationTableLocator(BaseTable):
     +---------+-----------+----------+ </tbody>
     """
 
-    TITLE_TD_INDEX = 0
+    TITEL_TD_INDEX = 0
     DATA_NEEDED_TD_INDEX = 2
 
     def parse(self, table: scrapy.Selector):
@@ -1014,7 +972,7 @@ class DestinationTableLocator(BaseTable):
         for tr in tr_list:
             td_list = tr.css("td")
 
-            title_td = td_list[self.TITLE_TD_INDEX]
+            title_td = td_list[self.TITEL_TD_INDEX]
             title = title_td.css("::text").get()
             title = title.strip() if isinstance(title, str) else ""
             self.add_left_header_set(title)
@@ -1023,19 +981,12 @@ class DestinationTableLocator(BaseTable):
 
 
 class DetentionDateTdExtractor(BaseTableCellExtractor):
-    def __init__(self, info_pack: Dict) -> None:
-        super().__init__()
-        self._info_pack = info_pack
-
     def extract(self, cell: Selector):
         text_list = cell.css("::text").getall()
         text_list_len = len(text_list)
 
         if text_list_len != 2 or text_list_len != 1:
-            FormatError(
-                **self._info_pack,
-                reason=f"Unknown last free day td format: `{text_list}`",
-            )
+            CarrierResponseFormatError(reason=f"Unknown last free day td format: `{text_list}`")
 
         return {
             "time_str": text_list[0].strip(),
@@ -1047,9 +998,6 @@ class DetentionDateTdExtractor(BaseTableCellExtractor):
 
 
 class _PageLocator:
-    def __init__(self, info_pack: Dict) -> None:
-        self._info_pack = info_pack
-
     def locate_selectors(self, response: scrapy.Selector):
         tables = response.css("table.groupTable")
 
@@ -1057,10 +1005,7 @@ class _PageLocator:
         summary_rule = CssQueryTextStartswithMatchRule(css_query="td.groupTitle::text", startswith="Summary")
         summary_table = find_selector_from(selectors=tables, rule=summary_rule)
         if not summary_table:
-            raise FormatError(
-                **self._info_pack,
-                reason="Can not find summary table !!!",
-            )
+            raise CarrierResponseFormatError(reason="Can not find summary table !!!")
         summary_selectors_map = self._locate_selectors_from_summary(summary_table=summary_table)
 
         # detail (may not exist)
@@ -1078,36 +1023,25 @@ class _PageLocator:
             **detail_selectors_map,
         }
 
-    def _locate_selectors_from_summary(self, summary_table: scrapy.Selector):
+    @staticmethod
+    def _locate_selectors_from_summary(summary_table: scrapy.Selector):
         # top table
         top_table = summary_table.xpath("./tr/td/table") or summary_table.xpath("./tbody/tr/td/table")
         if not top_table:
-            raise FormatError(
-                **self._info_pack,
-                reason="Can not find top_table !!!",
-            )
+            raise CarrierResponseFormatError(reason="Can not find top_table !!!")
 
         top_inner_tables = top_table.xpath("./tr/td") or top_table.xpath("./tbody/tr/td")
         if len(top_inner_tables) != 2:
-            raise FormatError(
-                **self._info_pack,
-                reason=f"Amount of top_inner_tables not right: `{len(top_inner_tables)}`",
-            )
+            raise CarrierResponseFormatError(reason=f"Amount of top_inner_tables not right: `{len(top_inner_tables)}`")
 
         # bottom table
         bottom_table = summary_table.css("div#summaryDiv > table")
         if not bottom_table:
-            raise FormatError(
-                **self._info_pack,
-                reason="Can not find container_outer_table !!!",
-            )
+            raise CarrierResponseFormatError(reason="Can not find container_outer_table !!!")
 
         bottom_inner_tables = bottom_table.css("tr table")
         if not bottom_inner_tables:
-            raise FormatError(
-                **self._info_pack,
-                reason="Can not find container_inner_table !!!",
-            )
+            raise CarrierResponseFormatError(reason="Can not find container_inner_table !!!")
 
         return {
             "summary:main_left_table": top_inner_tables[0],
@@ -1119,40 +1053,25 @@ class _PageLocator:
         # routing tab
         routing_tab = detail_table.css("div#Tab1")
         if not routing_tab:
-            raise FormatError(
-                **self._info_pack,
-                reason="Can not find routing_tab !!!",
-            )
+            raise CarrierResponseFormatError(reason="Can not find routing_tab !!!")
 
         routing_table = routing_tab.css("table#eventListTable")
         if not routing_table:
-            raise FormatError(
-                **self._info_pack,
-                reason="Can not find routing_table !!!",
-            )
+            raise CarrierResponseFormatError(reason="Can not find routing_table !!!")
 
         # equipment tab
         equipment_tab = detail_table.css("div#Tab2")
         if not equipment_tab:
-            raise FormatError(
-                **self._info_pack,
-                reason="Can not find equipment_tab !!!",
-            )
+            raise CarrierResponseFormatError(reason="Can not find equipment_tab !!!")
 
         equipment_table = equipment_tab.css("table#eventListTable")
         if not equipment_table:
-            raise FormatError(
-                **self._info_pack,
-                reason="Can not find equipment_table !!!",
-            )
+            raise CarrierResponseFormatError(reason="Can not find equipment_table !!!")
 
         # detention tab
         detention_tab = detail_table.css("div#Tab3")
         if not detention_tab:
-            raise FormatError(
-                **self._info_pack,
-                reason="Can not find detention_tab !!!",
-            )
+            raise CarrierResponseFormatError(reason="Can not find detention_tab !!!")
 
         detention_tables = self._locate_detail_detention_tables(detention_tab=detention_tab)
 
@@ -1162,13 +1081,11 @@ class _PageLocator:
             "detail:detention_right_table": detention_tables[1],
         }
 
-    def _locate_detail_detention_tables(self, detention_tab: scrapy.Selector):
+    @staticmethod
+    def _locate_detail_detention_tables(detention_tab: scrapy.Selector):
         inner_parts = detention_tab.xpath("./table/tr/td/table") or detention_tab.xpath("./table/tbody/tr/td/table")
         if len(inner_parts) != 2:
-            raise FormatError(
-                **self._info_pack,
-                reason=f"Amount of detention_inner_parts not right: `{len(inner_parts)}`",
-            )
+            raise CarrierResponseFormatError(reason=f"Amount of detention_inner_parts not right: `{len(inner_parts)}`")
 
         title_part, content_part = inner_parts
 
@@ -1176,15 +1093,14 @@ class _PageLocator:
             "./tbody/tr/td/table/tbody/tr/td/table"
         )
         if len(detention_tables) != 2:
-            raise FormatError(
-                **self._info_pack,
-                reason=f"Amount of detention tables does not right: {len(detention_tables)}",
+            raise CarrierResponseFormatError(
+                reason=f"Amount of detention tables does not right: {len(detention_tables)}"
             )
 
         return detention_tables
 
 
-def get_est_and_actual(status, time_str, info_pack: Dict):
+def _get_est_and_actual(status, time_str):
     if status == "(Actual)":
         estimate, actual = None, time_str
     elif status == "(Estimated)":
@@ -1192,17 +1108,14 @@ def get_est_and_actual(status, time_str, info_pack: Dict):
     elif status == "":
         estimate, actual = None, ""
     else:
-        raise FormatError(
-            **info_pack,
-            reason=f"Unknown status format: `{status}`",
-        )
+        raise CarrierResponseFormatError(reason=f"Unknown status format: `{status}`")
 
     return estimate, actual
 
 
-# def get_multipart_body(form_data, boundary):
-#     body = ""
-#     for index, key in enumerate(form_data):
-#         body += f"--{boundary}\r\n" f'Content-Disposition: form-data; name="{key}"\r\n' f"\r\n" f"{form_data[key]}\r\n"
-#     body += f"--{boundary}--"
-#     return body
+def get_multipart_body(form_data, boundary):
+    body = ""
+    for index, key in enumerate(form_data):
+        body += f"--{boundary}\r\n" f'Content-Disposition: form-data; name="{key}"\r\n' f"\r\n" f"{form_data[key]}\r\n"
+    body += f"--{boundary}--"
+    return body
