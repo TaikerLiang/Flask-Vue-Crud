@@ -4,7 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core.base import SEARCH_TYPE_MBL
+from crawler.core.base_new import SEARCH_TYPE_MBL
 from crawler.spiders.carrier_mscu_multi import MainRoutingRule
 from test.spiders.carrier_mscu_multi import main_info
 
