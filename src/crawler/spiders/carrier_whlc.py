@@ -163,7 +163,7 @@ class MblRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta["mbl_no"]
-        driver = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
+        driver = ContentGetter(proxy_manager=self._proxy_manager, is_headless=False)
         cookies = driver.get_cookies_dict_from_main_page()
         try:
             driver.search_mbl(mbl_no)

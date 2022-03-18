@@ -186,7 +186,6 @@ class MblRoutingRule(BaseRoutingRule):
             response_selector = Selector(text=driver.get_page_source())
             container_list = self.extract_container_info(response_selector)
             # mbl_no_set = self.get_mbl_no_set_from(container_list=container_list)
-
             yield MblItem(task_id=task_id, mbl_no=mbl_no)
 
             # for mbl_no, task_id in zip(mbl_nos, task_ids):
@@ -279,7 +278,6 @@ class MblRoutingRule(BaseRoutingRule):
                 driver.close()
                 driver.switch_to_last()
             driver.close()
-
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
