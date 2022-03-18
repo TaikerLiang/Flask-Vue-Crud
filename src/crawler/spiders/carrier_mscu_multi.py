@@ -112,6 +112,8 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
                 if self._retry_count >= MAX_RETRY_COUNT:
                     err = MaxRetryError(
                         task_id=task_ids[0],
+                        search_no=search_nos[0],
+                        search_type=self.search_type,
                         reason="Proxy max retry limit exceeded",
                     )
                     yield err.build_error_data()
