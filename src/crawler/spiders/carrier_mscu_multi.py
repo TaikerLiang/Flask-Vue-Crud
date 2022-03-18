@@ -4,18 +4,18 @@ from typing import Dict, List
 
 import scrapy
 
-from crawler.core.base import (
+from crawler.core.base_new import (
     DUMMY_URL_DICT,
     RESULT_STATUS_ERROR,
     SEARCH_TYPE_BOOKING,
     SEARCH_TYPE_MBL,
 )
-from crawler.core.exceptions import FormatError, SuspiciousOperationError
-from crawler.core.items import BaseItem, DataNotFoundItem
-from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.exceptions_new import FormatError, SuspiciousOperationError
+from crawler.core.items_new import BaseItem, DataNotFoundItem
+from crawler.core.proxy_new import HydraproxyProxyManager
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.items import (
+from crawler.core_carrier.base_spiders_new import BaseMultiCarrierSpider
+from crawler.core_carrier.items_new import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
@@ -23,7 +23,7 @@ from crawler.core_carrier.items import (
     LocationItem,
     MblItem,
 )
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.request_helpers_new import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 
 URL = "https://www.msc.com"
@@ -325,8 +325,7 @@ class MainRoutingRule(BaseRoutingRule):
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
-    @staticmethod
-    def _is_search_no_invalid(response: scrapy.Selector):
+    def _is_search_no_invalid(self, response: scrapy.Selector):
         error_message = response.css("div#ctl00_ctl00_plcMain_plcMain_pnlTrackingResults > h3::text").get()
         possible_prefix = ["Your reference number was not found", "We are unable to"]
         for prefix in possible_prefix:
@@ -534,8 +533,7 @@ class MainInfoTableLocator(BaseTable):
             self._td_map.setdefault(title, [])
             self._td_map[title].append(data_td)
 
-    @staticmethod
-    def _extract_top(th):
+    def _extract_top(self, th):
         th_text = th.css("::text").get()
         return th_text.strip() if isinstance(th_text, str) else ""
 
@@ -563,8 +561,7 @@ class ContainerInfoTableLocator(BaseTable):
             self._td_map.setdefault(title, [])
             self._td_map[title].append(data_td)
 
-    @staticmethod
-    def _extract_top(th):
+    def _extract_top(self, th):
         th_text = th.css("::text").get()
         return th_text.strip() if isinstance(th_text, str) else ""
 
@@ -589,7 +586,6 @@ class ContainerStatusTableLocator(BaseTable):
                 self._td_map.setdefault(title, [])
                 self._td_map[title].append(data_td)
 
-    @staticmethod
-    def _extract_top(th):
+    def _extract_top(self, th):
         top_header = th.css("::text").get()
         return top_header.strip() if isinstance(top_header, str) else ""
