@@ -1,12 +1,12 @@
 from pathlib import Path
-from test.spiders.carrier_oolu import cargo_tracking
 
 import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core.base_new import SEARCH_TYPE_MBL
+from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
 from crawler.spiders.carrier_oolu import CargoTrackingRule
+from test.spiders.carrier_oolu import cargo_tracking
 
 
 @pytest.fixture
@@ -31,24 +31,14 @@ def sample_loader(sample_loader):
 def test_cargo_tracking_handler(sub, mbl_no, sample_loader):
     html_file = sample_loader.read_file(sub, "sample.html")
 
-    option = CargoTrackingRule.build_request_option(task_id="1", search_no=mbl_no)
+    option = CargoTrackingRule.build_request_option(search_no=mbl_no)
     response = TextResponse(
-        url=option.url,
-        body=html_file,
-        encoding="utf-8",
-        request=Request(
-            url=option.url,
-            meta=option.meta,
-        ),
+        url=option.url, body=html_file, encoding="utf-8", request=Request(url=option.url, meta=option.meta,),
     )
 
-    rule = CargoTrackingRule(content_getter=None, search_type=SEARCH_TYPE_MBL)
-    info_pack = {
-        "task_id": option.meta["task_id"],
-        "search_no": option.meta["search_no"],
-        "search_type": rule._search_type,
-    }
-    results = list(rule._handle_response(response=response, info_pack=info_pack))
+    results = list(
+        CargoTrackingRule._handle_response(response=response, search_type=SHIPMENT_TYPE_MBL, search_no=mbl_no)
+    )
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
