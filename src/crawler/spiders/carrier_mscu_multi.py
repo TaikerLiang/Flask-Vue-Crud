@@ -10,8 +10,12 @@ from crawler.core.base_new import (
     SEARCH_TYPE_BOOKING,
     SEARCH_TYPE_MBL,
 )
-from crawler.core.exceptions_new import FormatError, SuspiciousOperationError
-from crawler.core.items_new import BaseItem, DataNotFoundItem
+from crawler.core.exceptions_new import (
+    FormatError,
+    MaxRetryError,
+    SuspiciousOperationError,
+)
+from crawler.core.items_new import DataNotFoundItem, ExportErrorData
 from crawler.core.proxy_new import HydraproxyProxyManager
 from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base_spiders_new import BaseMultiCarrierSpider
@@ -94,7 +98,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem) or isinstance(result, BaseItem):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem, ExportErrorData)):
                 yield result
             elif isinstance(result, RequestOption):
                 if result.rule_name == "NEXT_ROUND":
@@ -106,7 +110,11 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
                 search_nos = result.search_nos
                 task_ids = result.task_ids
                 if self._retry_count >= MAX_RETRY_COUNT:
-                    yield self._build_data_not_found_item(search_no=search_nos[0], task_id=task_ids[0])
+                    err = MaxRetryError(
+                        task_id=task_ids[0],
+                        reason="Proxy max retry limit exceeded",
+                    )
+                    yield err.build_error_data()
                 option = self._prepare_restart(search_nos=search_nos, task_ids=task_ids, reason=result.reason)
                 yield self._build_request_by(option=option)
             else:
