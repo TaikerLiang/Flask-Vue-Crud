@@ -634,10 +634,19 @@ class WhlcContentGetter(PyppeteerContentGetter):
         return await self.page.content()
 
     async def go_detail_page(self, idx: int):
+        row_selector = f"#cargoTrackListBean > table > tbody > tr:nth-child({idx})"
         await self.page.waitForSelector(
-            f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u"
+            f"{row_selector} > td:nth-child(1)",
+            options={"timeout": 60000},
         )
-        await self.page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u")
+
+        click_selector = f"{row_selector} > td:nth-child(1) > u"
+
+        # Sometimes the link of detail page is disappeared
+        if not await self.page.querySelector(click_selector):
+            raise CarrierResponseFormatError(reason="Link of detail page is disappeared")
+
+        await self.page.click(click_selector)
         await asyncio.sleep(10)
         await self.switch_to_last()
         await self.page.waitForSelector("table.tbl-list")

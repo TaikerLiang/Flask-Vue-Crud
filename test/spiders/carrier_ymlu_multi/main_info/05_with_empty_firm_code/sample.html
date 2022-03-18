@@ -1,0 +1,2000 @@
+
+
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head id="Head1"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" /><meta name="description" content="Yang Ming Marine Transport Corporation (Yang Ming) have observed our core value of &#39;Teamwork, Innovation, Honesty and Pragmatism&#39; in enhancing our transportation expertise and service quality.&lt;br/>陽明海運股份有限公司全球員工秉持”團隊、創新、誠信、務實”之價值理念，專注於全球化與精緻化的海運運輸經營，不僅以”準、快、穩、省”四大準則提供優良服務，在營運績效及策略上，透過與世界其他知名船公司聯營合作，發揮全球營運資源整合效能，使得業績持續穩健成長，成為全球名列前茅的海運公司。" /><meta http-equiv='X-UA-Compatible' content ='IE=edge' /> <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1'>
+    <!-- Bootstrap -->
+    <link href="../../Content/Img/favorite.ico" rel="Shortcut Icon" />
+    <link href="/Content/Css/bootstrap.css" rel="stylesheet" />
+    <link href="/Content/Css/bootstrap-theme.css" rel="stylesheet" />
+
+
+    <link href="/Content/Css/layout.css?ver=20211110a" rel="stylesheet" />
+
+
+    <link href="/Content/Css/Index.css?ver=202011191830" rel="stylesheet" />
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <!--[if IE 8]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="/Scripts/respond.js"></script>
+    <![endif]-->
+    <script src="/Scripts/jquery-3.6.0.min.js" type="text/javascript"></script>
+    <script type="text/javascript" src="/Scripts/jquery-validation/My97DatePicker/WdatePicker.js"
+        charset="utf-8"></script>
+    <script src="/Scripts/bootstrap.min.js" type="text/javascript"></script>
+    <script src="/Scripts/jquery.hoverIntent.minified.js" type="text/javascript"></script>
+    <script src="/Scripts/jquery-menulink.js" type="text/javascript"></script>
+
+    <script src="/Scripts/verge.min.js" type="text/javascript"></script>
+    <script src="/Scripts/rwdaddon.js" type="text/javascript"></script>
+    <script src="/Scripts/jquery.blockUI.js" type="text/javascript"></script>
+    <title>
+	YangMing Marine Transport Corp.
+</title>
+    <script src="/Scripts/cookieconsent.min.js"></script>
+    <script>
+        function isValidEmail(email) {
+            const regex = /^(("")("".+?""@)|(([0-9a-zA-Z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)@))((\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-zA-Z][-\w]*[0-9a-zA-Z]*\.)+[a-zA-Z0-9][\-a-zA-Z0-9]{0,22}[a-zA-Z]))$/;
+            var IsValidFlag = true;
+
+            if (email.indexOf(";", 0) >= 1) //多筆email
+            {
+                email = email.trimEnd(';');
+                var emailArray = email.split(';');
+                emailArray.forEach(function (tmp) {
+                    if (!tmp.trim() == "") {
+                        if (regex.test(String(tmp.trim())) == false)
+                            IsValidFlag = false;
+                    }
+                });
+            }
+            else //一個email
+            {
+                IsValidFlag = regex.test(String(email.trim()));
+            }
+
+            return IsValidFlag;
+        }
+
+        function inIframe() {
+            try {
+                return window.self !== window.top;
+            } catch (e) {
+                return true;
+            }
+        }
+
+        function getCookie(name)//取cookies函数
+        {
+            var arr = document.cookie.match(new RegExp("(^| )" + name + "=([^;]*)(;|$)"));
+            if (arr != null) return unescape(arr[2]); return null;
+
+        }
+
+        if (inIframe() || getCookie("APP") == "Y") {
+
+        } else {
+            window.addEventListener("load", function () {
+                window.cookieconsent.initialise({
+                    "palette": {
+                        "popup": {
+                            "background": "#F2F2F2"
+                        },
+                        "button": {
+                            "background": "transparent",
+                            "text": "#666666",
+                            "border": "#BBBCBC"
+                        },
+                        "revokable": true
+                    },
+                    "content": {
+                        "message": 'This Website uses necessary cookies to collect data in order to enable core functionality, including security and network management. If you continue without changing your settings, we will deem this as your consent to receive these cookies. To find out more about the cookies we use, see our Privacy and Security Statement.',
+                        "dismiss": 'Agree',
+                        "link": 'Check YM’s Privacy and Security Statement',
+                        "target": "_self",
+                        "href": '/PrivacyAndSecurity.aspx'
+                    }
+                })
+            });
+        }
+    </script>
+
+    <script type="text/cjs">
+       // document.domain = "yangming.com";
+    </script>
+    <script type='text/javascript'>
+        document.domain = "yangming.com";
+        (function ($) {
+            $(document).ready(function () {
+                $('ul.dropdown-menu [data-toggle=dropdown]').on('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    $(this).parent().siblings().removeClass('open');
+                    $(this).parent().toggleClass('open');
+                });
+            });
+        })(jQuery);
+
+        function login(act) {
+            if (act == "login") {
+                window.location.href = '/e-service/member_area/member_login.aspx';
+
+            }
+            if (act == "logout") {
+                window.location.href = '/e-service/member_area/member_login_index.aspx?h_Sign=Logout';
+            }
+        }
+
+
+        function switching() {
+            if (getCookie("page_ver") == null) {
+                SetCookie("page_ver", "PC");
+            }
+            else {
+                delCookie("page_ver");
+            }
+            window.location.href = '/index.aspx';
+        }
+        function SetCookie(name, value)//两个参数，一个是cookie的名子，一个是值
+        {
+            var Days = 1; //此 cookie 将被保存 30 天
+            var exp = new Date();    //new Date("December 31, 9998");
+            exp.setTime(exp.getTime() + Days * 24 * 60 * 60 * 1000);
+            document.cookie = name + "=" + escape(value) + ";expires=" + exp.toGMTString();
+        }
+        function getCookie(name)//取cookies函数
+        {
+            var arr = document.cookie.match(new RegExp("(^| )" + name + "=([^;]*)(;|$)"));
+            if (arr != null) return unescape(arr[2]); return null;
+
+        }
+        function delCookie(name)//删除cookie
+        {
+            var exp = new Date();
+            exp.setTime(exp.getTime() - 1);
+            var cval = getCookie(name);
+            if (cval != null) document.cookie = name + "=" + cval + ";expires=" + exp.toGMTString();
+        }
+
+        //check 是否under iframe
+        var isInIFrame = (self != top);
+        $('#hfIsInIframe').val(isInIFrame);
+
+    </script>
+    <style type="text/css">
+        #divhead {
+            height: 110px;
+        }
+
+        .DropDownListCss {
+            border: 1px thin blue;
+            border-radius: 3px;
+            color: ButtonText;
+            font-size: 12px;
+            padding: 2px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url('/Content/Img/ddlbtn.bmp');
+            background-position: 160px;
+            background-repeat: no-repeat;
+            cursor: pointer;
+        }
+
+        #header_rwd {
+            margin-right: 0px;
+        }
+    </style>
+
+
+    <link href="/Content/Css/jquery.dataTables.min.css" rel="stylesheet" type="text/css" />
+    <link href="/Content/Css/dataTables.fixedColumns.min.css" rel="stylesheet" type="text/css" />
+    <link href="/Content/Css/shCore.css" rel="stylesheet" type="text/css" />
+    <script src="/Scripts/jquery.dataTables.min.js" type="text/javascript"></script>
+    <script src="/Scripts/dataTables.fixedColumns.min.js" type="text/javascript"></script>
+    <script src="/Scripts/shCore.js" type="text/javascript"></script>
+
+    <style type="text/css">
+        .divTitle {
+            color: #FFFFFF;
+            background-color: #0577B2;
+            padding: 3px;
+            border-right: 1px solid #FFF;
+            border-bottom: 1px solid #FFF;
+            font-size: 12px;
+            vertical-align: middle;
+            word-wrap: break-word;
+            table-layout: fixed;
+        }
+
+        .mycls a {
+            color: #0577B3;
+        }
+
+        .field_odd {
+            color: #000000;
+            background-color: #E3E3E3;
+            padding: 3px;
+            border-right: 1px solid #FFF;
+            border-bottom: 1px solid #FFF;
+            font-size: 12px;
+            vertical-align: middle;
+            word-wrap: break-word;
+            table-layout: fixed;
+        }
+
+        .field_even {
+            color: #000000;
+            background-color: #C9ECFE;
+            padding: 3px;
+            border-right: 1px solid #FFF;
+            border-bottom: 1px solid #FFF;
+            font-size: 12px;
+            vertical-align: middle;
+            word-wrap: break-word;
+            table-layout: fixed;
+        }
+
+        .Button_DCSA:hover {
+            color: #0577B3;
+            margin-left: 20px;
+            margin-top: 20px;
+            background-color: #FFFFFF;
+            border: none;
+            text-decoration: underline;
+        }
+    </style>
+    <script type="text/javascript">
+        var resizeTimer;
+        var lfrzcnt = 1;
+        var hy = "100%"; //rptBLNo
+        var tblselector;
+        // 要作 freeze column 的 table name
+        //gvBasicInformation,gvRoutingSchedule,gvCustomsStatus,gvLastFreeDate,gvLatestEvent
+        $(document).ready(function () {
+            tblselector = $("#ContentPlaceHolder1_hidGVID").val().split(",");
+            SetTable();
+        });
+
+        function SetTable() {
+            // 把原始Table放入hidden
+            if ($("#ContentPlaceHolder1_hidTblOrigID").val() == "") {
+                OrigTblKeep(tblselector, "#ContentPlaceHolder1_hidTblOrigID", "#ContentPlaceHolder1_hidTblOrigHeight");
+            }
+            /* RWD Check */
+            if (verge.viewportW() > 1024) { //pc's view no freeze
+                UnbindEventfromDT();
+                OrigTblGet("#ContentPlaceHolder1_hidTblOrigID", "#ContentPlaceHolder1_hidTblOrigHeight");
+            }
+            else { // portable's view freeze column
+                ChkTblAndFreeze(tblselector, lfrzcnt, hy);
+            }
+        }
+
+        $(window).on('resize', function () {
+
+            if (resizeTimer) {
+                clearTimeout(resizeTimer);   // clear any previous pending timer
+            } else {
+                // must be first resize event in a series
+                UnbindEventfromDT();
+            }
+            // set new timer
+            resizeTimer = setTimeout(function () {
+                resizeTimer = null;
+                // put your resize logic here and it will only be called when
+                // there's been a pause in resize events
+                OrigTblGet("#ContentPlaceHolder1_hidTblOrigID", "#ContentPlaceHolder1_hidTblOrigHeight");
+                if (verge.viewportW() < 1025) {
+                    ChkTblAndFreeze(tblselector, lfrzcnt, hy);
+                }
+            }, 500);
+        });
+    </script>
+    <script type="text/javascript">
+        function DisplayDiv(obj) {
+            blockyu();
+            var lbtnView = $("#" + obj.id);
+            if (lbtnView.text() == "» View details") {
+                lbtnView.text("» Close");
+            }
+            else {
+                lbtnView.text("» View details");
+            }
+
+            var lbtnViewID = obj.id;
+            var divID = lbtnViewID.replace("lbtCView", "");
+
+            $("#" + divID).toggle();
+            tblselector = $("#ContentPlaceHolder1_hidGVID").val().split(",");
+            SetTable();
+            unblockyu();
+            return false;
+        }
+
+        function DisplayDivLast(obj) {
+            blockyu();
+            var lbtnView = $("#" + obj.id);
+            if (lbtnView.text() == "» View details") {
+                lbtnView.text("» Close");
+            }
+            else {
+                lbtnView.text("» View details");
+            }
+
+            var lbtnViewID = obj.id;
+            var divID = lbtnViewID.replace("lbtCView", "");
+            $("#" + divID).toggle();
+            tblselector = $("#ContentPlaceHolder1_hidGVID").val().split(",");
+            SetTable();
+            unblockyu();
+            return false;
+        }
+
+        function openMAIL(strUrl) {
+            location.href = strUrl;
+        }
+
+    </script>
+</head>
+<body>
+    <form method="post" action="./blconnect.aspx?var=fKg3FU%2f%2brhU%2fSn%2fWpl8slUEv%2fIhardJLsJMXEWwM6pwWoWrvIblX2Ur3urCURsmRaz4Y3KIcq%2fKzqVEVVOYElJDRfvgyzWjAI688UJ8pkQhUPtjko0JO7srKe%2fetSIm%2b" id="form1">
+<div class="aspNetHidden">
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="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" />
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['form1'];
+if (!theForm) {
+    theForm = document.form1;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<script src="/WebResource.axd?d=Z7O-ov7B7f7TAbGmP_mPcmUFtqohxFH4IqYZ8MEnaxeWmYJBo_pmsrTsicNg8Hf1nDdgRoRaPXLed1wfspEPVV7sGqNtPRryTGO2w2mtUD81&amp;t=637454356754849868" type="text/javascript"></script>
+
+
+<script src="/ScriptResource.axd?d=ao3poIdmOt8tqjg1tZkjjzjMfCgvz-MoWzASa1VykaZCpujaW3oXpoY1FzI2_Ex9JEnU0m8F6vrhMkxkAVy239mNoEWHtrgueBGzmAZjIY5U5OAHNUFka7914mOcl00xZH4ACY2ZBTgq0dNV865sfgM2X74mhGVGoDtPPSWT5pY1&amp;t=363be08" type="text/javascript"></script>
+<script src="/ScriptResource.axd?d=LKDWpJj1LskH6uvdLlDURWZ_jM_6tr7AfgxtqV8go4dA6zpkn7vxdWNhuRZ8SBfCAau3Wi8-epWhTI5LVNbXtvBj-6pjSgcxty7RPd3DP9dCm-m0jcoDXR6bczpaBxh6qc-5YZqNmw02rH_ZFvDeQGYvqnjVJkIMvqUEpJZDZz47WKskcT74ng_-0WeBxUGb0&amp;t=363be08" type="text/javascript"></script>
+<div class="aspNetHidden">
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="508E7D00" />
+	<input type="hidden" name="__VIEWSTATEENCRYPTED" id="__VIEWSTATEENCRYPTED" value="" />
+	<input type="hidden" name="__PREVIOUSPAGE" id="__PREVIOUSPAGE" value="G4-H3ECw5nJm6jR2CcosW9hpJCCHpCNZGQWfSAIkdj2jKnBNUm73ikW4YOyqRsCEcYf4kQNS_7YcisRZr0AxLn2hCSPAcckgWZtIgL0pDqoHr7oyXOIXuFUmWvOC7EHe0" />
+	<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="XiDnQ1Bk/Ghuu/J/ujk/uUBVf99KF+p8JQJ65zX9CIXQO+Cx6sTlRcePGsiKZqXELD3Hv+817qdzRYtgUeODQV3lH3XkDGg87O3m3kvEQZCh+mKQeyS6YPe1X57msTB19ex8m103feb4VQmsHUDr9D6FXcHQsxWsxeSo3O0eVEQvfTZTZztVYc8UQom7WTSH0ysJ3Kha9ZgLFI6qe6G4f8GvKvUr9Tv2UtqwM65+WcYUU2p4YtJ1arHyCjoWjcmIJZ54QI761/wKRmXo1bI9xaoZbWIwslVfMGZ2BEEgUhWTKaqC8pky17W9saKAv2KWGGuSqGwFqGY1hUlWYIPPeATzAsFqwU+Mx0gqtS5Ud7sXyIfTisZCe/S1wu3ixhvsa4iso1LIsNQ5oGPcPqt+U9dNDK8QSN2cF2HEZhWNpO7mgo2rKSim9pk5a1bKD3AhE31wdICkyUZT8Fb3Sz/a+NWlx2JNXJG6CS1hz894kgOthlBtKUu5BQllySNlRhFO3hrU7jBfRwsMBxjdE0vcardXG3p+9ZQVvl9YtL+LSIE9DIZCtdyObbuTF2301Ro6e22vwMxxkj1/Y4wEo2pWlSo5BzRnCnlNLkp+BTRV2Y39iMLqUrxOAehDLKFZFc05ztV7sD9VTxwxZ8tfC0KuMw==" />
+</div>
+        <input type="hidden" name="ctl00$hidButtonType" id="hidButtonType" value="0" />
+        <input type="hidden" name="ctl00$hfIsInIframe" id="hfIsInIframe" />
+
+        <div id="outter_wrap_rwd">
+
+            <div id="main_wrap_rwd" class="container">
+                <div id="header_rwd">
+                    <script type="text/javascript">
+//<![CDATA[
+Sys.WebForms.PageRequestManager._initialize('ctl00$DefaultMasterScriptManager', 'form1', ['tctl00$ContentPlaceHolder1$UpdatePanel','ContentPlaceHolder1_UpdatePanel'], [], [], 90, 'ctl00');
+//]]>
+</script>
+
+                    <div id="headera1">
+                        <div class="row">
+                            <!------Traditional Menu-------------->
+                            <div id="divhead" class="hidden-xs hidden-sm col-md-12 col-lg-12">
+                                <!------height assign------>
+                                <!------ Orignal Menu ------->
+                                <div id="header">
+                                    <a id="lnkHome" class="navbar-brand hidden-xs hidden-sm" href="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$lnkHome&quot;, &quot;&quot;, false, &quot;&quot;, &quot;/index.aspx&quot;, false, true))" style="padding-top: 30px">
+                                        <img src="/Content/Img/logo.svg" alt="" style="width: 70px;" />
+                                    </a>
+
+                                    <div id="LoginInfo" class="sayhello" style="display:none;">Hello,</div>
+                                    <div class="top-area">
+                                        <ul class="language">
+                                            <li class="global">Language
+                                                <div class="country">
+                                                    <a id="lbtus_en" href="javascript:__doPostBack(&#39;ctl00$lbtus_en&#39;,&#39;&#39;)">English</a>
+                                                    <a id="lbtzh_tw" href="javascript:__doPostBack(&#39;ctl00$lbtzh_tw&#39;,&#39;&#39;)">繁體中文</a>
+                                                    <a id="lbtzh_cn" href="javascript:__doPostBack(&#39;ctl00$lbtzh_cn&#39;,&#39;&#39;)">简体中文</a>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                        <ul class="flex-box">
+                                            <li id="login" class="login-icon"><a href="/e-service/member_area/member_login.aspx">Login</a></li>
+                                            <li class="logout-icon" style="display: none"><a href="/e-service/member_area/member_login_index.aspx?h_Sign=Logout">Logout</a>
+                                                <div class="logbox">
+                                                    <a href="/e-service/member_area/member_login_index.aspx">
+                                                        My YM Account</a>
+                                                    <a href="/e-service/member_area/register_modify.aspx">
+                                                        Change Register</a>
+                                                    <a href="/e-service/member_area/change_password.aspx">
+                                                        Change Password</a>
+                                                    <a href="/e-service/member_area/member_management.aspx">
+                                                        Sub-user Maintenance</a>
+                                                </div>
+                                            </li>
+                                            <li id="register" class="register_icon"><a href="/e-service/member_area/register.aspx">Register</a></li>
+                                            <li class="search_icon"><a href="/search.aspx" title="Website Search">Search</a></li>
+                                        </ul>
+                                    </div>
+                                    <div id="navi">
+                                        <ul id="menu">
+                                            <div id="menu_en">
+                                                <li class="logo_url"><a href="/index.aspx" title="Home">
+                                                    <img src="/Content/Img/logo_btn.gif" width="75" height="80"
+                                                        alt="" /></a></li>
+                                                <li class="menu_btn"><a href="#">
+                                                    About Us</a>
+                                                    <div class="sub" style="opacity: 0; display: none; width: 960px;">
+                                                        <div class="wrap_about">
+                                                            <dl>
+                                                                <dt>
+                                                                    Profile
+                                                                </dt>
+                                                                <dd>
+                                                                    <a href="/About_Us/Group_Profile/OverView.aspx">
+                                                                        Overview
+                                                                    </a>
+                                                                </dd>
+                                                                <dd>
+                                                                    <a href="/About_Us/Group_Profile/TopManagement.aspx">
+                                                                        Organization & Top Management
+                                                                    </a>
+
+                                                                </dd>
+                                                                <dd>
+                                                                    <a href="/About_Us/Group_Profile/AwardAndCertificate.aspx">
+                                                                        Awards And Certificates
+                                                                    </a>
+                                                                </dd>
+                                                                <dd>
+                                                                    <a href="/About_Us/Group_Profile/Chronicle.aspx">
+                                                                        Chronicle
+                                                                    </a>
+                                                                </dd>
+                                                                <dd>
+                                                                    <a href="/About_Us/Group_Profile/Culture.aspx">
+                                                                        Culture
+                                                                    </a>
+                                                                </dd>
+                                                                <dd>
+                                                                    <a href="/About_Us/Group_Profile/Related_Websites.aspx">
+                                                                        Related Websites
+                                                                    </a>
+                                                                </dd>
+
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>
+                                                                    ISO Management
+                                                                </dt>
+                                                                <dd>
+                                                                    <a href="/About_Us/ISO_Management/Quality_Policy.aspx">
+                                                                        Quality Management</a></dd>
+                                                                <dd>
+                                                                    <a href="/About_Us/ISO_Management/Environment_Policy.aspx">
+                                                                        Environment Management</a></dd>
+                                                                <dd>
+                                                                    <a href="/About_Us/ISO_Management/Information_Security_Management_system.aspx">
+                                                                        Information Security Management
+                                                                    </a></dd>
+                                                                <dd>
+                                                                    <a href="/About_Us/ISO_Management/Safety_and_Health_Management.aspx">
+                                                                        Safety and Health Management</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>
+                                                                    Security and Regulation</dt>
+                                                                <dd>
+                                                                    <a href="/About_Us/Security_Regulation/Authorized_Economic_Operator.aspx">
+                                                                        Authorized Economic Operator (AEO)</a></dd>
+                                                                <dd>
+                                                                    <a href="/About_Us/Security_Regulation/C_TPAT.aspx">
+                                                                        C-TPAT</a></dd>
+                                                                <dd>
+                                                                    <a href="/about_us/security_regulation/Vessel_ISM_ISPS_Certificate.aspx">
+                                                                        Vessel ISM / ISPS Certificate</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>
+                                                                    Environmental Protection</dt>
+                                                                <dd>
+                                                                    <a href="/About_Us/Environment_Preservation/Environment_Performance.aspx">
+                                                                        Environment Performance</a></dd>
+                                                                <dd>
+                                                                    <a href="/about_us/Environment_Preservation/greenvessel.aspx">
+                                                                        Green Vessel</a></dd>
+                                                                <dd>
+                                                                    <a href="/about_us/Environment_Preservation/Green_Terminal.aspx">
+                                                                        Green Terminal</a></dd>
+                                                                <dd>
+                                                                    <a href="/about_us/Environment_Preservation/carboncalculator.aspx">
+                                                                        Carbon Calculator</a></dd>
+                                                                <dd>
+                                                                    <a href="/about_Us/Environment_Preservation/Clean_Cargo.aspx">
+                                                                        Clean Cargo</a></dd>
+                                                            </dl>
+                                                            <dl id="job_en">
+                                                                <dt>Jobs &amp; Career</dt>
+                                                                <dd>
+                                                                    <a href="/About_Us/Jobs_Career/WorkAtYangMing.aspx">Work at Yang Ming</a></dd>
+                                                                <dd>
+                                                                    <a href="/About_Us/Jobs_Career/Job_Opportunity.aspx">Global Job Opportunity</a></dd>
+                                                            </dl>
+
+
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <!---------------------end about------------------------------------>
+                                                <li class="menu_btn"><a href="#">
+                                                    Service</a><!---------------------Our Service------------------------------------>
+                                                    <div class="sub" style="opacity: 0; display: none; width: 960px;">
+                                                        <div class="wrap_our_service">
+                                                            <dl>
+                                                                <dt>
+                                                                    Service Network</dt>
+                                                                <dd>
+                                                                    <a href="/service/service_network/containerequipment.aspx">
+                                                                        Container Specification</a></dd>
+                                                                <dd>
+                                                                    <a href="/service/service_network/fleet.aspx">
+                                                                        Fleet</a></dd>
+                                                                <dd>
+                                                                    <a href="/service/service_network/routemap.aspx">
+                                                                        Route Map</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>
+                                                                    Reefer Info</dt>
+                                                                <dd>
+                                                                    <a href="/service/Reefer_Info/Transporting_Perishables.aspx">
+                                                                        Transporting Perishables</a></dd>
+                                                                <dd>
+                                                                    <a href="/service/Reefer_Info/Prior_Loading.aspx">
+                                                                        Prior Loading Checklists</a></dd>
+                                                                <dd>
+                                                                    <a href="/service/Reefer_Info/Packaging.aspx">
+                                                                        Packaging Loading Patterns</a></dd>
+                                                                <dd>
+                                                                    <a href="/service/Reefer_Info/Compatibility.aspx">
+                                                                        Compatibility for Commodities</a></dd>
+                                                                <dd>
+                                                                    <a href="/service/Reefer_Info/Handling_Guidance.aspx">
+                                                                        Handling Guidance</a></dd>
+                                                                <dd>
+                                                                    <a href="/service/Reefer_Info/Generator_Sets.aspx">
+                                                                        Gensets</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>
+                                                                    Terminal Info.</dt>
+                                                                <dd>
+                                                                    <a href="/service/terminal_info/port.aspx">
+                                                                        Port Terminal</a></dd>
+                                                                <dd>
+                                                                    <a href="/service/terminal_info/Loop_Terminal.aspx">
+                                                                        Loop & Terminal</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>
+                                                                    Useful Info</dt>
+                                                                <dd>
+                                                                    <a href="/service/Useful_Info/BL_Clause.aspx">
+                                                                        B/L Clause</a></dd>
+                                                                <dd>
+                                                                    <a href="/service/Useful_Info/Cargo_Loss_And_Damage.aspx">
+                                                                        CargoLoss Damage</a></dd>
+                                                                <dd>
+                                                                    <a href="/service/Useful_Info/cargo_weight_limitation.aspx">
+                                                                        Cargo Weight Limitation</a></dd>
+                                                                <dd>
+                                                                    <a href="/service/Useful_Info/24_hour_ov.aspx">
+                                                                        24-Hour Advance Manifest Rule</a></dd>
+                                                                <dd>
+                                                                    <a href="/service/Useful_Info/dangerouscargoinformation.aspx">
+                                                                        Dangerous Cargo Information</a></dd>
+                                                                <dd>
+                                                                    <a href="/service/Useful_Info/LettersofIndemnityandGuarantee.aspx">
+                                                                        Letter of Indemnity</a></dd>
+
+                                                            </dl>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <!---------------------end Our Service---------------------------------------------------------->
+                                                <li class="menu_btn"><a href="#">
+                                                    News</a>
+                                                    <div class="sub" style="opacity: 0; display: none; width: 960px;">
+                                                        <div class="wrap_news">
+                                                            <dl>
+                                                                <dt><a href="/News/press_release/PressRelease.aspx?BulletinType=PressRelease">
+                                                                    Press Release</a></dt>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt><a href="/News/press_release/PressRelease.aspx?BulletinType=Notice">
+                                                                    Notice</a></dt>
+                                                            </dl>
+                                                            <dl style="display: none">
+                                                                <dt><a href="/News/press_release/PressRelease.aspx?BulletinType=Member">
+                                                                    Customer Advisory</a></dt>
+                                                            </dl>
+                                                        </div>
+                                                    </div>
+                                                    <!-- end of item_news -->
+                                                </li>
+                                                <!--20210119 new menu start-->
+                                                <li id="Corporate_en" class="menu_btn"><a href="#">
+                                                    Corporate Governance</a>
+                                                    <div class="sub">
+                                                        <div class="wrap_corporate">
+                                                            <dl>
+                                                                <dt>Corporate Governance Structure</dt>
+                                                                <dd><a href="/CorporateGovernance/Corporategovernancestructure.aspx">Corporate Governance Structure Chart</a></dd>
+                                                                <dd><a href="/CorporateGovernance/ChiefCorporateGovernanceOfficer.aspx">Chief Corporate Governance Officer</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>Implementation Status of Corporate Governance</dt>
+                                                                <dd><a href="/CorporateGovernance/ImplementationStatusofEthicalCorporateManagement.aspx">Implementation Status of Ethical Corporate Management </a></dd>
+                                                                <dd><a href="/CorporateGovernance/ImplementationStatusofHumanRightsPolicies.aspx">Implementation Status of Human Rights Policies</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>Board of Directors</dt>
+                                                                <dd><a href="/CorporateGovernance/BoardMembers.aspx">Board Members</a></dd>
+                                                                <dd><a href="/CorporateGovernance/BoardDiversityPolicy.aspx">The Board Diversity and Independence</a></dd>
+                                                                <dd><a href="/CorporateGovernance/SuccessionPlanforBoardMembers.aspx">Succession Plan for Board Members</a></dd>
+                                                                <dd><a href="/CorporateGovernance/BoardofDirectorsMeetingStatus.aspx">Board of Directors Meeting Status</a></dd>
+                                                                <dd><a href="/CorporateGovernance/MajorResolutionsofBoardMeetings.aspx">Major Resolutions of Board Meetings</a></dd>
+                                                                <dd><a href="/CorporateGovernance/ContinuingEducationforDirectors.aspx">Continuing Education for Directors</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>Functional Committees</dt>
+                                                                <dd><a href="/CorporateGovernance/FunctionalCommittees.aspx">Functional Committees</a></dd>
+                                                                <dd><a href="/CorporateGovernance/FunctionalCommitteesMeetingStatus.aspx">Functional Committees Meeting Status</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>Independent Directors’ Communication Status</dt>
+                                                                <dd><a href="/CorporateGovernance/IndependentDirectorsandChiefAuditor.aspx">Communication Status</a></dd>
+
+                                                            </dl>
+                                                            <!-- <dl>
+                                                                <dt>內部稽核</dt>
+                                                                <dd><a href="#">稽核室組織系統及人員配置表</a></dd>
+                                                                <dd><a href="#">稽核室執掌</a></dd>
+                                                            </dl> -->
+                                                            <dl>
+                                                                <dt>Whistleblowing System</dt>
+                                                                <dd><a href="/CorporateGovernance/WhistleblowingSystem.aspx">Whistleblowing System</a></dd>
+
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>Rules and Regulations</dt>
+                                                                <dd><a href="/CorporateGovernance/RulesandRegulations.aspx">Rules and Regulations</a></dd>
+
+                                                            </dl>
+                                                        </div>
+                                                    </div>
+                                                </li>
+
+                                                <!--20210119 new menu end-->
+                                                <li id="Investor_en" class="menu_btn"><a href="#">
+                                                    Investor</a>
+                                                    <div class="sub">
+                                                        <div class="wrap_investment">
+                                                            <dl>
+                                                                <dt>
+                                                                    Shareholder Services</dt>
+                                                                <dd>
+                                                                    <a href="/investor_relations/TwCorporate_Governance/Important_Message.aspx">Important Message</a></dd>
+                                                                <dd>
+                                                                    <a href="/investor_relations/Shareholder_Services/FinancialReportInfo.aspx">Financial Report Info.</a></dd>
+                                                                <dd>
+                                                                    <a href="/investor_relations/Shareholder_Services/ShareholdersMeetingInfo.aspx">Shareholders Meeting Info.</a></dd>
+                                                                <dd>
+                                                                    <a href="/investor_relations/Shareholder_Services/ForCostBasisInformation.aspx">For Cost Basis Information</a></dd>
+                                                                <dd>
+                                                                    <a href="/investor_relations/Shareholder_Services/Investor_Conference.aspx">Investor Conference</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>Risk Management</dt>
+                                                                <dd>
+                                                                    <a href="/investor_relations/TwRisk_management/Risk_Management.aspx">Risk Management Policy</a></dd>
+                                                                <dd>
+                                                                    <a href="/investor_relations/TwRisk_management/Risk_Management_Scope.aspx">The Scope and Organization Structure of the Risk Management</a></dd>
+                                                                <dd>
+                                                                    <a href="/investor_relations/TwRisk_management/Risk_Management_Process.aspx">Process</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt>Corporate Social Responsibility</dt>
+                                                                <dd>
+                                                                    <a href="/investor_relations/Corporate_Governance/CorporateSocialReportList.aspx">Corporate Social Responsibility Report</a></dd>
+                                                                <dd>
+                                                                    <a href="/investor_relations/Corporate_Governance/Stakeholder.aspx">Stakeholder Area</a></dd>
+                                                                <dd>
+                                                                    <a href="/investor_relations/Corporate_Governance/Sustainable_Procurement.aspx">Sustainable Procurement</a></dd>
+                                                            </dl>
+                                                        </div>
+                                                    </div>
+                                                    <!-- end of item_news -->
+                                                </li>
+
+                                                <li class="menu_btn"><a href="#">
+                                                    e-Service</a>
+                                                    <div class="sub" style="opacity: 0; display: none; width: 960px;">
+                                                        <div class="wrap_e_service">
+                                                            <dl>
+                                                                <dt><a href="/e-service/schedule/schedule_ov.aspx">
+                                                                    Sailing Schedule</a></dt>
+                                                                <dd>
+                                                                    <a href="/e-service/schedule/PointToPoint.aspx">
+                                                                        Point-to-Point Search
+                                                                    </a></dd>
+                                                                <dd>
+                                                                    <a href="/e-service/schedule/LongtermSchedule.aspx">
+                                                                        Long Term Schedule Download</a></dd>
+                                                                <dd>
+                                                                    <a href="/e-service/schedule/ScheduleSubscription.aspx">
+                                                                        Schedule Subscription</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt><a href="/e-service/vessel_tracking/vt_ov.aspx">
+                                                                    Vessel Tracking</a></dt>
+                                                                <dd>
+                                                                    <a href="/e-service/vessel_tracking/SearchByVessel.aspx">
+                                                                        Search by Vessel</a></dd>
+                                                                <dd>
+                                                                    <a href="/e-service/vessel_tracking/SearchByPort.aspx">
+                                                                        Search by Port
+                                                                    </a></dd>
+                                                                <dd>
+                                                                    <a href="/e-service/vessel_tracking/SearchByService.aspx">
+                                                                        Search by Service</a></dd>
+                                                                <dd>
+                                                                    <a href="/e-service/vessel_tracking/VtRptSubs.aspx">
+                                                                        Vessel Tracking Report Subscription</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt><a href="/e-service/track_trace/tt_ov.aspx">
+                                                                    Track & Trace</a></dt>
+                                                                <dd>
+                                                                    <a href="/e-service/track_trace/track_trace_cargo_tracking.aspx">
+                                                                        Cargo Tracking</a></dd>
+                                                                <dd>
+                                                                    <a href="/e-service/track_trace/track_trace_subscription.aspx">
+                                                                        Tracking Report Subscription</a></dd>
+                                                                <dd>
+                                                                    <a href="/e-service/bl_process/PressSearch.aspx">
+                                                                        Telex Release</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt><a href="/e-service/Tariff/TariffOv.aspx">
+                                                                    Tariff</a></dt>
+                                                                <dd>
+                                                                    <a href="/e-service/tariff/USA_Tariff_OV.aspx">
+                                                                        USA Tariff</a></dd>
+                                                                <dd>
+                                                                    <a href="/e-service/demdet/demdet.aspx">
+                                                                        Demurrage and Detention</a></dd>
+                                                                <dd style="visibility: hidden">
+                                                                    <a href="/e-service/Tariff/DropOffQry.aspx">
+                                                                        EU Drop off Tariff</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <div style="display: ">
+                                                                    <dt><a href="/e-service/member_area/member_login.aspx">
+                                                                        My YM Account<img src="/Content/Img/lock.png" style="padding-left: 3px" alt="" /></a></dt>
+                                                                    <dd>
+                                                                        <a href="/e-service/member_area/member_login.aspx">
+                                                                            Member Login</a></dd>
+                                                                    <dd>
+                                                                        <a href="/e-service/member_area/register.aspx">
+                                                                            Register</a></dd>
+                                                                    <dd>
+                                                                        <a href="/e-service/member_area/forgot_password.aspx">
+                                                                            Forgot Password</a></dd>
+                                                                </div>
+                                                                <div style="display: none">
+                                                                    <dt><a href="/e-service/member_area/member_login_index.aspx">
+                                                                        My YM Account<img src="/Content/Img/lock.png" style="padding-left: 3px" alt="" />
+                                                                    </a></dt>
+                                                                    <dd>
+                                                                        <a href="/e-service/member_area/member_login_index.aspx?h_Sign=Logout">
+                                                                            Member Logout</a>
+                                                                    </dd>
+                                                                    <dd id="ddAMD">
+                                                                        <a href="/e-service/member_area/register_modify.aspx">
+                                                                            Change Register</a></dd>
+                                                                    <dd>
+                                                                        <a href="/e-service/member_area/change_password.aspx">
+                                                                            Change Password</a></dd>
+                                                                    <dd>
+                                                                        <a href="/e-service/member_area/member_management.aspx">
+                                                                            Sub-user Maintenance</a></dd>
+                                                                </div>
+                                                                <dd>
+                                                                    <a href="/e-service/member_area/faqs.aspx">
+                                                                        FAQs</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt><a href="/e-service/myeservice_ov.aspx">
+                                                                    My e-Service<img src="/Content/Img/lock.png" style="padding-left: 3px" alt="" /></a></dt>
+                                                                <dd>
+                                                                    <a href="/e-service/booking/booking_ov.aspx">
+                                                                        Booking</a></dd>
+                                                                <dd>
+                                                                    <a href="/About_Us/Security_Regulation/SOLAS_VGM/Vgm_ov.aspx">
+                                                                        SOLAS VGM</a></dd>
+                                                                <dd>
+                                                                    <a href="/e-service/bl_process/bl_instruction.aspx">
+                                                                        B/L&nbsp;Instruction</a></dd>
+                                                                <dd>
+
+                                                                    <a href="/e-service/bl_process/blprint_main.aspx">
+                                                                        B/L Print</a></dd>
+                                                                <dd>
+                                                                    <a href="/e-service/bl_process/bl_contents_query.aspx">
+                                                                        B/L Contents</a></dd>
+                                                            </dl>
+                                                            <dl style="padding-top: 40px">
+                                                                <dd>
+                                                                    <a href="/e-service/track_trace/ShipmentManagement.aspx">
+                                                                        Shipment Management</a></dd>
+								<dd>
+                                                                    <a href="/e-service/track_trace/ShipmentControl.aspx">
+                                                                        Report and Notification</a></dd>
+								<dd style="display: none">
+                                                                    <a href="/e-service/bl_process/bl_finance.aspx">
+                                                                        Bank Financing Area</a></dd>
+                                                            </dl>
+                                                            <dl>
+                                                                <dt><a href="/e-service/EDI/EDI_OV.aspx">
+                                                                    EDI/API</a></dt>
+                                                                <dd>
+                                                                    <a href="/e-service/EDI/EDI_Intro.aspx?IntroType=EDI">
+                                                                        EDI Introduction</a></dd>
+                                                                <dd>
+                                                                    <a href="/e-service/EDI/EDI_Intro.aspx?IntroType=API">
+                                                                        API Introduction</a></dd>
+                                                            </dl>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <!---------------------Office Network------------------------------------>
+                                                <li class="menu_btn"><a href="#">
+                                                    Office Network</a>
+                                                    <div class="sub" style="opacity: 0; display: none; width: 960px;">
+                                                        <div class="wrap_local">
+                                                            <div class="left">
+                                                                <ul>
+                                                                    <li class="title_head_office">
+                                                                        Global Headquarters</li>
+                                                                    <li><a href="/office_network/headquarter/headquarter.aspx">
+                                                                        Global Headquarters</a></li>
+                                                                </ul>
+                                                            </div>
+                                                            <div class="left">
+                                                                <ul>
+                                                                    <li class="title_head_office">
+                                                                        Regional Head Office</li>
+                                                                    <li><a href="/office_network/regional_head_office/head_office.aspx#Central & South America">Central & South America</a></li>
+                                                                    <li><a href="/office_network/regional_head_office/head_office.aspx#Europe">Europe</a></li>
+                                                                    <li><a href="/office_network/regional_head_office/head_office.aspx#Mediterranean">Mediterranean Head Office</a></li>
+                                                                    <li><a href="/office_network/regional_head_office/head_office.aspx#Middle East">Middle East Head Office</a></li>
+                                                                    <li><a href="/office_network/regional_head_office/head_office.aspx#North America">North America</a></li>
+                                                                </ul>
+                                                            </div>
+                                                            <div class="right">
+                                                                <span class="agent_title">
+                                                                    Office & Agent</span>
+                                                                <ul>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#ASI">Asia</a></li>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#BLS">Black Sea</a></li>
+                                                                    <li style="display: none;"><a href="/office_network/office_agent/agent_overview.aspx#CBS">Caribbean Sea</a></li>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#AMC">Central America</a></li>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#EUR">Europe</a></li>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#MED">Mediterranean</a></li>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#ME">Middle East</a></li>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#AMN">North America</a></li>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#OCE">Oceania</a></li>
+                                                                    <li><a href="/office_network/office_agent/agent_overview.aspx#AMS">South America</a></li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                                <!---------------------end Office Network---------------------------------------------------------->
+                                                <div id="Master_Local_Menu">
+
+
+<script type='text/javascript'>
+    function setLocalSite(localver,Lang_ver) {
+        document.getElementById('ctl156_hidlocalver').value = localver;
+        document.getElementById('ctl156_hidLang_ver').value = Lang_ver;
+        document.getElementById('ctl156_lnkLocalSite').click();
+    }
+
+</script>
+<input type="hidden" name="ctl00$ctl156$hidlocalver" id="ctl156_hidlocalver" value="EN" />
+<input type="hidden" name="ctl00$ctl156$hidLang_ver" id="ctl156_hidLang_ver" value="en-us" />
+<a id="ctl156_lnkLocalSite" href="javascript:__doPostBack(&#39;ctl00$ctl156$lnkLocalSite&#39;,&#39;&#39;)"></a>
+
+<li id="ctl156_LocalInfo" class="menu_btn">
+    <a href="#">
+        Local Websites
+    </a>
+    <div class="sub">
+        <div class="wrap_local_site">
+            <span id="ctl156_lblLocal"><dl><dt><font size=2>Local Info</font></dt><dd><a href ='#' onclick=setLocalSite('AU','en-us'); > Australia</a></dd><dd><a href ='#' onclick=setLocalSite('BE','en-us'); > Belgium</a></dd><dd><a href ='#' onclick=setLocalSite('BG','en-us'); > Bulgaria</a></dd><dd><a href ='#' onclick=setLocalSite('CA','en-us'); > Canada</a></dd><dd><a href ='#' onclick=setLocalSite('CN','zh-cn'); > China(简体中文)</a></dd><dd><a href ='#' onclick=setLocalSite('HK','zh-tw'); > China-Hong Kong(繁體中文)</a></dd><dd><a href ='#' onclick=setLocalSite('EG','en-us'); > Egypt</a></dd><dd><a href ='#' onclick=setLocalSite('EE','en-us'); > Estonia</a></dd><dd><a href ='#' onclick=setLocalSite('DE','en-us'); > Germany</a></dd><dd><a href ='#' onclick=setLocalSite('GR','en-us'); > Greece</a></dd></dl><dl><dt>&nbsp;</dt><dd><a href ='#' onclick=setLocalSite('IN','en-us'); > India</a></dd><dd><a href ='#' onclick=setLocalSite('ID','en-us'); > Indonesia</a></dd><dd><a href ='#' onclick=setLocalSite('IT','en-us'); > Italy</a></dd><dd><a href ='#' onclick=setLocalSite('JP','ja-jp'); > Japan(日本語)</a></dd><dd><a href ='#' onclick=setLocalSite('KR','ko-KR'); > Korea(한국어)</a></dd><dd><a href ='#' onclick=setLocalSite('LV','en-us'); > Latvia</a></dd><dd><a href ='#' onclick=setLocalSite('LT','en-us'); > Lithuania</a></dd><dd><a href ='#' onclick=setLocalSite('MY','en-us'); > Malaysia</a></dd><dd><a href ='#' onclick=setLocalSite('NL','en-us'); > Netherlands</a></dd><dd><a href ='#' onclick=setLocalSite('PE','en-us'); > Peru</a></dd></dl><dl><dt>&nbsp;</dt><dd><a href ='#' onclick=setLocalSite('PH','en-us'); > Philippines</a></dd><dd><a href ='#' onclick=setLocalSite('PL','en-us'); > Poland</a></dd><dd><a href ='#' onclick=setLocalSite('RU','en-us'); > Russia(Россия)</a></dd><dd><a href ='#' onclick=setLocalSite('SG','en-us'); > Singapore</a></dd><dd><a href ='#' onclick=setLocalSite('ES','en-us'); > Spain</a></dd><dd><a href ='#' onclick=setLocalSite('SE','en-us'); > Sweden</a></dd><dd><a href ='#' onclick=setLocalSite('TW','zh-tw'); > Taiwan(繁體中文)</a></dd><dd><a href ='#' onclick=setLocalSite('TH','en-us'); > Thailand(ประเทศไทย)</a></dd><dd><a href ='#' onclick=setLocalSite('TR','en-us'); > Turkey(Turkish)</a></dd><dd><a href ='#' onclick=setLocalSite('AE','en-us'); > UAE</a></dd></dl><dl><dt>&nbsp;</dt><dd><a href ='#' onclick=setLocalSite('GB','en-us'); > United Kingdom</a></dd><dd><a href ='#' onclick=setLocalSite('US','en-us'); > USA</a></dd><dd><a href ='#' onclick=setLocalSite('VN','en-us'); > Vietnam</a></dd></span>
+        </div>
+    </div>
+</li>
+</div>
+                                            </div>
+
+                                            <!---------------------end menu_en----------------------------------->
+
+
+                                            <!---------------------end menu_zh_tw------------------------------------>
+                                        </ul>
+
+                                    </div>
+                                    <!--#navi end---------------->
+                                </div>
+                            </div>
+                            <!-----Tradition menu col div end---------->
+                            <!-----RWD Menu start-------------->
+                            <!------height assign------>
+                            <div id="menu_rwd" class="hidden-lg hidden-md col-sm-12 col-xs-12" style="padding: 0px">
+                                <div role="navigation" class="navbar navbar-default">
+                                    <!-- Brand and toggle get grouped for better mobile display -->
+                                    <div class="navbar-header">
+                                        <!-- <a href="#" class="navbar-brand">Brand</a> -->
+                                        <a href="/index.aspx?rwd_home=Y&localver=" class="navbar-brand" style="padding-top: 7px;">
+                                            <img id="logo1" src="/Content/Img/app_icon.png" style="width: 36px; height: 36px;" />
+                                        </a>
+
+                                        <button type="button" data-target="#navbarmenu" data-toggle="collapse" class="navbar-toggle btnextra">
+                                            <span class="sr-only">menu</span>
+                                            <table>
+                                                <tr>
+                                                    <td style="padding: 2px 1px 1px 1px;">
+                                                        <span class="icon-dot"></span>
+                                                    </td>
+                                                    <td style="padding-top: 2px">
+                                                        <span class="icon-bar"></span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding: 1px;">
+                                                        <span class="icon-dot"></span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="icon-bar"></span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding: 1px;">
+                                                        <span class="icon-dot"></span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="icon-bar"></span>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding: 1px 1px 1px 1px">
+                                                        <span class="icon-dot"></span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="icon-bar"></span>
+
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </button>
+                                        <button type="button" data-target="#navbarlang" data-toggle="collapse" class="navbar-toggle btnextra hidden-xs hidden-sm">
+                                            <span class="sr-only">lang</span>
+                                            <span>
+                                                <img src="/Content/Img/app_lang_2.png" style="width: 24px; height: 24px;" /></span>
+                                        </button>
+                                        <button type="button" data-target="#navbarsearch" data-toggle="collapse" class="navbar-toggle btnextra hidden-xs hidden-sm">
+                                            <span class="sr-only">search</span>
+                                            <span>
+                                                <img src="/Content/Img/app_search.png" style="width: 24px; height: 24px;" /></span>
+                                        </button>
+                                        <button type="button" data-toggle="collapse" class="navbar-toggle btnextra" style="display: " onclick="login('login');">
+                                            <span class="sr-only">user</span>
+                                            <span>
+
+                                                <img src="/Content/Img/app_account.png" style="width: 24px; height: 24px;" />
+
+                                            </span>
+                                        </button>
+                                        <button type="button" data-toggle="collapse" class="navbar-toggle btnextra" style="display: none" onclick="login('logout');">
+                                            <span class="sr-only">Logout</span>
+                                            <span>
+
+                                                <img src="/Content/Img/logout_m.png" style="width: 24px; height: 24px;" />
+
+                                            </span>
+                                        </button>
+
+                                        <a id="lbtzhrwd_tw" class="navbar-toggle btnextra" href="javascript:__doPostBack(&#39;ctl00$lbtzhrwd_tw&#39;,&#39;&#39;)" style="padding-top:5px;padding-bottom:5px;display:;">繁體版</a>
+                                        <a id="lbtusrwd_en" class="navbar-toggle btnextra" href="javascript:__doPostBack(&#39;ctl00$lbtusrwd_en&#39;,&#39;&#39;)" style="padding-top:5px;padding-bottom:5px;display:none;">English</a>
+
+                                        <div style="display: none; padding-top: 15px; font-size: 12px">
+                                            <span style="vertical-align: middle; color: White">
+
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <!-- Collection of nav links, forms, and other content for toggling -->
+                                    <div id="navbarmenu" class="collapse navbar-collapse">
+                                        <ul id="navbar_nav_rwd" class="nav navbar-nav">
+                                            <!---------------------About Us------------------------------------>
+
+                                            <li class="dropdown menu_li"><a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                                                About Us<b class="caret" style="color: Red;"></b></a>
+                                                <ul class="dropdown-menu">
+                                                    <li class="dropdown dropdown-submenu menu_li"><a tabindex="-1" class="dropdown-toggle"
+                                                        data-toggle="dropdown" href="#">
+                                                        Security and Regulation</a>
+                                                        <ul class="dropdown-menu">
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/About_Us/Security_Regulation/SOLAS_VGM/Vgm_ov.aspx">
+                                                                SOLAS VGM</a></li>
+                                                        </ul>
+                                                    </li>
+                                                </ul>
+                                                <ul class="dropdown-menu">
+                                                    <li class="dropdown dropdown-submenu menu_li"><a tabindex="-1" class="dropdown-toggle"
+                                                        data-toggle="dropdown" href="#">
+                                                        Environmental Protection</a>
+                                                        <ul class="dropdown-menu">
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/about_us/Environment_Preservation/greenvessel.aspx">
+                                                                Green Vessel</a></li>
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/about_us/Environment_Preservation/carboncalculator.aspx">
+                                                                Carbon Calculator</a></li>
+                                                        </ul>
+                                                    </li>
+                                                </ul>
+                                            </li>
+                                            <!---------------------end About Us---------------------------------------------------------->
+                                            <!---------------------Service------------------------------------>
+                                            <li class="dropdown menu_li"><a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                                                Service<b class="caret" style="color: Red;"></b></a>
+                                                <ul class="dropdown-menu">
+                                                    <li class="dropdown dropdown-submenu menu_li"><a tabindex="-1" class="dropdown-toggle"
+                                                        data-toggle="dropdown" href="#">
+                                                        Service Network</a>
+                                                        <ul class="dropdown-menu">
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/service/service_network/ContainerEquipment.aspx">
+                                                                Container Specification</a></li>
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/service/service_network/Fleet.aspx">
+                                                                Fleet</a></li>
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/service/service_network/RouteMap.aspx">
+                                                                Route Map</a></li>
+                                                        </ul>
+                                                    </li>
+                                                    <!--  <li class="divider"></li>-->
+                                                    <li class="dropdown dropdown-submenu menu_li"><a tabindex="-1" class="dropdown-toggle"
+                                                        data-toggle="dropdown" href="#">
+                                                        Terminal Info.</a>
+                                                        <ul class="dropdown-menu">
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/service/terminal_info/port.aspx">
+                                                                Port Terminal</a></li>
+                                                        </ul>
+                                                    </li>
+                                                </ul>
+                                            </li>
+                                            <!---------------------end Service---------------------------------------------------------->
+                                            <!---------------------office Network------------------------------------>
+                                            <li class="dropdown menu_li"><a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                                                Office Network<b class="caret" style="color: Red;"></b></a>
+                                                <ul class="dropdown-menu">
+                                                    <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/office_network/office_agent/agent_overview.aspx">
+                                                        Office & Agent</a></li>
+                                                </ul>
+                                            </li>
+                                            <!---------------------end office Network---------------------------------------------------------->
+                                            <!---------------------News------------------------------------>
+                                            <li class="menu_li"><a href="/News/press_release/PressRelease.aspx">
+                                                News</a> </li>
+                                            <!---------------------end News---------------------------------------------------------->
+                                            <!---------------------Investor------------------------------------>
+                                            <li class="dropdown menu_li"><a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                                                Investor<b class="caret" style="color: Red;"></b></a>
+                                                <ul class="dropdown-menu">
+                                                    <li class="dropdown dropdown-submenu menu_li"><a tabindex="-1" class="dropdown-toggle"
+                                                        data-toggle="dropdown" href="#">
+                                                        Corporate Governance</a>
+                                                        <ul class="dropdown-menu">
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/investor_relations/Corporate_Governance/CorporateSocialReportList.aspx">
+                                                                Article of Incorporation</a></li>
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/investor_relations/Corporate_Governance/CorporateSocialResponsibilityReport.aspx">Corporate Social Responsibility Report</a></li>
+                                                        </ul>
+                                                    </li>
+                                                    <li class="dropdown dropdown-submenu menu_li"><a tabindex="-1" class="dropdown-toggle"
+                                                        data-toggle="dropdown" href="#">Shareholder Services</a>
+                                                        <ul class="dropdown-menu">
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/investor_relations/Shareholder_Services/FinancialReportInfo.aspx">Financial Report Info.</a></li>
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/investor_relations/Shareholder_Services/ForCostBasisInformation.aspx">For Cost Basis Information</a></li>
+                                                        </ul>
+                                                    </li>
+                                                </ul>
+                                            </li>
+                                            <!---------------------end Investor---------------------------------------------------------->
+                                            <!---------------------e-Service------------------------------------>
+                                            <li class="dropdown menu_li"><a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                                                e-Service<b class="caret" style="color: Red;"></b></a>
+                                                <ul class="dropdown-menu">
+                                                    <li class="dropdown dropdown-submenu menu_li"><a tabindex="-1" class="dropdown-toggle"
+                                                        data-toggle="dropdown" href="#">
+                                                        Sailing Schedule</a>
+                                                        <ul class="dropdown-menu">
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/e-service/schedule/PointToPoint.aspx">
+                                                                Point-to-Point Search</a></li>
+                                                        </ul>
+                                                    </li>
+                                                    <li class="dropdown dropdown-submenu menu_li"><a tabindex="-1" class="dropdown-toggle"
+                                                        data-toggle="dropdown" href="#">
+                                                        Booking</a>
+                                                        <ul class="dropdown-menu">
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/e-service/booking/booking_request_inq.aspx">
+                                                                Booking Request</a></li>
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/e-service/booking/booking_page.aspx?nowAct=searchHistory">
+                                                                Booking History</a></li>
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/e-service/booking/booking_page.aspx?nowAct=templateList">
+                                                                Booking Template</a></li>
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/e-service/booking/business_partners_maintenance.aspx">
+                                                                Business Partners Maintenance</a></li>
+                                                        </ul>
+                                                    </li>
+                                                    <li class="dropdown dropdown-submenu menu_li"><a tabindex="-1" class="dropdown-toggle"
+                                                        data-toggle="dropdown" href="#">
+                                                        B/L Process</a>
+                                                        <ul class="dropdown-menu">
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/e-service/bl_process/bl_contents_query.aspx">
+                                                                B/L Contents</a></li>
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/e-service/bl_process/PressSearch.aspx">
+                                                                Telex Release</a></li>
+                                                        </ul>
+                                                    </li>
+                                                    <li class="dropdown dropdown-submenu menu_li"><a tabindex="-1" class="dropdown-toggle"
+                                                        data-toggle="dropdown" href="#">
+                                                        Vessel Tracking</a>
+                                                        <ul class="dropdown-menu">
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/e-service/vessel_tracking/SearchByVessel.aspx">
+                                                                Search by Vessel</a></li>
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/e-service/vessel_tracking/SearchByPort.aspx">
+                                                                Search by Port</a></li>
+                                                        </ul>
+                                                    </li>
+                                                    <li class="dropdown dropdown-submenu menu_li"><a tabindex="-1" class="dropdown-toggle"
+                                                        data-toggle="dropdown" href="#">
+                                                        Track & Trace</a>
+                                                        <ul class="dropdown-menu">
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/e-service/track_trace/track_trace_cargo_tracking.aspx">
+                                                                Cargo Tracking</a></li>
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/e-service/track_trace/track_trace_subscription.aspx">
+                                                                Tracking Report Subscription</a></li>
+                                                            <li class="dropdown-lastitem menu_li"><a tabindex="-1" href="/e-service/track_trace/ShipmentControl.aspx">
+                                                                Report and Notification</a></li>
+                                                        </ul>
+                                                    </li>
+                                                </ul>
+                                            </li>
+                                            <span id="Master_Local_Menu_Rwd">
+
+
+<script type='text/javascript'>
+    function setLocalSite_Rwd(localver, Lang_ver) {
+        document.getElementById('ctl157_hidlocalver').value = localver;
+        document.getElementById('ctl157_hidLang_ver').value = Lang_ver;
+        document.getElementById('ctl157_lnkLocalSite').click();
+    }
+
+</script>
+<input type="hidden" name="ctl00$ctl157$hidlocalver" id="ctl157_hidlocalver" value="EN" />
+<input type="hidden" name="ctl00$ctl157$hidLang_ver" id="ctl157_hidLang_ver" value="en-us" />
+<a id="ctl157_lnkLocalSite" href="javascript:__doPostBack(&#39;ctl00$ctl157$lnkLocalSite&#39;,&#39;&#39;)"></a>
+
+
+<li class="dropdown menu_li"  style="padding-left:30px">
+    <a href="#" class="dropdown-toggle" data-toggle="dropdown" >
+        Local Info<b class="caret" style="color: Red;"></b>
+    </a>
+    <ul class="dropdown-menu">
+
+              <span id="ctl157_lblLocal"><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('AU','en-us'); > Australia</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('BE','en-us'); > Belgium</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('BG','en-us'); > Bulgaria</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('CA','en-us'); > Canada</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('CN','zh-cn'); > China(简体中文)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('HK','zh-tw'); > China-Hong Kong(繁體中文)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('EG','en-us'); > Egypt</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('EE','en-us'); > Estonia</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('DE','en-us'); > Germany</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('GR','en-us'); > Greece</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('IN','en-us'); > India</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('ID','en-us'); > Indonesia</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('IT','en-us'); > Italy</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('JP','ja-jp'); > Japan(日本語)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('KR','ko-KR'); > Korea(한국어)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('LV','en-us'); > Latvia</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('LT','en-us'); > Lithuania</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('MY','en-us'); > Malaysia</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('NL','en-us'); > Netherlands</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('PE','en-us'); > Peru</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('PH','en-us'); > Philippines</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('PL','en-us'); > Poland</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('RU','en-us'); > Russia(Россия)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('SG','en-us'); > Singapore</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('ES','en-us'); > Spain</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('SE','en-us'); > Sweden</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('TW','zh-tw'); > Taiwan(繁體中文)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('TH','en-us'); > Thailand(ประเทศไทย)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('TR','en-us'); > Turkey(Turkish)</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('AE','en-us'); > UAE</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('GB','en-us'); > United Kingdom</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('US','en-us'); > USA</a></li><li class='dropdown dropdown-submenu menu_li'> <a tabindex ='-1' class='dropdown-toggle'  data-toggle='dropdown' href='#' onclick=setLocalSite_Rwd('VN','en-us'); > Vietnam</a></li></span>
+    </ul>
+</li>
+</span>
+                                            <!---------------------end e-Service---------------------------------------------------------->
+                                        </ul>
+
+
+                                    </div>
+                                    <div id="navbarlang" class="collapse navbar-collapse">
+                                        <ul class="nav navbar-nav">
+                                            <!---------------------English------------------------------------>
+                                            <li class="menu_li"><a href="/index.aspx">English</a> </li>
+                                            <!---------------------T_Chinese------------------------------------>
+                                            <li class="menu_li"><a href="/index.aspx">繁體中文</a> </li>
+                                            <!---------------------S_Chinese------------------------------------>
+                                            <li class="menu_li"><a href="http://www.yml.com.cn/cn/ASP/index.aspx" target="_blank">简体中文</a> </li>
+                                        </ul>
+                                    </div>
+                                    <!---- navbarlang end ---->
+                                    <div id="navbarsearch" class="collapse navbar-collapse">
+                                        <ul class="nav navbar-nav">
+                                            <!---------------------Search------------------------------------>
+                                            <li class="menu_li"><a href="/search.aspx">Search</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <!---- navbarsearch end ---->
+                                    <!---- navbaruser start ---->
+
+                                    <!---- navbaruser end ---->
+                                </div>
+                                <!---- navbar ---->
+                            </div>
+                        </div>
+                    </div>
+
+
+   <div class="row sub_menu">
+		<div class="subnavi_wrapper_rwd ">
+			<div id="current_rwd" class=" hidden-xs col-sm-2 col-md-2 col-lg-2">
+				Track & Trace
+			</div>
+			<div id="subnavi_rwd" class="hidden-xs col-sm-10 col-md-10 col-lg-10 ">
+				<a href="/e-service/track_trace/tt_ov.aspx" class="hidden-xs hidden-sm">
+					Overview</a>
+				<a href="/e-service/track_trace/track_trace_cargo_tracking.aspx" class="hidden-xs hidden-sm">
+					Cargo Tracking</a>
+				<a href="/e-service/track_trace/track_trace_subscription.aspx" class="hidden-xs hidden-sm">
+					Tracking Report Subscription</a>
+				<a href="/e-service/bl_process/PressSearch.aspx" class="hidden-xs hidden-sm">
+					Telex Release</a>
+			</div>
+		</div>
+	</div>
+
+
+                    <!--Sub Menu-->
+                </div>
+                <div id="content_rwd" class="row" style="background-color: #FFF;">
+
+    <div id="ContentPlaceHolder1_banner_rwd" class="col-xs-12 col-sm-12 col-md-12 col-lg-12" style="padding-left: 0px">
+        <img alt="" src="../../Content/img/banner_05.jpg" class="banner_img" />
+    </div>
+
+
+
+    <div id="ContentPlaceHolder1_article_rwd">
+        <div id="ContentPlaceHolder1_divResult" class="eser_ttwrap_topset_rwd col-xs-12 col-sm-12 col-md-12 col-lg-12">
+            <h2 class="greent_rwd">
+                Result of Tracking by B/L No.
+
+            </h2>
+        </div>
+
+        <br />
+        <div id="ContentPlaceHolder1_divQuickSurvey" style="width: 100px; margin-left: 830px;">
+            <a href="/e-service/survey/survey.aspx?survey=TRACK">
+                <span id="ContentPlaceHolder1_lblQuickSurvey" style="color:#0577B3;">[Quick Survey]</span></a>
+        </div>
+
+        <input type="hidden" name="ctl00$ContentPlaceHolder1$hidGVID" id="ContentPlaceHolder1_hidGVID" value="#ContentPlaceHolder1_rptBLNo_gvBasicInformation_0,#ContentPlaceHolder1_rptBLNo_gvLatestEvent_0" />
+
+        <div id="ContentPlaceHolder1_UpdatePanel">
+
+
+                        <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+                            <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 ser06_wrap1_topbar_top_rwd">
+                                &nbsp;
+                            </div>
+                            <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+
+                                <div id="ContentPlaceHolder1_rptBLNo_divBKNum_0" style="display: none; font-size: 18px">
+                                    Booking No.
+                                    :
+
+                                    <span class="bluefont3_rwd">
+                                        <span id="ContentPlaceHolder1_rptBLNo_lblBKNo_0"></span>
+                                    </span>
+                                </div>
+
+                            </div>
+                            <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+                                <div style="font-size: 18px">
+                                    B/L No.
+                                    :
+
+                                    <span class="bluefont3_rwd">
+                                        <span id="ContentPlaceHolder1_rptBLNo_lblBLNo_0">I209431722</span>
+                                        &nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblSw_ret_ind_0"></span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+
+                                <div id="ContentPlaceHolder1_rptBLNo_divSubscription_0" align="right" class="bkfont_rwd">
+                                    <a href="track_trace_subscription.aspx" target="_blank">Tracking Report Subscription</a>
+                                </div>
+                            </div>
+
+                            <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 ser06_wrap1_topbar_bottom_rwd">
+                                &nbsp;
+                            </div>
+                            <div id="ContentPlaceHolder1_rptBLNo_divConcent_0">
+                                <div class="eser_vewrap_wrap2_rwd" style="padding-top: 20px;">
+                                    <div align="center">
+                                        <div align="left">
+                                            <h4>
+                                                Basic Information</h4>
+                                        </div>
+                                        <div style="padding-top: 10px;">
+                                            <div>
+		<table class="responsiveTable2" cellspacing="0" cellpadding="0" rules="all" border="0" border="1" id="ContentPlaceHolder1_rptBLNo_gvBasicInformation_0" style="border-collapse:collapse;width: 100%; border-collapse: collapse; table-layout: fixed;">
+			<thead>
+				<tr class="field_name" align="left" style="font-weight:normal;">
+					<td>Receipt</td><td>Loading</td><td>Discharge</td><td>Delivery</td>
+				</tr>
+			</thead><tbody>
+				<tr class="field_odd" align="left">
+					<td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvBasicInformation_0_lblReceipt_0">KAOHSIUNG (TWKHH)</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvBasicInformation_0_lblLoading_0">KAOHSIUNG (TWKHH)</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvBasicInformation_0_lblDischarge_0">LAEM CHABANG (THLCB)</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvBasicInformation_0_lblDelivery_0">LAEM CHABANG (THLCB)</span>
+                                                        </td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+                                        </div>
+                                        <div align="left" style="padding-top: 20px;">
+                                            <div style="float: left; width: 50%;">
+                                                <div style="width: 12px; float: left;" align="left">
+                                                    <span class="bkfont_rwd">
+                                                        <img src="../../Content/img/icon_bluearrow.jpg" width="12" height="9" /></span>
+                                                </div>
+                                                <div class="bkfont_rwd">
+                                                    <div style="white-space: nowrap; float: left;">
+                                                        Vessel Voy No.
+                                                        :
+                                                    </div>
+                                                    <div style="white-space: nowrap; float: left;">
+                                                        <b>&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblVessel_0" class="mycls"><a href="../vessel_tracking/vessel_tracking_detail.aspx?vessel=YISN&func=current"
+                                  target="_blank" title="Click here to view vessel schedule">YM INSTRUCTION</a> - 283S (JTC207S)</span></b>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div style="float: left;">
+                                                <div style="width: 12px; float: left;" align="left">
+                                                    <span class="bkfont_rwd">
+                                                        <img src="../../Content/img/icon_bluearrow.jpg" width="12" height="9" /></span>
+                                                </div>
+                                                <div class="bkfont_rwd" style="width: 400px;">
+                                                    No. of Packages
+                                                    :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblPackages_0">102 BG</span>
+                                                </div>
+                                            </div>
+                                            <div style="float: left; padding-top: 10px; width: 50%;">
+                                                <div style="width: 12px; float: left;" align="left">
+                                                    <span class="bkfont_rwd">
+                                                        <img src="../../Content/img/icon_bluearrow.jpg" width="12" height="9" /></span>
+                                                </div>
+                                                <div class="bkfont_rwd" style="width: 400px;">
+                                                    On Board Date
+                                                    :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblBoard_0">2022/02/25</span>
+                                                </div>
+                                            </div>
+                                            <div style="float: left; padding-top: 10px;">
+                                                <div style="width: 12px; float: left;" align="left">
+                                                    <span class="bkfont_rwd">
+                                                        <img src="../../Content/img/icon_bluearrow.jpg" width="12" height="9" /></span>
+                                                </div>
+                                                <div class="bkfont_rwd" style="width: 400px;">
+                                                    Gross Cargo Weight
+                                                    :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblGross_0">77010</span>
+                                                    KGS
+                                                </div>
+                                            </div>
+                                            <div style="float: left; padding-top: 10px; width: 50%;">
+                                                <div style="width: 12px; float: left;" align="left">
+                                                    <span class="bkfont_rwd">
+                                                        <img src="../../Content/img/icon_bluearrow.jpg" width="12" height="9" /></span>
+                                                </div>
+                                                <div class="bkfont_rwd" style="width: 400px;">
+                                                    No. of Containers
+                                                    :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblContainers_0">3 units (3 * 40')</span>
+                                                </div>
+                                            </div>
+                                            <div style="float: left; padding-top: 10px;">
+                                                <div style="width: 12px; float: left;" align="left">
+                                                    <span class="bkfont_rwd">
+                                                        <img src="../../Content/img/icon_bluearrow.jpg" width="12" height="9" /></span>
+                                                </div>
+                                                <div class="bkfont_rwd" style="width: 450px;">
+                                                    Measurement
+                                                    :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblMeasurement_0">150</span>
+                                                    CBM
+                                                </div>
+                                            </div>
+                                            <div style="float: left; padding-top: 10px; padding-bottom: 20px; width: 50%;">
+                                                <div style="width: 12px; float: left;" align="left">
+                                                    <span class="bkfont_rwd">
+                                                        <img src="../../Content/img/icon_bluearrow.jpg" width="12" height="9" /></span>
+                                                </div>
+                                                <div class="bkfont_rwd" style="width: 400px;">
+                                                    Service Requirement
+                                                    :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblService_0">Container Yard - Container Yard</span>
+                                                </div>
+                                            </div>
+                                            <div id="ContentPlaceHolder1_rptBLNo_Precarriage_0" style="float:left;padding-top:10px;display:none;">
+                                                <div style="width: 12px; float: left;" align="left">
+                                                    <span class="bkfont_rwd">
+                                                        <img src="../../Content/img/icon_bluearrow.jpg" width="12" height="9" /></span>
+                                                </div>
+                                                <div class="bkfont_rwd" style="width: 400px;">
+                                                    Precarriage by
+                                                    :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblPrecarriage_0">Label</span>
+                                                </div>
+                                            </div>
+                                            <br />
+                                        </div>
+                                    </div>
+                                </div>
+                                <br />
+                                <br />
+                                <div class="eser_vewrap_wrap2_rwd row" style="padding-top: 80px;">
+                                    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12" align="left">
+                                        <div align="left" style="border-top: 1px dashed #999;">
+                                            <h4>
+                                                Routing Schedule
+                                                &nbsp;
+                                            </h4>
+                                        </div>
+                                        <div style="padding-top: 20px; border-bottom: 1px dashed #999; padding-bottom: 20px;">
+
+                                            <div class="row">
+                                                <div class="hidden-xs hidden-sm col-md-1 col-lg-1">
+                                                </div>
+                                                <div class="col-xs-12 col-sm-12 col-md-10 col-lg-10">
+                                                    <div class="cargo-trackbox3">
+
+                                                                <ul>
+                                                                    <li class="place">
+                                                                        <span id="ContentPlaceHolder1_rptBLNo_rptRoutingSchedule_0_lblRouting_0">KAOHSIUNG</span>
+                                                                    </li>
+                                                                    <li class="date">
+                                                                        <span id="ContentPlaceHolder1_rptBLNo_rptRoutingSchedule_0_lblDateTime_0">2022/02/26 02:15 (Actual)</span>
+                                                                    </li>
+                                                                </ul>
+
+                                                                <ul>
+                                                                    <li class="place">
+                                                                        <span id="ContentPlaceHolder1_rptBLNo_rptRoutingSchedule_0_lblRouting_1">LAEM CHABANG</span>
+                                                                    </li>
+                                                                    <li class="date">
+                                                                        <span id="ContentPlaceHolder1_rptBLNo_rptRoutingSchedule_0_lblDateTime_1">2022/03/03 05:56 (Actual)<br /><font color='#FF0000'>*</font>&nbsp;Berthing time at terminal: 2022/03/03 06:42 (Actual)</span>
+                                                                    </li>
+                                                                </ul>
+
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div id="ContentPlaceHolder1_rptBLNo_Discharged_0" style="margin-top: 10px;">
+                                                <div style="float: left;" align="left">
+                                                    <span class="bkfont_rwd">
+                                                        <img src="../../Content/img/icon_bluearrow.jpg" width="12" height="9" /></span>
+                                                </div>
+                                                <div class="bkfont_rwd" align="left">
+                                                    Discharged Port Terminal
+                                                    :&nbsp;<span id="ContentPlaceHolder1_rptBLNo_lblDischarged_0"><A HREF=www.siamseaport.co.th target=_blank TITLE='Link to web site'>Kerry Siam Seaport</A> (Firms code:)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!--Telex Release-->
+
+
+                                <!--DBL Release-->
+
+
+                                <!--Japan info-->
+                                <div id="ContentPlaceHolder1_rptBLNo_Japan_0" class="eser_vewrap_wrap2_rwd" style="padding-top:20px;display:none;">
+                                    <div class="div_sec" align="center" style="padding-bottom: 20px;">
+
+                                        <div align="left" style="margin-top: 10px;">
+                                            <h4>
+                                                Japan AFR Status (filed by Carrier)
+                                            </h4>
+                                        </div>
+                                        <div style="float: left; width: 115px; padding-top: 20px" align="left">
+                                            AFR Registration
+                                            :
+                                        </div>
+                                        <div align="left" style="padding-top: 20px">
+                                            <span id="ContentPlaceHolder1_rptBLNo_lblAMR_0">Label</span>
+                                        </div>
+                                        <div id="ContentPlaceHolder1_rptBLNo_Discrepancy_0" style="margin-left: 115px; padding-top: 10px" align="left">
+                                            <img src="../../Content/Img/bg_index_title.gif" width="8" height="8" />&nbsp;
+                                    Discrepancy Details
+                                            :
+                                            <span id="ContentPlaceHolder1_rptBLNo_lblDiscrepancy_0">Label</span>
+                                        </div>
+                                        <div id="ContentPlaceHolder1_rptBLNo_DivRiskDetails_0" style="margin-left: 115px; padding-top: 10px" align="left">
+                                            <img src="../../Content/Img/bg_index_title.gif" width="8" height="8" />&nbsp;
+                                    Risk Details
+                                            :
+                                            <span id="ContentPlaceHolder1_rptBLNo_lblRiskDetails_0">Label</span>
+                                        </div>
+                                        <div style="float: left; width: 115px; padding-top: 10px" align="left">
+                                            ATD Registration
+                                            :
+                                        </div>
+                                        <div align="left" style="padding-top: 10px">
+                                            <span id="ContentPlaceHolder1_rptBLNo_lblATD_0">Label</span>
+                                        </div>
+                                        <div style="padding-top: 10px">
+                                            <div class="divTitle">
+                                                <div style="color: White;" align="left">
+                                                    Information of Entering Vessel
+                                                </div>
+                                            </div>
+                                            <div class="field_odd">
+                                                <div style="width: 50%; float: left;" align="left">
+                                                    Carrier Code Registered in NACCS
+                                                </div>
+                                                <div style="width: 50%;" align="left">
+                                                    <span id="ContentPlaceHolder1_rptBLNo_lblCarrier_0">Label</span>
+                                                </div>
+                                            </div>
+                                            <div class="field_even">
+                                                <div style="width: 50%; float: left;" align="left">
+                                                    Laden Vessel Name
+                                                </div>
+                                                <div style="width: 50%;" align="left">
+                                                    <span id="ContentPlaceHolder1_rptBLNo_lblLaden_0">Label</span>
+                                                </div>
+                                            </div>
+                                            <div class="field_odd">
+                                                <div style="width: 50%; float: left;" align="left">
+                                                    Vessel Code (Call Sign)
+                                                </div>
+                                                <div style="width: 50%;" align="left">
+                                                    <span id="ContentPlaceHolder1_rptBLNo_lblVesselCode_0">Label</span>
+                                                </div>
+                                            </div>
+                                            <div class="field_even">
+                                                <div style="width: 50%; float: left;" align="left">
+                                                    Nationality Code of Vessel
+                                                </div>
+                                                <div style="width: 50%;" align="left">
+                                                    <span id="ContentPlaceHolder1_rptBLNo_lblNationality_0">Label</span>
+                                                </div>
+                                            </div>
+                                            <div class="field_odd">
+                                                <div style="width: 50%; float: left;" align="left">
+                                                    Voyage Number
+                                                </div>
+                                                <div style="width: 50%;" align="left">
+                                                    <span id="ContentPlaceHolder1_rptBLNo_lblVoyage_0">Label</span>
+                                                </div>
+                                            </div>
+                                            <div class="field_even">
+                                                <div style="width: 50%; float: left;" align="left">
+                                                    Port of Loading Code
+                                                </div>
+                                                <div style="width: 50%;" align="left">
+                                                    <span id="ContentPlaceHolder1_rptBLNo_lblPort_0">Label</span>
+                                                </div>
+                                            </div>
+                                            <div class="field_odd">
+                                                <div style="width: 50%; float: left;" align="left">
+                                                    Name of Port of Loading
+                                                </div>
+                                                <div style="width: 50%;" align="left">
+                                                    <span id="ContentPlaceHolder1_rptBLNo_lblName_0">Label</span>
+                                                </div>
+                                            </div>
+                                            <div id="ContentPlaceHolder1_rptBLNo_Suffix_0" class="field_even">
+                                                <div style="width: 50%; float: left;" align="left">
+                                                    Port of Loading Suffix
+                                                </div>
+                                                <div style="width: 50%;" align="left">
+                                                    <span id="ContentPlaceHolder1_rptBLNo_lblSuffix_0">Label</span>
+                                                </div>
+                                            </div>
+                                            <div class="field_odd">
+                                                <div style="width: 50%; float: left;" align="left">
+                                                    Estimated Time of Departure
+                                                </div>
+                                                <div style="width: 50%;" align="left">
+                                                    <span id="ContentPlaceHolder1_rptBLNo_lblEstimated_0">Label</span>
+                                                </div>
+                                            </div>
+                                            <div id="ContentPlaceHolder1_rptBLNo_Actual_0" class="field_even">
+                                                <div style="width: 50%; float: left;" align="left">
+                                                    Actual Time of Departure
+                                                </div>
+                                                <div style="width: 50%;" align="left">
+                                                    <span id="ContentPlaceHolder1_rptBLNo_lblActual_0">Label</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="field_even">
+                                                <div style="width: 50%; float: left;" align="left">
+                                                    Estimated Time of Arrival at JP 1<sup>st</sup> Port
+                                                </div>
+                                                <div style="width: 50%;" align="left">
+                                                    <span id="ContentPlaceHolder1_rptBLNo_lblJPETA_0">Label</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="ContentPlaceHolder1_rptBLNo_Japan2_0" class="eser_vewrap_wrap2_rwd" style="padding-top: 20px; display: none">
+                                    <div class="div_sec" align="center" style="padding-bottom: 20px;">
+                                        <div align="left" style="margin-top: 10px;">
+                                            <h4>
+                                                Japan AFR Status (filed by Carrier)
+                                            </h4>
+                                        </div>
+                                        <div style="float: left; width: 115px; padding-top: 20px" align="left">
+                                            AFR Registration
+                                            :
+                                        </div>
+                                        <div align="left" style="padding-top: 20px">
+                                            <span id="ContentPlaceHolder1_rptBLNo_lblAMR2_0">Not yet filed</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!--India info-->
+                                <div id="ContentPlaceHolder1_rptBLNo_India_0" class="eser_vewrap_wrap2_rwd" style="padding-top:20px;display:none;">
+                                    <div class="div_sec" align="center" style="padding-bottom: 20px;">
+                                        <div align="left" style="margin-top: 10px;">
+                                            <h4>
+                                                INDIA Custom Clearance
+                                            </h4>
+                                        </div>
+                                        <div style="padding-top: 10px">
+                                            <div class="divTitle">
+                                                <div style="color: White;" align="left">
+                                                    Import IGM Information
+                                                </div>
+                                            </div>
+                                            <div class="field_odd">
+                                                <div style="width: 40%; float: left;" align="left">
+                                                    IGM No
+
+                                                </div>
+                                                <div style="width: 60%;" align="left">
+                                                    <span id="ContentPlaceHolder1_rptBLNo_lblIGMNO_0">Label</span>
+                                                </div>
+                                            </div>
+                                            <div class="field_even">
+                                                <div style="width: 40%; float: left;" align="left">
+                                                    IGM Date
+
+                                                </div>
+                                                <div style="width: 60%;" align="left">
+                                                    <span id="ContentPlaceHolder1_rptBLNo_lblIGMDATE_0">Label</span>
+                                                </div>
+                                            </div>
+                                            <div class="field_odd">
+                                                <div style="width: 40%; float: left;" align="left">
+                                                    Item No
+
+                                                </div>
+                                                <div style="width: 60%;" align="left">
+                                                    <span id="ContentPlaceHolder1_rptBLNo_lblLINENO_0">Label</span>
+                                                </div>
+                                            </div>
+                                            <div class="field_even">
+                                                <div style="width: 40%; float: left;" align="left">
+                                                    Nominated Site/CFS
+
+                                                </div>
+                                                <div style="width: 60%;" align="left">
+                                                    <span id="ContentPlaceHolder1_rptBLNo_lblCFS_NAME_0">Label</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!--24 Hour-->
+                                <div id="ContentPlaceHolder1_rptBLNo_Hour_0" class="eser_vewrap_wrap2_rwd" style="padding-top:20px;display:none;">
+                                    <div class="div_sec" align="center" style="padding-bottom: 20px;">
+                                        <div align="left">
+                                            <h4>
+                                                24 Hour Advance Manifest</h4>
+                                        </div>
+                                        <div align="left">
+                                            <!--ACE-->
+                                            ACE Status (filed by carrier)
+                                            :
+                                            <span id="ContentPlaceHolder1_rptBLNo_lblAceStatus_0" class=" bluefont2">Label</span>
+                                            <br />
+                                            <!--ACI-->
+                                            ACI Status (filed by carrier)
+                                            :
+                                            <span id="ContentPlaceHolder1_rptBLNo_lblAciStatus_0" class=" bluefont2">Label</span>
+                                            <br />
+                                            <!--ACI code-->
+                                            ACI Sublocation code
+                                            :
+                                            <span id="ContentPlaceHolder1_rptBLNo_lblAciCode_0" class=" bluefont2">Label</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!--CBP-->
+                                <div id="ContentPlaceHolder1_rptBLNo_Cbp_0" class="eser_vewrap_wrap2_rwd" style="padding-top:20px;display:none;">
+                                    <div class="div_sec" align="center" style="padding-bottom: 20px;">
+                                        <div align="left">
+                                            <h4>
+                                                CBP Importer Security Filing(ISF)</h4>
+                                        </div>
+                                        <div align="left">
+                                            ISF Status (filed by importer/broker)
+                                            :
+                                            <span id="ContentPlaceHolder1_rptBLNo_lblIsfStatus_0" class=" bluefont2">Label</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="ContentPlaceHolder1_rptBLNo_ReleaseStatus_0" class="eser_vewrap_wrap2_rwd" style="padding-top:20px;display:none;">
+                                    <div class="div_sec" align="center" style="padding-bottom: 20px;">
+                                        <div align="left">
+                                            <h4>
+                                                Release Status</h4>
+                                        </div>
+                                        <div id="ContentPlaceHolder1_rptBLNo_CarrierStatus_0">
+                                            <div style="width: 110px; float: left;" align="left">
+                                                Carrier Status
+                                                :
+                                            </div>
+                                            <div align="left" class=" bluefont2">
+                                                <span id="ContentPlaceHolder1_rptBLNo_lblCarrierStatus_0">Label</span>
+                                            </div>
+                                        </div>
+                                        <div id="ContentPlaceHolder1_rptBLNo_CustomsStatus_0" style="margin-top: 10px;">
+                                            <div style="float: left; width: 110px;" align="left">
+                                                Customs Status
+                                                :
+                                            </div>
+                                            <div align="left">
+                                                <span id="ContentPlaceHolder1_rptBLNo_lblCustomsStatus_0" class="bluefont2">Label</span>
+                                                <span style="background-color: #FFFFCC;" class="bluefont2" id="Span1" title="View Customs status details.">
+                                                    <a onclick="return DisplayDiv(this);" id="ContentPlaceHolder1_rptBLNo_lbtCViewDivgvCustomsStatus_0" href="javascript:__doPostBack(&#39;ctl00$ContentPlaceHolder1$rptBLNo$ctl00$lbtCViewDivgvCustomsStatus&#39;,&#39;&#39;)">» View details</a></span>
+                                            </div>
+                                        </div>
+                                        <br />
+                                        <div id="ContentPlaceHolder1_rptBLNo_DivgvCustomsStatus_0" style="display: none;">
+                                            <br />
+                                            <div>
+
+	</div>
+                                            <div id="DivHBLNO" style="display: none;">
+                                                <span id="ContentPlaceHolder1_rptBLNo_lblHBLNO_0"></span>
+                                            </div>
+                                        </div>
+                                        <div id="ContentPlaceHolder1_rptBLNo_LastFreeDate_0" style="margin-top: 10px;">
+                                            <div align="left" style="width: 150px; float: left;">
+                                                Last Free Date
+                                                :
+                                            </div>
+                                            <div align="left">
+                                                <span id="ContentPlaceHolder1_rptBLNo_lblLastFreeDate_0" class="bluefont2">Label</span><span style="background-color: #FFFFCC;" class="bluefont2" id="Span2" title="View last free date details."><a onclick="return DisplayDivLast(this);" id="ContentPlaceHolder1_rptBLNo_lbtCViewDivgvLastFreeDate_0" href="javascript:__doPostBack(&#39;ctl00$ContentPlaceHolder1$rptBLNo$ctl00$lbtCViewDivgvLastFreeDate&#39;,&#39;&#39;)">» View details</a></span>
+                                            </div>
+                                        </div>
+                                        <div id="ContentPlaceHolder1_rptBLNo_DivgvLastFreeDate_0" style="display: none;">
+                                            <br />
+                                            <div>
+
+	</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="eser_vewrap_wrap2_rwd" style="padding-top: 20px; padding-bottom: 30px;">
+                                    <div id="ContentPlaceHolder1_rptBLNo_div_sec_0" class="div_sec" align="center" style="padding-bottom: 20px;">
+                                        <div align="left">
+                                            <h4>
+                                                Container(s) with Latest Event
+                                            </h4>
+                                        </div>
+
+                                        <!--remarks by Green 2022/2/10-->
+                                        <a id="ContentPlaceHolder1_rptBLNo_lbt_ShowDCSA_0" class="Button_DCSA" href="javascript:__doPostBack(&#39;ctl00$ContentPlaceHolder1$rptBLNo$ctl00$lbt_ShowDCSA&#39;,&#39;&#39;)" style="margin-left: 700px; margin-top: 20px; background-color: #FFFFFF; color: #0577B3; border: none;">[Events compliant with DCSA standard]</a>
+                                        <a id="ContentPlaceHolder1_rptBLNo_lbt_ShowNonDCSA_0" class="Button_DCSA" href="javascript:__doPostBack(&#39;ctl00$ContentPlaceHolder1$rptBLNo$ctl00$lbt_ShowNonDCSA&#39;,&#39;&#39;)" style="margin-left: 850px; margin-top: 20px; background-color: #FFFFFF; color: #0577B3; border: none; display: none;">[Switch back]</a>
+
+                                        <div id="divLatestEvent" style="padding-top: 20px;">
+                                            <div>
+		<table class="responsiveTable2" cellspacing="0" cellpadding="0" rules="all" border="0" border="1" id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0" style="border-collapse:collapse;width: 100%; border-collapse: collapse;">
+			<thead>
+				<tr class="field_name" align="left" style="font-weight:normal;">
+					<td>Container No.</td><td>Size</td><td>Type</td><td>Seal No.</td><td>MoveType</td><td>Date/Time</td><td>Latest Event</td><td>Place</td><td>VGM</td>
+				</tr>
+			</thead><tbody>
+				<tr class="field_odd" align="left">
+					<td>
+                                                            <a href="ctconnect.aspx?var=6kXS94MAUKku1eUXw6LbZEutRU6z%2b4lPhaStBOod9zUQmJ%2bP3qmLH%2fDDxTGM%2f%2bsE%2f78q1qU6BoFx425UlkDj%2bNtKivqMSG7%2f5%2bn1B3KxLjyP6AERrRqpyB9mfEF4d2mTp4RKozIF6bpCJmHTIARgiKR011Wl03iXTPK7EGt%2bVx8%3d">TGHU5296335</a>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblSize_0">40</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblType_0">DC-Dry cargo container</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblSealNo_0">YMAK803772</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblMoveType_0">FCL/FCL</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblDate_0">2022/03/10 14:00</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblLatestEvent_0">Empty Returned</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblPlace_0">LAEM CHABANG<BR />(TIPS CD)</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblVGM_0">29560 KGS</span>
+                                                        </td>
+				</tr><tr class="field_even" align="left">
+					<td>
+                                                            <a href="ctconnect.aspx?var=6kXS94MAUKku1eUXw6LbZA8W19w55bM9J3EwU5raXyTFR8VF4s3AVYXhRHSnku4fYuyQ9oSpydX2J68L2dCLA%2fOTaED6TZsWWIIWLUSxQG0drQfW26n19iehUEueKJpPa%2feN5C0GIQlc%2b%2bFoSgGQOj%2fD71DD3GvwIIEEDHp0zBk%3d">YMLU5151195</a>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblSize_1">40</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblType_1">DC-Dry cargo container</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblSealNo_1">YMAK804089</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblMoveType_1">FCL/FCL</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblDate_1">2022/03/10 17:56</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblLatestEvent_1">Empty Returned</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblPlace_1">LAEM CHABANG<BR />(TIPS CD)</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblVGM_1">29950 KGS</span>
+                                                        </td>
+				</tr><tr class="field_odd" align="left">
+					<td>
+                                                            <a href="ctconnect.aspx?var=6kXS94MAUKku1eUXw6LbZA8W19w55bM9J3EwU5raXySENJWU9KfbPrXKb9RilsOP84MRS1hZUQQpYnnOQq%2fzh2RQB3cnipDqJcuVewUjTV6BxCs8sCl9OTkpnYNA0cfbHkJluy%2fIHod5tpqLT%2fZsCpXiq%2blxPZx6OIY8he2o6z0%3d">YMLU5179778</a>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblSize_2">40</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblType_2">DC-Dry cargo container</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblSealNo_2">YMAK803909</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblMoveType_2">FCL/FCL</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblDate_2">2022/03/10 16:22</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblLatestEvent_2">Empty Returned</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblPlace_2">LAEM CHABANG<BR />(TIPS CD)</span>
+                                                        </td><td>
+                                                            <span id="ContentPlaceHolder1_rptBLNo_gvLatestEvent_0_lblVGM_2">29910 KGS</span>
+                                                        </td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+                                        </div>
+
+                                        <!--DCSA version-->
+                                        <!--remarks by Green 2022/2/10-->
+
+                                        <div id="divLatestEvent_DCSA" style="padding-top: 20px;">
+                                            <div>
+
+	</div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="ContentPlaceHolder1_rptBLNo_divNoDataFound_0" style="display: none; padding-top: 20px;">
+                                Dear Sir/Madam,
+                                <div style="padding-top: 20px; padding-left: 20px;">
+                                    <p>
+                                        The data of the BL No. is not available yet, please use Booking No. or Container No. to trace again.<br />
+                                        If there is any question, please mail to us
+
+                                        <a id="ContentPlaceHolder1_rptBLNo_Mail_0" style="color: Black; text-decoration: underline;" href="javascript:__doPostBack(&#39;ctl00$ContentPlaceHolder1$rptBLNo$ctl00$Mail&#39;,&#39;&#39;)">cs@yangming.com</a><br />
+                                        for further checking.<br />
+                                        Thank you !
+
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+
+</div>
+    </div>
+    <div id="ContentPlaceHolder1_divNoDataFound2" class="col-xs-12 col-sm-12 col-md-12 col-lg-12" style="padding-top: 20px; display: none; padding-bottom: 40px;">
+        <div style="padding-bottom: 40px; font-size: 18px;">
+            B/L No.
+            :
+        </div>
+        Dear Sir/Madam,
+        <div style="padding-left: 20px;">
+            Sorry, we can't identify your input.<br />
+            It's probably caused by typing error.<br />
+            Please input Search No. or at least one Targeted No.<br />
+            Any question, please mail to us :
+            <a href="mailto:cs@yangming.com" style="color: Black;"><b>cs@yangming.com</b></a><br />
+            Thank you !
+        </div>
+    </div>
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 div_sec" style="padding-top: 30px;">
+        <input type="submit" name="ctl00$ContentPlaceHolder1$btnBack" value="Back" id="ContentPlaceHolder1_btnBack" class="form_btn_80px" />
+    </div>
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12" style="padding-top: 30px; padding-bottom: 10px;">
+        <div class="div_sec">
+            <font color="red">DISCLAIMER: This tracking result is for reference only. All information is subject to change without prior notice.</font><br/>For more details, please contact our&nbsp;<a
+                href="../../office_network/office_agent/agent_overview.aspx" target="_blank" style="text-decoration: underline">local office</a>.
+            <br />
+            <br />
+        </div>
+    </div>
+    <input type="hidden" name="ctl00$ContentPlaceHolder1$hidTblOrigHeight" id="ContentPlaceHolder1_hidTblOrigHeight" />
+    <input type="hidden" name="ctl00$ContentPlaceHolder1$hidTblOrigID" id="ContentPlaceHolder1_hidTblOrigID" />
+    <input type="hidden" name="ctl00$ContentPlaceHolder1$hidRefNo" id="ContentPlaceHolder1_hidRefNo" value="I209431722," />
+    <input type="hidden" name="ctl00$ContentPlaceHolder1$hidQType" id="ContentPlaceHolder1_hidQType" value="BL" />
+
+                    <!--Main-->
+                </div>
+
+    <div id="breadcrumb_rwd" class="row hidden-xs">
+        <div class="hidden-xs col-sm-12 col-md-12 col-lg-12">
+            <span id="ContentPlaceHolder3_DIRECT1">Home</span>
+            <span id="ContentPlaceHolder3_DIRECT2">e-Service</span>
+            <span id="ContentPlaceHolder3_DIRECT3">Track & Trace</span>
+            <span id="ContentPlaceHolder3_DIRECT4">Cargo Tracking</span>
+        </div>
+    </div>
+    <div id="footer">
+        <br />
+        <span class="copyright">
+            Copyright © YANG MING. All Rights Reserved. <span class="terms"><a href="/TermsOfUse.aspx">
+                Terms of use</a></span>
+            <span class="terms"><a href="/PrivacyAndSecurity.aspx">
+                Privacy & Security</a></span>
+        </span>
+        <br />
+    </div>
+
+                <!--footer-->
+            </div>
+        </div>
+    </form>
+</body>
+</html>

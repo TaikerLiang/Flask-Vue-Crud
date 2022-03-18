@@ -2,31 +2,35 @@ import dataclasses
 import re
 from enum import Enum
 from queue import Queue
-from typing import Union, Tuple
+from typing import Tuple, Union
 
-from scrapy import Selector, FormRequest, Request
+from scrapy import FormRequest, Request, Selector
 
 from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
-from crawler.core_carrier.items import (
-    BaseCarrierItem,
-    MblItem,
-    LocationItem,
-    VesselItem,
-    ContainerItem,
-    ContainerStatusItem,
-    ExportErrorData,
-    DebugItem,
-)
 from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    CarrierInvalidMblNoError,
     BaseCarrierError,
+    CarrierInvalidMblNoError,
+    CarrierResponseFormatError,
     SuspiciousOperationError,
 )
-from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from, BaseMatchRule
+from crawler.core_carrier.items import (
+    BaseCarrierItem,
+    ContainerItem,
+    ContainerStatusItem,
+    DebugItem,
+    ExportErrorData,
+    LocationItem,
+    MblItem,
+    VesselItem,
+)
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
+from crawler.extractors.selector_finder import (
+    BaseMatchRule,
+    CssQueryTextStartswithMatchRule,
+    find_selector_from,
+)
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 
 BASE_URL = "https://www.hamburgsud-line.com/linerportal/pages/hsdg/tnt.xhtml"
@@ -594,8 +598,8 @@ class VesselVoyageTdExtractor(BaseTableCellExtractor):
         voyage_cell = a_list[1]
 
         return {
-            "vessel": vessel_cell.css("::text").get().strip(),
-            "voyage": voyage_cell.css("::text").get().strip(),
+            "vessel": vessel_cell.css("::text").get("").strip(),
+            "voyage": voyage_cell.css("::text").get("").strip(),
             "voyage_css_id": voyage_cell.css("::attr(id)").get(),
         }
 

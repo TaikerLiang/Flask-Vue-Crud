@@ -898,11 +898,11 @@ class WhlcContentGetter(PyppeteerContentGetter):
 
     async def go_detail_page(self, idx: int, info_pack: Dict) -> str:
         await self.page.waitForSelector(
-            f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u",
+            f"{row_selector} > td:nth-child(1)",
             options={"timeout": 60000},
         )
 
-        click_selector = f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(1) > u"
+        click_selector = f"{row_selector} > td:nth-child(1) > u"
         wait_for_selector = "table.tbl-list"
         await self.click_button_and_wait_for(
             click_selector=click_selector, wait_for_selector=wait_for_selector, info_pack=info_pack
