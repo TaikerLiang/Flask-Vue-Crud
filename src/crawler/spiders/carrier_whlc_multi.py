@@ -43,7 +43,7 @@ from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
-WHLC_BASE_URL = "https://www.wanhai.com/views/cargoTrack/CargoTrack.xhtml"
+WHLC_BASE_URL = "https://www.wanhai.com/views/Main.xhtml"
 COOKIES_RETRY_LIMIT = 3
 
 
@@ -157,116 +157,122 @@ class MblRoutingRule(BaseRoutingRule):
         task_ids = response.meta["task_ids"]
         mbl_nos = response.meta["mbl_nos"]
         driver = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
-        cookies = driver.get_cookies_dict_from_main_page()
-        try:
-            driver.multi_search(search_nos=mbl_nos, search_type=self._search_type)
-        except ReadTimeoutError:
-            raise LoadWebsiteTimeOutError(url=WHLC_BASE_URL)
-
-        try:
-            driver.check_alert()
-            for mbl_no, task_id in zip(mbl_nos, task_ids):
-                yield ExportErrorData(
-                    task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found"
-                )
-            return
-        except (NoAlertPresentException, UnexpectedAlertPresentException):
-            pass
-
-        response_selector = Selector(text=driver.get_page_source())
-        container_list = self.extract_container_info(response_selector)
-        mbl_no_set = self.get_mbl_no_set_from(container_list=container_list)
 
         for mbl_no, task_id in zip(mbl_nos, task_ids):
-            if mbl_no in mbl_no_set:
-                yield MblItem(task_id=task_id, mbl_no=mbl_no)
-            else:
+            try:
+                driver.get_cookies_dict_from_main_page()
+                driver.search(search_no=mbl_no, search_type=self._search_type)
+            except ReadTimeoutError:
+                raise LoadWebsiteTimeOutError(url=WHLC_BASE_URL)
+
+            try:
+                driver.check_alert()
+                driver.close_alert()
                 yield ExportErrorData(
                     task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found"
                 )
                 continue
-
-        for idx in range(len(container_list)):
-            container_no = container_list[idx]["container_no"]
-            mbl_no = container_list[idx]["mbl_no"]
-            index = mbl_nos.index(mbl_no)
-            task_id = task_ids[index]
-
-            yield ContainerItem(
-                task_id=task_id,
-                container_key=container_no,
-                container_no=container_no,
-            )
-
-            # detail page
-            try:
-                driver.go_detail_page(idx + 2)
-                detail_selector = Selector(text=driver.get_page_source())
-                date_information = self.extract_date_information(detail_selector)
-
-                yield VesselItem(
-                    task_id=task_id,
-                    vessel_key=f"{date_information['pol_vessel']} / {date_information['pol_voyage']}",
-                    vessel=date_information["pol_vessel"],
-                    voyage=date_information["pol_voyage"],
-                    pol=LocationItem(un_lo_code=date_information["pol_un_lo_code"]),
-                    etd=date_information["pol_etd"],
-                )
-
-                yield VesselItem(
-                    task_id=task_id,
-                    vessel_key=f"{date_information['pod_vessel']} / {date_information['pod_voyage']}",
-                    vessel=date_information["pod_vessel"],
-                    voyage=date_information["pod_voyage"],
-                    pod=LocationItem(un_lo_code=date_information["pod_un_lo_code"]),
-                    eta=date_information["pod_eta"],
-                )
-
-                driver.close()
-                driver.switch_to_last()
-            except NoSuchElementException:
+            except UnexpectedAlertPresentException:
+                driver.close_alert()
+            except NoAlertPresentException:
                 pass
-            except TimeoutException:
-                yield ExportErrorData(
+
+            response_selector = Selector(text=driver.get_page_source())
+            container_list = self.extract_container_info(response_selector)
+            # mbl_no_set = self.get_mbl_no_set_from(container_list=container_list)
+
+            yield MblItem(task_id=task_id, mbl_no=mbl_no)
+
+            # for mbl_no, task_id in zip(mbl_nos, task_ids):
+            #     if mbl_no in mbl_no_set:
+            #         yield MblItem(task_id=task_id, mbl_no=mbl_no)
+            #     else:
+            #         yield ExportErrorData(
+            #             task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found"
+            #         )
+            #         continue
+
+            for idx in range(len(container_list)):
+                container_no = container_list[idx]["container_no"]
+                mbl_no = container_list[idx]["mbl_no"]
+                index = mbl_nos.index(mbl_no)
+                task_id = task_ids[index]
+
+                yield ContainerItem(
                     task_id=task_id,
-                    mbl_no=mbl_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail="Load detail page timeout",
+                    container_key=container_no,
+                    container_no=container_no,
                 )
-                driver.close()
-                driver.switch_to_last()
-                continue
 
-            # history page
-            try:
-                driver.go_history_page(idx + 2)
-                history_selector = Selector(text=driver.get_page_source())
-                container_status_list = self.extract_container_status(history_selector)
+                # detail page
+                try:
+                    driver.go_detail_page(idx + 2)
+                    detail_selector = Selector(text=driver.get_page_source())
+                    date_information = self.extract_date_information(detail_selector)
 
-                for container_status in container_status_list:
-                    yield ContainerStatusItem(
+                    yield VesselItem(
                         task_id=task_id,
-                        container_key=container_no,
-                        local_date_time=container_status["local_date_time"],
-                        description=container_status["description"],
-                        location=LocationItem(name=container_status["location_name"]),
+                        vessel_key=f"{date_information['pol_vessel']} / {date_information['pol_voyage']}",
+                        vessel=date_information["pol_vessel"],
+                        voyage=date_information["pol_voyage"],
+                        pol=LocationItem(un_lo_code=date_information["pol_un_lo_code"]),
+                        etd=date_information["pol_etd"],
                     )
-            except NoSuchElementException:
-                pass
-            except TimeoutException:
-                yield ExportErrorData(
-                    task_id=task_id,
-                    mbl_no=mbl_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail="Load status page timeout",
-                )
+
+                    yield VesselItem(
+                        task_id=task_id,
+                        vessel_key=f"{date_information['pod_vessel']} / {date_information['pod_voyage']}",
+                        vessel=date_information["pod_vessel"],
+                        voyage=date_information["pod_voyage"],
+                        pod=LocationItem(un_lo_code=date_information["pod_un_lo_code"]),
+                        eta=date_information["pod_eta"],
+                    )
+
+                    driver.close()
+                    driver.switch_to_last()
+                except NoSuchElementException:
+                    pass
+                except TimeoutException:
+                    yield ExportErrorData(
+                        task_id=task_id,
+                        mbl_no=mbl_no,
+                        status=CARRIER_RESULT_STATUS_ERROR,
+                        detail="Load detail page timeout",
+                    )
+                    driver.close()
+                    driver.switch_to_last()
+                    continue
+
+                # history page
+                try:
+                    driver.go_history_page(idx + 2)
+                    history_selector = Selector(text=driver.get_page_source())
+                    container_status_list = self.extract_container_status(history_selector)
+
+                    for container_status in container_status_list:
+                        yield ContainerStatusItem(
+                            task_id=task_id,
+                            container_key=container_no,
+                            local_date_time=container_status["local_date_time"],
+                            description=container_status["description"],
+                            location=LocationItem(name=container_status["location_name"]),
+                        )
+                except NoSuchElementException:
+                    pass
+                except TimeoutException:
+                    yield ExportErrorData(
+                        task_id=task_id,
+                        mbl_no=mbl_no,
+                        status=CARRIER_RESULT_STATUS_ERROR,
+                        detail="Load status page timeout",
+                    )
+                    driver.close()
+                    driver.switch_to_last()
+                    continue
+
                 driver.close()
                 driver.switch_to_last()
-                continue
-
             driver.close()
-            driver.switch_to_last()
-        driver.close()
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
@@ -725,11 +731,13 @@ class ContentGetter(FirefoxContentGetter):
     def search(self, search_no, search_type):
         select_text = self._type_select_text_map[search_type]
 
+        WebDriverWait(self._driver, 30).until(ec.invisibility_of_element_located((By.CSS_SELECTOR, "div#loader")))
         self._driver.find_element_by_xpath(f"//*[@id='cargoType']/option[text()='{select_text}']").click()
         time.sleep(1)
         input_ele = self._driver.find_element_by_xpath('//*[@id="q_ref_no1"]')
         input_ele.send_keys(search_no)
         time.sleep(3)
+        WebDriverWait(self._driver, 30).until(ec.element_to_be_clickable((By.XPATH, "//*[@id='quick_ctnr_query']")))
         self._driver.find_element_by_xpath('//*[@id="quick_ctnr_query"]').click()
         time.sleep(10)
         self._driver.switch_to.window(self._driver.window_handles[-1])
@@ -749,7 +757,13 @@ class ContentGetter(FirefoxContentGetter):
         time.sleep(10)
         self._driver.switch_to.window(self._driver.window_handles[-1])
 
+    def close_alert(self):
+        self._driver.switch_to.alert.accept()
+
     def go_detail_page(self, idx: int):
+        WebDriverWait(self._driver, 30).until(
+            ec.element_to_be_clickable((By.XPATH, f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u'))
+        )
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u').click()
         time.sleep(2)
         self._driver.switch_to.window(self._driver.window_handles[-1])

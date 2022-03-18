@@ -5,6 +5,9 @@ from typing import List, Dict
 
 import scrapy
 from scrapy import Selector
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as ec
+from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException, UnexpectedAlertPresentException
 
 from crawler.core.proxy import HydraproxyProxyManager
@@ -157,7 +160,7 @@ class MblRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         mbl_no = response.meta["mbl_no"]
-        driver = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
+        driver = ContentGetter(proxy_manager=self._proxy_manager, is_headless=False)
         cookies = driver.get_cookies_dict_from_main_page()
         try:
             driver.search_mbl(mbl_no)
@@ -555,6 +558,9 @@ class ContentGetter(FirefoxContentGetter):
         return view_state
 
     def search_mbl(self, mbl_no):
+        WebDriverWait(self._driver, 30).until(
+            ec.element_to_be_clickable((By.XPATH, "//*[@id='cargoType']/option[text()='BL no.']"))
+        )
         self._driver.find_element_by_xpath("//*[@id='cargoType']/option[text()='BL no.']").click()
         time.sleep(2)
         input_ele = self._driver.find_element_by_xpath('//*[@id="q_ref_no1"]')
@@ -577,6 +583,9 @@ class ContentGetter(FirefoxContentGetter):
         self._driver.switch_to.window(self._driver.window_handles[-1])
 
     def go_detail_page(self, idx: int):
+        WebDriverWait(self._driver, 30).until(
+            ec.element_to_be_clickable((By.XPATH, f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u'))
+        )
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u').click()
         time.sleep(5)
         self._driver.switch_to.window(self._driver.window_handles[-1])
