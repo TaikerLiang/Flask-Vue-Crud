@@ -211,7 +211,7 @@ class CargoTrackingRoutingRule(BaseRoutingRule):
             yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
             return
 
-        response = self.get_response_selector(
+        response = self._get_response_selector(
             url=EGLV_INFO_URL, httptext=page_source, meta={"search_nos": search_nos, "task_ids": task_ids}
         )
 
@@ -223,8 +223,7 @@ class CargoTrackingRoutingRule(BaseRoutingRule):
         for result in rule.handle(response=response):
             yield result
 
-    @staticmethod
-    def get_response_selector(url, httptext, meta):
+    def _get_response_selector(self, url, httptext, meta):
         return TextResponse(
             url=url,
             body=httptext,
@@ -235,8 +234,7 @@ class CargoTrackingRoutingRule(BaseRoutingRule):
             ),
         )
 
-    @staticmethod
-    def _is_mbl_no_invalid(response: Selector):
+    def _is_mbl_no_invalid(self, response: Selector):
         return not bool(response.css('table[cellpadding="2"]'))
 
 
@@ -247,10 +245,10 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
-    def handle_container_status(self, container_no, search_nos: List, task_ids: List):
+    def _handle_container_status(self, container_no, search_nos: List, task_ids: List):
         httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.container_page(container_no))
         if httptext:
-            response = self.get_response_selector(
+            response = self._get_response_selector(
                 url=EGLV_INFO_URL,
                 httptext=httptext,
                 meta={"search_no": container_no, "task_id": task_ids[0], "search_type": SEARCH_TYPE_CONTAINER},
@@ -260,8 +258,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             for item in rule.handle(response):
                 yield item
 
-    @staticmethod
-    def get_response_selector(url, httptext, meta):
+    def _get_response_selector(self, url, httptext, meta):
         return TextResponse(
             url=url,
             body=httptext,
@@ -336,9 +333,9 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
         )
 
         try:
-            for item in self.handle_filing_status(search_nos=search_nos, task_ids=task_ids):
+            for item in self._handle_filing_status(search_nos=search_nos, task_ids=task_ids):
                 yield item
-            for item in self.handle_release_status(search_nos=search_nos, task_ids=task_ids):
+            for item in self._handle_release_status(search_nos=search_nos, task_ids=task_ids):
                 yield item
         except (TimeoutError, NetworkError, PageError) as e:
             yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
@@ -347,7 +344,7 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
         container_list = self._extract_container_info(response=response)
         for container in container_list:
             try:
-                for item in self.handle_container_status(
+                for item in self._handle_container_status(
                     container_no=container["container_no"], search_nos=search_nos, task_ids=task_ids
                 ):
                     yield item
@@ -357,8 +354,7 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
-    @staticmethod
-    def _extract_hidden_info(response: scrapy.Selector, info_pack: Dict) -> Dict:
+    def _extract_hidden_info(self, response: scrapy.Selector, info_pack: Dict) -> Dict:
         tables = response.css("table table")
 
         hidden_form_query = "form[name=frmCntrMove]"
@@ -375,8 +371,7 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
             "podctry": table_selector.css("input[name=podctry]::attr(value)").get(),
         }
 
-    @staticmethod
-    def _extract_basic_info(response: scrapy.Selector, info_pack: Dict) -> Dict:
+    def _extract_basic_info(self, response: scrapy.Selector, info_pack: Dict) -> Dict:
         tables = response.css("table table")
 
         rule = CssQueryTextStartswithMatchRule(css_query="td.f13tabb2::text", startswith="Basic Information")
@@ -434,16 +429,14 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
             "voyage": None,
         }
 
-    @staticmethod
-    def _get_vessel_voyage(vessel_voyage: str):
+    def _get_vessel_voyage(self, vessel_voyage: str):
         if vessel_voyage == "To be Advised":
             return "", ""
 
         vessel, voyage = vessel_voyage.rsplit(sep=" ", maxsplit=1)
         return vessel, voyage
 
-    @staticmethod
-    def _extract_container_info(response: scrapy.Selector) -> List:
+    def _extract_container_info(self, response: scrapy.Selector) -> List:
         tables = response.css("table table")
 
         rule = CssQueryTextStartswithMatchRule(
@@ -470,21 +463,19 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
 
         return return_list
 
-    @staticmethod
-    def _check_filing_status(response: scrapy.Selector):
-        tables = response.css("table")
+    # def _check_filing_status(self, response: scrapy.Selector):
+    #     tables = response.css("table")
 
-        rule = CssQueryTextStartswithMatchRule(css_query="td a::text", startswith="Customs Information")
-        return bool(find_selector_from(selectors=tables, rule=rule))
+    #     rule = CssQueryTextStartswithMatchRule(css_query="td a::text", startswith="Customs Information")
+    #     return bool(find_selector_from(selectors=tables, rule=rule))
 
-    @staticmethod
-    def _get_first_container_no(container_list: List):
-        return container_list[0]["container_no"]
+    # def _get_first_container_no(self, container_list: List):
+    #     return container_list[0]["container_no"]
 
-    def handle_filing_status(self, search_nos: List, task_ids: List):
+    def _handle_filing_status(self, search_nos: List, task_ids: List):
         httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.custom_info_page())
         if httptext:
-            response = self.get_response_selector(
+            response = self._get_response_selector(
                 url=EGLV_INFO_URL,
                 httptext=httptext,
                 meta={"search_no": search_nos[0], "task_id": task_ids[0], "search_type": SEARCH_TYPE_MBL},
@@ -494,10 +485,10 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
             for item in rule.handle(response):
                 yield item
 
-    def handle_release_status(self, search_nos: List, task_ids: List):
+    def _handle_release_status(self, search_nos: List, task_ids: List):
         httptext = asyncio.get_event_loop().run_until_complete(self.content_getter.release_status_page())
         if httptext:
-            response = self.get_response_selector(
+            response = self._get_response_selector(
                 url=EGLV_INFO_URL,
                 httptext=httptext,
                 meta={"task_ids": task_ids, "search_nos": search_nos, "search_type": SEARCH_TYPE_MBL},
@@ -619,8 +610,7 @@ class FilingStatusRoutingRule(BaseRoutingRule):
             us_filing_date=status["filing_date"],
         )
 
-    @staticmethod
-    def _extract_filing_status(response: scrapy.Selector) -> Dict:
+    def _extract_filing_status(self, response: scrapy.Selector) -> Dict:
         table_selector = response.css("table")
 
         if table_selector is None:
@@ -691,8 +681,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
             customs_release_date=release_status["customs_release_date"],
         )
 
-    @staticmethod
-    def _extract_release_status(response: scrapy.Selector) -> Dict:
+    def _extract_release_status(self, response: scrapy.Selector) -> Dict:
         table_selector = response.css("table")
 
         if not table_selector:
@@ -926,8 +915,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 location=LocationItem(name=container_status["location_name"]),
             )
 
-    @staticmethod
-    def _extract_container_status_list(response: scrapy.Selector) -> List[Dict]:
+    def _extract_container_status_list(self, response: scrapy.Selector) -> List[Dict]:
         container_status_list = []
 
         tables = response.css("table table")
@@ -994,20 +982,19 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
         for item in self._handle_main_info_page(response=response):
             yield item
 
-    @staticmethod
-    def _check_captcha(response) -> bool:
-        # wrong captcha -> back to search page
-        message_under_search_table = " ".join(
-            response.css('table table[cellpadding="1"] tr td.f12rown1::text').getall()
-        )
-        if isinstance(message_under_search_table, str):
-            message_under_search_table = message_under_search_table.strip()
-        back_to_search_page_message = "Shipments tracing by Booking NO. is available for specific countries/areas only."
+    # def _check_captcha(self, response) -> bool:
+    #     # wrong captcha -> back to search page
+    #     message_under_search_table = " ".join(
+    #         response.css('table table[cellpadding="1"] tr td.f12rown1::text').getall()
+    #     )
+    #     if isinstance(message_under_search_table, str):
+    #         message_under_search_table = message_under_search_table.strip()
+    #     back_to_search_page_message = "Shipments tracing by Booking NO. is available for specific countries/areas only."
 
-        if message_under_search_table == back_to_search_page_message:
-            return False
-        else:
-            return True
+    #     if message_under_search_table == back_to_search_page_message:
+    #         return False
+    #     else:
+    #         return True
 
     def _handle_main_info_page(self, response):
         task_ids = response.meta["task_ids"]
@@ -1052,7 +1039,7 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
             )
 
             try:
-                for item in self.handle_container_status(
+                for item in self._handle_container_status(
                     container_no=container_info["container_no"], search_nos=search_nos, task_ids=task_ids
                 ):
                     yield item
@@ -1081,8 +1068,7 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
             "voyage": voyage,
         }
 
-    @staticmethod
-    def _re_parse_vessel_voyage(vessel_voyage: str, info_pack: Dict):
+    def _re_parse_vessel_voyage(self, vessel_voyage: str, info_pack: Dict):
         """
         ex:
         EVER LINKING 0950-041E\n\n\t\t\t\t\xa0(長連輪)
@@ -1093,8 +1079,7 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
             raise FormatError(**info_pack, reason=f"Unexpected vessel_voyage `{vessel_voyage}`")
         return match.group("vessel"), match.group("voyage")
 
-    @staticmethod
-    def _extract_basic_info(response: scrapy.Selector) -> Dict:
+    def _extract_basic_info(self, response: scrapy.Selector) -> Dict:
         tables = response.css("table table")
         rule = FirstCellTextMatch(text="Basic Information")
         table = find_selector_from(selectors=tables, rule=rule)
@@ -1121,8 +1106,7 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
             "onboard_date": table_extractor.extract_cell(top="Estimated On Board Date", left="Port of Loading"),
         }
 
-    @staticmethod
-    def _extract_filing_info(response: scrapy.Selector) -> Dict:
+    def _extract_filing_info(self, response: scrapy.Selector) -> Dict:
         tables = response.css("table")
         rule = CssQueryTextStartswithMatchRule(css_query="td.f13tabb2::text", startswith="Advance Filing Status")
         table = find_selector_from(selectors=tables, rule=rule)
@@ -1141,23 +1125,21 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
             "filing_date": table_extractor.extract_cell(top="Date", left=0),
         }
 
-    @staticmethod
-    def _extract_hidden_form_info(response: scrapy.Selector) -> Dict:
-        tables = response.css("br + table")
-        rule = CssQueryTextStartswithMatchRule(
-            css_query="td.f12rowb4::text", startswith="Container Activity Information"
-        )
-        table = find_selector_from(selectors=tables, rule=rule)
+    # def _extract_hidden_form_info(self, response: scrapy.Selector) -> Dict:
+    #     tables = response.css("br + table")
+    #     rule = CssQueryTextStartswithMatchRule(
+    #         css_query="td.f12rowb4::text", startswith="Container Activity Information"
+    #     )
+    #     table = find_selector_from(selectors=tables, rule=rule)
 
-        return {
-            "bl_no": table.css("input[name='bl_no']::attr(value)").get(),
-            "onboard_date": table.css("input[name='onboard_date']::attr(value)").get(),
-            "pol": table.css("input[name='pol']::attr(value)").get(),
-            "TYPE": table.css("input[name='TYPE']::attr(value)").get(),
-        }
+    #     return {
+    #         "bl_no": table.css("input[name='bl_no']::attr(value)").get(),
+    #         "onboard_date": table.css("input[name='onboard_date']::attr(value)").get(),
+    #         "pol": table.css("input[name='pol']::attr(value)").get(),
+    #         "TYPE": table.css("input[name='TYPE']::attr(value)").get(),
+    #     }
 
-    @staticmethod
-    def _extract_container_infos(response: scrapy.Selector) -> List[Dict]:
+    def _extract_container_infos(self, response: scrapy.Selector) -> List[Dict]:
         container_infos = []
 
         tables = response.css("br + table")
@@ -1349,7 +1331,7 @@ class EglvContentGetter(PyppeteerContentGetter):
 
     async def search_and_return(self, search_no: str, search_type: str):
         btn_value = "s_bl" if search_type == SEARCH_TYPE_MBL else "s_bk"
-        self.page.on("dialog", lambda dialog: asyncio.ensure_future(self.close_dialog(dialog)))
+        self.page.on("dialog", lambda dialog: asyncio.ensure_future(self._close_dialog(dialog)))
 
         await self.page.goto(EGLV_INFO_URL)
         await self.page.waitForSelector(f"input[value={btn_value}]", {"timeout": 10000})
@@ -1369,36 +1351,6 @@ class EglvContentGetter(PyppeteerContentGetter):
         await self.scroll_down()
 
         return content, is_exist
-
-    async def _check_data_exist(self):
-        try:
-            await self.page.waitForSelector('table[cellpadding="2"]', {"timeout": 10000})
-            return True
-        except TimeoutError:
-            return False
-
-    async def handle_captcha(self):
-        captcha_analyzer = CaptchaAnalyzer()
-        element = await self.page.querySelector("div#captcha_div > img#captchaImg")
-        get_base64_func = """(img) => {
-                        var canvas = document.createElement("canvas");
-                        canvas.width = 150;
-                        canvas.height = 40;
-                        var ctx = canvas.getContext("2d");
-                        ctx.drawImage(img, 0, 0);
-                        var dataURL = canvas.toDataURL("image/png");
-                        return dataURL.replace(/^data:image/(png|jpg);base64,/, "");
-                    }
-                    """
-        captcha_base64 = await self.page.evaluate(get_base64_func, element)
-        verification_code = captcha_analyzer.analyze_captcha(captcha_base64=captcha_base64).decode("utf-8")
-        await self.page.type("div#captcha_div > input#captcha_input", verification_code)
-        await asyncio.sleep(2)
-
-    @staticmethod
-    async def close_dialog(dialog: Dialog):
-        await asyncio.sleep(2)
-        await dialog.dismiss()
 
     async def custom_info_page(self) -> str:
         try:
@@ -1438,3 +1390,32 @@ class EglvContentGetter(PyppeteerContentGetter):
             return content
         except PageError:
             return ""
+
+    async def _close_dialog(self, dialog: Dialog):
+        await asyncio.sleep(2)
+        await dialog.dismiss()
+
+    async def _check_data_exist(self):
+        try:
+            await self.page.waitForSelector('table[cellpadding="2"]', {"timeout": 10000})
+            return True
+        except TimeoutError:
+            return False
+
+    # async def _handle_captcha(self):
+    #     captcha_analyzer = CaptchaAnalyzer()
+    #     element = await self.page.querySelector("div#captcha_div > img#captchaImg")
+    #     get_base64_func = """(img) => {
+    #                     var canvas = document.createElement("canvas");
+    #                     canvas.width = 150;
+    #                     canvas.height = 40;
+    #                     var ctx = canvas.getContext("2d");
+    #                     ctx.drawImage(img, 0, 0);
+    #                     var dataURL = canvas.toDataURL("image/png");
+    #                     return dataURL.replace(/^data:image/(png|jpg);base64,/, "");
+    #                 }
+    #                 """
+    #     captcha_base64 = await self.page.evaluate(get_base64_func, element)
+    #     verification_code = captcha_analyzer.analyze_captcha(captcha_base64=captcha_base64).decode("utf-8")
+    #     await self.page.type("div#captcha_div > input#captcha_input", verification_code)
+    #     await asyncio.sleep(2)

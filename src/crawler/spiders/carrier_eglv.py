@@ -218,8 +218,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
                 reason=f"Captcha retry is more than {CAPTCHA_RETRY_LIMIT} times",
             )
 
-    @staticmethod
-    def _check_captcha(response) -> bool:
+    def _check_captcha(self, response) -> bool:
         # wrong captcha -> back to search page
         message_under_search_table = " ".join(
             response.css('table table[cellpadding="1"] tr td.f12rown1::text').getall()
@@ -285,8 +284,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
 
         yield ReleaseStatusRoutingRule.build_request_option(search_no=mbl_no)
 
-    @staticmethod
-    def _is_mbl_no_invalid(response):
+    def _is_mbl_no_invalid(self, response):
         script_text = response.css("script::text").get()
         if "B/L No. is not valid, please check again, thank you." in script_text:
             return True
@@ -303,8 +301,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
 
         return False
 
-    @staticmethod
-    def _extract_hidden_info(response: scrapy.Selector, info_pack: Dict) -> Dict:
+    def _extract_hidden_info(self, response: scrapy.Selector, info_pack: Dict) -> Dict:
         tables = response.css("table table")
 
         hidden_form_query = "form[name=frmCntrMove]"
@@ -324,8 +321,7 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
             "podctry": table_selector.css("input[name=podctry]::attr(value)").get(),
         }
 
-    @staticmethod
-    def _extract_basic_info(response: scrapy.Selector, info_pack: Dict) -> Dict:
+    def _extract_basic_info(self, response: scrapy.Selector, info_pack: Dict) -> Dict:
         tables = response.css("table table")
 
         rule = CssQueryTextStartswithMatchRule(css_query="td.f13tabb2::text", startswith="Basic Information")
@@ -386,16 +382,14 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
             "voyage": None,
         }
 
-    @staticmethod
-    def _get_vessel_voyage(vessel_voyage: str):
+    def _get_vessel_voyage(self, vessel_voyage: str):
         if vessel_voyage == "To be Advised":
             return "", ""
 
         vessel, voyage = vessel_voyage.rsplit(sep=" ", maxsplit=1)
         return vessel, voyage
 
-    @staticmethod
-    def _extract_container_info(response: scrapy.Selector) -> List:
+    def _extract_container_info(self, response: scrapy.Selector) -> List:
         tables = response.css("table table")
 
         rule = CssQueryTextStartswithMatchRule(
@@ -422,15 +416,13 @@ class BillMainInfoRoutingRule(BaseRoutingRule):
 
         return return_list
 
-    @staticmethod
-    def _check_filing_status(response: scrapy.Selector):
+    def _check_filing_status(self, response: scrapy.Selector):
         tables = response.css("table")
 
         rule = CssQueryTextStartswithMatchRule(css_query="td a::text", startswith="Customs Information")
         return bool(find_selector_from(selectors=tables, rule=rule))
 
-    @staticmethod
-    def _get_first_container_no(container_list: List):
+    def _get_first_container_no(self, container_list: List):
         return container_list[0]["container_no"]
 
 
@@ -536,8 +528,7 @@ class FilingStatusRoutingRule(BaseRoutingRule):
             us_filing_date=status["filing_date"],
         )
 
-    @staticmethod
-    def _extract_filing_status(response: scrapy.Selector) -> Dict:
+    def _extract_filing_status(self, response: scrapy.Selector) -> Dict:
         table_selector = response.css("table")
 
         if table_selector is None:
@@ -596,8 +587,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
             customs_release_date=release_status["customs_release_date"],
         )
 
-    @staticmethod
-    def _extract_release_status(response: scrapy.Selector) -> Dict:
+    def _extract_release_status(self, response: scrapy.Selector) -> Dict:
         table_selector = response.css("table")
 
         if not table_selector:
@@ -825,8 +815,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 location=LocationItem(name=container_status["location_name"]),
             )
 
-    @staticmethod
-    def _extract_container_status_list(response: scrapy.Selector) -> List[Dict]:
+    def _extract_container_status_list(self, response: scrapy.Selector) -> List[Dict]:
         container_status_list = []
 
         tables = response.css("table table")
@@ -919,8 +908,21 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
                 reason=f"aptcha retry is more than {CAPTCHA_RETRY_LIMIT} times",
             )
 
-    @staticmethod
-    def _is_booking_no_invalid(response):
+    def _check_captcha(self, response) -> bool:
+        # wrong captcha -> back to search page
+        message_under_search_table = " ".join(
+            response.css('table table[cellpadding="1"] tr td.f12rown1::text').getall()
+        )
+        if isinstance(message_under_search_table, str):
+            message_under_search_table = message_under_search_table.strip()
+        back_to_search_page_message = "Shipments tracing by Booking NO. is available for specific countries/areas only."
+
+        if message_under_search_table == back_to_search_page_message:
+            return False
+        else:
+            return True
+
+    def _is_booking_no_invalid(self, response):
         script_text = response.css("script::text").get()
         if "Booking No. is not valid, please check again, thank you." in script_text:
             return True
@@ -935,21 +937,6 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
             return True
 
         return False
-
-    @staticmethod
-    def _check_captcha(response) -> bool:
-        # wrong captcha -> back to search page
-        message_under_search_table = " ".join(
-            response.css('table table[cellpadding="1"] tr td.f12rown1::text').getall()
-        )
-        if isinstance(message_under_search_table, str):
-            message_under_search_table = message_under_search_table.strip()
-        back_to_search_page_message = "Shipments tracing by Booking NO. is available for specific countries/areas only."
-
-        if message_under_search_table == back_to_search_page_message:
-            return False
-        else:
-            return True
 
     def _handle_main_info_page(self, response, info_pack: Dict):
         booking_no_and_vessel_voyage = self._extract_booking_no_and_vessel_voyage(
@@ -1009,8 +996,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
             "voyage": voyage,
         }
 
-    @staticmethod
-    def _re_parse_vessel_voyage(vessel_voyage: str, info_pack: Dict):
+    def _re_parse_vessel_voyage(self, vessel_voyage: str, info_pack: Dict):
         """
         ex:
         EVER LINKING 0950-041E\n\n\t\t\t\t\xa0(長連輪)
@@ -1025,8 +1011,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
 
         return match.group("vessel"), match.group("voyage")
 
-    @staticmethod
-    def _extract_basic_info(response: scrapy.Selector) -> Dict:
+    def _extract_basic_info(self, response: scrapy.Selector) -> Dict:
         tables = response.css("table table")
         rule = FirstCellTextMatch(text="Basic Information")
         table = find_selector_from(selectors=tables, rule=rule)
@@ -1053,8 +1038,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
             "onboard_date": table_extractor.extract_cell(top="Estimated On Board Date", left="Port of Loading"),
         }
 
-    @staticmethod
-    def _extract_filing_info(response: scrapy.Selector) -> Dict:
+    def _extract_filing_info(self, response: scrapy.Selector) -> Dict:
         tables = response.css("table")
         rule = CssQueryTextStartswithMatchRule(css_query="td.f13tabb2::text", startswith="Advance Filing Status")
         table = find_selector_from(selectors=tables, rule=rule)
@@ -1073,8 +1057,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
             "filing_date": table_extractor.extract_cell(top="Date", left=0),
         }
 
-    @staticmethod
-    def _extract_hidden_form_info(response: scrapy.Selector) -> Dict:
+    def _extract_hidden_form_info(self, response: scrapy.Selector) -> Dict:
         tables = response.css("br + table")
         rule = CssQueryTextStartswithMatchRule(
             css_query="td.f12rowb4::text", startswith="Container Activity Information"
@@ -1088,8 +1071,7 @@ class BookingMainInfoRoutingRule(BaseRoutingRule):
             "TYPE": table.css("input[name='TYPE']::attr(value)").get(),
         }
 
-    @staticmethod
-    def _extract_container_infos(response: scrapy.Selector) -> List[Dict]:
+    def _extract_container_infos(self, response: scrapy.Selector) -> List[Dict]:
         container_infos = []
 
         tables = response.css("br + table")
