@@ -234,7 +234,9 @@ class MblRoutingRule(BaseRoutingRule):
             page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(idx + 2))
         except FormatError as e:
             # This exception is used to notify that the link of detail page is disappeared, thus no handling continued
-            yield DebugItem(info=f"{e.reason}, on (task_id: search_no): {task_id}: {info_pack["search_no"]}")
+            yield DebugItem(
+                info=f"{e.reason}, on (task_id: search_no): {info_pack['task_id']}: {info_pack['search_no']}"
+            )
             return
 
         detail_selector = Selector(text=page_source)
@@ -650,7 +652,7 @@ class WhlcContentGetter(PyppeteerContentGetter):
 
         # Sometimes the link of detail page is disappeared
         if not await self.page.querySelector(click_selector):
-            raise CarrierResponseFormatError(reason="Link of detail page is disappeared")
+            raise FormatError(reason="Link of detail page is disappeared")
 
         await self.page.click(click_selector)
         await asyncio.sleep(10)
