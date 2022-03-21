@@ -40,7 +40,7 @@ class AirChinaSouthernSpider(BaseAirSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseAirItem):
+            if isinstance(result, BaseAirItem) or isinstance(result, DataNotFoundItem):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -63,12 +63,11 @@ class AirChinaSouthernSpider(BaseAirSpider):
                 dont_filter=True,
             )
         else:
-            map_dict = {self.mawb_no: self.task_id}
             raise SuspiciousOperationError(
                 task_id=self.task_id,
                 search_no=self.mawb_no,
                 search_type=self.search_type,
-                reason=f"Unexpected request method: `{option.method}`, on (search_no: task_id): {map_dict}",
+                reason=f"Unexpected request method: `{option.method}`",
             )
 
 
@@ -142,8 +141,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
             for history_item in self._construct_history_item_list(response):
                 yield history_item
 
-    @staticmethod
-    def _construct_air_item(response) -> AirItem:
+    def _construct_air_item(self, response) -> AirItem:
         selector = response.css("span[id='ctl00_ContentPlaceHolder1_awbLbl'] tr td")
         basic_info = []
         for info in selector:
@@ -206,8 +204,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
             }
         )
 
-    @staticmethod
-    def _construct_history_item_list(response):
+    def _construct_history_item_list(self, response):
         info_list = []
         status_selector = response.css("table[id='ctl00_ContentPlaceHolder1_gvCargoState'] tr")
         for tr_selector in status_selector[1:]:
@@ -227,8 +224,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
 
         return info_list
 
-    @staticmethod
-    def _is_mawb_not_exist(response) -> bool:
+    def _is_mawb_not_exist(self, response) -> bool:
         error_info = response.css("span[id='ctl00_ContentPlaceHolder1_lblErrorInfo'] font::text").get()
         if error_info == "Mawb information does not exist":
             return True
