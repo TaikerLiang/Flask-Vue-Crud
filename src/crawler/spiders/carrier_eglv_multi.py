@@ -308,15 +308,6 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
             cargo_cutoff_date=basic_info["cargo_cutoff_date"],
         )
 
-        try:
-            for item in self.handle_filing_status(search_nos=search_nos, task_ids=task_ids):
-                yield item
-            for item in self.handle_release_status(search_nos=search_nos, task_ids=task_ids):
-                yield item
-        except (TimeoutError, NetworkError, PageError) as e:
-            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
-            return
-
         container_list = self._extract_container_info(response=response)
         for container in container_list:
             try:
@@ -327,6 +318,15 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
             except (TimeoutError, NetworkError, PageError) as e:
                 yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
                 return
+
+        try:
+            for item in self.handle_filing_status(search_nos=search_nos, task_ids=task_ids):
+                yield item
+            for item in self.handle_release_status(search_nos=search_nos, task_ids=task_ids):
+                yield item
+        except (TimeoutError, NetworkError, PageError) as e:
+            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
+            return
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
@@ -1387,6 +1387,7 @@ class EglvContentGetter(PyppeteerContentGetter):
 
     async def container_page(self, container_no) -> str:
         try:
+            await self.scroll_down()
             await self.page.click(f"a[href^=\"javascript:frmCntrMoveDetail('{container_no}')\"]")
             await asyncio.sleep(10)
             container_page = (await self.browser.pages())[-1]
