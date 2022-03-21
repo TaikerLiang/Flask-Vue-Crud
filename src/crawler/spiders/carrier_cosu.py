@@ -9,18 +9,18 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from urllib3.exceptions import ReadTimeoutError
 
-from crawler.core.base import (
+from crawler.core.base_new import (
     DUMMY_URL_DICT,
     RESULT_STATUS_ERROR,
     SEARCH_TYPE_BOOKING,
     SEARCH_TYPE_MBL,
 )
-from crawler.core.exceptions import SuspiciousOperationError, TimeOutError
-from crawler.core.items import DataNotFoundItem
+from crawler.core.exceptions_new import SuspiciousOperationError, TimeOutError
+from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.selenium import FirefoxContentGetter
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.items import (
+from crawler.core_carrier.base_spiders_new import BaseCarrierSpider
+from crawler.core_carrier.items_new import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
@@ -29,7 +29,7 @@ from crawler.core_carrier.items import (
     MblItem,
     VesselItem,
 )
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.request_helpers_new import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.selector_finder import (
     CssQueryExistMatchRule,
@@ -66,7 +66,7 @@ class CarrierCosuSpider(BaseCarrierSpider):
         if self.mbl_no:
             option = MainInfoRoutingRule.build_request_option(task_id=self.task_id, mbl_no=self.mbl_no)
         else:
-            option = BookingInfoRoutingRule.build_request_option(booking_nos=[self.booking_no])
+            option = BookingInfoRoutingRule.build_request_option(task_id=self.task_id, booking_nos=[self.booking_no])
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -78,7 +78,7 @@ class CarrierCosuSpider(BaseCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem) or isinstance(result, DataNotFoundItem):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -161,8 +161,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
             yield MblItem(mbl_no=mbl_no)
             yield BookingInfoRoutingRule.build_request_option(task_id=task_id, booking_nos=booking_nos)
 
-    @staticmethod
-    def _is_mbl_no_invalid(response: Selector) -> bool:
+        yield EndItem(task_id=task_id)
+
+    def _is_mbl_no_invalid(self, response: Selector) -> bool:
         return bool(response.css("div.noFoundTips"))
 
 
@@ -223,8 +224,9 @@ class BookingInfoRoutingRule(BaseRoutingRule):
             ):
                 yield item
 
-    @staticmethod
-    def _is_booking_no_invalid(response: Selector) -> bool:
+        yield EndItem(task_id=task_id)
+
+    def _is_booking_no_invalid(self, response: Selector) -> bool:
         return bool(response.css("div.noFoundTips"))
 
 
@@ -268,9 +270,8 @@ class ItemExtractor:
             for item in container_status_items:
                 yield item
 
-    @classmethod
-    def _make_main_item(cls, response: scrapy.Selector, search_type) -> BaseCarrierItem:
-        mbl_data = cls._extract_main_info(response=response)
+    def _make_main_item(self, response: scrapy.Selector, search_type) -> BaseCarrierItem:
+        mbl_data = self._extract_main_info(response=response)
         mbl_item = MblItem(
             vessel=mbl_data.get("vessel", None),
             voyage=mbl_data.get("voyage", None),
@@ -306,8 +307,7 @@ class ItemExtractor:
 
         return mbl_item
 
-    @staticmethod
-    def _extract_main_info(response: scrapy.Selector) -> Dict:
+    def _extract_main_info(self, response: scrapy.Selector) -> Dict:
         table_like_div = response.css("div.ivu-c-detailPart")[0]  # 0 for booking info bookmark, 1 for print bookmark
         table_locator = MainInfoTableLocator()
         table_locator.parse(table=table_like_div)
@@ -387,9 +387,8 @@ class ItemExtractor:
 
         return data
 
-    @classmethod
-    def _make_vessel_items(cls, response: scrapy.Selector) -> List[BaseCarrierItem]:
-        vessel_data = cls._extract_schedule_detail_info(response=response)
+    def _make_vessel_items(self, response: scrapy.Selector) -> List[BaseCarrierItem]:
+        vessel_data = self._extract_schedule_detail_info(response=response)
         vessels = []
         for vessel in vessel_data:
             vessels.append(
@@ -407,8 +406,7 @@ class ItemExtractor:
             )
         return vessels
 
-    @staticmethod
-    def _extract_schedule_detail_info(response: scrapy.Selector) -> List:
+    def _extract_schedule_detail_info(self, response: scrapy.Selector) -> List:
         # 0 for booking info bookmark, 1 for print bookmark
         table_like_div = response.css("div.cargoTrackingSailing div.ivu-table")[0]
         table_locator = VesselContainerTableLocator()
@@ -453,9 +451,8 @@ class ItemExtractor:
 
         return vessels
 
-    @classmethod
-    def _make_container_items(cls, response: scrapy.Selector) -> List[BaseCarrierItem]:
-        container_infos = cls._extract_container_infos(response=response)
+    def _make_container_items(self, response: scrapy.Selector) -> List[BaseCarrierItem]:
+        container_infos = self._extract_container_infos(response=response)
 
         container_items = []
         for container_info in container_infos:
@@ -469,8 +466,7 @@ class ItemExtractor:
             )
         return container_items
 
-    @staticmethod
-    def _extract_container_infos(response: scrapy.Selector):
+    def _extract_container_infos(self, response: scrapy.Selector):
         table_like_div = response.css("div.movingList")[0]  # 0 for booking info bookmark, 1 for print bookmark
         table_locator = VesselContainerTableLocator()
         table_locator.parse(table=table_like_div)
@@ -500,9 +496,14 @@ class ItemExtractor:
 
         return container_infos
 
-    @classmethod
-    def _make_container_status_items(cls, container_no: str, response: scrapy.Selector) -> List[BaseCarrierItem]:
-        container_status_infos = cls._extract_container_status_infos(response=response)
+    def _extract_railway_info(self, response: scrapy.Selector):
+        pop_up_divs = response.css("div.ivu-poptip-content")
+        rule = CssQueryExistMatchRule(css_query="p.poptip-title-up")
+        railway_div = find_selector_from(selectors=pop_up_divs, rule=rule)
+        return railway_div.xpath(".//table/tbody/tr[1]/td[5]/div/span/text()").get().strip()
+
+    def _make_container_status_items(self, container_no: str, response: scrapy.Selector) -> List[BaseCarrierItem]:
+        container_status_infos = self._extract_container_status_infos(response=response)
 
         container_status_items = []
         for container_status_info in container_status_infos:
@@ -518,8 +519,7 @@ class ItemExtractor:
 
         return container_status_items
 
-    @staticmethod
-    def _extract_container_status_infos(response: scrapy.Selector):
+    def _extract_container_status_infos(self, response: scrapy.Selector):
         pop_up_divs = response.css("div.ivu-poptip-content")
         rule = CssQueryExistMatchRule(css_query="p.poptip-title-up")
         container_status_div = find_selector_from(selectors=pop_up_divs, rule=rule)
@@ -547,13 +547,6 @@ class ItemExtractor:
             )
 
         return container_status_infos
-
-    @staticmethod
-    def _extract_railway_info(response: scrapy.Selector):
-        pop_up_divs = response.css("div.ivu-poptip-content")
-        rule = CssQueryExistMatchRule(css_query="p.poptip-title-up")
-        railway_div = find_selector_from(selectors=pop_up_divs, rule=rule)
-        return railway_div.xpath(".//table/tbody/tr[1]/td[5]/div/span/text()").get().strip()
 
 
 class MainInfoTableLocator(BaseTable):
@@ -659,19 +652,6 @@ class ContentGetter(FirefoxContentGetter):
         except TimeoutException:
             raise TimeOutError(**info_pack, reason="Timeout during search_and_return()")
 
-    def _handle_cookie(self, info_pack: Dict):
-        try:
-            accept_btn = WebDriverWait(self._driver, 10).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, "button[class='ivu-btn ivu-btn-primary ivu-btn-large']"))
-            )
-        except (TimeoutException, ReadTimeoutError):
-            raise TimeOutError(**info_pack, reason="Timeout during _handle_cookie()")
-
-        # accept cookie
-        time.sleep(1)
-        accept_btn.click()
-        time.sleep(1)
-
     def click_container_status_button(self, idx: int):
         repeat_three_times_buttons = self._driver.find_elements_by_css_selector(
             "div.containerSearchBody i[class='ivu-icon ivu-icon-ios-information']"
@@ -696,6 +676,19 @@ class ContentGetter(FirefoxContentGetter):
         railway_button.click()
         time.sleep(5)
         return self._driver.page_source
+
+    def _handle_cookie(self, info_pack: Dict):
+        try:
+            accept_btn = WebDriverWait(self._driver, 10).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "button[class='ivu-btn ivu-btn-primary ivu-btn-large']"))
+            )
+        except (TimeoutException, ReadTimeoutError):
+            raise TimeOutError(**info_pack, reason="Timeout during _handle_cookie()")
+
+        # accept cookie
+        time.sleep(1)
+        accept_btn.click()
+        time.sleep(1)
 
 
 def get_container_key(container_no: str):
