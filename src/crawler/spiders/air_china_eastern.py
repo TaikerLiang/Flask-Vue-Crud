@@ -41,7 +41,11 @@ class AirChinaEasternSpider(BaseMultiAirSpider):
             token = driver.handle_captcha()
             driver.close()
         except GeneralFatalError as e:
-            yield e
+            yield GeneralFatalError(
+                task_id=self.mno_tid_map[self.mawb_nos[0]][0],
+                search_type=self.search_type,
+                reason=f"{e.reason}, on (search_no: [task_id...]): {self.mno_tid_map}",
+            )
             driver.close()
             return
 
@@ -57,7 +61,7 @@ class AirChinaEasternSpider(BaseMultiAirSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseAirItem):
+            if isinstance(result, BaseAirItem) or isinstance(result, DataNotFoundItem):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -86,12 +90,11 @@ class AirChinaEasternSpider(BaseMultiAirSpider):
                 headers=option.headers,
             )
         else:
-            map_dict = {option.meta["search_no"]: self.mno_tid_map[option.meta["search_no"]]}
             raise SuspiciousOperationError(
                 task_id=self.mno_tid_map[option.meta["search_no"]][0],
                 search_no=option.meta["search_no"],
                 search_type=self.search_type,
-                reason=f"Unexpected request method: `{option.method}`, on (search_no: [task_id...]): {map_dict}",
+                reason=f"Unexpected request method: `{option.method}`",
             )
 
 
@@ -128,7 +131,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
         mawb_no = response.meta["search_no"]
         task_id = response.meta["task_id"]
         response_dict = json.loads(response.text)
-        if self.is_mawb_no_invalid(response_dict):
+        if self._is_mawb_no_invalid(response_dict):
             yield DataNotFoundItem(
                 status=RESULT_STATUS_ERROR,
                 detail="Data was not found",
@@ -137,18 +140,18 @@ class AirInfoRoutingRule(BaseRoutingRule):
                 search_type=SEARCH_TYPE_AWB,
             )
             return
-        air_info = self.extract_air_info(response_dict)
+        air_info = self._extract_air_info(response_dict)
         yield AirItem(task_id=task_id, mawb=mawb_no, **air_info)
-        history_list = self.extract_history_info(response_dict)
+        history_list = self._extract_history_info(response_dict)
         for history in history_list:
             yield HistoryItem(task_id=task_id, **history)
 
-    def is_mawb_no_invalid(self, response):
+    def _is_mawb_no_invalid(self, response):
         if "ErrorMessage" in response:
             return True
         return False
 
-    def extract_air_info(self, response):
+    def _extract_air_info(self, response):
         current_state = response["Segments"]["Segment"][-1]["StatusCode"]
         return {
             "pieces": response["NumberOfPieces"],
@@ -158,7 +161,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
             "current_state": current_state,
         }
 
-    def extract_history_info(self, response):
+    def _extract_history_info(self, response):
         history_list = []
         for event in response["Segments"]["Segment"]:
             history_list.append(
