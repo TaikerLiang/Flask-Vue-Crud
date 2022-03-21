@@ -4,7 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core.base import SEARCH_TYPE_MBL
+from crawler.core.base_new import SEARCH_TYPE_MBL
 from crawler.core_carrier.oney_smlm_multi_share_spider import ReleaseStatusRoutingRule
 from crawler.spiders.carrier_oney_multi import CarrierOneySpider
 from test.spiders.carrier_oney_smlm_multi.oney import release_status

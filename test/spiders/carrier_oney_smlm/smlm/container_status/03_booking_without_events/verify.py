@@ -1,2 +1,2 @@
 def verify(results):
-    assert results == []
+    assert results == [{"task_id": "1"}]

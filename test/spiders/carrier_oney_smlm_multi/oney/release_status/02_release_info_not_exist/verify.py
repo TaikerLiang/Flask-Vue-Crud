@@ -1,4 +1,4 @@
-from crawler.core_carrier.items import MblItem, ContainerItem
+from crawler.core_carrier.items_new import ContainerItem, MblItem
 
 
 def verify(results):
