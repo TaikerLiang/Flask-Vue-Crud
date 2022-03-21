@@ -5,16 +5,24 @@ from typing import Dict, List
 import requests
 import scrapy
 
-from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_BOOKING, SEARCH_TYPE_MBL
-from crawler.core.exceptions import FormatError, MaxRetryError, SuspiciousOperationError
-from crawler.core.items import DataNotFoundItem
+from crawler.core.base_new import (
+    RESULT_STATUS_ERROR,
+    SEARCH_TYPE_BOOKING,
+    SEARCH_TYPE_MBL,
+)
+from crawler.core.exceptions_new import (
+    FormatError,
+    MaxRetryError,
+    SuspiciousOperationError,
+)
+from crawler.core.items_new import DataNotFoundItem
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.base_spiders import (
+from crawler.core_carrier.base_spiders_new import (
     CARRIER_DEFAULT_SETTINGS,
     DISABLE_DUPLICATE_REQUEST_FILTER,
     BaseCarrierSpider,
 )
-from crawler.core_carrier.items import (
+from crawler.core_carrier.items_new import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
@@ -22,7 +30,7 @@ from crawler.core_carrier.items import (
     LocationItem,
     MblItem,
 )
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.request_helpers_new import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.selector_finder import (
     BaseMatchRule,

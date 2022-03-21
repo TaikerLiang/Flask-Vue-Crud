@@ -12,7 +12,7 @@ from scrapy import Request
 from scrapy.http import TextResponse
 from scrapy.selector.unified import Selector
 
-from crawler.core.base import (
+from crawler.core.base_new import (
     DUMMY_URL_DICT,
     RESULT_STATUS_ERROR,
     SEARCH_TYPE_BOOKING,
@@ -20,13 +20,17 @@ from crawler.core.base import (
     SEARCH_TYPE_MBL,
 )
 from crawler.core.defines import BaseContentGetter
-from crawler.core.exceptions import FormatError, MaxRetryError, SuspiciousOperationError
-from crawler.core.items import DataNotFoundItem
-from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
+from crawler.core.exceptions_new import (
+    FormatError,
+    MaxRetryError,
+    SuspiciousOperationError,
+)
+from crawler.core.items_new import DataNotFoundItem, EndItem
+from crawler.core.proxy_new import HydraproxyProxyManager, ProxyManager
 from crawler.core.pyppeteer import PyppeteerContentGetter
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.items import (
+from crawler.core_carrier.base_spiders_new import BaseMultiCarrierSpider
+from crawler.core_carrier.items_new import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
@@ -34,7 +38,7 @@ from crawler.core_carrier.items import (
     LocationItem,
     MblItem,
 )
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.request_helpers_new import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.selector_finder import (
     BaseMatchRule,
@@ -117,7 +121,7 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
             self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem) or isinstance(result, DataNotFoundItem):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, Restart):
                 yield DebugItem(info=f"{result.reason}, Restarting...")
@@ -208,7 +212,7 @@ class CargoTrackingRoutingRule(BaseRoutingRule):
                 yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
                 return
         except (TimeoutError, NetworkError, PageError) as e:
-            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
+            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=repr(e))
             return
 
         response = self._get_response_selector(
@@ -338,7 +342,7 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
             for item in self._handle_release_status(search_nos=search_nos, task_ids=task_ids):
                 yield item
         except (TimeoutError, NetworkError, PageError) as e:
-            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
+            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=repr(e))
             return
 
         container_list = self._extract_container_info(response=response)
@@ -349,9 +353,10 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
                 ):
                     yield item
             except (TimeoutError, NetworkError, PageError) as e:
-                yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
+                yield Restart(search_nos=search_nos, task_ids=task_ids, reason=repr(e))
                 return
 
+        yield EndItem(task_id=task_ids[0])
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
     def _extract_hidden_info(self, response: scrapy.Selector, info_pack: Dict) -> Dict:
@@ -1044,9 +1049,10 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
                 ):
                     yield item
             except (TimeoutError, NetworkError, PageError) as e:
-                yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
+                yield Restart(search_nos=search_nos, task_ids=task_ids, reason=repr(e))
                 return
 
+        yield EndItem(task_id=task_ids[0])
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
     def _extract_booking_no_and_vessel_voyage(self, response: scrapy.Selector, info_pack: Dict) -> Dict:
