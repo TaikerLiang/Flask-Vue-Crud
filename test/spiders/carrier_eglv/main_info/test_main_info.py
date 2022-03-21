@@ -4,7 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core.exceptions import MaxRetryError
+from crawler.core.exceptions_new import MaxRetryError
 from crawler.spiders.carrier_eglv import BillMainInfoRoutingRule
 from test.spiders.carrier_eglv import main_info
 

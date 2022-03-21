@@ -1,4 +1,4 @@
-from crawler.core_carrier.items import MblItem
+from crawler.core_carrier.items_new import MblItem
 
 
 class Verifier:

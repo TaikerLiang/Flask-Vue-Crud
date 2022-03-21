@@ -1,4 +1,4 @@
-from crawler.core_carrier.items import MblItem
+from crawler.core_carrier.items_new import MblItem
 
 
 class Verifier:
@@ -6,5 +6,5 @@ class Verifier:
         assert results[0] == MblItem(
             us_filing_status=None,
             us_filing_date=None,
-            task_id='1',
+            task_id="1",
         )

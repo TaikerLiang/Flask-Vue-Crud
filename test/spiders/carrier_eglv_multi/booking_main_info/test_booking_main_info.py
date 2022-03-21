@@ -4,7 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core.base import SEARCH_TYPE_BOOKING
+from crawler.core.base_new import SEARCH_TYPE_BOOKING
 from crawler.spiders.carrier_eglv_multi import BookingMainInfoRoutingRule
 from test.spiders.carrier_eglv_multi import booking_main_info
 
