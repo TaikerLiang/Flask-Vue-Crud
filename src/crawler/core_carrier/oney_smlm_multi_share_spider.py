@@ -5,18 +5,22 @@ from typing import Dict, List, Set
 
 import scrapy
 
-from crawler.core.base import (
+from crawler.core.base_new import (
     DUMMY_URL_DICT,
     RESULT_STATUS_ERROR,
     SEARCH_TYPE_BOOKING,
     SEARCH_TYPE_CONTAINER,
     SEARCH_TYPE_MBL,
 )
-from crawler.core.exceptions import FormatError, MaxRetryError, SuspiciousOperationError
-from crawler.core.items import DataNotFoundItem
-from crawler.core.proxy import HydraproxyProxyManager
-from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.items import (
+from crawler.core.exceptions_new import (
+    FormatError,
+    MaxRetryError,
+    SuspiciousOperationError,
+)
+from crawler.core.items_new import DataNotFoundItem, EndItem
+from crawler.core.proxy_new import HydraproxyProxyManager
+from crawler.core_carrier.base_spiders_new import BaseMultiCarrierSpider
+from crawler.core_carrier.items_new import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
@@ -25,7 +29,7 @@ from crawler.core_carrier.items import (
     MblItem,
     VesselItem,
 )
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.request_helpers_new import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 
 MAX_PAGE_NUM = 10
@@ -74,6 +78,8 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
         elif self.search_type == SEARCH_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
 
+        self._enditem_remaining_num_dict = {}
+
     def start(self):
         self._proxy_manager.renew_proxy()
         option = FirstTierRoutingRule.build_request_option(
@@ -90,8 +96,18 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem) or isinstance(result, DataNotFoundItem):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem)):
                 yield result
+            elif isinstance(result, EndItem):
+                if result.get("remaining_num"):
+                    if self._enditem_remaining_num_dict.get(result["task_id"]):
+                        self._enditem_remaining_num_dict[result["task_id"]] += result["remaining_num"]
+                    else:
+                        self._enditem_remaining_num_dict.setdefault(result["task_id"], result["remaining_num"])
+                else:
+                    self._enditem_remaining_num_dict[result["task_id"]] -= 1
+                    if self._enditem_remaining_num_dict[result["task_id"]] == 0:
+                        yield result
             elif isinstance(result, RequestOption):
                 if result.rule_name == "NEXT_ROUND":
                     self._retry_count = 0
@@ -134,6 +150,10 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
                             detail="proxy max retry error",
                         )
                     return
+
+                # clean dict for task_ids which need retry
+                for task_id in task_ids[:MAX_PAGE_NUM]:
+                    self._enditem_remaining_num_dict.pop(task_id, None)
 
                 option = FirstTierRoutingRule.build_request_option(
                     search_nos=search_nos, task_ids=task_ids, base_url=self.base_url
@@ -265,6 +285,8 @@ class FirstTierRoutingRule(BaseRoutingRule):
                             break
 
                     yield MblItem(task_id=task_id, mbl_no=search_no, final_dest=LocationItem(name=final_dest))
+
+                    yield EndItem(task_id=task_id, remaining_num=1)
                     yield VesselRoutingRule.build_request_option(
                         booking_no=search_no, base_url=base_url, task_id=task_id
                     )
@@ -285,6 +307,8 @@ class FirstTierRoutingRule(BaseRoutingRule):
                             break
 
                     yield MblItem(task_id=task_id, booking_no=search_no, final_dest=LocationItem(name=final_dest))
+
+                    yield EndItem(task_id=task_id, remaining_num=1)
                     yield VesselRoutingRule.build_request_option(
                         booking_no=search_no, base_url=base_url, task_id=task_id
                     )
@@ -311,6 +335,8 @@ class FirstTierRoutingRule(BaseRoutingRule):
                 container_key=container_no,
                 container_no=container_no,
             )
+
+            yield EndItem(task_id=task_id, remaining_num=3)
 
             yield ContainerStatusRoutingRule.build_request_option(
                 container_no=container_no,
@@ -340,8 +366,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, base_url=base_url)
 
-    @staticmethod
-    def _is_json_response_invalid(response):
+    def _is_json_response_invalid(self, response):
         return "System error" in response.text
 
     def _is_search_no_invalid(self, response_dict: Dict) -> bool:
@@ -414,6 +439,7 @@ class VesselRoutingRule(BaseRoutingRule):
         response_dict = json.loads(response.text)
 
         if self._is_vessel_empty(response_dict=response_dict):
+            yield EndItem(task_id=task_id)
             return
             yield VesselItem(vessel_key="", task_id=task_id)
 
@@ -432,7 +458,9 @@ class VesselRoutingRule(BaseRoutingRule):
                 ata=vessel_info.get("ata", ""),
             )
 
-    def _is_vessel_empty(self, response_dict: Dict) -> List:
+        yield EndItem(task_id=task_id)
+
+    def _is_vessel_empty(self, response_dict: Dict):
         return "list" not in response_dict
 
     def _extract_vessel_info_list(self, response_dict: Dict) -> List:
@@ -510,6 +538,8 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                 location=LocationItem(name=container_status["location"]),
                 est_or_actual=container_status["est_or_actual"],
             )
+
+        yield EndItem(task_id=task_id)
 
     def _extract_container_status_list(self, response_dict: Dict) -> List:
         if "list" not in response_dict:
@@ -594,6 +624,8 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
             terminal=LocationItem(name=release_info.get("terminal") or None),
         )
 
+        yield EndItem(task_id=task_id)
+
     def _extract_release_info(self, response_dict: Dict, info_pack: Dict) -> Dict:
         if "list" not in response_dict:
             return {}
@@ -661,6 +693,8 @@ class RailInfoRoutingRule(BaseRoutingRule):
             railway=rail_info.get("railway") or None,
             final_dest_eta=rail_info.get("final_dest_eta", "") or None,
         )
+
+        yield EndItem(task_id=task_id)
 
     def _extract_rail_info(self, response_dict: Dict, info_pack: Dict) -> Dict:
         if "list" not in response_dict:
