@@ -2,7 +2,7 @@ from typing import List
 
 import scrapy
 from scrapy.selector import Selector
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import ElementNotInteractableException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -408,4 +408,7 @@ class ContentGetter(ChromeContentGetter):
 
         WebDriverWait(self._driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, confirm_button_css)))
         button = self._driver.find_element(By.CSS_SELECTOR, confirm_button_css)
-        button.click()
+        try:
+            button.click()
+        except ElementNotInteractableException:
+            pass
