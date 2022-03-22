@@ -38,14 +38,10 @@ class AirChinaEasternSpider(BaseMultiAirSpider):
         driver = ContentGetter()
         try:
             driver.handle_cookie()
-            token = driver.handle_captcha()
+            token = driver.handle_captcha(task_id=self.mno_tid_map[self.mawb_nos[0]][0], mno_tid_map=self.mno_tid_map)
             driver.close()
         except GeneralFatalError as e:
-            yield GeneralFatalError(
-                task_id=self.mno_tid_map[self.mawb_nos[0]][0],
-                search_type=self.search_type,
-                reason=f"{e.reason}, on (search_no: [task_id...]): {self.mno_tid_map}",
-            )
+            yield e
             driver.close()
             return
 
@@ -183,12 +179,12 @@ class ContentGetter(FirefoxContentGetter):
         cookie_btn = WebDriverWait(self._driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "a.cb-enable")))
         cookie_btn.click()
 
-    def handle_captcha(self):
+    def handle_captcha(self, task_id, mno_tid_map):
         WebDriverWait(self._driver, 30).until(
             EC.frame_to_be_available_and_switch_to_it((By.CSS_SELECTOR, "iframe#mtcaptcha-iframe-1"))
         )
         for i in range(CAPTCHA_RETRY_LIMIT):
-            captcha_text = self._solve_captcha()
+            captcha_text = self._solve_captcha(task_id, mno_tid_map)
             search_bar = self._driver.find_element_by_css_selector("input#mtcap-inputtext-1")
             search_bar.send_keys(captcha_text)
             time.sleep(3)
@@ -200,9 +196,13 @@ class ContentGetter(FirefoxContentGetter):
                 )
                 return token
         self._driver.switch_to.default_content()
-        raise GeneralFatalError(reason="<anti-captcha-error>")
+        raise GeneralFatalError(
+            task_id=task_id,
+            search_type=SEARCH_TYPE_AWB,
+            reason=f"<anti-captcha-error> max retry error, on (search_no: [task_id...]): {mno_tid_map}",
+        )
 
-    def _solve_captcha(self):
+    def _solve_captcha(self, task_id, mno_tid_map):
         response = scrapy.Selector(text=self.get_page_source())
         src = response.css("img.mtcap-show-if-nocss::attr(src)").get()
         pattern = re.compile(r"data:image/png;base64,(?P<base64>.+)$")
