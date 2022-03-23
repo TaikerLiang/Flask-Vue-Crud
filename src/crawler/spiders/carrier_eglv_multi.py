@@ -72,11 +72,13 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
 
         bill_rules = [
             CargoTrackingRoutingRule(content_getter=self._driver, search_type=SHIPMENT_TYPE_MBL),
+            ContainerStatusRoutingRule(),
             NextRoundRoutingRule(),
         ]
 
         booking_rules = [
             CargoTrackingRoutingRule(content_getter=self._driver, search_type=SHIPMENT_TYPE_BOOKING),
+            ContainerStatusRoutingRule(),
             NextRoundRoutingRule(),
         ]
 
@@ -310,14 +312,24 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
 
         container_list = self._extract_container_info(response=response)
         for container in container_list:
-            try:
-                for item in self.handle_container_status(
-                    container_no=container["container_no"], search_nos=search_nos, task_ids=task_ids
-                ):
-                    yield item
-            except (TimeoutError, NetworkError, PageError) as e:
-                yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
-                return
+            # try:
+            #     for item in self.handle_container_status(
+            #         container_no=container["container_no"], search_nos=search_nos, task_ids=task_ids
+            #     ):
+            #         yield item
+            # except (TimeoutError, NetworkError, PageError) as e:
+            #     yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
+            #     return
+
+            yield ContainerStatusRoutingRule.build_request_option(
+                task_id=task_ids[0],
+                search_no=mbl_no_info["mbl_no"],
+                container_no=container["container_no"],
+                onboard_date=mbl_no_info["onboard_date"],
+                pol=mbl_no_info["pol_code"],
+                pod=mbl_no_info["pod_code"],
+                podctry=mbl_no_info["podctry"],
+            )
 
         try:
             for item in self.handle_filing_status(search_nos=search_nos, task_ids=task_ids):
@@ -1000,7 +1012,7 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
             voyage=booking_no_and_vessel_voyage["voyage"],
         )
 
-        # hidden_form_info = self._extract_hidden_form_info(response=response)
+        hidden_form_info = self._extract_hidden_form_info(response=response)
         container_infos = self._extract_container_infos(response=response)
         for container_info in container_infos:
             yield ContainerItem(
@@ -1010,14 +1022,22 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
                 full_pickup_date=container_info.get("full_pickup_date", ""),
             )
 
-            try:
-                for item in self.handle_container_status(
-                    container_no=container_info["container_no"], search_nos=search_nos, task_ids=task_ids
-                ):
-                    yield item
-            except (TimeoutError, NetworkError, PageError) as e:
-                yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
-                return
+            # try:
+            #     for item in self.handle_container_status(
+            #         container_no=container_info["container_no"], search_nos=search_nos, task_ids=task_ids
+            #     ):
+            #         yield item
+            # except (TimeoutError, NetworkError, PageError) as e:
+            #     yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
+            #     return
+
+            yield ContainerStatusRoutingRule.build_request_option(
+                search_no=hidden_form_info["bl_no"],
+                task_id=task_ids[0],
+                container_no=container_info["container_no"],
+                onboard_date=hidden_form_info["onboard_date"],
+                pol=hidden_form_info["pol"],
+            )
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
@@ -1083,7 +1103,7 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
     @staticmethod
     def _extract_filing_info(response: scrapy.Selector) -> Dict:
         tables = response.css("table")
-        rule = CssQueryTextStartswithMatchRule(css_query="td.f13tabb2::text", startswith="Advance Filing Status")
+        rule = CssQueryTextStartswithMatchRule(css_query="td.f12rowb4::text", startswith="Advance Filing Status")
         table = find_selector_from(selectors=tables, rule=rule)
         if not table:
             return {
@@ -1124,6 +1144,9 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
             css_query="td.f12rowb4::text", startswith="Container Activity Information"
         )
         table = find_selector_from(selectors=tables, rule=rule)
+        if not table:
+            return []
+
         table_locator = NameOnTopHeaderTableLocator()
         table_locator.parse(table=table)
         table_extractor = TableExtractor(table_locator=table_locator)
