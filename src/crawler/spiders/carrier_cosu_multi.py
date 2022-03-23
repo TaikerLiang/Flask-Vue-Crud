@@ -293,6 +293,7 @@ class ItemExtractor:
         content_getter.go_container_info_page()
         content_getter.scroll_to_bottom_of_page()
         button_table = content_getter.get_container_status_buttons()
+        container_items = [dict(c) for c in {tuple(d.items()) for d in container_items}]
         for c_i, c_item in enumerate(container_items):
             try:
                 response_text = content_getter.click_railway_button(c_i)
@@ -533,7 +534,6 @@ class ItemExtractor:
         table_locator.parse(table=table_like_div)
         table_extractor = TableExtractor(table_locator=table_locator)
         container_infos = []
-        container_no_set = set()
 
         for left in table_locator.iter_left_header():
             container_no = table_extractor.extract_cell(
@@ -541,11 +541,6 @@ class ItemExtractor:
             )[
                 0
             ]  # 0 container_no, 1 container_spec
-
-            if container_no in container_no_set:
-                continue
-            container_no_set.add(container_no)
-
             lfd_related = {}
             if table_extractor.has_header(top="LFD"):
                 lfd_related = table_extractor.extract_cell(
