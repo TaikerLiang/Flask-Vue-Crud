@@ -133,7 +133,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_nos = response.meta["mbl_nos"]
         task_ids = response.meta["task_ids"]
-        content_getter = ContentGetter(is_headless=True)
+        content_getter = ContentGetter(is_headless=False)
 
         response_text = content_getter.search_and_return(search_no=mbl_nos[0], is_booking=False)
         response_selector = scrapy.Selector(text=response_text)
@@ -533,6 +533,7 @@ class ItemExtractor:
         table_locator.parse(table=table_like_div)
         table_extractor = TableExtractor(table_locator=table_locator)
         container_infos = []
+        container_no_set = set()
 
         for left in table_locator.iter_left_header():
             container_no = table_extractor.extract_cell(
@@ -540,6 +541,11 @@ class ItemExtractor:
             )[
                 0
             ]  # 0 container_no, 1 container_spec
+
+            if container_no in container_no_set:
+                continue
+            container_no_set.add(container_no)
+
             lfd_related = {}
             if table_extractor.has_header(top="LFD"):
                 lfd_related = table_extractor.extract_cell(
@@ -773,8 +779,10 @@ class ContentGetter(FirefoxContentGetter):
         button = button_table[container_no]
         button.click()
         time.sleep(8)
-
-        return self._driver.page_source
+        res = self._driver.page_source
+        self._driver.find_element_by_css_selector("i.poptip-close").click()
+        time.sleep(1)
+        return res
 
     def go_container_info_page(self):
         container_info_tab = self._driver.find_elements_by_css_selector("div[class='ivu-tabs-tab']")
