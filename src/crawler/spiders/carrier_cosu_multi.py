@@ -133,7 +133,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_nos = response.meta["mbl_nos"]
         task_ids = response.meta["task_ids"]
-        content_getter = ContentGetter(is_headless=False)
+        content_getter = ContentGetter(is_headless=True)
 
         response_text = content_getter.search_and_return(search_no=mbl_nos[0], is_booking=False)
         response_selector = scrapy.Selector(text=response_text)
