@@ -293,6 +293,7 @@ class ItemExtractor:
         content_getter.go_container_info_page()
         content_getter.scroll_to_bottom_of_page()
         button_table = content_getter.get_container_status_buttons()
+        container_items = [dict(c) for c in {tuple(d.items()) for d in container_items}]
         for c_i, c_item in enumerate(container_items):
             try:
                 response_text = content_getter.click_railway_button(c_i)
@@ -773,8 +774,10 @@ class ContentGetter(FirefoxContentGetter):
         button = button_table[container_no]
         button.click()
         time.sleep(8)
-
-        return self._driver.page_source
+        res = self._driver.page_source
+        self._driver.find_element_by_css_selector("i.poptip-close").click()
+        time.sleep(1)
+        return res
 
     def go_container_info_page(self):
         container_info_tab = self._driver.find_elements_by_css_selector("div[class='ivu-tabs-tab']")
