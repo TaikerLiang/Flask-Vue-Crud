@@ -119,22 +119,20 @@ class ContainerRoutingRule(BaseRoutingRule):
             return
 
         if self._has_multiple_results(response):
-            # handle container reuse cases(e.g. OOLU6258622) (maybe another rule?)
             for mbl_no in self._extract_mbl_nos(response):
                 yield ContainerRoutingRule.build_request_option(search_no=mbl_no, search_type=SHIPMENT_TYPE_MBL)
             return
 
         container_info = self._extract_container_info(response)
-        pickup_notes = self._extract_pickup_notes(response)
+        self._extract_pickup_notes(response)
 
+        appointment_date = f"{container_info['appointment_date']} {container_info['appointment_time']}".strip()
         yield TerminalItem(
             mbl_no=container_info["mbl_no"],
             container_no=container_info["container_no"],
             vessel=container_info["vessel"],
-            ready_for_pick_up=container_info["ready_for_pick_up"],
-            appointment_date=container_info["appointment_date"],
-            gate_out_date=container_info["gate_out_date"],
-            last_free_day=pickup_notes.get("last_free_day"),
+            available=container_info["available"],
+            appointment_date=appointment_date,
         )
 
     def _is_container_no_invalid(self, response: Selector) -> bool:
@@ -173,9 +171,9 @@ class ContainerRoutingRule(BaseRoutingRule):
             "mbl_no": left_table.extract_cell(left="Master Bill Number"),
             "container_no": left_table.extract_cell(left="Container Number"),
             "vessel": left_table.extract_cell(left="Vessel Name"),
-            "ready_for_pick_up": right_table.extract_cell(left="Status"),
+            "available": right_table.extract_cell(left="Status"),
             "appointment_date": right_table.extract_cell(left="Appointment Date"),
-            "gate_out_date": right_table.extract_cell(left="GO Date"),
+            "appointment_time": right_table.extract_cell(left="Appointment Time"),
         }
 
     def _extract_pickup_notes(self, response) -> Dict:
