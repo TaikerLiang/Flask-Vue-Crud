@@ -389,6 +389,7 @@ class ContentGetter(ChromeContentGetter):
     def connect(self):
         self._driver.get(f"{SITC_BASE_URL}/wel")
         login_button_css = "a.login.click-able"
+        time.sleep(60)
 
         try:
             WebDriverWait(self._driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, login_button_css)))
@@ -396,9 +397,9 @@ class ContentGetter(ChromeContentGetter):
             self._login()
 
             # wait until login
-            time.sleep(1)
+            time.sleep(5)
             self._driver.get(SITC_SEARCH_URL)
-            time.sleep(1)
+            time.sleep(5)
 
         except TimeoutException:
             self.restart()
@@ -460,7 +461,7 @@ class ContentGetter(ChromeContentGetter):
         )
 
         # wait for the next mbl page to replace the previous
-        time.sleep(1)
+        time.sleep(5)
 
         return self._driver.page_source
 
