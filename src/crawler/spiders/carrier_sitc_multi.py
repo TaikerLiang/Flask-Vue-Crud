@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import List
 
 import scrapy
-from PIL import Image
 from scrapy.selector import Selector
+from PIL import Image
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -31,8 +31,8 @@ from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RequestOptionQueue, RuleManager
 from crawler.services.captcha_service import CaptchaSolverService
 
-SITC_BASE_URL = "https://api.sitcline.com"
-SEARCH_URL = SITC_BASE_URL + "/sitcline/query/cargoTrack"
+SITC_BASE_URL = "https://api.sitcline.com/sitcline"
+SITC_SEARCH_URL = f"{SITC_BASE_URL}/query/cargoTrack"
 MAX_RETRY_COUNT = 5
 
 
@@ -387,23 +387,28 @@ class ContentGetter(ChromeContentGetter):
         self.retry_count = 0
 
     def connect(self):
-        self._driver.get(SEARCH_URL)
-        login_button_sel = "a.login.click-able"
+        self._driver.get(f"{SITC_BASE_URL}/wel")
+        login_button_css = "a.login.click-able"
 
         try:
-            WebDriverWait(self._driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, login_button_sel)))
-            self._driver.find_element(By.CSS_SELECTOR, login_button_sel).click()
+            WebDriverWait(self._driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, login_button_css)))
+            self._driver.find_element(By.CSS_SELECTOR, login_button_css).click()
             self._login()
+
+            # wait until login
+            time.sleep(1)
+            self._driver.get(SITC_SEARCH_URL)
+            time.sleep(1)
 
         except TimeoutException:
             self.restart()
 
     def _login(self):
-        WebDriverWait(self._driver, 10).until(
-            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.el-dialog__body"))
-        )
+        login_dialog_css = "div.el-dialog__body"
 
-        login_window = self._driver.find_element(By.CSS_SELECTOR, "div.el-dialog__body")
+        WebDriverWait(self._driver, 10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, login_dialog_css)))
+
+        login_window = self._driver.find_element(By.CSS_SELECTOR, login_dialog_css)
         captcha_ele = login_window.find_element(By.XPATH, "//img[@class='login-code-img']")
 
         login_window.find_element(By.XPATH, "//input[@placeholder='请输入登陆用户名']").send_keys(self.USERNAME)
