@@ -69,3 +69,27 @@ Comment[C]=
 Comment=
 ```
 
+## Ubuntu startup script for docker-compose
+
+path: `/etc/systemd/system/ep-sc.service`
+
+```
+[Unit]
+Description=ep-sc service with docker compose
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=true
+User=ubuntu
+WorkingDirectory=/home/ubuntu
+ExecStartPre=/usr/local/bin/docker-compose --env-file .env pull
+ExecStart=/usr/local/bin/docker-compose --env-file .env up -d
+ExecStop=/usr/local/bin/docker-compose down
+
+[Install]
+WantedBy=multi-user.target
+
+```
+
