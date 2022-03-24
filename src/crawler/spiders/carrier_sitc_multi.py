@@ -4,9 +4,9 @@ from typing import List
 
 import scrapy
 from scrapy.selector import Selector
-from PIL import Image
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
@@ -381,10 +381,12 @@ class ContentGetter(ChromeContentGetter):
     PASSWORD = "hardcore@2021"
     CAPTCHA_NAME = "captcha.png"
     CAPTCHA_PATH = Path("carrier_sitc_multi.py").absolute().parents[0] / CAPTCHA_NAME
+    MAX_CAPTCHA_RETRY = 3
 
     def __init__(self, proxy_manager, is_headless):
         super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
         self.retry_count = 0
+        self.captcha_retry_count = 0
 
     def connect(self):
         self._driver.get(f"{SITC_BASE_URL}/wel")
@@ -414,24 +416,24 @@ class ContentGetter(ChromeContentGetter):
 
         login_window.find_element(By.XPATH, "//input[@placeholder='请输入登陆用户名']").send_keys(self.USERNAME)
         login_window.find_element(By.XPATH, "//input[@placeholder='请输入密码']").send_keys(self.PASSWORD)
-        login_window.find_element(By.XPATH, "//input[@placeholder='请输入验证码']").send_keys(
-            self._solve_captcha(captcha_ele)
-        )
-        login_window.find_element(By.CSS_SELECTOR, "button.el-button.el-button--danger.el-button--medium").click()
 
-    def _solve_captcha(self, ele):
-        self._driver.save_screenshot(self.CAPTCHA_NAME)
-        location = ele.location
-        size = ele.size
+        dialog_wrapper = self._driver.find_element_by_css_selector("div.el-dialog__wrapper")
+        while not self._is_captcha_solved(dialog_wrapper):
+            login_window.find_element(By.XPATH, "//input[@placeholder='请输入验证码']").send_keys(
+                self._solve_captcha(captcha_ele)
+            )
+            login_window.find_element(By.CSS_SELECTOR, "button.el-button.el-button--danger.el-button--medium").click()
 
-        left = location["x"]
-        top = location["y"]
-        right = location["x"] + size["width"]
-        bottom = location["y"] + size["height"]
+    def _is_captcha_solved(self, dialog_wrapper):
+        style = self._driver.execute_script("return arguments[0].getAttribute('style');", dialog_wrapper)
+        return "display: None" in style
 
-        screenshot = Image.open(self.CAPTCHA_NAME)
-        screenshot = screenshot.crop((left, top, right, bottom))
-        screenshot.save(self.CAPTCHA_NAME)
+    def _solve_captcha(self, ele: WebElement):
+        if self.captcha_retry_count > self.MAX_CAPTCHA_RETRY:
+            raise DriverMaxRetryError()
+
+        self.captcha_retry_count += 1
+        ele.screenshot("captcha.png")
 
         return CaptchaSolverService().solve_image(file_path=self.CAPTCHA_PATH)
 
@@ -444,12 +446,15 @@ class ContentGetter(ChromeContentGetter):
         self.connect()
 
     def get_mbl_page(self, mbl_no):
+        WebDriverWait(self._driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='请输入提单号']"))
+        )
         mbl_input = self._driver.find_element(By.XPATH, "//input[@placeholder='请输入提单号']")
         mbl_input.send_keys(mbl_no)
         button = self._driver.find_element(
             By.CSS_SELECTOR, "button.el-button.search-form-btn.el-button--primary.el-button--small"
         )
-        self._driver.execute_script("arguments[0].click();", button)
+        button.click()
         mbl_input.clear()
 
         WebDriverWait(self._driver, 10).until(
@@ -479,6 +484,6 @@ class ContentGetter(ChromeContentGetter):
 
         close_button = self._driver.find_element(By.CSS_SELECTOR, "button.el-dialog__headerbtn")
         page_src = self._driver.page_source
-        self._driver.execute_script("arguments[0].click();", close_button)
+        close_button.click()
 
         return page_src
