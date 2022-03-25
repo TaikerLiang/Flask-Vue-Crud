@@ -72,13 +72,11 @@ class CarrierEglvSpider(BaseMultiCarrierSpider):
 
         bill_rules = [
             CargoTrackingRoutingRule(content_getter=self._driver, search_type=SHIPMENT_TYPE_MBL),
-            ContainerStatusRoutingRule(),
             NextRoundRoutingRule(),
         ]
 
         booking_rules = [
             CargoTrackingRoutingRule(content_getter=self._driver, search_type=SHIPMENT_TYPE_BOOKING),
-            ContainerStatusRoutingRule(),
             NextRoundRoutingRule(),
         ]
 
@@ -312,24 +310,14 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
 
         container_list = self._extract_container_info(response=response)
         for container in container_list:
-            # try:
-            #     for item in self.handle_container_status(
-            #         container_no=container["container_no"], search_nos=search_nos, task_ids=task_ids
-            #     ):
-            #         yield item
-            # except (TimeoutError, NetworkError, PageError) as e:
-            #     yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
-            #     return
-
-            yield ContainerStatusRoutingRule.build_request_option(
-                task_id=task_ids[0],
-                search_no=mbl_no_info["mbl_no"],
-                container_no=container["container_no"],
-                onboard_date=mbl_no_info["onboard_date"],
-                pol=mbl_no_info["pol_code"],
-                pod=mbl_no_info["pod_code"],
-                podctry=mbl_no_info["podctry"],
-            )
+            try:
+                for item in self.handle_container_status(
+                    container_no=container["container_no"], search_nos=search_nos, task_ids=task_ids
+                ):
+                    yield item
+            except (TimeoutError, NetworkError, PageError) as e:
+                yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
+                return
 
         try:
             for item in self.handle_filing_status(search_nos=search_nos, task_ids=task_ids):
@@ -1012,7 +1000,6 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
             voyage=booking_no_and_vessel_voyage["voyage"],
         )
 
-        hidden_form_info = self._extract_hidden_form_info(response=response)
         container_infos = self._extract_container_infos(response=response)
         for container_info in container_infos:
             yield ContainerItem(
@@ -1022,22 +1009,14 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
                 full_pickup_date=container_info.get("full_pickup_date", ""),
             )
 
-            # try:
-            #     for item in self.handle_container_status(
-            #         container_no=container_info["container_no"], search_nos=search_nos, task_ids=task_ids
-            #     ):
-            #         yield item
-            # except (TimeoutError, NetworkError, PageError) as e:
-            #     yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
-            #     return
-
-            yield ContainerStatusRoutingRule.build_request_option(
-                search_no=hidden_form_info["bl_no"],
-                task_id=task_ids[0],
-                container_no=container_info["container_no"],
-                onboard_date=hidden_form_info["onboard_date"],
-                pol=hidden_form_info["pol"],
-            )
+            try:
+                for item in self.handle_container_status(
+                    container_no=container_info["container_no"], search_nos=search_nos, task_ids=task_ids
+                ):
+                    yield item
+            except (TimeoutError, NetworkError, PageError) as e:
+                yield Restart(search_nos=search_nos, task_ids=task_ids, reason=str(e))
+                return
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
@@ -1348,7 +1327,6 @@ class EglvContentGetter(PyppeteerContentGetter):
 
         is_exist = await self._check_data_exist()
         content = await self.page.content()
-        await self.scroll_down()
 
         return content, is_exist
 
@@ -1410,14 +1388,13 @@ class EglvContentGetter(PyppeteerContentGetter):
 
     async def container_page(self, container_no) -> str:
         try:
-            await self.scroll_down()
             await self.page.click(f"a[href^=\"javascript:frmCntrMoveDetail('{container_no}')\"]")
             await asyncio.sleep(10)
             container_page = (await self.browser.pages())[-1]
             await container_page.waitForSelector("table table")
             await asyncio.sleep(5)
             content = await container_page.content()
-            await container_page.close()
+            await container_page.evaluate("""window.close();""")
             return content
         except PageError:
             return ""
