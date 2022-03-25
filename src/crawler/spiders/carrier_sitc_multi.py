@@ -391,7 +391,7 @@ class ContentGetter(ChromeContentGetter):
     def connect(self):
         self._driver.get(f"{SITC_BASE_URL}/wel")
         login_button_css = "a.login.click-able"
-        time.sleep(60)
+        time.sleep(30)
 
         try:
             WebDriverWait(self._driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, login_button_css)))
@@ -410,8 +410,11 @@ class ContentGetter(ChromeContentGetter):
         login_dialog_css = "div.el-dialog__body"
 
         WebDriverWait(self._driver, 10).until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, login_dialog_css)))
-
         login_window = self._driver.find_element(By.CSS_SELECTOR, login_dialog_css)
+
+        WebDriverWait(self._driver, 10).until(
+            EC.visibility_of_element_located((By.XPATH, "//img[@class='login-code-img']"))
+        )
         captcha_ele = login_window.find_element(By.XPATH, "//img[@class='login-code-img']")
 
         login_window.find_element(By.XPATH, "//input[@placeholder='请输入登陆用户名']").send_keys(self.USERNAME)
@@ -423,10 +426,12 @@ class ContentGetter(ChromeContentGetter):
                 self._solve_captcha(captcha_ele)
             )
             login_window.find_element(By.CSS_SELECTOR, "button.el-button.el-button--danger.el-button--medium").click()
+            time.sleep(1)
+            dialog_wrapper = self._driver.find_element_by_css_selector("div.el-dialog__wrapper")
 
     def _is_captcha_solved(self, dialog_wrapper):
         style = self._driver.execute_script("return arguments[0].getAttribute('style');", dialog_wrapper)
-        return "display: None" in style
+        return "display: none" in style
 
     def _solve_captcha(self, ele: WebElement):
         if self.captcha_retry_count > self.MAX_CAPTCHA_RETRY:
