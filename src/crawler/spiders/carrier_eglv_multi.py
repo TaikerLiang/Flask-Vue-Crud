@@ -1100,21 +1100,6 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
         }
 
     @staticmethod
-    def _extract_hidden_form_info(response: scrapy.Selector) -> Dict:
-        tables = response.css("br + table")
-        rule = CssQueryTextStartswithMatchRule(
-            css_query="td.f12rowb4::text", startswith="Container Activity Information"
-        )
-        table = find_selector_from(selectors=tables, rule=rule)
-
-        return {
-            "bl_no": table.css("input[name='bl_no']::attr(value)").get(),
-            "onboard_date": table.css("input[name='onboard_date']::attr(value)").get(),
-            "pol": table.css("input[name='pol']::attr(value)").get(),
-            "TYPE": table.css("input[name='TYPE']::attr(value)").get(),
-        }
-
-    @staticmethod
     def _extract_container_infos(response: scrapy.Selector) -> List[Dict]:
         container_infos = []
 
