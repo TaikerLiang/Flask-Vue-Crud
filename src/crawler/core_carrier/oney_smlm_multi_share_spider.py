@@ -44,11 +44,13 @@ class Restart:
 class OneySmlmSharedSpider(BaseMultiCarrierSpider):
     name = None
     base_url = None
+    custom_settings = {
+        **BaseMultiCarrierSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super(OneySmlmSharedSpider, self).__init__(*args, **kwargs)
-
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         self._proxy_manager = HydraproxyProxyManager(session="oneysmlm", logger=self.logger)
         self._retry_count = 0

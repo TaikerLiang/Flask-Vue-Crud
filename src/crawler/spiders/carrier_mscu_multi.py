@@ -43,11 +43,14 @@ class Restart:
 
 class CarrierMscuSpider(BaseMultiCarrierSpider):
     name = "carrier_mscu_multi"
+    custom_settings = {
+        **BaseMultiCarrierSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super(CarrierMscuSpider, self).__init__(*args, **kwargs)
 
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
         self._retry_count = 0
 
         bill_rules = [

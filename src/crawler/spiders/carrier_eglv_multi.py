@@ -60,11 +60,15 @@ class Restart:
 
 class CarrierEglvSpider(BaseMultiCarrierSpider):
     name = "carrier_eglv_multi"
+    custom_settings = {
+        **BaseMultiCarrierSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super(CarrierEglvSpider, self).__init__(*args, **kwargs)
+
         self._retry_count = 0
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
         self._driver = EglvContentGetter(
             proxy_manager=HydraproxyProxyManager(session="eglv", logger=self.logger), is_headless=True
         )

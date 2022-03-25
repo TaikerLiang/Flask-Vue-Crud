@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import List
 
 import scrapy
-from scrapy.selector import Selector
 from PIL import Image
+from scrapy.selector import Selector
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -38,11 +38,14 @@ MAX_RETRY_COUNT = 5
 
 class CarrierSitcSpider(BaseMultiCarrierSpider):
     name = "carrier_sitc_multi"
+    custom_settings = {
+        **BaseMultiCarrierSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super(CarrierSitcSpider, self).__init__(*args, **kwargs)
 
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
         self._content_getter = ContentGetter(proxy_manager=None, is_headless=True)
         self._content_getter.connect()
 
