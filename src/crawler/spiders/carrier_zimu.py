@@ -196,6 +196,19 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         to_pod_vessel = self._find_to_pod_vessel(vessel_list, schedule_list)
 
+        # TODO: should remove after EDI complete
+        final_dest = main_info["final_dest"]
+        if not final_dest:
+            final_dest_un_lo_code = None
+            final_dest_name = None
+        elif len(final_dest) == 5:
+            final_dest_un_lo_code = final_dest
+            final_dest_name = None
+        else:
+            final_dest_un_lo_code = None
+            final_dest_name = final_dest
+
+
         place_of_deliv = main_info["place_of_deliv"]
         if not place_of_deliv:
             place_of_deliv_un_lo_code = None
@@ -215,6 +228,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             pol=LocationItem(name=main_info["pol"]),
             pod=LocationItem(name=main_info["pod"]),
             place_of_deliv=LocationItem(un_lo_code=place_of_deliv_un_lo_code, name=place_of_deliv_name),
+            final_dest=LocationItem(un_lo_code=final_dest_un_lo_code, name=final_dest_name),
             etd=main_info["etd"] or None,
             eta=main_info["eta"] or None,
             deliv_eta=main_info["deliv_eta"] or None,
