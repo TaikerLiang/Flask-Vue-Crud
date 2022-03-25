@@ -135,7 +135,7 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
         time.sleep(3)
 
         self._content_getter = self._make_content_getter()
-        self._rule_manager.get_rule_by_name(CargoTrackingRule.name)._content_getter = self._content_getter
+        self._rule_manager.get_rule_by_name(CargoTrackingRule.name).set_content_getter(self._content_getter)
         return CargoTrackingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
     def _make_content_getter(self):
@@ -449,6 +449,9 @@ class CargoTrackingRule(BaseRoutingRule):
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
+
+    def set_content_getter(self, content_getter: ContentGetter):
+        self._content_getter = content_getter
 
     def handle(self, response):
         search_nos = response.meta["search_nos"]
