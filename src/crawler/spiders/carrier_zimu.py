@@ -279,10 +279,13 @@ class MainInfoRoutingRule(BaseRoutingRule):
         routing_schedule = dict(routing_schedule_list)
 
         if "Final Destination:" in routing_schedule:
+            # TODO: remove later
+            final_dest = routing_schedule["Final Destination:"].strip()
             place_of_deliv = routing_schedule["Final Destination:"].strip()
             deliv_eta = response.css("dt#etaDate::text").get() or ""
             eta = pod_info.get("Arrival Date", "")
         else:
+            final_dest = ""
             place_of_deliv = ""
             deliv_eta = ""
             eta = response.css("dt#etaDate::text").get() or ""
@@ -296,6 +299,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             "pol": routing_schedule["Port of Loading (POL)"].strip(),
             "pod": routing_schedule["Port of Discharge (POD)"].strip(),
             "place_of_deliv": place_of_deliv,
+            "final_dest": final_dest,
             "deliv_eta": deliv_eta.strip(),
             "etd": routing_schedule["Sailing Date"].strip(),
             "eta": eta.strip(),
