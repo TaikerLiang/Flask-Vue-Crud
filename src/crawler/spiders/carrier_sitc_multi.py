@@ -29,7 +29,7 @@ from crawler.core_carrier.items import (
 )
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RequestOptionQueue, RuleManager
-from crawler.services.captcha_service import CaptchaSolverService
+from crawler.services.captcha_service import ImageAntiCaptchaService
 
 SITC_BASE_URL = "https://api.sitcline.com/sitcline"
 SITC_SEARCH_URL = f"{SITC_BASE_URL}/query/cargoTrack"
@@ -440,7 +440,7 @@ class ContentGetter(ChromeContentGetter):
         self.captcha_retry_count += 1
         ele.screenshot("captcha.png")
 
-        return CaptchaSolverService().solve_image(file_path=self.CAPTCHA_PATH)
+        return ImageAntiCaptchaService().solve(file_path=self.CAPTCHA_PATH)
 
     def restart(self):
         if self.retry_count >= MAX_RETRY_COUNT:
