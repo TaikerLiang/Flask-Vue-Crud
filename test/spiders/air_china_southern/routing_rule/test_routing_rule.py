@@ -16,16 +16,16 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    "sub, task_id, mawb_no",
+    "sub, mawb_no",
     [
-        ("01_basic", "1", "66323191"),
-        ("02_data_not_found", "1", "46449060"),
+        ("01_basic", "66323191"),
+        ("02_data_not_found", "46449060"),
     ],
 )
-def test_routing_rule_handle(sub, task_id, mawb_no, sample_loader):
+def test_routing_rule_handle(sub, mawb_no, sample_loader):
     http_text = sample_loader.read_file(sub, "sample.html")
 
-    option = AirInfoRoutingRule.build_request_option(task_id=task_id, mawb_no=mawb_no)
+    option = AirInfoRoutingRule.build_request_option(task_id="1", mawb_no=mawb_no)
 
     response = TextResponse(
         url=option.url,

@@ -1,3 +1,4 @@
+from typing import Union
 from urllib.parse import urlencode
 
 import requests
@@ -40,7 +41,7 @@ class AirChinaSouthernSpider(BaseAirSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseAirItem) or isinstance(result, DataNotFoundItem):
+            if isinstance(result, (BaseAirItem, DataNotFoundItem)):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -84,6 +85,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
                 task_id=task_id,
                 search_no=mawb_no,
                 search_type=SEARCH_TYPE_AWB,
+                reason=f"unexpected HTTP status: {str(response.status_code)}",
             )
 
         prompt = 'value="'
@@ -141,7 +143,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
             for history_item in self._construct_history_item_list(response):
                 yield history_item
 
-    def _construct_air_item(self, response) -> AirItem:
+    def _construct_air_item(self, response) -> Union[AirItem, DataNotFoundItem]:
         selector = response.css("span[id='ctl00_ContentPlaceHolder1_awbLbl'] tr td")
         basic_info = []
         for info in selector:
