@@ -7,14 +7,15 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
+from crawler.core.selenium import ChromeContentGetter
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
+from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError
 from crawler.core_terminal.items import DebugItem, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
-from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError
-from crawler.core.selenium import ChromeContentGetter
+from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
+from crawler.services.captcha_service import GoogleRecaptchaV2Service
 
-BASE_URL = "https://www.propassva.com/"
+BASE_URL = "https://propassva.emodal.com/"
 MAX_PAGE_NUM = 20
 
 
@@ -52,7 +53,7 @@ class PropassvaShareSpider(BaseMultiTerminalSpider):
             if isinstance(result, TerminalItem):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map.get(c_no)
-                if t_ids != None:
+                if t_ids:
                     for t_id in t_ids:
                         result["task_id"] = t_id
                         yield result
@@ -100,13 +101,13 @@ class LoginRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        container_no_list = response.meta["container_no_list"]
+        response.meta["container_no_list"]
         browser = ContentGetter(proxy_manager=None, is_headless=True)
         browser.login()
-        cookies = browser.get_cookies_dict()
-        browser.close()
-
-        yield GetContainerNoRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
+        # cookies = browser.get_cookies_dict()
+        # browser.close()
+        #
+        # yield GetContainerNoRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
 
 
 # -------------------------------------------------------------------------------
@@ -279,12 +280,27 @@ class ContentGetter(ChromeContentGetter):
     PASSWORD = "Hardc0re"
 
     def login(self):
+        g_captcha_solver = GoogleRecaptchaV2Service()
         self._driver.get(BASE_URL)
-        WebDriverWait(self._driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, "input#txtUserName")))
-        self._driver.find_element_by_css_selector("input#txtUserName").send_keys(self.USERNAME)
-        self._driver.find_element_by_css_selector("input#txtPassword").send_keys(self.PASSWORD)
+        WebDriverWait(self._driver, 20).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Username"]')))
+        site_key = "6LcYbVYUAAAAAOTBbXHZFvXBLYugYI5-sqQKlqsA"
+        g_url = "https://sso.emodal.com/Account/Login?ReturnUrl=%2Fconnect%2Fauthorize%2Fcallback%3Fclient_id%3DPCPOV%26redirect_uri%3Dhttps%253A%252F%252Fpropassva.emodal.com%252Fsignin-oidc%26response_type%3Dcode%26scope%3Dopenid%2520profile%2520sso_auth_api%2520security_web_auth_api%2520sso_custom_endpoint%2520offline_access%26nonce%3D65502e55895da422c6bb353e242bad41d18IIxoa5%26state%3D5fe3c00be3778ec4242e25cab55ca827ebsLGyMzY%26code_challenge%3DfwP9WWayWseVqVsFIp-LHJ-TgomBmvyrjyd5mTgSJwc%26code_challenge_method%3DS256"
+        token = g_captcha_solver.solve(g_url, site_key)
+        self._driver.find_element(By.XPATH, '//*[@id="Username"]').send_keys(self.USERNAME)
+        time.sleep(1)
+        self._driver.find_element(By.XPATH, '//*[@id="Password"]').send_keys(self.PASSWORD)
+        time.sleep(1)
 
-        login_btn = WebDriverWait(self._driver, 20).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "input#btnLogin"))
-        )
+        # ref: https://stackoverflow.com/questions/66476952/anti-captcha-not-working-validation-happening-before-callback-selenium
+        # 1: go to your target url, inspect elements, click on console tab
+        # 2: start typing: ___grecaptcha_cfg
+        # 3: should check the path of the callback function would be different or not after a few days (TODO)
+        self._driver.execute_script('document.getElementById("g-recaptcha-response").innerHTML = "{}";'.format(token))
+        self._driver.execute_script(f"___grecaptcha_cfg.clients[0].I.I.callback('{token}')")
+        time.sleep(2)
+
+        self._driver.save_screenshot("before_login.png")
+        login_btn = WebDriverWait(self._driver, 20).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="btnLogin"]')))
         login_btn.click()
+        time.sleep(10)
+        self._driver.save_screenshot("after_login.png")
