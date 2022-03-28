@@ -9,7 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_AWB
-from crawler.core.exceptions import GeneralFatalError, SuspiciousOperationError
+from crawler.core.exceptions import MaxRetryError, SuspiciousOperationError
 from crawler.core.items import DataNotFoundItem
 from crawler.core.selenium import FirefoxContentGetter
 from crawler.core_air.base_spiders import BaseMultiAirSpider
@@ -36,14 +36,9 @@ class AirChinaEasternSpider(BaseMultiAirSpider):
 
     def start(self):
         driver = ContentGetter()
-        try:
-            driver.handle_cookie()
-            token = driver.handle_captcha(task_id=self.mno_tid_map[self.mawb_nos[0]][0], mno_tid_map=self.mno_tid_map)
-            driver.close()
-        except GeneralFatalError as e:
-            yield e
-            driver.close()
-            return
+        driver.handle_cookie()
+        token = driver.handle_captcha(task_id=self.mno_tid_map[self.mawb_nos[0]][0], mno_tid_map=self.mno_tid_map)
+        driver.close()
 
         for mawb_no, task_id in zip(self.mawb_nos, self.task_ids):
             option = AirInfoRoutingRule.build_request_option(mawb_no=mawb_no, task_id=task_id, token=token)
@@ -57,7 +52,7 @@ class AirChinaEasternSpider(BaseMultiAirSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseAirItem) or isinstance(result, DataNotFoundItem):
+            if isinstance(result, (BaseAirItem, DataNotFoundItem)):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -87,7 +82,7 @@ class AirChinaEasternSpider(BaseMultiAirSpider):
             )
         else:
             raise SuspiciousOperationError(
-                task_id=self.mno_tid_map[option.meta["search_no"]][0],
+                task_id=option.meta["task_id"],
                 search_no=option.meta["search_no"],
                 search_type=self.search_type,
                 reason=f"Unexpected request method: `{option.method}`",
@@ -196,10 +191,10 @@ class ContentGetter(FirefoxContentGetter):
                 )
                 return token
         self._driver.switch_to.default_content()
-        raise GeneralFatalError(
+        raise MaxRetryError(
             task_id=task_id,
             search_type=SEARCH_TYPE_AWB,
-            reason=f"<anti-captcha-error> max retry error, on (search_no: [task_id...]): {mno_tid_map}",
+            reason=f"anti-captcha fail, on (search_no: [task_id...]): {mno_tid_map}",
         )
 
     def _solve_captcha(self, task_id, mno_tid_map):
