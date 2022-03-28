@@ -232,9 +232,21 @@ class ContentGetter(ChromeContentGetter):
     #     assert len(windows) == 1
     #     self._driver.switch_to.window(windows[0])
 
-    def find_container_btn_and_click(self, container_btn_css):
-        container_btn = self._driver.find_element_by_css_selector(container_btn_css)
-        container_btn.click()
+    def get_container_info(self, i_th_container, sleep_sec=10, info_pack: Dict = {}):
+        click_element_css = f"a[id='form:link{i_th_container}']"
+        try:
+            container_btn = self._driver.find_element_by_css_selector(click_element_css)
+            container_btn.click()
+            time.sleep(sleep_sec)
+        except ReadTimeoutError:
+            url = self.get_current_url()
+            self.quit()
+            raise TimeOutError(
+                **info_pack,
+                reason=f"Timeout during connect to {url}",
+            )
+
+        return Selector(text=self.get_page_source())
 
     def _search(self, search_no, search_type):
         if self._is_first:
@@ -548,23 +560,27 @@ class CargoTrackingRule(BaseRoutingRule):
         container_list = self._extract_container_list(selector_map=selector_map)
         for i, container in enumerate(container_list):
             container_no = container["container_no"].strip()
-            click_element_css = f"a[id='form:link{i}']"
+
+            response = self._content_getter.get_container_info(i_th_container=i, info_pack=info_pack)
 
             try:
-                self._content_getter.find_container_btn_and_click(container_btn_css=click_element_css)
-                time.sleep(10)
-            except ReadTimeoutError:
-                url = self._content_getter.get_current_url()
-                self._content_getter.quit()
-                raise TimeOutError(
-                    **info_pack,
-                    reason=f"Timeout during connect to {url}",
-                )
+                for item in self._handle_container_response(
+                    response=response, task_id=task_id, container_no=container_no
+                ):
+                    yield item
+            except FormatError as e:
+                # Might result from loading of website too slow, click again and wait longer
+                if "Container no mismatch" in e.reason:
+                    response = self._content_getter.get_container_info(
+                        i_th_container=i, sleep_sec=20, info_pack=info_pack
+                    )
 
-            response = Selector(text=self._content_getter.get_page_source())
-
-            for item in self._handle_container_response(response=response, task_id=task_id, container_no=container_no):
-                yield item
+                    for item in self._handle_container_response(
+                        response=response, task_id=task_id, container_no=container_no
+                    ):
+                        yield item
+                else:
+                    raise e
 
         yield EndItem(task_id=task_id)
 
