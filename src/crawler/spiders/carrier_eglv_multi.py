@@ -1004,7 +1004,6 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
             voyage=booking_no_and_vessel_voyage["voyage"],
         )
 
-        # hidden_form_info = self._extract_hidden_form_info(response=response)
         container_infos = self._extract_container_infos(response=response)
         for container_info in container_infos:
             yield ContainerItem(
@@ -1087,7 +1086,7 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
     @staticmethod
     def _extract_filing_info(response: scrapy.Selector) -> Dict:
         tables = response.css("table")
-        rule = CssQueryTextStartswithMatchRule(css_query="td.f13tabb2::text", startswith="Advance Filing Status")
+        rule = CssQueryTextStartswithMatchRule(css_query="td.f12rowb4::text", startswith="Advance Filing Status")
         table = find_selector_from(selectors=tables, rule=rule)
         if not table:
             return {
@@ -1105,21 +1104,6 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
         }
 
     @staticmethod
-    def _extract_hidden_form_info(response: scrapy.Selector) -> Dict:
-        tables = response.css("br + table")
-        rule = CssQueryTextStartswithMatchRule(
-            css_query="td.f12rowb4::text", startswith="Container Activity Information"
-        )
-        table = find_selector_from(selectors=tables, rule=rule)
-
-        return {
-            "bl_no": table.css("input[name='bl_no']::attr(value)").get(),
-            "onboard_date": table.css("input[name='onboard_date']::attr(value)").get(),
-            "pol": table.css("input[name='pol']::attr(value)").get(),
-            "TYPE": table.css("input[name='TYPE']::attr(value)").get(),
-        }
-
-    @staticmethod
     def _extract_container_infos(response: scrapy.Selector) -> List[Dict]:
         container_infos = []
 
@@ -1128,6 +1112,9 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
             css_query="td.f12rowb4::text", startswith="Container Activity Information"
         )
         table = find_selector_from(selectors=tables, rule=rule)
+        if not table:
+            return []
+
         table_locator = NameOnTopHeaderTableLocator()
         table_locator.parse(table=table)
         table_extractor = TableExtractor(table_locator=table_locator)
@@ -1329,7 +1316,6 @@ class EglvContentGetter(PyppeteerContentGetter):
 
         is_exist = await self._check_data_exist()
         content = await self.page.content()
-        await self.scroll_down()
 
         return content, is_exist
 
@@ -1391,14 +1377,13 @@ class EglvContentGetter(PyppeteerContentGetter):
 
     async def container_page(self, container_no) -> str:
         try:
-            await self.scroll_down()
             await self.page.click(f"a[href^=\"javascript:frmCntrMoveDetail('{container_no}')\"]")
             await asyncio.sleep(10)
             container_page = (await self.browser.pages())[-1]
             await container_page.waitForSelector("table table")
             await asyncio.sleep(5)
             content = await container_page.content()
-            await container_page.close()
+            await container_page.evaluate("""window.close();""")
             return content
         except PageError:
             return ""

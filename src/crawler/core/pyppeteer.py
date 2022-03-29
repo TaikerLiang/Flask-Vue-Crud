@@ -1,11 +1,11 @@
-from typing import Any
-import random
 import asyncio
 import logging
+import random
+from typing import Any
 
+import websockets.client
 from pyppeteer import connection, launch, launcher
 from pyppeteer_stealth import stealth
-import websockets.client
 
 from crawler.core.defines import BaseContentGetter
 
@@ -27,6 +27,7 @@ class PyppeteerContentGetter(BaseContentGetter):
             "--disable-blink-features",
             "--enable-javascript",
             "--window-size=1920,1080",
+            "--allow-insecure-localhost",
             # "--start-maximized",
         ]
         default_viewport = {
