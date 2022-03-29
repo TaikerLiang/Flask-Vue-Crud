@@ -30,11 +30,13 @@ from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
     name = ""
     base_url_format = ""
+    custom_settings = {
+        **BaseMultiCarrierSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super(MaeuMccqSafmShareSpider, self).__init__(*args, **kwargs)
-
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         bill_rules = [
             MainInfoRoutingRule(SHIPMENT_TYPE_MBL),
