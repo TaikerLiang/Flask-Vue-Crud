@@ -1,6 +1,7 @@
 import json
 import time
-from typing import Dict, List
+from typing import List
+from urllib.parse import unquote
 
 import scrapy
 from selenium.webdriver.common.by import By
@@ -8,9 +9,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
 from crawler.core.selenium import ChromeContentGetter
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError
-from crawler.core_terminal.items import DebugItem, TerminalItem
+from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 from crawler.services.captcha_service import GoogleRecaptchaV2Service
@@ -31,7 +32,7 @@ class PropassvaShareSpider(BaseMultiTerminalSpider):
             GetContainerNoRoutingRule(),
             RemoveContainerNoRoutingRule(),
             ContainerRoutingRule(),
-            NextRoundRoutingRule(),
+            # NextRoundRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -77,7 +78,24 @@ class PropassvaShareSpider(BaseMultiTerminalSpider):
                 cookies=option.cookies,
                 dont_filter=True,
             )
-
+        elif option.method == RequestOption.METHOD_POST_BODY:
+            return scrapy.Request(
+                method="POST",
+                url=option.url,
+                headers=option.headers,
+                body=option.body,
+                meta=meta,
+                dont_filter=True,
+            )
+        elif option.method in ["DELETE", "PUT"]:
+            return scrapy.Request(
+                method=option.method,
+                url=option.url,
+                headers=option.headers,
+                body=option.body,
+                meta=meta,
+                dont_filter=True,
+            )
         else:
             raise RuntimeError()
 
@@ -91,7 +109,7 @@ class LoginRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://www.google.com",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "container_no_list": container_no_list,
             },
@@ -101,13 +119,15 @@ class LoginRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        response.meta["container_no_list"]
+        container_no_list = response.meta["container_no_list"]
         browser = ContentGetter(proxy_manager=None, is_headless=True)
         browser.login()
-        # cookies = browser.get_cookies_dict()
-        # browser.close()
-        #
-        # yield GetContainerNoRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
+        cookies = browser.get_cookies_dict()
+        auth_dict = json.loads(unquote(cookies["AuthCookie"]))
+        auth = f"Bearer {auth_dict['bearer']}"
+        browser.close()
+
+        yield GetContainerNoRoutingRule.build_request_option(container_no_list=container_no_list, auth=auth)
 
 
 # -------------------------------------------------------------------------------
@@ -117,15 +137,28 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
     name = "Get_Container_No"
 
     @classmethod
-    def build_request_option(cls, container_no_list: List, cookies: Dict) -> RequestOption:
-        url = (
-            "https://availability.propassva.com:64455/ImportAvailability/GetContainerInfoList"
-            "?sgrdModel=%7B%22searchtext%22:%22%22,%22page%22:1,%22pageSize%22:30,%22sortBy"
-            "%22:%221%22,%22sortDirection%22:%22asc%22,%22sortColumns%22:%22%22%7D"
-        )
+    def build_request_option(cls, container_no_list: List, auth: str, first=True) -> RequestOption:
+        url = "https://datahub.visibility.emodal.com/datahub/container/accesslist"
+        form_data = {
+            "queryContinuationToken": "",
+            "pageSize": 30,
+            "Page": 0,
+            "conditions": [
+                {
+                    "mem": "viewtype_desc",
+                    "include": True,
+                    "oper": 10,
+                    "required": True,
+                    "vLow": "U",
+                    "vHigh": [],
+                    "seprator": "AND",
+                }
+            ],
+            "ordering": [],
+        }
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
+            method=RequestOption.METHOD_POST_BODY,
             url=url,
             headers={
                 "User-Agent": (
@@ -133,11 +166,14 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
                     "Chrome/87.0.4280.141 Safari/537.36"
                 ),
                 "Accept-Language": "zh-TW,zh;q=0.9",
+                "Authorization": auth,
+                "Content-Type": "application/json",
             },
-            cookies=cookies,
+            body=json.dumps(form_data),
             meta={
                 "container_no_list": container_no_list,
-                "cookies": cookies,
+                "auth": auth,
+                "first": first,
             },
         )
 
@@ -146,12 +182,77 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_no_list = response.meta["container_no_list"]
-        cookies = response.meta["cookies"]
+        auth = response.meta["auth"]
+
+        if not response.meta["first"]:
+            search_container_nos = container_no_list[:MAX_PAGE_NUM]
+            container_no_list = container_no_list[MAX_PAGE_NUM:]
+        else:
+            search_container_nos = []
+
         response_dict = json.loads(response.text)
-        remove_container_nos = []
-        for content in response_dict["Content"]:
-            remove_container_nos.append(content["ContainerNumber"])
-        yield RemoveContainerNoRoutingRule.build_request_option(container_no_list, remove_container_nos, cookies)
+        remove_containers = []
+        remove_ids = []
+        for container in response_dict["data"]:
+            if (container["unit_nbr"] in search_container_nos) and (container["id"] is not None):
+                vessel_info = container["locations"][0]["locationinfo"]["arrivalinfo"]["vesselinfo"]
+                release_info = self._extract_release_info(container)
+                yield TerminalItem(
+                    container_no=container["unit_nbr"],
+                    last_free_day=container["lastfree_dttm"],
+                    gate_out_date=self._extract_gate_out_date(container),
+                    demurrage=self._extract_demurrage_info(container),
+                    customs_release=release_info["CUSTOMS"],
+                    freight_release=release_info["FREIGHT"],
+                    carrier=container["unitinfo"]["ownerline_scac"],
+                    container_spec=container["unitinfo"]["unitsztype_cd"],
+                    vessel=vessel_info["vessel_nm"],
+                    voyage=vessel_info["voyage_nbr"],
+                )
+                search_container_nos.remove(container["unit_nbr"])
+            remove_containers.append(container["unit_nbr"])
+            remove_ids.append(container["id"])
+
+        for container_no in search_container_nos:
+            yield ExportErrorData(
+                container_no=container_no,
+                detail="Data was not found",
+                status=TERMINAL_RESULT_STATUS_ERROR,
+            )
+
+        if len(container_no_list) == 0:
+            return
+
+        if len(remove_containers) == 0:
+            yield ContainerRoutingRule.build_request_option(container_no_list, auth)
+        else:
+            yield RemoveContainerNoRoutingRule.build_request_option(
+                container_no_list, remove_containers, remove_ids, auth
+            )
+
+    def _extract_release_info(self, container_dict):
+        release_info = {
+            "CUSTOMS": None,
+            "FREIGHT": None,
+        }
+        for status in container_dict["shipmentstatus"]:
+            for hold in status["holdsinfo"]:
+                release_info[hold["type"]] = hold["status"]
+        return release_info
+
+    def _extract_gate_out_date(self, container_dict):
+        activity_list = container_dict["drayunitactivity"]
+        for activity in activity_list:
+            if activity["event_desc"] == "Departed Terminal":
+                return activity["event_dttm"]
+        return None
+
+    def _extract_demurrage_info(self, container_dict):
+        demurrage_list = container_dict["confeeinfo"]
+        for demurrage in demurrage_list:
+            if demurrage["feestatus_dsc"] == "Paid":
+                return demurrage["feepaid"]
+        return None
 
 
 # -------------------------------------------------------------------------------
@@ -161,14 +262,14 @@ class RemoveContainerNoRoutingRule(BaseRoutingRule):
     name = "Remove_Container_No"
 
     @classmethod
-    def build_request_option(cls, container_no_list: List, remove_container_nos: List, cookies: Dict) -> RequestOption:
-        url = (
-            f"https://availability.propassva.com:64455/ImportAvailability/RemoveContainerWatchListInfo"
-            f"?Container_Nbr={','.join(remove_container_nos)}"
-        )
+    def build_request_option(
+        cls, container_no_list: List, remove_containers: List, remove_ids: List, auth: str
+    ) -> RequestOption:
+        url = "https://datahub.visibility.emodal.com/datahub/container/accesslist"
+        form_data = {"containernbrs": ",".join(remove_containers), "drayunituids": ",".join(remove_ids)}
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
+            method="DELETE",
             url=url,
             headers={
                 "User-Agent": (
@@ -176,11 +277,13 @@ class RemoveContainerNoRoutingRule(BaseRoutingRule):
                     "Chrome/87.0.4280.141 Safari/537.36"
                 ),
                 "Accept-Language": "zh-TW,zh;q=0.9",
+                "Authorization": auth,
+                "Content-Type": "application/json",
             },
-            cookies=cookies,
+            body=json.dumps(form_data),
             meta={
                 "container_no_list": container_no_list,
-                "cookies": cookies,
+                "auth": auth,
             },
         )
 
@@ -189,8 +292,8 @@ class RemoveContainerNoRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_no_list = response.meta["container_no_list"]
-        cookies = response.meta["cookies"]
-        yield ContainerRoutingRule.build_request_option(container_no_list, cookies)
+        auth = response.meta["auth"]
+        yield ContainerRoutingRule.build_request_option(container_no_list, auth)
 
 
 # -------------------------------------------------------------------------------
@@ -200,16 +303,18 @@ class ContainerRoutingRule(BaseRoutingRule):
     name = "Container"
 
     @classmethod
-    def build_request_option(cls, container_no_list: List, cookies: Dict) -> RequestOption:
-        url = (
-            f"https://availability.propassva.com:64455/ImportAvailability/GetContainerInfoList?"
-            f"apiParams=%7B%22Container_Nbr%22:%22{'%5Cn'.join(container_no_list[:MAX_PAGE_NUM])}%22%7D&"
-            f"sgrdModel=%7B%22searchtext%22:%22%22,%22page%22:1,%22pageSize%22:20,%22sortBy"
-            f"%22:%221%22,%22sortDirection%22:%22asc%22,%22sortColumns%22:%22%22%7D"
-        )
+    def build_request_option(cls, container_no_list: List, auth: str) -> RequestOption:
+        url = "https://datahub.visibility.emodal.com/datahub/container/AddContainers"
+        form_data = {
+            "containerNumbers": container_no_list[:MAX_PAGE_NUM],
+            "tradeType": "I",
+            "portCd": "",
+            "IsselectedallTradetypes": False,
+            "tags": None,
+        }
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
+            method="PUT",
             url=url,
             headers={
                 "User-Agent": (
@@ -217,9 +322,14 @@ class ContainerRoutingRule(BaseRoutingRule):
                     "Chrome/87.0.4280.141 Safari/537.36"
                 ),
                 "Accept-Language": "zh-TW,zh;q=0.9",
+                "Authorization": auth,
+                "Content-Type": "application/json",
             },
-            cookies=cookies,
-            meta={"container_no_list": container_no_list, "cookies": cookies},
+            body=json.dumps(form_data),
+            meta={
+                "container_no_list": container_no_list,
+                "auth": auth,
+            },
         )
 
     def get_save_name(self, response) -> str:
@@ -227,49 +337,37 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_no_list = response.meta["container_no_list"]
-        cookies = response.meta["cookies"]
-        response_dict = json.loads(response.text)
-        for content in response_dict["Content"]:
-            if content["ContainerInfo"] == "":
-                raise TerminalInvalidContainerNoError
-            container_info = json.loads(content["ContainerInfo"])
-            yield TerminalItem(
-                container_no=content["ContainerNumber"],
-                available=content["AvailableStatus"],
-                last_free_day=content["LastFreeDay"],
-                gate_out_date=container_info["outgate-dt"],
-                customs_release=container_info["custm-status"],
-                demurrage=container_info["demurrage-status"],
-                holds=content["Holds"],
-                vessel=container_info["vsl"],
-                voyage=container_info["voy"],
-            )
-        yield NextRoundRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
+        auth = response.meta["auth"]
+        # response_dict = json.loads(response.text)
+        # print(response_dict[0]["messageDetail"])
+        yield GetContainerNoRoutingRule.build_request_option(
+            container_no_list=container_no_list, auth=auth, first=False
+        )
 
 
 # --------------------------------------------------------------------
 
 
-class NextRoundRoutingRule(BaseRoutingRule):
-    @classmethod
-    def build_request_option(cls, container_no_list: List, cookies: Dict) -> RequestOption:
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url="https://eval.edi.hardcoretech.co/c/livez",
-            meta={"container_no_list": container_no_list, "cookies": cookies},
-        )
-
-    def handle(self, response):
-        container_no_list = response.meta["container_no_list"]
-        cookies = response.meta["cookies"]
-
-        if len(container_no_list) <= MAX_PAGE_NUM:
-            return
-
-        container_no_list = container_no_list[MAX_PAGE_NUM:]
-
-        yield GetContainerNoRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
+# class NextRoundRoutingRule(BaseRoutingRule):
+#     @classmethod
+#     def build_request_option(cls, container_no_list: List, cookies: Dict) -> RequestOption:
+#         return RequestOption(
+#             rule_name=cls.name,
+#             method=RequestOption.METHOD_GET,
+#             url="https://eval.edi.hardcoretech.co/c/livez",
+#             meta={"container_no_list": container_no_list, "cookies": cookies},
+#         )
+#
+#     def handle(self, response):
+#         container_no_list = response.meta["container_no_list"]
+#         cookies = response.meta["cookies"]
+#
+#         if len(container_no_list) <= MAX_PAGE_NUM:
+#             return
+#
+#         container_no_list = container_no_list[MAX_PAGE_NUM:]
+#
+#         yield GetContainerNoRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
 
 
 # -------------------------------------------------------------------------------
