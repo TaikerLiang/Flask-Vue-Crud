@@ -522,6 +522,7 @@ class ItemExtractor:
                     container_key=container_info["container_key"],
                     container_no=container_info["container_no"],
                     last_free_day=container_info["last_free_day"],
+                    rail_last_free_day=container_info["rail_last_free_day"],
                     depot_last_free_day=container_info["depot_last_free_day"],
                 )
             )
@@ -551,8 +552,9 @@ class ItemExtractor:
                 {
                     "container_key": get_container_key(container_no=container_no),
                     "container_no": container_no,
-                    "last_free_day": lfd_related.get("Rail LFD", ""),
-                    "depot_last_free_day": lfd_related.get("Depot LFD", ""),
+                    "last_free_day": lfd_related.get("LFD", None),
+                    "rail_last_free_day": lfd_related.get("Rail LFD", None),
+                    "depot_last_free_day": lfd_related.get("Depot LFD", None),
                 }
             )
 
