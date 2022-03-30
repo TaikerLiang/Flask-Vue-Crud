@@ -47,6 +47,7 @@ def multi_verify(results):
         por=LocationItem(name=None),
         pol=LocationItem(name="QINGDAO (CN)"),
         pod=LocationItem(name="LOS ANGELES, CA (US)"),
+        place_of_deliv=LocationItem(name="ST LOUIS, MO (US)"),
         final_dest=LocationItem(name="ST LOUIS, MO (US)"),
         eta=None,
         ata="Saturday 18-DEC-2021 16:17",
