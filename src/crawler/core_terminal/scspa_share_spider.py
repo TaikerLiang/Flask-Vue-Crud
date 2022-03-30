@@ -112,16 +112,8 @@ class ContainerRoutingRule(BaseRoutingRule):
     @classmethod
     def _handle_response(cls, response):
         content_table = cls._extract_content_table(response)
-        print("===================")
-        # print("content_table:", len(content_table))
 
         for content in content_table:
-            print("-------------------------------")
-            print("content:", len(content))
-            print(content)
-            print("-------------------------------")
-            # yield TerminalItem()
-
             yield TerminalItem(
                 container_no=content[0],
                 available=content[8],
