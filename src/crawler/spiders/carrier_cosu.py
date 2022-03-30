@@ -235,7 +235,7 @@ class ItemExtractor:
             else:
                 terminal = mbl_item["pod"]["name"]
 
-            yield ContainerItem(**c_item, terminal=LocationItem(name=terminal), railway=railway)
+            yield ContainerItem(**c_item, terminal_pod=LocationItem(name=terminal), railway=railway)
 
             response_text = content_getter.click_container_status_button(c_i)
             response_selector = scrapy.Selector(text=response_text)

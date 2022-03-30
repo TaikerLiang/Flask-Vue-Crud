@@ -307,7 +307,7 @@ class ItemExtractor:
             else:
                 terminal = mbl_item["pod"]["name"]
 
-            yield ContainerItem(**c_item, terminal=LocationItem(name=terminal), railway=railway)
+            yield ContainerItem(**c_item, terminal_pod=LocationItem(name=terminal), railway=railway)
 
             response_text = content_getter.click_container_status_button(
                 button_table=button_table, container_no=c_item["container_no"]

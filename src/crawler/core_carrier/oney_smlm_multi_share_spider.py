@@ -587,7 +587,7 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
             task_id=task_id,
             container_key=container_key,
             last_free_day=release_info.get("last_free_day") or None,
-            terminal=LocationItem(name=release_info.get("terminal") or None),
+            terminal_pod=LocationItem(name=release_info.get("terminal") or None),
         )
 
     def _extract_release_info(self, response_dict: Dict) -> Dict:
