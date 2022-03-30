@@ -1,7 +1,5 @@
-import dataclasses
 import logging
 import random
-import string
 import time
 
 import scrapy
@@ -10,14 +8,8 @@ from selenium.webdriver.common.keys import Keys
 
 from local.core import BaseLocalCrawler, BaseSeleniumContentGetter
 from local.exceptions import AccessDeniedError, DataNotFoundError
+from local.proxy import HydraproxyProxyManager, ProxyManager
 from src.crawler.spiders.carrier_zimu import MainInfoRoutingRule
-
-
-@dataclasses.dataclass
-class ProxyOption:
-    group: str
-    session: str
-
 
 logger = logging.getLogger("local-crawler-zimu")
 

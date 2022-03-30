@@ -5,7 +5,7 @@ import os
 import re
 import time
 from io import BytesIO
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import cv2
 import numpy as np
@@ -431,7 +431,7 @@ class ContentGetter(ChromeContentGetter):
 class CargoTrackingRule(BaseRoutingRule):
     name = "CARGO_TRACKING"
 
-    def __init__(self, content_getter: ContentGetter, search_type):
+    def __init__(self, content_getter: Optional[ContentGetter], search_type):
         self._content_getter = content_getter
         self._search_type = search_type
 
@@ -472,7 +472,7 @@ class CargoTrackingRule(BaseRoutingRule):
             res = self._content_getter.search_and_return(info_pack=info_pack)
             response = Selector(text=res)
 
-            while self._no_response(response=response):
+            while self.is_no_response(response=response):
                 res = self._content_getter.search_again_and_return(info_pack=info_pack)
                 response = Selector(text=res)
         except Exception as e:
@@ -484,15 +484,16 @@ class CargoTrackingRule(BaseRoutingRule):
         if os.path.exists("./slider01.jpg"):
             os.remove("./slider01.jpg")
 
-        for item in self._handle_response(response=response, info_pack=info_pack):
+        for item in self.handle_response(response=response, info_pack=info_pack):
             yield item
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
-    def _no_response(self, response: Selector) -> bool:
+    @staticmethod
+    def is_no_response(response: Selector) -> bool:
         return not bool(response.css("td.pageTitle"))
 
-    def _handle_response(self, response, info_pack: Dict):
+    def handle_response(self, response, info_pack: Dict):
         if self.is_search_no_invalid(response):
             yield DataNotFoundItem(**info_pack, status=RESULT_STATUS_ERROR, detail="Data was not found")
             return
