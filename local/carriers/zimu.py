@@ -1,29 +1,15 @@
-import dataclasses
-import random
-import asyncio
 import logging
+import random
 import time
 
 import scrapy
-from pyppeteer.errors import TimeoutError
-from urllib3.exceptions import ReadTimeoutError
-from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.webdriver.common.keys import Keys
 
-from local.core import BaseLocalCrawler
-from local.proxy import HydraproxyProxyManager, ProxyManager
+from local.core import BaseLocalCrawler, BaseSeleniumContentGetter
 from local.exceptions import AccessDeniedError, DataNotFoundError
-from src.crawler.core_carrier.exceptions import LoadWebsiteTimeOutError
-from src.crawler.core.pyppeteer import PyppeteerContentGetter
-from local.core import BaseSeleniumContentGetter
+from local.proxy import HydraproxyProxyManager, ProxyManager
 from src.crawler.spiders.carrier_zimu import MainInfoRoutingRule
-
-
-@dataclasses.dataclass
-class ProxyOption:
-    group: str
-    session: str
-
 
 logger = logging.getLogger("local-crawler-zimu")
 
