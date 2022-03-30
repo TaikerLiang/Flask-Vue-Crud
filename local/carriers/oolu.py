@@ -17,6 +17,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 from crawler.core.base_new import SEARCH_TYPE_BOOKING, SEARCH_TYPE_MBL
 from crawler.core.exceptions_new import AccessDeniedError, MaxRetryError
+from crawler.core.proxy import HydraproxyProxyManager
 from local.core import BaseLocalCrawler
 from src.crawler.core.selenium import ChromeContentGetter
 from src.crawler.spiders.carrier_oolu_multi import CargoTrackingRule
@@ -45,7 +46,7 @@ class ContentGetter(ChromeContentGetter):
         search_no = info_pack["search_no"]
         search_type = info_pack["search_type"]
 
-        self._search(search_no=search_no, search_type=search_type)
+        self.search(search_no=search_no, search_type=search_type)
         time.sleep(7)
         windows = self._driver.window_handles
         self._driver.switch_to.window(windows[1])  # windows[1] is new page
@@ -95,7 +96,7 @@ class ContentGetter(ChromeContentGetter):
         container_btn = self._driver.find_element_by_css_selector(container_btn_css)
         container_btn.click()
 
-    def _search(self, search_no, search_type):
+    def search(self, search_no, search_type):
         if self._is_first:
             # handle cookies
             cookie_accept_btn = WebDriverWait(self._driver, 20).until(
@@ -291,7 +292,10 @@ class OoluLocalCrawler(BaseLocalCrawler):
         super().__init__(proxy=proxy)
         self._search_type = ""
         self._search_nos = []
-        self.content_getter = ContentGetter(proxy_manager=None, is_headless=False)
+        self._first = True
+        self.content_getter = ContentGetter(
+            proxy_manager=HydraproxyProxyManager(session="oolu", logger=logger), is_headless=True
+        )
 
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):
         task_ids = task_ids.split(",")
@@ -313,13 +317,18 @@ class OoluLocalCrawler(BaseLocalCrawler):
             "search_no": search_no,
             "search_type": self._search_type,
         }
-        self.content_getter.goto()
-        windows = self.content_getter.get_window_handles()
-        if len(windows) > 1:
-            self.content_getter.close()
-            self.content_getter.switch_to_first()
+        if self._first:
+            self.content_getter.goto()
+            res = self.content_getter.search_and_return(info_pack=info_pack)
+        else:
+            windows = self.content_getter.get_window_handles()
+            if len(windows) > 1:
+                self.content_getter.close()
+                self.content_getter.switch_to_first()
+            self.content_getter.goto()
+            self.content_getter.search(search_no, self._search_type)
+            res = self.content_getter.get_page_source()
 
-        res = self.content_getter.search_and_return(info_pack=info_pack)
         response = Selector(text=res)
 
         rule = CargoTrackingRule(content_getter=self.content_getter, search_type=self._search_type)
@@ -328,6 +337,7 @@ class OoluLocalCrawler(BaseLocalCrawler):
             res = self.content_getter.search_again_and_return(info_pack=info_pack)
             response = Selector(text=res)
 
+        self._first = False
         if os.path.exists("./background01.jpg"):
             os.remove("./background01.jpg")
         if os.path.exists("./slider01.jpg"):

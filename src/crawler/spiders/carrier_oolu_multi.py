@@ -180,7 +180,7 @@ class ContentGetter(ChromeContentGetter):
 
     def goto(self):
         self._driver.get("https://www.oocl.com/eng/ourservices/eservices/cargotracking/Pages/cargotracking.aspx")
-        time.sleep(3)
+        time.sleep(10)
 
     def search_and_return(self, info_pack: Dict):
         search_no = info_pack["search_no"]
