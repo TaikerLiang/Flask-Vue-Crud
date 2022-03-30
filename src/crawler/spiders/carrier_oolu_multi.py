@@ -169,7 +169,20 @@ class ContentGetter(ChromeContentGetter):
     MAX_SEARCH_TIMES = 10
 
     def __init__(self, proxy_manager, is_headless):
-        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
+
+        self.block_urls = [
+            "https://www.oocl.com/Style%20Library/revamp/images/flexslider_depot.jpg",
+            "https://www.oocl.com/Style%20Library/revamp/images/*.png",
+            # "https://moc.oocl.com/app/skin/mcc_oocl/images/*.gif",
+            # "https://www.oocl.com/Style%20Library/revamp/Images/*.svg",
+            "https://moc.oocl.com/admin/scripts/jquery-1.8.0.js",
+            "https://www.google-analytics.com/analytics.js",
+            "https://moc.oocl.com/admin/common/xss.js",
+            "https://ca.cargosmart.ai/js/analytics.client.core.js",
+            "https://moc.oocl.com/party/scripts/cs_browser_monitor.js",
+        ]
+
+        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless, block_urls=self.block_urls)
 
         logging.getLogger("seleniumwire").setLevel(logging.ERROR)
         logging.getLogger("hpack").setLevel(logging.INFO)
@@ -193,6 +206,9 @@ class ContentGetter(ChromeContentGetter):
         WebDriverWait(self._driver, 120).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div#recaptcha_div")))
         if self._is_blocked(response=Selector(text=self._driver.page_source)):
             raise AccessDeniedError(**info_pack, reason="Blocked during searching")
+
+        self._driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": self.block_urls})
+        self._driver.execute_cdp_cmd("Network.enable", {})
 
         if self._is_first:
             self._is_first = False
