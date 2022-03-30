@@ -13,6 +13,6 @@ def verify(results):
     assert results[1] == ContainerItem(
         container_key="CCLU3451951",
         last_free_day="2019-09-29 00:00",
-        terminal={"name": None},
+        terminal_pod={"name": None},
         task_id=1,
     )

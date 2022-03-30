@@ -37,7 +37,7 @@ def verify(results: List):
         container_no="YMLU8538167",
         last_free_day=None,
         task_id=1,
-        terminal=LocationItem(name="Y773"),
+        terminal_pod=LocationItem(name="Y773"),
     )
 
     assert isinstance(results[2], RequestOption)
@@ -75,7 +75,7 @@ def verify(results: List):
         container_no="YMLU8917617",
         last_free_day=None,
         task_id=3,
-        terminal=LocationItem(name="Y258"),
+        terminal_pod=LocationItem(name="Y258"),
     )
 
     assert isinstance(results[6], RequestOption)
