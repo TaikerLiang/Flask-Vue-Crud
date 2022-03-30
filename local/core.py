@@ -1,19 +1,28 @@
-import dataclasses
-import random
-import time
-import string
 import abc
+import dataclasses
+import logging
+import random
+import string
+import time
 
-import undetected_chromedriver as uc
+import bezier
+import numpy as np
+import pyautogui
+import selenium.webdriver
 from scrapy import Request
 from scrapy.http import TextResponse
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.common.keys import Keys
+from seleniumwire.undetected_chromedriver.v2 import Chrome
 
-from local.config import PROXY_URL, PROXY_PASSWORD
+from local.config import PROXY_PASSWORD, PROXY_URL
+from local.proxy import HydraproxyProxyManager
+
+logger = logging.getLogger("seleniumwire")
+logger.setLevel(logging.ERROR)
 
 
 @dataclasses.dataclass
@@ -34,13 +43,28 @@ class BaseSeleniumContentGetter:
     PROXY_URL = PROXY_URL
     PROXY_PASSWORD = PROXY_PASSWORD
 
-    def __init__(self, proxy_manager):
-        self.driver = uc.Chrome(version_main=97)
-        self.driver.get("https://nowsecure.nl")
-        time.sleep(5)
+    def __init__(self, proxy: bool):
+        seleniumwire_options = {}
+        options = selenium.webdriver.ChromeOptions()
+
+        options.add_argument("--disable-dev-shm-usage")  # 使用共享內存RAM
+        options.add_argument("--no-sandbox")
+        options.add_argument("--window-size=1920,1080")
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        self.proxy = proxy
+        if self.proxy:
+            proxy_manager = HydraproxyProxyManager(logger=logger)
+            proxy_manager.renew_proxy()
+            seleniumwire_options = {
+                "proxy": {
+                    "http": f"http://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_DOMAIN}",
+                    "https": f"https://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_DOMAIN}",
+                }
+            }
+        self.driver = Chrome(version_main=98, seleniumwire_options=seleniumwire_options, options=options)
+        # self.driver.get("https://nowsecure.nl")
+        # time.sleep(5)
         self.action = ActionChains(self.driver)
-        self.delete_all_cookies()
-        time.sleep(5)
 
     def go_to(self, url: str, seconds: int):
         self.driver.get(url=url)
@@ -68,6 +92,10 @@ class BaseSeleniumContentGetter:
         self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(5)
 
+    def scroll_up(self):
+        self.driver.execute_script("window.scrollTo(0, 0);")
+        time.sleep(5)
+
     def back_to_previous(self):
         self.driver.back()
         time.sleep(2)
@@ -78,6 +106,48 @@ class BaseSeleniumContentGetter:
     def wait_for_appear(self, css: str, wait_sec: int):
         locator = (By.CSS_SELECTOR, css)
         WebDriverWait(self.driver, wait_sec).until(EC.presence_of_element_located(locator))
+
+    def resting_mouse(self):  # move mouse to right of screen
+
+        start = pyautogui.position()
+        end = random.randint(1600, 1750), random.randint(400, 850)
+
+        x2 = (start[0] + end[0]) / 3  # midpoint x
+        y2 = (start[1] + end[1]) / 3  # midpoint y
+
+        control1_X = (start[0] + x2) / 3
+        control2_X = (end[0] + x2) / 3
+
+        # Two intermediate control points that may be adjusted to modify the curve.
+        control1 = control1_X, y2  # combine midpoints to create perfect curve
+        control2 = control2_X, y2  # using y2 for both to get a more linear curve
+
+        # Format points to use with bezier
+        control_points = np.array([start, control1, control2, end])
+        points = np.array([control_points[:, 0], control_points[:, 1]])  # Split x and y coordinates
+        # You can set the degree of the curve here, should be less than # of control points
+        degree = 3
+        # Create the bezier curve
+        curve = bezier.Curve(points, degree)
+
+        curve_steps = (
+            50  # How many points the curve should be split into. Each is a separate pyautogui.moveTo() execution
+        )
+        delay = 0.003  # Time between movements. 1/curve_steps = 1 second for entire curve
+
+        # Move the mouse
+        for j in range(1, curve_steps + 1):
+            # The evaluate method takes a float from [0.0, 1.0] and returns the coordinates at that point in the curve
+            # Another way of thinking about it is that i/steps gets the coordinates at (100*i/steps) percent into the curve
+            x, y = curve.evaluate(j / curve_steps)
+            pyautogui.moveTo(x, y)  # Move to point in curve
+            pyautogui.sleep(delay)  # Wait delay
+        time.sleep(2)
+
+    def slow_type(self, elem, page_input):
+        for letter in page_input:
+            time.sleep(float(random.uniform(0.05, 0.3)))
+            elem.send_keys(letter)
 
     def move_mouse_to_random_position(self):
         max_x, max_y = self.driver.execute_script("return [window.innerWidth, window.innerHeight];")
@@ -124,7 +194,8 @@ class BaseSeleniumContentGetter:
 
 
 class BaseLocalCrawler:
-    def __init__(self):
+    def __init__(self, proxy: bool):
+        self.proxy = proxy
         self.content_getter = None
 
     @abc.abstractmethod
