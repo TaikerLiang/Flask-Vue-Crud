@@ -58,11 +58,15 @@ class Restart:
 
 class CarrierYmluSpider(BaseMultiCarrierSpider):
     name = "carrier_ymlu_multi"
+    custom_settings = {
+        **BaseMultiCarrierSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super(CarrierYmluSpider, self).__init__(*args, **kwargs)
+
         self._cookie_jar_id = 1
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         bill_rules = [
             MainPageRoutingRule(),

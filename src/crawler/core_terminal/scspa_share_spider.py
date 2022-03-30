@@ -7,10 +7,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
 from crawler.core.selenium import ChromeContentGetter
-from crawler.core_terminal.items import DebugItem, TerminalItem
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
+from crawler.core_terminal.items import DebugItem, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
+from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 
 MAX_PAGE_NUM = 10
 
@@ -18,10 +18,13 @@ MAX_PAGE_NUM = 10
 class ScspaShareSpider(BaseMultiTerminalSpider):
     firms_code = ""
     name = ""
+    custom_settings = {
+        **BaseMultiTerminalSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         self._content_getter = ContentGetter(proxy_manager=None, is_headless=True)
 
@@ -49,7 +52,7 @@ class ScspaShareSpider(BaseMultiTerminalSpider):
             if isinstance(result, TerminalItem):
                 c_no = result.get("container_no")
                 t_ids = self.cno_tid_map.get(c_no)
-                if t_ids != None:
+                if t_ids:
                     for t_id in t_ids:
                         result["task_id"] = t_id
                         yield result
@@ -189,7 +192,7 @@ class ContentGetter(ChromeContentGetter):
         while True:
             try:
                 self._driver.find_element(By.XPATH, "//div[id='tosModelPopUpWinId']")
-            except:
+            except Exception:
                 break
             else:
                 close_button = self._driver.find_element(

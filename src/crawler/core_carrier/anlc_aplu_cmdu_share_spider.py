@@ -45,11 +45,13 @@ class ForceRestart:
 class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
     name = ""
     base_url = ""
+    custom_settings = {
+        **BaseMultiCarrierSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super(AnlcApluCmduShareSpider, self).__init__(*args, **kwargs)
-
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         bill_rules = [
             RecaptchaRule(),
