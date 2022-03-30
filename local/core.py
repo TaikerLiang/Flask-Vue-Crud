@@ -16,10 +16,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
+from seleniumwire.undetected_chromedriver.v2 import Chrome
 
 from local.config import PROXY_PASSWORD, PROXY_URL
 from local.proxy import HydraproxyProxyManager
-from local.seleniumwire.seleniumwire.undetected_chromedriver.v2 import Chrome
 
 logger = logging.getLogger("seleniumwire")
 logger.setLevel(logging.ERROR)
