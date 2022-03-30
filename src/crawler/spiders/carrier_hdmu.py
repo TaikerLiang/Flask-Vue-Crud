@@ -1,32 +1,46 @@
 import dataclasses
 import json
-from typing import List, Dict
+from typing import Dict, List
 from urllib.parse import urlencode
 
-from scrapy import Selector, Request, FormRequest
+from scrapy import FormRequest, Request, Selector
 from twisted.python.failure import Failure
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_ERROR
-from crawler.core_carrier.base_spiders import BaseCarrierSpider, CARRIER_DEFAULT_SETTINGS
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, SuspiciousOperationError
+from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.table import BaseTable, HeaderMismatchError, TableExtractor
+from crawler.core_carrier.base import (
+    CARRIER_RESULT_STATUS_ERROR,
+    SHIPMENT_TYPE_BOOKING,
+    SHIPMENT_TYPE_MBL,
+)
+from crawler.core_carrier.base_spiders import (
+    CARRIER_DEFAULT_SETTINGS,
+    BaseCarrierSpider,
+)
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError,
+    SuspiciousOperationError,
+)
 from crawler.core_carrier.items import (
-    MblItem,
-    LocationItem,
-    VesselItem,
+    BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
-    BaseCarrierItem,
-    ExportErrorData,
     DebugItem,
+    ExportErrorData,
+    LocationItem,
+    MblItem,
+    VesselItem,
 )
-from crawler.core.proxy import HydraproxyProxyManager
-from crawler.core_carrier.request_helpers import RequestOption, ProxyMaxRetryError
+from crawler.core_carrier.request_helpers import ProxyMaxRetryError, RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
-from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from, BaseMatchRule
-from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
-from crawler.core.table import (
-    TableExtractor,
-    BaseTable,
+from crawler.extractors.selector_finder import (
+    BaseMatchRule,
+    CssQueryTextStartswithMatchRule,
+    find_selector_from,
+)
+from crawler.extractors.table_cell_extractors import (
+    BaseTableCellExtractor,
+    FirstTextTdExtractor,
 )
 
 BASE_URL = "http://www.hmm21.com"
@@ -281,7 +295,7 @@ class CheckIpRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://eval.edi.hardcoretech.co/c/livez",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "search_no": search_no,
             },
@@ -614,6 +628,7 @@ class MainRoutingRule(BaseRoutingRule):
                 customs_status = self._extract_customs_status(response=response)
                 cargo_delivery_info = self._extract_cargo_delivery_info(response=response)
                 latest_update = self._extract_lastest_update(response=response)
+                container_contents = self._extract_container_contents(response=response)
             except IndexError:
                 yield ForceRestart()
                 return
@@ -622,7 +637,7 @@ class MainRoutingRule(BaseRoutingRule):
                 por=LocationItem(name=tracking_results["location.por"]),
                 pod=LocationItem(name=tracking_results["location.pod"]),
                 pol=LocationItem(name=tracking_results["location.pol"]),
-                final_dest=LocationItem(name=tracking_results["Location.dest"]),
+                final_dest=LocationItem(name=tracking_results["location.dest"]),
                 por_atd=tracking_results["departure.por_actual"],
                 ata=tracking_results["arrival.pod_actual"],
                 eta=tracking_results["arrival.pod_estimate"],
@@ -653,6 +668,19 @@ class MainRoutingRule(BaseRoutingRule):
                 mbl_item["booking_no"] = search_no
 
             self._item_recorder.record_item(key=(MBL, search_no), item=mbl_item)
+
+            for container_content in container_contents:
+                terminal_pod = tracking_results["terminal.pod"]
+                terminal_final_dest = tracking_results["terminal.dest"]
+                if terminal_pod or terminal_final_dest:
+                    container_item = ContainerItem(
+                        container_key=container_content.container_no,
+                        container_no=container_content.container_no,
+                        terminal_pod=terminal_pod,
+                        terminal_final_dest=terminal_final_dest,
+                    )
+
+                    self._item_recorder.record_item(key=(MBL, search_no), item=container_item)
 
         if not self._item_recorder.is_item_recorded(key=(VESSEL, search_no)):
             vessel = self._extract_vessel(response=response)
@@ -733,11 +761,20 @@ class MainRoutingRule(BaseRoutingRule):
         table = TableExtractor(table_locator=table_locator)
         red_blue_td_extractor = RedBlueTdExtractor()
 
+        try:
+            terminal_pod = table.extract_cell("Discharging Port", "Terminal")
+            terminal_final_dest = table.extract_cell("Destination", "Terminal")
+        except HeaderMismatchError:
+            terminal_pod = None
+            terminal_final_dest = None
+
         return {
             "location.por": table.extract_cell("Origin", "Location"),
             "location.pol": table.extract_cell("Loading Port", "Location"),
             "location.pod": table.extract_cell("Discharging Port", "Location"),
-            "Location.dest": table.extract_cell("Destination", "Location"),
+            "location.dest": table.extract_cell("Destination", "Location"),
+            "terminal.pod": terminal_pod,
+            "terminal.dest": terminal_final_dest,
             "arrival.pol_estimate": table.extract_cell("Loading Port", "Arrival", red_blue_td_extractor)["red"],
             "arrival.pol_actual": table.extract_cell("Loading Port", "Arrival", red_blue_td_extractor)["blue"],
             "arrival.pod_estimate": table.extract_cell("Discharging Port", "Arrival", red_blue_td_extractor)["red"],
