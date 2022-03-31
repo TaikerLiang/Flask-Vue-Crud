@@ -213,7 +213,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
 class ContentGetter(ChromeContentGetter):
     USER_NAME = "hvv26"
-    PASS_WORD = "Goft0108"
+    PASS_WORD = "Goft0401"
     LOGIN_URL = "https://accessns.web.ocp01.nscorp.com/auth/login"
 
     def _login(self):
