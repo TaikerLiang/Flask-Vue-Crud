@@ -5,7 +5,7 @@ import os
 import re
 import time
 from io import BytesIO
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import cv2
 import numpy as np
@@ -563,7 +563,13 @@ class CargoTrackingRule(BaseRoutingRule):
 
             response = Selector(text=self._content_getter.get_page_source())
 
-            for item in self._handle_container_response(response=response, task_id=task_id, container_no=container_no):
+            for item in self._handle_container_response(
+                response=response,
+                task_id=task_id,
+                container_no=container_no,
+                terminal_pod=routing_info["teminal_pod"],
+                terminal_final_dest=routing_info["terminal_final_dest"],
+            ):
                 yield item
 
         yield EndItem(task_id=task_id)
@@ -713,12 +719,21 @@ class CargoTrackingRule(BaseRoutingRule):
             top="Destination", left=table_locator.LAST_LEFT_HEADER, extractor=span_extractor
         )
 
+        if pod_info["port"] == final_dest:
+            terminal_pod = deliv_info["port"]
+            terminal_final_dest = None
+        else:
+            terminal_pod = None
+            terminal_final_dest = deliv_info["port"]
+
         routing_info = {
             "por": por,
             "pol": pol_info["port"],
             "pod": pod_info["port"],
             "place_of_deliv": deliv_info["port"],
             "final_dest": final_dest,
+            "terminal_pod": terminal_pod,
+            "terminal_final_dest": terminal_final_dest,
             "etd": etd,
             "atd": atd,
             "eta": eta,
@@ -751,7 +766,9 @@ class CargoTrackingRule(BaseRoutingRule):
             )
         return container_no_list
 
-    def _handle_container_response(self, response, task_id: str, container_no: str):
+    def _handle_container_response(
+        self, response, task_id: str, container_no: str, terminal_pod: Optional[str], terminal_final_dest: Optional[str]
+    ):
         info_pack = {
             "task_id": task_id,
             "search_no": container_no,
@@ -775,6 +792,8 @@ class CargoTrackingRule(BaseRoutingRule):
             container_no=info_pack["search_no"],
             last_free_day=detention_info["last_free_day"] or None,
             det_free_time_exp_date=detention_info["det_free_time_exp_date"] or None,
+            terminal_pod=LocationItem(name=terminal_pod),
+            terminal_final_dest=LocationItem(name=terminal_final_dest),
         )
 
         container_status_list = self._extract_container_status_list(selectors_map)
