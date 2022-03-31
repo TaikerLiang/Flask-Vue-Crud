@@ -190,6 +190,7 @@ class ContentGetter(ChromeContentGetter):
         self._driver.set_page_load_timeout(120)
 
         self._search_count = 0
+        self._first = True
 
     def goto(self):
         self._driver.get("https://www.oocl.com/eng/ourservices/eservices/cargotracking/Pages/cargotracking.aspx")
@@ -200,19 +201,16 @@ class ContentGetter(ChromeContentGetter):
         search_type = info_pack["search_type"]
 
         self._search(search_no=search_no, search_type=search_type)
-        time.sleep(7)
+        time.sleep(10)
         windows = self._driver.window_handles
         self._driver.switch_to.window(windows[1])  # windows[1] is new page
-        WebDriverWait(self._driver, 120).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div#recaptcha_div")))
         if self._is_blocked(response=Selector(text=self._driver.page_source)):
             raise AccessDeniedError(**info_pack, reason="Blocked during searching")
 
         self._driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": self.block_urls})
         self._driver.execute_cdp_cmd("Network.enable", {})
-
-        if self._is_first:
-            self._is_first = False
-        self._handle_with_slide(info_pack=info_pack)
+        if self._first:
+            self._handle_with_slide(info_pack=info_pack)
         time.sleep(10)
 
         self._search_count = 0
@@ -253,13 +251,15 @@ class ContentGetter(ChromeContentGetter):
         container_btn.click()
 
     def _search(self, search_no, search_type):
-        if self._is_first:
+        try:
             # handle cookies
             cookie_accept_btn = WebDriverWait(self._driver, 20).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, "form > button#btn_cookie_accept"))
             )
             cookie_accept_btn.click()
             time.sleep(2)
+        except Exception:
+            pass
 
         drop_down_btn = self._driver.find_element_by_css_selector("button[data-id='ooclCargoSelector']")
         drop_down_btn.click()
@@ -314,6 +314,8 @@ class ContentGetter(ChromeContentGetter):
 
             time.sleep(10)
             retry_times += 1
+
+        self._first = False
 
     def _pass_verification_or_not(self):
         try:
@@ -479,11 +481,12 @@ class CargoTrackingRule(BaseRoutingRule):
         }
 
         try:
-            self._content_getter.goto()
             windows = self._content_getter.get_window_handles()
             if len(windows) > 1:
                 self._content_getter.close()
                 self._content_getter.switch_to_first()
+            else:
+                self._content_getter.goto()
 
             res = self._content_getter.search_and_return(info_pack=info_pack)
             response = Selector(text=res)
