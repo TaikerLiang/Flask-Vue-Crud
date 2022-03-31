@@ -29,4 +29,6 @@ def verify(results):
         "task_id": "1",
         "container_no": "OOCU8081870",
         "click_element_css": "a[id='form:link0']",
+        "terminal_pod": None,
+        "terminal_final_dest": "BNSF - Chicago LPC",
     }

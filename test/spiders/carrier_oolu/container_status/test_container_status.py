@@ -27,7 +27,9 @@ def sample_loader(sample_loader):
 def test_container_status_handler(sub, mbl_no, container_no, sample_loader):
     html_file = sample_loader.read_file(sub, "sample.html")
 
-    option = ContainerStatusRule.build_request_option(task_id="1", container_no=container_no, click_element_css="")
+    option = ContainerStatusRule.build_request_option(
+        task_id="1", container_no=container_no, click_element_css="", terminal_pod=None, terminal_final_dest=None
+    )
 
     response = TextResponse(
         url=option.url,
@@ -45,7 +47,9 @@ def test_container_status_handler(sub, mbl_no, container_no, sample_loader):
         "search_no": option.meta["container_no"],
         "search_type": SEARCH_TYPE_CONTAINER,
     }
-    results = list(rule._handle_response(response=response, info_pack=info_pack))
+    results = list(
+        rule._handle_response(response=response, terminal_pod=None, terminal_final_dest=None, info_pack=info_pack)
+    )
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
