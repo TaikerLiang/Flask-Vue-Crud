@@ -26,14 +26,17 @@ def verify(results):
         pol=LocationItem(name="SAVANNAH (GA), U.S.A."),
         pod=LocationItem(name="KAOHSIUNG, TAIWAN"),
         place_of_deliv=LocationItem(un_lo_code=None, name=None),
+        final_dest=LocationItem(un_lo_code=None, name=None),
         etd="28-Nov-2019",
         eta="08-Jan-2020",
         deliv_eta=None,
+        deliv_ata=None,
     )
 
     assert results[2] == ContainerItem(
         container_key="GAOU6141898",
         container_no="GAOU6141898",
+        terminal_pod=LocationItem(name=None),
     )
 
     assert results[3] == ContainerStatusItem(

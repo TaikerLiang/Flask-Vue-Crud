@@ -26,14 +26,17 @@ def verify(results):
         pol=LocationItem(name="NINGBO (ZJ), CHINA. PEOPLE'S REPUBLIC"),
         pod=LocationItem(name="DURRES, ALBANIA"),
         place_of_deliv=LocationItem(un_lo_code=None, name=None),
+        final_dest=LocationItem(un_lo_code=None, name=None),
         etd="01-Apr-2020",
         eta="08-May-2020",
         deliv_eta=None,
+        deliv_ata=None,
     )
 
     assert results[2] == ContainerItem(
         container_key="FCIU4134820",
         container_no="FCIU4134820",
+        terminal_pod=LocationItem(name=None),
     )
 
     assert results[3] == ContainerStatusItem(

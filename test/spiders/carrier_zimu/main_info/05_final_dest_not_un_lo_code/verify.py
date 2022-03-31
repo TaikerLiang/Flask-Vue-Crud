@@ -26,14 +26,17 @@ def verify(results):
         pol=LocationItem(name="SHANGHAI (SH), CHINA. PEOPLE'S REPUBLIC"),
         pod=LocationItem(name="WILMINGTON (NC), U.S.A."),
         place_of_deliv=LocationItem(un_lo_code=None, name="CHARLOTTE (NC), U.S.A."),
+        final_dest=LocationItem(un_lo_code=None, name="CHARLOTTE (NC), U.S.A."),
         etd="17-Oct-2019",
         eta="18-Nov-2019",
         deliv_eta="27-Nov-2019",
+        deliv_ata="27-Nov-2019",
     )
 
     assert results[2] == ContainerItem(
         container_key="ZCSU8513632",
         container_no="ZCSU8513632",
+        terminal_pod=LocationItem(name=None),
     )
 
     assert results[3] == ContainerStatusItem(
