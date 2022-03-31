@@ -676,8 +676,8 @@ class MainRoutingRule(BaseRoutingRule):
                     container_item = ContainerItem(
                         container_key=container_content.container_no,
                         container_no=container_content.container_no,
-                        terminal_pod=terminal_pod,
-                        terminal_final_dest=terminal_final_dest,
+                        terminal_pod=LocationItem(name=terminal_pod),
+                        terminal_final_dest=LocationItem(name=terminal_final_dest),
                     )
 
                     self._item_recorder.record_item(key=(MBL, search_no), item=container_item)

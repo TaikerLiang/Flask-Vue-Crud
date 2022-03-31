@@ -752,8 +752,8 @@ class MainRoutingRule(BaseRoutingRule):
                         task_id=current_task_id,
                         container_key=container_content.container_no,
                         container_no=container_content.container_no,
-                        terminal_pod=tracking_results["terminal.pod"],
-                        terminal_final_dest=tracking_results["terminal.dest"],
+                        terminal_pod=LocationItem(name=terminal_pod),
+                        terminal_final_dest=LocationItem(name=terminal_final_dest),
                     )
 
                     current_item_recorder_map.record_item(key=(MBL, current_search_no), item=container_item)
