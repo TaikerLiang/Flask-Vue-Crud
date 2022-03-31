@@ -91,7 +91,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://www.google.com",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "container_no_list": container_no_list,
             },
@@ -112,6 +112,7 @@ class ContainerRoutingRule(BaseRoutingRule):
     @classmethod
     def _handle_response(cls, response):
         content_table = cls._extract_content_table(response)
+
         for content in content_table:
             yield TerminalItem(
                 container_no=content[0],
@@ -125,7 +126,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         content_table = []
         response = scrapy.Selector(text=page_source)
 
-        table = response.xpath("(//table[contains(@class, 'x-grid-table')])[2]")
+        table = response.xpath("(//table[contains(@class, 'x-grid-table')])[4]")
         tr_list = table.xpath("./tbody/tr")[1:]
         for tr in tr_list:
             content_table.append(tr.xpath("./td/div/text()").getall())
