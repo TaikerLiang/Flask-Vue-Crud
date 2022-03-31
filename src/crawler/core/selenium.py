@@ -14,7 +14,7 @@ class SeleniumContentGetter(BaseContentGetter):
         proxy_manager: Optional[ProxyManager] = None,
         is_headless: bool = False,
         load_image: bool = True,
-        block_urls: Optional[List] = None,
+        block_urls: List = [],
     ):
         self._is_first = True
         self.is_headless = is_headless
@@ -64,7 +64,7 @@ class ChromeContentGetter(SeleniumContentGetter):
         proxy_manager: Optional[ProxyManager] = None,
         is_headless: bool = False,
         load_image: bool = True,
-        block_urls: Optional[List] = None,
+        block_urls: List = [],
     ):
         super().__init__(
             proxy_manager=proxy_manager, is_headless=is_headless, load_image=load_image, block_urls=block_urls
