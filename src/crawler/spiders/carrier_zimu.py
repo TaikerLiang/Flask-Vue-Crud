@@ -135,7 +135,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, mbl_no) -> RequestOption:
-        url = f"https://www.google.com"
+        url = "https://www.google.com"
 
         return RequestOption(
             method=RequestOption.METHOD_GET,
@@ -208,7 +208,6 @@ class MainInfoRoutingRule(BaseRoutingRule):
             final_dest_un_lo_code = None
             final_dest_name = final_dest
 
-
         place_of_deliv = main_info["place_of_deliv"]
         if not place_of_deliv:
             place_of_deliv_un_lo_code = None
@@ -232,6 +231,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             etd=main_info["etd"] or None,
             eta=main_info["eta"] or None,
             deliv_eta=main_info["deliv_eta"] or None,
+            deliv_ata=main_info["deliv_ata"] or None,
         )
 
         container_no_list = self._extract_container_no_list(response=response)
@@ -239,6 +239,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             yield ContainerItem(
                 container_key=container_no,
                 container_no=container_no,
+                terminal_pod=LocationItem(name=main_info["terminal_pod"] or None),
             )
 
             container_status_list = self._extract_container_status_list(response=response, container_no=container_no)
@@ -263,6 +264,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
     def _extract_main_info(self, response: scrapy.Selector):
         mbl_no = response.css("dl.dl-inline dd::text").get()
 
+        if not mbl_no:
+            return {}
+
         pod_dl = response.xpath("//dl[@class='dlist']/*[text()='POD']/..")
         if pod_dl:
             pod_info = dict(self.extract_dl(dl=pod_dl))
@@ -281,17 +285,18 @@ class MainInfoRoutingRule(BaseRoutingRule):
         if "Final Destination:" in routing_schedule:
             # TODO: remove later
             final_dest = routing_schedule["Final Destination:"].strip()
-            place_of_deliv = routing_schedule["Final Destination:"].strip()
+            place_of_deliv = final_dest
             deliv_eta = response.css("dt#etaDate::text").get() or ""
+            deliv_ata = deliv_eta
             eta = pod_info.get("Arrival Date", "")
         else:
             final_dest = ""
-            place_of_deliv = ""
+            place_of_deliv = final_dest
             deliv_eta = ""
+            deliv_ata = deliv_eta
             eta = response.css("dt#etaDate::text").get() or ""
 
-        if not mbl_no:
-            return {}
+        terminal_pod = routing_schedule.get("Terminal Name") or ""
 
         return {
             "mbl_no": mbl_no.strip(),
@@ -300,7 +305,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
             "pod": routing_schedule["Port of Discharge (POD)"].strip(),
             "place_of_deliv": place_of_deliv,
             "final_dest": final_dest,
+            "terminal_pod": terminal_pod.strip(),
             "deliv_eta": deliv_eta.strip(),
+            "deliv_ata": deliv_ata.strip(),
             "etd": routing_schedule["Sailing Date"].strip(),
             "eta": eta.strip(),
         }
