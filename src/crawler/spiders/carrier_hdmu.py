@@ -671,13 +671,13 @@ class MainRoutingRule(BaseRoutingRule):
 
             for container_content in container_contents:
                 terminal_pod = tracking_results["terminal.pod"]
-                terminal_final_dest = tracking_results["terminal.dest"]
-                if terminal_pod or terminal_final_dest:
+                terminal_deliv = tracking_results["terminal.dest"]
+                if terminal_pod or terminal_deliv:
                     container_item = ContainerItem(
                         container_key=container_content.container_no,
                         container_no=container_content.container_no,
                         terminal_pod=LocationItem(name=terminal_pod),
-                        terminal_final_dest=LocationItem(name=terminal_final_dest),
+                        terminal_deliv=LocationItem(name=terminal_deliv),
                     )
 
                     self._item_recorder.record_item(key=(MBL, search_no), item=container_item)
@@ -763,10 +763,10 @@ class MainRoutingRule(BaseRoutingRule):
 
         try:
             terminal_pod = table.extract_cell("Discharging Port", "Terminal")
-            terminal_final_dest = table.extract_cell("Destination", "Terminal")
+            terminal_deliv = table.extract_cell("Destination", "Terminal")
         except HeaderMismatchError:
             terminal_pod = None
-            terminal_final_dest = None
+            terminal_deliv = None
 
         return {
             "location.por": table.extract_cell("Origin", "Location"),
@@ -774,7 +774,7 @@ class MainRoutingRule(BaseRoutingRule):
             "location.pod": table.extract_cell("Discharging Port", "Location"),
             "location.dest": table.extract_cell("Destination", "Location"),
             "terminal.pod": terminal_pod,
-            "terminal.dest": terminal_final_dest,
+            "terminal.dest": terminal_deliv,
             "arrival.pol_estimate": table.extract_cell("Loading Port", "Arrival", red_blue_td_extractor)["red"],
             "arrival.pol_actual": table.extract_cell("Loading Port", "Arrival", red_blue_td_extractor)["blue"],
             "arrival.pod_estimate": table.extract_cell("Discharging Port", "Arrival", red_blue_td_extractor)["red"],
