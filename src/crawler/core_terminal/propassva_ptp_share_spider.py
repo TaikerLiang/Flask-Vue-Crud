@@ -1,3 +1,4 @@
+import dataclasses
 import json
 import time
 from typing import List
@@ -16,13 +17,25 @@ from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 from crawler.services.captcha_service import GoogleRecaptchaV2Service
 
-BASE_URL = "https://propassva.emodal.com/"
+BASE_URL = "https://{}.emodal.com/"  # propassva or porttruckpass
 MAX_PAGE_NUM = 20
 
 
-class PropassvaShareSpider(BaseMultiTerminalSpider):
+@dataclasses.dataclass
+class CompanyInfo:
+    site_name: str
+    username: str
+    password: str
+
+
+class PropassvaPtpShareSpider(BaseMultiTerminalSpider):
     firms_code = ""
     name = ""
+    company_info = CompanyInfo(
+        site_name="",
+        username="",
+        password="",
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -39,7 +52,9 @@ class PropassvaShareSpider(BaseMultiTerminalSpider):
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
-        option = LoginRoutingRule.build_request_option(container_no_list=unique_container_nos)
+        option = LoginRoutingRule.build_request_option(
+            container_no_list=unique_container_nos, company_info=self.company_info
+        )
         yield self._build_request_by(option=option)
 
     def parse(self, response):
@@ -51,7 +66,7 @@ class PropassvaShareSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem):
+            if isinstance(result, (TerminalItem, ExportErrorData)):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map.get(c_no)
                 if t_ids:
@@ -105,13 +120,14 @@ class LoginRoutingRule(BaseRoutingRule):
     name = "Login"
 
     @classmethod
-    def build_request_option(cls, container_no_list: List[str]) -> RequestOption:
+    def build_request_option(cls, container_no_list: List[str], company_info: CompanyInfo) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url="https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "container_no_list": container_no_list,
+                "company_info": company_info,
             },
         )
 
@@ -121,7 +137,7 @@ class LoginRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_no_list = response.meta["container_no_list"]
         browser = ContentGetter(proxy_manager=None, is_headless=True)
-        browser.login()
+        browser.login(response.meta["company_info"])
         cookies = browser.get_cookies_dict()
         auth_dict = json.loads(unquote(cookies["AuthCookie"]))
         auth = f"Bearer {auth_dict['bearer']}"
@@ -195,7 +211,7 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
         remove_ids = []
         for container in response_dict["data"]:
             if (container["unit_nbr"] in search_container_nos) and (container["id"] is not None):
-                vessel_info = container["locations"][0]["locationinfo"]["arrivalinfo"]["vesselinfo"]
+                vessel_info = self._extract_vessel_info(container)
                 release_info = self._extract_release_info(container)
                 yield TerminalItem(
                     container_no=container["unit_nbr"],
@@ -206,12 +222,12 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
                     freight_release=release_info["FREIGHT"],
                     carrier=container["unitinfo"]["ownerline_scac"],
                     container_spec=container["unitinfo"]["unitsztype_cd"],
-                    vessel=vessel_info["vessel_nm"],
-                    voyage=vessel_info["voyage_nbr"],
+                    vessel=vessel_info["vessel"],
+                    voyage=vessel_info["voyage"],
                 )
                 search_container_nos.remove(container["unit_nbr"])
             remove_containers.append(container["unit_nbr"])
-            remove_ids.append(container["id"])
+            remove_ids.append(container["id"] or "")
 
         for container_no in search_container_nos:
             yield ExportErrorData(
@@ -253,6 +269,20 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
             if demurrage["feestatus_dsc"] == "Paid":
                 return demurrage["feepaid"]
         return None
+
+    def _extract_vessel_info(self, container):
+        location_info = container["locations"][0]["locationinfo"]
+        if location_info:
+            arrive_info = location_info["arrivalinfo"]
+            if arrive_info is not None:
+                return {
+                    "vessel": arrive_info["vesselinfo"].get("vessel_nm"),
+                    "voyage": arrive_info["vesselinfo"].get("voyage_nbr"),
+                }
+        return {
+            "vessel": None,
+            "voyage": None,
+        }
 
 
 # -------------------------------------------------------------------------------
@@ -374,19 +404,16 @@ class ContainerRoutingRule(BaseRoutingRule):
 
 
 class ContentGetter(ChromeContentGetter):
-    USERNAME = "tk@hardcoretech.co"
-    PASSWORD = "Hardc0re"
-
-    def login(self):
+    def login(self, company_info: CompanyInfo):
         g_captcha_solver = GoogleRecaptchaV2Service()
-        self._driver.get(BASE_URL)
+        self._driver.get(BASE_URL.format(company_info.site_name))
         WebDriverWait(self._driver, 20).until(EC.presence_of_element_located((By.XPATH, '//*[@id="Username"]')))
         site_key = "6LcYbVYUAAAAAOTBbXHZFvXBLYugYI5-sqQKlqsA"
-        g_url = "https://sso.emodal.com/Account/Login?ReturnUrl=%2Fconnect%2Fauthorize%2Fcallback%3Fclient_id%3DPCPOV%26redirect_uri%3Dhttps%253A%252F%252Fpropassva.emodal.com%252Fsignin-oidc%26response_type%3Dcode%26scope%3Dopenid%2520profile%2520sso_auth_api%2520security_web_auth_api%2520sso_custom_endpoint%2520offline_access%26nonce%3D65502e55895da422c6bb353e242bad41d18IIxoa5%26state%3D5fe3c00be3778ec4242e25cab55ca827ebsLGyMzY%26code_challenge%3DfwP9WWayWseVqVsFIp-LHJ-TgomBmvyrjyd5mTgSJwc%26code_challenge_method%3DS256"
+        g_url = self.get_current_url()
         token = g_captcha_solver.solve(g_url, site_key)
-        self._driver.find_element(By.XPATH, '//*[@id="Username"]').send_keys(self.USERNAME)
+        self._driver.find_element(By.XPATH, '//*[@id="Username"]').send_keys(company_info.username)
         time.sleep(1)
-        self._driver.find_element(By.XPATH, '//*[@id="Password"]').send_keys(self.PASSWORD)
+        self._driver.find_element(By.XPATH, '//*[@id="Password"]').send_keys(company_info.password)
         time.sleep(1)
 
         # ref: https://stackoverflow.com/questions/66476952/anti-captcha-not-working-validation-happening-before-callback-selenium
@@ -394,7 +421,13 @@ class ContentGetter(ChromeContentGetter):
         # 2: start typing: ___grecaptcha_cfg
         # 3: should check the path of the callback function would be different or not after a few days (TODO)
         self._driver.execute_script('document.getElementById("g-recaptcha-response").innerHTML = "{}";'.format(token))
-        self._driver.execute_script(f"___grecaptcha_cfg.clients[0].I.I.callback('{token}')")
+        self._driver.execute_script(
+            """
+            jQuery('#btnLogin').prop('disabled', false);
+            var response = grecaptcha.getResponse();
+            jQuery('#hdnToken').val(response);
+            """
+        )
         time.sleep(2)
 
         self._driver.save_screenshot("before_login.png")
