@@ -12,7 +12,7 @@ def verify(results):
         det_free_time_exp_date=None,
         last_free_day=None,
         terminal_pod=LocationItem(name=None),
-        terminal_final_dest=LocationItem(name=None),
+        terminal_deliv=LocationItem(name=None),
     )
 
     assert results[1] == ContainerStatusItem(
