@@ -1,241 +1,1565 @@
 {
-	"Content": [
-		{
-			"Holds": [
-				{
-					"HoldCode": "QQ",
-					"HoldDescription": "CUSTOMS Default Bill Hold ",
-					"HoldDate": "2021-10-28T00:05:00-04:00",
-					"sHoldDtTm": "28 Oct 2021 00:05",
-					"txtHoldDate": "2021-10-28T00:05:00-04:00"
-				}
-			],
-			"LastFreeDay": null,
-			"LastFreeDate": "0001-01-01T00:00:00",
-			"EquipmentSizeType": "20ST",
-			"Create_DtTm": "28 Oct 2021 05:05",
-			"Create_Date": "2021-10-28T05:05:11.433",
-			"AvailableStatus": "ON VESSEL",
-			"ContainerNumber": "EITU3044650",
-			"WLContainerNumber": "EITU3044650",
-			"TerminalCode": "VITAP",
-			"ResvIdentifier": null,
-			"ResvStatus": null,
-			"ResvCompanyId": 0,
-			"MoveIdentifier": null,
-			"ShippingLine": "EVG",
-			"Estarrival_Dt": "",
-			"Estarrival_date": "0001-01-01T00:00:00",
-			"HasHolds": "Yes",
-			"ContainerWatchList_Id": 4823522,
-			"OnWatchList": "Y",
-			"Display_Ord": 0,
-			"Fees": null,
-			"IsNotify": "Y",
-			"FeeTotal": 0,
-			"AcceptsPayments": "N",
-			"FeeTotalAmount": -1,
-			"TotalFeePaid": 0,
-			"TotalFeeAwait": 0,
-			"PreGateStatus": "N/A",
-			"AllowAdvPregate": "N",
-			"AdvResvCtrstatus": null,
-			"AllowAdvPregateDesc": "N",
-			"GateApptId": 0,
-			"PreGateStatusCd": "NA",
-			"PreGateStatusDesc": "N/A",
-			"ContainerInfo": "{\"asset-ownr\":\"EGLV\",\"avl-status\":\"ON VESSEL\",\"shipment-status\":\"AE#2021-10-28T00:05:00,DN#2021-10-28T00:05:00,QQ#2021-10-28T00:05:00\",\"cntr-nbr\":\"EITU3044650\",\"eq-type\":\"2210\",\"fclty-cd\":\"VITAP\",\"fclty-nm\":\"Virginia International Gateway\",\"ship-line\":\"EVG\",\"bol\":\"003102898671\",\"custm-status\":\"\",\"demurrage-status\":\"\",\"in-bond\":\"N\",\"lfd\":\"\",\"lloyds\":\"9667174\",\"outgate-dt\":\"\",\"usda-status\":\"\",\"vsl\":\"THALASSA DOXA\",\"voy\":\"THDO-1113W\",\"weight-unit\":\"Kilograms\",\"yard-status\":\"On Vessel\",\"eq-sztp\":\"20ST\",\"gseq_nbr\":\"00000000-0000-0000-0000-000000000000\",\"fees\":[],\"holds\":[{\"hold-cd\":\"QQ\",\"hold-description\":\"CUSTOMS Default Bill Hold \",\"hold-date\":\"2021-10-28T00:05:00-04:00\"}],\"last-status\":\"2021-10-28T00:05:00-04:00\",\"time-zone\":\"Eastern Standard Time\",\"interchange-tm\":\"2021-10-28T00:05:00\",\"ctrl-nbr\":\"760503436\",\"cntr-type\":\"2210\",\"data-src\":\"VITIG\",\"trans-nbr\":\"50\",\"last-move-dt\":\"2021-10-28T00:05:00-04:00\",\"vsl-ref\":\"9667174\",\"is-haz\":\"N\",\"is-reefer\":\"N\",\"is-awk\":\"N\",\"exam-transfer\":\"N\",\"allow-transfer\":\"N\",\"unload-vessel\":\"N\",\"CalcFeeAmt\":0.0}",
-			"ConInstance": "{\"ConInstance_Id\":10323951,\"Terminal_Cd\":\"VITAP\",\"TradeType_Cd\":\"I\",\"Con_Nbr\":\"EITU3044650\",\"ConInstanceUID\":\"c201ce26-2453-4b0b-918e-424cb86cf197\",\"Con10_Nbr\":\"EITU304465\",\"ConInfo\":\"{\\\"asset-ownr\\\":\\\"EGLV\\\",\\\"avl-status\\\":\\\"ON VESSEL\\\",\\\"shipment-status\\\":\\\"AE#2021-10-28T00:05:00,DN#2021-10-28T00:05:00,QQ#2021-10-28T00:05:00\\\",\\\"cntr-nbr\\\":\\\"EITU3044650\\\",\\\"eq-type\\\":\\\"2210\\\",\\\"fclty-cd\\\":\\\"VITAP\\\",\\\"fclty-nm\\\":\\\"Virginia International Gateway\\\",\\\"ship-line\\\":\\\"EVG\\\",\\\"bol\\\":\\\"003102898671\\\",\\\"custm-status\\\":\\\"\\\",\\\"demurrage-status\\\":\\\"\\\",\\\"in-bond\\\":\\\"N\\\",\\\"lfd\\\":\\\"\\\",\\\"lloyds\\\":\\\"9667174\\\",\\\"outgate-dt\\\":\\\"\\\",\\\"usda-status\\\":\\\"\\\",\\\"vsl\\\":\\\"THALASSA DOXA\\\",\\\"voy\\\":\\\"THDO-1113W\\\",\\\"weight-unit\\\":\\\"Kilograms\\\",\\\"yard-status\\\":\\\"On Vessel\\\",\\\"eq-sztp\\\":\\\"20ST\\\",\\\"gseq_nbr\\\":\\\"00000000-0000-0000-0000-000000000000\\\",\\\"fees\\\":[],\\\"holds\\\":[{\\\"hold-cd\\\":\\\"QQ\\\",\\\"hold-description\\\":\\\"CUSTOMS Default Bill Hold \\\",\\\"hold-date\\\":\\\"2021-10-28T00:05:00-04:00\\\"}],\\\"last-status\\\":\\\"2021-10-28T00:05:00-04:00\\\",\\\"time-zone\\\":\\\"Eastern Standard Time\\\",\\\"interchange-tm\\\":\\\"2021-10-28T00:05:00\\\",\\\"ctrl-nbr\\\":\\\"760503436\\\",\\\"cntr-type\\\":\\\"2210\\\",\\\"data-src\\\":\\\"VITIG\\\",\\\"trans-nbr\\\":\\\"50\\\",\\\"last-move-dt\\\":\\\"2021-10-28T00:05:00-04:00\\\",\\\"vsl-ref\\\":\\\"9667174\\\",\\\"is-haz\\\":\\\"N\\\",\\\"is-reefer\\\":\\\"N\\\",\\\"is-awk\\\":\\\"N\\\",\\\"exam-transfer\\\":\\\"N\\\",\\\"allow-transfer\\\":\\\"N\\\",\\\"unload-vessel\\\":\\\"N\\\",\\\"CalcFeeAmt\\\":0.0}\",\"RouteInfo\":\"{\\\"vessel-cd\\\":\\\"9667174\\\",\\\"vessel-nm\\\":\\\"THALASSA DOXA\\\",\\\"voyage-nbr\\\":\\\"THDO-1113W\\\",\\\"vslcdtype-cd\\\":\\\"L\\\"}\",\"CargoInfo\":\"{\\\"bol-nbr\\\":\\\"003102898671\\\"}\",\"ArrivalInfo\":\"{}\",\"DepartureInfo\":\"{\\\"direction-cd\\\":\\\"DEPARTURE\\\"}\",\"UnitStatusInfo\":\"{\\\"unituse-cd\\\":\\\"I\\\",\\\"unituse-desc\\\":\\\"IMPORT\\\"}\",\"FeeInfo\":\"[]\",\"ShipmentStatusInfo\":\"[{\\\"shipmentstatus-cd\\\":\\\"DN\\\",\\\"shipmentstatus-dttm\\\":\\\"10/12/2021 10:59:00\\\"},{\\\"shipmentstatus-cd\\\":\\\"QQ\\\",\\\"shipmentstatus-dttm\\\":\\\"10/12/2021 10:59:00\\\"}]\",\"CurrentConditionInfo\":\"{\\\"fullempty-cd\\\":\\\"FULL\\\",\\\"actual-wgt\\\":\\\"2120\\\",\\\"actualwgt-unit\\\":\\\"Kilograms\\\"}\",\"SvcEventInfo\":\"[{\\\"svcevent-cd\\\":\\\"AE\\\",\\\"svcevent-dttm\\\":\\\"2021-10-14T13:06:00\\\"}]\",\"Active_Flg\":\"Y\",\"Archive_Flg\":false,\"BillOfLading\":\"003102898671\",\"StatusNC_Val\":\"ON VESSEL\",\"HoldNC_Val\":\"Y\",\"LFDNC_Val\":\"\",\"ActiveControl_Nbr\":760503436,\"Control_Nbr\":760503436,\"StatusChange_Ind\":0,\"ApptInfo\":null,\"UnitInfo\":\"{\\\"terminal-cd\\\":\\\"VITAP\\\",\\\"unit-cat\\\":\\\"CONTAINER\\\",\\\"unit-nbr\\\":\\\"EITU3044650\\\",\\\"unittypeISO-cd\\\":\\\"2210\\\",\\\"unitsztype-cd\\\":\\\"20ST\\\",\\\"ownerline-cd\\\":\\\"EVG\\\",\\\"ownerline-scac\\\":\\\"EGLV\\\"}\",\"LastEDIConUpdate_DtTm\":\"2021-10-28T00:05:00\",\"LastUpdatedBy_Id\":250,\"LastUpdated_DtTm\":\"2021-10-28T00:23:30\",\"CreatedBy_Id\":250,\"Created_DtTm\":\"2021-10-12T11:08:29\",\"GateTransactioninfo\":null,\"MoveStatus_Cd\":null}",
-			"MTODisplay_Nm": "VIG",
-			"Company_Id": 0,
-			"StatusNC_Val": null,
-			"InCart_Cnt": 0,
-			"Yardspot": null,
-			"Vessel": "THALASSA DOXA"
-		},
-		{
-			"Holds": [],
-			"LastFreeDay": null,
-			"LastFreeDate": "0001-01-01T00:00:00",
-			"EquipmentSizeType": "40HC",
-			"Create_DtTm": "28 Oct 2021 05:05",
-			"Create_Date": "2021-10-28T05:05:11.433",
-			"AvailableStatus": "AVAILABLE",
-			"ContainerNumber": "BMOU4520471",
-			"WLContainerNumber": "BMOU4520471",
-			"TerminalCode": "VITAP",
-			"ResvIdentifier": null,
-			"ResvStatus": null,
-			"ResvCompanyId": 0,
-			"MoveIdentifier": null,
-			"ShippingLine": "ZIM",
-			"Estarrival_Dt": "",
-			"Estarrival_date": "0001-01-01T00:00:00",
-			"HasHolds": "No",
-			"ContainerWatchList_Id": 4823517,
-			"OnWatchList": "Y",
-			"Display_Ord": 0,
-			"Fees": null,
-			"IsNotify": "Y",
-			"FeeTotal": 0,
-			"AcceptsPayments": "N",
-			"FeeTotalAmount": -1,
-			"TotalFeePaid": 0,
-			"TotalFeeAwait": 0,
-			"PreGateStatus": "N/A",
-			"AllowAdvPregate": "N",
-			"AdvResvCtrstatus": null,
-			"AllowAdvPregateDesc": "N",
-			"GateApptId": 0,
-			"PreGateStatusCd": "NA",
-			"PreGateStatusDesc": "N/A",
-			"ContainerInfo": "{\"asset-ownr\":\"ZIMU\",\"avl-status\":\"AVAILABLE\",\"shipment-status\":\"UV#2021-10-28T02:55:00,AV#2021-10-28T02:55:00,CT#2021-10-28T02:55:00,CR#2021-10-28T02:55:00,NP#2021-10-28T02:55:00\",\"cntr-nbr\":\"BMOU4520471\",\"eq-type\":\"45G1\",\"fclty-cd\":\"VITAP\",\"fclty-nm\":\"Virginia International Gateway\",\"ship-line\":\"ZIM\",\"bol\":\"SHH30648445\",\"custm-status\":\"RELEASED\",\"demurrage-status\":\"\",\"in-bond\":\"N\",\"lfd\":\"\",\"lloyds\":\"9302889\",\"outgate-dt\":\"\",\"usda-status\":\"\",\"vsl\":\"GRETE MAERSK\",\"voy\":\"GRMA-140W\",\"weight-unit\":\"Kilograms\",\"yard-status\":\"Grounded\",\"yard-spot\":\"03A\",\"eq-sztp\":\"40HC\",\"gseq_nbr\":\"00000000-0000-0000-0000-000000000000\",\"fees\":[],\"holds\":[],\"last-status\":\"2021-10-28T02:55:00-04:00\",\"time-zone\":\"Eastern Standard Time\",\"interchange-tm\":\"2021-10-28T02:55:00\",\"ctrl-nbr\":\"575298352\",\"cntr-type\":\"45G1\",\"data-src\":\"VITIG\",\"yard-lcn\":\"03A\",\"trans-nbr\":\"50\",\"last-move-dt\":\"2021-10-28T02:55:00-04:00\",\"vsl-ref\":\"9302889\",\"is-haz\":\"N\",\"is-reefer\":\"N\",\"is-awk\":\"N\",\"exam-transfer\":\"N\",\"allow-transfer\":\"N\",\"unload-vessel\":\"Y\",\"CalcFeeAmt\":0.0}",
-			"ConInstance": "{\"ConInstance_Id\":10322618,\"Terminal_Cd\":\"VITAP\",\"TradeType_Cd\":\"I\",\"Con_Nbr\":\"BMOU4520471\",\"ConInstanceUID\":\"af3d6ca9-1c24-46c7-ab75-440f2d5cde21\",\"Con10_Nbr\":\"BMOU452047\",\"ConInfo\":\"{\\\"asset-ownr\\\":\\\"ZIMU\\\",\\\"avl-status\\\":\\\"AVAILABLE\\\",\\\"shipment-status\\\":\\\"UV#2021-10-28T02:55:00,AV#2021-10-28T02:55:00,CT#2021-10-28T02:55:00,CR#2021-10-28T02:55:00,NP#2021-10-28T02:55:00\\\",\\\"cntr-nbr\\\":\\\"BMOU4520471\\\",\\\"eq-type\\\":\\\"45G1\\\",\\\"fclty-cd\\\":\\\"VITAP\\\",\\\"fclty-nm\\\":\\\"Virginia International Gateway\\\",\\\"ship-line\\\":\\\"ZIM\\\",\\\"bol\\\":\\\"SHH30648445\\\",\\\"custm-status\\\":\\\"RELEASED\\\",\\\"demurrage-status\\\":\\\"\\\",\\\"in-bond\\\":\\\"N\\\",\\\"lfd\\\":\\\"\\\",\\\"lloyds\\\":\\\"9302889\\\",\\\"outgate-dt\\\":\\\"\\\",\\\"usda-status\\\":\\\"\\\",\\\"vsl\\\":\\\"GRETE MAERSK\\\",\\\"voy\\\":\\\"GRMA-140W\\\",\\\"weight-unit\\\":\\\"Kilograms\\\",\\\"yard-status\\\":\\\"Grounded\\\",\\\"yard-spot\\\":\\\"03A\\\",\\\"eq-sztp\\\":\\\"40HC\\\",\\\"gseq_nbr\\\":\\\"00000000-0000-0000-0000-000000000000\\\",\\\"fees\\\":[],\\\"holds\\\":[],\\\"last-status\\\":\\\"2021-10-28T02:55:00-04:00\\\",\\\"time-zone\\\":\\\"Eastern Standard Time\\\",\\\"interchange-tm\\\":\\\"2021-10-28T02:55:00\\\",\\\"ctrl-nbr\\\":\\\"575298352\\\",\\\"cntr-type\\\":\\\"45G1\\\",\\\"data-src\\\":\\\"VITIG\\\",\\\"yard-lcn\\\":\\\"03A\\\",\\\"trans-nbr\\\":\\\"50\\\",\\\"last-move-dt\\\":\\\"2021-10-28T02:55:00-04:00\\\",\\\"vsl-ref\\\":\\\"9302889\\\",\\\"is-haz\\\":\\\"N\\\",\\\"is-reefer\\\":\\\"N\\\",\\\"is-awk\\\":\\\"N\\\",\\\"exam-transfer\\\":\\\"N\\\",\\\"allow-transfer\\\":\\\"N\\\",\\\"unload-vessel\\\":\\\"Y\\\",\\\"CalcFeeAmt\\\":0.0}\",\"RouteInfo\":\"{\\\"vessel-cd\\\":\\\"9302889\\\",\\\"vessel-nm\\\":\\\"GRETE MAERSK\\\",\\\"voyage-nbr\\\":\\\"GRMA-140W\\\",\\\"vslcdtype-cd\\\":\\\"L\\\"}\",\"CargoInfo\":\"{\\\"bol-nbr\\\":\\\"SHH30648445\\\"}\",\"ArrivalInfo\":\"{}\",\"DepartureInfo\":\"{\\\"direction-cd\\\":\\\"DEPARTURE\\\"}\",\"UnitStatusInfo\":\"{\\\"unituse-cd\\\":\\\"I\\\",\\\"unituse-desc\\\":\\\"IMPORT\\\"}\",\"FeeInfo\":\"[]\",\"ShipmentStatusInfo\":\"[{\\\"shipmentstatus-cd\\\":\\\"AV\\\",\\\"shipmentstatus-dttm\\\":\\\"10/28/2021 02:35:00\\\"},{\\\"shipmentstatus-cd\\\":\\\"CT\\\",\\\"shipmentstatus-dttm\\\":\\\"10/25/2021 18:35:00\\\"},{\\\"shipmentstatus-cd\\\":\\\"CR\\\",\\\"shipmentstatus-dttm\\\":\\\"10/25/2021 18:35:00\\\"},{\\\"shipmentstatus-cd\\\":\\\"NP\\\",\\\"shipmentstatus-dttm\\\":\\\"10/25/2021 18:35:00\\\"}]\",\"CurrentConditionInfo\":\"{\\\"yard-loc\\\":\\\"03A\\\",\\\"fullempty-cd\\\":\\\"FULL\\\",\\\"actual-wgt\\\":\\\"12756\\\",\\\"actualwgt-unit\\\":\\\"Kilograms\\\"}\",\"SvcEventInfo\":\"[{\\\"svcevent-cd\\\":\\\"UV\\\",\\\"svcevent-dttm\\\":\\\"2021-10-28T02:35:00\\\"}]\",\"Active_Flg\":\"Y\",\"Archive_Flg\":false,\"BillOfLading\":\"SHH30648445\",\"StatusNC_Val\":\"AVAILABLE\",\"HoldNC_Val\":\"N\",\"LFDNC_Val\":\"\",\"ActiveControl_Nbr\":575298352,\"Control_Nbr\":575298352,\"StatusChange_Ind\":0,\"ApptInfo\":null,\"UnitInfo\":\"{\\\"terminal-cd\\\":\\\"VITAP\\\",\\\"unit-cat\\\":\\\"CONTAINER\\\",\\\"unit-nbr\\\":\\\"BMOU4520471\\\",\\\"unittypeISO-cd\\\":\\\"45G1\\\",\\\"unitsztype-cd\\\":\\\"40HC\\\",\\\"ownerline-cd\\\":\\\"ZIM\\\",\\\"ownerline-scac\\\":\\\"ZIMU\\\"}\",\"LastEDIConUpdate_DtTm\":\"2021-10-28T02:55:00\",\"LastUpdatedBy_Id\":250,\"LastUpdated_DtTm\":\"2021-10-28T03:06:25\",\"CreatedBy_Id\":250,\"Created_DtTm\":\"2021-10-12T11:07:48\",\"GateTransactioninfo\":null,\"MoveStatus_Cd\":null}",
-			"MTODisplay_Nm": "VIG",
-			"Company_Id": 0,
-			"StatusNC_Val": null,
-			"InCart_Cnt": 0,
-			"Yardspot": "03A",
-			"Vessel": "GRETE MAERSK"
-		},
-		{
-			"Holds": [],
-			"LastFreeDay": null,
-			"LastFreeDate": "0001-01-01T00:00:00",
-			"EquipmentSizeType": "40HC",
-			"Create_DtTm": "28 Oct 2021 05:05",
-			"Create_Date": "2021-10-28T05:05:11.433",
-			"AvailableStatus": "AVAILABLE",
-			"ContainerNumber": "MEDU8348187",
-			"WLContainerNumber": "MEDU8348187",
-			"TerminalCode": "VITAP",
-			"ResvIdentifier": null,
-			"ResvStatus": null,
-			"ResvCompanyId": 0,
-			"MoveIdentifier": null,
-			"ShippingLine": "MSC",
-			"Estarrival_Dt": "",
-			"Estarrival_date": "0001-01-01T00:00:00",
-			"HasHolds": "No",
-			"ContainerWatchList_Id": 4830587,
-			"OnWatchList": "Y",
-			"Display_Ord": 0,
-			"Fees": null,
-			"IsNotify": "Y",
-			"FeeTotal": 0,
-			"AcceptsPayments": "N",
-			"FeeTotalAmount": -1,
-			"TotalFeePaid": 0,
-			"TotalFeeAwait": 0,
-			"PreGateStatus": "N/A",
-			"AllowAdvPregate": "N",
-			"AdvResvCtrstatus": null,
-			"AllowAdvPregateDesc": "N",
-			"GateApptId": 0,
-			"PreGateStatusCd": "NA",
-			"PreGateStatusDesc": "N/A",
-			"ContainerInfo": "{\"asset-ownr\":\"MSCU\",\"avl-status\":\"AVAILABLE\",\"shipment-status\":\"UV#2021-10-28T00:05:00,AV#2021-10-28T00:05:00,CT#2021-10-28T00:05:00,CR#2021-10-28T00:05:00,NP#2021-10-28T00:05:00\",\"cntr-nbr\":\"MEDU8348187\",\"eq-type\":\"4510\",\"fclty-cd\":\"VITAP\",\"fclty-nm\":\"Virginia International Gateway\",\"ship-line\":\"MSC\",\"bol\":\"MQ951581\",\"custm-status\":\"RELEASED\",\"demurrage-status\":\"\",\"in-bond\":\"N\",\"lfd\":\"\",\"lloyds\":\"9704984\",\"outgate-dt\":\"\",\"usda-status\":\"\",\"vsl\":\"MSC NAOMI\",\"voy\":\"NAOM-IV142R\",\"weight-unit\":\"Kilograms\",\"yard-status\":\"Grounded\",\"yard-spot\":\"03A\",\"eq-sztp\":\"40HC\",\"gseq_nbr\":\"00000000-0000-0000-0000-000000000000\",\"fees\":[],\"holds\":[],\"last-status\":\"2021-10-28T00:05:00-04:00\",\"time-zone\":\"Eastern Standard Time\",\"interchange-tm\":\"2021-10-28T00:05:00\",\"ctrl-nbr\":\"760503436\",\"cntr-type\":\"4510\",\"data-src\":\"VITIG\",\"yard-lcn\":\"03A\",\"trans-nbr\":\"50\",\"last-move-dt\":\"2021-10-28T00:05:00-04:00\",\"vsl-ref\":\"9704984\",\"is-haz\":\"N\",\"is-reefer\":\"N\",\"is-awk\":\"N\",\"exam-transfer\":\"N\",\"allow-transfer\":\"N\",\"unload-vessel\":\"Y\",\"CalcFeeAmt\":0.0}",
-			"ConInstance": "{\"ConInstance_Id\":10299066,\"Terminal_Cd\":\"VITAP\",\"TradeType_Cd\":\"I\",\"Con_Nbr\":\"MEDU8348187\",\"ConInstanceUID\":\"364b2e6a-b275-47b4-936d-7e9fb0c250b6\",\"Con10_Nbr\":\"MEDU834818\",\"ConInfo\":\"{\\\"asset-ownr\\\":\\\"MSCU\\\",\\\"avl-status\\\":\\\"AVAILABLE\\\",\\\"shipment-status\\\":\\\"UV#2021-10-28T00:05:00,AV#2021-10-28T00:05:00,CT#2021-10-28T00:05:00,CR#2021-10-28T00:05:00,NP#2021-10-28T00:05:00\\\",\\\"cntr-nbr\\\":\\\"MEDU8348187\\\",\\\"eq-type\\\":\\\"4510\\\",\\\"fclty-cd\\\":\\\"VITAP\\\",\\\"fclty-nm\\\":\\\"Virginia International Gateway\\\",\\\"ship-line\\\":\\\"MSC\\\",\\\"bol\\\":\\\"MQ951581\\\",\\\"custm-status\\\":\\\"RELEASED\\\",\\\"demurrage-status\\\":\\\"\\\",\\\"in-bond\\\":\\\"N\\\",\\\"lfd\\\":\\\"\\\",\\\"lloyds\\\":\\\"9704984\\\",\\\"outgate-dt\\\":\\\"\\\",\\\"usda-status\\\":\\\"\\\",\\\"vsl\\\":\\\"MSC NAOMI\\\",\\\"voy\\\":\\\"NAOM-IV142R\\\",\\\"weight-unit\\\":\\\"Kilograms\\\",\\\"yard-status\\\":\\\"Grounded\\\",\\\"yard-spot\\\":\\\"03A\\\",\\\"eq-sztp\\\":\\\"40HC\\\",\\\"gseq_nbr\\\":\\\"00000000-0000-0000-0000-000000000000\\\",\\\"fees\\\":[],\\\"holds\\\":[],\\\"last-status\\\":\\\"2021-10-28T00:05:00-04:00\\\",\\\"time-zone\\\":\\\"Eastern Standard Time\\\",\\\"interchange-tm\\\":\\\"2021-10-28T00:05:00\\\",\\\"ctrl-nbr\\\":\\\"760503436\\\",\\\"cntr-type\\\":\\\"4510\\\",\\\"data-src\\\":\\\"VITIG\\\",\\\"yard-lcn\\\":\\\"03A\\\",\\\"trans-nbr\\\":\\\"50\\\",\\\"last-move-dt\\\":\\\"2021-10-28T00:05:00-04:00\\\",\\\"vsl-ref\\\":\\\"9704984\\\",\\\"is-haz\\\":\\\"N\\\",\\\"is-reefer\\\":\\\"N\\\",\\\"is-awk\\\":\\\"N\\\",\\\"exam-transfer\\\":\\\"N\\\",\\\"allow-transfer\\\":\\\"N\\\",\\\"unload-vessel\\\":\\\"Y\\\",\\\"CalcFeeAmt\\\":0.0}\",\"RouteInfo\":\"{\\\"vessel-cd\\\":\\\"9704984\\\",\\\"vessel-nm\\\":\\\"MSC NAOMI\\\",\\\"voyage-nbr\\\":\\\"NAOM-IV142R\\\",\\\"vslcdtype-cd\\\":\\\"L\\\"}\",\"CargoInfo\":\"{\\\"bol-nbr\\\":\\\"MQ951581\\\"}\",\"ArrivalInfo\":\"{}\",\"DepartureInfo\":\"{\\\"direction-cd\\\":\\\"DEPARTURE\\\"}\",\"UnitStatusInfo\":\"{\\\"unituse-cd\\\":\\\"I\\\",\\\"unituse-desc\\\":\\\"IMPORT\\\"}\",\"FeeInfo\":\"[]\",\"ShipmentStatusInfo\":\"[{\\\"shipmentstatus-cd\\\":\\\"AV\\\",\\\"shipmentstatus-dttm\\\":\\\"10/25/2021 09:47:00\\\"},{\\\"shipmentstatus-cd\\\":\\\"CT\\\",\\\"shipmentstatus-dttm\\\":\\\"10/22/2021 14:46:00\\\"},{\\\"shipmentstatus-cd\\\":\\\"CR\\\",\\\"shipmentstatus-dttm\\\":\\\"10/22/2021 14:46:00\\\"},{\\\"shipmentstatus-cd\\\":\\\"NP\\\",\\\"shipmentstatus-dttm\\\":\\\"10/22/2021 14:46:00\\\"}]\",\"CurrentConditionInfo\":\"{\\\"yard-loc\\\":\\\"03A\\\",\\\"fullempty-cd\\\":\\\"FULL\\\",\\\"actual-wgt\\\":\\\"8780\\\",\\\"actualwgt-unit\\\":\\\"Kilograms\\\"}\",\"SvcEventInfo\":\"[{\\\"svcevent-cd\\\":\\\"UV\\\",\\\"svcevent-dttm\\\":\\\"2021-10-25T09:47:00\\\"}]\",\"Active_Flg\":\"Y\",\"Archive_Flg\":false,\"BillOfLading\":\"MQ951581\",\"StatusNC_Val\":\"AVAILABLE\",\"HoldNC_Val\":\"N\",\"LFDNC_Val\":\"\",\"ActiveControl_Nbr\":760503436,\"Control_Nbr\":760503436,\"StatusChange_Ind\":0,\"ApptInfo\":null,\"UnitInfo\":\"{\\\"terminal-cd\\\":\\\"VITAP\\\",\\\"unit-cat\\\":\\\"CONTAINER\\\",\\\"unit-nbr\\\":\\\"MEDU8348187\\\",\\\"unittypeISO-cd\\\":\\\"4510\\\",\\\"unitsztype-cd\\\":\\\"40HC\\\",\\\"ownerline-cd\\\":\\\"MSC\\\",\\\"ownerline-scac\\\":\\\"MSCU\\\"}\",\"LastEDIConUpdate_DtTm\":\"2021-10-28T00:05:00\",\"LastUpdatedBy_Id\":250,\"LastUpdated_DtTm\":\"2021-10-28T01:52:27\",\"CreatedBy_Id\":250,\"Created_DtTm\":\"2021-10-08T17:07:37\",\"GateTransactioninfo\":null,\"MoveStatus_Cd\":null}",
-			"MTODisplay_Nm": "VIG",
-			"Company_Id": 0,
-			"StatusNC_Val": null,
-			"InCart_Cnt": 0,
-			"Yardspot": "03A",
-			"Vessel": "MSC NAOMI"
-		},
-		{
-			"Holds": [],
-			"LastFreeDay": null,
-			"LastFreeDate": "0001-01-01T00:00:00",
-			"EquipmentSizeType": "40ST",
-			"Create_DtTm": "28 Oct 2021 05:05",
-			"Create_Date": "2021-10-28T05:05:11.433",
-			"AvailableStatus": "OUT-GATE",
-			"ContainerNumber": "TCKU4811590",
-			"WLContainerNumber": "TCKU4811590",
-			"TerminalCode": "VITAP",
-			"ResvIdentifier": null,
-			"ResvStatus": null,
-			"ResvCompanyId": 0,
-			"MoveI dentifier": null,
-			"ShippingLine": "ONE",
-			"Estarrival_Dt": "",
-			"Estarrival_date": "0001-01-01T00:00:00",
-			"HasHolds": "No",
-			"ContainerWatchList_Id": 4823525,
-			"OnWatchList": "Y",
-			"Display_Ord": 0,
-			"Fees": null,
-			"IsNotify": "Y",
-			"FeeTotal": 0,
-			"AcceptsPayments": "N",
-			"FeeTotalAmount": -1,
-			"TotalFeePaid": 0,
-			"TotalFeeAwait": 0,
-			"PreGateStatus": "N/A",
-			"AllowAdvPregate": "N",
-			"AdvR esvCtrstatus": null,
-			"AllowAdvPregateDesc": "N",
-			"GateApptId": 0,
-			"PreGateStatusCd": "NA",
-			"PreGateStatusDesc": "N/A",
-			"ContainerInfo": "{\"asset-ownr\":\"ONEY\",\"avl-status\":\"OUT-GATE\",\"s hipment-status\":\"OA#2021-10-26T16:08:00-04:00\",\"cntr-nbr\":\"TCKU4811590\",\"eq-type\":\"42G1\",\"fclty-cd\":\"VITAP\",\"ship-line\":\"ONE\",\"custm-status\":\"\",\"demurrage-status\":\"\", \"in-bond\":\"N\",\"lfd\":\"\",\"lloyds\":\"9805465\",\"outgate-dt\":\"2021-10-26T16:08:00-04:00\",\"usda-status\":\"\",\"vsl\":\"MEISHAN BRIDGE\",\"voy\":\"015E\",\"weight-qty\":6763.0,\"weigh t-qual\":\"ACTUAL\",\"yard-status\":\"\",\"eq-sztp\":\"40ST\",\"gseq_nbr\":\"00000000-0000-0000-0000-000000000000\",\"fees\":[],\"holds\":[],\"last-status\":\"2021-10-26T16:08:00-04:00\",\"time -zone\":\"Eastern Standard Time\",\"interchange-tm\":\"2021-10-26T16:15:00-04:00\",\"seals\":\"HKA090276\",\"ctrl-nbr\":\"000073342\",\"cntr-type\":\"42G1\",\"data-src\":\"VITUSB\",\"load-port\":\"HKHKG\",\"discharge-port\":\"USORF\",\"trans-nbr\":\"39\",\"cntr-gr-wt\":6763.0,\"cntr-tr-wt\":3700.0,\"last-move-dt\":\"2021-10-26T16:08:00-04:00\",\"vsl-ref\":\"9805465\",\"cntr-wt-unit\" :\"Kilograms\",\"is-haz\":\"N\",\"is-reefer\":\"N\",\"is-awk\":\"N\",\"exam-transfer\":\"N\",\"allow-transfer\":\"N\",\"unload-vessel\":\"N\",\"CalcFeeAmt\":0.0}",
-			"ConInstance": "{\"ConInstanc e_Id\":10264728,\"Terminal_Cd\":\"VITAP\",\"TradeType_Cd\":\"I\",\"Con_Nbr\":\"TCKU4811590\",\"ConInstanceUID\":\"b7e2ad7c-e294-4da8-91d1-bcd7cc97cd24\",\"Con10_Nbr\":\"TCKU481159\",\"ConInfo\" :\"{\\\"asset-ownr\\\":\\\"ONEY\\\",\\\"avl-status\\\":\\\"OUT-GATE\\\",\\\"shipment-status\\\":\\\"OA#2021-10-26T16:08:00-04:00\\\",\\\"cntr-nbr\\\":\\\"TCKU4811590\\\",\\\"eq-type\\\":\\\"42G 1\\\",\\\"fclty-cd\\\":\\\"VITAP\\\",\\\"ship-line\\\":\\\"ONE\\\",\\\"custm-status\\\":\\\"\\\",\\\"demurrage-status\\\":\\\"\\\",\\\"in-bond\\\":\\\"N\\\",\\\"lfd\\\":\\\"\\\",\\\"lloyds\\\": \\\"9805465\\\",\\\"outgate-dt\\\":\\\"2021-10-26T16:08:00-04:00\\\",\\\"usda-status\\\":\\\"\\\",\\\"vsl\\\":\\\"MEISHAN BRIDGE\\\",\\\"voy\\\":\\\"015E\\\",\\\"weight-qty\\\":6763.0,\\\"weigh t-qual\\\":\\\"ACTUAL\\\",\\\"yard-status\\\":\\\"\\\",\\\"eq-sztp\\\":\\\"40ST\\\",\\\"gseq_nbr\\\":\\\"00000000-0000-0000-0000-000000000000\\\",\\\"fees\\\":[],\\\"holds\\\":[],\\\"last-statu s\\\":\\\"2021-10-26T16:08:00-04:00\\\",\\\"time-zone\\\":\\\"Eastern Standard Time\\\",\\\"interchange-tm\\\":\\\"2021-10-26T16:15:00-04:00\\\",\\\"seals\\\":\\\"HKA090276\\\",\\\"ctrl-nbr\\\" :\\\"000073342\\\",\\\"cntr-type\\\":\\\"42G1\\\",\\\"data-src\\\":\\\"VITUSB\\\",\\\"load-port\\\":\\\"HKHKG\\\",\\\"discharge-port\\\":\\\"USORF\\\",\\\"trans-nbr\\\":\\\"39\\\",\\\"cntr-gr-w t\\\":6763.0,\\\"cntr-tr-wt\\\":3700.0,\\\"last-move-dt\\\":\\\"2021-10-26T16:08:00-04:00\\\",\\\"vsl-ref\\\":\\\"9805465\\\",\\\"cntr-wt-unit\\\":\\\"Kilograms\\\",\\\"is-haz\\\":\\\"N\\\",\\\"is-reefer\\\":\\\"N\\\",\\\"is-awk\\\":\\\"N\\\",\\\"exam-transfer\\\":\\\"N\\\",\\\"allow-transfer\\\":\\\"N\\\",\\\"unload-vessel\\\":\\\"N\\\",\\\"CalcFeeAmt\\\":0.0}\",\"RouteInfo\":\"{\\\"pol-cd\\\":\\\"HKHKG\\\",\\\"pod-cd\\\":\\\"USORF\\\",\\\"vessel-cd\\\":\\\"9805465\\\",\\\"vessel-nm\\\":\\\"MEISHAN BRIDGE\\\",\\\"voyage-nbr\\\":\\\"015E\\\",\\\"vslcdtype-cd\\\":\\\"L\\\"} \",\"CargoInfo\":\"{\\\"hazmat-flg\\\":\\\"N\\\",\\\"Seal-nbr\\\":\\\"HKA090276\\\",\\\"userline-scac\\\":\\\"ONEY\\\"}\",\"ArrivalInfo\":\"{}\",\"DepartureInfo\":\"{\\\"direction-cd\\\":\\\"DE PARTURE\\\",\\\"carriertype-cd\\\":\\\"MC\\\",\\\"carriertype-desc\\\":\\\"Motor Carrier\\\",\\\"carrier-cd\\\":\\\"XPDR\\\",\\\"svctype-cd\\\":\\\"HH\\\",\\\"svctype-desc\\\":\\\"House-to-Hous e\\\"}\",\"UnitStatusInfo\":\"{\\\"unituse-cd\\\":\\\"I\\\",\\\"unituse-desc\\\":\\\"IMPORT\\\"}\",\"FeeInfo\":\"[]\",\"ShipmentStatusInfo\":\"[]\",\"CurrentConditionInfo\":\"{\\\"fullempty-cd\\\":\\\"FULL\\\",\\\"gross-wgt\\\":6763.0,\\\"grosswgt-unit\\\":\\\"Kilograms\\\"}\",\"SvcEventInfo\":\"[{\\\"svcevent-cd\\\":\\\"OA\\\",\\\"svcevent-desc\\\":\\\"GATEOUT\\\",\\\"svcevent-dttm\\\":\\\"2021-10-26T16:08:00\\\"}]\",\"Active_Flg\":\"Y\",\"Archive_Flg\":false,\"BillOfLading\":\"\",\"StatusNC_Val\":\"OUT-GATE\",\"HoldNC_Val\":\"N\",\"LFDNC_Val\":\"\",\"ActiveControl_Nbr\": 73342,\"Control_Nbr\":73342,\"StatusChange_Ind\":5,\"ApptInfo\":null,\"UnitInfo\":\"{\\\"terminal-cd\\\":\\\"VITAP\\\",\\\"unit-cat\\\":\\\"CONTAINER\\\",\\\"unit-nbr\\\":\\\"TCKU4811590\\\",\\ \"unittypeISO-cd\\\":\\\"42G1\\\",\\\"unitsztype-cd\\\":\\\"40ST\\\",\\\"ownerline-cd\\\":\\\"ONE\\\",\\\"ownerline-scac\\\":\\\"ONEY\\\",\\\"tare-wgt\\\":3700.0,\\\"tarewgt-cd\\\":\\\"ACTUAL\\ \",\\\"tarewgt-unit\\\":\\\"Kilograms\\\"}\",\"LastEDIConUpdate_DtTm\":\"2021-10-26T16:08:00\",\"LastUpdatedBy_Id\":250,\"LastUpdated_DtTm\":\"2021-10-26T16:30:04\",\"CreatedBy_Id\":250,\"Creat ed_DtTm\":\"2021-10-04T14:19:18\",\"GateTransactioninfo\":null,\"MoveStatus_Cd\":null}",
-			"MTODisplay_Nm": "VIG",
-			"Company_Id": 0,
-			"StatusNC_Val": null,
-			"InCart_Cnt": 0,
-			"Yardspot": null,
-			"Vesse l": "MEISHAN BRIDGE"
-		},
-		{
-			"Holds": [],
-			"LastFreeDay": null,
-			"LastFreeDate": "0001-01-01T00:00:00",
-			"EquipmentSizeType": "40HC",
-			"Create_DtTm": "28 Oct 2021 05:05",
-			"Create_Date": "2021-10-28T05:05:11.433",
-			"AvailableStatus": "NOT AVAILABLE",
-			"ContainerNumber": "OOCU7493403",
-			"WLContainerNumber": "OOCU7493403",
-			"TerminalCode": "VITAP",
-			"ResvIdentifier": null,
-			"ResvStatus": null,
-			"ResvCompanyId": 0,
-			" MoveIdentifier": null,
-			"ShippingLine": "OOL",
-			"Estarrival_Dt": "",
-			"Estarrival_date": "0001-01-01T00:00:00",
-			"HasHolds": "No",
-			"ContainerWatchList_Id": 4823523,
-			"OnWatchList": "Y",
-			"Display_Ord ": 0,
-			"Fees": null,
-			"IsNotify": "Y",
-			"FeeTotal": 0,
-			"AcceptsPayments": "N",
-			"FeeTotalAmount": -1,
-			"TotalFeePaid": 0,
-			"TotalFeeAwait": 0,
-			"PreGateStatus": "N/A",
-			"AllowAdvPregate": "N",
-			"AdvResvCtrstatus": null,
-			"AllowAdvPregateDesc": "N",
-			"GateApptId": 0,
-			"PreGateStatusCd": "NA",
-			"PreGateStatusDesc": "N/A",
-			"ContainerInfo": "{\"asset-ownr\":\"OOLU\",\"avl-status\":\"NOT AVAIL ABLE\",\"shipment-status\":\"DN#2021-10-20T13:05:00,CT#2021-10-20T13:05:00,CR#2021-10-20T13:05:00,NP#2021-10-20T13:05:00\",\"cntr-nbr\":\"OOCU7493403\",\"eq-type\":\"45G1\",\"fclty-cd\":\"VITAP \",\"fclty-nm\":\"Virginia International Gateway\",\"ship-line\":\"OOL\",\"bol\":\"2677575440\",\"custm-status\":\"RELEASED\",\"demurrage-status\":\"\",\"in-bond\":\"N\",\"lfd\":\"\",\"lloyds\" :\"9454436\",\"outgate-dt\":\"\",\"usda-status\":\"\",\"vsl\":\"CMA CGM MARCO POLO\",\"voy\":\"POLO-0TUKEN1\",\"weight-unit\":\"Kilograms\",\"yard-status\":\"\",\"eq-sztp\":\"40HC\",\"gseq_nbr\":\"00000000-0000-0000-0000-000000000000\",\"fees\":[],\"holds\":[],\"last-status\":\"2021-10-20T13:05:00-04:00\",\"time-zone\":\"Eastern Standard Time\",\"interchange-tm\":\"2021-10-20T13:05:0 0\",\"ctrl-nbr\":\"683798533\",\"cntr-type\":\"45G1\",\"data-src\":\"VITIG\",\"trans-nbr\":\"50\",\"last-move-dt\":\"2021-10-20T13:05:00-04:00\",\"vsl-ref\":\"9454436\",\"is-haz\":\"N\",\"is-re efer\":\"N\",\"is-awk\":\"N\",\"exam-transfer\":\"N\",\"allow-transfer\":\"N\",\"unload-vessel\":\"N\",\"CalcFeeAmt\":0.0}",
-			"ConInstance": "{\"ConInstance_Id\":10202765,\"Terminal_Cd\":\"VITAP \",\"TradeType_Cd\":\"I\",\"Con_Nbr\":\"OOCU7493403\",\"ConInstanceUID\":\"664db25e-6ce5-4718-9570-ccf779abf990\",\"Con10_Nbr\":\"OOCU749340\",\"ConInfo\":\"{\\\"asset-ownr\\\":\\\"OOLU\\\",\\\"avl-status\\\":\\\"NOT AVAILABLE\\\",\\\"shipment-status\\\":\\\"DN#2021-10-20T13:05:00,CT#2021-10-20T13:05:00,CR#2021-10-20T13:05:00,NP#2021-10-20T13:05:00\\\",\\\"cntr-nbr\\\":\\\"OOCU749340 3\\\",\\\"eq-type\\\":\\\"45G1\\\",\\\"fclty-cd\\\":\\\"VITAP\\\",\\\"fclty-nm\\\":\\\"Virginia International Gateway\\\",\\\"ship-line\\\":\\\"OOL\\\",\\\"bol\\\":\\\"2677575440\\\",\\\"custm- status\\\":\\\"RELEASED\\\",\\\"demurrage-status\\\":\\\"\\\",\\\"in-bond\\\":\\\"N\\\",\\\"lfd\\\":\\\"\\\",\\\"lloyds\\\":\\\"9454436\\\",\\\"outgate-dt\\\":\\\"\\\",\\\"usda-status\\\":\\\"\\\",\\\"vsl\\\":\\\"CMA CGM MARCO POLO\\\",\\\"voy\\\":\\\"POLO-0TUKEN1\\\",\\\"weight-unit\\\":\\\"Kilograms\\\",\\\"yard-status\\\":\\\"\\\",\\\"eq-sztp\\\":\\\"40HC\\\",\\\"gseq_nbr\\\":\\\" 00000000-0000-0000-0000-000000000000\\\",\\\"fees\\\":[],\\\"holds\\\":[],\\\"last-status\\\":\\\"2021-10-20T13:05:00-04:00\\\",\\\"time-zone\\\":\\\"Eastern Standard Time\\\",\\\"interchange-t m\\\":\\\"2021-10-20T13:05:00\\\",\\\"ctrl-nbr\\\":\\\"683798533\\\",\\\"cntr-type\\\":\\\"45G1\\\",\\\"data-src\\\":\\\"VITIG\\\",\\\"trans-nbr\\\":\\\"50\\\",\\\"last-move-dt\\\":\\\"2021-10- 20T13:05:00-04:00\\\",\\\"vsl-ref\\\":\\\"9454436\\\",\\\"is-haz\\\":\\\"N\\\",\\\"is-reefer\\\":\\\"N\\\",\\\"is-awk\\\":\\\"N\\\",\\\"exam-transfer\\\":\\\"N\\\",\\\"allow-transfer\\\":\\\"N\\\",\\\"unload-vessel\\\":\\\"N\\\",\\\"CalcFeeAmt\\\":0.0}\",\"RouteInfo\":\"{\\\"vessel-cd\\\":\\\"9454436\\\",\\\"vessel-nm\\\":\\\"CMA CGM MARCO POLO\\\",\\\"voyage-nbr\\\":\\\"POLO-0TUKEN1 \\\",\\\"vslcdtype-cd\\\":\\\"L\\\"}\",\"CargoInfo\":\"{\\\"bol-nbr\\\":\\\"2677575440\\\"}\",\"ArrivalInfo\":\"{}\",\"DepartureInfo\":\"{\\\"direction-cd\\\":\\\"DEPARTURE\\\"}\",\"UnitStatusI nfo\":\"{\\\"unituse-cd\\\":\\\"I\\\",\\\"unituse-desc\\\":\\\"IMPORT\\\"}\",\"FeeInfo\":\"[]\",\"ShipmentStatusInfo\":\"[{\\\"shipmentstatus-cd\\\":\\\"DN\\\",\\\"shipmentstatus-dttm\\\":\\\"2 021-10-20T13:05:00\\\"},{\\\"shipmentstatus-cd\\\":\\\"CT\\\",\\\"shipmentstatus-dttm\\\":\\\"2021-10-20T13:05:00\\\"},{\\\"shipmentstatus-cd\\\":\\\"CR\\\",\\\"shipmentstatus-dttm\\\":\\\"2021 -10-20T13:05:00\\\"},{\\\"shipmentstatus-cd\\\":\\\"NP\\\",\\\"shipmentstatus-dttm\\\":\\\"2021-10-20T13:05:00\\\"}]\",\"CurrentConditionInfo\":\"{\\\"fullempty-cd\\\":\\\"FULL\\\",\\\"actual-w gt\\\":\\\"21090\\\",\\\"actualwgt-unit\\\":\\\"Kilograms\\\",\\\"group-cd\\\":\\\"TRS\\\"}\",\"SvcEventInfo\":\"[]\",\"Active_Flg\":\"Y\",\"Archive_Flg\":false,\"BillOfLading\":\"2677575440\", \"StatusNC_Val\":\"NOT AVAILABLE\",\"HoldNC_Val\":\"N\",\"LFDNC_Val\":\"\",\"ActiveControl_Nbr\":683798533,\"Control_Nbr\":683798533,\"StatusChange_Ind\":1,\"ApptInfo\":null,\"UnitInfo\":\"{\\\"terminal-cd\\\":\\\"VITAP\\\",\\\"unit-cat\\\":\\\"CONTAINER\\\",\\\"unit-nbr\\\":\\\"OOCU7493403\\\",\\\"unittypeISO-cd\\\":\\\"45G0\\\",\\\"unitsztype-cd\\\":\\\"40HC\\\",\\\"ownerline-cd\\\":\\\"OOL\\\",\\\"ownerline-scac\\\":\\\"OOLU\\\"}\",\"LastEDIConUpdate_DtTm\":\"2021-10-20T13:05:00\",\"LastUpdatedBy_Id\":250,\"LastUpdated_DtTm\":\"2021-10-20T13:07:34\",\"CreatedBy_Id\":250 ,\"Created_DtTm\":\"2021-09-27T15:18:26\",\"GateTransactioninfo\":null,\"MoveStatus_Cd\":null}",
-			"MTODisplay_Nm": "VIG",
-			"Company_Id": 0,
-			"StatusNC_Val": null,
-			"InCart_Cnt": 0,
-			"Yardspot": null,
-			"Vessel": "CMA CGM MARCO POLO"
-		}
-	],
-	"CurrentPage": 1,
-	"PageSize": 20,
-	"TotalRecords": 3,
-	"TotalPages": 1
+   "continuationToken":"",
+   "more":true,
+   "data":[
+      {
+         "id":"2c99342e-516a-40b8-aa5a-aeee93818926",
+         "unit_nbr":"CMAU8656108",
+         "unit10_nbr":"CMAU865610",
+         "unitcat_cd":"CTR",
+         "tradetype_cd":"I",
+         "tradetype_desc":"IMPORT",
+         "partition_key":"POV-202206",
+         "drayunitstatus_cd":"I",
+         "drayunitstatus_desc":"GATE IN",
+         "accesslevel":null,
+         "referenceinfo":[
+            {
+               "reftype":"BOL",
+               "reftype_desc":"BILL OF LADING",
+               "ref_nbr":"CNCC356099",
+               "ref_uid":null
+            }
+         ],
+         "shipmentstatus":[
+            {
+               "sourcetype":"TERMINAL",
+               "source_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "holdsinfo":[
+                  {
+                     "type":"CUSTOMS",
+                     "status":"RELEASED",
+                     "status_dttm":"2022-03-07T05:07:07.913071",
+                     "details":[
+                        {
+                           "release_dttm":"2022-03-07T05:07:07.913949",
+                           "reportedby":"VITAP"
+                        }
+                     ]
+                  },
+                  {
+                     "type":"FREIGHT",
+                     "status":"RELEASED",
+                     "status_dttm":"2022-03-07T05:07:07.913071",
+                     "details":[
+                        {
+                           "release_dttm":"2022-03-07T05:07:07.913954",
+                           "reportedby":"VITAP"
+                        }
+                     ]
+                  }
+               ]
+            }
+         ],
+         "shipmentrefinfo":[
+
+         ],
+         "shipmentinfo":null,
+         "unitinfo":{
+            "unitmaster_uid":"a09583cf-23c3-4d18-9e2e-2d4d127b0c1a",
+            "owner_cd":"CMA",
+            "ownerline_scac":"CMDU",
+            "user_cd":null,
+            "operator_cd":null,
+            "unittypeiso_cd":"45G1",
+            "unitsztype_cd":"40HC",
+            "unittype_cd":null,
+            "unitweight":null,
+            "unitweight_uom":null,
+            "pol_cd":null,
+            "pdl_cd":null,
+            "pod_cd":null
+         },
+         "drayunitactivity":[
+            {
+               "seq_nbr":"1",
+               "event_cd":"CNMAN",
+               "event_desc":"Container Manifested",
+               "event_dttm":"2022-02-21T05:28:27.242359",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "unitevent_uid":"c61b2b11-e983-4e2d-b5ab-d765eb9bfaf3"
+            },
+            {
+               "seq_nbr":"2",
+               "event_cd":"DISCH",
+               "event_desc":"Discharged",
+               "event_dttm":"2022-02-21T10:16:00",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "unitevent_uid":"ce11691a-e505-42e5-b9b8-0b91206ec0ba"
+            },
+            {
+               "seq_nbr":"3",
+               "event_cd":"LFDAY",
+               "event_desc":"Last Free Day",
+               "event_dttm":null,
+               "facility_uid":"",
+               "facility_cd":null,
+               "facility_nm":null,
+               "unitevent_uid":""
+            },
+            {
+               "seq_nbr":"4",
+               "event_cd":"PLAVI",
+               "event_desc":"Ready for pick up",
+               "event_dttm":"2022-02-21T10:16:00",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "unitevent_uid":"ce11691a-e505-42e5-b9b8-0b91206ec0ba"
+            },
+            {
+               "seq_nbr":"5",
+               "event_cd":"APNMT",
+               "event_desc":"Pregate",
+               "event_dttm":"2022-02-26T15:00:00",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "unitevent_uid":"dd6934e4-f205-4966-9f64-e662c6660524"
+            },
+            {
+               "seq_nbr":"6",
+               "event_cd":"DPTRM",
+               "event_desc":"Departed Terminal",
+               "event_dttm":"2022-02-26T15:32:00",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "unitevent_uid":"f700eebe-b065-49d0-855f-3f5b4216462b"
+            },
+            {
+               "seq_nbr":"9",
+               "event_cd":"ARCUS",
+               "event_desc":"Arrived at customer",
+               "event_dttm":null,
+               "facility_uid":"",
+               "facility_cd":null,
+               "facility_nm":null,
+               "unitevent_uid":""
+            },
+            {
+               "seq_nbr":"10",
+               "event_cd":"EMTOT",
+               "event_desc":"Empty released by customer",
+               "event_dttm":null,
+               "facility_uid":"",
+               "facility_cd":null,
+               "facility_nm":null,
+               "unitevent_uid":""
+            },
+            {
+               "seq_nbr":"11",
+               "event_cd":"EMTRC",
+               "event_desc":"Empty Received",
+               "event_dttm":"2022-03-06T23:55:00",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "unitevent_uid":"7d6bf391-eb02-4605-bc58-ec8512bbb213"
+            }
+         ],
+         "locations":[
+            {
+               "port_cd":"POV",
+               "port_nm":"Port of Virginia",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "locationtype_cd":"O",
+               "seq_nbr":"1",
+               "locationstatus_cd":"CMP",
+               "lastdrayunitstatus_cd":"OA",
+               "lastdrayunitstatus_desc":"GATE OUT",
+               "unitevent_uid":"f700eebe-b065-49d0-855f-3f5b4216462b",
+               "groupcode":null,
+               "groupcode_uid":null,
+               "lat":null,
+               "lng":null,
+               "address":null,
+               "lastediupdated_dttm":"2022-02-26T15:32:00",
+               "locationinfo":{
+                  "arrivalinfo":{
+                     "carriertype_cd":"VC",
+                     "carriertype_desc":"VESSEL",
+                     "vesselinfo":{
+                        "vessel_cd":"9454424",
+                        "vessel_nm":"CMA CGM MAGELLAN",
+                        "voyage_nbr":"MAGE-0MBAEW1",
+                        "vesseltype_cd":"L",
+                        "estarrival_dt":"",
+                        "actarrival_dt":""
+                     },
+                     "railinfo":null,
+                     "truckinfo":null,
+                     "driverinfo":null,
+                     "designatedtruckerscac":null,
+                     "eta":null,
+                     "ata":null,
+                     "apptinfo":[
+
+                     ],
+                     "gatetransactioninfo":[
+
+                     ],
+                     "dropoff_comments":null,
+                     "dropoff_dttm":null,
+                     "unitevent_uid":"f700eebe-b065-49d0-855f-3f5b4216462b"
+                  },
+                  "departureinfo":{
+                     "carriertype_cd":"MC",
+                     "carriertype_desc":"Motor Carrier",
+                     "vesselinfo":{
+                        "estdepature_dt":"",
+                        "actdepature_dt":""
+                     },
+                     "railinfo":null,
+                     "truckinfo":{
+                        "accessories":{
+
+                        }
+                     },
+                     "driverinfo":{
+                        "first_nm":"rew",
+                        "last_nm":""
+                     },
+                     "designatedtruckerscac":"HZMQ",
+                     "etd":null,
+                     "atd":null,
+                     "apptinfo":[
+                        {
+                           "appt_uid":"cb909eb9-03eb-4bf5-a7f6-e355a23ded88",
+                           "apptnbr":"**************",
+                           "appttype_cd":"**",
+                           "appttype_desc":"***********",
+                           "apptstatus_cd":"D",
+                           "apptstatus_desc":"*********",
+                           "apptdttm":"*************************",
+                           "apptvalidthrough":"**********",
+                           "trucker_scac":"****",
+                           "speedgateallowed":"*****",
+                           "readyforspeedgate":"*****",
+                           "gatecode":"",
+                           "company_uid":"************************************",
+                           "createdbyuser_uid":"************************************",
+                           "modifiedbyuser_uid":"************************************",
+                           "lastapptupdateddttm":"********************",
+                           "terminalstatus_cd":"*",
+                           "terminalstatus_desc":"*********",
+                           "externalvisitref_nbr":""
+                        }
+                     ],
+                     "gatetransactioninfo":[
+                        {
+                           "trans_id":"000080774",
+                           "line_cd":"CMA",
+                           "trucker_scac":"HZMQ",
+                           "unitsztype_cd":"40HC",
+                           "trans_hist":[
+                              {
+                                 "move_type":"PICK IMPORT",
+                                 "trans_status":"COMPLETED",
+                                 "trans_dttm":"02/26/2022 15:32:00",
+                                 "errors":[
+
+                                 ]
+                              }
+                           ],
+                           "damages":[
+                              {
+                                 "location":null,
+                                 "description":null
+                              }
+                           ]
+                        }
+                     ],
+                     "pickup_comments":null,
+                     "pickup_dttm":null,
+                     "unitevent_uid":"f700eebe-b065-49d0-855f-3f5b4216462b"
+                  },
+                  "holds":[
+                     {
+                        "hold_cd":"DN",
+                        "hold_description":"Not available at terminal",
+                        "holdcat_cd":null,
+                        "hold_date":"2022-02-26T15:05:00"
+                     }
+                  ],
+                  "releases":[
+                     {
+                        "release_cd":"CR",
+                        "release_description":"Carrier Release",
+                        "releasecat_cd":null,
+                        "release_date":"2022-02-04T15:40:00"
+                     },
+                     {
+                        "release_cd":"CT",
+                        "release_description":"Customs Released",
+                        "releasecat_cd":null,
+                        "release_date":"2022-02-04T15:40:00"
+                     }
+                  ],
+                  "confeeinfo":[
+
+                  ],
+                  "currentconditioninfo":{
+                     "damaged_flg":null,
+                     "yard_loc":null,
+                     "block_nbr":null,
+                     "supply_temp":null,
+                     "return_temp":null,
+                     "set_temp":null,
+                     "fullempty_cd":"FULL",
+                     "gross_wgt":"15960.0",
+                     "grosswgt_unit":"Kilograms",
+                     "actual_wgt":null,
+                     "actualwgt_unit":null,
+                     "lastfree_dttm":null,
+                     "good_thru_date":null,
+                     "group_cd":null,
+                     "tmfflg":null,
+                     "fee_pay_link":null,
+                     "gate_cd":null,
+                     "transship_flg":null,
+                     "vent_setting":null,
+                     "vent_unit":null,
+                     "scale_weight":null,
+                     "dray_flg":null,
+                     "remark":null,
+                     "constraintcode":null,
+                     "hazinfo":[
+
+                     ],
+                     "yard_status":null,
+                     "feeindicator":null
+                  },
+                  "cargoinfo":{
+                     "reefer_flg":null,
+                     "temp_min":null,
+                     "mintemp_uom":null,
+                     "temp_max":null,
+                     "maxtemp_uom":null,
+                     "hazmat_flg":"N",
+                     "imoclass_cd":null,
+                     "od_flg":null,
+                     "seal_nbr":"C2689908",
+                     "bcocompany_name":null,
+                     "userline_scac":"CMDU"
+                  },
+                  "shipmentstatusinfo":[
+                     {
+                        "shipmentstatus_cd":"OA",
+                        "shipmentstatus_desc":"GATEOUT",
+                        "shipmentstatus_dttm":"2022-02-26T15:32:00"
+                     }
+                  ],
+                  "svceventinfo":[
+                     {
+                        "svcevent_cd":"OA",
+                        "svcevent_desc":"GATEOUT",
+                        "svcevent_dttm":"2022-02-26T15:32:00"
+                     }
+                  ]
+               }
+            },
+            {
+               "port_cd":"",
+               "port_nm":"",
+               "facility_uid":"00000000-0000-0000-0000-000000000000",
+               "facility_cd":"",
+               "facility_nm":"UNKNOWN",
+               "locationtype_cd":"M",
+               "seq_nbr":"2",
+               "locationstatus_cd":"CMP",
+               "lastdrayunitstatus_cd":null,
+               "lastdrayunitstatus_desc":null,
+               "unitevent_uid":"00000000-0000-0000-0000-000000000000",
+               "groupcode":"",
+               "groupcode_uid":"00000000-0000-0000-0000-000000000000",
+               "lat":null,
+               "lng":null,
+               "address":null,
+               "lastediupdated_dttm":"2022-03-06T23:55:00",
+               "locationinfo":null
+            },
+            {
+               "port_cd":"POV",
+               "port_nm":null,
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "locationtype_cd":"S",
+               "seq_nbr":"3",
+               "locationstatus_cd":"ACT",
+               "lastdrayunitstatus_cd":"I",
+               "lastdrayunitstatus_desc":"GATE IN",
+               "unitevent_uid":"7d6bf391-eb02-4605-bc58-ec8512bbb213",
+               "groupcode":null,
+               "groupcode_uid":null,
+               "lat":null,
+               "lng":null,
+               "address":null,
+               "lastediupdated_dttm":"2022-03-06T23:55:00",
+               "locationinfo":{
+                  "arrivalinfo":{
+                     "carriertype_cd":"MC",
+                     "carriertype_desc":"Motor Carrier",
+                     "vesselinfo":null,
+                     "railinfo":null,
+                     "truckinfo":{
+                        "accessories":{
+
+                        }
+                     },
+                     "driverinfo":{
+                        "first_nm":"joe",
+                        "last_nm":""
+                     },
+                     "designatedtruckerscac":null,
+                     "eta":null,
+                     "ata":null,
+                     "apptinfo":[
+                        {
+                           "appt_uid":"c5d21d21-877e-4a3e-b0bf-08945a31c380",
+                           "apptnbr":"**************",
+                           "appttype_cd":"**",
+                           "appttype_desc":"**********",
+                           "apptstatus_cd":"D",
+                           "apptstatus_desc":"*********",
+                           "apptdttm":"*************************",
+                           "apptvalidthrough":"**********",
+                           "trucker_scac":"****",
+                           "speedgateallowed":"*****",
+                           "readyforspeedgate":"*****",
+                           "gatecode":"",
+                           "company_uid":"************************************",
+                           "createdbyuser_uid":"************************************",
+                           "modifiedbyuser_uid":"************************************",
+                           "lastapptupdateddttm":"*******************",
+                           "terminalstatus_cd":"*",
+                           "terminalstatus_desc":"*********",
+                           "externalvisitref_nbr":""
+                        }
+                     ],
+                     "gatetransactioninfo":[
+
+                     ],
+                     "dropoff_comments":null,
+                     "dropoff_dttm":null,
+                     "unitevent_uid":"7d6bf391-eb02-4605-bc58-ec8512bbb213"
+                  },
+                  "departureinfo":null,
+                  "holds":[
+                     {
+                        "hold_cd":"DN",
+                        "hold_description":"Not available at terminal",
+                        "holdcat_cd":null,
+                        "hold_date":"2022-03-06T23:55:00"
+                     }
+                  ],
+                  "releases":[
+                     {
+                        "release_cd":"CR",
+                        "release_description":"Carrier Release",
+                        "releasecat_cd":null,
+                        "release_date":"2022-03-03T10:56:00"
+                     },
+                     {
+                        "release_cd":"CT",
+                        "release_description":"Customs Released",
+                        "releasecat_cd":null,
+                        "release_date":"2022-03-03T10:56:00"
+                     }
+                  ],
+                  "confeeinfo":[
+
+                  ],
+                  "currentconditioninfo":{
+                     "damaged_flg":null,
+                     "yard_loc":null,
+                     "block_nbr":null,
+                     "supply_temp":null,
+                     "return_temp":null,
+                     "set_temp":null,
+                     "fullempty_cd":"EMPTY",
+                     "gross_wgt":null,
+                     "grosswgt_unit":null,
+                     "actual_wgt":"3753",
+                     "actualwgt_unit":"Kilograms",
+                     "lastfree_dttm":null,
+                     "good_thru_date":null,
+                     "group_cd":null,
+                     "tmfflg":null,
+                     "fee_pay_link":null,
+                     "gate_cd":null,
+                     "transship_flg":null,
+                     "vent_setting":null,
+                     "vent_unit":null,
+                     "scale_weight":null,
+                     "dray_flg":null,
+                     "remark":null,
+                     "constraintcode":null,
+                     "hazinfo":[
+
+                     ],
+                     "yard_status":null,
+                     "feeindicator":null
+                  },
+                  "cargoinfo":{
+                     "reefer_flg":"N",
+                     "temp_min":null,
+                     "mintemp_uom":null,
+                     "temp_max":null,
+                     "maxtemp_uom":null,
+                     "hazmat_flg":"N",
+                     "imoclass_cd":null,
+                     "od_flg":"N",
+                     "seal_nbr":null,
+                     "bcocompany_name":null,
+                     "userline_scac":null
+                  },
+                  "shipmentstatusinfo":[
+                     {
+                        "shipmentstatus_cd":"DN",
+                        "shipmentstatus_desc":"Container Not Available for pickup",
+                        "shipmentstatus_dttm":"2022-03-06T23:55:00"
+                     },
+                     {
+                        "shipmentstatus_cd":"CT",
+                        "shipmentstatus_desc":"Customs Released",
+                        "shipmentstatus_dttm":"2022-03-03T10:56:00"
+                     },
+                     {
+                        "shipmentstatus_cd":"CR",
+                        "shipmentstatus_desc":"Carrier Release",
+                        "shipmentstatus_dttm":"2022-03-03T10:56:00"
+                     },
+                     {
+                        "shipmentstatus_cd":"NP",
+                        "shipmentstatus_desc":"Terminal Charges Paid",
+                        "shipmentstatus_dttm":"2022-03-03T10:56:00"
+                     },
+                     {
+                        "shipmentstatus_cd":"I",
+                        "shipmentstatus_desc":"GATEIN",
+                        "shipmentstatus_dttm":"2022-03-06T23:55:00"
+                     }
+                  ],
+                  "svceventinfo":[
+                     {
+                        "svcevent_cd":"I",
+                        "svcevent_desc":"GATEIN",
+                        "svcevent_dttm":"2022-03-06T23:55:00"
+                     }
+                  ]
+               }
+            }
+         ],
+         "confeeinfo":[
+
+         ],
+         "lfdinfo":[
+
+         ],
+         "services":[
+
+         ],
+         "attachments":[
+
+         ],
+         "hold_flg":"False",
+         "release_flg":"True",
+         "linehold_flg":"False",
+         "customhold_flg":"False",
+         "lastfree_dttm":null,
+         "preadvice_number":null,
+         "unload_dttm":"2/21/2022 10:16:00 AM",
+         "feepaid":null,
+         "feedue":null,
+         "gatecode":null,
+         "active_flg":"True",
+         "createuser_uid":"00000000-0000-0000-0000-000000000000",
+         "created_dttm":"2022-02-04T20:53:19.521931",
+         "lastupdateduser_uid":"00000000-0000-0000-0000-000000000000",
+         "updated_dttm":"2022-03-07T05:07:07.913071",
+         "lastupdated_dttm":"2022-03-06T23:55:00",
+         "pregatestatus_desc":null,
+         "added_dttm":"0001-01-01T00:00:00",
+         "tags":null
+      },
+      {
+         "id":"b976b126-4969-4f98-821d-dd601179795f",
+         "unit_nbr":"TRHU3021789",
+         "unit10_nbr":"TRHU302178",
+         "unitcat_cd":"CTR",
+         "tradetype_cd":"I",
+         "tradetype_desc":"IMPORT",
+         "partition_key":"POV-202209",
+         "drayunitstatus_cd":"OA",
+         "drayunitstatus_desc":"GATE OUT",
+         "accesslevel":null,
+         "referenceinfo":[
+            {
+               "reftype":"BOL",
+               "reftype_desc":"BILL OF LADING",
+               "ref_nbr":"HPHB30403400",
+               "ref_uid":null
+            }
+         ],
+         "shipmentstatus":[
+            {
+               "sourcetype":"TERMINAL",
+               "source_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "holdsinfo":[
+                  {
+                     "type":"CUSTOMS",
+                     "status":"RELEASED",
+                     "status_dttm":"2022-03-12T20:15:37.571491",
+                     "details":[
+                        {
+                           "hold_dttm":"02/22/2022 09:28:00",
+                           "holdreason_cd":"QQ",
+                           "holdreason_desc":"CUSTOMS Default Bill Hold",
+                           "release_dttm":"2022-03-12T20:15:37.573279",
+                           "reportedby":"VITAP"
+                        }
+                     ]
+                  },
+                  {
+                     "type":"FREIGHT",
+                     "status":"RELEASED",
+                     "status_dttm":"2022-03-12T20:15:37.571491",
+                     "details":[
+                        {
+                           "hold_dttm":"02/22/2022 09:28:00",
+                           "holdreason_cd":"RK",
+                           "holdreason_desc":"LINE.Line Release Hold ",
+                           "release_dttm":"2022-03-12T20:15:37.573282",
+                           "reportedby":"VITAP"
+                        }
+                     ]
+                  }
+               ]
+            },
+            {
+               "sourcetype":"SSL",
+               "source_uid":"895e74bc-dc67-4c07-890a-802a01911a0b",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "holdsinfo":[
+                  {
+                     "type":"FREIGHT",
+                     "status":"RELEASED",
+                     "status_dttm":"02/25/2022 00:00:00",
+                     "details":[
+                        {
+                           "hold_dttm":"02/24/2022 20:47:00",
+                           "holdreason_cd":"FD",
+                           "holdreason_desc":"Freight is due",
+                           "release_dttm":"02/25/2022 00:00:00",
+                           "reportedby":"ONEY"
+                        }
+                     ]
+                  },
+                  {
+                     "type":"FEE",
+                     "status":"RELEASED",
+                     "status_dttm":"2022-03-12T20:28:18.843516",
+                     "details":[
+                        {
+                           "release_dttm":"2022-03-12T20:28:18.843516",
+                           "reportedby":"ONE"
+                        }
+                     ]
+                  }
+               ]
+            }
+         ],
+         "shipmentrefinfo":[
+            {
+               "reftype":"BOL",
+               "reftype_desc":"BILL OF LADING",
+               "ref_nbr":"HPHB30403400",
+               "ref_uid":"a253c5cb-6851-4e6d-bd7a-7338613407c5",
+               "refunit_uid":null,
+               "source_cd":"SSL",
+               "servicetype_cd":"MERCHANT",
+               "servicetype_desc":"MERCHANT HAULAGE",
+               "ownerline_scac":"ONEY",
+               "ownerline_cd":"ONE",
+               "transportmode":{
+                  "transporttype_cd":"OCEAN",
+                  "vesselinfo":{
+                     "vessel_cd":"9525924",
+                     "vessel_nm":"AL QIBLA",
+                     "voyage_nbr":"024E",
+                     "vesseltype_cd":"L",
+                     "vesseldischarge_dttm":"03/07/2022 19:46:00"
+                  }
+               }
+            }
+         ],
+         "shipmentinfo":{
+            "temp_min":"",
+            "temp_max":"",
+            "od_flg":""
+         },
+         "unitinfo":{
+            "unitmaster_uid":"4d898361-ea23-40b2-9521-269745f78d6b",
+            "owner_cd":null,
+            "ownerline_scac":"ONEY",
+            "user_cd":null,
+            "operator_cd":null,
+            "unittypeiso_cd":null,
+            "unitsztype_cd":null,
+            "unittype_cd":null,
+            "unitweight":"2180",
+            "unitweight_uom":"Kilograms",
+            "pol_cd":"CNYTN",
+            "pdl_cd":null,
+            "pod_cd":"USORF"
+         },
+         "drayunitactivity":[
+            {
+               "seq_nbr":"1",
+               "event_cd":"CNMAN",
+               "event_desc":"Container Manifested",
+               "event_dttm":"2022-03-07T05:51:52.856329",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "unitevent_uid":"25c061e8-3c6b-4ea6-8ad1-74535b1cb0b7"
+            },
+            {
+               "seq_nbr":"2",
+               "event_cd":"DISCH",
+               "event_desc":"Discharged",
+               "event_dttm":"2022-03-07T19:56:00",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "unitevent_uid":"cedfba9a-c76d-49c3-9089-05db1a631ee2"
+            },
+            {
+               "seq_nbr":"3",
+               "event_cd":"LFDAY",
+               "event_desc":"Last Free Day",
+               "event_dttm":"2022-03-11T23:59:00",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "unitevent_uid":"e9dccd5c-60ee-45e0-b252-5594f39ae160"
+            },
+            {
+               "seq_nbr":"4",
+               "event_cd":"PLAVI",
+               "event_desc":"Ready for pick up",
+               "event_dttm":"2022-03-07T19:56:00",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "unitevent_uid":"cedfba9a-c76d-49c3-9089-05db1a631ee2"
+            },
+            {
+               "seq_nbr":"5",
+               "event_cd":"APNMT",
+               "event_desc":"Pregate",
+               "event_dttm":"2022-03-12T11:00:00",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "unitevent_uid":"245555bb-df4c-42fb-a82f-09ce4ff61ed2"
+            },
+            {
+               "seq_nbr":"6",
+               "event_cd":"DPTRM",
+               "event_desc":"Departed Terminal",
+               "event_dttm":"2022-03-12T14:38:00",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "unitevent_uid":"e9dccd5c-60ee-45e0-b252-5594f39ae160"
+            },
+            {
+               "seq_nbr":"9",
+               "event_cd":"ARCUS",
+               "event_desc":"Arrived at customer",
+               "event_dttm":null,
+               "facility_uid":"",
+               "facility_cd":null,
+               "facility_nm":null,
+               "unitevent_uid":""
+            },
+            {
+               "seq_nbr":"10",
+               "event_cd":"EMTOT",
+               "event_desc":"Empty released by customer",
+               "event_dttm":null,
+               "facility_uid":"",
+               "facility_cd":null,
+               "facility_nm":null,
+               "unitevent_uid":""
+            },
+            {
+               "seq_nbr":"11",
+               "event_cd":"EMTRC",
+               "event_desc":"Empty Received",
+               "event_dttm":null,
+               "facility_uid":"",
+               "facility_cd":null,
+               "facility_nm":null,
+               "unitevent_uid":""
+            }
+         ],
+         "locations":[
+            {
+               "port_cd":"POV",
+               "port_nm":"Port of Virginia",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "locationtype_cd":"O",
+               "seq_nbr":"1",
+               "locationstatus_cd":"ACT",
+               "lastdrayunitstatus_cd":"OA",
+               "lastdrayunitstatus_desc":"GATE OUT",
+               "unitevent_uid":"be951c66-54b7-4144-a820-8ec52d815da3",
+               "groupcode":null,
+               "groupcode_uid":null,
+               "lat":null,
+               "lng":null,
+               "address":null,
+               "lastediupdated_dttm":"0001-01-01T00:00:00",
+               "locationinfo":{
+                  "arrivalinfo":{
+                     "carriertype_cd":"VC",
+                     "carriertype_desc":"VESSEL",
+                     "vesselinfo":{
+                        "vessel_cd":"9525924",
+                        "vessel_nm":"AL QIBLA",
+                        "voyage_nbr":"ALQI-024W",
+                        "vesseltype_cd":"L",
+                        "estarrival_dt":"",
+                        "actarrival_dt":""
+                     },
+                     "railinfo":null,
+                     "truckinfo":null,
+                     "driverinfo":null,
+                     "designatedtruckerscac":null,
+                     "eta":null,
+                     "ata":null,
+                     "apptinfo":[
+
+                     ],
+                     "gatetransactioninfo":[
+
+                     ],
+                     "dropoff_comments":null,
+                     "dropoff_dttm":null,
+                     "unitevent_uid":"be951c66-54b7-4144-a820-8ec52d815da3"
+                  },
+                  "departureinfo":{
+                     "carriertype_cd":"MC",
+                     "carriertype_desc":"Motor Carrier",
+                     "vesselinfo":{
+                        "estdepature_dt":"",
+                        "actdepature_dt":""
+                     },
+                     "railinfo":null,
+                     "truckinfo":{
+                        "accessories":{
+
+                        }
+                     },
+                     "driverinfo":{
+
+                     },
+                     "designatedtruckerscac":"LHKL",
+                     "etd":null,
+                     "atd":null,
+                     "apptinfo":[
+                        {
+                           "appt_uid":"57911678-14b7-418c-8afa-70beb4c59b15",
+                           "apptnbr":"**************",
+                           "appttype_cd":"**",
+                           "appttype_desc":"***********",
+                           "apptstatus_cd":"D",
+                           "apptstatus_desc":"*********",
+                           "apptdttm":"*************************",
+                           "apptvalidthrough":"**********",
+                           "trucker_scac":"****",
+                           "speedgateallowed":"*****",
+                           "readyforspeedgate":"*****",
+                           "gatecode":"",
+                           "company_uid":"************************************",
+                           "createdbyuser_uid":"************************************",
+                           "modifiedbyuser_uid":"************************************",
+                           "lastapptupdateddttm":"********************",
+                           "terminalstatus_cd":"*",
+                           "terminalstatus_desc":"*********",
+                           "externalvisitref_nbr":""
+                        }
+                     ],
+                     "gatetransactioninfo":[
+                        {
+                           "trans_id":"54589",
+                           "line_cd":"ONEY",
+                           "line_scac":"ONEY",
+                           "trucker_scac":"LHKL",
+                           "unitsztype_cd":"22G1",
+                           "trans_hist":[
+                              {
+                                 "move_type":"PICK IMPORT",
+                                 "trans_status":"COMPLETED",
+                                 "trans_dttm":"2022-03-12T14:38:00",
+                                 "chassis_nbr":"TRHU302178"
+                              }
+                           ]
+                        }
+                     ],
+                     "pickup_comments":null,
+                     "pickup_dttm":null,
+                     "unitevent_uid":"be951c66-54b7-4144-a820-8ec52d815da3"
+                  },
+                  "holds":[
+                     {
+                        "hold_cd":"DN",
+                        "hold_description":"Not available at terminal",
+                        "holdcat_cd":null,
+                        "hold_date":"2022-03-12T14:05:00"
+                     }
+                  ],
+                  "releases":[
+                     {
+                        "release_cd":"CR",
+                        "release_description":"Carrier Release",
+                        "releasecat_cd":null,
+                        "release_date":"2022-02-28T13:36:00"
+                     },
+                     {
+                        "release_cd":"CT",
+                        "release_description":"Customs Released",
+                        "releasecat_cd":null,
+                        "release_date":"2022-02-28T13:36:00"
+                     }
+                  ],
+                  "confeeinfo":[
+
+                  ],
+                  "currentconditioninfo":{
+                     "damaged_flg":null,
+                     "yard_loc":null,
+                     "block_nbr":null,
+                     "supply_temp":null,
+                     "return_temp":null,
+                     "set_temp":null,
+                     "fullempty_cd":"FULL",
+                     "gross_wgt":null,
+                     "grosswgt_unit":null,
+                     "actual_wgt":null,
+                     "actualwgt_unit":null,
+                     "lastfree_dttm":null,
+                     "good_thru_date":null,
+                     "group_cd":null,
+                     "tmfflg":null,
+                     "fee_pay_link":null,
+                     "gate_cd":null,
+                     "transship_flg":null,
+                     "vent_setting":null,
+                     "vent_unit":null,
+                     "scale_weight":null,
+                     "dray_flg":null,
+                     "remark":null,
+                     "constraintcode":null,
+                     "hazinfo":[
+
+                     ],
+                     "yard_status":null,
+                     "feeindicator":null
+                  },
+                  "cargoinfo":{
+                     "reefer_flg":null,
+                     "temp_min":null,
+                     "mintemp_uom":null,
+                     "temp_max":null,
+                     "maxtemp_uom":null,
+                     "hazmat_flg":"N",
+                     "imoclass_cd":null,
+                     "od_flg":"",
+                     "seal_nbr":null,
+                     "bcocompany_name":"",
+                     "userline_scac":null
+                  },
+                  "shipmentstatusinfo":[
+                     {
+                        "shipmentstatus_cd":"OA",
+                        "shipmentstatus_desc":"GATEOUT",
+                        "shipmentstatus_dttm":"2022-03-12T14:38:00"
+                     }
+                  ],
+                  "svceventinfo":[
+                     {
+                        "svcevent_cd":"OA",
+                        "svcevent_desc":"GATEOUT",
+                        "svcevent_dttm":"2022-03-12T14:38:00"
+                     }
+                  ]
+               }
+            },
+            {
+               "port_cd":"",
+               "port_nm":"",
+               "facility_uid":"00000000-0000-0000-0000-000000000000",
+               "facility_cd":"",
+               "facility_nm":"UNKNOWN",
+               "locationtype_cd":"M",
+               "seq_nbr":"2",
+               "locationstatus_cd":"PND",
+               "lastdrayunitstatus_cd":null,
+               "lastdrayunitstatus_desc":null,
+               "unitevent_uid":"00000000-0000-0000-0000-000000000000",
+               "groupcode":"",
+               "groupcode_uid":"00000000-0000-0000-0000-000000000000",
+               "lat":null,
+               "lng":null,
+               "address":null,
+               "lastediupdated_dttm":"2022-03-12T14:38:00",
+               "locationinfo":null
+            }
+         ],
+         "confeeinfo":[
+            {
+               "confeeinfo_uid":null,
+               "fee_cd":"DEMRG",
+               "fee_desc":"Demurrage",
+               "feestatus_cd":"P",
+               "feestatus_dsc":"Paid",
+               "feedisplay_desc":"Demurrage  Through  2022-03-12",
+               "fee_amt":"250.00",
+               "fee_dttm":"2022-03-12T00:00:00",
+               "feeexp_dttm":"2022-03-13T04:59:00+00:00",
+               "feepaid":"250.00",
+               "feepaid_dttm":"2022-03-12T00:00:00",
+               "paymentallowed":"True",
+               "paidforcompay_uid":"4b309bdc-bc54-4fb0-acde-0ee066318f9e",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "reason_cd":null,
+               "reason_desc":null,
+               "sourcecompany_uid":null,
+               "feegroup":"DEMRG",
+               "istimesensitive":true,
+               "seller_uid":"895e74bc-dc67-4c07-890a-802a01911a0b",
+               "seller_cd":"ONE"
+            },
+            {
+               "confeeinfo_uid":null,
+               "fee_cd":"DEMRG",
+               "fee_desc":"Demurrage",
+               "feestatus_cd":"B",
+               "feestatus_dsc":"Blocked",
+               "feedisplay_desc":"Demurrage  Through  2022-03-13",
+               "fee_amt":"250",
+               "fee_dttm":"2022-03-13T00:00:00",
+               "feeexp_dttm":"2022-03-14T03:59:00+00:00",
+               "feepaid":null,
+               "feepaid_dttm":null,
+               "paymentallowed":"True",
+               "paidforcompay_uid":"00000000-0000-0000-0000-000000000000",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "reason_cd":null,
+               "reason_desc":null,
+               "sourcecompany_uid":null,
+               "feegroup":"DEMRG",
+               "istimesensitive":true,
+               "seller_uid":"895e74bc-dc67-4c07-890a-802a01911a0b",
+               "seller_cd":"ONE"
+            },
+            {
+               "confeeinfo_uid":null,
+               "fee_cd":"DEMRG",
+               "fee_desc":"Demurrage",
+               "feestatus_cd":"B",
+               "feestatus_dsc":"Blocked",
+               "feedisplay_desc":"Demurrage  Through  2022-03-14",
+               "fee_amt":"500",
+               "fee_dttm":"2022-03-14T00:00:00",
+               "feeexp_dttm":"2022-03-15T03:59:00+00:00",
+               "feepaid":null,
+               "feepaid_dttm":null,
+               "paymentallowed":"True",
+               "paidforcompay_uid":"00000000-0000-0000-0000-000000000000",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "reason_cd":null,
+               "reason_desc":null,
+               "sourcecompany_uid":null,
+               "feegroup":"DEMRG",
+               "istimesensitive":true,
+               "seller_uid":"895e74bc-dc67-4c07-890a-802a01911a0b",
+               "seller_cd":"ONE"
+            },
+            {
+               "confeeinfo_uid":null,
+               "fee_cd":"DEMRG",
+               "fee_desc":"Demurrage",
+               "feestatus_cd":"B",
+               "feestatus_dsc":"Blocked",
+               "feedisplay_desc":"Demurrage  Through  2022-03-15",
+               "fee_amt":"750",
+               "fee_dttm":"2022-03-15T00:00:00",
+               "feeexp_dttm":"2022-03-16T03:59:00+00:00",
+               "feepaid":null,
+               "feepaid_dttm":null,
+               "paymentallowed":"True",
+               "paidforcompay_uid":"00000000-0000-0000-0000-000000000000",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "reason_cd":null,
+               "reason_desc":null,
+               "sourcecompany_uid":null,
+               "feegroup":"DEMRG",
+               "istimesensitive":true,
+               "seller_uid":"895e74bc-dc67-4c07-890a-802a01911a0b",
+               "seller_cd":"ONE"
+            },
+            {
+               "confeeinfo_uid":null,
+               "fee_cd":"DEMRG",
+               "fee_desc":"Demurrage",
+               "feestatus_cd":"B",
+               "feestatus_dsc":"Blocked",
+               "feedisplay_desc":"Demurrage  Through  2022-03-16",
+               "fee_amt":"1000",
+               "fee_dttm":"2022-03-16T00:00:00",
+               "feeexp_dttm":"2022-03-17T03:59:00+00:00",
+               "feepaid":null,
+               "feepaid_dttm":null,
+               "paymentallowed":"True",
+               "paidforcompay_uid":"00000000-0000-0000-0000-000000000000",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "reason_cd":null,
+               "reason_desc":null,
+               "sourcecompany_uid":null,
+               "feegroup":"DEMRG",
+               "istimesensitive":true,
+               "seller_uid":"895e74bc-dc67-4c07-890a-802a01911a0b",
+               "seller_cd":"ONE"
+            },
+            {
+               "confeeinfo_uid":null,
+               "fee_cd":"DEMRG",
+               "fee_desc":"Demurrage",
+               "feestatus_cd":"B",
+               "feestatus_dsc":"Blocked",
+               "feedisplay_desc":"Demurrage  Through  2022-03-17",
+               "fee_amt":"1280",
+               "fee_dttm":"2022-03-17T00:00:00",
+               "feeexp_dttm":"2022-03-18T03:59:00+00:00",
+               "feepaid":null,
+               "feepaid_dttm":null,
+               "paymentallowed":"True",
+               "paidforcompay_uid":"00000000-0000-0000-0000-000000000000",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "reason_cd":null,
+               "reason_desc":null,
+               "sourcecompany_uid":null,
+               "feegroup":"DEMRG",
+               "istimesensitive":true,
+               "seller_uid":"895e74bc-dc67-4c07-890a-802a01911a0b",
+               "seller_cd":"ONE"
+            }
+         ],
+         "lfdinfo":[
+            {
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "sourcecompany_uid":"895e74bc-dc67-4c07-890a-802a01911a0b",
+               "sourcetype":"SSL",
+               "isprimary":"True",
+               "goodthru_dt":"2022-03-12T23:59:00",
+               "lastfree_dt":"2022-03-11T23:59:00",
+               "excessdwelllastfree_dt":"0001-01-01T00:00:00",
+               "excessdwellgoodthru_dt":"0001-01-01T00:00:00"
+            },
+            {
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "sourcecompany_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "sourcetype":"TERMINAL",
+               "isprimary":"False",
+               "goodthru_dt":"2022-03-12T23:59:00",
+               "lastfree_dt":"2022-03-12T23:59:00",
+               "excessdwelllastfree_dt":"0001-01-01T00:00:00",
+               "excessdwellgoodthru_dt":"0001-01-01T00:00:00"
+            }
+         ],
+         "services":[
+
+         ],
+         "attachments":[
+
+         ],
+         "hold_flg":"False",
+         "release_flg":"True",
+         "linehold_flg":"False",
+         "customhold_flg":"False",
+         "lastfree_dttm":"3/11/2022 11:59:00 PM",
+         "preadvice_number":null,
+         "unload_dttm":"3/7/2022 7:56:00 PM",
+         "feepaid":null,
+         "feedue":null,
+         "gatecode":null,
+         "active_flg":"True",
+         "createuser_uid":"00000000-0000-0000-0000-000000000000",
+         "created_dttm":"2022-02-22T14:47:45.049287",
+         "lastupdateduser_uid":"00000000-0000-0000-0000-000000000000",
+         "updated_dttm":"2022-03-12T20:28:18.246999",
+         "lastupdated_dttm":"0001-01-01T00:00:00",
+         "pregatestatus_desc":null,
+         "added_dttm":"0001-01-01T00:00:00",
+         "tags":null
+      },
+      {
+         "id":"5e7eb2dc-6cce-41b5-a6eb-f59f3e37457b",
+         "unit_nbr":"TGHU6953748",
+         "unit10_nbr":"TGHU695374",
+         "unitcat_cd":"CTR",
+         "tradetype_cd":"I",
+         "tradetype_desc":"IMPORT",
+         "partition_key":"POV-202213",
+         "drayunitstatus_cd":"AE",
+         "drayunitstatus_desc":"ON VESSEL",
+         "accesslevel":null,
+         "referenceinfo":[
+            {
+               "reftype":"BOL",
+               "reftype_desc":"BILL OF LADING",
+               "ref_nbr":"SHH30781992",
+               "ref_uid":null
+            }
+         ],
+         "shipmentstatus":[
+            {
+               "sourcetype":"TERMINAL",
+               "source_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "holdsinfo":[
+                  {
+                     "type":"CUSTOMS",
+                     "status":"RELEASED",
+                     "status_dttm":"2022-03-31T04:51:08.533374",
+                     "details":[
+                        {
+                           "hold_dttm":"2022-03-22T14:27:00.000000",
+                           "holdreason_cd":"QQ",
+                           "holdreason_desc":"CUSTOMS Default Bill Hold",
+                           "release_dttm":"2022-03-31T04:51:08.534541",
+                           "reportedby":"VITAP"
+                        }
+                     ]
+                  }
+               ]
+            }
+         ],
+         "shipmentrefinfo":[
+
+         ],
+         "shipmentinfo":null,
+         "unitinfo":{
+            "unitmaster_uid":"21b0efa5-00a7-48b1-b376-4f1fd1db6efd",
+            "owner_cd":"ZIM",
+            "ownerline_scac":"ZIMU",
+            "user_cd":null,
+            "operator_cd":null,
+            "unittypeiso_cd":"45G1",
+            "unitsztype_cd":"40HC",
+            "unittype_cd":null,
+            "unitweight":null,
+            "unitweight_uom":null,
+            "pol_cd":null,
+            "pdl_cd":null,
+            "pod_cd":null
+         },
+         "drayunitactivity":[
+            {
+               "seq_nbr":"1",
+               "event_cd":"CNMAN",
+               "event_desc":"Container Manifested",
+               "event_dttm":"2022-03-31T04:51:05.394951",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "unitevent_uid":"97523860-62f5-4147-896a-00766be695bf"
+            },
+            {
+               "seq_nbr":"2",
+               "event_cd":"DISCH",
+               "event_desc":"Discharged",
+               "event_dttm":null,
+               "facility_uid":"",
+               "facility_cd":null,
+               "facility_nm":null,
+               "unitevent_uid":""
+            },
+            {
+               "seq_nbr":"3",
+               "event_cd":"LFDAY",
+               "event_desc":"Last Free Day",
+               "event_dttm":null,
+               "facility_uid":"",
+               "facility_cd":null,
+               "facility_nm":null,
+               "unitevent_uid":""
+            },
+            {
+               "seq_nbr":"4",
+               "event_cd":"PLAVI",
+               "event_desc":"Ready for pick up",
+               "event_dttm":null,
+               "facility_uid":"",
+               "facility_cd":null,
+               "facility_nm":null,
+               "unitevent_uid":""
+            },
+            {
+               "seq_nbr":"5",
+               "event_cd":"APNMT",
+               "event_desc":"Pregate",
+               "event_dttm":null,
+               "facility_uid":"",
+               "facility_cd":null,
+               "facility_nm":null,
+               "unitevent_uid":""
+            },
+            {
+               "seq_nbr":"6",
+               "event_cd":"DPTRM",
+               "event_desc":"Departed Terminal",
+               "event_dttm":null,
+               "facility_uid":"",
+               "facility_cd":null,
+               "facility_nm":null,
+               "unitevent_uid":""
+            },
+            {
+               "seq_nbr":"9",
+               "event_cd":"ARCUS",
+               "event_desc":"Arrived at customer",
+               "event_dttm":null,
+               "facility_uid":"",
+               "facility_cd":null,
+               "facility_nm":null,
+               "unitevent_uid":""
+            },
+            {
+               "seq_nbr":"10",
+               "event_cd":"EMTOT",
+               "event_desc":"Empty released by customer",
+               "event_dttm":null,
+               "facility_uid":"",
+               "facility_cd":null,
+               "facility_nm":null,
+               "unitevent_uid":""
+            },
+            {
+               "seq_nbr":"11",
+               "event_cd":"EMTRC",
+               "event_desc":"Empty Received",
+               "event_dttm":null,
+               "facility_uid":"",
+               "facility_cd":null,
+               "facility_nm":null,
+               "unitevent_uid":""
+            }
+         ],
+         "locations":[
+            {
+               "port_cd":"POV",
+               "port_nm":"Port of Virginia",
+               "facility_uid":"e517176b-194a-4e91-999d-44dcc57e4821",
+               "facility_cd":"VITAP",
+               "facility_nm":"Virginia International Gateway (VIG)",
+               "locationtype_cd":"O",
+               "seq_nbr":"1",
+               "locationstatus_cd":"ACT",
+               "lastdrayunitstatus_cd":"AE",
+               "lastdrayunitstatus_desc":"ON VESSEL",
+               "unitevent_uid":"97523860-62f5-4147-896a-00766be695bf",
+               "groupcode":null,
+               "groupcode_uid":null,
+               "lat":null,
+               "lng":null,
+               "address":null,
+               "lastediupdated_dttm":"2022-03-31T00:05:00",
+               "locationinfo":{
+                  "arrivalinfo":{
+                     "carriertype_cd":"VC",
+                     "carriertype_desc":"VESSEL",
+                     "vesselinfo":{
+                        "vessel_cd":"9735218",
+                        "vessel_nm":"MSC ELMA",
+                        "voyage_nbr":"ELMA-UL211W",
+                        "vesseltype_cd":"L",
+                        "estarrival_dt":"",
+                        "actarrival_dt":""
+                     },
+                     "railinfo":null,
+                     "truckinfo":null,
+                     "driverinfo":null,
+                     "designatedtruckerscac":null,
+                     "eta":null,
+                     "ata":null,
+                     "apptinfo":[
+
+                     ],
+                     "gatetransactioninfo":[
+
+                     ],
+                     "dropoff_comments":null,
+                     "dropoff_dttm":null,
+                     "unitevent_uid":"97523860-62f5-4147-896a-00766be695bf"
+                  },
+                  "departureinfo":null,
+                  "holds":[
+                     {
+                        "hold_cd":"DN",
+                        "hold_description":"Not available at terminal",
+                        "holdcat_cd":null,
+                        "hold_date":"2022-03-22T14:27:00"
+                     }
+                  ],
+                  "releases":[
+                     {
+                        "release_cd":"CR",
+                        "release_description":"Carrier Release",
+                        "releasecat_cd":null,
+                        "release_date":"2022-03-30T12:15:00"
+                     },
+                     {
+                        "release_cd":"CT",
+                        "release_description":"Customs Released",
+                        "releasecat_cd":null,
+                        "release_date":"2022-03-30T12:15:00"
+                     }
+                  ],
+                  "confeeinfo":[
+
+                  ],
+                  "currentconditioninfo":{
+                     "damaged_flg":null,
+                     "yard_loc":null,
+                     "block_nbr":null,
+                     "supply_temp":null,
+                     "return_temp":null,
+                     "set_temp":null,
+                     "fullempty_cd":"FULL",
+                     "gross_wgt":null,
+                     "grosswgt_unit":null,
+                     "actual_wgt":"3890",
+                     "actualwgt_unit":"Kilograms",
+                     "lastfree_dttm":null,
+                     "good_thru_date":null,
+                     "group_cd":null,
+                     "tmfflg":null,
+                     "fee_pay_link":null,
+                     "gate_cd":null,
+                     "transship_flg":null,
+                     "vent_setting":null,
+                     "vent_unit":null,
+                     "scale_weight":null,
+                     "dray_flg":null,
+                     "remark":null,
+                     "constraintcode":null,
+                     "hazinfo":[
+
+                     ],
+                     "yard_status":null,
+                     "feeindicator":null
+                  },
+                  "cargoinfo":{
+                     "reefer_flg":"N",
+                     "temp_min":null,
+                     "mintemp_uom":null,
+                     "temp_max":null,
+                     "maxtemp_uom":null,
+                     "hazmat_flg":"N",
+                     "imoclass_cd":null,
+                     "od_flg":"N",
+                     "seal_nbr":null,
+                     "bcocompany_name":null,
+                     "userline_scac":null
+                  },
+                  "shipmentstatusinfo":[
+                     {
+                        "shipmentstatus_cd":"DN",
+                        "shipmentstatus_desc":"Container Not Available for pickup",
+                        "shipmentstatus_dttm":"2022-03-22T14:27:00"
+                     },
+                     {
+                        "shipmentstatus_cd":"CT",
+                        "shipmentstatus_desc":"Customs Released",
+                        "shipmentstatus_dttm":"2022-03-30T12:15:00"
+                     },
+                     {
+                        "shipmentstatus_cd":"CR",
+                        "shipmentstatus_desc":"Carrier Release",
+                        "shipmentstatus_dttm":"2022-03-30T12:15:00"
+                     },
+                     {
+                        "shipmentstatus_cd":"NP",
+                        "shipmentstatus_desc":"Terminal Charges Paid",
+                        "shipmentstatus_dttm":"2022-03-30T12:15:00"
+                     },
+                     {
+                        "shipmentstatus_cd":"AE",
+                        "shipmentstatus_desc":"VESSELLOAD",
+                        "shipmentstatus_dttm":"2022-03-22T14:27:00"
+                     }
+                  ],
+                  "svceventinfo":[
+                     {
+                        "svcevent_cd":"AE",
+                        "svcevent_desc":"VESSELLOAD",
+                        "svcevent_dttm":"2022-03-22T14:27:00"
+                     }
+                  ]
+               }
+            }
+         ],
+         "confeeinfo":[
+
+         ],
+         "lfdinfo":[
+
+         ],
+         "services":[
+
+         ],
+         "attachments":[
+
+         ],
+         "hold_flg":"False",
+         "release_flg":"True",
+         "linehold_flg":"False",
+         "customhold_flg":"False",
+         "lastfree_dttm":null,
+         "preadvice_number":null,
+         "unload_dttm":null,
+         "feepaid":null,
+         "feedue":null,
+         "gatecode":null,
+         "active_flg":"True",
+         "createuser_uid":"00000000-0000-0000-0000-000000000000",
+         "created_dttm":"2022-03-22T18:43:29.668834",
+         "lastupdateduser_uid":"00000000-0000-0000-0000-000000000000",
+         "updated_dttm":"2022-03-31T04:51:08.533374",
+         "lastupdated_dttm":"2022-03-31T00:05:00",
+         "pregatestatus_desc":null,
+         "added_dttm":"0001-01-01T00:00:00",
+         "tags":null
+      }
+   ],
+   "totalPages":12,
+   "totalRecords":331,
+   "nextpageNumber":1
 }

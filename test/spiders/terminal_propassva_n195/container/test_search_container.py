@@ -4,7 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_terminal.ptp_share_spider import ContainerRoutingRule
+from crawler.core_terminal.propassva_ptp_share_spider import GetContainerNoRoutingRule
 from test.spiders.terminal_propassva_n195 import container
 
 
@@ -18,15 +18,16 @@ def sample_loader(sample_loader):
 @pytest.mark.parametrize(
     "sub, container_no_list",
     [
-        ("01_basic", ["EITU3044650", "BMOU4520471", "MEDU8348187", "TCKU4811590", "OOCU7493403"]),
+        ("01_basic", ["TGHU6953748", "TRHU3021789", "CMAU8656108"]),
     ],
 )
 def test_container_handle(sub, container_no_list, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.json")
 
-    option = ContainerRoutingRule.build_request_option(
+    option = GetContainerNoRoutingRule.build_request_option(
         container_no_list=container_no_list,
-        cookies={},
+        auth="",
+        first=False,
     )
     response = TextResponse(
         url=option.url,
@@ -37,7 +38,7 @@ def test_container_handle(sub, container_no_list, sample_loader):
             meta=option.meta,
         ),
     )
-    rule = ContainerRoutingRule()
+    rule = GetContainerNoRoutingRule()
     results = list(rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
