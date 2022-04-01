@@ -1,16 +1,16 @@
 import base64
 import dataclasses
+from io import BytesIO
 import logging
 import os
 import re
 import time
-from io import BytesIO
 from typing import Dict, List, Optional
 
+from PIL import Image
 import cv2
 import numpy as np
 import scrapy
-from PIL import Image
 from scrapy import Selector
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver import ActionChains
@@ -201,7 +201,7 @@ class ContentGetter(ChromeContentGetter):
         search_type = info_pack["search_type"]
 
         self._search(search_no=search_no, search_type=search_type)
-        time.sleep(10)
+        time.sleep(30)
         windows = self._driver.window_handles
         self._driver.switch_to.window(windows[1])  # windows[1] is new page
         if self._is_blocked(response=Selector(text=self._driver.page_source)):
@@ -209,10 +209,12 @@ class ContentGetter(ChromeContentGetter):
 
         self._driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": self.block_urls})
         self._driver.execute_cdp_cmd("Network.enable", {})
-        if self._first:
-            self._handle_with_slide(info_pack=info_pack)
-        time.sleep(10)
 
+        if self._pass_verification_or_not():
+            self._handle_with_slide(info_pack=info_pack)
+            time.sleep(10)
+
+        self._first = False
         self._search_count = 0
         return self._driver.page_source
 
@@ -303,7 +305,7 @@ class ContentGetter(ChromeContentGetter):
             icon_ele = self._get_slider_icon_ele()
             img_ele = self._get_bg_img_ele()
 
-            distance = self._get_element_slide_distance(icon_ele, img_ele, 1)
+            distance = self._get_element_slide_distance(icon_ele, img_ele, 0)
 
             if distance <= 100:
                 self._refresh()
@@ -441,6 +443,7 @@ class ContentGetter(ChromeContentGetter):
             ActionChains(self._driver).move_by_offset(xoffset=x, yoffset=0).perform()
         time.sleep(0.5)  # move to the right place and take a break
         ActionChains(self._driver).release().perform()
+        time.sleep(4)
 
 
 # -------------------------------------------------------------------------------
