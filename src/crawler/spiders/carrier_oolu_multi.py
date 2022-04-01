@@ -567,7 +567,7 @@ class CargoTrackingRule(BaseRoutingRule):
                 response=response,
                 task_id=task_id,
                 container_no=container_no,
-                terminal_pod=routing_info["teminal_pod"],
+                terminal_pod=routing_info["terminal_pod"],
                 terminal_final_dest=routing_info["terminal_final_dest"],
             ):
                 yield item
@@ -786,12 +786,18 @@ class CargoTrackingRule(BaseRoutingRule):
         selectors_map = locator.locate_selectors(response=response)
         detention_info = self._extract_detention_info(selectors_map, info_pack=info_pack)
 
+        if terminal_final_dest:
+            railway = terminal_final_dest.split("-")[0].strip()
+        else:
+            railway = None
+
         yield ContainerItem(
             task_id=info_pack["task_id"],
             container_key=info_pack["search_no"],
             container_no=info_pack["search_no"],
             last_free_day=detention_info["last_free_day"] or None,
             det_free_time_exp_date=detention_info["det_free_time_exp_date"] or None,
+            railway=railway,
             terminal_pod=LocationItem(name=terminal_pod),
             terminal_final_dest=LocationItem(name=terminal_final_dest),
         )
