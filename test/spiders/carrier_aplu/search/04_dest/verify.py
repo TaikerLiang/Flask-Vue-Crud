@@ -52,6 +52,7 @@ def multi_verify(results: List):
         pol=LocationItem(name="YANTIAN (CN)"),
         pod=LocationItem(name="OAKLAND, CA (US)"),
         final_dest=LocationItem(name="CHICAGO, IL (US)"),
+        place_of_deliv=LocationItem(name="CHICAGO, IL (US)"),
         eta=None,
         ata="Thursday 03-FEB-2022 15:57",
         task_id=1,
