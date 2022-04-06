@@ -244,8 +244,6 @@ class MainRoutingRule(BaseRoutingRule):
             "search_type": self._search_type,
         }
 
-        if task_ids[0] == "3":
-            raise FormatError(task_id="3")
         if self._is_search_no_invalid(response=response):
             yield DataNotFoundItem(
                 task_id=task_ids[0],
@@ -335,8 +333,7 @@ class MainRoutingRule(BaseRoutingRule):
             mbl_item["booking_no"] = search_nos[0]
         yield mbl_item
 
-        if not task_ids[0] == "2":
-            yield EndItem(task_id=task_ids[0])
+        yield EndItem(task_id=task_ids[0])
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
     def _is_search_no_invalid(self, response: scrapy.Selector):
