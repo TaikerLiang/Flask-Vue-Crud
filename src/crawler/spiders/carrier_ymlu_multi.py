@@ -648,7 +648,9 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
         }
 
     def _extract_vessel_voyage(self, response: Selector):
-        span = response.css("span#ContentPlaceHolder1_rptBLNo_lblVessel_0")
+        span = response.css("span#ContentPlaceHolder1_rptBKNo_lblVessel_0") or response.css(
+            "span#ContentPlaceHolder1_rptBLNo_lblVessel_0"
+        )
         if span.css("a"):
             vessel = span.css("a::text").get().strip()
         else:
