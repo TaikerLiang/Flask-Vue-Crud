@@ -209,7 +209,9 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         full_invalid_container_nos = []
         for cno in container_nos:
-            if cno[:-1] in invalid_container_nos:
+            # cno[:-1] (FANU3051380)
+            # cno[:4] + cno[5:] (NYKU0751886)
+            if cno[:-1] in invalid_container_nos or cno[:4] + cno[5:] in invalid_container_nos:
                 full_invalid_container_nos.append(cno)
 
         return full_invalid_container_nos
