@@ -1,6 +1,6 @@
 #!/bin/bash
-#git fetch
-#git reset --hard origin/master
+git fetch
+git reset --hard origin/master
 #pip3 install -r ../requirements-dev.txt
 while true
 do
