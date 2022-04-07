@@ -8,15 +8,16 @@ import time
 import bezier
 import numpy as np
 import pyautogui
-import selenium.webdriver
 from scrapy import Request
 from scrapy.http import TextResponse
+import selenium.webdriver
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from seleniumwire.undetected_chromedriver.v2 import Chrome
+import undetected_chromedriver as us
 
 from local.config import PROXY_PASSWORD, PROXY_URL
 from local.proxy import HydraproxyProxyManager
@@ -61,7 +62,9 @@ class BaseSeleniumContentGetter:
                     "https": f"https://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_DOMAIN}",
                 }
             }
-        self.driver = Chrome(version_main=98, seleniumwire_options=seleniumwire_options, options=options)
+            self.driver = Chrome(version_main=98, seleniumwire_options=seleniumwire_options, options=options)
+        else:
+            self.driver = us.Chrome(version_main=98, options=options)
         # self.driver.get("https://nowsecure.nl")
         # time.sleep(5)
         self.action = ActionChains(self.driver)
