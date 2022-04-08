@@ -14,5 +14,6 @@ def verify(results):
         container_key="CLHU9129958",
         last_free_day=None,
         terminal_pod={"name": "Y258"},
+        terminal_deliv={"name": "H099"},
         task_id=1,
     )
