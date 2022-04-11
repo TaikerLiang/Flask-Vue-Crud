@@ -4,7 +4,9 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_terminal.voyagecontrol_share_spider import ListTracedContainerRoutingRule
+from crawler.core_terminal.voyagecontrol_share_spider import (
+    ListTracedContainerRoutingRule,
+)
 from crawler.spiders.terminal_voyagecontrol_y790 import TerminalYtiSpider
 from test.spiders.terminal_voyagecontrol_y790 import listed_traced_containers
 
@@ -39,12 +41,7 @@ def test_container_handle(sub, container_no, is_first, sample_loader):
         encoding="utf-8",
         request=Request(
             url=option.url,
-            meta={
-                "is_first": is_first,
-                "container_nos": [container_no],
-                "authorization_token": "",
-                "company_info": TerminalYtiSpider.company_info,
-            },
+            meta=option.meta,
         ),
     )
 
