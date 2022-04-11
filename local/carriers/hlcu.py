@@ -22,14 +22,15 @@ MAX_RETRY_COUNT = 1
 
 
 class HlcuContentGetter(BaseSeleniumContentGetter):
-    def __init__(self, proxy: bool):
-        super().__init__(proxy=proxy)
+    def __init__(self, proxy: bool, need_anticaptcha: bool = False):
+        super().__init__(proxy=proxy, need_anticaptcha=need_anticaptcha)
         logging.disable(logging.DEBUG)
         self.retry_count = 0
 
     def connect(self):
         self.driver.get(SEARCH_URL)
         time.sleep(5)
+        self._solve_anticaptcha()
 
     def restart(self):
         if self.retry_count >= MAX_RETRY_COUNT:
@@ -59,6 +60,19 @@ class HlcuContentGetter(BaseSeleniumContentGetter):
         page_source = self.driver.page_source
         return page_source
 
+    def _solve_anticaptcha(self):
+        # wait for "solved" selector to come up
+        # Sometimes, the website reacts on too fast to show solved, so timeout here is not equivalent to failure
+        try:
+            WebDriverWait(self.driver, 60).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, ".antigate_solver.solved"))
+            )
+        except TimeoutException:
+            confirm_button_css = "button.save-preference-btn-handler.onetrust-close-btn-handler"
+            WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, confirm_button_css)))
+
+        time.sleep(10)
+
     def _confirm_privacy_choices(self):
         confirm_button_css = "button.save-preference-btn-handler.onetrust-close-btn-handler"
 
@@ -77,13 +91,17 @@ class HlcuLocalCrawler(BaseLocalCrawler):
         super().__init__(proxy=proxy)
         self._search_type = ""
         self._search_nos = []
-        self.content_getter = HlcuContentGetter(proxy=proxy)
+        self.content_getter = HlcuContentGetter(proxy=proxy, need_anticaptcha=False)
+        # If using proxy on hlcu website, may cause page reload infinitely and make hcaptcha not solvable
+        # self.content_getter = HlcuContentGetter(proxy=False, need_anticaptcha=True)
         self.rule = TracingRoutingRule(content_getter=None)
 
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):
         task_ids = task_ids.split(",")
         mbl_nos = mbl_nos.split(",")
         id_mbl_map = {mbl_no: task_id for task_id, mbl_no in zip(task_ids, mbl_nos)}
+
+        self.content_getter.connect()
 
         for mbl_no, task_id in id_mbl_map.items():
             mbl_page = self.content_getter.get_mbl_page(mbl_no=mbl_no, need_handle_popup=True)

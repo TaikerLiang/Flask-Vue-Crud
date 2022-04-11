@@ -1,9 +1,12 @@
 import abc
 import dataclasses
 import logging
+from pathlib import Path
 import random
 import string
 import time
+import urllib.request
+import zipfile
 
 import bezier
 import numpy as np
@@ -44,7 +47,10 @@ class BaseSeleniumContentGetter:
     PROXY_URL = PROXY_URL
     PROXY_PASSWORD = PROXY_PASSWORD
 
-    def __init__(self, proxy: bool):
+    def __init__(self, proxy: bool, need_anticaptcha: bool = False):
+        self.proxy = proxy
+        self._need_anticaptcha = need_anticaptcha
+
         seleniumwire_options = {}
         options = selenium.webdriver.ChromeOptions()
 
@@ -52,7 +58,33 @@ class BaseSeleniumContentGetter:
         options.add_argument("--no-sandbox")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--disable-blink-features=AutomationControlled")
-        self.proxy = proxy
+
+        if self._need_anticaptcha:
+            # Check whether the plugin is exist
+            logging.info("Check whether anticaptcha plugin is exist ...")
+            file = Path("./plugin/")
+            if not (file.is_dir() and file.exists()):
+                # Download the plugin
+                logging.info("Downloading anticaptcha plugin ...")
+                url = "https://antcpt.com/anticaptcha-plugin.zip"
+                filehandle, _ = urllib.request.urlretrieve(url)
+
+                logging.info("Deploying anticaptcha plugin ...")
+                # Unzip it
+                with zipfile.ZipFile(filehandle, "r") as f:
+                    f.extractall("plugin")
+
+                    # Set API key in configuration file
+                    api_key = "fbe73f747afc996b624e8d2a95fa0f84"
+                    file = Path("./plugin/js/config_ac_api_key.js")
+                    file.write_text(
+                        file.read_text().replace(
+                            "antiCapthaPredefinedApiKey = ''", f"antiCapthaPredefinedApiKey = '{api_key}'"
+                        )
+                    )
+
+            options.add_argument("--load-extension=./plugin/")
+
         if self.proxy:
             proxy_manager = HydraproxyProxyManager(logger=logger)
             proxy_manager.renew_proxy()
