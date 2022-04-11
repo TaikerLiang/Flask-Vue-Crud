@@ -215,6 +215,7 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
                 release_info = self._extract_release_info(container)
                 yield TerminalItem(
                     container_no=container["unit_nbr"],
+                    available=self._extract_available_time(container),
                     last_free_day=container["lastfree_dttm"],
                     gate_out_date=self._extract_gate_out_date(container),
                     demurrage=self._extract_demurrage_info(container),
@@ -283,6 +284,14 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
             "vessel": None,
             "voyage": None,
         }
+
+    def _extract_available_time(self, container_dict):
+        activity_list = container_dict["drayunitactivity"]
+        for activity in activity_list:
+            if activity["event_desc"] == "Ready for pick up":
+                return activity["event_dttm"]
+
+        return None
 
 
 # -------------------------------------------------------------------------------
