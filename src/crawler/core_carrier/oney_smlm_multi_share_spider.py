@@ -587,7 +587,8 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
             task_id=task_id,
             container_key=container_key,
             last_free_day=release_info.get("last_free_day") or None,
-            terminal_pod=LocationItem(name=release_info.get("terminal") or None),
+            terminal_pod=LocationItem(name=release_info.get("terminal_pod") or None),
+            terminal_deliv=LocationItem(name=release_info.get("terminal_deliv") or None),
         )
 
     def _extract_release_info(self, response_dict: Dict) -> Dict:
@@ -606,7 +607,8 @@ class ReleaseStatusRoutingRule(BaseRoutingRule):
             "us_filing_date": release_data["impFilDt"],
             "firms_code": release_data["delFirmsCode"],
             "last_free_day": release_data["lastFreeDt"],
-            "terminal": release_data["podFirmsCode"],
+            "terminal_pod": release_data["podFirmsCode"],
+            "terminal_deliv": release_data["delFirmsCode"],
         }
 
 
