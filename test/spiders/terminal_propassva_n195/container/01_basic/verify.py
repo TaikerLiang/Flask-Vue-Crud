@@ -5,6 +5,7 @@ from crawler.core_terminal.items import TerminalItem
 
 def verify(results: List):
     assert results[0] == TerminalItem(
+        available="2022-02-21T10:16:00",
         container_no="CMAU8656108",
         customs_release="RELEASED",
         freight_release="RELEASED",
@@ -17,6 +18,7 @@ def verify(results: List):
         voyage="MAGE-0MBAEW1",
     )
     assert results[1] == TerminalItem(
+        available="2022-03-07T19:56:00",
         container_no="TRHU3021789",
         customs_release="RELEASED",
         freight_release="RELEASED",
@@ -29,6 +31,7 @@ def verify(results: List):
         voyage="ALQI-024W",
     )
     assert results[2] == TerminalItem(
+        available=None,
         container_no="TGHU6953748",
         customs_release="RELEASED",
         freight_release=None,
