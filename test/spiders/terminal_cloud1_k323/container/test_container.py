@@ -34,7 +34,7 @@ def sample_loader(sample_loader):
     ],
 )
 def test_container_handle(sub, container_no, url, sample_loader):
-    json_text = sample_loader.read_file(sub, "sample.json")
+    json_text = sample_loader.read_file(sub, "sample.html")
 
     option = ContainerRoutingRule.build_request_option(container_no=container_no, url=url)
 
@@ -62,7 +62,7 @@ def test_container_handle(sub, container_no, url, sample_loader):
     ],
 )
 def test_container_not_found(sub, container_no, url_code, code, sample_loader):
-    json_text = sample_loader.read_file(sub, "sample.json")
+    json_text = sample_loader.read_file(sub, "sample.html")
 
     option = ConfigureSettingsRule.build_request_option(container_no=container_no, url_code=url_code, code=code)
 
