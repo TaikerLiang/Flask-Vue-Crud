@@ -335,7 +335,7 @@ class ContainerInfoTableParser:
 
 class ContentGetter(ChromeContentGetter):
     USER_NAME = "gftracking"
-    PASS_WORD = "Hardcore20221"
+    PASS_WORD = "Hardcore202204"
 
     def _login(self):
         self._driver.get("https://www8.cpr.ca/cx/sap/bc/ui5_ui5/ui2/ushell/shells/abap/Fiorilaunchpad.html?#Shell-home")

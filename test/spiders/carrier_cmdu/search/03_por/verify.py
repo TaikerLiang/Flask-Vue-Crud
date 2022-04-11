@@ -51,6 +51,7 @@ def multi_verify(results: List):
         por=LocationItem(name="BANGALORE, KA (IN)"),
         pol=LocationItem(name="CHENNAI (IN)"),
         pod=LocationItem(name="LOS ANGELES, CA (US)"),
+        place_of_deliv=LocationItem(name=None),
         final_dest=LocationItem(name=None),
         eta=None,
         ata="Wednesday 09-FEB-2022 16:04",

@@ -91,7 +91,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://www.google.com",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "container_no_list": container_no_list,
             },
@@ -112,6 +112,7 @@ class ContainerRoutingRule(BaseRoutingRule):
     @classmethod
     def _handle_response(cls, response):
         content_table = cls._extract_content_table(response)
+
         for content in content_table:
             yield TerminalItem(
                 container_no=content[0],
@@ -156,7 +157,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
 
 class ContentGetter(ChromeContentGetter):
     USERNAME = "tk@hardcoretech.co"
-    PASSWORD = "Goft@220126"
+    PASSWORD = "Goft@220401"
     URL = "https://goport.scspa.com/scspa/index"
 
     def login(self):

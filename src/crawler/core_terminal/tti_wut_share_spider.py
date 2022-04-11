@@ -1,22 +1,22 @@
-import time
 import dataclasses
+import time
 from typing import List
-from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError
 
 import scrapy
 from scrapy import Selector
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoAlertPresentException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 from crawler.core.selenium import ChromeContentGetter
+from crawler.core.table import BaseTable
 from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
+from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError
+from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
-from crawler.core.table import BaseTable
+from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 
 MAX_PAGE_NUM = 20
 
@@ -206,7 +206,7 @@ class ContentGetter(ChromeContentGetter):
     def search(self, container_no_list: List, short_name: str):
         self._driver.switch_to.default_content()
         if short_name == "TTI":
-            menu_btn = self._driver.find_element_by_xpath('//*[@id="nav"]/li[3]/a')
+            menu_btn = self._driver.find_element_by_xpath('//*[@id="nav"]/li[4]/a')
         else:
             menu_btn = self._driver.find_element_by_xpath('//*[@id="nav"]/li[1]/a')
 

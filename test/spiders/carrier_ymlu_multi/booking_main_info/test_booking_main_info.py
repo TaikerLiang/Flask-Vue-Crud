@@ -26,6 +26,7 @@ def sample_loader(sample_loader):
         ("06_ip_blocked", "E209048375", 1),
         ("07_delivery_without_time_status", "YLX392742", 1),
         ("08_to_be_advised_ver2", "YHU739759", 1),
+        ("09_no_mbl_no", "YLX400679", 1),
     ],
 )
 def test_booking_main_info_page_routing_rule(sub, booking_no, task_id, sample_loader):

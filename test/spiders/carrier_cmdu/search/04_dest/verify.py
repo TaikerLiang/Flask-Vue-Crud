@@ -52,6 +52,7 @@ def multi_verify(results: List):
         pol=LocationItem(name="NINGBO (CN)"),
         pod=LocationItem(name="NORFOLK, VA (US)"),
         final_dest=LocationItem(name="DETROIT, MI (US)"),
+        place_of_deliv=LocationItem(name="DETROIT, MI (US)"),
         eta="Wednesday 09-MAR-2022 18:00",
         ata=None,
         task_id=1,
