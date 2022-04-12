@@ -26,7 +26,6 @@ def verify(results):
         pol=LocationItem(name="SEATTLE (WA), U.S.A."),
         pod=LocationItem(name="KAOHSIUNG, TAIWAN"),
         place_of_deliv=LocationItem(un_lo_code=None, name=None),
-        final_dest=LocationItem(un_lo_code=None, name=None),
         etd="12-Oct-2019",
         eta="03-Nov-2019",
         deliv_eta=None,

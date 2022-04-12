@@ -36,7 +36,6 @@ def verify(results):
         pol=LocationItem(name="WILMINGTON (NC), U.S.A."),
         pod=LocationItem(name="KEELUNG, TAIWAN"),
         place_of_deliv=LocationItem(un_lo_code=None, name=None),
-        final_dest=LocationItem(un_lo_code=None, name=None),
         etd="08-Nov-2019",
         eta="21-Dec-2019",
         deliv_eta=None,

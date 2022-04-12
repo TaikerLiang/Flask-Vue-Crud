@@ -25,7 +25,6 @@ def verify(results):
         pol=LocationItem(name="SHANGHAI (SH), CHINA. PEOPLE'S REPUBLIC"),
         pod=LocationItem(name="SAVANNAH (GA), U.S.A."),
         place_of_deliv=LocationItem(un_lo_code="USNVL", name=None),
-        final_dest=LocationItem(un_lo_code="USNVL", name=None),
         etd="17-Oct-2019",
         eta="13-Nov-2019",
         deliv_eta="19-Nov-2019",
