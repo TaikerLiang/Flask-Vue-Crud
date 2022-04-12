@@ -248,7 +248,7 @@ class ContentGetter(ChromeContentGetter):
     #     assert len(windows) == 1
     #     self._driver.switch_to.window(windows[0])
 
-    def find_container_btn_and_click(self, container_btn_css):
+    def find_container_btn_and_click(self, container_btn_css: str, container_no: str):
         container_btn = self._driver.find_element_by_css_selector(container_btn_css)
         container_btn.click()
 
@@ -571,11 +571,9 @@ class CargoTrackingRule(BaseRoutingRule):
         container_list = self._extract_container_list(selector_map=selector_map)
         for i, container in enumerate(container_list):
             container_no = container["container_no"].strip()
-            click_element_css = f"a[id='form:link{i}']"
 
             try:
-                self._content_getter.find_container_btn_and_click(container_btn_css=click_element_css)
-                time.sleep(10)
+                self._switch_container_pane(ith_pane=i, container_no=container_no, info_pack=info_pack)
             except ReadTimeoutError:
                 url = self._content_getter.get_current_url()
                 self._content_getter.quit()
@@ -583,8 +581,6 @@ class CargoTrackingRule(BaseRoutingRule):
                     **info_pack,
                     reason=f"Timeout during connect to {url}",
                 )
-
-            response = Selector(text=self._content_getter.get_page_source())
 
             for item in self._handle_container_response(response=response, task_id=task_id, container_no=container_no):
                 yield item
@@ -774,19 +770,37 @@ class CargoTrackingRule(BaseRoutingRule):
             )
         return container_no_list
 
+    def _switch_container_pane(self, ith_pane: int, container_no: str, info_pack: Dict, max_retry_times: int = 3):
+        click_element_css = f"a[id='form:link{ith_pane}']"
+        title_container_no = ""
+
+        for i in range(1, max_retry_times + 1):
+            # Switch pane and wait
+            self._content_getter.find_container_btn_and_click(
+                container_btn_css=click_element_css, container_no=container_no
+            )
+            time.sleep(10 * i)
+
+            # Extract container_no of pane and compare it to parameter container_no
+            response = Selector(text=self._content_getter.get_page_source())
+            title_container_no = self._extract_container_no(response, info_pack=info_pack)
+            if title_container_no == container_no:
+                return
+
+        # Raise due to retry counts reach max_retry_times
+        info_pack["search_no"] = container_no
+        info_pack["search_type"] = SEARCH_TYPE_CONTAINER
+        raise MaxRetryError(
+            **info_pack,
+            reason=f"Container no mismatch: website={title_container_no}, ours={container_no}",
+        )
+
     def _handle_container_response(self, response, task_id: str, container_no: str):
         info_pack = {
             "task_id": task_id,
             "search_no": container_no,
             "search_type": SEARCH_TYPE_CONTAINER,
         }
-
-        title_container_no = self._extract_container_no(response, info_pack=info_pack)
-        if title_container_no != info_pack["search_no"]:
-            raise FormatError(
-                **info_pack,
-                reason=f"Container no mismatch: website={title_container_no}, ours={info_pack['search_no']}",
-            )
 
         locator = _PageLocator(info_pack=info_pack)
         selectors_map = locator.locate_selectors(response=response)
