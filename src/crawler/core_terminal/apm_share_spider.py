@@ -66,7 +66,8 @@ class ApmShareSpider(BaseMultiTerminalSpider):
             elif isinstance(result, BaseTerminalItem):
                 yield result
             elif isinstance(result, RequestOption):
-                yield self._build_request_by(option=result)
+                proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=result)
+                yield self._build_request_by(option=proxy_option)
             else:
                 raise RuntimeError()
 
