@@ -11,6 +11,8 @@ def verify(results):
         container_no="OOLU9108987",
         det_free_time_exp_date="10 Nov 2019, 23:59  Local",
         last_free_day="05 Nov 2019, 23:59  Local",
+        terminal_pod=LocationItem(name=None),
+        terminal_deliv=LocationItem(name=None),
     )
 
     assert results[1] == ContainerStatusItem(
