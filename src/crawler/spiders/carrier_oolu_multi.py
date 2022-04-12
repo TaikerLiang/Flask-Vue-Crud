@@ -558,8 +558,6 @@ class CargoTrackingRule(BaseRoutingRule):
                     **info_pack,
                     reason=f"Timeout during connect to {url}",
                 )
-            except MaxRetryError as e:
-                raise e
 
             for item in self._handle_container_response(response=response, task_id=task_id, container_no=container_no):
                 yield item
