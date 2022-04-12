@@ -179,7 +179,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             "por_name": container["originPort"],
             "pol_name": container["loadPort"],
             "pod_name": container["dischargePort"],
-            "place_of_deliv_name": container["destPort"],
+            "place_of_deliv_name": container["blDest"],
             "eta": container.get("vesselETA"),
         }
 

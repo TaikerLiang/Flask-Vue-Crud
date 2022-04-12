@@ -51,6 +51,7 @@ def multi_verify(results: List):
         por=LocationItem(name=None),
         pol=LocationItem(name="NINGBO (CN)"),
         pod=LocationItem(name="MIAMI, FL (US)"),
+        place_of_deliv=LocationItem(name=None),
         final_dest=LocationItem(name=None),
         eta="Sunday 20-FEB-2022 20:00",
         ata=None,

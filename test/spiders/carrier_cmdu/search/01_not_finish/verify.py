@@ -51,6 +51,7 @@ def multi_verify(results: List):
         por=LocationItem(name="HO CHI MINH CITY (VN)"),
         pol=LocationItem(name="VUNG TAU (VN)"),
         pod=LocationItem(name="LOS ANGELES, CA (US)"),
+        place_of_deliv=LocationItem(name="CHICAGO, IL (US)"),
         final_dest=LocationItem(name="CHICAGO, IL (US)"),
         eta="Tuesday 22-FEB-2022 07:00",
         ata=None,

@@ -7,7 +7,7 @@ def verify(results):
         por=LocationItem(name="SHANGHAI"),
         pol=LocationItem(name="SHANGHAI"),
         pod=LocationItem(name="OAKLAND OICT"),
-        place_of_deliv=LocationItem(name="OAKLAND"),
+        place_of_deliv=LocationItem(name=""),
         eta="01/27/22",
         task_id="1",
     )

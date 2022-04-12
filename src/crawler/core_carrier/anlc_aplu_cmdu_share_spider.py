@@ -45,11 +45,13 @@ class ForceRestart:
 class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
     name = ""
     base_url = ""
+    custom_settings = {
+        **BaseMultiCarrierSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super(AnlcApluCmduShareSpider, self).__init__(*args, **kwargs)
-
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         bill_rules = [
             RecaptchaRule(),
@@ -352,6 +354,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             por=LocationItem(name=main_info["por"]),
             pol=LocationItem(name=main_info["pol"]),
             pod=LocationItem(name=main_info["pod"]),
+            place_of_deliv=LocationItem(name=main_info["place_of_deliv"]),
             final_dest=LocationItem(name=main_info["dest"]),
             eta=main_info["pod_eta"],
             ata=main_info["pod_ata"],
@@ -414,6 +417,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             "por": response.css("li#prepol strong::text").get(),
             "pol": response.css("li#pol strong::text").get(),
             "pod": pod,
+            "place_of_deliv": response.xpath("//span[text() = 'FPD']/..//strong/text()").get(),
             "dest": dest,
             "pod_eta": pod_eta,
             "pod_ata": pod_ata,

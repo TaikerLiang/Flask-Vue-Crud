@@ -1,16 +1,18 @@
 import dataclasses
 import json
-from typing import List, Dict
+from typing import Dict, List
 from urllib.parse import urlencode
 
-from scrapy import Selector, Request, FormRequest
+from scrapy import FormRequest, Request, Selector
 from twisted.python.failure import Failure
 
+from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base import (
     CARRIER_RESULT_STATUS_ERROR,
-    SHIPMENT_TYPE_MBL,
-    SHIPMENT_TYPE_BOOKING,
     CARRIER_RESULT_STATUS_FATAL,
+    SHIPMENT_TYPE_BOOKING,
+    SHIPMENT_TYPE_MBL,
 )
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import (
@@ -18,23 +20,25 @@ from crawler.core_carrier.exceptions import (
     SuspiciousOperationError,
 )
 from crawler.core_carrier.items import (
-    ExportErrorData,
-    MblItem,
-    LocationItem,
-    VesselItem,
+    BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
-    BaseCarrierItem,
     DebugItem,
+    ExportErrorData,
+    LocationItem,
+    MblItem,
+    VesselItem,
 )
-from crawler.core.proxy import HydraproxyProxyManager
-from crawler.core_carrier.request_helpers import RequestOption, ProxyMaxRetryError
+from crawler.core_carrier.request_helpers import ProxyMaxRetryError, RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
-from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from, BaseMatchRule
-from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
-from crawler.core.table import (
-    TableExtractor,
-    BaseTable,
+from crawler.extractors.selector_finder import (
+    BaseMatchRule,
+    CssQueryTextStartswithMatchRule,
+    find_selector_from,
+)
+from crawler.extractors.table_cell_extractors import (
+    BaseTableCellExtractor,
+    FirstTextTdExtractor,
 )
 
 BASE_URL = "http://www.hmm21.com"
@@ -114,11 +118,14 @@ class ItemRecorder:
 
 class CarrierHdmuSpider(BaseMultiCarrierSpider):
     name = "carrier_hdmu_multi"
+    custom_settings = {
+        **BaseMultiCarrierSpider.custom_settings,  # type: ignore
+        "DOWNLOAD_TIMEOUT": 30,
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.custom_settings.update({"DOWNLOAD_TIMEOUT": 30})
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         self._cookiejar_id_map = {}
         self._item_recorder_map = {}
@@ -337,7 +344,7 @@ class CheckIpRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://api.myip.com/",
+            url="https://api.myip.com/",
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,

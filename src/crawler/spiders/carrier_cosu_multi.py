@@ -297,6 +297,7 @@ class ItemExtractor:
         content_getter.go_container_info_page()
         content_getter.scroll_to_bottom_of_page()
         button_table = content_getter.get_container_status_buttons()
+        container_items = [dict(c) for c in {tuple(d.items()) for d in container_items}]
         for c_i, c_item in enumerate(container_items):
             try:
                 response_text = content_getter.click_railway_button(c_i)
@@ -520,6 +521,7 @@ class ItemExtractor:
                     container_key=container_info["container_key"],
                     container_no=container_info["container_no"],
                     last_free_day=container_info["last_free_day"],
+                    rail_last_free_day=container_info["rail_last_free_day"],
                     depot_last_free_day=container_info["depot_last_free_day"],
                 )
             )
@@ -548,8 +550,9 @@ class ItemExtractor:
                 {
                     "container_key": get_container_key(container_no=container_no),
                     "container_no": container_no,
-                    "last_free_day": lfd_related.get("LFD", ""),
-                    "depot_last_free_day": lfd_related.get("Depot LFD", ""),
+                    "last_free_day": lfd_related.get("LFD", None),
+                    "rail_last_free_day": lfd_related.get("Rail LFD", None),
+                    "depot_last_free_day": lfd_related.get("Depot LFD", None),
                 }
             )
 
@@ -775,7 +778,10 @@ class ContentGetter(FirefoxContentGetter):
         button.click()
         time.sleep(8)
 
-        return self._driver.page_source
+        res = self._driver.page_source
+        self._driver.find_element_by_css_selector("i.poptip-close").click()
+        time.sleep(1)
+        return res
 
     def _handle_cookie(self, info_pack: Dict):
         try:

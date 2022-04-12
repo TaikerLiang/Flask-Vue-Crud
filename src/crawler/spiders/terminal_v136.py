@@ -1,15 +1,15 @@
-from urllib.parse import urlencode
 from datetime import datetime
 import json
 import time
 from typing import List
+from urllib.parse import urlencode
 
-from scrapy import Request, FormRequest
+from scrapy import FormRequest, Request
 
-from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
 from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
+from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
+from crawler.core_terminal.rules import BaseRoutingRule, RequestOption, RuleManager
 
 BASE_URL = "https://csp.poha.com"
 
@@ -99,7 +99,7 @@ class LoginRoutingRule(BaseRoutingRule):
         url = f"{BASE_URL}/Lynx/VITTerminalAccess/Login.aspx"
         form_data = {
             "User": "hard202006010",
-            "Pass": "*r@y39=9q-!k",
+            "Pass": "IYtmr_Z3bg6yTY",
         }
 
         return RequestOption(

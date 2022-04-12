@@ -352,6 +352,8 @@ class BookingInfoRoutingRule(BaseRoutingRule):
             pol = basic_info["pol"]
             pod = basic_info["pod"]
 
+            vessel, voyage = self._extract_vessel_voyage(response=response)
+
             routing_schedule = self._extract_routing_schedule(response=response, pol=pol, pod=pod)
             firms_code = self._extract_firms_code(response=response)
             release_status = self._extract_release_status(response=response)
@@ -372,6 +374,8 @@ class BookingInfoRoutingRule(BaseRoutingRule):
                 carrier_release_date=release_status["carrier_release_date"],
                 customs_release_status=release_status["customs_release_status"],
                 customs_release_date=release_status["customs_release_date"],
+                vessel=vessel,
+                voyage=voyage,
             )
 
             last_free_day_dict = self._extract_last_free_day(response=response)
@@ -437,6 +441,15 @@ class BookingInfoRoutingRule(BaseRoutingRule):
             "pod": table.extract_cell(top="Discharge", extractor=span_text_td_extractor) or None,
             "place_of_deliv": table.extract_cell(top="Delivery", extractor=span_text_td_extractor) or None,
         }
+
+    def _extract_vessel_voyage(self, response: Selector):
+        span = response.css("span#ContentPlaceHolder1_rptBLNo_lblVessel_0")
+        if span.css("a"):
+            vessel = span.css("a::text").get().strip()
+        else:
+            vessel = None
+        voyage = span.css("span::text").get().split("-")[-1].strip()
+        return vessel, voyage
 
     @staticmethod
     def _extract_routing_schedule(response: Selector, pol: str, pod: str):
@@ -683,6 +696,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
             pol = basic_info["pol"]
             pod = basic_info["pod"]
 
+            vessel, voyage = self._extract_vessel_voyage(response=response)
+
             routing_schedule = self._extract_routing_schedule(response=response, pol=pol, pod=pod)
             firms_code = self._extract_firms_code(response=response)
             release_status = self._extract_release_status(response=response)
@@ -703,6 +718,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 carrier_release_date=release_status["carrier_release_date"],
                 customs_release_status=release_status["customs_release_status"],
                 customs_release_date=release_status["customs_release_date"],
+                vessel=vessel,
+                voyage=voyage,
             )
 
             last_free_day_dict = self._extract_last_free_day(response=response)
@@ -768,6 +785,15 @@ class MainInfoRoutingRule(BaseRoutingRule):
             "pod": table.extract_cell(top="Discharge", extractor=span_text_td_extractor) or None,
             "place_of_deliv": table.extract_cell(top="Delivery", extractor=span_text_td_extractor) or None,
         }
+
+    def _extract_vessel_voyage(self, response: Selector):
+        span = response.css("span#ContentPlaceHolder1_rptBLNo_lblVessel_0")
+        if span.css("a"):
+            vessel = span.css("a::text").get().strip()
+        else:
+            vessel = None
+        voyage = span.css("span::text").get().split("-")[-1].strip()
+        return vessel, voyage
 
     @staticmethod
     def _extract_routing_schedule(response: Selector, pol: str, pod: str):
