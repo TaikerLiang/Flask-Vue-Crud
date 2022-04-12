@@ -149,15 +149,6 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
                 reason=f"Unexpected request method: `{option.method}` {tid_sno_pairs}",
             )
 
-    def _build_data_not_found_item(self, search_no: str, task_id: str):
-        return DataNotFoundItem(
-            search_type=self.search_type,
-            search_no=search_no,
-            task_id=task_id,
-            status=RESULT_STATUS_ERROR,
-            detail="Data was not found",
-        )
-
 
 # -------------------------------------------------------------------------------
 
