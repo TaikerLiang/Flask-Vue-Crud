@@ -51,5 +51,8 @@ class EdiClientService:
     def get_local_tasks(self):
         response = requests.request("GET", f"{self.url}", headers=self.build_header())
 
-        content = response.json()
-        return content["rows"]
+        if response.status_code == 200:
+            content = response.json()
+            return content["rows"]
+        else:
+            return []

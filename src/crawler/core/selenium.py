@@ -1,6 +1,6 @@
 import random
 import time
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import selenium.webdriver
 import seleniumwire.webdriver
@@ -11,7 +11,11 @@ from crawler.core.proxy import ProxyManager
 
 class SeleniumContentGetter(BaseContentGetter):
     def __init__(
-        self, proxy_manager: Optional[ProxyManager] = None, is_headless: bool = False, load_image: bool = True
+        self,
+        proxy_manager: Optional[ProxyManager] = None,
+        is_headless: bool = False,
+        load_image: bool = True,
+        block_urls: List = [],
     ):
         self._is_first = True
         self.is_headless = is_headless
@@ -72,9 +76,15 @@ class SeleniumContentGetter(BaseContentGetter):
 
 class ChromeContentGetter(SeleniumContentGetter):
     def __init__(
-        self, proxy_manager: Optional[ProxyManager] = None, is_headless: bool = False, load_image: bool = True
+        self,
+        proxy_manager: Optional[ProxyManager] = None,
+        is_headless: bool = False,
+        load_image: bool = True,
+        block_urls: List = [],
     ):
-        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless, load_image=load_image)
+        super().__init__(
+            proxy_manager=proxy_manager, is_headless=is_headless, load_image=load_image, block_urls=block_urls
+        )
 
         options = selenium.webdriver.ChromeOptions()
 
@@ -96,6 +106,8 @@ class ChromeContentGetter(SeleniumContentGetter):
         options.add_argument("--no-sandbox")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--disable-blink-features=AutomationControlled")
+        options.add_argument("--allow-insecure-localhost")
+        # options.add_argument("auto-open-devtools-for-tabs")
 
         if proxy_manager:
             proxy_manager.renew_proxy()
@@ -111,15 +123,27 @@ class ChromeContentGetter(SeleniumContentGetter):
         else:
             self._driver = selenium.webdriver.Chrome(chrome_options=options)
 
-        self._driver.execute_cdp_cmd(
-            "Network.setBlockedURLs", {"urls": ["facebook.net/*", "www.google-analytics.com/*"]}
-        )
+        default_block_urls = [
+            "facebook.net/*",
+            "www.google-analytics.com/*",
+        ]
+
+        self._driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": default_block_urls + block_urls})
         self._driver.execute_cdp_cmd("Network.enable", {})
 
 
 class FirefoxContentGetter(SeleniumContentGetter):
-    def __init__(self, service_log_path=None, is_headless: bool = False):
-        super().__init__(is_headless=is_headless)
+    def __init__(
+        self,
+        service_log_path=None,
+        proxy_manager: Optional[ProxyManager] = None,
+        is_headless: bool = False,
+        load_image: bool = True,
+        block_urls: Optional[List] = None,
+    ):
+        super().__init__(
+            proxy_manager=proxy_manager, is_headless=is_headless, load_image=load_image, block_urls=block_urls
+        )
 
         useragent = self._random_choose_user_agent()
         profile = selenium.webdriver.FirefoxProfile()

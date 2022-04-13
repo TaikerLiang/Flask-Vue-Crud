@@ -1,6 +1,5 @@
 import time
 from typing import List
-from crawler.core.selenium import ChromeContentGetter
 
 import scrapy
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
@@ -9,14 +8,19 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
 from crawler.core.proxy import HydraproxyProxyManager
-from crawler.core_rail.base_spiders import BaseMultiRailSpider
-from crawler.core_rail.exceptions import RailResponseFormatError, DriverMaxRetryError
-from crawler.core_rail.items import BaseRailItem, RailItem, DebugItem, InvalidContainerNoItem
-from crawler.core_rail.request_helpers import RequestOption
-from crawler.core_rail.rules import RuleManager, BaseRoutingRule
-from crawler.extractors.table_extractors import BaseTableCellExtractor
+from crawler.core.selenium import ChromeContentGetter
 from crawler.core.table import BaseTable, TableExtractor
-
+from crawler.core_rail.base_spiders import BaseMultiRailSpider
+from crawler.core_rail.exceptions import DriverMaxRetryError, RailResponseFormatError
+from crawler.core_rail.items import (
+    BaseRailItem,
+    DebugItem,
+    InvalidContainerNoItem,
+    RailItem,
+)
+from crawler.core_rail.request_helpers import RequestOption
+from crawler.core_rail.rules import BaseRoutingRule, RuleManager
+from crawler.extractors.table_extractors import BaseTableCellExtractor
 
 MAX_RETRY_COUNT = 3
 
@@ -109,7 +113,7 @@ class ContainerRoutingRule(BaseRoutingRule):
     name = "CONTAINER"
 
     ERROR_BTN_CSS = "button[aria-label='No Results Found']"
-    ERROR_H5_CSS = "h5.d-inline-block"
+    ERROR_H5_CSS = "div.mat-list-text h5"
 
     @classmethod
     def build_request_option(cls, container_nos, proxy_manager) -> RequestOption:
@@ -205,7 +209,9 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         full_invalid_container_nos = []
         for cno in container_nos:
-            if cno[:-1] in invalid_container_nos:
+            # cno[:-1] (FANU3051380)
+            # cno[:4] + cno[5:] (NYKU0751886)
+            if cno[:-1] in invalid_container_nos or cno[:4] + cno[5:] in invalid_container_nos:
                 full_invalid_container_nos.append(cno)
 
         return full_invalid_container_nos
@@ -213,7 +219,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
 class ContentGetter(ChromeContentGetter):
     USER_NAME = "hvv26"
-    PASS_WORD = "Goft0108"
+    PASS_WORD = "Goft0401"
     LOGIN_URL = "https://accessns.web.ocp01.nscorp.com/auth/login"
 
     def _login(self):
@@ -267,7 +273,7 @@ class TrackAndTraceTableLocator(BaseTable):
         content_divs = table.css(".ag-center-cols-container > div")
 
         for row_num, div in enumerate(content_divs):
-            data_divs = div.css("div")[1:]
+            data_divs = div.css("div")[7:]
 
             for data_id, data_div in enumerate(data_divs):
                 title_id = data_id

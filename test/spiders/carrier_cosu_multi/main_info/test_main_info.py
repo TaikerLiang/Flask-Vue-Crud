@@ -1,13 +1,12 @@
 from pathlib import Path
+from test.spiders.carrier_cosu_multi import main_info
 from typing import List
 
 import pytest
 from scrapy import Selector
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
-from crawler.spiders.carrier_cosu_multi import MainInfoRoutingRule, ItemExtractor
-
-from test.spiders.carrier_cosu_multi import main_info
+from crawler.core.base_new import SEARCH_TYPE_MBL
+from crawler.spiders.carrier_cosu_multi import ItemExtractor, MainInfoRoutingRule
 
 
 @pytest.fixture
@@ -18,65 +17,67 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    'sub,mbl_no,task_id,make_item_fun',
+    "sub,task_id,make_item_fun",
     [
-        ('01_main_item', '6199589860', '1', ItemExtractor._make_main_item),
-        ('02_vessel_items', '6300090760', '2', ItemExtractor._make_vessel_items),
-        ('03_container_items', '6283228140', '3', ItemExtractor._make_container_items),
+        ("01_main_item", "1", ItemExtractor(task_id="1")._make_main_item),
+        ("02_vessel_items", "2", ItemExtractor(task_id="2")._make_vessel_items),
+        ("03_container_items", "3", ItemExtractor(task_id="3")._make_container_items),
     ],
 )
-def test_main_info(sample_loader, sub, mbl_no, task_id, make_item_fun):
-    http_text = sample_loader.read_file(sub, 'sample.html')
-
-    resp = Selector(text=http_text)
-
-    # action
-    if make_item_fun == ItemExtractor._make_main_item:
-        result = make_item_fun(response=resp, search_type=SHIPMENT_TYPE_MBL, task_id=task_id)
-    else:
-        result = make_item_fun(response=resp, task_id=task_id)
-
-    # assert
-    if isinstance(result, List):
-        verify_module = sample_loader.load_sample_module(sub, 'verify')
-        verify_module.verify(items=result)
-    else:
-        verify_module = sample_loader.load_sample_module(sub, 'verify')
-        verify_module.verify(item=result)
-
-
-@pytest.mark.parametrize(
-    'sub,mbl_no,task_id,container_no',
-    [
-        ('04_container_status_items', '6283228140', '4', 'CSNU6395607'),
-    ],
-)
-def test_main_info_container_status(sample_loader, sub, mbl_no, task_id, container_no):
-    http_text = sample_loader.read_file(sub, 'sample.html')
-
-    resp = Selector(text=http_text)
-
-    # action
-    items = ItemExtractor._make_container_status_items(container_no=container_no, response=resp, task_id=task_id)
-
-    # assert
-    verify_module = sample_loader.load_sample_module(sub, 'verify')
-    verify_module.verify(items=items)
-
-
-@pytest.mark.parametrize(
-    "sub,mbl_no",
-    [
-        ("05_railway_info", "6199589860"),
-    ],
-)
-def test_main_info_railway_info(sample_loader, sub, mbl_no):
+def test_main_info(sample_loader, sub, task_id, make_item_fun):
     http_text = sample_loader.read_file(sub, "sample.html")
 
     resp = Selector(text=http_text)
 
     # action
-    result = ItemExtractor._extract_railway_info(response=resp)
+    if sub == "01_main_item":
+        result = make_item_fun(response=resp, search_type=SEARCH_TYPE_MBL, task_id=task_id)
+    else:
+        result = make_item_fun(response=resp, task_id=task_id)
+
+    # assert
+    if isinstance(result, List):
+        verify_module = sample_loader.load_sample_module(sub, "verify")
+        verify_module.verify(items=result)
+    else:
+        verify_module = sample_loader.load_sample_module(sub, "verify")
+        verify_module.verify(item=result)
+
+
+@pytest.mark.parametrize(
+    "sub,task_id,container_no",
+    [
+        ("04_container_status_items", "4", "CSNU6395607"),
+    ],
+)
+def test_main_info_container_status(sample_loader, sub, task_id, container_no):
+    http_text = sample_loader.read_file(sub, "sample.html")
+
+    resp = Selector(text=http_text)
+
+    # action
+    extractor = ItemExtractor(task_id=task_id)
+    items = extractor._make_container_status_items(container_no=container_no, response=resp, task_id=task_id)
+
+    # assert
+    verify_module = sample_loader.load_sample_module(sub, "verify")
+    verify_module.verify(items=items)
+
+
+@pytest.mark.parametrize(
+    "sub",
+    [
+        ("05_railway_info"),
+    ],
+)
+def test_main_info_railway_info(sample_loader, sub):
+    http_text = sample_loader.read_file(sub, "sample.html")
+
+    resp = Selector(text=http_text)
+
+    # action
+    extractor = ItemExtractor(task_id="1")
+    result = extractor._extract_railway_info(response=resp)
 
     # assert
     verify_module = sample_loader.load_sample_module(sub, "verify")
@@ -84,13 +85,13 @@ def test_main_info_railway_info(sample_loader, sub, mbl_no):
 
 
 @pytest.mark.parametrize(
-    'sub,mbl_no',
+    "sub",
     [
-        ('e01_invalid_mbl_no', '6213846642'),
+        ("e01_invalid_mbl_no"),
     ],
 )
-def test_main_info_no_invalid(sample_loader, sub, mbl_no):
-    http_text = sample_loader.read_file(sub, 'sample.html')
+def test_main_info_no_invalid(sample_loader, sub):
+    http_text = sample_loader.read_file(sub, "sample.html")
 
     resp = Selector(text=http_text)
 

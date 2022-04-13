@@ -37,11 +37,13 @@ MAX_RETRY_COUNT = 1
 
 class CarrierHlcuSpider(BaseMultiCarrierSpider):
     name = "carrier_hlcu_multi"
+    custom_settings = {
+        **BaseMultiCarrierSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super(CarrierHlcuSpider, self).__init__(*args, **kwargs)
-
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         self._content_getter = ContentGetter(proxy_manager=None, is_headless=True)
         self._content_getter.connect()

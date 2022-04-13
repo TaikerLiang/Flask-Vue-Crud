@@ -51,6 +51,7 @@ def multi_verify(results: List):
         por=LocationItem(name=None),
         pol=LocationItem(name="KAOHSIUNG (TW)"),
         pod=LocationItem(name="MELBOURNE (AU)"),
+        place_of_deliv=LocationItem(name=None),
         final_dest=LocationItem(name=None),
         eta="Friday 04-MAR-2022 06:00",
         ata=None,

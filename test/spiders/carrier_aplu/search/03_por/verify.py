@@ -51,6 +51,7 @@ def multi_verify(results: List):
         por=LocationItem(name="TAICHUNG (TW)"),
         pol=LocationItem(name="KAOHSIUNG (TW)"),
         pod=LocationItem(name="LONG BEACH, CA (US)"),
+        place_of_deliv=LocationItem(name=None),
         final_dest=LocationItem(name=None),
         eta=None,
         ata="Sunday 16-JAN-2022 21:40",

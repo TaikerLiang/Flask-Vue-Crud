@@ -5,7 +5,7 @@ import string
 import dataclasses
 import abc
 
-from .exceptions import ProxyMaxRetryError
+from exceptions import ProxyMaxRetryError
 
 PROXY_GROUP_RESIDENTIAL = "RESIDENTIAL"
 
