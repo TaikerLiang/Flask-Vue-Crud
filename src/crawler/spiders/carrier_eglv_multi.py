@@ -4,10 +4,10 @@ import re
 import time
 from typing import Dict, List
 
-import requests
-import scrapy
 from pyppeteer.dialog import Dialog
 from pyppeteer.errors import NetworkError, PageError, TimeoutError
+import requests
+import scrapy
 from scrapy import Request
 from scrapy.http import TextResponse
 from scrapy.selector.unified import Selector
