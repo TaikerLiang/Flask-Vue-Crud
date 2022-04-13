@@ -117,7 +117,7 @@ class ConfigureSettingsRule(BaseRoutingRule):
         )
 
     def get_save_name(self, response) -> str:
-        return f"{self.name}.json"
+        return f"{self.name}.html"
 
     def handle(self, response):
         container_no = response.meta["container_no"]
@@ -153,7 +153,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         )
 
     def get_save_name(self, response) -> str:
-        return f"{self.name}.json"
+        return f"{self.name}.html"
 
     def handle(self, response):
         container_no = response.meta["container_no"]
