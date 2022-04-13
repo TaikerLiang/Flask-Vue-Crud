@@ -33,6 +33,8 @@ STATUS_MULTI_CONTAINER = "STATUS_MULTI_CONTAINER"
 STATUS_MBL_NOT_EXIST = "STATUS_MBL_NOT_EXIST"
 STATUS_WEBSITE_SUSPEND = "STATUS_WEBSITE_SUSPEND"
 
+MAX_PAGE_NUM = 1
+
 
 class ForceRestart:
     pass
@@ -109,6 +111,10 @@ class AnlcApluCmduShareSpider(BaseMultiCarrierSpider):
             elif isinstance(result, ForceRestart):
                 search_nos = response.meta["search_nos"]
                 task_ids = response.meta["task_ids"]
+
+                for task_id in task_ids[:MAX_PAGE_NUM]:
+                    self._enditem_remaining_num_dict.pop(task_id, None)
+
                 proxy_option = self._prepare_start(search_nos=search_nos, task_ids=task_ids)
                 yield self._build_request_by(option=proxy_option)
             else:
@@ -501,11 +507,11 @@ class NextRoundRoutingRule(BaseRoutingRule):
         search_nos = response.meta["search_nos"]
         search_type = response.meta["search_type"]
 
-        if len(search_nos) == 1 and len(task_ids) == 1:
+        if len(search_nos) <= MAX_PAGE_NUM and len(task_ids) <= MAX_PAGE_NUM:
             return
 
-        task_ids = task_ids[1:]
-        search_nos = search_nos[1:]
+        task_ids = task_ids[MAX_PAGE_NUM:]
+        search_nos = search_nos[MAX_PAGE_NUM:]
         yield RecaptchaRule.build_request_option(
             base_url=base_url, search_nos=search_nos, task_ids=task_ids, search_type=search_type
         )

@@ -103,6 +103,7 @@ class ShareSpider(BaseCarrierSpider):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
                 yield self._build_request_by(option=proxy_option)
             elif isinstance(result, ForceRestart):
+                self._enditem_remaining_num_dict.pop([self.task_id], None)
                 proxy_option = self._prepare_start()
                 yield self._build_request_by(option=proxy_option)
             else:
