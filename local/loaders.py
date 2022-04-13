@@ -1,4 +1,4 @@
-from carriers import cmdu, eglv, hlcu, mscu, oolu, whlc, zimu
+from carriers import cmdu, eglv, hlcu, mscu, whlc, zimu
 from terminals import trapac_jax, trapac_la, trapac_oak
 
 CARRIERS = [
@@ -7,7 +7,6 @@ CARRIERS = [
     eglv.EglvLocalCrawler,
     mscu.MscuLocalCrawler,
     cmdu.CmduLocalCrawler,
-    oolu.OoluLocalCrawler,
     hlcu.HlcuLocalCrawler,
 ]
 
