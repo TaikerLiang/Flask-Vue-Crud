@@ -1,10 +1,10 @@
 import scrapy
 
-from local.terminals.share.trapac import TrapacContentGetter
 from local.core import BaseLocalCrawler
-from src.crawler.core_terminal.trapac_share_spider import MainRoutingRule
+from local.terminals.share.trapac import TrapacContentGetter
 from src.crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
-from src.crawler.core_terminal.items import TerminalItem, ExportErrorData
+from src.crawler.core_terminal.items import ExportErrorData, TerminalItem
+from src.crawler.core_terminal.trapac_share_spider import MainRoutingRule
 
 
 class LaTrapacContentGetter(TrapacContentGetter):
@@ -13,13 +13,16 @@ class LaTrapacContentGetter(TrapacContentGetter):
     EMAIL = ""
     PASSWORD = ""
 
+    def __init__(self, proxy: bool):
+        super().__init__(proxy=proxy)
+
 
 class LaTrapacLocalCrawler(BaseLocalCrawler):
     code = "Y258"
 
-    def __init__(self):
-        super().__init__()
-        self.content_getter = LaTrapacContentGetter()
+    def __init__(self, proxy: bool):
+        super().__init__(proxy=proxy)
+        self.content_getter = LaTrapacContentGetter(proxy=proxy)
 
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):
         task_ids = task_ids.split(",")
@@ -41,7 +44,7 @@ class LaTrapacLocalCrawler(BaseLocalCrawler):
                 demurrage=container_info["demurrage"],  # demurrage-amt
                 container_spec=container_info["container_spec"],  # dimensions
                 holds=container_info["holds"],  # demurrage-hold
-                cy_location=container_info["cy_location"],  # yard status
+                gate_out_date=container_info["cy_location"],  # yard status
                 vessel=container_info["vessel"],  # vsl / voy
                 voyage=container_info["voyage"],  # vsl / voy
             )

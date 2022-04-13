@@ -62,11 +62,15 @@ class Restart:
 
 class CarrierEglvSpider(BaseMultiCarrierSpider):
     name = "carrier_eglv_multi"
+    custom_settings = {
+        **BaseMultiCarrierSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super(CarrierEglvSpider, self).__init__(*args, **kwargs)
+
         self._retry_count = 0
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
         self._driver = EglvContentGetter(
             proxy_manager=HydraproxyProxyManager(session="eglv", logger=self.logger), is_headless=True
         )
@@ -336,15 +340,6 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
             cargo_cutoff_date=basic_info["cargo_cutoff_date"],
         )
 
-        try:
-            for item in self._handle_filing_status(search_nos=search_nos, task_ids=task_ids):
-                yield item
-            for item in self._handle_release_status(search_nos=search_nos, task_ids=task_ids):
-                yield item
-        except (TimeoutError, NetworkError, PageError) as e:
-            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=repr(e))
-            return
-
         container_list = self._extract_container_info(response=response)
         for container in container_list:
             try:
@@ -355,6 +350,15 @@ class BillMainInfoRoutingRule(MainInfoRoutingRule):
             except (TimeoutError, NetworkError, PageError) as e:
                 yield Restart(search_nos=search_nos, task_ids=task_ids, reason=repr(e))
                 return
+
+        try:
+            for item in self._handle_filing_status(search_nos=search_nos, task_ids=task_ids):
+                yield item
+            for item in self._handle_release_status(search_nos=search_nos, task_ids=task_ids):
+                yield item
+        except (TimeoutError, NetworkError, PageError) as e:
+            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=repr(e))
+            return
 
         yield EndItem(task_id=task_ids[0])
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
@@ -1033,7 +1037,6 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
             voyage=booking_no_and_vessel_voyage["voyage"],
         )
 
-        # hidden_form_info = self._extract_hidden_form_info(response=response)
         container_infos = self._extract_container_infos(response=response)
         for container_info in container_infos:
             yield ContainerItem(
@@ -1114,7 +1117,7 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
 
     def _extract_filing_info(self, response: scrapy.Selector) -> Dict:
         tables = response.css("table")
-        rule = CssQueryTextStartswithMatchRule(css_query="td.f13tabb2::text", startswith="Advance Filing Status")
+        rule = CssQueryTextStartswithMatchRule(css_query="td.f12rowb4::text", startswith="Advance Filing Status")
         table = find_selector_from(selectors=tables, rule=rule)
         if not table:
             return {
@@ -1131,20 +1134,6 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
             "filing_date": table_extractor.extract_cell(top="Date", left=0),
         }
 
-    # def _extract_hidden_form_info(self, response: scrapy.Selector) -> Dict:
-    #     tables = response.css("br + table")
-    #     rule = CssQueryTextStartswithMatchRule(
-    #         css_query="td.f12rowb4::text", startswith="Container Activity Information"
-    #     )
-    #     table = find_selector_from(selectors=tables, rule=rule)
-
-    #     return {
-    #         "bl_no": table.css("input[name='bl_no']::attr(value)").get(),
-    #         "onboard_date": table.css("input[name='onboard_date']::attr(value)").get(),
-    #         "pol": table.css("input[name='pol']::attr(value)").get(),
-    #         "TYPE": table.css("input[name='TYPE']::attr(value)").get(),
-    #     }
-
     def _extract_container_infos(self, response: scrapy.Selector) -> List[Dict]:
         container_infos = []
 
@@ -1153,6 +1142,9 @@ class BookingMainInfoRoutingRule(MainInfoRoutingRule):
             css_query="td.f12rowb4::text", startswith="Container Activity Information"
         )
         table = find_selector_from(selectors=tables, rule=rule)
+        if not table:
+            return []
+
         table_locator = NameOnTopHeaderTableLocator()
         table_locator.parse(table=table)
         table_extractor = TableExtractor(table_locator=table_locator)
@@ -1354,7 +1346,6 @@ class EglvContentGetter(PyppeteerContentGetter):
 
         is_exist = await self._check_data_exist()
         content = await self.page.content()
-        await self.scroll_down()
 
         return content, is_exist
 
@@ -1392,7 +1383,7 @@ class EglvContentGetter(PyppeteerContentGetter):
             await container_page.waitForSelector("table table")
             await asyncio.sleep(5)
             content = await container_page.content()
-            await container_page.close()
+            await container_page.evaluate("""window.close();""")
             return content
         except PageError:
             return ""

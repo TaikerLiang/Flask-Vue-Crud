@@ -1,6 +1,6 @@
 from typing import List
 
-from crawler.core_carrier.items import MblItem, LocationItem, ContainerItem
+from crawler.core_carrier.items import ContainerItem, LocationItem, MblItem
 
 
 def verify(results: List):
@@ -21,6 +21,8 @@ def verify(results: List):
         customs_release_date=None,
         task_id=1,
         berthing_time="2021/11/09 03:40",
+        vessel="HYUNDAI FORCE",
+        voyage="091W (PS4133W)",
     )
 
     assert results[1] == ContainerItem(

@@ -1,5 +1,4 @@
 import dataclasses
-import json
 import re
 
 import scrapy
@@ -7,9 +6,9 @@ import scrapy
 from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import TerminalResponseFormatError
-from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
+from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
+from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 
 
 @dataclasses.dataclass
@@ -22,6 +21,10 @@ class CompanyInfo:
 
 class TideworksShareSpider(BaseMultiTerminalSpider):
     name = ""
+    custom_settings = {
+        **BaseMultiTerminalSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
     company_info = CompanyInfo(
         lower_short="",
         upper_short="",
@@ -31,7 +34,6 @@ class TideworksShareSpider(BaseMultiTerminalSpider):
 
     def __init__(self, *args, **kwargs):
         super(TideworksShareSpider, self).__init__(*args, **kwargs)
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         rules = [
             LoginRoutingRule(),

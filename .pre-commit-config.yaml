@@ -24,7 +24,11 @@ repos:
     rev: 5.10.1
     hooks:
       - id: isort
-        args: ["--profile", "black"]
+        args: [
+          "--profile", "black",
+          "--force-sort-within-sections",
+          "--project", "test",
+        ]
   - repo: https://github.com/psf/black
     rev: 22.1.0
     hooks:

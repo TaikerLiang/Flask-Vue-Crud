@@ -21,6 +21,8 @@ def verify(results: List):
         customs_release_date=None,
         task_id=1,
         berthing_time=None,
+        vessel="ONE STORK",
+        voyage="014W (EC4131W)",
     )
 
     assert results[1] == ContainerItem(

@@ -1,14 +1,16 @@
 import base64
+import dataclasses
+from io import BytesIO
+import logging
 import os
 import re
 import time
-from io import BytesIO
-from typing import Dict, List
+from typing import Dict, List, Optional
 
+from PIL import Image
 import cv2
 import numpy as np
 import scrapy
-from PIL import Image
 from scrapy import Selector
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver import ActionChains
@@ -56,17 +58,29 @@ from crawler.extractors.table_cell_extractors import (
     FirstTextTdExtractor,
 )
 
+MAX_RETRY_COUNT = 10
 BASE_URL = "http://moc.oocl.com"
+
+
+@dataclasses.dataclass
+class Restart:
+    search_nos: list
+    task_ids: list
+    reason: str = ""
 
 
 class CarrierOoluSpider(BaseMultiCarrierSpider):
     name = "carrier_oolu_multi"
+    custom_settings = {
+        **BaseMultiCarrierSpider.custom_settings,  # type: ignore
+        "CLOSESPIDER_TIMEOUT": 30 * 60,
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super(CarrierOoluSpider, self).__init__(*args, **kwargs)
-        self._content_getter = ContentGetter(proxy_manager=None, is_headless=True)
-
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
+        self._retry_count = 0
+        self._content_getter = self._make_content_getter()
 
         bill_rules = [
             CargoTrackingRule(self._content_getter, search_type=SEARCH_TYPE_MBL),
@@ -83,8 +97,6 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
         elif self.search_type == SEARCH_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
 
-        self._proxy_manager = HydraproxyProxyManager(session="oolu", logger=self.logger)
-
     def start(self):
         option = CargoTrackingRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids)
         yield self._build_request_by(option=option)
@@ -100,10 +112,34 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
         for result in routing_rule.handle(response=response):
             if isinstance(result, (BaseCarrierItem, DataNotFoundItem, EndItem)):
                 yield result
+            elif isinstance(result, Restart):
+                yield DebugItem(info=f"{result.reason}, Restart {self._retry_count + 1} times ...")
+                option = self._prepare_restart(search_nos=result.search_nos, task_ids=result.task_ids)
+                yield self._build_request_by(option=option)
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
             else:
                 raise RuntimeError()
+
+    def _prepare_restart(self, search_nos: List, task_ids: List):
+        if self._retry_count >= MAX_RETRY_COUNT:
+            raise MaxRetryError(
+                task_id=task_ids[0],
+                search_no=search_nos[0],
+                search_type=self.search_type,
+                reason=f"Retry more than {MAX_RETRY_COUNT} times",
+            )
+
+        self._retry_count += 1
+        self._content_getter.quit()
+        time.sleep(3)
+
+        self._content_getter = self._make_content_getter()
+        self._rule_manager.get_rule_by_name(CargoTrackingRule.name).set_content_getter(self._content_getter)
+        return CargoTrackingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+
+    def _make_content_getter(self):
+        return ContentGetter(proxy_manager=HydraproxyProxyManager(session="oolu", logger=self.logger), is_headless=True)
 
     def _build_request_by(self, option: RequestOption):
         meta = {
@@ -130,32 +166,64 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
 
 
 class ContentGetter(ChromeContentGetter):
-    def __init__(self, proxy_manager, is_headless):
-        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
+    MAX_SEARCH_TIMES = 10
 
-        self._driver.get("http://www.oocl.com/eng/Pages/default.aspx")
-        time.sleep(3)
+    def __init__(self, proxy_manager, is_headless):
+
+        self.block_urls = [
+            "https://www.oocl.com/Style%20Library/revamp/images/flexslider_depot.jpg",
+            "https://www.oocl.com/Style%20Library/revamp/images/*.png",
+            # "https://moc.oocl.com/app/skin/mcc_oocl/images/*.gif",
+            # "https://www.oocl.com/Style%20Library/revamp/Images/*.svg",
+            "https://moc.oocl.com/admin/scripts/jquery-1.8.0.js",
+            "https://www.google-analytics.com/analytics.js",
+            "https://moc.oocl.com/admin/common/xss.js",
+            "https://ca.cargosmart.ai/js/analytics.client.core.js",
+            "https://moc.oocl.com/party/scripts/cs_browser_monitor.js",
+        ]
+
+        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless, block_urls=self.block_urls)
+
+        logging.getLogger("seleniumwire").setLevel(logging.ERROR)
+        logging.getLogger("hpack").setLevel(logging.INFO)
+
+        self._driver.set_page_load_timeout(120)
+
+        self._search_count = 0
+        self._first = True
+
+    def goto(self):
+        self._driver.get("https://www.oocl.com/eng/ourservices/eservices/cargotracking/Pages/cargotracking.aspx")
+        time.sleep(10)
 
     def search_and_return(self, info_pack: Dict):
         search_no = info_pack["search_no"]
         search_type = info_pack["search_type"]
 
         self._search(search_no=search_no, search_type=search_type)
-        time.sleep(7)
+        time.sleep(30)
         windows = self._driver.window_handles
         self._driver.switch_to.window(windows[1])  # windows[1] is new page
         if self._is_blocked(response=Selector(text=self._driver.page_source)):
             raise AccessDeniedError(**info_pack, reason="Blocked during searching")
 
-        if self._is_first:
-            self._is_first = False
-        self._handle_with_slide(info_pack=info_pack)
-        time.sleep(10)
+        self._driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": self.block_urls})
+        self._driver.execute_cdp_cmd("Network.enable", {})
 
+        if self._pass_verification_or_not():
+            self._handle_with_slide(info_pack=info_pack)
+            time.sleep(10)
+
+        self._first = False
+        self._search_count = 0
         return self._driver.page_source
 
     def search_again_and_return(self, info_pack: Dict):
         self._driver.close()
+
+        self._search_count += 1
+        if self._search_count > self.MAX_SEARCH_TIMES:
+            raise MaxRetryError(**info_pack, reason=f"Retry search more than {self.MAX_SEARCH_TIMES} times")
 
         # jump back to origin window
         windows = self._driver.window_handles
@@ -185,19 +253,24 @@ class ContentGetter(ChromeContentGetter):
         container_btn.click()
 
     def _search(self, search_no, search_type):
-        if self._is_first:
+        try:
             # handle cookies
             cookie_accept_btn = WebDriverWait(self._driver, 20).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, "form > button#btn_cookie_accept"))
             )
             cookie_accept_btn.click()
             time.sleep(2)
+        except Exception:
+            pass
 
-        if self._is_first and search_type == SEARCH_TYPE_MBL:
-            drop_down_btn = self._driver.find_element_by_css_selector("button[data-id='ooclCargoSelector']")
-            drop_down_btn.click()
-            bl_select = self._driver.find_element_by_css_selector("a[tabindex='0']")
-            bl_select.click()
+        drop_down_btn = self._driver.find_element_by_css_selector("button[data-id='ooclCargoSelector']")
+        drop_down_btn.click()
+        if search_type == SEARCH_TYPE_MBL:
+            bl_select = self._driver.find_element_by_css_selector("li[data-original-index='0'] > a")
+        else:
+            bl_select = self._driver.find_element_by_css_selector("li[data-original-index='1'] > a")
+
+        bl_select.click()
 
         time.sleep(2)
         search_bar = self._driver.find_element_by_css_selector("input#SEARCH_NUMBER")
@@ -232,7 +305,7 @@ class ContentGetter(ChromeContentGetter):
             icon_ele = self._get_slider_icon_ele()
             img_ele = self._get_bg_img_ele()
 
-            distance = self._get_element_slide_distance(icon_ele, img_ele, 1)
+            distance = self._get_element_slide_distance(icon_ele, img_ele, 0)
 
             if distance <= 100:
                 self._refresh()
@@ -241,8 +314,10 @@ class ContentGetter(ChromeContentGetter):
             track = self._get_track(distance)
             self._move_to_gap(slider_ele, track)
 
-            time.sleep(5)
+            time.sleep(10)
             retry_times += 1
+
+        self._first = False
 
     def _pass_verification_or_not(self):
         try:
@@ -368,6 +443,7 @@ class ContentGetter(ChromeContentGetter):
             ActionChains(self._driver).move_by_offset(xoffset=x, yoffset=0).perform()
         time.sleep(0.5)  # move to the right place and take a break
         ActionChains(self._driver).release().perform()
+        time.sleep(4)
 
 
 # -------------------------------------------------------------------------------
@@ -376,7 +452,7 @@ class ContentGetter(ChromeContentGetter):
 class CargoTrackingRule(BaseRoutingRule):
     name = "CARGO_TRACKING"
 
-    def __init__(self, content_getter: ContentGetter, search_type):
+    def __init__(self, content_getter: Optional[ContentGetter], search_type):
         self._content_getter = content_getter
         self._search_type = search_type
 
@@ -395,6 +471,9 @@ class CargoTrackingRule(BaseRoutingRule):
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
+    def set_content_getter(self, content_getter: ContentGetter):
+        self._content_getter = content_getter
+
     def handle(self, response):
         search_nos = response.meta["search_nos"]
         task_ids = response.meta["task_ids"]
@@ -409,36 +488,34 @@ class CargoTrackingRule(BaseRoutingRule):
             if len(windows) > 1:
                 self._content_getter.close()
                 self._content_getter.switch_to_first()
+            else:
+                self._content_getter.goto()
 
             res = self._content_getter.search_and_return(info_pack=info_pack)
             response = Selector(text=res)
 
-            while self._no_response(response=response):
+            while self.is_no_response(response=response):
                 res = self._content_getter.search_again_and_return(info_pack=info_pack)
                 response = Selector(text=res)
-
-        except ReadTimeoutError:
-            url = self._content_getter.get_current_url()
-            self._content_getter.quit()
-            raise TimeOutError(
-                **info_pack,
-                reason=f"Timeout during connect to {url}",
-            )
+        except Exception as e:
+            yield Restart(search_nos=search_nos, task_ids=task_ids, reason=repr(e))
+            return
 
         if os.path.exists("./background01.jpg"):
             os.remove("./background01.jpg")
         if os.path.exists("./slider01.jpg"):
             os.remove("./slider01.jpg")
 
-        for item in self._handle_response(response=response, info_pack=info_pack):
+        for item in self.handle_response(response=response, info_pack=info_pack):
             yield item
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
-    def _no_response(self, response: Selector) -> bool:
+    @staticmethod
+    def is_no_response(response: Selector) -> bool:
         return not bool(response.css("td.pageTitle"))
 
-    def _handle_response(self, response, info_pack: Dict):
+    def handle_response(self, response, info_pack: Dict):
         if self.is_search_no_invalid(response):
             yield DataNotFoundItem(**info_pack, status=RESULT_STATUS_ERROR, detail="Data was not found")
             return
