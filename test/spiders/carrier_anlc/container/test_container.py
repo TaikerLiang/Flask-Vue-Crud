@@ -1,5 +1,4 @@
 from pathlib import Path
-from test.spiders.carrier_anlc import container
 
 import pytest
 from scrapy import Request
@@ -9,6 +8,7 @@ from crawler.core_carrier.anlc_aplu_cmdu_share_spider import (
     ContainerStatusRoutingRule as MultiContainerStatusRoutingRule,
 )
 from crawler.spiders.carrier_anlc_aplu_cmdu import ContainerStatusRoutingRule
+from test.spiders.carrier_anlc import container
 
 
 @pytest.fixture
@@ -27,7 +27,7 @@ def sample_loader(sample_loader):
 def test_container_status_routing_rule(sample_loader, sub, mbl_no, container_no):
     html_text = sample_loader.read_file(sub, "container.html")
 
-    option = ContainerStatusRoutingRule.build_request_option(container_no=container_no, search_no=mbl_no)
+    option = ContainerStatusRoutingRule.build_request_option(container_no=container_no, search_no=mbl_no, task_id="1")
 
     response = TextResponse(
         url=option.url,
@@ -58,7 +58,7 @@ def test_multi_container_status_routing_rule(sample_loader, sub, mbl_no, contain
     option = MultiContainerStatusRoutingRule.build_request_option(
         container_no=container_no,
         search_no=mbl_no,
-        task_id=1,
+        task_id="1",
     )
 
     response = TextResponse(
