@@ -36,6 +36,10 @@ class PropassvaPtpShareSpider(BaseMultiTerminalSpider):
         username="",
         password="",
     )
+    custom_settings = {
+        **BaseMultiTerminalSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -424,21 +428,7 @@ class ContentGetter(ChromeContentGetter):
         time.sleep(1)
         self._driver.find_element(By.XPATH, '//*[@id="Password"]').send_keys(company_info.password)
         time.sleep(1)
-
-        # ref: https://stackoverflow.com/questions/66476952/anti-captcha-not-working-validation-happening-before-callback-selenium
-        # 1: go to your target url, inspect elements, click on console tab
-        # 2: start typing: ___grecaptcha_cfg
-        # 3: should check the path of the callback function would be different or not after a few days (TODO)
-        self._driver.execute_script('document.getElementById("g-recaptcha-response").innerHTML = "{}";'.format(token))
-        self._driver.execute_script(
-            """
-            jQuery('#btnLogin').prop('disabled', false);
-            var response = grecaptcha.getResponse();
-            jQuery('#hdnToken').val(response);
-            """
-        )
-        time.sleep(2)
-
+        self.execute_recaptcha_callback_fun(token=token)
         self._driver.save_screenshot("before_login.png")
         login_btn = WebDriverWait(self._driver, 20).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="btnLogin"]')))
         login_btn.click()
