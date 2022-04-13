@@ -1,4 +1,5 @@
 import random
+import time
 from typing import Dict, List, Optional
 
 import selenium.webdriver
@@ -56,6 +57,21 @@ class SeleniumContentGetter(BaseContentGetter):
     def check_alert(self):
         alert = self._driver.switch_to.alert
         alert.text
+
+    def execute_recaptcha_callback_fun(self, token: str):
+        # ref: https://stackoverflow.com/questions/66476952/anti-captcha-not-working-validation-happening-before-callback-selenium
+        # 1: go to your target url, inspect elements, click on console tab
+        # 2: start typing: ___grecaptcha_cfg
+        # 3: should check the path of the callback function would be different or not after a few days (TODO)
+        self._driver.execute_script('document.getElementById("g-recaptcha-response").innerHTML = "{}";'.format(token))
+        self._driver.execute_script(
+            """
+            jQuery('#btnLogin').prop('disabled', false);
+            var response = grecaptcha.getResponse();
+            jQuery('#hdnToken').val(response);
+            """
+        )
+        time.sleep(2)
 
 
 class ChromeContentGetter(SeleniumContentGetter):
