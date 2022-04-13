@@ -10,6 +10,7 @@ from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
 from crawler.core_terminal.rules import BaseRoutingRule, RequestOption, RuleManager
 
+MAX_PAGE_NUM = 20
 SHIPMENT_TYPE_MBL = "MBL"
 SHIPMENT_TYPE_CONTAINER = "CONTAINER"
 
@@ -21,19 +22,21 @@ class StgShareSpider(BaseMultiTerminalSpider):
     def __init__(self, *args, **kwargs):
         super(StgShareSpider, self).__init__(*args, **kwargs)
 
+        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
+
         rules = [
             ContainerRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
-        for container_no in unique_container_nos:
-            option = ContainerRoutingRule.build_request_option(
-                search_no=container_no, search_type=SHIPMENT_TYPE_CONTAINER
-            )
-            yield self._build_request_by(option=option)
+        option = ContainerRoutingRule.build_request_option(
+            search_nos=unique_container_nos, search_type=SHIPMENT_TYPE_CONTAINER
+        )
+        yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -68,6 +71,15 @@ class StgShareSpider(BaseMultiTerminalSpider):
                 headers=option.headers,
                 body=option.body,
                 meta=meta,
+                dont_filter=True,
+            )
+        elif option.method == RequestOption.METHOD_GET:
+            return Request(
+                method="GET",
+                url=option.url,
+                headers=option.headers,
+                meta=meta,
+                dont_filter=True,
             )
         else:
             raise ValueError(f"Invalid option.method [{option.method}]")
@@ -80,11 +92,11 @@ class ContainerRoutingRule(BaseRoutingRule):
     name = "CONTAINER"
 
     @classmethod
-    def build_request_option(cls, search_no, search_type) -> RequestOption:
+    def build_request_option(cls, search_nos, search_type) -> RequestOption:
         form_data = {
             "locationCode": "STGL" if search_type == SHIPMENT_TYPE_CONTAINER else "",
             "searchBy": "container" if search_type == SHIPMENT_TYPE_CONTAINER else "lineBl",
-            "searchValue": search_no,
+            "searchValue": search_nos[0],
         }
 
         return RequestOption(
@@ -100,7 +112,8 @@ class ContainerRoutingRule(BaseRoutingRule):
                 ),
             },
             meta={
-                "search_no": search_no,
+                "search_nos": search_nos,
+                "search_type": search_type,
             },
         )
 
@@ -108,19 +121,22 @@ class ContainerRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        search_no = response.meta["search_no"]
+        search_nos = response.meta["search_nos"]
+        search_type = response.meta["search_type"]
 
         if self._is_container_no_invalid(response):
             yield ExportErrorData(
-                container_no=search_no,
+                container_no=search_nos[0],
                 detail="Data was not found",
                 status=TERMINAL_RESULT_STATUS_ERROR,
             )
+            yield NextRoundRoutingRule.build_request_option(search_nos=search_nos)
             return
 
         if self._has_multiple_results(response):
-            for mbl_no in self._extract_mbl_nos(response):
-                yield ContainerRoutingRule.build_request_option(search_no=mbl_no, search_type=SHIPMENT_TYPE_MBL)
+            mbl_nos = self._extract_mbl_nos(response)
+            yield ContainerRoutingRule.build_request_option(search_nos=mbl_nos, search_type=SHIPMENT_TYPE_MBL)
+            yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, search_type=SHIPMENT_TYPE_CONTAINER)
             return
 
         container_info = self._extract_container_info(response)
@@ -134,6 +150,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             available=container_info["available"],
             appointment_date=appointment_date,
         )
+        yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, search_type=search_type)
 
     def _is_container_no_invalid(self, response: Selector) -> bool:
         return bool(response.css("p.noResults"))
@@ -197,6 +214,33 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         if m:
             return m.group("lfd")
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    name = "NEXT_ROUND"
+
+    @classmethod
+    def build_request_option(cls, search_nos: List, search_type: str) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://eval.edi.hardcoretech.co/c/livez",
+            meta={
+                "search_nos": search_nos,
+                "search_type": search_type,
+            },
+        )
+
+    def handle(self, response):
+        search_nos = response.meta["search_nos"]
+        search_type = response.meta["search_type"]
+
+        if len(search_nos) == 1:
+            return
+
+        search_nos = search_nos[1:]
+
+        yield ContainerRoutingRule.build_request_option(search_nos=search_nos, search_type=search_type)
 
 
 class CFSSearchResultTableLocator(BaseTable):
