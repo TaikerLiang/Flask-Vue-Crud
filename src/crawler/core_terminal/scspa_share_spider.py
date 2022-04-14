@@ -126,7 +126,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         content_table = []
         response = scrapy.Selector(text=page_source)
 
-        table = response.css("div#gridview-1153 > table")
+        table = response.xpath("//*[@id='quickInptPtrWinGridId-body']//table")
         tr_list = table.xpath("./tbody/tr")[1:]
         for tr in tr_list:
             content_table.append(tr.xpath("./td/div/text()").getall())
