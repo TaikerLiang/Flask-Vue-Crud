@@ -1,4 +1,5 @@
 from crawler.core.base_new import RESULT_STATUS_ERROR, SEARCH_TYPE_MBL
+from crawler.core.description import DATA_NOT_FOUND_DESC
 from crawler.core.items_new import DataNotFoundItem
 from crawler.core_carrier.oney_smlm_multi_share_spider import NextRoundRoutingRule
 from crawler.core_carrier.request_helpers_new import RequestOption
@@ -10,7 +11,7 @@ def verify(results):
         search_no="SHSB1FY71701",
         search_type=SEARCH_TYPE_MBL,
         status=RESULT_STATUS_ERROR,
-        detail="Data was not found",
+        detail=DATA_NOT_FOUND_DESC,
         task_id=1,
     )
 
