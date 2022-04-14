@@ -303,9 +303,9 @@ class ItemExtractor:
                 railway = None
 
             location_item = mbl_item["pod"]
-            terminal_pod = location_item["firms_code"] if location_item["firms_code"] else location_item["name"]
+            terminal_pod = location_item["firms_code"] or location_item["name"]
             location_item = mbl_item["place_of_deliv"]
-            terminal_deliv = location_item["firms_code"] if location_item["firms_code"] else location_item["name"]
+            terminal_deliv = location_item["firms_code"] or location_item["name"]
 
             yield ContainerItem(
                 **c_item,
