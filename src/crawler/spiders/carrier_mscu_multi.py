@@ -10,6 +10,11 @@ from crawler.core.base_new import (
     SEARCH_TYPE_BOOKING,
     SEARCH_TYPE_MBL,
 )
+from crawler.core.description import (
+    DATA_NOT_FOUND_DESC,
+    MAX_RETRY_DESC,
+    SUSPICIOUS_OPERATION_DESC,
+)
 from crawler.core.exceptions_new import (
     FormatError,
     MaxRetryError,
@@ -117,7 +122,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
                         task_id=task_ids[0],
                         search_no=search_nos[0],
                         search_type=self.search_type,
-                        reason="Proxy max retry limit exceeded",
+                        reason=MAX_RETRY_DESC.format(action="proxy", times=MAX_RETRY_COUNT),
                     )
                     yield err.build_error_data()
                 option = self._prepare_restart(search_nos=search_nos, task_ids=task_ids, reason=result.reason)
@@ -146,10 +151,11 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
                 dont_filter=True,
             )
         else:
-            tid_sno_pairs = list(zip(meta["task_ids"], meta["search_nos"]))
+            zip_list = list(zip(meta["task_ids"], meta["search_nos"]))
             raise SuspiciousOperationError(
                 task_id=meta["task_ids"][0],
-                reason=f"Unexpected request method: `{option.method}` {tid_sno_pairs}",
+                reason=SUSPICIOUS_OPERATION_DESC.format(method=option.method)
+                + f", on (task_id, search_no): {zip_list}",
             )
 
 
@@ -244,7 +250,7 @@ class MainRoutingRule(BaseRoutingRule):
                 search_type=self._search_type,
                 search_no=search_nos[0],
                 status=RESULT_STATUS_ERROR,
-                detail="Data was not found",
+                detail=DATA_NOT_FOUND_DESC,
             )
             yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
             return

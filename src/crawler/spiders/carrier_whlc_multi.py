@@ -5,8 +5,8 @@ import re
 import time
 from typing import Dict, List, Optional
 
-import scrapy
 from pyppeteer.errors import NetworkError, PageError, TimeoutError
+import scrapy
 from scrapy import Selector
 from urllib3.exceptions import ReadTimeoutError
 
@@ -18,6 +18,11 @@ from crawler.core.base_new import (
     SEARCH_TYPE_MBL,
 )
 from crawler.core.defines import BaseContentGetter
+from crawler.core.description import (
+    DATA_NOT_FOUND_DESC,
+    MAX_RETRY_DESC,
+    SUSPICIOUS_OPERATION_DESC,
+)
 from crawler.core.exceptions_new import (
     FormatError,
     GeneralFatalError,
@@ -102,7 +107,7 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
                 task_id=task_ids[0],
                 search_no=search_nos[0],
                 search_type=self.search_type,
-                reason=f"Retry more than {MAX_RETRY_COUNT} times",
+                reason=MAX_RETRY_DESC.format(action="", times=MAX_RETRY_COUNT),
             )
 
         self._retry_count += 1
@@ -172,7 +177,8 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
             raise SuspiciousOperationError(
                 task_id=meta["task_ids"][0],
                 search_type=self.search_type,
-                reason=f"Unexpected request method: `{option.method}`, on (task_id, search_no): {zip_list}",
+                reason=SUSPICIOUS_OPERATION_DESC.format(method=option.method)
+                + f", on (task_id, search_no): {zip_list}",
             )
 
 
@@ -229,7 +235,7 @@ class MblRoutingRule(BaseRoutingRule):
                     search_no=mbl_no,
                     search_type=self._search_type,
                     status=RESULT_STATUS_ERROR,
-                    detail="Data was not found",
+                    detail=DATA_NOT_FOUND_DESC,
                 )
                 continue
 
@@ -607,7 +613,7 @@ class BookingRoutingRule(BaseRoutingRule):
                     search_no=search_no,
                     search_type=self._search_type,
                     status=RESULT_STATUS_ERROR,
-                    detail="Data was not found",
+                    detail=DATA_NOT_FOUND_DESC,
                 )
 
         prev_task_id = ""

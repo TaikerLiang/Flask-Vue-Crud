@@ -15,6 +15,11 @@ from crawler.core.base_new import (
     SEARCH_TYPE_BOOKING,
     SEARCH_TYPE_MBL,
 )
+from crawler.core.description import (
+    DATA_NOT_FOUND_DESC,
+    SUSPICIOUS_OPERATION_DESC,
+    TIMEOUT_DESC,
+)
 from crawler.core.exceptions_new import SuspiciousOperationError, TimeOutError
 from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.selenium import FirefoxContentGetter
@@ -103,7 +108,8 @@ class CarrierCosuSpider(BaseMultiCarrierSpider):
             raise SuspiciousOperationError(
                 task_id=meta["task_ids"][0],
                 search_type=self.search_type,
-                reason=f"Unexpected request method: `{option.method}`, on (task_id, search_no): {zip_list}",
+                reason=SUSPICIOUS_OPERATION_DESC.format(method=option.method)
+                + f", on (task_id, search_no): {zip_list}",
             )
 
 
@@ -154,7 +160,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             yield DataNotFoundItem(
                 **info_pack,
                 status=RESULT_STATUS_ERROR,
-                detail="Data was not found",
+                detail=DATA_NOT_FOUND_DESC,
             )
         elif not self._is_mbl_no_invalid(response=response_selector):
             item_extractor = ItemExtractor(task_id=task_ids[0])
@@ -194,7 +200,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             yield DataNotFoundItem(
                 **info_pack,
                 status=RESULT_STATUS_ERROR,
-                detail="Data was not found",
+                detail=DATA_NOT_FOUND_DESC,
             )
             return
 
@@ -253,7 +259,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
             yield DataNotFoundItem(
                 **info_pack,
                 status=RESULT_STATUS_ERROR,
-                detail="Data was not found",
+                detail=DATA_NOT_FOUND_DESC,
             )
         else:
             item_extractor = ItemExtractor(task_id=task_ids[0])
@@ -790,7 +796,7 @@ class ContentGetter(FirefoxContentGetter):
                 EC.element_to_be_clickable((By.CSS_SELECTOR, "button[class='ivu-btn ivu-btn-primary ivu-btn-large']"))
             )
         except (TimeoutException, ReadTimeoutError):
-            raise TimeOutError(**info_pack, reason="Timeout during _handle_cookie()")
+            raise TimeOutError(**info_pack, reason=TIMEOUT_DESC.format(action="_handle_cookie()"))
 
         # accept cookie
         time.sleep(1)

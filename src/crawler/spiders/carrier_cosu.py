@@ -15,6 +15,11 @@ from crawler.core.base_new import (
     SEARCH_TYPE_BOOKING,
     SEARCH_TYPE_MBL,
 )
+from crawler.core.description import (
+    DATA_NOT_FOUND_DESC,
+    SUSPICIOUS_OPERATION_DESC,
+    TIMEOUT_DESC,
+)
 from crawler.core.exceptions_new import SuspiciousOperationError, TimeOutError
 from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.selenium import FirefoxContentGetter
@@ -101,7 +106,7 @@ class CarrierCosuSpider(BaseCarrierSpider):
                 task_id=self.task_id,
                 search_no=self.search_no,
                 search_type=self.search_type,
-                reason=f"Unexpected request method: `{option.method}`",
+                reason=SUSPICIOUS_OPERATION_DESC.format(method=option.method),
             )
 
 
@@ -147,7 +152,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         booking_nos = [raw_booking_no.strip() for raw_booking_no in raw_booking_nos]
 
         if self._is_mbl_no_invalid(response=response_selector) and not booking_nos:
-            yield DataNotFoundItem(**info_pack, status=RESULT_STATUS_ERROR, detail="Data was not found")
+            yield DataNotFoundItem(**info_pack, status=RESULT_STATUS_ERROR, detail=DATA_NOT_FOUND_DESC)
             return
 
         elif not self._is_mbl_no_invalid(response=response_selector):
@@ -213,7 +218,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
                 yield DataNotFoundItem(
                     **info_pack,
                     status=RESULT_STATUS_ERROR,
-                    detail="Data was not found",
+                    detail=DATA_NOT_FOUND_DESC,
                 )
                 return
 
@@ -685,7 +690,7 @@ class ContentGetter(FirefoxContentGetter):
                 EC.element_to_be_clickable((By.CSS_SELECTOR, "button[class='ivu-btn ivu-btn-primary ivu-btn-large']"))
             )
         except (TimeoutException, ReadTimeoutError):
-            raise TimeOutError(**info_pack, reason="Timeout during _handle_cookie()")
+            raise TimeOutError(**info_pack, reason=TIMEOUT_DESC.format(action="_handle_cookie()"))
 
         # accept cookie
         time.sleep(1)

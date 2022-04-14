@@ -11,6 +11,7 @@ from crawler.core.base_new import (
     SEARCH_TYPE_CONTAINER,
     SEARCH_TYPE_MBL,
 )
+from crawler.core.description import SUSPICIOUS_OPERATION_DESC
 from crawler.core.exceptions_new import (
     FormatError,
     MaxRetryError,
@@ -153,7 +154,7 @@ class OneySmlmSharedSpider(BaseCarrierSpider):
                 search_type=self.search_type,
                 task_id=self.task_id,
                 search_no=self.search_no,
-                reason=f"Unexpected request method: `{option.method}`",
+                reason=SUSPICIOUS_OPERATION_DESC.format(method=option.method),
             )
 
 

@@ -2,9 +2,9 @@ import asyncio
 import re
 from typing import Dict, List
 
-import scrapy
 from pyppeteer import logging
 from pyppeteer.errors import ElementHandleError, TimeoutError
+import scrapy
 from scrapy import Selector
 from urllib3.exceptions import ReadTimeoutError
 
@@ -16,6 +16,7 @@ from crawler.core.base_new import (
     SEARCH_TYPE_MBL,
 )
 from crawler.core.defines import BaseContentGetter
+from crawler.core.description import SUSPICIOUS_OPERATION_DESC, TIMEOUT_DESC
 from crawler.core.exceptions_new import (
     FormatError,
     SuspiciousOperationError,
@@ -132,7 +133,7 @@ class CarrierWhlcSpider(BaseCarrierSpider):
                 task_id=self.task_id,
                 search_no=self.search_no,
                 search_type=self.search_type,
-                reason=f"Unexpected request method: `{option.method}`",
+                reason=SUSPICIOUS_OPERATION_DESC.format(method=option.method),
             )
 
 
@@ -172,7 +173,7 @@ class MblRoutingRule(BaseRoutingRule):
             )
         except (ReadTimeoutError, TimeoutError):
             # the case of invalid mbl_no is included in the case of TimeoutError
-            raise TimeOutError(**info_pack, reason="Timeout during driver.search()")
+            raise TimeOutError(**info_pack, reason=TIMEOUT_DESC.format(action="driver.search()"))
 
         response_selector = Selector(text=page_source)
         container_list = self._extract_container_info(response=response_selector, info_pack=info_pack)
@@ -453,7 +454,7 @@ class BookingRoutingRule(BaseRoutingRule):
             )
         except (ReadTimeoutError, TimeoutError):
             # the case of invalid mbl_no is included in the case of TimeoutError
-            raise TimeOutError(**info_pack, reason="Timeout during driver.search()")
+            raise TimeOutError(**info_pack, reason=TIMEOUT_DESC.format(action="driver.search()"))
 
         try:
             page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(2))

@@ -1,13 +1,13 @@
 import base64
+from io import BytesIO
 import logging
 import os
 import time
-from io import BytesIO
 from typing import Dict
 
+from PIL import Image
 import cv2
 import numpy as np
-from PIL import Image
 from scrapy import Selector
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver import ActionChains
@@ -16,6 +16,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
 from crawler.core.base_new import SEARCH_TYPE_BOOKING, SEARCH_TYPE_MBL
+from crawler.core.description import MAX_RETRY_DESC
 from crawler.core.exceptions_new import AccessDeniedError, MaxRetryError
 from crawler.core.proxy import HydraproxyProxyManager
 from local.core import BaseLocalCrawler
@@ -80,7 +81,10 @@ class ContentGetter(ChromeContentGetter):
 
         self._search_count += 1
         if self._search_count > self.MAX_SEARCH_TIMES:
-            raise MaxRetryError(**info_pack, reason=f"Retry search more than {self.MAX_SEARCH_TIMES} times")
+            raise MaxRetryError(
+                **info_pack,
+                reason=MAX_RETRY_DESC.format(action="search", times=self.MAX_SEARCH_TIMES),
+            )
 
         # jump back to origin window
         windows = self._driver.window_handles
@@ -149,7 +153,10 @@ class ContentGetter(ChromeContentGetter):
 
         while True:
             if retry_times > max_retry_times:
-                raise MaxRetryError(**info_pack, reason=f"Retry more than {max_retry_times} times")
+                raise MaxRetryError(
+                    **info_pack,
+                    reason=MAX_RETRY_DESC.format(actions="handling slide", times=max_retry_times),
+                )
 
             if not self._pass_verification_or_not():
                 break
