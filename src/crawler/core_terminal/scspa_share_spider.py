@@ -126,7 +126,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         content_table = []
         response = scrapy.Selector(text=page_source)
 
-        table = response.xpath("(//table[contains(@class, 'x-grid-table')])[2]")
+        table = response.xpath("(//table[contains(@class, 'x-grid-table')])[last()]")
         tr_list = table.xpath("./tbody/tr")[1:]
         for tr in tr_list:
             content_table.append(tr.xpath("./td/div/text()").getall())
@@ -218,7 +218,7 @@ class ContentGetter(ChromeContentGetter):
         )
         list_tree = self._driver.find_element(By.XPATH, "//div[@id='queryListingeTreeGridId-body']")
         WebDriverWait(self._driver, 20).until(
-            EC.presence_of_element_located((By.XPATH, "//tr[2]/td/div/img[contains(@class, 'x-tree-expander')]"))
+            EC.element_to_be_clickable((By.XPATH, "//tr[2]/td/div/img[contains(@class, 'x-tree-expander')]"))
         )
         folder_toggler = list_tree.find_element(By.XPATH, "//tr[2]/td/div/img[contains(@class, 'x-tree-expander')]")
         folder_toggler.click()
