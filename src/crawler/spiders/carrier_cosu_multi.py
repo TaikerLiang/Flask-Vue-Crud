@@ -163,11 +163,12 @@ class MainInfoRoutingRule(BaseRoutingRule):
             ):
                 yield item
         elif booking_nos:
+            info_pack["search_type"] = SEARCH_TYPE_BOOKING
             for booking_no in booking_nos:
                 yield MblItem(task_id=task_ids[0], mbl_no=mbl_nos[0])
-                for b_item in self._process_booking(
-                    content_getter=content_getter, booking_no=booking_no, info_pack=info_pack
-                ):
+
+                info_pack["search_no"] = booking_no
+                for b_item in self._process_booking(content_getter=content_getter, info_pack=info_pack):
                     yield b_item
 
         yield EndItem(task_id=task_ids[0])
@@ -185,9 +186,9 @@ class MainInfoRoutingRule(BaseRoutingRule):
             or response.css("div.ivu-form-item-error-tip::text").get() == "Invalid B/L number"
         )
 
-    def _process_booking(self, content_getter, booking_no: str, info_pack: Dict):
+    def _process_booking(self, content_getter, info_pack: Dict):
         item_extractor = ItemExtractor(task_id=info_pack["task_id"])
-        response_text = content_getter.search_and_return(search_no=booking_no, is_booking=True)
+        response_text = content_getter.search_and_return(info_pack=info_pack, is_booking=True)
         response_selector = scrapy.Selector(text=response_text)
         if self._is_booking_no_invalid(response=response_selector):
             yield DataNotFoundItem(
