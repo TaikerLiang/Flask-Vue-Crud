@@ -1,4 +1,3 @@
-import os
 import pprint
 import traceback
 from typing import Dict, Optional
@@ -11,37 +10,13 @@ from crawler.core.base_new import (
     RESULT_STATUS_FATAL,
 )
 from crawler.core.items_new import DataNotFoundItem, ExportErrorData
+from crawler.core.pipelines import BaseItemPipeline
 from crawler.core_terminal import items_new as terminal_items
-from crawler.services.edi_service import EdiClientService
-
-
-class BaseItemPipeline:
-    def __init__(self):
-        # edi client setting
-        user = os.environ.get("EDI_ENGINE_USER")
-        token = os.environ.get("EDI_ENGINE_TOKEN")
-        url = (os.environ.get("EDI_ENGINE_BASE_URL") or "") + "tracking-terminal/local/"
-        self.edi_client = EdiClientService(url=url, edi_user=user, edi_token=token)
-
-    def handle_err_result(self, collector, task_id: int, result: Dict):
-        if collector.is_default():
-            status_code, text = self.edi_client.send_provider_result_back(
-                task_id=task_id, provider_code="scrapy_cloud_api", item_result=result
-            )
-        else:
-            item_result = collector.build_final_data()
-            status_code, text = self.edi_client.send_provider_result_back(
-                task_id=task_id, provider_code="scrapy_cloud_api", item_result=item_result
-            )
-        return status_code, text
-
-
-# ---------------------------------------------------------------------------------------------------------------------
 
 
 class TerminalItemPipeline(BaseItemPipeline):
     def __init__(self):
-        super().__init__()
+        super().__init__("tracking-terminal/local/")
 
     @classmethod
     def get_setting_name(cls):
@@ -92,9 +67,7 @@ class TerminalItemPipeline(BaseItemPipeline):
 
         task_id = item_result.get("request_args", {}).get("task_id")
         if task_id:
-            status_code, text = self.edi_client.send_provider_result_back(
-                task_id=task_id, provider_code="scrapy_cloud_api", item_result=item_result
-            )
+            status_code, text = self.send_provider_result_to_edi_client(task_id=task_id, item_result=item_result)
             res.append({"task_id": task_id, "status_code": status_code, "text": text, "data": item_result})
             return res
         else:
@@ -113,7 +86,7 @@ class TerminalItemPipeline(BaseItemPipeline):
 
 class TerminalMultiItemsPipeline(BaseItemPipeline):
     def __init__(self):
-        super().__init__()
+        super().__init__("tracking-terminal/local/")
         self._collector_map = {}
 
     @classmethod
@@ -178,9 +151,7 @@ class TerminalMultiItemsPipeline(BaseItemPipeline):
                 item_result = collector.build_final_data()
 
             if item_result:
-                status_code, text = self.edi_client.send_provider_result_back(
-                    task_id=task_id, provider_code="scrapy_cloud_api", item_result=item_result
-                )
+                status_code, text = self.send_provider_result_to_edi_client(task_id=task_id, item_result=item_result)
                 res.append({"task_id": task_id, "status_code": status_code, "text": text, "data": item_result})
 
         return res
