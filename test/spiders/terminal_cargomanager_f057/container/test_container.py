@@ -4,11 +4,11 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_terminal.cloud1_share_spider import (
+from crawler.core_terminal.cargomanager_share_spider import (
     ConfigureSettingsRule,
     ContainerRoutingRule,
 )
-from test.spiders.terminal_cloud1_f057 import container
+from test.spiders.terminal_cargomanager_f057 import container
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def sample_loader(sample_loader):
 def test_container_handle(sub, container_no, url, sample_loader):
     json_text = sample_loader.read_file(sub, "sample.html")
 
-    option = ContainerRoutingRule.build_request_option(container_no=container_no, url=url)
+    option = ContainerRoutingRule.build_request_option(search_no=container_no, url=url)
 
     response = TextResponse(
         url=option.url,
@@ -56,15 +56,15 @@ def test_container_handle(sub, container_no, url, sample_loader):
 
 
 @pytest.mark.parametrize(
-    "sub,container_no,url_code,code",
+    "sub,container_nos,url_code,code",
     [
-        ("03_data_not_found", "SEGU5842736", "ARWP", "ARWP"),
+        ("03_data_not_found", ["SEGU5842736"], "ARWP", "ARWP"),
     ],
 )
-def test_container_not_found(sub, container_no, url_code, code, sample_loader):
+def test_container_not_found(sub, container_nos, url_code, code, sample_loader):
     json_text = sample_loader.read_file(sub, "sample.html")
 
-    option = ConfigureSettingsRule.build_request_option(container_no=container_no, url_code=url_code, code=code)
+    option = ConfigureSettingsRule.build_request_option(search_nos=container_nos, url_code=url_code, code=code)
 
     response = TextResponse(
         url=option.url,
