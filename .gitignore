@@ -33,3 +33,6 @@ ghostdriver.log
 *.releases
 *geckodriver.log
 
+# vscode local config
+*.code-workspace
+.vscode
