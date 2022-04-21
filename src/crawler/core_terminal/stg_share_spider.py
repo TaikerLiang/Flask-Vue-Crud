@@ -18,11 +18,15 @@ SHIPMENT_TYPE_CONTAINER = "CONTAINER"
 class StgShareSpider(BaseMultiTerminalSpider):
     firms_code = ""
     name = ""
+    custom_settings = {
+        **BaseMultiTerminalSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super(StgShareSpider, self).__init__(*args, **kwargs)
 
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
+        # self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         rules = [
             ContainerRoutingRule(),
