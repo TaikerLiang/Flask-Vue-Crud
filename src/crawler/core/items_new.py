@@ -7,6 +7,7 @@ class BaseItem(scrapy.Item):
 
 class EndItem(BaseItem):
     task_id = scrapy.Field()
+    remaining_num = scrapy.Field()
 
 
 class ExportErrorData(BaseItem):

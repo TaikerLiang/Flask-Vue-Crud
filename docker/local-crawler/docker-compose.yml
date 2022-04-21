@@ -1,0 +1,11 @@
+version: "3.7"
+services:
+  local-crawler:
+    image: "478041131377.dkr.ecr.us-west-2.amazonaws.com/hardcore/ep-sc-local-crawler:${IMAGE_TAG:-latest}"
+    shm_size: 2gb
+    restart: always
+    env_file: .env
+    environment:
+      - CHROME_VERSION=99
+      - CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
+      - PROFILE_PATH=/root/temp

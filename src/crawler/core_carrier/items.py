@@ -113,6 +113,7 @@ class ContainerItem(BaseCarrierItem):
     container_key = scrapy.Field()
     container_no = scrapy.Field()
     last_free_day = scrapy.Field()
+    rail_last_free_day = scrapy.Field()
     depot_last_free_day = scrapy.Field()
     empty_pickup_date = scrapy.Field()
     empty_return_date = scrapy.Field()

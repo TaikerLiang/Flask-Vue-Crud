@@ -1,7 +1,9 @@
 from typing import List
 
 from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.voyagecontrol_share_spider import AddContainerToTraceRoutingRule
+from crawler.core_terminal.voyagecontrol_share_spider import (
+    AddContainerToTraceRoutingRule,
+)
 from crawler.spiders.terminal_voyagecontrol_y257 import TerminalFenixSpider
 
 
@@ -13,5 +15,4 @@ def verify(results: List):
         "authorization_token": "",
         "dont_retry": True,
         "company_info": TerminalFenixSpider.company_info,
-        "handle_httpstatus_list": [502],
     }

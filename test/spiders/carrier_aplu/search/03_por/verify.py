@@ -1,6 +1,6 @@
 from typing import List
 
-from crawler.core_carrier.items import (
+from crawler.core_carrier.items_new import (
     ContainerItem,
     ContainerStatusItem,
     LocationItem,
@@ -51,16 +51,17 @@ def multi_verify(results: List):
         por=LocationItem(name="TAICHUNG (TW)"),
         pol=LocationItem(name="KAOHSIUNG (TW)"),
         pod=LocationItem(name="LONG BEACH, CA (US)"),
+        place_of_deliv=LocationItem(name=None),
         final_dest=LocationItem(name=None),
         eta=None,
         ata="Sunday 16-JAN-2022 21:40",
-        task_id=1,
+        task_id="1",
     )
 
     assert results[1] == ContainerItem(
         container_key="CAIU3813177",
         container_no="CAIU3813177",
-        task_id=1,
+        task_id="1",
     )
 
     assert results[2] == ContainerStatusItem(
@@ -70,7 +71,7 @@ def multi_verify(results: List):
         location=LocationItem(name="TAICHUNG"),
         est_or_actual="A",
         facility="",
-        task_id=1,
+        task_id="1",
     )
 
     assert results[7] == ContainerStatusItem(
@@ -80,5 +81,5 @@ def multi_verify(results: List):
         location=LocationItem(name="LONG BEACH, CA"),
         est_or_actual="A",
         facility="LONG BEACH CONTAINER TERM",
-        task_id=1,
+        task_id="1",
     )

@@ -1,4 +1,5 @@
 import base64
+import json
 import random
 import re
 import string
@@ -7,7 +8,6 @@ from typing import Dict, List
 
 import Crypto.Cipher.AES
 import scrapy
-from anticaptchaofficial.imagecaptcha import *
 
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
@@ -27,7 +27,7 @@ from crawler.core_carrier.items import (
 )
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
-from crawler.services.captcha_service import CaptchaSolverService
+from crawler.services.captcha_service import ImageAntiCaptchaService
 
 SITC_BASE_URL = "https://api.sitcline.com"
 
@@ -128,8 +128,8 @@ class Captcha1RoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_no = response.meta["mbl_no"]
         rand_str = response.meta["rand_str"]
-        captcha_solver = CaptchaSolverService()
-        captcha_code = captcha_solver.solve_image(image_content=response.body)
+        captcha_solver = ImageAntiCaptchaService()
+        captcha_code = captcha_solver.solve(image_content=response.body)
 
         yield LoginRoutingRule.build_request_option(mbl_no=mbl_no, rand_str=rand_str, captcha_code=captcha_code)
 

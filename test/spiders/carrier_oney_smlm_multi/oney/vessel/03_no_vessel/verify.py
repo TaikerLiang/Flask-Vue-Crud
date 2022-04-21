@@ -1,2 +1,3 @@
 def verify(results):
-    assert len(results) == 0
+    # An EndItem
+    assert len(results) == 1

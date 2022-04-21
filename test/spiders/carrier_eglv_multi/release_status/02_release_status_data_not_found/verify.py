@@ -1,4 +1,4 @@
-from crawler.core_carrier.items import MblItem
+from crawler.core_carrier.items_new import MblItem
 
 
 class Verifier:
@@ -10,5 +10,5 @@ class Verifier:
             us_customs_date=None,
             customs_release_status=None,
             customs_release_date=None,
-            task_id='1',
+            task_id="1",
         )

@@ -8,8 +8,8 @@ from src.crawler.services.edi_service import EdiClientService
 logger = logging.getLogger("local-generator")
 
 CARRIER_TASKS = [
-    {"type": "carrier", "scac_code": "ZIMU", "task_id": "219992", "mbl_no": "ZIMUTPE8201344"},
-    {"type": "carrier", "scac_code": "ZIMU", "task_id": "220004", "mbl_no": "ZIMUSNH1651309"},
+    {"type": "carrier", "scac_code": "OOLU", "task_id": "277601", "mbl_no": "2130772550"},
+    {"type": "carrier", "scac_code": "OOLU", "task_id": "277597", "booking_no": "2688878180"},
     {"type": "carrier", "scac_code": "ZIMU", "task_id": "220034", "mbl_no": "ZIMUSHH30744766"},
     {"type": "carrier", "scac_code": "ZIMU", "task_id": "220035", "mbl_no": "ZIMUSHH30754994"},
     {"type": "carrier", "scac_code": "ZIMU", "task_id": "220115", "mbl_no": "ZIMUSHH30736982"},

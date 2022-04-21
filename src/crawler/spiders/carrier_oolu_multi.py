@@ -1,16 +1,16 @@
 import base64
 import dataclasses
+from io import BytesIO
 import logging
 import os
 import re
 import time
-from io import BytesIO
 from typing import Dict, List, Optional
 
+from PIL import Image
 import cv2
 import numpy as np
 import scrapy
-from PIL import Image
 from scrapy import Selector
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver import ActionChains
@@ -169,7 +169,20 @@ class ContentGetter(ChromeContentGetter):
     MAX_SEARCH_TIMES = 10
 
     def __init__(self, proxy_manager, is_headless):
-        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
+
+        self.block_urls = [
+            "https://www.oocl.com/Style%20Library/revamp/images/flexslider_depot.jpg",
+            "https://www.oocl.com/Style%20Library/revamp/images/*.png",
+            # "https://moc.oocl.com/app/skin/mcc_oocl/images/*.gif",
+            # "https://www.oocl.com/Style%20Library/revamp/Images/*.svg",
+            "https://moc.oocl.com/admin/scripts/jquery-1.8.0.js",
+            "https://www.google-analytics.com/analytics.js",
+            "https://moc.oocl.com/admin/common/xss.js",
+            "https://ca.cargosmart.ai/js/analytics.client.core.js",
+            "https://moc.oocl.com/party/scripts/cs_browser_monitor.js",
+        ]
+
+        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless, block_urls=self.block_urls)
 
         logging.getLogger("seleniumwire").setLevel(logging.ERROR)
         logging.getLogger("hpack").setLevel(logging.INFO)
@@ -177,28 +190,31 @@ class ContentGetter(ChromeContentGetter):
         self._driver.set_page_load_timeout(120)
 
         self._search_count = 0
+        self._first = True
 
     def goto(self):
         self._driver.get("https://www.oocl.com/eng/ourservices/eservices/cargotracking/Pages/cargotracking.aspx")
-        time.sleep(3)
+        time.sleep(10)
 
     def search_and_return(self, info_pack: Dict):
         search_no = info_pack["search_no"]
         search_type = info_pack["search_type"]
 
         self._search(search_no=search_no, search_type=search_type)
-        time.sleep(7)
+        time.sleep(30)
         windows = self._driver.window_handles
         self._driver.switch_to.window(windows[1])  # windows[1] is new page
-        WebDriverWait(self._driver, 120).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div#recaptcha_div")))
         if self._is_blocked(response=Selector(text=self._driver.page_source)):
             raise AccessDeniedError(**info_pack, reason="Blocked during searching")
 
-        if self._is_first:
-            self._is_first = False
-        self._handle_with_slide(info_pack=info_pack)
-        time.sleep(10)
+        self._driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": self.block_urls})
+        self._driver.execute_cdp_cmd("Network.enable", {})
 
+        if self._pass_verification_or_not():
+            self._handle_with_slide(info_pack=info_pack)
+            time.sleep(10)
+
+        self._first = False
         self._search_count = 0
         return self._driver.page_source
 
@@ -232,18 +248,20 @@ class ContentGetter(ChromeContentGetter):
     #     assert len(windows) == 1
     #     self._driver.switch_to.window(windows[0])
 
-    def find_container_btn_and_click(self, container_btn_css):
+    def find_container_btn_and_click(self, container_btn_css: str, container_no: str):
         container_btn = self._driver.find_element_by_css_selector(container_btn_css)
         container_btn.click()
 
     def _search(self, search_no, search_type):
-        if self._is_first:
+        try:
             # handle cookies
             cookie_accept_btn = WebDriverWait(self._driver, 20).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, "form > button#btn_cookie_accept"))
             )
             cookie_accept_btn.click()
             time.sleep(2)
+        except Exception:
+            pass
 
         drop_down_btn = self._driver.find_element_by_css_selector("button[data-id='ooclCargoSelector']")
         drop_down_btn.click()
@@ -287,7 +305,7 @@ class ContentGetter(ChromeContentGetter):
             icon_ele = self._get_slider_icon_ele()
             img_ele = self._get_bg_img_ele()
 
-            distance = self._get_element_slide_distance(icon_ele, img_ele, 1)
+            distance = self._get_element_slide_distance(icon_ele, img_ele, 0)
 
             if distance <= 100:
                 self._refresh()
@@ -298,6 +316,8 @@ class ContentGetter(ChromeContentGetter):
 
             time.sleep(10)
             retry_times += 1
+
+        self._first = False
 
     def _pass_verification_or_not(self):
         try:
@@ -423,6 +443,7 @@ class ContentGetter(ChromeContentGetter):
             ActionChains(self._driver).move_by_offset(xoffset=x, yoffset=0).perform()
         time.sleep(0.5)  # move to the right place and take a break
         ActionChains(self._driver).release().perform()
+        time.sleep(4)
 
 
 # -------------------------------------------------------------------------------
@@ -431,7 +452,7 @@ class ContentGetter(ChromeContentGetter):
 class CargoTrackingRule(BaseRoutingRule):
     name = "CARGO_TRACKING"
 
-    def __init__(self, content_getter: ContentGetter, search_type):
+    def __init__(self, content_getter: Optional[ContentGetter], search_type):
         self._content_getter = content_getter
         self._search_type = search_type
 
@@ -463,16 +484,17 @@ class CargoTrackingRule(BaseRoutingRule):
         }
 
         try:
-            self._content_getter.goto()
             windows = self._content_getter.get_window_handles()
             if len(windows) > 1:
                 self._content_getter.close()
                 self._content_getter.switch_to_first()
+            else:
+                self._content_getter.goto()
 
             res = self._content_getter.search_and_return(info_pack=info_pack)
             response = Selector(text=res)
 
-            while self._no_response(response=response):
+            while self.is_no_response(response=response):
                 res = self._content_getter.search_again_and_return(info_pack=info_pack)
                 response = Selector(text=res)
         except Exception as e:
@@ -484,15 +506,16 @@ class CargoTrackingRule(BaseRoutingRule):
         if os.path.exists("./slider01.jpg"):
             os.remove("./slider01.jpg")
 
-        for item in self._handle_response(response=response, info_pack=info_pack):
+        for item in self.handle_response(response=response, info_pack=info_pack):
             yield item
 
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
-    def _no_response(self, response: Selector) -> bool:
+    @staticmethod
+    def is_no_response(response: Selector) -> bool:
         return not bool(response.css("td.pageTitle"))
 
-    def _handle_response(self, response, info_pack: Dict):
+    def handle_response(self, response, info_pack: Dict):
         if self.is_search_no_invalid(response):
             yield DataNotFoundItem(**info_pack, status=RESULT_STATUS_ERROR, detail="Data was not found")
             return
@@ -548,11 +571,9 @@ class CargoTrackingRule(BaseRoutingRule):
         container_list = self._extract_container_list(selector_map=selector_map)
         for i, container in enumerate(container_list):
             container_no = container["container_no"].strip()
-            click_element_css = f"a[id='form:link{i}']"
 
             try:
-                self._content_getter.find_container_btn_and_click(container_btn_css=click_element_css)
-                time.sleep(10)
+                self._switch_container_pane(ith_pane=i, container_no=container_no, info_pack=info_pack)
             except ReadTimeoutError:
                 url = self._content_getter.get_current_url()
                 self._content_getter.quit()
@@ -766,6 +787,31 @@ class CargoTrackingRule(BaseRoutingRule):
             )
         return container_no_list
 
+    def _switch_container_pane(self, ith_pane: int, container_no: str, info_pack: Dict, max_retry_times: int = 3):
+        click_element_css = f"a[id='form:link{ith_pane}']"
+        title_container_no = ""
+
+        for i in range(1, max_retry_times + 1):
+            # Switch pane and wait
+            self._content_getter.find_container_btn_and_click(
+                container_btn_css=click_element_css, container_no=container_no
+            )
+            time.sleep(10 * i)
+
+            # Extract container_no of pane and compare it to parameter container_no
+            response = Selector(text=self._content_getter.get_page_source())
+            title_container_no = self._extract_container_no(response, info_pack=info_pack)
+            if title_container_no == container_no:
+                return
+
+        # Raise due to retry counts reach max_retry_times
+        info_pack["search_no"] = container_no
+        info_pack["search_type"] = SEARCH_TYPE_CONTAINER
+        raise MaxRetryError(
+            **info_pack,
+            reason=f"Container no mismatch: website={title_container_no}, ours={container_no}",
+        )
+
     def _handle_container_response(
         self, response, task_id: str, container_no: str, terminal_pod: Optional[str], terminal_deliv: Optional[str]
     ):
@@ -774,13 +820,6 @@ class CargoTrackingRule(BaseRoutingRule):
             "search_no": container_no,
             "search_type": SEARCH_TYPE_CONTAINER,
         }
-
-        title_container_no = self._extract_container_no(response, info_pack=info_pack)
-        if title_container_no != info_pack["search_no"]:
-            raise FormatError(
-                **info_pack,
-                reason=f"Container no mismatch: website={title_container_no}, ours={info_pack['search_no']}",
-            )
 
         locator = _PageLocator(info_pack=info_pack)
         selectors_map = locator.locate_selectors(response=response)

@@ -4,8 +4,8 @@ import logging
 import re
 from typing import List, Tuple, Union
 
-import scrapy
 from python_anticaptcha import AnticaptchaClient, AnticaptchaException, ImageToTextTask
+import scrapy
 from scrapy import Selector
 
 from crawler.core.proxy import HydraproxyProxyManager
@@ -652,7 +652,9 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
         }
 
     def _extract_vessel_voyage(self, response: Selector):
-        span = response.css("span#ContentPlaceHolder1_rptBLNo_lblVessel_0")
+        span = response.css("span#ContentPlaceHolder1_rptBKNo_lblVessel_0") or response.css(
+            "span#ContentPlaceHolder1_rptBLNo_lblVessel_0"
+        )
         if span.css("a"):
             vessel = span.css("a::text").get().strip()
         else:
