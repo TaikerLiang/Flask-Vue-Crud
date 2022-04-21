@@ -31,7 +31,7 @@ def verify(results: List):
         container_no="YMMU6022283",
         last_free_day=None,
         task_id=1,
-        terminal=LocationItem(name="Y258"),
+        terminal_pod=LocationItem(name="Y258"),
     )
 
     assert isinstance(results[2], RequestOption)

@@ -31,7 +31,7 @@ def verify(results: List):
         container_no="BMOU5687951",
         last_free_day=None,
         task_id=1,
-        terminal=LocationItem(name=None),
+        terminal_pod=LocationItem(name=None),
     )
 
     assert isinstance(results[2], RequestOption)
@@ -41,7 +41,7 @@ def verify(results: List):
         container_no="BMOU5757067",
         last_free_day=None,
         task_id=1,
-        terminal=LocationItem(name=None),
+        terminal_pod=LocationItem(name=None),
     )
 
     assert isinstance(results[4], RequestOption)

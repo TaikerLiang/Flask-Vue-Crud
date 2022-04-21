@@ -29,11 +29,13 @@ def verify(results):
         etd="28-Nov-2019",
         eta="08-Jan-2020",
         deliv_eta=None,
+        deliv_ata=None,
     )
 
     assert results[2] == ContainerItem(
         container_key="GAOU6141898",
         container_no="GAOU6141898",
+        terminal_pod=LocationItem(name=None),
     )
 
     assert results[3] == ContainerStatusItem(
