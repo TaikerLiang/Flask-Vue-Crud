@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 import scrapy
 from scrapy import Selector
@@ -16,11 +16,15 @@ from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 BASE_URL = "https://cloud1.cargomanager.com/warehousing"
 
 
-class Cloud1ShareSpider(BaseMultiTerminalSpider):
+class CargomanagerShareSpider(BaseMultiTerminalSpider):
     firms_code = ""
     name = ""
     url_code = ""
     code = ""
+    custom_settings = {
+        **BaseMultiTerminalSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -28,17 +32,17 @@ class Cloud1ShareSpider(BaseMultiTerminalSpider):
         rules = [
             ConfigureSettingsRule(),
             ContainerRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
-        for c_no in unique_container_nos:
-            option = ConfigureSettingsRule.build_request_option(
-                container_no=c_no, url_code=self.url_code, code=self.code
-            )
-            yield self._build_request_by(option=option)
+        option = ConfigureSettingsRule.build_request_option(
+            search_nos=unique_container_nos, url_code=self.url_code, code=self.code
+        )
+        yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -94,7 +98,7 @@ class ConfigureSettingsRule(BaseRoutingRule):
     name = "Configure"
 
     @classmethod
-    def build_request_option(cls, container_no: str, url_code: str, code: str) -> RequestOption:
+    def build_request_option(cls, search_nos: list, url_code: str, code: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_FORM,
@@ -103,7 +107,7 @@ class ConfigureSettingsRule(BaseRoutingRule):
             form_data={
                 "code": code,
                 "fileType": "CFS",
-                "container": container_no,
+                "container": search_nos[0],
                 "MBL": "",
                 "IT": "",
                 "houseBL": "",
@@ -113,18 +117,21 @@ class ConfigureSettingsRule(BaseRoutingRule):
                 "entryNo": "",
                 "trsackingNo": "",
             },
-            meta={"container_no": container_no, "url_code": url_code},
+            meta={"search_nos": search_nos, "url_code": url_code, "code": code},
         )
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
     def handle(self, response):
-        container_no = response.meta["container_no"]
+        container_nos = response.meta["search_nos"]
+        current_container_no = container_nos[0]
+        url_code = response.meta["url_code"]
+        code = response.meta["code"]
 
         if "No results found" in response.css("::text").getall():
             yield ExportErrorData(
-                container_no=container_no,
+                container_no=current_container_no,
                 detail="Data was not found",
                 status=TERMINAL_RESULT_STATUS_ERROR,
             )
@@ -133,8 +140,10 @@ class ConfigureSettingsRule(BaseRoutingRule):
             extra_url = response.css("script ::text").get().strip().split("'")[-2]
 
             yield ContainerRoutingRule.build_request_option(
-                container_no=container_no, url=f"{BASE_URL}{url_code}/availability/{extra_url}"
+                search_no=current_container_no, url=f"{BASE_URL}{url_code}/availability/{extra_url}"
             )
+
+        yield NextRoundRoutingRule.build_request_option(search_nos=container_nos, url_code=url_code, code=code)
 
 
 # -------------------------------------------------------------------------------
@@ -144,19 +153,19 @@ class ContainerRoutingRule(BaseRoutingRule):
     name = "Container"
 
     @classmethod
-    def build_request_option(cls, container_no, url) -> RequestOption:
+    def build_request_option(cls, search_no, url) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
-            meta={"container_no": container_no},
+            meta={"search_no": search_no},
         )
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
     def handle(self, response):
-        container_no = response.meta["container_no"]
+        container_no = response.meta["search_no"]
         info = Extractor.extract_table(response.css("table.cfsdetails"))
 
         if info["Container No:"] != container_no:
@@ -173,6 +182,31 @@ class ContainerRoutingRule(BaseRoutingRule):
                 vessel=info["Vessel Name:"],
                 last_free_day=info["Free Time Expires:"],
             )
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    name = "NEXT_ROUND"
+
+    @classmethod
+    def build_request_option(cls, search_nos: List, url_code, code) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://eval.edi.hardcoretech.co/c/livez",
+            meta={"search_nos": search_nos, "url_code": url_code, "code": code},
+        )
+
+    def handle(self, response):
+        search_nos = response.meta["search_nos"]
+        url_code = response.meta["url_code"]
+        code = response.meta["code"]
+
+        if len(search_nos) <= 1:
+            return
+
+        search_nos = search_nos[1:]
+
+        yield ConfigureSettingsRule.build_request_option(search_nos=search_nos, url_code=url_code, code=code)
 
 
 # -------------------------------------------------------------------------------
