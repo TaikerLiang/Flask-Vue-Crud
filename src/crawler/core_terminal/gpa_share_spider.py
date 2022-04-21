@@ -1,5 +1,5 @@
-import time
 from datetime import date
+import time
 from typing import Dict, List
 from urllib.parse import urlencode
 
@@ -131,8 +131,8 @@ class LoginRoutingRule(BaseRoutingRule):
 
     def _raise_if_login_fail(self, page: str):
         selector = scrapy.Selector(text=page)
-        text = selector.css("table.contentArea div#printContent p > font::text").get().strip()
-        if text == "Help is available from your system administrator.":
+        text = selector.css("table.contentArea div#printContent p > font::text").get()
+        if text and text.strip() == "Help is available from your system administrator.":
             msg = selector.css("table.contentArea div#printContent font > b::text").get()
             raise LoginNotSuccessFatal(success_status=msg)
 
@@ -296,8 +296,9 @@ class ContainerRoutingRule(BaseRoutingRule):
             invalid_data_field_item["valid_data_dict"].update({"available": ["Yes", "No"]})
             invalid_data_field_item["invalid_data_dict"].update({"available": available})
 
-        if location != "C" and location != "V" and location != "Y":
-            invalid_data_field_item["valid_data_dict"].update({"location": ["C", "V", "Y"]})
+        location = location.split("-")[0]
+        if len(location) != 1:
+            invalid_data_field_item["valid_data_dict"].update({"location": ["C", "V", "Y", "T"]})
             invalid_data_field_item["invalid_data_dict"].update({"location": location})
 
         if invalid_data_field_item["valid_data_dict"]:
@@ -331,8 +332,8 @@ class NextRoundRoutingRule(BaseRoutingRule):
 
 
 class ContentGetter(ChromeContentGetter):
-    USERNAME = "cli2"
-    PASSWORD = "Hardc0re"
+    USERNAME = "rhuang"
+    PASSWORD = "hr0845"
     LOGIN_URL = BASE_URL + "secure/Today.jsp?Facility=GCT"
 
     def login(self):
