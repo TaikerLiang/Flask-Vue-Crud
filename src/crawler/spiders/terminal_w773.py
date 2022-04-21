@@ -1,4 +1,5 @@
 import re
+from typing import List
 
 from scrapy import FormRequest, Request, Selector
 
@@ -14,6 +15,7 @@ from crawler.core_terminal.items import (
 from crawler.core_terminal.rules import BaseRoutingRule, RequestOption, RuleManager
 
 BASE_URL = "http://www.asocfs.com"
+MAX_PAGE_NUM = 1
 
 
 class TerminalAsoSpider(BaseMultiTerminalSpider):
@@ -26,14 +28,14 @@ class TerminalAsoSpider(BaseMultiTerminalSpider):
         rules = [
             QueryNoRoutingRule(),
             ContainerRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        for container_no in self.container_nos:
-            option = QueryNoRoutingRule.build_request_option(container_no=container_no)
-            yield self._build_request_by(option=option)
+        option = QueryNoRoutingRule.build_request_option(container_nos=self.container_nos)
+        yield self._build_request_by(option=option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -83,15 +85,15 @@ class QueryNoRoutingRule(BaseRoutingRule):
     name = "QUERY_NO"
 
     @classmethod
-    def build_request_option(cls, container_no) -> RequestOption:
-        url = f"{BASE_URL}/main_left_bottom.asp?KeyType=3&QueryNo={container_no}"
+    def build_request_option(cls, container_nos: List) -> RequestOption:
+        url = f"{BASE_URL}/main_left_bottom.asp?KeyType=3&QueryNo={container_nos[0]}"
 
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
             meta={
-                "container_no": container_no,
+                "container_nos": container_nos,
             },
         )
 
@@ -99,13 +101,13 @@ class QueryNoRoutingRule(BaseRoutingRule):
         return f"{self.name}.json"
 
     def handle(self, response):
-        container_no = response.meta["container_no"]
+        container_nos = response.meta["container_nos"]
 
         onclick = response.css("div#divx ::attr('onclick')").get()
 
         if not onclick:
             yield ExportErrorData(
-                container_no=container_no,
+                container_no=container_nos[0],
                 detail="Data was not found",
                 status=TERMINAL_RESULT_STATUS_ERROR,
             )
@@ -114,7 +116,7 @@ class QueryNoRoutingRule(BaseRoutingRule):
         m = re.search(r"mainRight\(0,(?P<query_no>\d+)\)", onclick)
         query_no = m.group("query_no")
 
-        yield ContainerRoutingRule.build_request_option(container_no=container_no, query_no=query_no)
+        yield ContainerRoutingRule.build_request_option(container_nos=container_nos, query_no=query_no)
 
 
 # -------------------------------------------------------------------------------
@@ -124,7 +126,7 @@ class ContainerRoutingRule(BaseRoutingRule):
     name = "CONTAINER"
 
     @classmethod
-    def build_request_option(cls, container_no, query_no) -> RequestOption:
+    def build_request_option(cls, container_nos, query_no) -> RequestOption:
         url = f"{BASE_URL}/main_right.asp?KeyType=3&QueryNo={query_no}"
 
         return RequestOption(
@@ -132,7 +134,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_GET,
             url=url,
             meta={
-                "container_no": container_no,
+                "container_nos": container_nos,
             },
         )
 
@@ -140,7 +142,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         return f"{self.name}.json"
 
     def handle(self, response):
-        container_no = response.meta["container_no"]
+        container_nos = response.meta["container_nos"]
 
         tables = response.css("table[style]")
 
@@ -161,14 +163,40 @@ class ContainerRoutingRule(BaseRoutingRule):
         gate_out_date = container_table.extract_cell("G.O.Date")
 
         yield TerminalItem(
-            container_no=container_no,
+            container_no=container_nos[0],
             mbl_no=mbl_no,
             last_free_day=last_free_day,
             gate_out_date=gate_out_date,
         )
+        yield NextRoundRoutingRule.build_request_option(container_nos=container_nos)
 
 
 # -------------------------------------------------------------------------------
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    name = "NEXT_ROUND"
+
+    @classmethod
+    def build_request_option(cls, container_nos: List) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://eval.edi.hardcoretech.co/c/livez",
+            meta={
+                "container_nos": container_nos,
+            },
+        )
+
+    def handle(self, response):
+        container_nos = response.meta["container_nos"]
+
+        if len(container_nos) <= MAX_PAGE_NUM:
+            return
+
+        container_nos = container_nos[MAX_PAGE_NUM:]
+
+        yield QueryNoRoutingRule.build_request_option(container_nos=container_nos)
 
 
 class GeneralTableLocator(BaseTable):
