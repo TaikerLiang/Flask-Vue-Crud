@@ -1,10 +1,10 @@
-import os
 import pprint
 import traceback
 from typing import Dict, Optional
 
 from scrapy.exceptions import DropItem
 
+from crawler.core.pipelines import BaseItemPipeline
 from crawler.core_rail import items as rail_items
 from crawler.core_rail.base import (
     RAIL_RESULT_STATUS_DATA,
@@ -12,33 +12,11 @@ from crawler.core_rail.base import (
     RAIL_RESULT_STATUS_ERROR,
     RAIL_RESULT_STATUS_FATAL,
 )
-from crawler.services.edi_service import EdiClientService
 
 
-class BaseRailItemPipeline:
+class RailItemPipeline(BaseItemPipeline):
     def __init__(self):
-        # edi client setting
-        user = os.environ.get("EDI_ENGINE_USER")
-        token = os.environ.get("EDI_ENGINE_TOKEN")
-        url = (os.environ.get("EDI_ENGINE_BASE_URL") or "") + "tracking-rail/local/"
-        self.edi_client = EdiClientService(url=url, edi_user=user, edi_token=token)
-
-    def handle_err_result(self, collector, task_id: int, result: Dict):
-        if collector.is_default():
-            status_code, text = self.edi_client.send_provider_result_back(
-                task_id=task_id, provider_code="scrapy_cloud_api", item_result=result
-            )
-        else:
-            item_result = collector.build_final_data()
-            status_code, text = self.edi_client.send_provider_result_back(
-                task_id=task_id, provider_code="scrapy_cloud_api", item_result=item_result
-            )
-        return status_code, text
-
-
-class RailItemPipeline(BaseRailItemPipeline):
-    def __init__(self):
-        super().__init__()
+        super().__init__("tracking-rail/local/")
 
     @classmethod
     def get_setting_name(cls):
@@ -85,9 +63,7 @@ class RailItemPipeline(BaseRailItemPipeline):
         item_result = self._collector.build_final_data()
         task_id = item_result.get("request_args", {}).get("task_id")
         if task_id:
-            status_code, text = self.edi_client.send_provider_result_back(
-                task_id=task_id, provider_code="scrapy_cloud_api", item_result=item_result
-            )
+            status_code, text = self.send_provider_result_to_edi_client(task_id=task_id, item_result=item_result)
             res.append({"task_id": task_id, "status_code": status_code, "text": text, "data": item_result})
             return res
         else:
@@ -104,9 +80,9 @@ class RailItemPipeline(BaseRailItemPipeline):
 # ---------------------------------------------------------------------------------------------------------------------
 
 
-class RailMultiItemsPipeline(BaseRailItemPipeline):
+class RailMultiItemsPipeline(BaseItemPipeline):
     def __init__(self):
-        super().__init__()
+        super().__init__("tracking-rail/local/")
         self._collector_map = {}
 
     @classmethod
@@ -180,9 +156,7 @@ class RailMultiItemsPipeline(BaseRailItemPipeline):
                 item_result = collector.build_final_data()
 
             if item_result:
-                status_code, text = self.edi_client.send_provider_result_back(
-                    task_id=task_id, provider_code="scrapy_cloud_api", item_result=item_result
-                )
+                status_code, text = self.send_provider_result_to_edi_client(task_id=task_id, item_result=item_result)
                 res.append({"task_id": task_id, "status_code": status_code, "text": text, "data": item_result})
 
         return res
