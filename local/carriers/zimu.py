@@ -1,14 +1,18 @@
 import logging
 import random
+import string
 import time
 
 import scrapy
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    StaleElementReferenceException,
+    TimeoutException,
+)
 from selenium.webdriver.common.keys import Keys
 
 from local.core import BaseLocalCrawler, BaseSeleniumContentGetter
 from local.exceptions import AccessDeniedError, DataNotFoundError
-from local.proxy import HydraproxyProxyManager, ProxyManager
 from src.crawler.spiders.carrier_zimu import MainInfoRoutingRule
 
 logger = logging.getLogger("local-crawler-zimu")
@@ -24,27 +28,55 @@ class ZimuContentGetter(BaseSeleniumContentGetter):
         try:
             cookie_btn = self.driver.find_element_by_css_selector(accept_btn_css)
             cookie_btn.click()
-            time.sleep(3)
         except (TimeoutException, NoSuchElementException):
             pass
 
-    def check_denied(self, res):
-        response = scrapy.Selector(text=res)
+    def check_denied(self):
+        response = scrapy.Selector(text=self.driver.page_source)
 
         alter_msg = response.xpath("/html/body/h1")
         if alter_msg:
             return True
         return False
 
-    def search(self, mbl_no: str):
-        self.driver.get("https://api.myip.com/")
-        time.sleep(3)
-        self.driver.get("https://www.zim.com/tools/track-a-shipment")
-        if self.proxy:
-            time.sleep(20)
-        else:
-            time.sleep(5)
+    def randomize(self, random_count):
+        probabilities = [
+            0.3,  # typing
+            0.1,  # mouse movement
+            0.2,  # click
+        ]
 
+        if self.driver.current_url != "https://www.zim.com/tools/track-a-shipment":
+            self.driver.get("https://www.zim.com/tools/track-a-shipment")
+
+        for i in range(random_count):
+            self.resting_mouse(end=[random.randint(10, 1900), random.randint(200, 1060)])
+            if random.random() < probabilities[0]:
+                search_bar = self.driver.find_element_by_css_selector("input[name='consnumber']")
+                self.slow_type(search_bar, self.get_random_string())
+                search_bar.send_keys(Keys.RETURN)
+                time.sleep(2)
+                search_bar = self.driver.find_element_by_css_selector("input[name='consnumber']")
+                for _ in range(random.randint(6, 9)):
+                    search_bar.send_keys(Keys.BACKSPACE)
+                    time.sleep(float(random.uniform(0.05, 0.3)))
+
+            if random.random() < probabilities[1]:
+                self.resting_mouse(end=[random.randint(10, 1900), random.randint(200, 1060)])
+
+            if random.random() < probabilities[2]:
+                self.click_mouse()
+                time.sleep(2)
+
+            if self.driver.current_url != "https://www.zim.com/tools/track-a-shipment":
+                self.driver.back()
+
+    def search(self, mbl_no: str):
+        self.driver.get("https://www.zim.com/tools/track-a-shipment")
+        if self.check_denied():
+            raise AccessDeniedError()
+
+        self.randomize(random.randint(1, 3))
         self._accept_cookie()
         self.close_questionnaire()
         try:
@@ -52,17 +84,16 @@ class ZimuContentGetter(BaseSeleniumContentGetter):
         except NoSuchElementException:
             pass
 
-        for i in range(random.randint(1, 3)):
-            self.move_mouse_to_random_position()
+        self.randomize(random.randint(1, 3))
 
-        search_bar = self.driver.find_element_by_css_selector("input[name='consnumber']")
-        self.action.move_to_element(search_bar).click().perform()
-        self.slow_type(search_bar, mbl_no)
-        search_bar.send_keys(Keys.RETURN)
-        if self.proxy:
-            time.sleep(16)
-        else:
-            time.sleep(7)
+        try:
+            search_bar = self.driver.find_element_by_css_selector("input[name='consnumber']")
+            self.action.move_to_element(search_bar).click().perform()
+            self.slow_type(search_bar, mbl_no)
+            search_bar.send_keys(Keys.RETURN)
+            time.sleep(2)
+        except (NoSuchElementException, StaleElementReferenceException):
+            self.retry(mbl_no)
 
         self.close_questionnaire()
 
@@ -74,44 +105,49 @@ class ZimuContentGetter(BaseSeleniumContentGetter):
         return self.driver.page_source
 
     def get_random_string(self):
-        return "".join(random.choice(string.ascii_uppercase + string.digits) for _ in range(5))
+        return "".join(random.choice(string.ascii_uppercase + string.digits) for _ in range(random.randint(3, 5)))
 
     def close_questionnaire(self):
         try:
             self.driver.find_element_by_xpath('//*[@id="error-modal-newsletter-popup"]/div/div/button[1]').click()
-            time.sleep(2)
-        except:
+        except:  # noqa: E722
             pass
 
     def retry(self, mbl_no: str):
-        self.driver.back()
-        time.sleep(2)
-        for i in range(random.randint(1, 3)):
-            self.move_mouse_to_random_position()
+        logger.info(f"retry {self.driver.current_url}")
+        if self.driver.current_url != "chrome://welcome/":
+            self.driver.back()
+        if self.driver.current_url != "https://www.zim.com/tools/track-a-shipment":
+            self.driver.get("https://www.zim.com/tools/track-a-shipment")
+
+        if self.check_denied():
+            raise AccessDeniedError()
+
+        self.randomize(random.randint(1, 3))
+        self._accept_cookie()
+        self.close_questionnaire()
 
         if random.randint(1, 6) > 4:
             icon = self.driver.find_element_by_xpath("/html/body/div[4]/header/div[3]/div/div[1]/a/img")
             self.action.move_to_element(icon).click().perform()
-            time.sleep(2)
             self.driver.back()
-            time.sleep(5)
+            self.randomize(random.randint(1, 3))
 
         if random.randint(1, 6) > 4:
             small_icon = self.driver.find_element_by_xpath(
                 '//*[@id="main"]/div/div/div/div/div/div/div/div/div[1]/div/div[2]/button'
             )
             self.action.move_to_element(small_icon).click().perform()
-            time.sleep(5)
+            self.randomize(random.randint(1, 3))
 
         if random.randint(1, 6) > 4:
             contact_us = self.driver.find_element_by_xpath("/html/body/div[4]/header/div[2]/ul/li[1]/ul/li[2]/a")
             self.action.move_to_element(contact_us).click().perform()
-            time.sleep(5)
             self.driver.back()
-            time.sleep(5)
-            self.scroll_down()
+            self.scroll_down(wait=False)
+            self.randomize(random.randint(1, 3))
 
-        self.resting_mouse()
+        self.resting_mouse(end=[random.randint(1600, 1750), random.randint(400, 850)])
         search_bar = self.driver.find_element_by_css_selector("input[name='consnumber']")
 
         if random.randint(1, 6) > 4:
@@ -124,41 +160,58 @@ class ZimuContentGetter(BaseSeleniumContentGetter):
             for _ in range(random.randint(6, 9)):
                 search_bar.send_keys(Keys.BACKSPACE)
                 time.sleep(float(random.uniform(0.05, 0.3)))
+
+        if search_bar.get_attribute("value") != mbl_no:
+            now_str = search_bar.get_attribute("value")
+            for _ in range(random.randint(len(now_str), len(now_str) + 3)):
+                search_bar.send_keys(Keys.BACKSPACE)
+                time.sleep(float(random.uniform(0.05, 0.15)))
             self.slow_type(search_bar, mbl_no)
+
         self.close_questionnaire()
         search_bar.send_keys(Keys.RETURN)
+        time.sleep(2)
         self.close_questionnaire()
-        time.sleep(5)
 
     def search_and_return(self, mbl_no: str):
-        resp = self.search(mbl_no=mbl_no)
-
-        if self.check_denied(resp) and not self.proxy:
+        # 10% chance to retry to increase chaos
+        if random.random() < 0.1:
             self.retry(mbl_no)
+        else:
+            self.search(mbl_no=mbl_no)
 
-        if not self.proxy:
-            rnd = random.randint(1, 8)
-            if rnd > 6:
+        if self.check_denied():
+            try:
+                self.retry(mbl_no)
+            finally:
+                if self.check_denied():
+                    raise AccessDeniedError()
+
+        rnd = random.randint(1, 8)
+        if rnd > 6:
+            try:
                 new_icon = self.driver.find_element_by_xpath(
                     '//*[@id="main"]/div/div/div/div/div/div/div/div/div[1]/div[2]/div[1]/div/dl[1]/dt[2]/a/span'
                 )
                 self.action.move_to_element(new_icon).click().perform()
-                time.sleep(2)
-            elif rnd > 3:
+            except NoSuchElementException:
+                self.retry(mbl_no)
+        elif rnd > 3:
+            try:
                 bus_icon = self.driver.find_element_by_xpath(
                     '//*[@id="main"]/div/div/div/div/div/div/div/div/div[1]/div[2]/div[1]/div/dl[2]/dd/a'
                 )
                 self.action.move_to_element(bus_icon).click().perform()
-                time.sleep(3)
                 windows = self.driver.window_handles
                 if len(windows) > 1:
                     self.driver.switch_to.window(windows[1])
                     self.driver.close()
                     self.driver.switch_to.window(windows[0])
+            except NoSuchElementException:
+                self.retry(mbl_no)
 
-            self.resting_mouse()
-            time.sleep(1)
-            self.scroll_down()
+        self.resting_mouse(end=[random.randint(1600, 1750), random.randint(400, 850)])
+        self.scroll_down(wait=False)
 
         return self.driver.page_source
 

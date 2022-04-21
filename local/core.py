@@ -104,9 +104,10 @@ class BaseSeleniumContentGetter:
     def close(self):
         self.driver.close()
 
-    def scroll_down(self):
+    def scroll_down(self, wait=True):
         self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(5)
+        if wait:
+            time.sleep(5)
 
     def scroll_up(self):
         self.driver.execute_script("window.scrollTo(0, 0);")
@@ -123,10 +124,12 @@ class BaseSeleniumContentGetter:
         locator = (By.CSS_SELECTOR, css)
         WebDriverWait(self.driver, wait_sec).until(EC.presence_of_element_located(locator))
 
-    def resting_mouse(self):  # move mouse to right of screen
+    def click_mouse(self):
+        pyautogui.click()
+
+    def resting_mouse(self, end):  # move mouse to right of screen
 
         start = pyautogui.position()
-        end = random.randint(1600, 1750), random.randint(400, 850)
 
         x2 = (start[0] + end[0]) / 3  # midpoint x
         y2 = (start[1] + end[1]) / 3  # midpoint y
@@ -158,7 +161,6 @@ class BaseSeleniumContentGetter:
             x, y = curve.evaluate(j / curve_steps)
             pyautogui.moveTo(x, y)  # Move to point in curve
             pyautogui.sleep(delay)  # Wait delay
-        time.sleep(2)
 
     def slow_type(self, elem, page_input):
         for letter in page_input:
