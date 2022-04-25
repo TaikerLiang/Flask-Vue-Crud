@@ -4,8 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core.base import SEARCH_TYPE_MBL
-from crawler.core.exceptions import GeneralError
+from crawler.core.base_new import SEARCH_TYPE_MBL
+from crawler.core.exceptions_new import GeneralError
 from crawler.spiders.carrier_zimu import MainInfoRoutingRule
 from test.spiders.carrier_zimu import main_info
 

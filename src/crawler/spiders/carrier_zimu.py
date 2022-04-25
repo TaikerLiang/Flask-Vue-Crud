@@ -5,19 +5,19 @@ from typing import Dict, List, Tuple, Union
 from pyppeteer.errors import TimeoutError
 import scrapy
 
-from crawler.core.base import DUMMY_URL_DICT, RESULT_STATUS_ERROR, SEARCH_TYPE_MBL
-from crawler.core.exceptions import (
+from crawler.core.base_new import DUMMY_URL_DICT, RESULT_STATUS_ERROR, SEARCH_TYPE_MBL
+from crawler.core.exceptions_new import (
     FormatError,
     GeneralError,
     SuspiciousOperationError,
     TimeOutError,
 )
-from crawler.core.items import DataNotFoundItem
-from crawler.core.proxy import ProxyManager
+from crawler.core.items_new import DataNotFoundItem, EndItem
+from crawler.core.proxy_new import ProxyManager
 from crawler.core.pyppeteer import PyppeteerContentGetter
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.items import (
+from crawler.core_carrier.base_spiders_new import BaseCarrierSpider
+from crawler.core_carrier.items_new import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
@@ -26,7 +26,7 @@ from crawler.core_carrier.items import (
     MblItem,
     VesselItem,
 )
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.request_helpers_new import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import (
     BaseTableCellExtractor,
@@ -59,7 +59,7 @@ class CarrierZimuSpider(BaseCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem) or isinstance(result, DataNotFoundItem):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -194,6 +194,14 @@ class MainInfoRoutingRule(BaseRoutingRule):
         for item in self._handle_item(response=response_selector, info_pack=info_pack):
             yield item
 
+        yield EndItem(task_id=task_id)
+
+    def _is_not_found(self, response):
+        return bool(response.css("section#noResult p"))
+
+    def _is_mbl_no_format_error(self, response):
+        return bool(response.css("span.field-validation-error"))
+
     def _handle_item(self, response, info_pack: Dict):
         main_info = self._extract_main_info(response=response)
 
@@ -267,12 +275,6 @@ class MainInfoRoutingRule(BaseRoutingRule):
                     location=LocationItem(name=container_status["location"]),
                 )
 
-    def _is_not_found(self, response):
-        return bool(response.css("section#noResult p"))
-
-    def _is_mbl_no_format_error(self, response):
-        return bool(response.css("span.field-validation-error"))
-
     def _extract_main_info(self, response: scrapy.Selector):
         mbl_no = response.css("dl.dl-inline dd::text").get()
 
@@ -281,7 +283,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         pod_dl = response.xpath("//dl[@class='dlist']/*[text()='POD']/..")
         if pod_dl:
-            pod_info = dict(self.extract_dl(dl=pod_dl))
+            pod_info = dict(self._extract_dl(dl=pod_dl))
         else:
             pod_info = {
                 "Arrival Date": "",
@@ -290,7 +292,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         routing_schedule_dl_list = response.css("dl.dl-list")
         routing_schedule_list = []
         for routing_schedule_dl in routing_schedule_dl_list:
-            routing_schedule_info = self.extract_dl(dl=routing_schedule_dl)
+            routing_schedule_info = self._extract_dl(dl=routing_schedule_dl)
             routing_schedule_list.extend(routing_schedule_info)
         routing_schedule = dict(routing_schedule_list)
 
@@ -332,7 +334,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             if not vessel_dl:
                 vessel = {}
             else:
-                vessel = dict(self.extract_dl(dl=vessel_dl))
+                vessel = dict(self._extract_dl(dl=vessel_dl))
             vessel_list.append(vessel)
 
         return vessel_list
@@ -346,7 +348,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             if not schedule_dl:
                 schedule = {}
             else:
-                may_empty_schedule = dict(self.extract_dl(dl=schedule_dl))
+                may_empty_schedule = dict(self._extract_dl(dl=schedule_dl))
                 schedule = {} if "" in may_empty_schedule else may_empty_schedule
             schedule_list.append(schedule)
 
@@ -457,7 +459,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
         return container_status_list
 
-    def extract_dl(self, dl: scrapy.Selector, dt_extractor=None, dd_extractor=None) -> List[Tuple[str, str]]:
+    def _extract_dl(self, dl: scrapy.Selector, dt_extractor=None, dd_extractor=None) -> List[Tuple[str, str]]:
         """
         <dl>
             <dt></dt> --+-- pair
