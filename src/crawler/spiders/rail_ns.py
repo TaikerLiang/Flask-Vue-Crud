@@ -10,14 +10,10 @@ from selenium.webdriver.support.wait import WebDriverWait
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core.table import BaseTable, TableExtractor
+from crawler.core_rail.base import RAIL_RESULT_STATUS_ERROR
 from crawler.core_rail.base_spiders import BaseMultiRailSpider
 from crawler.core_rail.exceptions import DriverMaxRetryError, RailResponseFormatError
-from crawler.core_rail.items import (
-    BaseRailItem,
-    DebugItem,
-    InvalidContainerNoItem,
-    RailItem,
-)
+from crawler.core_rail.items import BaseRailItem, DebugItem, ExportErrorData, RailItem
 from crawler.core_rail.request_helpers import RequestOption
 from crawler.core_rail.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_extractors import BaseTableCellExtractor
@@ -68,7 +64,7 @@ class RailNSSpider(BaseMultiRailSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, RailItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, RailItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
@@ -148,7 +144,11 @@ class ContainerRoutingRule(BaseRoutingRule):
         if self._is_some_container_nos_invalid(response=response):
             invalid_container_nos = self._extract_invalid_container_nos(response=response, container_nos=container_nos)
             for cno in invalid_container_nos:
-                yield InvalidContainerNoItem(container_no=cno)
+                yield ExportErrorData(
+                    container_no=cno,
+                    detail="Data was not found",
+                    status=RAIL_RESULT_STATUS_ERROR,
+                )
 
         container_infos = self._extract_container_infos(response=response)
         for valid_c_no in set(container_nos) - set(invalid_container_nos):
