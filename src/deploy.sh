@@ -30,11 +30,16 @@ elif [ "x$target" = "xeval" ]; then
     shub image build 407696 -f Dockerfile.eval
     shub image push 407696
     shub image deploy 407696
-elif [ "x$target" = "xdev" ]; then
+elif [ "x$target" = "xqa" ]; then
     echo "deploy to scrapy cloud project: 544508"
     shub image build 544508 -f Dockerfile.dev
     shub image push 544508
     shub image deploy 544508
+elif [ "x$target" = "xdev" ]; then
+    echo "deploy to scrapy cloud project: 592363"
+    shub image build 592363 -f Dockerfile.dev
+    shub image push 592363
+    shub image deploy 592363
 else
     echo "invalid -t paramter, one of prd/eval/dev only"
 fi
