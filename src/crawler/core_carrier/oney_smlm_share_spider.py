@@ -264,6 +264,9 @@ class FirstTierRoutingRule(BaseRoutingRule):
                 base_url=base_url,
             )
 
+        if not container_info_list:
+            yield EndItem(task_id=task_id)
+
     def _is_search_no_invalid(self, response_dict):
         return "list" not in response_dict
 

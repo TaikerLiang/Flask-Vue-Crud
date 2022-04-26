@@ -283,6 +283,7 @@ class SearchRoutingRule(BaseRoutingRule):
                 container_list = self._extract_container_list(response=response)
 
                 for container_no in container_list:
+                    yield EndItem(task_id=task_ids[0], remaining_num=1)
                     yield RecaptchaRule.build_request_option(
                         base_url=base_url,
                         search_nos=[container_no],
@@ -290,7 +291,8 @@ class SearchRoutingRule(BaseRoutingRule):
                         search_type=SEARCH_TYPE_CONTAINER,
                     )
 
-                yield EndItem(task_id=task_ids[0], remaining_num=len(container_list))
+                if not container_list:
+                    yield EndItem(task_id=task_ids[0])
 
             elif mbl_status == STATUS_WEBSITE_SUSPEND:
                 research_times = response.meta["research_times"]

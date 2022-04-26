@@ -263,11 +263,13 @@ class SearchRoutingRule(BaseRoutingRule):
                 container_list = self._extract_container_list(response=response)
 
                 for container_no in container_list:
+                    yield EndItem(task_id=task_id, remaining_num=1)
                     yield RecaptchaRule(search_type=SEARCH_TYPE_CONTAINER).build_request_option(
                         base_url=base_url, task_id=task_id, search_no=container_no
                     )
 
-                yield EndItem(task_id=task_id, remaining_num=len(container_list))
+                if not container_list:
+                    yield EndItem(task_id=task_id)
 
             elif mbl_status == STATUS_WEBSITE_SUSPEND:
                 raise FormatError(**info_pack, reason="Website suspend")
