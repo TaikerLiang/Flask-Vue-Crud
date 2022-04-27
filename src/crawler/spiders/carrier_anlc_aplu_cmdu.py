@@ -96,9 +96,12 @@ class ShareSpider(BaseCarrierSpider):
                 if result.get("remaining_num"):
                     self._enditem_remaining_num_dict.setdefault(result["task_id"], result["remaining_num"])
                 else:
-                    self._enditem_remaining_num_dict[result["task_id"]] -= 1
-                    if self._enditem_remaining_num_dict[result["task_id"]] == 0:
+                    if not self._enditem_remaining_num_dict.get(result["task_id"]):
                         yield result
+                    else:
+                        self._enditem_remaining_num_dict[result["task_id"]] -= 1
+                        if self._enditem_remaining_num_dict[result["task_id"]] == 0:
+                            yield result
             elif isinstance(result, RequestOption):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
                 yield self._build_request_by(option=proxy_option)

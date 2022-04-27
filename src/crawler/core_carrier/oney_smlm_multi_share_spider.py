@@ -366,16 +366,6 @@ class FirstTierRoutingRule(BaseRoutingRule):
                 task_id=task_id,
             )
 
-        if not container_info_list:
-            for container_info in container_info_list:
-                if self._search_type == SEARCH_TYPE_MBL:
-                    search_no = container_info["mbl_no"]
-                else:
-                    search_no = container_info["booking_no"]
-
-                index = search_nos.index(search_no)
-                yield EndItem(task_id=task_ids[index])
-
         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, base_url=base_url)
 
     def _is_json_response_invalid(self, response):
