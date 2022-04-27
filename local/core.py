@@ -1,12 +1,9 @@
 import abc
 import dataclasses
 import logging
-from pathlib import Path
 import random
 import string
 import time
-import urllib.request
-import zipfile
 
 import bezier
 import numpy as np
@@ -23,6 +20,7 @@ from seleniumwire.undetected_chromedriver.v2 import Chrome
 import undetected_chromedriver as us
 
 from local.config import PROXY_PASSWORD, PROXY_URL
+from local.plugin.plugin_loader import PluginLoader
 from local.proxy import HydraproxyProxyManager
 
 logger = logging.getLogger("seleniumwire")
@@ -60,30 +58,7 @@ class BaseSeleniumContentGetter:
         options.add_argument("--disable-blink-features=AutomationControlled")
 
         if self._need_anticaptcha:
-            # Check whether the plugin is exist
-            logging.info("Check whether anticaptcha plugin is exist ...")
-            file = Path("./plugin/")
-            if not (file.is_dir() and file.exists()):
-                # Download the plugin
-                logging.info("Downloading anticaptcha plugin ...")
-                url = "https://antcpt.com/anticaptcha-plugin.zip"
-                filehandle, _ = urllib.request.urlretrieve(url)
-
-                logging.info("Deploying anticaptcha plugin ...")
-                # Unzip it
-                with zipfile.ZipFile(filehandle, "r") as f:
-                    f.extractall("plugin")
-
-                    # Set API key in configuration file
-                    api_key = "fbe73f747afc996b624e8d2a95fa0f84"
-                    file = Path("./plugin/js/config_ac_api_key.js")
-                    file.write_text(
-                        file.read_text().replace(
-                            "antiCapthaPredefinedApiKey = ''", f"antiCapthaPredefinedApiKey = '{api_key}'"
-                        )
-                    )
-
-            options.add_argument("--load-extension=./plugin/")
+            options = PluginLoader.load(plugin_name="anticaptcha", options=options)
 
         if self.proxy:
             proxy_manager = HydraproxyProxyManager(logger=logger)
