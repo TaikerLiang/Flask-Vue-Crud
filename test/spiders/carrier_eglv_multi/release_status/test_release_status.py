@@ -3,7 +3,6 @@ from pathlib import Path
 import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
 
 from crawler.spiders.carrier_eglv_multi import ReleaseStatusRoutingRule
 from test.spiders.carrier_eglv_multi import release_status
@@ -26,17 +25,18 @@ def sample_loader(sample_loader):
 def test_release_status_handler(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
+    option = ReleaseStatusRoutingRule.build_request_option(
+        search_nos=[mbl_no],
+        task_ids=["1"],
+    )
+
     response = TextResponse(
-        url="https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do",
+        url=option.url,
         body=httptext,
         encoding="utf-8",
         request=Request(
-            url="https://www.shipmentlink.com/servlet/TDB1_CargoTracking.do",
-            meta={
-                "search_nos": [mbl_no],
-                "task_ids": ["1"],
-                "search_type": SHIPMENT_TYPE_MBL,
-            },
+            url=option.url,
+            meta=option.meta,
         ),
     )
 

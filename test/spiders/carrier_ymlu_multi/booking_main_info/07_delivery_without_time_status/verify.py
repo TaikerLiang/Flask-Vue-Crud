@@ -30,5 +30,5 @@ def verify(results: List):
         container_no="TTNU1129599",
         last_free_day=None,
         task_id=1,
-        terminal=LocationItem(name=None),
+        terminal_pod=LocationItem(name=None),
     )

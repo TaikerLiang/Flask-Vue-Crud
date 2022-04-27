@@ -1,12 +1,12 @@
 import abc
+import dataclasses
 from logging import Logger
-from typing import Dict
 import random
 import string
-import dataclasses
+from typing import Dict
 
-from .exceptions import ProxyMaxRetryError
 from .base import PROXY_GROUP_RESIDENTIAL
+from .exceptions import ProxyMaxRetryError
 
 
 @dataclasses.dataclass

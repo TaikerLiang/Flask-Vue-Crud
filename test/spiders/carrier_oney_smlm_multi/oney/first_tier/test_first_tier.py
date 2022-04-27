@@ -4,9 +4,9 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
-from crawler.spiders.carrier_oney_multi import CarrierOneySpider
+from crawler.core.base_new import SEARCH_TYPE_MBL
 from crawler.core_carrier.oney_smlm_multi_share_spider import FirstTierRoutingRule
+from crawler.spiders.carrier_oney_multi import CarrierOneySpider
 from test.spiders.carrier_oney_smlm_multi.oney import first_tier
 
 
@@ -47,7 +47,7 @@ def test_first_tier_handle(sub, search_nos, task_ids, base_url, sample_loader):
         ),
     )
 
-    rule = FirstTierRoutingRule(search_type=SHIPMENT_TYPE_MBL)
+    rule = FirstTierRoutingRule(search_type=SEARCH_TYPE_MBL)
     results = list(rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, "verify")

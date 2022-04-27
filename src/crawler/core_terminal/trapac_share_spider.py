@@ -1,30 +1,27 @@
-import time
 import dataclasses
 import random
 import string
-from typing import List, Dict
+import time
 from datetime import datetime, timedelta
+from typing import Dict, List
 from urllib.parse import urlencode
-import ujson as json
 
 import scrapy
+import ujson as json
 from scrapy import Selector
-
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.common.exceptions import NoSuchElementException
-from anticaptchaofficial.recaptchav2proxyless import *
 
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError, DataNotFoundError
+from crawler.core_carrier.exceptions import DataNotFoundError, LoadWebsiteTimeOutError
 from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
+from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 
 
@@ -354,10 +351,6 @@ class ContentGetter(ChromeContentGetter):
         cookies = self.get_cookies()
         self.press_search_button()
 
-        if self.get_google_recaptcha():
-            g_response = self.solve_google_recaptcha(self._company.lower_short)
-            return True, g_response, cookies
-
         return False, self.get_result_response_text(), cookies
 
     def accept_cookie(self):
@@ -365,7 +358,7 @@ class ContentGetter(ChromeContentGetter):
             cookie_btn = self._driver.find_element_by_xpath('//*[@id="cn-accept-cookie"]')
             cookie_btn.click()
             time.sleep(3)
-        except:
+        except Exception:
             pass
 
     def wait_for_appear(self, css: str, wait_sec: int):
@@ -398,22 +391,6 @@ class ContentGetter(ChromeContentGetter):
             element = self._driver.find_element_by_xpath('//*[@id="recaptcha-backup"]')
             return element
         except NoSuchElementException:
-            return None
-
-    def solve_google_recaptcha(self, location_name: str):
-        solver = recaptchaV2Proxyless()
-        solver.set_verbose(1)
-        solver.set_key("fbe73f747afc996b624e8d2a95fa0f84")
-        solver.set_website_url(f"https://{location_name}.trapac.com/")
-        solver.set_website_key("6LfCy7gUAAAAAHSPtJRrJIVQKeKQt_hrYbGSIpuF")
-
-        g_response = solver.solve_and_return_solution()
-
-        if g_response != 0:
-            print("g-response: " + g_response)
-            return g_response
-        else:
-            print("task finished with error " + solver.error_code)
             return None
 
     def get_proxy_username(self, option: ProxyOption) -> str:

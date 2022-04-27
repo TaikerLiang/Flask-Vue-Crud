@@ -4,7 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.spiders.carrier_eglv import BillMainInfoRoutingRule, CarrierCaptchaMaxRetryError
+from crawler.core.exceptions_new import MaxRetryError
+from crawler.spiders.carrier_eglv import BillMainInfoRoutingRule
 from test.spiders.carrier_eglv import main_info
 
 
@@ -30,7 +31,7 @@ def sample_loader(sample_loader):
 def test_main_info_handler(sub, mbl_no, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
-    option = BillMainInfoRoutingRule.build_request_option(mbl_no=mbl_no, verification_code="")
+    option = BillMainInfoRoutingRule.build_request_option(task_id="1", mbl_no=mbl_no, verification_code="")
 
     response = TextResponse(
         url=option.url,
@@ -50,13 +51,13 @@ def test_main_info_handler(sub, mbl_no, sample_loader):
 @pytest.mark.parametrize(
     "sub,mbl_no,expect_exception",
     [
-        ("e01_invalid_captcha_max_retry", "", CarrierCaptchaMaxRetryError),
+        ("e01_invalid_captcha_max_retry", "", MaxRetryError),
     ],
 )
 def test_main_info_handler_max_retry_error(sub, mbl_no, expect_exception, sample_loader):
     httptext = sample_loader.read_file(sub, "sample.html")
 
-    option = BillMainInfoRoutingRule.build_request_option(mbl_no=mbl_no, verification_code="")
+    option = BillMainInfoRoutingRule.build_request_option(task_id="1", mbl_no=mbl_no, verification_code="")
 
     response = TextResponse(
         url=option.url,

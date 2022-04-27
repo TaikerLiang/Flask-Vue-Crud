@@ -10,16 +10,21 @@ import numpy as np
 import pyautogui
 from scrapy import Request
 from scrapy.http import TextResponse
-import selenium.webdriver
-from selenium.webdriver import ActionChains
+from selenium.webdriver import ActionChains, ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
-from seleniumwire.undetected_chromedriver.v2 import Chrome
-import undetected_chromedriver as us
+from seleniumwire.undetected_chromedriver import Chrome
+import undetected_chromedriver as uc
 
-from local.config import PROXY_PASSWORD, PROXY_URL
+from local.config import (
+    CHROME_VERSION,
+    CHROMEDRIVER_PATH,
+    PROFILE_PATH,
+    PROXY_PASSWORD,
+    PROXY_URL,
+)
 from local.plugin.plugin_loader import PluginLoader
 from local.proxy import HydraproxyProxyManager
 
@@ -49,9 +54,7 @@ class BaseSeleniumContentGetter:
         self.proxy = proxy
         self._need_anticaptcha = need_anticaptcha
 
-        seleniumwire_options = {}
-        options = selenium.webdriver.ChromeOptions()
-
+        options = ChromeOptions()
         options.add_argument("--disable-dev-shm-usage")  # 使用共享內存RAM
         options.add_argument("--no-sandbox")
         options.add_argument("--window-size=1920,1080")
@@ -60,6 +63,14 @@ class BaseSeleniumContentGetter:
         if self._need_anticaptcha:
             options = PluginLoader.load(plugin_name="anticaptcha", options=options)
 
+        if PROFILE_PATH:
+            options.add_argument(f"--user-data-dir={PROFILE_PATH}")
+
+        kwargs = {
+            "version_main": CHROME_VERSION,
+            "driver_executable_path": CHROMEDRIVER_PATH,
+            "options": options,
+        }
         if self.proxy:
             proxy_manager = HydraproxyProxyManager(logger=logger)
             proxy_manager.renew_proxy()
@@ -69,9 +80,10 @@ class BaseSeleniumContentGetter:
                     "https": f"https://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_DOMAIN}",
                 }
             }
-            self.driver = Chrome(version_main=98, seleniumwire_options=seleniumwire_options, options=options)
-        else:
-            self.driver = us.Chrome(version_main=98, options=options)
+            kwargs["seleniumwire_options"] = seleniumwire_options
+
+        chrome_cls = Chrome if self.proxy else uc.Chrome
+        self.driver = chrome_cls(**kwargs)
         # self.driver.get("https://nowsecure.nl")
         # time.sleep(5)
         self.action = ActionChains(self.driver)

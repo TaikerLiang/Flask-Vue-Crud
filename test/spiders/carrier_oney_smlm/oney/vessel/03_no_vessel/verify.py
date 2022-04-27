@@ -1,4 +1,4 @@
-from crawler.core_carrier.items import VesselItem
+from crawler.core_carrier.items_new import VesselItem
 
 
 def verify(results):

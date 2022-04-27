@@ -1,4 +1,4 @@
-from crawler.core_carrier.items import (
+from crawler.core_carrier.items_new import (
     ContainerItem,
     ContainerStatusItem,
     LocationItem,
@@ -32,7 +32,8 @@ def verify(results):
         est_or_actual="A",
     )
 
-    assert results[-1] == MblItem(
+    # The lastest item is EndItem, the second last item is the lastest real data
+    assert results[-2] == MblItem(
         mbl_no="MEDUNG283959",
         pol=LocationItem(name="NINGBO, CN"),
         pod=LocationItem(name="SUAPE, BR"),

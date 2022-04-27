@@ -4,6 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
+from crawler.core.base_new import SEARCH_TYPE_MBL
 from crawler.spiders.carrier_eglv_multi import BillMainInfoRoutingRule
 from test.spiders.carrier_eglv_multi import main_info
 
@@ -41,8 +42,13 @@ def test_hidden_info(sub, mbl_no, sample_loader):
         request=Request(url=option.url, meta=option.meta),
     )
 
+    info_pack = {
+        "task_id": "1",
+        "search_no": mbl_no,
+        "search_type": SEARCH_TYPE_MBL,
+    }
     rule = BillMainInfoRoutingRule(content_getter=None)
-    results = rule._extract_hidden_info(response=response)
+    results = rule._extract_hidden_info(response=response, info_pack=info_pack)
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
     verifier = verify_module.Verifier()
@@ -75,8 +81,13 @@ def test_basic_info(sub, mbl_no, sample_loader):
         request=Request(url=option.url, meta=option.meta),
     )
 
+    info_pack = {
+        "task_id": "1",
+        "search_no": mbl_no,
+        "search_type": SEARCH_TYPE_MBL,
+    }
     rule = BillMainInfoRoutingRule(content_getter=None)
-    results = rule._extract_basic_info(response=response)
+    results = rule._extract_basic_info(response=response, info_pack=info_pack)
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
     verifier = verify_module.Verifier()

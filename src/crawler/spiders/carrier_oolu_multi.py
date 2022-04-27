@@ -248,7 +248,7 @@ class ContentGetter(ChromeContentGetter):
     #     assert len(windows) == 1
     #     self._driver.switch_to.window(windows[0])
 
-    def find_container_btn_and_click(self, container_btn_css):
+    def find_container_btn_and_click(self, container_btn_css: str, container_no: str):
         container_btn = self._driver.find_element_by_css_selector(container_btn_css)
         container_btn.click()
 
@@ -571,11 +571,9 @@ class CargoTrackingRule(BaseRoutingRule):
         container_list = self._extract_container_list(selector_map=selector_map)
         for i, container in enumerate(container_list):
             container_no = container["container_no"].strip()
-            click_element_css = f"a[id='form:link{i}']"
 
             try:
-                self._content_getter.find_container_btn_and_click(container_btn_css=click_element_css)
-                time.sleep(10)
+                self._switch_container_pane(ith_pane=i, container_no=container_no, info_pack=info_pack)
             except ReadTimeoutError:
                 url = self._content_getter.get_current_url()
                 self._content_getter.quit()
@@ -586,7 +584,13 @@ class CargoTrackingRule(BaseRoutingRule):
 
             response = Selector(text=self._content_getter.get_page_source())
 
-            for item in self._handle_container_response(response=response, task_id=task_id, container_no=container_no):
+            for item in self._handle_container_response(
+                response=response,
+                task_id=task_id,
+                container_no=container_no,
+                terminal_pod=routing_info["terminal_pod"],
+                terminal_deliv=routing_info["terminal_deliv"],
+            ):
                 yield item
 
         yield EndItem(task_id=task_id)
@@ -736,12 +740,21 @@ class CargoTrackingRule(BaseRoutingRule):
             top="Destination", left=table_locator.LAST_LEFT_HEADER, extractor=span_extractor
         )
 
+        if pod_info["port"] == final_dest:
+            terminal_pod = deliv_info["port"]
+            terminal_deliv = None
+        else:
+            terminal_pod = None
+            terminal_deliv = deliv_info["port"]
+
         routing_info = {
             "por": por,
             "pol": pol_info["port"],
             "pod": pod_info["port"],
             "place_of_deliv": deliv_info["port"],
             "final_dest": final_dest,
+            "terminal_pod": terminal_pod,
+            "terminal_deliv": terminal_deliv,
             "etd": etd,
             "atd": atd,
             "eta": eta,
@@ -774,23 +787,48 @@ class CargoTrackingRule(BaseRoutingRule):
             )
         return container_no_list
 
-    def _handle_container_response(self, response, task_id: str, container_no: str):
+    def _switch_container_pane(self, ith_pane: int, container_no: str, info_pack: Dict, max_retry_times: int = 3):
+        click_element_css = f"a[id='form:link{ith_pane}']"
+        title_container_no = ""
+
+        for i in range(1, max_retry_times + 1):
+            # Switch pane and wait
+            self._content_getter.find_container_btn_and_click(
+                container_btn_css=click_element_css, container_no=container_no
+            )
+            time.sleep(10 * i)
+
+            # Extract container_no of pane and compare it to parameter container_no
+            response = Selector(text=self._content_getter.get_page_source())
+            title_container_no = self._extract_container_no(response, info_pack=info_pack)
+            if title_container_no == container_no:
+                return
+
+        # Raise due to retry counts reach max_retry_times
+        info_pack["search_no"] = container_no
+        info_pack["search_type"] = SEARCH_TYPE_CONTAINER
+        raise MaxRetryError(
+            **info_pack,
+            reason=f"Container no mismatch: website={title_container_no}, ours={container_no}",
+        )
+
+    def _handle_container_response(
+        self, response, task_id: str, container_no: str, terminal_pod: Optional[str], terminal_deliv: Optional[str]
+    ):
         info_pack = {
             "task_id": task_id,
             "search_no": container_no,
             "search_type": SEARCH_TYPE_CONTAINER,
         }
 
-        title_container_no = self._extract_container_no(response, info_pack=info_pack)
-        if title_container_no != info_pack["search_no"]:
-            raise FormatError(
-                **info_pack,
-                reason=f"Container no mismatch: website={title_container_no}, ours={info_pack['search_no']}",
-            )
-
         locator = _PageLocator(info_pack=info_pack)
         selectors_map = locator.locate_selectors(response=response)
         detention_info = self._extract_detention_info(selectors_map, info_pack=info_pack)
+
+        if terminal_deliv:
+            railway = terminal_deliv.split("-")[0].strip()
+        else:
+            railway = None
 
         yield ContainerItem(
             task_id=info_pack["task_id"],
@@ -798,6 +836,9 @@ class CargoTrackingRule(BaseRoutingRule):
             container_no=info_pack["search_no"],
             last_free_day=detention_info["last_free_day"] or None,
             det_free_time_exp_date=detention_info["det_free_time_exp_date"] or None,
+            railway=railway,
+            terminal_pod=LocationItem(name=terminal_pod),
+            terminal_deliv=LocationItem(name=terminal_deliv),
         )
 
         container_status_list = self._extract_container_status_list(selectors_map)

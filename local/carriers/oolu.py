@@ -1,13 +1,13 @@
 import base64
+from io import BytesIO
 import logging
 import os
 import time
-from io import BytesIO
 from typing import Dict
 
+from PIL import Image
 import cv2
 import numpy as np
-from PIL import Image
 from scrapy import Selector
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver import ActionChains
@@ -18,6 +18,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from crawler.core.base_new import SEARCH_TYPE_BOOKING, SEARCH_TYPE_MBL
 from crawler.core.exceptions_new import AccessDeniedError, MaxRetryError
 from crawler.core.proxy import HydraproxyProxyManager
+from local.config import PROFILE_PATH
 from local.core import BaseLocalCrawler
 from src.crawler.core.selenium import ChromeContentGetter
 from src.crawler.spiders.carrier_oolu_multi import CargoTrackingRule
@@ -40,7 +41,9 @@ class ContentGetter(ChromeContentGetter):
             "https://ca.cargosmart.ai/js/analytics.client.core.js",
         ]
 
-        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless, block_urls=self.block_urls)
+        super().__init__(
+            proxy_manager=proxy_manager, is_headless=is_headless, block_urls=self.block_urls, profile_path=PROFILE_PATH
+        )
 
         logging.getLogger("seleniumwire").setLevel(logging.ERROR)
         logging.getLogger("hpack").setLevel(logging.INFO)
@@ -103,7 +106,7 @@ class ContentGetter(ChromeContentGetter):
     #     assert len(windows) == 1
     #     self._driver.switch_to.window(windows[0])
 
-    def find_container_btn_and_click(self, container_btn_css):
+    def find_container_btn_and_click(self, container_btn_css, container_no):
         container_btn = self._driver.find_element_by_css_selector(container_btn_css)
         container_btn.click()
 
@@ -160,7 +163,7 @@ class ContentGetter(ChromeContentGetter):
             icon_ele = self._get_slider_icon_ele()
             img_ele = self._get_bg_img_ele()
 
-            distance = self._get_element_slide_distance(icon_ele, img_ele, 1)
+            distance = self._get_element_slide_distance(icon_ele, img_ele, 0)
 
             if distance <= 100:
                 self._refresh()
@@ -306,7 +309,7 @@ class OoluLocalCrawler(BaseLocalCrawler):
         self._search_type = ""
         self._search_nos = []
         self.content_getter = ContentGetter(
-            proxy_manager=HydraproxyProxyManager(session="oolu", logger=logger), is_headless=True
+            proxy_manager=HydraproxyProxyManager(session="oolu", logger=logger), is_headless=False
         )
 
     def start_crawler(self, task_ids: str, mbl_nos: str, booking_nos: str, container_nos: str):
