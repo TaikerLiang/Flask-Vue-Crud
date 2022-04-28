@@ -267,38 +267,24 @@ class ContentGetter(ChromeContentGetter):
 
 class TrackAndTraceTableLocator(BaseTable):
     def parse(self, table: scrapy.Selector):
-        print("hihih")
         titles = table.css("span.ag-header-cell-text ::text").getall()
         titles = [t.strip() for t in titles]
-
-        print("titles", titles)
-
         content_divs = table.css(".ag-center-cols-container")
 
         for row_num, div in enumerate(content_divs):
             data_divs = div.css("div")
-
-            print("data_divs", data_divs)
 
             for data_id, data_div in enumerate(data_divs):
                 colindex = data_div.css("div::attr(aria-colindex)").extract()
                 if len(colindex) > 1:
                     continue
 
-                # print(data_id, data_div, data_div.css('div::text').extract(), data_div.css('div::attr(aria-colindex)').extract())
-
                 title_id = int(colindex[0]) - 1
                 title = titles[title_id]
-
-                # print(title, data_div)
 
                 self._td_map.setdefault(title, [])
                 self._td_map[title].append(data_div)
                 self.add_left_header_set(row_num)
-
-        from pprint import pprint
-
-        pprint(self._td_map)
 
 
 class DivCellExtractor(BaseTableCellExtractor):
