@@ -247,7 +247,7 @@ class MainRoutingRule(BaseRoutingRule):
         info["pol"] = LocationItem(name=main_data["PortOfLoad"])
         info["pod"] = LocationItem(name=main_data["PortOfDischarge"])
         if info["pod"] != main_data["ShippedTo"]:
-            info["place_of_deliv"] = main_data["ShippedTo"]
+            info["place_of_deliv"] = LocationItem(name=main_data["ShippedTo"])
 
         pattern = re.compile(r"^Tracking results provided by MSC on (?P<latest_update>.+)$")
         m = pattern.match(data["TrackingResultsLabel"])
