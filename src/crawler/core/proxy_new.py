@@ -1,8 +1,9 @@
 import abc
+import copy
 import dataclasses
+from logging import Logger
 import random
 import string
-from logging import Logger
 from typing import Dict
 
 from crawler.core.base_new import PROXY_GROUP_RESIDENTIAL
@@ -146,12 +147,12 @@ class HydraproxyProxyManager(ProxyManager):
 
     def __init__(self, session: str, logger: Logger):
         super().__init__(logger)
-        self._proxy_options = self.PROXY_OPTIONS_LIST
+        self._proxy_options = copy.copy(self.PROXY_OPTIONS_LIST)
 
     def renew_proxy(self, allow_reset=False):
         if not self._proxy_options:
             if allow_reset:
-                self._proxy_options = self.PROXY_OPTIONS_LIST
+                self._proxy_options = copy.copy(self.PROXY_OPTIONS_LIST)
             else:
                 raise MaxRetryError()
 
