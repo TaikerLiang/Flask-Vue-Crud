@@ -1,4 +1,5 @@
 import dataclasses
+from datetime import datetime
 import json
 import re
 import time
@@ -212,6 +213,7 @@ class MainRoutingRule(BaseRoutingRule):
         main_info = self._extract_main_info(data=data, task_id=task_ids[0], info_pack=info_pack)
         yield MblItem(**main_info)
 
+        current_date = datetime.strptime(data["CurrentDate"], "%d/%m/%Y")
         bill_data = data["BillOfLadings"][0]
         container_data_list = bill_data["ContainersInfo"]
         for container_data in container_data_list:
@@ -223,6 +225,7 @@ class MainRoutingRule(BaseRoutingRule):
 
             status_info_list = self._extract_status_info(
                 status_data_list=container_data["Events"],
+                current_date=current_date,
                 task_id=task_ids[0],
                 container_no=container_data["ContainerNumber"],
             )
@@ -260,13 +263,17 @@ class MainRoutingRule(BaseRoutingRule):
 
         return info
 
-    def _extract_status_info(self, status_data_list: List[Dict], task_id: str, container_no: str):
+    def _extract_status_info(
+        self, status_data_list: List[Dict], current_date: datetime, task_id: str, container_no: str
+    ):
         status_info_list = []
         for status_data in status_data_list:
             if len(status_data["Detail"]) == 2:
                 vessel, voyage = status_data["Detail"]
             else:
                 vessel, voyage = None, None
+
+            event_date = datetime.strptime(status_data["Date"], "%d/%m/%Y")
 
             status_info_list.append(
                 {
@@ -277,6 +284,7 @@ class MainRoutingRule(BaseRoutingRule):
                     "location": LocationItem(name=status_data["Location"]),
                     "vessel": vessel,
                     "voyage": voyage,
+                    "est_or_actual": "E" if event_date > current_date else "A",
                 }
             )
 
