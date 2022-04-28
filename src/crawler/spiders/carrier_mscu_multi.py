@@ -76,7 +76,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         yield self._build_request_by(option=option)
 
     def _prepare_start(self, search_nos: List, task_ids: List):
-        self._proxy_manager.renew_proxy()
+        self._proxy_manager.renew_proxy(allow_reset=True)
         option = MainRoutingRule.build_request_option(
             search_nos=search_nos, task_ids=task_ids, search_mode=self._search_mode
         )
