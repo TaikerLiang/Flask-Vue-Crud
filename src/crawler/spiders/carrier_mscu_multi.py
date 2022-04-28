@@ -202,16 +202,17 @@ class MainRoutingRule(BaseRoutingRule):
             )
             return
 
-        bill_data = json_response["Data"]["BillOfLadings"][0]
-        if bill_data["BillOfLadingNumber"] != search_nos[0]:
+        data = json_response["Data"]
+        if data["TrackingNumber"] != search_nos[0]:
             raise FormatError(
                 **info_pack,
-                reason=f"Search number not match, ours={search_nos[0]}, data={bill_data['BillOfLadingNumber']}",
+                reason=f"Search number not match, ours={search_nos[0]}, website's={data['TrackingNumber']}",
             )
 
-        main_info = self._extract_main_info(data=json_response["Data"], task_id=task_ids[0], info_pack=info_pack)
+        main_info = self._extract_main_info(data=data, task_id=task_ids[0], info_pack=info_pack)
         yield MblItem(**main_info)
 
+        bill_data = data["BillOfLadings"][0]
         container_data_list = bill_data["ContainersInfo"]
         for container_data in container_data_list:
             yield ContainerItem(
@@ -239,15 +240,14 @@ class MainRoutingRule(BaseRoutingRule):
         main_data = bill_data["GeneralTrackingInfo"]
 
         if self._search_type == SEARCH_TYPE_MBL:
-            info["mbl_no"] = bill_data["BillOfLadingNumber"]
+            info["mbl_no"] = data["TrackingNumber"]
         else:
-            info["booking_no"] = bill_data["BillOfLadingNumber"]
+            info["booking_no"] = data["TrackingNumber"]
 
         info["task_id"] = task_id
         info["pol"] = LocationItem(name=main_data["PortOfLoad"])
         info["pod"] = LocationItem(name=main_data["PortOfDischarge"])
-        if info["pod"] != main_data["ShippedTo"]:
-            info["place_of_deliv"] = LocationItem(name=main_data["ShippedTo"])
+        info["place_of_deliv"] = LocationItem(name=main_data["ShippedTo"])
 
         pattern = re.compile(r"^Tracking results provided by MSC on (?P<latest_update>.+)$")
         m = pattern.match(data["TrackingResultsLabel"])
