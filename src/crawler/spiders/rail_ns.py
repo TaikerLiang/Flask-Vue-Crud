@@ -129,7 +129,7 @@ class ContainerRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_nos = response.meta["container_nos"]
         event_code_mapper = EventCodeMapper()
-        content_getter = ContentGetter(proxy_manager=self._proxy_manager, is_headless=False)
+        content_getter = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
 
         response_text = ""
         try:
