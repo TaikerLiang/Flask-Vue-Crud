@@ -10,7 +10,6 @@ from selenium.webdriver.support.wait import WebDriverWait
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_rail.base import RAIL_RESULT_STATUS_ERROR
 from crawler.core_rail.base_spiders import BaseMultiRailSpider
 from crawler.core_rail.exceptions import DriverMaxRetryError, RailResponseFormatError
 from crawler.core_rail.items import BaseRailItem, DebugItem, ExportErrorData, RailItem
@@ -141,14 +140,14 @@ class ContainerRoutingRule(BaseRoutingRule):
         response = scrapy.Selector(text=response_text)
 
         invalid_container_nos = []
-        if self._is_some_container_nos_invalid(response=response):
-            invalid_container_nos = self._extract_invalid_container_nos(response=response, container_nos=container_nos)
-            for cno in invalid_container_nos:
-                yield ExportErrorData(
-                    container_no=cno,
-                    detail="Data was not found",
-                    status=RAIL_RESULT_STATUS_ERROR,
-                )
+        # if self._is_some_container_nos_invalid(response=response):
+        #     invalid_container_nos = self._extract_invalid_container_nos(response=response, container_nos=container_nos)
+        #     for cno in invalid_container_nos:
+        #         yield ExportErrorData(
+        #             container_no=cno,
+        #             detail="Data was not found",
+        #             status=RAIL_RESULT_STATUS_ERROR,
+        #         )
 
         container_infos = self._extract_container_infos(response=response)
         for valid_c_no in set(container_nos) - set(invalid_container_nos):
@@ -269,7 +268,7 @@ class TrackAndTraceTableLocator(BaseTable):
     def parse(self, table: scrapy.Selector):
         titles = table.css("span.ag-header-cell-text ::text").getall()
         titles = [t.strip() for t in titles]
-        content_divs = table.css(".ag-center-cols-container")
+        content_divs = table.css(".ag-center-cols-container div[role='row']")
 
         for row_num, div in enumerate(content_divs):
             data_divs = div.css("div")
@@ -284,7 +283,8 @@ class TrackAndTraceTableLocator(BaseTable):
 
                 self._td_map.setdefault(title, [])
                 self._td_map[title].append(data_div)
-                self.add_left_header_set(row_num)
+
+            self.add_left_header_set(row_num)
 
 
 class DivCellExtractor(BaseTableCellExtractor):
