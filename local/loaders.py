@@ -1,4 +1,4 @@
-from carriers import cmdu, eglv, hlcu, mscu, whlc, zimu
+from carriers import cmdu, eglv, mscu, whlc, zimu
 from terminals import trapac_jax, trapac_la, trapac_oak
 
 CARRIERS = [
@@ -7,7 +7,6 @@ CARRIERS = [
     eglv.EglvLocalCrawler,
     mscu.MscuLocalCrawler,
     cmdu.CmduLocalCrawler,
-    hlcu.HlcuLocalCrawler,
 ]
 
 CARRIER_CLASS_MAP = {c.code: c for c in CARRIERS}

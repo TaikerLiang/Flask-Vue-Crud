@@ -1,3 +1,4 @@
+import time
 from typing import List
 
 import scrapy
@@ -372,10 +373,13 @@ class ContainerStatusTableLocator(BaseTable):
 class ContentGetter(ChromeContentGetter):
     def __init__(self, proxy_manager, is_headless):
         super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
+        # If using proxy on hlcu website, may cause page reload infinitely and make hcaptcha not solvable
+        # super().__init__(proxy_manager=None, is_headless=is_headless, need_anticaptcha=True)
         self.retry_count = 0
 
     def connect(self):
         self._driver.get(SEARCH_URL)
+        time.sleep(5)
 
     def restart(self):
         if self.retry_count >= MAX_RETRY_COUNT:

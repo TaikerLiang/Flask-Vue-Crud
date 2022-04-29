@@ -11,6 +11,7 @@ from undetected_chromedriver import Chrome as UCChrome
 
 from crawler.core.defines import BaseContentGetter
 from crawler.core.proxy import ProxyManager
+from crawler.plugin.plugin_loader import PluginLoader
 
 
 class SeleniumContentGetter(BaseContentGetter):
@@ -19,6 +20,7 @@ class SeleniumContentGetter(BaseContentGetter):
         proxy_manager: Optional[ProxyManager] = None,
         is_headless: bool = False,
         load_image: bool = True,
+        need_anticaptcha: bool = False,
         block_urls: List = [],
     ):
         self._is_first = True
@@ -26,6 +28,7 @@ class SeleniumContentGetter(BaseContentGetter):
         self.is_headless = is_headless and running_at == "scrapy"
         self._proxy_manager = proxy_manager
         self.load_image = load_image
+        self.need_anticaptcha = need_anticaptcha
         self._driver = None
         self.profile_path = os.environ.get("PROFILE_PATH")
         chrome_version = os.environ.get("CHROME_VERSION")
@@ -89,16 +92,21 @@ class ChromeContentGetter(SeleniumContentGetter):
         proxy_manager: Optional[ProxyManager] = None,
         is_headless: bool = False,
         load_image: bool = True,
+        need_anticaptcha: bool = False,
         block_urls: List = [],
     ):
         super().__init__(
             proxy_manager=proxy_manager,
             is_headless=is_headless,
             load_image=load_image,
+            need_anticaptcha=need_anticaptcha,
             block_urls=block_urls,
         )
 
         options = selenium.webdriver.ChromeOptions()
+
+        if self.need_anticaptcha:
+            options = PluginLoader.load(plugin_name="anticaptcha", options=options)
 
         if self.is_headless:
             options.add_argument("--headless")

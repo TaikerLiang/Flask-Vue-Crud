@@ -25,8 +25,8 @@ from local.config import (
     PROXY_PASSWORD,
     PROXY_URL,
 )
-from local.plugin.plugin_loader import PluginLoader
 from local.proxy import HydraproxyProxyManager
+from src.crawler.plugin.plugin_loader import PluginLoader
 
 logger = logging.getLogger("seleniumwire")
 logger.setLevel(logging.ERROR)
