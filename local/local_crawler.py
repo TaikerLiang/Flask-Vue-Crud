@@ -1,23 +1,23 @@
-import time
-import click
 import datetime
 import logging.config
+import time
 
-from selenium.common.exceptions import (
-    NoSuchElementException,
-    TimeoutException,
-    StaleElementReferenceException,
-)
-
+import click
 import config
 from config import ScreenColor
-from local.helpers import CrawlerHelper
-from local.defines import LocalTask
-from local.core import BaseLocalCrawler
-from local.services import DataHandler, TaskAggregator
-from local.exceptions import AccessDeniedError, DataNotFoundError, TimeoutError
-from local.utility import timeout
 from generator import TaskGenerator
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    StaleElementReferenceException,
+    TimeoutException,
+)
+
+from local.core import BaseLocalCrawler
+from local.defines import LocalTask
+from local.exceptions import AccessDeniedError, DataNotFoundError, TimeoutError
+from local.helpers import CrawlerHelper
+from local.services import DataHandler, TaskAggregator
+from local.utility import timeout
 from src.crawler.services.edi_service import EdiClientService
 
 logger = logging.getLogger("local-crawler")
@@ -156,7 +156,7 @@ def start(mode: str, task_type: str, num: int, proxy: bool):
                 logger.warning(
                     f"{ScreenColor.WARNING} (TimeoutException), time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"
                 )
-                logger.warning(f"Browser Closed")
+                logger.warning("Browser Closed")
                 local_crawler.quit()
                 time.sleep(1)
                 local_crawler = LocalCrawler(_type=_type, crawler=helper.get_crawler(code=_code, proxy=True))
@@ -164,15 +164,14 @@ def start(mode: str, task_type: str, num: int, proxy: bool):
                 logger.warning(
                     f"{ScreenColor.WARNING} (NoSuchElementException, StaleElementReferenceException), time consuming: {(time.time() - start_time):.2f}, code: {task.code} task_ids: {task.task_ids}"
                 )
-                continue
             except AccessDeniedError:
                 logger.warning(
                     f"{ScreenColor.WARNING} (AccessDeniedError), time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"
                 )
-                logger.warning(f"Browser Closed")
+                logger.warning("Browser Closed")
                 local_crawler.quit()
-                time.sleep(1)
-                local_crawler = LocalCrawler(_type=_type, crawler=helper.get_crawler(code=_code, proxy=True))
+                time.sleep(60 * 5)
+                local_crawler = LocalCrawler(_type=_type, crawler=helper.get_crawler(code=_code, proxy=False))
             except DataNotFoundError as e:
                 logger.warning(
                     f"{ScreenColor.WARNING} (DataNotFoundError), time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"
@@ -189,7 +188,7 @@ def start(mode: str, task_type: str, num: int, proxy: bool):
                 start_time = time.time()
                 print()
 
-        logger.warning(f"Browser Closed")
+        logger.warning("Browser Closed")
         local_crawler.quit()
 
 
