@@ -29,7 +29,7 @@ from crawler.core_carrier.request_helpers_new import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 
 URL = "https://www.msc.com"
-MAX_RETRY_COUNT = 3
+MAX_RETRY_COUNT = 10
 
 
 @dataclasses.dataclass
