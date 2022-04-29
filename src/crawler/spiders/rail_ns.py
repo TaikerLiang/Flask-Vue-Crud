@@ -7,6 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
+from crawler.core.base_new import RESULT_STATUS_ERROR
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core.table import BaseTable, TableExtractor
@@ -154,6 +155,11 @@ class ContainerRoutingRule(BaseRoutingRule):
             valid_c_no_without_check_code = valid_c_no[:-1]
             c_no_info = container_infos.get(valid_c_no_without_check_code)
             if c_no_info is None:
+                yield ExportErrorData(
+                    container_no=valid_c_no,
+                    detail="Data was not found",
+                    status=RESULT_STATUS_ERROR,
+                )
                 continue
 
             yield RailItem(
