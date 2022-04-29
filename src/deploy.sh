@@ -32,7 +32,7 @@ elif [ "x$target" = "xeval" ]; then
     shub image deploy 407696
 elif [ "x$target" = "xqa" ]; then
     echo "deploy to scrapy cloud project: 544508"
-    shub image build 544508 -f Dockerfile.dev
+    shub image build 544508 -f Dockerfile.qa
     shub image push 544508
     shub image deploy 544508
 elif [ "x$target" = "xdev" ]; then
