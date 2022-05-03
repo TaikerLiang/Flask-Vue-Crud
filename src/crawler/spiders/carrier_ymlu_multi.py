@@ -1407,7 +1407,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                     location=LocationItem(name=container_status["location_name"]),
                     transport=container_status["transport"] or None,
                 )
-                if "Rail" in container_status["transport"]:
+                if container_status["description"] == "Loaded on Rail":
                     rail = container_status["location_name"]
             if rail:
                 yield ContainerItem(
