@@ -25,6 +25,7 @@ from local.config import (
     PROXY_PASSWORD,
     PROXY_URL,
 )
+from local.plugin.plugin_loader import PluginLoader
 from local.proxy import HydraproxyProxyManager
 
 logger = logging.getLogger("seleniumwire")
@@ -49,14 +50,19 @@ class BaseSeleniumContentGetter:
     PROXY_URL = PROXY_URL
     PROXY_PASSWORD = PROXY_PASSWORD
 
-    def __init__(self, proxy: bool):
+    def __init__(self, proxy: bool, need_anticaptcha: bool = False):
         self.proxy = proxy
+        self._need_anticaptcha = need_anticaptcha
 
         options = ChromeOptions()
         options.add_argument("--disable-dev-shm-usage")  # 使用共享內存RAM
         options.add_argument("--no-sandbox")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--disable-blink-features=AutomationControlled")
+
+        if self._need_anticaptcha:
+            options = PluginLoader.load(plugin_name="anticaptcha", options=options)
+
         if PROFILE_PATH:
             options.add_argument(f"--user-data-dir={PROFILE_PATH}")
 
