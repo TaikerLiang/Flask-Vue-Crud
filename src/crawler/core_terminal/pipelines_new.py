@@ -9,7 +9,8 @@ from crawler.core.base_new import (
     RESULT_STATUS_DEBUG,
     RESULT_STATUS_FATAL,
 )
-from crawler.core.items_new import DataNotFoundItem, ExportErrorData
+from crawler.core.exceptions_new import DidNotEndError
+from crawler.core.items_new import DataNotFoundItem, EndItem, ExportErrorData
 from crawler.core.pipelines import BaseItemPipeline
 from crawler.core_terminal import items_new as terminal_items
 
@@ -36,8 +37,10 @@ class TerminalItemPipeline(BaseItemPipeline):
                 self._collector.collect_terminal_item(item=item)
             elif isinstance(item, DataNotFoundItem):
                 self._collector.collect_not_found_item(item=item)
+            elif isinstance(item, EndItem):
+                self._collector.set_is_end()
             elif isinstance(item, terminal_items.ExportFinalData):
-                res = self._send_result_back_to_edi_engine()
+                res = self._send_result_back_to_edi_engine(spider=spider)
                 return {"status": "CLOSE", "result": res}
             elif isinstance(item, terminal_items.DebugItem):
                 return self._collector.build_debug_data(item)
@@ -56,12 +59,14 @@ class TerminalItemPipeline(BaseItemPipeline):
 
         raise DropItem("item processed")
 
-    def _send_result_back_to_edi_engine(self):
+    def _send_result_back_to_edi_engine(self, spider):
         res = []
         if self._collector.has_error():
             item_result = self._collector.get_error_item()
         elif self._collector.has_not_found():
             item_result = self._collector.get_not_found_item()
+        elif not self._collector.is_end():
+            item_result = dict(DidNotEndError(task_id=spider.task_id).build_error_data())
         else:
             item_result = self._collector.build_final_data()
 
@@ -118,6 +123,8 @@ class TerminalMultiItemsPipeline(BaseItemPipeline):
                 collector.collect_terminal_item(item=item)
             elif isinstance(item, DataNotFoundItem):
                 collector.collect_not_found_item(item=item)
+            elif isinstance(item, EndItem):
+                collector.set_is_end()
             elif isinstance(item, ExportErrorData):
                 collector.collect_error_item(item=item)
             elif isinstance(item, terminal_items.ExportFinalData):
@@ -147,6 +154,8 @@ class TerminalMultiItemsPipeline(BaseItemPipeline):
                 item_result = collector.get_error_item()
             elif collector.has_not_found():
                 item_result = collector.get_not_found_item()
+            elif not collector.is_end():
+                item_result = dict(DidNotEndError(task_id=task_id).build_error_data())
             else:
                 item_result = collector.build_final_data()
 
@@ -170,6 +179,7 @@ class TerminalMultiItemsPipeline(BaseItemPipeline):
 
 class TerminalResultCollector:
     def __init__(self, request_args):
+        self._is_end = False
         self._request_args = dict(request_args)
         self._terminal = {}
         self._not_found = {}
@@ -218,6 +228,12 @@ class TerminalResultCollector:
         drop private keys (startswith '_')
         """
         return {k: v for k, v in item.items() if not k.startswith("_")}
+
+    def set_is_end(self):
+        self._is_end = True
+
+    def is_end(self):
+        return self._is_end
 
     def is_default(self):
         return False if self._terminal else True
