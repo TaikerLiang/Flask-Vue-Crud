@@ -214,6 +214,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
             schedule_list=raw_schedule_list, main_info=main_info, info_pack=info_pack
         )
 
+        task_id = info_pack["task_id"]
+
         if len(vessel_list) >= len(schedule_list):
             raise FormatError(**info_pack, reason=f"vessel_list: `{vessel_list}`, schedule_list: `{schedule_list}`")
 
@@ -222,6 +224,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             arrival_info = schedule_list[vessel_index + 1]
 
             yield VesselItem(
+                task_id=task_id,
                 vessel_key=vessel_index,
                 vessel=vessel.vessel,
                 voyage=vessel.voyage,
@@ -245,6 +248,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             place_of_deliv_name = place_of_deliv
 
         yield MblItem(
+            task_id=task_id,
             mbl_no=main_info["mbl_no"],
             vessel=to_pod_vessel.vessel,
             voyage=to_pod_vessel.voyage,
@@ -261,6 +265,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
         container_no_list = self._extract_container_no_list(response=response)
         for container_no in container_no_list:
             yield ContainerItem(
+                task_id=task_id,
                 container_key=container_no,
                 container_no=container_no,
                 terminal_pod=LocationItem(name=main_info["terminal_pod"] or None),
@@ -269,6 +274,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
             container_status_list = self._extract_container_status_list(response=response, container_no=container_no)
             for container_status in container_status_list:
                 yield ContainerStatusItem(
+                    task_id=task_id,
                     container_key=container_no,
                     description=container_status["description"],
                     local_date_time=container_status["local_time"],

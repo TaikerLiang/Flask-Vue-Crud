@@ -1,7 +1,6 @@
-from carriers import cmdu, eglv, mscu, whlc, zimu
+from carriers import cmdu, eglv, mscu, whlc
 
 CARRIERS = [
-    zimu.ZimuLocalCrawler,
     whlc.WhlcLocalCrawler,
     eglv.EglvLocalCrawler,
     mscu.MscuLocalCrawler,
