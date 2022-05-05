@@ -36,3 +36,5 @@ ghostdriver.log
 # vscode local config
 *.code-workspace
 .vscode
+
+temp/
