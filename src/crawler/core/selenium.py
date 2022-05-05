@@ -1,9 +1,13 @@
+import os
 import random
 import time
 from typing import Any, Dict, List, Optional
 
 import selenium.webdriver
-import seleniumwire.webdriver
+from selenium.webdriver import Chrome
+from seleniumwire.undetected_chromedriver import Chrome as WireUCChrome
+from seleniumwire.webdriver import Chrome as WireChrome
+from undetected_chromedriver import Chrome as UCChrome
 
 from crawler.core.defines import BaseContentGetter
 from crawler.core.proxy import ProxyManager
@@ -16,14 +20,17 @@ class SeleniumContentGetter(BaseContentGetter):
         is_headless: bool = False,
         load_image: bool = True,
         block_urls: List = [],
-        profile_path: Optional[str] = None,
     ):
         self._is_first = True
-        self.is_headless = is_headless
+        running_at = os.environ.get("RUNNING_AT") or "scrapy"
+        self.is_headless = is_headless and running_at == "scrapy"
         self._proxy_manager = proxy_manager
         self.load_image = load_image
         self._driver = None
-        self.profile_path = profile_path
+        self.profile_path = os.environ.get("PROFILE_PATH")
+        chrome_version = os.environ.get("CHROME_VERSION")
+        self.chrome_version = int(chrome_version) if chrome_version else None
+        self.chromedriver_path = os.environ.get("CHROMEDRIVER_PATH")
 
     def get_current_url(self):
         return self._driver.current_url
@@ -83,20 +90,22 @@ class ChromeContentGetter(SeleniumContentGetter):
         is_headless: bool = False,
         load_image: bool = True,
         block_urls: List = [],
-        profile_path: Optional[str] = None,
     ):
         super().__init__(
             proxy_manager=proxy_manager,
             is_headless=is_headless,
             load_image=load_image,
             block_urls=block_urls,
-            profile_path=profile_path,
         )
 
         options = selenium.webdriver.ChromeOptions()
 
         if self.is_headless:
             options.add_argument("--headless")
+            options.add_argument(
+                "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/88.0.4324.96 Safari/537.36"
+            )
 
         if not load_image:
             options.add_argument("blink-settings=imagesEnabled=false")  # 不加載圖片提高效率
@@ -108,20 +117,20 @@ class ChromeContentGetter(SeleniumContentGetter):
         options.add_argument("--disable-notifications")
         options.add_argument("--enable-javascript")
         options.add_argument("--disable-gpu")  # 規避部分chrome gpu bug
-        options.add_argument(
-            "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/88.0.4324.96 Safari/537.36"
-        )
         options.add_argument("--disable-dev-shm-usage")  # 使用共享內存RAM
         options.add_argument("--no-sandbox")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_argument("--allow-insecure-localhost")
-        # options.add_argument("auto-open-devtools-for-tabs")
 
         kwargs: dict[str, Any] = {
             "options": options,
         }
+
+        if not self.is_headless:
+            kwargs["version_main"] = self.chrome_version
+            kwargs["driver_executable_path"] = self.chromedriver_path
+
         if proxy_manager:
             proxy_manager.renew_proxy()
             seleniumwire_options = {
@@ -132,7 +141,8 @@ class ChromeContentGetter(SeleniumContentGetter):
             }
             kwargs["seleniumwire_options"] = seleniumwire_options
 
-        chrome_cls = seleniumwire.webdriver.Chrome if proxy_manager else selenium.webdriver.Chrome
+        chrome_classes = [WireChrome, WireUCChrome] if proxy_manager else [Chrome, UCChrome]
+        chrome_cls = chrome_classes[0] if self.is_headless else chrome_classes[1]
         self._driver = chrome_cls(**kwargs)
 
         default_block_urls = [
