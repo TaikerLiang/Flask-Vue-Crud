@@ -5,6 +5,9 @@ from typing import Any, Dict, List, Optional
 
 import selenium.webdriver
 from selenium.webdriver import Chrome
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 from seleniumwire.undetected_chromedriver import Chrome as WireUCChrome
 from seleniumwire.webdriver import Chrome as WireChrome
 from undetected_chromedriver import Chrome as UCChrome
@@ -84,6 +87,23 @@ class SeleniumContentGetter(BaseContentGetter):
             """
         )
         time.sleep(2)
+
+    def scroll_down(self):
+        self._driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(5)
+
+    def scroll_up(self):
+        self._driver.execute_script("window.scrollTo(0, 0);")
+        time.sleep(5)
+
+    def wait_for_appear(self, css: str, wait_sec: int):
+        locator = (By.CSS_SELECTOR, css)
+        WebDriverWait(self._driver, wait_sec).until(EC.presence_of_element_located(locator))
+
+    def slow_type(self, elem, page_input):
+        for letter in page_input:
+            time.sleep(float(random.uniform(0.05, 0.3)))
+            elem.send_keys(letter)
 
 
 class ChromeContentGetter(SeleniumContentGetter):
