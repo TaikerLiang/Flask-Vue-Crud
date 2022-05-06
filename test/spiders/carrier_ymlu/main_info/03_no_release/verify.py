@@ -29,7 +29,7 @@ def verify(results: List):
         container_key="TGHU5309509",
         container_no="TGHU5309509",
         last_free_day=None,
-        terminal=LocationItem(name=None),
+        terminal_pod=LocationItem(name=None),
     )
 
     assert isinstance(results[2], RequestOption)

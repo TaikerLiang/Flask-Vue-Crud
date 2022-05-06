@@ -1,4 +1,4 @@
-from crawler.core_carrier.items import (
+from crawler.core_carrier.items_new import (
     ContainerItem,
     ContainerStatusItem,
     LocationItem,
@@ -29,11 +29,13 @@ def verify(results):
         etd="17-Oct-2019",
         eta="22-Nov-2019",
         deliv_eta=None,
+        deliv_ata=None,
     )
 
     assert results[2] == ContainerItem(
         container_key="TRHU2925251",
         container_no="TRHU2925251",
+        terminal_pod=LocationItem(name=None),
     )
 
     assert results[3] == ContainerStatusItem(

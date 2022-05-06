@@ -594,7 +594,15 @@ class CargoTrackingRule(BaseRoutingRule):
                     reason=TIMEOUT_DESC.format(action=f"connecting to {url}"),
                 )
 
-            for item in self._handle_container_response(response=response, task_id=task_id, container_no=container_no):
+            response = Selector(text=self._content_getter.get_page_source())
+
+            for item in self._handle_container_response(
+                response=response,
+                task_id=task_id,
+                container_no=container_no,
+                terminal_pod=routing_info["terminal_pod"],
+                terminal_deliv=routing_info["terminal_deliv"],
+            ):
                 yield item
 
         yield EndItem(task_id=task_id)
@@ -744,12 +752,21 @@ class CargoTrackingRule(BaseRoutingRule):
             top="Destination", left=table_locator.LAST_LEFT_HEADER, extractor=span_extractor
         )
 
+        if pod_info["port"] == final_dest:
+            terminal_pod = deliv_info["port"]
+            terminal_deliv = None
+        else:
+            terminal_pod = None
+            terminal_deliv = deliv_info["port"]
+
         routing_info = {
             "por": por,
             "pol": pol_info["port"],
             "pod": pod_info["port"],
             "place_of_deliv": deliv_info["port"],
             "final_dest": final_dest,
+            "terminal_pod": terminal_pod,
+            "terminal_deliv": terminal_deliv,
             "etd": etd,
             "atd": atd,
             "eta": eta,
@@ -808,7 +825,9 @@ class CargoTrackingRule(BaseRoutingRule):
             + f", container no mismatch: website={title_container_no}, ours={container_no}",
         )
 
-    def _handle_container_response(self, response, task_id: str, container_no: str):
+    def _handle_container_response(
+        self, response, task_id: str, container_no: str, terminal_pod: Optional[str], terminal_deliv: Optional[str]
+    ):
         info_pack = {
             "task_id": task_id,
             "search_no": container_no,
@@ -819,12 +838,20 @@ class CargoTrackingRule(BaseRoutingRule):
         selectors_map = locator.locate_selectors(response=response)
         detention_info = self._extract_detention_info(selectors_map, info_pack=info_pack)
 
+        if terminal_deliv:
+            railway = terminal_deliv.split("-")[0].strip()
+        else:
+            railway = None
+
         yield ContainerItem(
             task_id=info_pack["task_id"],
             container_key=info_pack["search_no"],
             container_no=info_pack["search_no"],
             last_free_day=detention_info["last_free_day"] or None,
             det_free_time_exp_date=detention_info["det_free_time_exp_date"] or None,
+            railway=railway,
+            terminal_pod=LocationItem(name=terminal_pod),
+            terminal_deliv=LocationItem(name=terminal_deliv),
         )
 
         container_status_list = self._extract_container_status_list(selectors_map)

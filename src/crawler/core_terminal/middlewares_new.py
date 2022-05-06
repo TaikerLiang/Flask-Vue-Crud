@@ -41,6 +41,9 @@ class TerminalSpiderMiddleware:
 
             yield error_data
 
+            self._retrieve_queue_status_and_log(spider=spider)
+            spider.logger.warning(f"[{self.__class__.__name__}] ----- process_spider_output (FINAL)")
+            yield ExportFinalData()
             raise CloseSpider(error_data["status"])
 
         # [StackOverflow] How to get the number of requests in queue in scrapy?
@@ -56,6 +59,19 @@ class TerminalSpiderMiddleware:
         if (in_scheduler_count == 0) and (in_progress_count <= 1):
             spider.logger.warning(f"[{self.__class__.__name__}] ----- process_spider_output (FINAL)")
             yield ExportFinalData()
+
+    def _retrieve_queue_status_and_log(self, spider):
+        # [StackOverflow] How to get the number of requests in queue in scrapy?
+        # https://stackoverflow.com/questions/28169756/how-to-get-the-number-of-requests-in-queue-in-scrapy
+        in_scheduler_count = len(spider.crawler.engine.slot.scheduler)
+        in_progress_count = len(spider.crawler.engine.slot.inprogress)
+
+        spider.logger.info(
+            f"[{self.__class__.__name__}] ----- process_spider_output"
+            f" (in_scheduler={in_scheduler_count}, in_progress={in_progress_count})"
+        )
+
+        return in_scheduler_count, in_progress_count
 
 
 def build_error_data_from_exc(exc_type, exc_value, exc_traceback) -> ExportErrorData:

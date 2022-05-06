@@ -10,17 +10,23 @@ import numpy as np
 import pyautogui
 from scrapy import Request
 from scrapy.http import TextResponse
-import selenium.webdriver
-from selenium.webdriver import ActionChains
+from selenium.webdriver import ActionChains, ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
-from seleniumwire.undetected_chromedriver.v2 import Chrome
-import undetected_chromedriver as us
+from seleniumwire.undetected_chromedriver import Chrome
+import undetected_chromedriver as uc
 
-from local.config import PROXY_PASSWORD, PROXY_URL
+from local.config import (
+    CHROME_VERSION,
+    CHROMEDRIVER_PATH,
+    PROFILE_PATH,
+    PROXY_PASSWORD,
+    PROXY_URL,
+)
 from local.proxy import HydraproxyProxyManager
+from src.crawler.plugin.plugin_loader import PluginLoader
 
 logger = logging.getLogger("seleniumwire")
 logger.setLevel(logging.ERROR)
@@ -44,15 +50,27 @@ class BaseSeleniumContentGetter:
     PROXY_URL = PROXY_URL
     PROXY_PASSWORD = PROXY_PASSWORD
 
-    def __init__(self, proxy: bool):
-        seleniumwire_options = {}
-        options = selenium.webdriver.ChromeOptions()
+    def __init__(self, proxy: bool, need_anticaptcha: bool = False):
+        self.proxy = proxy
+        self._need_anticaptcha = need_anticaptcha
 
+        options = ChromeOptions()
         options.add_argument("--disable-dev-shm-usage")  # 使用共享內存RAM
         options.add_argument("--no-sandbox")
         options.add_argument("--window-size=1920,1080")
         options.add_argument("--disable-blink-features=AutomationControlled")
-        self.proxy = proxy
+
+        if self._need_anticaptcha:
+            options = PluginLoader.load(plugin_name="anticaptcha", options=options)
+
+        if PROFILE_PATH:
+            options.add_argument(f"--user-data-dir={PROFILE_PATH}")
+
+        kwargs = {
+            "version_main": CHROME_VERSION,
+            "driver_executable_path": CHROMEDRIVER_PATH,
+            "options": options,
+        }
         if self.proxy:
             proxy_manager = HydraproxyProxyManager(logger=logger)
             proxy_manager.renew_proxy()
@@ -62,9 +80,10 @@ class BaseSeleniumContentGetter:
                     "https": f"https://{proxy_manager.proxy_username}:{proxy_manager.proxy_password}@{proxy_manager.PROXY_DOMAIN}",
                 }
             }
-            self.driver = Chrome(version_main=98, seleniumwire_options=seleniumwire_options, options=options)
-        else:
-            self.driver = us.Chrome(version_main=98, options=options)
+            kwargs["seleniumwire_options"] = seleniumwire_options
+
+        chrome_cls = Chrome if self.proxy else uc.Chrome
+        self.driver = chrome_cls(**kwargs)
         # self.driver.get("https://nowsecure.nl")
         # time.sleep(5)
         self.action = ActionChains(self.driver)
@@ -91,9 +110,10 @@ class BaseSeleniumContentGetter:
     def close(self):
         self.driver.close()
 
-    def scroll_down(self):
+    def scroll_down(self, wait=True):
         self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(5)
+        if wait:
+            time.sleep(5)
 
     def scroll_up(self):
         self.driver.execute_script("window.scrollTo(0, 0);")
@@ -110,10 +130,12 @@ class BaseSeleniumContentGetter:
         locator = (By.CSS_SELECTOR, css)
         WebDriverWait(self.driver, wait_sec).until(EC.presence_of_element_located(locator))
 
-    def resting_mouse(self):  # move mouse to right of screen
+    def click_mouse(self):
+        pyautogui.click()
+
+    def resting_mouse(self, end):  # move mouse to right of screen
 
         start = pyautogui.position()
-        end = random.randint(1600, 1750), random.randint(400, 850)
 
         x2 = (start[0] + end[0]) / 3  # midpoint x
         y2 = (start[1] + end[1]) / 3  # midpoint y
@@ -145,7 +167,6 @@ class BaseSeleniumContentGetter:
             x, y = curve.evaluate(j / curve_steps)
             pyautogui.moveTo(x, y)  # Move to point in curve
             pyautogui.sleep(delay)  # Wait delay
-        time.sleep(2)
 
     def slow_type(self, elem, page_input):
         for letter in page_input:

@@ -257,12 +257,17 @@ class ItemExtractor:
             except NoSuchElementException:
                 railway = None
 
-            if mbl_item["pod"]["firms_code"]:
-                terminal = mbl_item["pod"]["firms_code"]
-            else:
-                terminal = mbl_item["pod"]["name"]
+            location_item = mbl_item["pod"]
+            terminal_pod = location_item["firms_code"] or location_item["name"]
+            location_item = mbl_item["place_of_deliv"]
+            terminal_deliv = location_item["firms_code"] or location_item["name"]
 
-            yield ContainerItem(**c_item, terminal=LocationItem(name=terminal), railway=railway)
+            yield ContainerItem(
+                **c_item,
+                terminal_pod=LocationItem(name=terminal_pod),
+                terminal_deliv=LocationItem(name=terminal_deliv),
+                railway=railway,
+            )
 
             response_text = content_getter.click_container_status_button(c_i)
             response_selector = scrapy.Selector(text=response_text)

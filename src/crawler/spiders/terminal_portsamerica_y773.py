@@ -10,5 +10,5 @@ class TerminalWbctSpider(PortsamericaShareSpider):
     company_info = CompanyInfo(
         upper_short="WBCT_LA",
         email="hc89scooter",
-        password="GoFt211008",
+        password="25450953",
     )

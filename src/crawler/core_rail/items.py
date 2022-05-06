@@ -13,6 +13,8 @@ class ExportErrorData(BaseRailItem):
     status = scrapy.Field()
     detail = scrapy.Field()
     traceback_info = scrapy.Field()
+    container_no = scrapy.Field()
+    task_id = scrapy.Field()
 
 
 class RailItem(BaseRailItem):

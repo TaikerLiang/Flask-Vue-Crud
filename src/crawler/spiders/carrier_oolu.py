@@ -3,7 +3,7 @@ from io import BytesIO
 import os
 import re
 import time
-from typing import Dict
+from typing import Dict, Optional
 
 from PIL import Image
 import cv2
@@ -457,6 +457,8 @@ class CargoTrackingRule(BaseRoutingRule):
                 task_id=task_id,
                 container_no=container["container_no"].strip(),
                 click_element_css=f"a[id='form:link{i}']",
+                terminal_pod=routing_info["terminal_pod"],
+                terminal_deliv=routing_info["terminal_deliv"],
             )
 
         yield EndItem(task_id=task_id)
@@ -587,12 +589,21 @@ class CargoTrackingRule(BaseRoutingRule):
             top="Destination", left=table_locator.LAST_LEFT_HEADER, extractor=span_extractor
         )
 
+        if pod_info["port"] == final_dest:
+            terminal_pod = deliv_info["port"]
+            terminal_deliv = None
+        else:
+            terminal_pod = None
+            terminal_deliv = deliv_info["port"]
+
         return {
             "por": por,
             "pol": pol_info["port"],
             "pod": pod_info["port"],
             "place_of_deliv": deliv_info["port"],
             "final_dest": final_dest,
+            "terminal_pod": terminal_pod,
+            "terminal_deliv": terminal_deliv,
             "etd": etd,
             "atd": atd,
             "eta": eta,
@@ -815,7 +826,14 @@ class ContainerStatusRule(BaseRoutingRule):
         self._content_getter = content_getter
 
     @classmethod
-    def build_request_option(cls, task_id: str, container_no: str, click_element_css: str) -> RequestOption:
+    def build_request_option(
+        cls,
+        task_id: str,
+        container_no: str,
+        click_element_css: str,
+        terminal_pod: Optional[str],
+        terminal_deliv: Optional[str],
+    ) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
@@ -824,6 +842,8 @@ class ContainerStatusRule(BaseRoutingRule):
                 "task_id": task_id,
                 "container_no": container_no,
                 "click_element_css": click_element_css,
+                "terminal_pod": terminal_pod,
+                "terminal_deliv": terminal_deliv,
             },
         )
 
@@ -835,6 +855,8 @@ class ContainerStatusRule(BaseRoutingRule):
         task_id = response.meta["task_id"]
         container_no = response.meta["container_no"]
         click_element_css = response.meta["click_element_css"]
+        terminal_pod = response.meta["terminal_pod"]
+        terminal_deliv = response.meta["terminal_deliv"]
 
         info_pack = {
             "task_id": task_id,
@@ -855,10 +877,12 @@ class ContainerStatusRule(BaseRoutingRule):
 
         response = Selector(text=self._content_getter.get_page_source())
 
-        for item in self._handle_response(response=response, info_pack=info_pack):
+        for item in self._handle_response(
+            response=response, terminal_pod=terminal_pod, terminal_deliv=terminal_deliv, info_pack=info_pack
+        ):
             yield item
 
-    def _handle_response(self, response, info_pack: Dict):
+    def _handle_response(self, response, terminal_pod: Optional[str], terminal_deliv: Optional[str], info_pack: Dict):
         container_no = info_pack["search_no"]
         title_container_no = self._extract_container_no(response, info_pack=info_pack)
 
@@ -877,6 +901,8 @@ class ContainerStatusRule(BaseRoutingRule):
             container_no=container_no,
             last_free_day=detention_info["last_free_day"] or None,
             det_free_time_exp_date=detention_info["det_free_time_exp_date"] or None,
+            terminal_pod=LocationItem(name=terminal_pod),
+            terminal_deliv=LocationItem(name=terminal_deliv),
         )
 
         container_status_list = self._extract_container_status_list(selectors_map)

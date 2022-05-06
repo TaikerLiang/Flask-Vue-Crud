@@ -7,17 +7,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
+from crawler.core.base_new import RESULT_STATUS_ERROR
 from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_rail.base_spiders import BaseMultiRailSpider
 from crawler.core_rail.exceptions import DriverMaxRetryError, RailResponseFormatError
-from crawler.core_rail.items import (
-    BaseRailItem,
-    DebugItem,
-    InvalidContainerNoItem,
-    RailItem,
-)
+from crawler.core_rail.items import BaseRailItem, DebugItem, ExportErrorData, RailItem
 from crawler.core_rail.request_helpers import RequestOption
 from crawler.core_rail.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_extractors import BaseTableCellExtractor
@@ -68,7 +64,7 @@ class RailNSSpider(BaseMultiRailSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, RailItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, RailItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
@@ -145,16 +141,25 @@ class ContainerRoutingRule(BaseRoutingRule):
         response = scrapy.Selector(text=response_text)
 
         invalid_container_nos = []
-        if self._is_some_container_nos_invalid(response=response):
-            invalid_container_nos = self._extract_invalid_container_nos(response=response, container_nos=container_nos)
-            for cno in invalid_container_nos:
-                yield InvalidContainerNoItem(container_no=cno)
+        # if self._is_some_container_nos_invalid(response=response):
+        #     invalid_container_nos = self._extract_invalid_container_nos(response=response, container_nos=container_nos)
+        #     for cno in invalid_container_nos:
+        #         yield ExportErrorData(
+        #             container_no=cno,
+        #             detail="Data was not found",
+        #             status=RAIL_RESULT_STATUS_ERROR,
+        #         )
 
         container_infos = self._extract_container_infos(response=response)
         for valid_c_no in set(container_nos) - set(invalid_container_nos):
             valid_c_no_without_check_code = valid_c_no[:-1]
             c_no_info = container_infos.get(valid_c_no_without_check_code)
             if c_no_info is None:
+                yield ExportErrorData(
+                    container_no=valid_c_no,
+                    detail="Data was not found",
+                    status=RESULT_STATUS_ERROR,
+                )
                 continue
 
             yield RailItem(
@@ -269,19 +274,23 @@ class TrackAndTraceTableLocator(BaseTable):
     def parse(self, table: scrapy.Selector):
         titles = table.css("span.ag-header-cell-text ::text").getall()
         titles = [t.strip() for t in titles]
-
-        content_divs = table.css(".ag-center-cols-container > div")
+        content_divs = table.css(".ag-center-cols-container div[role='row']")
 
         for row_num, div in enumerate(content_divs):
-            data_divs = div.css("div")[7:]
+            data_divs = div.css("div")
 
             for data_id, data_div in enumerate(data_divs):
-                title_id = data_id
+                colindex = data_div.css("div::attr(aria-colindex)").extract()
+                if len(colindex) > 1:
+                    continue
+
+                title_id = int(colindex[0]) - 1
                 title = titles[title_id]
 
                 self._td_map.setdefault(title, [])
                 self._td_map[title].append(data_div)
-                self.add_left_header_set(row_num)
+
+            self.add_left_header_set(row_num)
 
 
 class DivCellExtractor(BaseTableCellExtractor):

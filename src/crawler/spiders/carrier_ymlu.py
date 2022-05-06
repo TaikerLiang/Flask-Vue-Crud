@@ -4,8 +4,8 @@ import logging
 import re
 from typing import List, Tuple, Union
 
-import scrapy
 from python_anticaptcha import AnticaptchaClient, AnticaptchaException, ImageToTextTask
+import scrapy
 from scrapy import Selector
 
 from crawler.core.proxy import HydraproxyProxyManager
@@ -389,7 +389,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
                     container_key=container_no,
                     container_no=container_no,
                     last_free_day=last_free_day,
-                    terminal=LocationItem(name=firms_code),
+                    terminal_pod=LocationItem(name=firms_code),
                 )
 
                 follow_url = container_info["follow_url"]
@@ -733,7 +733,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
                     container_key=container_no,
                     container_no=container_no,
                     last_free_day=last_free_day,
-                    terminal=LocationItem(name=firms_code),
+                    terminal_pod=LocationItem(name=firms_code),
                 )
 
                 follow_url = container_info["follow_url"]
@@ -1152,7 +1152,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                     location=LocationItem(name=container_status["location_name"]),
                     transport=container_status["transport"] or None,
                 )
-                if "Rail" in container_status["transport"]:
+                if container_status["description"] == "Loaded on Rail":
                     rail = container_status["location_name"]
             if rail:
                 yield ContainerItem(

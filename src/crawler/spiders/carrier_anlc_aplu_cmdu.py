@@ -97,9 +97,12 @@ class ShareSpider(BaseCarrierSpider):
                 if result.get("remaining_num"):
                     self._enditem_remaining_num_dict.setdefault(result["task_id"], result["remaining_num"])
                 else:
-                    self._enditem_remaining_num_dict[result["task_id"]] -= 1
-                    if self._enditem_remaining_num_dict[result["task_id"]] == 0:
+                    if not self._enditem_remaining_num_dict.get(result["task_id"]):
                         yield result
+                    else:
+                        self._enditem_remaining_num_dict[result["task_id"]] -= 1
+                        if self._enditem_remaining_num_dict[result["task_id"]] == 0:
+                            yield result
             elif isinstance(result, RequestOption):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
                 yield self._build_request_by(option=proxy_option)
@@ -264,11 +267,13 @@ class SearchRoutingRule(BaseRoutingRule):
                 container_list = self._extract_container_list(response=response)
 
                 for container_no in container_list:
+                    yield EndItem(task_id=task_id, remaining_num=1)
                     yield RecaptchaRule(search_type=SEARCH_TYPE_CONTAINER).build_request_option(
                         base_url=base_url, task_id=task_id, search_no=container_no
                     )
 
-                yield EndItem(task_id=task_id, remaining_num=len(container_list))
+                if not container_list:
+                    yield EndItem(task_id=task_id)
 
             elif mbl_status == STATUS_WEBSITE_SUSPEND:
                 raise FormatError(**info_pack, reason="Website suspend")
