@@ -12,18 +12,22 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 import ujson as json
 
-from crawler.core.base import DUMMY_URL_DICT, RESULT_STATUS_ERROR, SEARCH_TYPE_CONTAINER
-from crawler.core.exceptions import (
+from crawler.core.base_new import (
+    DUMMY_URL_DICT,
+    RESULT_STATUS_ERROR,
+    SEARCH_TYPE_CONTAINER,
+)
+from crawler.core.exceptions_new import (
     GeneralFatalError,
     SuspiciousOperationError,
     TimeOutError,
 )
-from crawler.core.items import DataNotFoundItem
+from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem
-from crawler.core_terminal.request_helpers import RequestOption
+from crawler.core_terminal.base_spiders_new import BaseMultiTerminalSpider
+from crawler.core_terminal.items_new import DebugItem, TerminalItem
+from crawler.core_terminal.request_helpers_new import RequestOption
 from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 
@@ -103,6 +107,7 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
                 for t_id in t_ids:
                     result["task_id"] = t_id
                     yield result
+                    yield EndItem(task_id=t_id)
             elif isinstance(result, DataNotFoundItem):
                 c_no = result["search_no"]
                 t_ids = self.cno_tid_map[c_no]
@@ -187,7 +192,8 @@ class MainRoutingRule(BaseRoutingRule):
                 cookies=cookies,
             )
         else:
-            self.handle_response(response=res, container_nos=container_nos)
+            for item in self.handle_response(response=res, container_nos=container_nos):
+                yield item
 
     def handle_response(self, response, container_nos):
         container_response = scrapy.Selector(text=response)
@@ -371,7 +377,7 @@ class ContentGetter(ChromeContentGetter):
         cookies = self.get_cookies()
         self._press_search_button()
 
-        return False, self.get_result_response_text(), cookies
+        return False, self._get_result_response_text(), cookies
 
     def _accept_cookie(self):
         try:

@@ -4,8 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_CONTAINER
-from crawler.core.items import DataNotFoundItem
+from crawler.core.base_new import RESULT_STATUS_ERROR, SEARCH_TYPE_CONTAINER
+from crawler.core.items_new import DataNotFoundItem
 from crawler.core_terminal.trapac_share_spider import MainRoutingRule
 from crawler.spiders.terminal_trapac_y258 import TerminalTrapacLASpider
 from test.spiders.terminal_trapac_y258 import main
