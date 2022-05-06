@@ -435,7 +435,7 @@ class ContentGetter(ChromeContentGetter):
     def _get_result_response_text(self):
         result_table_css = "div#transaction-detail-result table"
 
-        self._wait_for_appear(css=result_table_css, wait_sec=15)
+        self._wait_for_appear(css=result_table_css, wait_sec=30)
         return self._driver.page_source
 
     def _wait_for_appear(self, css: str, wait_sec: int):
