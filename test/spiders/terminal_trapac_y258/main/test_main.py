@@ -4,8 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
-from crawler.core_terminal.items import ExportErrorData
+from crawler.core.base_new import RESULT_STATUS_ERROR, SEARCH_TYPE_CONTAINER
+from crawler.core.items_new import DataNotFoundItem
 from crawler.core_terminal.trapac_share_spider import MainRoutingRule
 from crawler.spiders.terminal_trapac_y258 import TerminalTrapacLASpider
 from test.spiders.terminal_trapac_y258 import main
@@ -18,7 +18,6 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
-@pytest.mark.skip
 @pytest.mark.parametrize(
     "sub,container_no",
     [
@@ -30,7 +29,8 @@ def test_main_routing_rule(sub, container_no, sample_loader):
     html_text = sample_loader.read_file(sub, "sample.html")
 
     option = MainRoutingRule.build_request_option(
-        container_no_list=[container_no],
+        container_nos=[container_no],
+        cno_tid_map={container_no: ["1"]},
         company_info=TerminalTrapacLASpider.company_info,
     )
     response = TextResponse(
@@ -43,13 +43,12 @@ def test_main_routing_rule(sub, container_no, sample_loader):
         ),
     )
     rule = MainRoutingRule()
-    results = list(rule.handle(response=response))
+    results = list(rule.handle_response(response=response.text, container_nos=[container_no]))
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
     verify_module.verify(results=results)
 
 
-@pytest.mark.skip
 @pytest.mark.parametrize(
     "sub,container_no",
     [
@@ -57,18 +56,18 @@ def test_main_routing_rule(sub, container_no, sample_loader):
     ],
 )
 def test_invalid_container_no(sub, container_no, sample_loader):
-    expect_data_list = [
-        ExportErrorData(
-            container_no=container_no,
-            detail="Data was not found",
-            status=TERMINAL_RESULT_STATUS_ERROR,
-        ),
-    ]
+    expect_data = DataNotFoundItem(
+        search_no=container_no,
+        search_type=SEARCH_TYPE_CONTAINER,
+        detail="Data was not found",
+        status=RESULT_STATUS_ERROR,
+    )
 
     html_text = sample_loader.read_file(sub, "sample.html")
 
     option = MainRoutingRule.build_request_option(
-        container_no_list=[container_no],
+        container_nos=[container_no],
+        cno_tid_map={container_no: ["1"]},
         company_info=TerminalTrapacLASpider.company_info,
     )
     response = TextResponse(
@@ -82,4 +81,4 @@ def test_invalid_container_no(sub, container_no, sample_loader):
     )
 
     rule = MainRoutingRule()
-    assert list(rule.handle(response=response)) == expect_data_list
+    assert list(rule.handle_response(response=response.text, container_nos=[container_no]))[-1] == expect_data
