@@ -14,11 +14,10 @@ from selenium.webdriver import ActionChains
 from selenium.webdriver.common.keys import Keys
 
 from crawler.core.base_new import DUMMY_URL_DICT, RESULT_STATUS_ERROR, SEARCH_TYPE_MBL
-from crawler.core.exceptions_new import SuspiciousOperationError
+from crawler.core.exceptions_new import AccessDeniedError, SuspiciousOperationError
 from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core_carrier.base_spiders_new import BaseMultiCarrierSpider
-from crawler.core_carrier.exceptions import AccessDeniedError
 from crawler.core_carrier.items_new import BaseCarrierItem, DebugItem
 from crawler.core_carrier.request_helpers_new import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
@@ -46,7 +45,9 @@ class CarrierZimuSpider(BaseMultiCarrierSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
-        request_option = MultiMainInfoRoutingRule.build_request_option(mbl_nos=self.search_nos, task_ids=self.task_ids)
+        request_option = MultiMainInfoRoutingRule.build_request_option(
+            search_nos=self.search_nos, task_ids=self.task_ids
+        )
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -79,32 +80,37 @@ class CarrierZimuSpider(BaseMultiCarrierSpider):
                 callback=self.parse,
             )
         else:
-            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
+            zip_list = list(zip(meta["task_ids"], meta["search_nos"]))
+            raise SuspiciousOperationError(
+                task_id=meta["task_ids"][0],
+                search_type=self.search_type,
+                reason=f"Unexpected request method: `{option.method}`, on (task_id, search_no): {zip_list}",
+            )
 
 
 class NextRoundRoutingRule(BaseRoutingRule):
     name = "ROUTING"
 
     @classmethod
-    def build_request_option(cls, mbl_nos: List, task_ids: List) -> RequestOption:
+    def build_request_option(cls, search_nos: List, task_ids: List) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=DUMMY_URL_DICT["eval_edi"],
-            meta={"mbl_nos": mbl_nos, "task_ids": task_ids},
+            meta={"search_nos": search_nos, "task_ids": task_ids},
         )
 
     def handle(self, response):
         task_ids = response.meta["task_ids"]
-        mbl_nos = response.meta["mbl_nos"]
+        search_nos = response.meta["search_nos"]
 
-        if len(mbl_nos) == 1 and len(task_ids) == 1:
+        if len(search_nos) == 1 and len(task_ids) == 1:
             return
 
         task_ids = task_ids[1:]
-        mbl_nos = mbl_nos[1:]
+        search_nos = search_nos[1:]
 
-        yield MultiMainInfoRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
+        yield MultiMainInfoRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
 
 class MultiMainInfoRoutingRule(MainInfoRoutingRule):
@@ -114,43 +120,41 @@ class MultiMainInfoRoutingRule(MainInfoRoutingRule):
         self._content_getter = content_getter
 
     @classmethod
-    def build_request_option(cls, mbl_nos: List, task_ids: List) -> RequestOption:
+    def build_request_option(cls, search_nos: List, task_ids: List) -> RequestOption:
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
             url=DUMMY_URL_DICT["eval_edi"],
             meta={
-                "mbl_nos": mbl_nos,
+                "search_nos": search_nos,
                 "task_ids": task_ids,
             },
         )
 
     def handle(self, response):
-        mbl_nos = response.meta["mbl_nos"]
+        search_nos = response.meta["search_nos"]
         task_ids = response.meta["task_ids"]
-        current_mbl_no = mbl_nos[0]
+        current_search_nos = search_nos[0]
         current_task_id = task_ids[0]
         info_pack = {
             "task_id": current_task_id,
-            "search_no": current_mbl_no,
+            "search_no": current_search_nos,
             "search_type": SEARCH_TYPE_MBL,
         }
 
-        response_text = self._content_getter.search(mbl_no=current_mbl_no)
+        response_text = self._content_getter.search_and_return(mbl_no=current_search_nos)
         response_selector = scrapy.Selector(text=response_text)
 
         if self._content_getter.check_denied():
-            raise AccessDeniedError()
+            raise AccessDeniedError(**info_pack, reason="Blocked during searching")
 
         if self._is_not_found(response_selector):
             yield DataNotFoundItem(
                 **info_pack,
-                mbl_no=current_mbl_no,
-                task_id=current_task_id,
                 status=RESULT_STATUS_ERROR,
                 detail="Data was not found",
             )
-            yield NextRoundRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
+            yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
             return
 
         for item in self._handle_item(response=response_selector, info_pack=info_pack):
@@ -158,7 +162,7 @@ class MultiMainInfoRoutingRule(MainInfoRoutingRule):
 
         yield EndItem(task_id=current_task_id)
 
-        yield NextRoundRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
+        yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
 
 class ContentGetter(ChromeContentGetter):
@@ -216,7 +220,7 @@ class ContentGetter(ChromeContentGetter):
     def search(self, mbl_no: str):
         self._driver.get("https://www.zim.com/tools/track-a-shipment")
         if self.check_denied():
-            raise AccessDeniedError()
+            return
 
         self.randomize(random.randint(1, 3))
         self._accept_cookie()
@@ -263,7 +267,7 @@ class ContentGetter(ChromeContentGetter):
             self._driver.get("https://www.zim.com/tools/track-a-shipment")
 
         if self.check_denied():
-            raise AccessDeniedError()
+            return
 
         self.randomize(random.randint(1, 3))
         self._accept_cookie()
@@ -327,7 +331,7 @@ class ContentGetter(ChromeContentGetter):
                 self.retry(mbl_no)
             finally:
                 if self.check_denied():
-                    raise AccessDeniedError()
+                    return
 
         rnd = random.randint(1, 8)
         if rnd > 6:
