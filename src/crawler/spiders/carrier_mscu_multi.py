@@ -140,6 +140,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
             return scrapy.Request(
                 url=option.url,
                 meta=meta,
+                headers=option.headers,
                 dont_filter=True,
             )
 
@@ -173,6 +174,9 @@ class MainRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f"{URL}/api/feature/tools/TrackingInfo?trackingNumber={search_nos[0]}&trackingMode={search_mode}",
+            headers={
+                "x-requested-with": "XMLHttpRequest",
+            },
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,
