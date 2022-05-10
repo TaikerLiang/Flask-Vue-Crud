@@ -46,9 +46,9 @@ class PropassvaPtpShareSpider(BaseMultiTerminalSpider):
 
         rules = [
             LoginRoutingRule(),
+            AddContainerRoutingRule(),
             GetContainerNoRoutingRule(),
             RemoveContainerNoRoutingRule(),
-            ContainerRoutingRule(),
             NextRoundRoutingRule(),
         ]
 
@@ -147,7 +147,52 @@ class LoginRoutingRule(BaseRoutingRule):
         auth = f"Bearer {auth_dict['bearer']}"
         browser.close()
 
-        yield ContainerRoutingRule.build_request_option(container_no_list=container_no_list, auth=auth)
+        yield AddContainerRoutingRule.build_request_option(container_no_list=container_no_list, auth=auth)
+
+
+# -------------------------------------------------------------------------------
+class AddContainerRoutingRule(BaseRoutingRule):
+    name = "Add_Container"
+
+    @classmethod
+    def build_request_option(cls, container_no_list: List, auth: str) -> RequestOption:
+        url = "https://datahub.visibility.emodal.com/datahub/container/AddContainers"
+        form_data = {
+            "containerNumbers": container_no_list[:MAX_PAGE_NUM],
+            "tradeType": "I",
+            "portCd": "",
+            "IsselectedallTradetypes": False,
+            "tags": None,
+        }
+        return RequestOption(
+            rule_name=cls.name,
+            method="PUT",
+            url=url,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/87.0.4280.141 Safari/537.36"
+                ),
+                "Accept-Language": "zh-TW,zh;q=0.9",
+                "Authorization": auth,
+                "Content-Type": "application/json",
+            },
+            body=json.dumps(form_data),
+            meta={
+                "container_no_list": container_no_list,
+                "auth": auth,
+            },
+        )
+
+    def get_save_name(self, response) -> str:
+        return f"{self.name}.json"
+
+    def handle(self, response):
+        container_no_list = response.meta["container_no_list"]
+        auth = response.meta["auth"]
+        # response_dict = json.loads(response.text)
+        # print(response_dict[0]["messageDetail"])
+        yield GetContainerNoRoutingRule.build_request_option(container_no_list=container_no_list, auth=auth)
 
 
 # -------------------------------------------------------------------------------
@@ -243,12 +288,7 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
                 status=TERMINAL_RESULT_STATUS_ERROR,
             )
 
-        if len(remove_containers) == 0:
-            yield NextRoundRoutingRule.build_request_option(container_no_list, auth)
-        else:
-            yield RemoveContainerNoRoutingRule.build_request_option(
-                container_no_list, remove_containers, remove_ids, auth
-            )
+        yield RemoveContainerNoRoutingRule.build_request_option(container_no_list, remove_containers, remove_ids, auth)
 
     def _extract_release_info(self, container_dict):
         release_info = {
@@ -342,53 +382,6 @@ class RemoveContainerNoRoutingRule(BaseRoutingRule):
         yield NextRoundRoutingRule.build_request_option(container_no_list, auth)
 
 
-# -------------------------------------------------------------------------------
-
-
-class ContainerRoutingRule(BaseRoutingRule):
-    name = "Container"
-
-    @classmethod
-    def build_request_option(cls, container_no_list: List, auth: str) -> RequestOption:
-        url = "https://datahub.visibility.emodal.com/datahub/container/AddContainers"
-        form_data = {
-            "containerNumbers": container_no_list[:MAX_PAGE_NUM],
-            "tradeType": "I",
-            "portCd": "",
-            "IsselectedallTradetypes": False,
-            "tags": None,
-        }
-        return RequestOption(
-            rule_name=cls.name,
-            method="PUT",
-            url=url,
-            headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/87.0.4280.141 Safari/537.36"
-                ),
-                "Accept-Language": "zh-TW,zh;q=0.9",
-                "Authorization": auth,
-                "Content-Type": "application/json",
-            },
-            body=json.dumps(form_data),
-            meta={
-                "container_no_list": container_no_list,
-                "auth": auth,
-            },
-        )
-
-    def get_save_name(self, response) -> str:
-        return f"{self.name}.json"
-
-    def handle(self, response):
-        container_no_list = response.meta["container_no_list"]
-        auth = response.meta["auth"]
-        # response_dict = json.loads(response.text)
-        # print(response_dict[0]["messageDetail"])
-        yield GetContainerNoRoutingRule.build_request_option(container_no_list=container_no_list, auth=auth)
-
-
 # --------------------------------------------------------------------
 
 
@@ -411,7 +404,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
 
         container_no_list = container_no_list[MAX_PAGE_NUM:]
 
-        yield ContainerRoutingRule.build_request_option(container_no_list=container_no_list, auth=auth)
+        yield AddContainerRoutingRule.build_request_option(container_no_list=container_no_list, auth=auth)
 
 
 # -------------------------------------------------------------------------------
