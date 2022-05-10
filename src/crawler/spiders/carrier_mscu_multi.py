@@ -190,7 +190,7 @@ class MainRoutingRule(BaseRoutingRule):
         )
 
     def get_save_name(self, response) -> str:
-        return f"{self.name}.html"
+        return f"{self.name}.json"
 
     def handle(self, response):
         task_ids = response.meta["task_ids"]
@@ -204,7 +204,7 @@ class MainRoutingRule(BaseRoutingRule):
 
         json_response = json.loads(response.text)
         if not json_response["IsSuccess"]:
-            if "not found" in json_response["Data"]:
+            if isinstance(json_response["Data"], str) and ("not found" in json_response["Data"]):
                 yield DataNotFoundItem(
                     **info_pack,
                     status=RESULT_STATUS_ERROR,
