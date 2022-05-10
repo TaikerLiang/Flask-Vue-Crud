@@ -190,8 +190,6 @@ class AddContainerRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_no_list = response.meta["container_no_list"]
         auth = response.meta["auth"]
-        # response_dict = json.loads(response.text)
-        # print(response_dict[0]["messageDetail"])
         yield GetContainerNoRoutingRule.build_request_option(container_no_list=container_no_list, auth=auth)
 
 
