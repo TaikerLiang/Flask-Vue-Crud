@@ -26,7 +26,7 @@ def sample_loader(sample_loader):
     ],
 )
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
-    http_text = sample_loader.read_file(sub, "sample.html")
+    http_text = sample_loader.read_file(sub, "sample.json")
 
     url = "https://www.msc.com/track-a-shipment?agencyPath=twn"
     response = TextResponse(
