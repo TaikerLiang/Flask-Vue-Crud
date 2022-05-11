@@ -7,7 +7,12 @@ from typing import Dict, List
 
 import scrapy
 
-from crawler.core.base_new import DUMMY_URL_DICT, SEARCH_TYPE_BOOKING, SEARCH_TYPE_MBL
+from crawler.core.base_new import (
+    DUMMY_URL_DICT,
+    RESULT_STATUS_ERROR,
+    SEARCH_TYPE_BOOKING,
+    SEARCH_TYPE_MBL,
+)
 from crawler.core.exceptions_new import (
     FormatError,
     MaxRetryError,
@@ -185,7 +190,7 @@ class MainRoutingRule(BaseRoutingRule):
         )
 
     def get_save_name(self, response) -> str:
-        return f"{self.name}.html"
+        return f"{self.name}.json"
 
     def handle(self, response):
         task_ids = response.meta["task_ids"]
@@ -199,12 +204,19 @@ class MainRoutingRule(BaseRoutingRule):
 
         json_response = json.loads(response.text)
         if not json_response["IsSuccess"]:
-            time.sleep(5)
-            yield Restart(
-                search_nos=search_nos,
-                task_ids=task_ids,
-                reason="'IsSuccess' field of response data is False, sleep and retry",
-            )
+            if isinstance(json_response["Data"], str) and ("not found" in json_response["Data"]):
+                yield DataNotFoundItem(
+                    **info_pack,
+                    status=RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+            else:
+                time.sleep(5)
+                yield Restart(
+                    search_nos=search_nos,
+                    task_ids=task_ids,
+                    reason="'IsSuccess' field of response data is False, sleep and retry",
+                )
             return
 
         data = json_response["Data"]
