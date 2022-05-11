@@ -46,10 +46,10 @@ class PropassvaPtpShareSpider(BaseMultiTerminalSpider):
 
         rules = [
             LoginRoutingRule(),
+            AddContainerRoutingRule(),
             GetContainerNoRoutingRule(),
             RemoveContainerNoRoutingRule(),
-            ContainerRoutingRule(),
-            # NextRoundRoutingRule(),
+            NextRoundRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -147,6 +147,49 @@ class LoginRoutingRule(BaseRoutingRule):
         auth = f"Bearer {auth_dict['bearer']}"
         browser.close()
 
+        yield AddContainerRoutingRule.build_request_option(container_no_list=container_no_list, auth=auth)
+
+
+# -------------------------------------------------------------------------------
+class AddContainerRoutingRule(BaseRoutingRule):
+    name = "Add_Container"
+
+    @classmethod
+    def build_request_option(cls, container_no_list: List, auth: str) -> RequestOption:
+        url = "https://datahub.visibility.emodal.com/datahub/container/AddContainers"
+        form_data = {
+            "containerNumbers": container_no_list[:MAX_PAGE_NUM],
+            "tradeType": "I",
+            "portCd": "",
+            "IsselectedallTradetypes": False,
+            "tags": None,
+        }
+        return RequestOption(
+            rule_name=cls.name,
+            method="PUT",
+            url=url,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/87.0.4280.141 Safari/537.36"
+                ),
+                "Accept-Language": "zh-TW,zh;q=0.9",
+                "Authorization": auth,
+                "Content-Type": "application/json",
+            },
+            body=json.dumps(form_data),
+            meta={
+                "container_no_list": container_no_list,
+                "auth": auth,
+            },
+        )
+
+    def get_save_name(self, response) -> str:
+        return f"{self.name}.json"
+
+    def handle(self, response):
+        container_no_list = response.meta["container_no_list"]
+        auth = response.meta["auth"]
         yield GetContainerNoRoutingRule.build_request_option(container_no_list=container_no_list, auth=auth)
 
 
@@ -157,13 +200,20 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
     name = "Get_Container_No"
 
     @classmethod
-    def build_request_option(cls, container_no_list: List, auth: str, first=True) -> RequestOption:
+    def build_request_option(cls, container_no_list: List, auth: str) -> RequestOption:
         url = "https://datahub.visibility.emodal.com/datahub/container/accesslist"
         form_data = {
             "queryContinuationToken": "",
             "pageSize": 30,
             "Page": 0,
             "conditions": [
+                {
+                    "mem": "unit_nbr",
+                    "include": True,
+                    "oper": 10,
+                    "vLow": ",".join(container_no_list[:MAX_PAGE_NUM]),
+                    "vHigh": "",
+                },
                 {
                     "mem": "viewtype_desc",
                     "include": True,
@@ -172,7 +222,7 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
                     "vLow": "U",
                     "vHigh": [],
                     "seprator": "AND",
-                }
+                },
             ],
             "ordering": [],
         }
@@ -193,7 +243,6 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
             meta={
                 "container_no_list": container_no_list,
                 "auth": auth,
-                "first": first,
             },
         )
 
@@ -204,11 +253,7 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
         container_no_list = response.meta["container_no_list"]
         auth = response.meta["auth"]
 
-        if not response.meta["first"]:
-            search_container_nos = container_no_list[:MAX_PAGE_NUM]
-            container_no_list = container_no_list[MAX_PAGE_NUM:]
-        else:
-            search_container_nos = []
+        search_container_nos = container_no_list[:MAX_PAGE_NUM]
 
         response_dict = json.loads(response.text)
         remove_containers = []
@@ -241,15 +286,7 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
                 status=TERMINAL_RESULT_STATUS_ERROR,
             )
 
-        if len(container_no_list) == 0:
-            return
-
-        if len(remove_containers) == 0:
-            yield ContainerRoutingRule.build_request_option(container_no_list, auth)
-        else:
-            yield RemoveContainerNoRoutingRule.build_request_option(
-                container_no_list, remove_containers, remove_ids, auth
-            )
+        yield RemoveContainerNoRoutingRule.build_request_option(container_no_list, remove_containers, remove_ids, auth)
 
     def _extract_release_info(self, container_dict):
         release_info = {
@@ -276,10 +313,14 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
         return None
 
     def _extract_vessel_info(self, container):
-        location_info = container["locations"][0]["locationinfo"]
+        locations = container["locations"]
+        location_info = None
+        if len(locations) > 0:
+            location_info = locations[0]["locationinfo"]
+
         if location_info:
             arrive_info = location_info["arrivalinfo"]
-            if arrive_info is not None:
+            if arrive_info and arrive_info["vesselinfo"]:
                 return {
                     "vessel": arrive_info["vesselinfo"].get("vessel_nm"),
                     "voyage": arrive_info["vesselinfo"].get("voyage_nbr"),
@@ -336,81 +377,32 @@ class RemoveContainerNoRoutingRule(BaseRoutingRule):
     def handle(self, response):
         container_no_list = response.meta["container_no_list"]
         auth = response.meta["auth"]
-        yield ContainerRoutingRule.build_request_option(container_no_list, auth)
-
-
-# -------------------------------------------------------------------------------
-
-
-class ContainerRoutingRule(BaseRoutingRule):
-    name = "Container"
-
-    @classmethod
-    def build_request_option(cls, container_no_list: List, auth: str) -> RequestOption:
-        url = "https://datahub.visibility.emodal.com/datahub/container/AddContainers"
-        form_data = {
-            "containerNumbers": container_no_list[:MAX_PAGE_NUM],
-            "tradeType": "I",
-            "portCd": "",
-            "IsselectedallTradetypes": False,
-            "tags": None,
-        }
-        return RequestOption(
-            rule_name=cls.name,
-            method="PUT",
-            url=url,
-            headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/87.0.4280.141 Safari/537.36"
-                ),
-                "Accept-Language": "zh-TW,zh;q=0.9",
-                "Authorization": auth,
-                "Content-Type": "application/json",
-            },
-            body=json.dumps(form_data),
-            meta={
-                "container_no_list": container_no_list,
-                "auth": auth,
-            },
-        )
-
-    def get_save_name(self, response) -> str:
-        return f"{self.name}.json"
-
-    def handle(self, response):
-        container_no_list = response.meta["container_no_list"]
-        auth = response.meta["auth"]
-        # response_dict = json.loads(response.text)
-        # print(response_dict[0]["messageDetail"])
-        yield GetContainerNoRoutingRule.build_request_option(
-            container_no_list=container_no_list, auth=auth, first=False
-        )
+        yield NextRoundRoutingRule.build_request_option(container_no_list, auth)
 
 
 # --------------------------------------------------------------------
 
 
-# class NextRoundRoutingRule(BaseRoutingRule):
-#     @classmethod
-#     def build_request_option(cls, container_no_list: List, cookies: Dict) -> RequestOption:
-#         return RequestOption(
-#             rule_name=cls.name,
-#             method=RequestOption.METHOD_GET,
-#             url="https://eval.edi.hardcoretech.co/c/livez",
-#             meta={"container_no_list": container_no_list, "cookies": cookies},
-#         )
-#
-#     def handle(self, response):
-#         container_no_list = response.meta["container_no_list"]
-#         cookies = response.meta["cookies"]
-#
-#         if len(container_no_list) <= MAX_PAGE_NUM:
-#             return
-#
-#         container_no_list = container_no_list[MAX_PAGE_NUM:]
-#
-#         yield GetContainerNoRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
+class NextRoundRoutingRule(BaseRoutingRule):
+    @classmethod
+    def build_request_option(cls, container_no_list: List, auth: str) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://eval.edi.hardcoretech.co/c/livez",
+            meta={"container_no_list": container_no_list, "auth": auth},
+        )
+
+    def handle(self, response):
+        container_no_list = response.meta["container_no_list"]
+        auth = response.meta["auth"]
+
+        if len(container_no_list) <= MAX_PAGE_NUM:
+            return
+
+        container_no_list = container_no_list[MAX_PAGE_NUM:]
+
+        yield AddContainerRoutingRule.build_request_option(container_no_list=container_no_list, auth=auth)
 
 
 # -------------------------------------------------------------------------------
