@@ -12,12 +12,6 @@ load_dotenv()
 EDI_USER = os.environ.get("EDI_ENGINE_USER")
 EDI_TOKEN = os.environ.get("EDI_ENGINE_TOKEN")
 EDI_DOMAIN = os.environ.get("EDI_ENGINE_DOMAIN")
-PROXY_URL = os.environ.get("PROXY_URL")
-PROXY_PASSWORD = os.environ.get("PROXY_PASSWORD")
-# For backwards compatibility, default version set to 98.
-CHROME_VERSION = int(os.environ.get("CHROME_VERSION", "98"))
-CHROMEDRIVER_PATH = os.environ.get("CHROMEDRIVER_PATH")
-PROFILE_PATH = os.environ.get("PROFILE_PATH")
 
 
 class ScreenColor:

@@ -6,7 +6,6 @@ from scrapy.crawler import CrawlerProcess
 from scrapy.signalmanager import dispatcher
 from scrapy.utils.project import get_project_settings
 
-from local.core import BaseLocalCrawler
 from local.exceptions import AccessDeniedError
 
 logger = logging.getLogger("scrapy-loader")
@@ -40,9 +39,10 @@ def run_scrapy_spider(
             results.append(item)
 
     dispatcher.connect(crawler_results, signal=signals.item_dropped)
-    process = CrawlerProcess(get_scrapy_project_settings())
-    process.crawl(name, task_ids=task_ids, mbl_nos=mbl_nos, booking_nos=booking_nos, container_nos=container_nos)
-    process.start()
+    with DisableLogger():
+        process = CrawlerProcess(get_scrapy_project_settings())
+        process.crawl(name, task_ids=task_ids, mbl_nos=mbl_nos, booking_nos=booking_nos, container_nos=container_nos)
+        process.start()
 
     if results:
         result = results[0]
@@ -52,7 +52,7 @@ def run_scrapy_spider(
             raise Exception(result["detail"])
 
 
-class ScrapyLoader(BaseLocalCrawler):
+class ScrapyLoader:
     def __init__(self, type: str, code: str):
         self.spider_name = f"{type}_{code}_multi".lower()
         with DisableLogger():
@@ -75,9 +75,6 @@ class ScrapyLoader(BaseLocalCrawler):
                 container_nos=container_nos,
             )
             future.result()
-        # TODO: Remove this after we don't call send_provider_result_back
-        # manually in local_crawler.py
-        return []
 
     def quit(self):
         pass

@@ -1340,6 +1340,11 @@ class EglvContentGetter(PyppeteerContentGetter):
         await asyncio.sleep(2)
         await self.page.click("#quick input[type=button]")
 
+        if await self._has_captcha():
+            for _ in range(self.MAX_CAPTCHA_RETRY):
+                await self._handle_captcha()
+                await self.page.click("#quick input[type=button]")
+
         max_check_times = 2
         while (max_check_times != 0) and (await self._check_data_exist()):
             max_check_times -= 1
@@ -1399,20 +1404,27 @@ class EglvContentGetter(PyppeteerContentGetter):
         except TimeoutError:
             return False
 
-    # async def _handle_captcha(self):
-    #     captcha_analyzer = CaptchaAnalyzer()
-    #     element = await self.page.querySelector("div#captcha_div > img#captchaImg")
-    #     get_base64_func = """(img) => {
-    #                     var canvas = document.createElement("canvas");
-    #                     canvas.width = 150;
-    #                     canvas.height = 40;
-    #                     var ctx = canvas.getContext("2d");
-    #                     ctx.drawImage(img, 0, 0);
-    #                     var dataURL = canvas.toDataURL("image/png");
-    #                     return dataURL.replace(/^data:image/(png|jpg);base64,/, "");
-    #                 }
-    #                 """
-    #     captcha_base64 = await self.page.evaluate(get_base64_func, element)
-    #     verification_code = captcha_analyzer.analyze_captcha(captcha_base64=captcha_base64).decode("utf-8")
-    #     await self.page.type("div#captcha_div > input#captcha_input", verification_code)
-    #     await asyncio.sleep(2)
+    async def _has_captcha(self):
+        try:
+            await self.page.waitForSelector("div#captcha_div > img#captchaImg", {"timeout": 5000})
+            return True
+        except TimeoutError:
+            return False
+
+    async def _handle_captcha(self):
+        captcha_analyzer = CaptchaAnalyzer()
+        element = await self.page.querySelector("div#captcha_div > img#captchaImg")
+        get_base64_func = """(img) => {
+                        var canvas = document.createElement("canvas");
+                        canvas.width = 150;
+                        canvas.height = 40;
+                        var ctx = canvas.getContext("2d");
+                        ctx.drawImage(img, 0, 0);
+                        var dataURL = canvas.toDataURL("image/png");
+                        return dataURL.replace(/^data:image/(png|jpg);base64,/, "");
+                    }
+                    """
+        captcha_base64 = await self.page.evaluate(get_base64_func, element)
+        verification_code = captcha_analyzer.analyze_captcha(captcha_base64=captcha_base64).decode("utf-8")
+        await self.page.type("div#captcha_div > input#captcha_input", verification_code)
+        await asyncio.sleep(2)
