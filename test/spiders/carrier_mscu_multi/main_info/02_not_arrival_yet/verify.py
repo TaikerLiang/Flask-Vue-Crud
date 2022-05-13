@@ -12,7 +12,7 @@ def verify(results):
         mbl_no="MEDUNG283959",
         pol=LocationItem(name="NINGBO, CN"),
         pod=LocationItem(name="SUAPE, BR"),
-        place_of_deliv=LocationItem(name="SUAPE, BR"),
+        place_of_deliv=LocationItem(name=None),
         latest_update="09.05.2022 at 10:36 Central Europe Standard Time",
     )
 
