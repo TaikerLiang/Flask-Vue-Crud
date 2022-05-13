@@ -3,8 +3,14 @@ import random
 import time
 from typing import Any, Dict, List, Optional
 
+import bezier
+import numpy as np
+import pyautogui
 import selenium.webdriver
 from selenium.webdriver import Chrome
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 from seleniumwire.undetected_chromedriver import Chrome as WireUCChrome
 from seleniumwire.webdriver import Chrome as WireChrome
 from undetected_chromedriver import Chrome as UCChrome
@@ -84,6 +90,62 @@ class SeleniumContentGetter(BaseContentGetter):
             """
         )
         time.sleep(2)
+
+    def scroll_down(self, wait=True):
+        self._driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        if wait:
+            time.sleep(5)
+
+    def scroll_up(self):
+        self._driver.execute_script("window.scrollTo(0, 0);")
+        time.sleep(5)
+
+    def wait_for_appear(self, css: str, wait_sec: int):
+        locator = (By.CSS_SELECTOR, css)
+        WebDriverWait(self._driver, wait_sec).until(EC.presence_of_element_located(locator))
+
+    def slow_type(self, elem, page_input):
+        for letter in page_input:
+            time.sleep(float(random.uniform(0.05, 0.3)))
+            elem.send_keys(letter)
+
+    def click_mouse(self):
+        pyautogui.click()
+
+    def resting_mouse(self, end):  # move mouse to right of screen
+
+        start = pyautogui.position()
+
+        x2 = (start[0] + end[0]) / 3  # midpoint x
+        y2 = (start[1] + end[1]) / 3  # midpoint y
+
+        control1_X = (start[0] + x2) / 3
+        control2_X = (end[0] + x2) / 3
+
+        # Two intermediate control points that may be adjusted to modify the curve.
+        control1 = control1_X, y2  # combine midpoints to create perfect curve
+        control2 = control2_X, y2  # using y2 for both to get a more linear curve
+
+        # Format points to use with bezier
+        control_points = np.array([start, control1, control2, end])
+        points = np.array([control_points[:, 0], control_points[:, 1]])  # Split x and y coordinates
+        # You can set the degree of the curve here, should be less than # of control points
+        degree = 3
+        # Create the bezier curve
+        curve = bezier.Curve(points, degree)
+
+        curve_steps = (
+            50  # How many points the curve should be split into. Each is a separate pyautogui.moveTo() execution
+        )
+        delay = 0.003  # Time between movements. 1/curve_steps = 1 second for entire curve
+
+        # Move the mouse
+        for j in range(1, curve_steps + 1):
+            # The evaluate method takes a float from [0.0, 1.0] and returns the coordinates at that point in the curve
+            # Another way of thinking about it is that i/steps gets the coordinates at (100*i/steps) percent into the curve
+            x, y = curve.evaluate(j / curve_steps)
+            pyautogui.moveTo(x, y)  # Move to point in curve
+            pyautogui.sleep(delay)  # Wait delay
 
 
 class ChromeContentGetter(SeleniumContentGetter):
