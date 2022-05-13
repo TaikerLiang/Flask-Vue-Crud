@@ -12,7 +12,7 @@ def verify(results):
         mbl_no="MEDUMY898253",
         pol=LocationItem(name="TANJUNG PELEPAS, MY"),
         pod=LocationItem(name="LOS ANGELES, US"),
-        place_of_deliv=LocationItem(name="LOS ANGELES, US"),
+        place_of_deliv=LocationItem(name=None),
         latest_update="09.05.2022 at 10:37 Central Europe Standard Time",
     )
 

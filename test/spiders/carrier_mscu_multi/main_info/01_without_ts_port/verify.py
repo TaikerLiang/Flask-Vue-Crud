@@ -12,7 +12,7 @@ def verify(results):
         mbl_no="MEDUN4194175",
         pol=LocationItem(name="NINGBO, CN"),
         pod=LocationItem(name="LONG BEACH, US"),
-        place_of_deliv=LocationItem(name="LONG BEACH, US"),
+        place_of_deliv=LocationItem(name=None),
         latest_update="09.05.2022 at 10:34 Central Europe Standard Time",
     )
 
