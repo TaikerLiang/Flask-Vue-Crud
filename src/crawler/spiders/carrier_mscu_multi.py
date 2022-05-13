@@ -216,6 +216,9 @@ class MainRoutingRule(BaseRoutingRule):
                     status=RESULT_STATUS_ERROR,
                     detail="Data was not found",
                 )
+                yield NextRoundRoutingRule.build_request_option(
+                    search_nos=search_nos, task_ids=task_ids, search_mode=search_mode
+                )
             else:
                 time.sleep(5)
                 yield Restart(
