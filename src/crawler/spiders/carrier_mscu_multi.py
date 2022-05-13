@@ -34,7 +34,8 @@ from crawler.core_carrier.request_helpers_new import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 
 URL = "https://www.msc.com"
-MAX_RETRY_COUNT = 10
+MAX_RETRY_TIMES = 10
+MAX_DOWNLOAD_ERRBACK_RETRY_TIMES = 3
 
 
 @dataclasses.dataclass
@@ -55,6 +56,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         super(CarrierMscuSpider, self).__init__(*args, **kwargs)
 
         self._retry_count = 0
+        self._errback_retry_count = 0
 
         bill_rules = [
             # HomePageRoutingRule(search_type=SEARCH_TYPE_MBL),
@@ -91,7 +93,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         return proxy_option
 
     def _prepare_restart(self, search_nos: List, task_ids: List, reason: str):
-        if self._retry_count >= MAX_RETRY_COUNT:
+        if self._retry_count >= MAX_RETRY_TIMES:
             self._retry_count = 0
             option = NextRoundRoutingRule.build_request_option(
                 search_nos=search_nos, task_ids=task_ids, search_mode=self._search_mode
@@ -104,6 +106,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
+        self._errback_retry_count = 0
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -122,7 +125,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
             elif isinstance(result, Restart):
                 search_nos = result.search_nos
                 task_ids = result.task_ids
-                if self._retry_count >= MAX_RETRY_COUNT:
+                if self._retry_count >= MAX_RETRY_TIMES:
                     err = MaxRetryError(
                         task_id=task_ids[0],
                         search_no=search_nos[0],
@@ -143,10 +146,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
 
         if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
-                url=option.url,
-                meta=meta,
-                headers=option.headers,
-                dont_filter=True,
+                url=option.url, meta=meta, headers=option.headers, dont_filter=True, errback=self._download_errback
             )
 
         # elif option.method == RequestOption.METHOD_POST_FORM:
@@ -162,6 +162,12 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
                 task_id=meta["task_ids"][0],
                 reason=f"Unexpected request method: `{option.method}` {tid_sno_pairs}",
             )
+
+    def _download_errback(self, failure):
+        self._errback_retry_count += 1
+        yield DebugItem(info=f"download_errback {self._errback_retry_count} times, failure: {failure}")
+
+        yield failure.request
 
 
 # -------------------------------------------------------------------------------
