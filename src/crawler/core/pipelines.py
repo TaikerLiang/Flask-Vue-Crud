@@ -12,10 +12,10 @@ class BaseItemPipeline:
         url = f'{os.environ.get("EDI_ENGINE_BASE_URL") or ""}{url_suffix}'
         self._edi_client = EdiClientService(url=url, edi_user=user, edi_token=token)
         self._provider_code = "scrapy_local" if os.environ.get("RUNNING_AT") == "local" else "scrapy_cloud_api"
-        self._mode = os.environ.get("RUNNING_MODE") or "prod"
+        self._mode = os.environ.get("RUNNING_MODE") or "prd"
 
     def send_provider_result_to_edi_client(self, task_id: int, item_result: Dict):
-        if self._mode != "prod":
+        if self._mode != "prd":
             return "200", "Ignored due to dev mode"
 
         return self._edi_client.send_provider_result_back(
