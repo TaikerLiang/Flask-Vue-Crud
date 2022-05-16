@@ -73,7 +73,7 @@ def start(mode: str, task_type: str, num: int):
     os.environ["SCRAPY_SETTINGS_MODULE"] = "src.crawler.settings"
     os.environ["EDI_ENGINE_USER"] = EDI_USER or ""
     os.environ["EDI_ENGINE_TOKEN"] = EDI_TOKEN or ""
-    os.environ["EDI_ENGINE_BASE_URL"] = EDI_DOMAIN or ""
+    os.environ["EDI_ENGINE_BASE_URL"] = f'{EDI_DOMAIN or ""}/api/'
 
     for key, local_tasks in task_mapper.items():
         _type, _code = key.split("-")

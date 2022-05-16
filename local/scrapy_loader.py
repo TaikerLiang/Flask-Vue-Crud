@@ -39,6 +39,17 @@ def run_scrapy_spider(
             results.append(item)
 
     dispatcher.connect(crawler_results, signal=signals.item_dropped)
+
+    def crawler_closed(signal, reason, spider):
+        content_getter = spider._content_getter or spider.content_getter
+        if not content_getter:
+            return
+
+        content_getter.close()
+        content_getter.quit()
+
+    dispatcher.connect(crawler_closed, signal=signals.spider_closed)
+
     with DisableLogger():
         process = CrawlerProcess(get_scrapy_project_settings())
         process.crawl(name, task_ids=task_ids, mbl_nos=mbl_nos, booking_nos=booking_nos, container_nos=container_nos)
