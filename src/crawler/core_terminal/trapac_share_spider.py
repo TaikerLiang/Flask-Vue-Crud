@@ -407,20 +407,23 @@ class ContentGetter(ChromeContentGetter):
     def _accept_cookie(self):
         try:
             cookie_btn = self._driver.find_element_by_xpath('//*[@id="cn-accept-cookie"]')
-            cookie_btn.click()
+            ActionChains(self._driver).move_to_element(cookie_btn).click().perform()
             time.sleep(3)
         except Exception:
             pass
 
     def _key_in_search_bar(self, search_no: str):
         text_area = self._driver.find_element_by_xpath('//*[@id="edit-containers"]')
-        text_area.send_keys(search_no)
+        ActionChains(self._driver).move_to_element(text_area).click().perform()
+        self.slow_type(text_area, search_no)
         time.sleep(3)
 
     def _press_search_button(self):
         search_btn = self._driver.find_element_by_xpath('//*[@id="transaction-form"]/div[3]/button')
-        search_btn.click()
-        time.sleep(10)
+        ActionChains(self._driver).move_to_element(search_btn).click().perform()
+        time.sleep(90)
+        self.scroll_down()
+        self.scroll_up()
 
     def _get_google_recaptcha(self):
         try:
@@ -435,7 +438,7 @@ class ContentGetter(ChromeContentGetter):
     def _get_result_response_text(self):
         result_table_css = "div#transaction-detail-result table"
 
-        self._wait_for_appear(css=result_table_css, wait_sec=30)
+        self._wait_for_appear(css=result_table_css, wait_sec=20)
         return self._driver.page_source
 
     def _wait_for_appear(self, css: str, wait_sec: int):
