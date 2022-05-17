@@ -1,13 +1,10 @@
 import dataclasses
-import io
 import json
 import random
 import re
 from typing import Dict, List
 
-import PIL.Image as Image
 import scrapy
-from anticaptchaofficial.imagecaptcha import imagecaptcha
 from scrapy.http import HtmlResponse
 
 from crawler.core.proxy import HydraproxyProxyManager
@@ -17,6 +14,7 @@ from crawler.core_terminal.exceptions import DriverMaxRetryError
 from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
+from crawler.services.captcha_service import ImageAntiCaptchaService
 
 
 @dataclasses.dataclass
@@ -198,21 +196,8 @@ class CaptchaRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _get_captcha_str(captcha_code):
-        file_name = "captcha.jpeg"
-        image = Image.open(io.BytesIO(captcha_code))
-        image.save(file_name)
-        # api_key = 'f7dd6de6e36917b41d05505d249876c3'
-        api_key = "fbe73f747afc996b624e8d2a95fa0f84"
-        solver = imagecaptcha()
-        solver.set_verbose(1)
-        solver.set_key(api_key)
-
-        captcha_text = solver.solve_and_return_solution(file_name)
-        if captcha_text != 0:
-            return captcha_text
-        else:
-            print("task finished with error ", solver.error_code)
-            return ""
+        captcha_solver = ImageAntiCaptchaService()
+        return captcha_solver.solve(captcha_code)
 
     @staticmethod
     def _get_random_number():
