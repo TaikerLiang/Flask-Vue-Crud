@@ -28,7 +28,6 @@ def test_container_handle(sub, container_no_list, sample_loader):
     option = GetContainerNoRoutingRule.build_request_option(
         container_no_list=container_no_list,
         auth="",
-        first=False,
     )
     response = TextResponse(
         url=option.url,

@@ -26,7 +26,7 @@ def sample_loader(sample_loader):
     ],
 )
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
-    http_text = sample_loader.read_file(sub, "sample.html")
+    http_text = sample_loader.read_file(sub, "sample.json")
 
     url = "https://www.msc.com/track-a-shipment?agencyPath=twn"
     response = TextResponse(
@@ -35,10 +35,7 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
         encoding="utf-8",
         request=Request(
             url=url,
-            meta={
-                "search_nos": [mbl_no],
-                "task_ids": ["1"],
-            },
+            meta={"search_nos": [mbl_no], "task_ids": ["1"], "search_mode": "0"},
         ),
     )
 

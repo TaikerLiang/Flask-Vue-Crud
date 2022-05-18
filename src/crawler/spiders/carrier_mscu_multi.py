@@ -7,7 +7,12 @@ from typing import Dict, List
 
 import scrapy
 
-from crawler.core.base_new import DUMMY_URL_DICT, SEARCH_TYPE_BOOKING, SEARCH_TYPE_MBL
+from crawler.core.base_new import (
+    DUMMY_URL_DICT,
+    RESULT_STATUS_ERROR,
+    SEARCH_TYPE_BOOKING,
+    SEARCH_TYPE_MBL,
+)
 from crawler.core.description import MAX_RETRY_DESC, SUSPICIOUS_OPERATION_DESC
 from crawler.core.exceptions_new import (
     FormatError,
@@ -30,7 +35,8 @@ from crawler.core_carrier.request_helpers_new import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 
 URL = "https://www.msc.com"
-MAX_RETRY_COUNT = 10
+MAX_RETRY_TIMES = 10
+MAX_DOWNLOAD_ERRBACK_RETRY_TIMES = 3
 
 
 @dataclasses.dataclass
@@ -51,6 +57,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         super(CarrierMscuSpider, self).__init__(*args, **kwargs)
 
         self._retry_count = 0
+        self._errback_retry_count = 0
 
         bill_rules = [
             # HomePageRoutingRule(search_type=SEARCH_TYPE_MBL),
@@ -87,7 +94,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         return proxy_option
 
     def _prepare_restart(self, search_nos: List, task_ids: List, reason: str):
-        if self._retry_count >= MAX_RETRY_COUNT:
+        if self._retry_count >= MAX_RETRY_TIMES:
             self._retry_count = 0
             option = NextRoundRoutingRule.build_request_option(
                 search_nos=search_nos, task_ids=task_ids, search_mode=self._search_mode
@@ -100,6 +107,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
+        self._errback_retry_count = 0
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -118,7 +126,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
             elif isinstance(result, Restart):
                 search_nos = result.search_nos
                 task_ids = result.task_ids
-                if self._retry_count >= MAX_RETRY_COUNT:
+                if self._retry_count >= MAX_RETRY_TIMES:
                     err = MaxRetryError(
                         task_id=task_ids[0],
                         search_no=search_nos[0],
@@ -139,9 +147,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
 
         if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
-                url=option.url,
-                meta=meta,
-                dont_filter=True,
+                url=option.url, meta=meta, headers=option.headers, dont_filter=True, errback=self._download_errback
             )
 
         # elif option.method == RequestOption.METHOD_POST_FORM:
@@ -159,6 +165,12 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
                 + f", on (task_id, search_no): {zip_list}",
             )
 
+    def _download_errback(self, failure):
+        self._errback_retry_count += 1
+        yield DebugItem(info=f"download_errback {self._errback_retry_count} times, failure: {failure}")
+
+        yield failure.request
+
 
 # -------------------------------------------------------------------------------
 
@@ -175,6 +187,9 @@ class MainRoutingRule(BaseRoutingRule):
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=f"{URL}/api/feature/tools/TrackingInfo?trackingNumber={search_nos[0]}&trackingMode={search_mode}",
+            headers={
+                "x-requested-with": "XMLHttpRequest",
+            },
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,
@@ -183,7 +198,7 @@ class MainRoutingRule(BaseRoutingRule):
         )
 
     def get_save_name(self, response) -> str:
-        return f"{self.name}.html"
+        return f"{self.name}.json"
 
     def handle(self, response):
         task_ids = response.meta["task_ids"]
@@ -197,12 +212,22 @@ class MainRoutingRule(BaseRoutingRule):
 
         json_response = json.loads(response.text)
         if not json_response["IsSuccess"]:
-            time.sleep(5)
-            yield Restart(
-                search_nos=search_nos,
-                task_ids=task_ids,
-                reason="'IsSuccess' field of response data is False, sleep and retry",
-            )
+            if isinstance(json_response["Data"], str) and ("not found" in json_response["Data"]):
+                yield DataNotFoundItem(
+                    **info_pack,
+                    status=RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+                yield NextRoundRoutingRule.build_request_option(
+                    search_nos=search_nos, task_ids=task_ids, search_mode=search_mode
+                )
+            else:
+                time.sleep(5)
+                yield Restart(
+                    search_nos=search_nos,
+                    task_ids=task_ids,
+                    reason="'IsSuccess' field of response data is False, sleep and retry",
+                )
             return
 
         data = json_response["Data"]
@@ -252,7 +277,10 @@ class MainRoutingRule(BaseRoutingRule):
         info["task_id"] = task_id
         info["pol"] = LocationItem(name=main_data["PortOfLoad"])
         info["pod"] = LocationItem(name=main_data["PortOfDischarge"])
-        info["place_of_deliv"] = LocationItem(name=main_data["ShippedTo"])
+        if main_data["ShippedTo"] != main_data["PortOfDischarge"]:
+            info["place_of_deliv"] = LocationItem(name=main_data["ShippedTo"])
+        else:
+            info["place_of_deliv"] = LocationItem(name=None)
 
         pattern = re.compile(r"^Tracking results provided by MSC on (?P<latest_update>.+)$")
         m = pattern.match(data["TrackingResultsLabel"])

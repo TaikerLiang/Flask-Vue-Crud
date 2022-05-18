@@ -1,24 +1,21 @@
-import requests
 from urllib.parse import urlencode
 
+import requests
 import scrapy
 from scrapy.http import Response
 
 from crawler.core_air.base import AIR_RESULT_STATUS_ERROR
 from crawler.core_air.base_spiders import BaseAirSpider
-from crawler.core_air.exceptions import (
-    AirInvalidMawbNoError,
-    LoadWebsiteTimeOutFatal,
-)
+from crawler.core_air.exceptions import AirInvalidMawbNoError, LoadWebsiteTimeOutFatal
 from crawler.core_air.items import (
-    BaseAirItem,
     AirItem,
+    BaseAirItem,
     DebugItem,
     ExportErrorData,
     HistoryItem,
 )
 from crawler.core_air.request_helpers import RequestOption
-from crawler.core_air.rules import RuleManager, BaseRoutingRule
+from crawler.core_air.rules import BaseRoutingRule, RuleManager
 
 PREFIX = "784"
 URL = "https://tang.csair.com/EN/WebFace/Tang.WebFace.Cargo/AgentAwbBrower.aspx"
@@ -149,7 +146,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
         for info in selector:
             basic_info.append(info.xpath("normalize-space(text())").get())
 
-        if basic_info[0] is None:
+        if not basic_info or basic_info[0] is None:
             raise AirInvalidMawbNoError()
 
         basic_info[0] = basic_info[0].split("-")[1]

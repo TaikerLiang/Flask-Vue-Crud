@@ -4,7 +4,6 @@ import os
 import time
 
 import click
-import config
 from config import ScreenColor
 from generator import TaskGenerator
 from selenium.common.exceptions import (
@@ -13,74 +12,23 @@ from selenium.common.exceptions import (
     TimeoutException,
 )
 
-from local.core import BaseLocalCrawler
-from local.defines import LocalTask
-from local.exceptions import AccessDeniedError, DataNotFoundError, TimeoutError
+from local.config import EDI_DOMAIN, EDI_TOKEN, EDI_USER
+from local.exceptions import AccessDeniedError, TimeoutError
 from local.helpers import CrawlerHelper
-from local.services import DataHandler, TaskAggregator
+from local.services import TaskAggregator
 from local.utility import timeout
-from src.crawler.services.edi_service import EdiClientService
 
 logger = logging.getLogger("local-crawler")
 
 
-class LocalCrawler:
-    def __init__(self, _type: str, crawler: BaseLocalCrawler):
-        self.helper = CrawlerHelper()
-        self.handler = DataHandler()
-        self.type = _type
-        self.crawler = crawler
-
-    def run(self, task: LocalTask):
-        items = list(
-            self.crawler.start_crawler(
-                task_ids=",".join(task.task_ids),
-                mbl_nos=",".join(task.mbl_nos),
-                booking_nos=",".join(task.booking_nos),
-                container_nos=",".join(task.container_nos),
-            )
-        )
-
-        if not items:
-            return []
-
-        init_items = self.handler.build_init_item_response(
-            spider_tag=task.code,
-            task_ids=",".join(task.task_ids),
-            mbl_nos=",".join(task.mbl_nos),
-            booking_nos=",".join(task.booking_nos),
-            container_nos=",".join(task.container_nos),
-        )
-        # TODO: handle data was not found here (init_items)
-        for resp_data in self.handler.build_response_data(_type=self.type, items=items):
-            yield self.handler.update_resp_data(data=resp_data, result=init_items[resp_data["task_id"]])
-
-    def build_error_resp(self, task_id: str, task: LocalTask, err_msg: str):
-        init_items = self.handler.build_init_item_response(
-            spider_tag=task.code,
-            task_ids=",".join(task.task_ids),
-            mbl_nos=",".join(task.mbl_nos),
-            booking_nos=",".join(task.booking_nos),
-            container_nos=",".join(task.container_nos),
-        )
-
-        return self.handler.update_error_message(result=init_items[task_id], err_msg=err_msg)
-
-    def reset(self):
-        self.crawler.reset()
-
-    def quit(self):
-        self.crawler.quit()
-
-
 @timeout(300, "Function slow; aborted")
-def run_spider(local_crawler, edi_client, task, start_time: datetime, mode: str):
-    for result in local_crawler.run(task=task):
-        if mode == "dev":
-            continue
-
-        edi_client.send_provider_result_back(task_id=result["task_id"], provider_code="local", item_result=result)
-
+def run_spider(crawler, task, start_time: datetime):
+    crawler.start_crawler(
+        task_ids=",".join(task.task_ids),
+        mbl_nos=",".join(task.mbl_nos),
+        booking_nos=",".join(task.booking_nos),
+        container_nos=",".join(task.container_nos),
+    )
     logger.info(
         f"{ScreenColor.SUCCESS} SUCCESS, time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"
     )
@@ -114,14 +62,7 @@ def run_spider(local_crawler, edi_client, task, start_time: datetime, mode: str)
     show_default=True,
     help="how many tasks do you want to take",
 )
-@click.option(
-    "--proxy/--no-proxy",
-    default=False,
-    type=bool,
-    show_default=True,
-    help="with proxy or not",
-)
-def start(mode: str, task_type: str, num: int, proxy: bool):
+def start(mode: str, task_type: str, num: int):
     task_generator = TaskGenerator(mode=mode, task_type=task_type)
     local_tasks = task_generator.get_local_tasks(num)
     task_aggregator = TaskAggregator()
@@ -130,42 +71,34 @@ def start(mode: str, task_type: str, num: int, proxy: bool):
     os.environ["RUNNING_AT"] = "local"
     os.environ["RUNNING_MODE"] = mode
     os.environ["SCRAPY_SETTINGS_MODULE"] = "src.crawler.settings"
-
-    print("proxy", proxy)
+    os.environ["EDI_ENGINE_USER"] = EDI_USER or ""
+    os.environ["EDI_ENGINE_TOKEN"] = EDI_TOKEN or ""
+    os.environ["EDI_ENGINE_BASE_URL"] = f'{EDI_DOMAIN or ""}/api/'
 
     for key, local_tasks in task_mapper.items():
         _type, _code = key.split("-")
-        crawler = helper.get_crawler(type=_type, code=_code, proxy=proxy)
+        crawler = helper.get_crawler(type=_type, code=_code)
         if not crawler:
             continue
 
-        local_crawler = LocalCrawler(_type=_type, crawler=crawler)
         start_time = time.time()
-        logger.warning(f"{start_time}: Browser Opened {local_crawler}")
+        logger.warning(f"{start_time}: Browser Opened {crawler}")
 
         for task in local_tasks:
             try:
                 run_spider(
-                    local_crawler=local_crawler,
-                    edi_client=EdiClientService(
-                        url=f"{config.EDI_DOMAIN}/api/tracking-{_type}/local/",
-                        edi_user=config.EDI_USER,
-                        edi_token=config.EDI_TOKEN,
-                    ),
+                    crawler=crawler,
                     task=task,
                     start_time=start_time,
-                    mode=mode,
                 )
             except (TimeoutException, TimeoutError):
                 logger.warning(
                     f"{ScreenColor.WARNING} (TimeoutException), time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"
                 )
                 logger.warning("Browser Closed")
-                local_crawler.quit()
+                crawler.quit()
                 time.sleep(1)
-                local_crawler = LocalCrawler(
-                    _type=_type, crawler=helper.get_crawler(type=_type, code=_code, proxy=True)
-                )
+                crawler = helper.get_crawler(type=_type, code=_code)
             except (NoSuchElementException, StaleElementReferenceException):
                 logger.warning(
                     f"{ScreenColor.WARNING} (NoSuchElementException, StaleElementReferenceException), time consuming: {(time.time() - start_time):.2f}, code: {task.code} task_ids: {task.task_ids}"
@@ -175,29 +108,22 @@ def start(mode: str, task_type: str, num: int, proxy: bool):
                     f"{ScreenColor.WARNING} (AccessDeniedError), time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"
                 )
                 logger.warning("Browser Closed")
-                local_crawler.quit()
+                crawler.quit()
                 time.sleep(60 * 5)
-                local_crawler = LocalCrawler(_type=_type, crawler=helper.get_crawler(code=_code, proxy=False))
-            except DataNotFoundError as e:
-                logger.warning(
-                    f"{ScreenColor.WARNING} (DataNotFoundError), time consuming: {(time.time() - start_time):.2f} code: {task.code} task_ids: {task.task_ids}"
-                )
-                local_crawler.build_error_resp(task_id=e.task_id, task=task, err_msg="Data was not found")
+                crawler = helper.get_crawler(type=_type, code=_code)
             except Exception as e:
                 logger.error(
                     f"{ScreenColor.ERROR} Unknown Exception: {str(e)}, time consuming: {(time.time() - start_time):.2f}, code: {task.code} task_ids: {task.task_ids}"
                 )
-                local_crawler.quit()
+                crawler.quit()
                 time.sleep(1)
-                local_crawler = LocalCrawler(
-                    _type=_type, crawler=helper.get_crawler(type=_type, code=_code, proxy=False)
-                )
+                crawler = helper.get_crawler(type=_type, code=_code)
             finally:
                 start_time = time.time()
                 print()
 
         logger.warning("Browser Closed")
-        local_crawler.quit()
+        crawler.quit()
 
 
 if __name__ == "__main__":

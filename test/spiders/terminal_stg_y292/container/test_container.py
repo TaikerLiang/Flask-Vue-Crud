@@ -13,6 +13,7 @@ from crawler.core_terminal.stg_share_spider import (
 from test.spiders.terminal_stg_y292 import container
 
 
+@pytest.mark.skip()
 @pytest.fixture
 def sample_loader(sample_loader):
     sample_path = Path(__file__).parent
@@ -20,6 +21,7 @@ def sample_loader(sample_loader):
     return sample_loader
 
 
+@pytest.mark.skip()
 @pytest.mark.parametrize(
     "sub,container_no",
     [
@@ -49,6 +51,7 @@ def test_container_handle(sub, container_no, sample_loader):
     verify_module.verify(results=results)
 
 
+@pytest.mark.skip()
 @pytest.mark.parametrize(
     "sub,container_no",
     [

@@ -11,6 +11,12 @@ RUN wget https://chromedriver.storage.googleapis.com/99.0.4844.51/chromedriver_l
 RUN unzip /root/temp/chromedriver.zip -d /usr/local/bin
 RUN rm /root/temp/chromedriver.zip
 
+# Add Tini
+ENV TINI_VERSION v0.19.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
+RUN chmod +x /tini
+ENTRYPOINT ["/tini", "--"]
+
 COPY . /root
 WORKDIR /root/local
 CMD xvfb-run -s "-screen 0 1920x1200x24" python3 local_crawler.py -m prd

@@ -7,6 +7,7 @@ from urllib.parse import urlencode
 import scrapy
 from scrapy import Selector
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
@@ -118,8 +119,6 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
                 yield self._build_request_by(option=result)
             elif isinstance(result, SaveItem) and self._save:
                 self._saver.save(to=result.file_name, text=result.text)
-            elif isinstance(result, SaveItem) and not self._save:
-                raise RuntimeError()
 
     def _build_request_by(self, option: RequestOption):
         meta = {
@@ -182,7 +181,6 @@ class MainRoutingRule(BaseRoutingRule):
             container_nos=container_nos,
             cno_tid_map=cno_tid_map,
         )
-        is_g_captcha = True
         if is_g_captcha:
             yield ContentRoutingRule.build_request_option(
                 container_nos=container_nos,
@@ -255,7 +253,7 @@ class MainRoutingRule(BaseRoutingRule):
     def _build_container_response(self, company_info: CompanyInfo, container_nos: List, cno_tid_map: Dict):
         content_getter = ContentGetter(proxy_manager=None, is_headless=True, company_info=company_info)
         try:
-            is_g_captcha, res, cookies = content_getter.get_content(search_no=",".join(container_nos))
+            is_g_captcha, res, cookies = content_getter.get_content(container_no_list=container_nos)
         except TimeOutError as e:
             map_dict = {search_no: cno_tid_map[search_no] for search_no in container_nos}
             raise TimeOutError(
@@ -367,35 +365,65 @@ class ContentGetter(ChromeContentGetter):
         super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
         self._company = company_info
 
-    def get_content(self, search_no):
-        self._driver.get(
-            url=f"https://{self._company.lower_short}.trapac.com/quick-check/?terminal={self._company.upper_short}&transaction=availability"
-        )
+    def get_content(self, container_no_list):
+        self._driver.get("https://www.trapac.com/")
+        time.sleep(10)
         self._accept_cookie()
-        time.sleep(2)
-        self._key_in_search_bar(search_no=search_no)
-        cookies = self.get_cookies()
+
+        link_pathes = {
+            "LAX": "/html/body/div[1]/div/div/div[1]/ul/li[2]/a",
+            "OAK": "/html/body/div[1]/div/div/div[1]/ul/li[2]/a",
+            "OTHERS": "/html/body/div[1]/div/div/div[1]/ul/li[4]/a",
+        }
+        link_path = link_pathes.get(self._company.upper_short, link_pathes["OTHERS"])
+        link = self._driver.find_element_by_xpath(link_path)
+        ActionChains(self._driver).move_to_element(link).click().perform()
+        time.sleep(10)
+
+        menu_pathes = {
+            "LAX": '//*[@id="menu-item-74"]/a',
+            "OAK": '//*[@id="menu-item-245"]/a',
+            "OTHERS": '//*[@id="menu-item-248"]/a',
+        }
+        menu_path = menu_pathes.get(self._company.upper_short, menu_pathes["OTHERS"])
+        menu = self._driver.find_element_by_xpath(menu_path)
+        ActionChains(self._driver).move_to_element(menu).click().perform()
+        time.sleep(3)
+
+        self._driver.get(
+            f"https://{self._company.lower_short}.trapac.com/quick-check/?terminal={self._company.upper_short}&transaction=availability"
+        )
+        time.sleep(15)
+
+        self._human_action()
+        time.sleep(3)
+        self._key_in_search_bar(search_no="\n".join(container_no_list))
         self._press_search_button()
+        cookies = self.get_cookies()
+        self._accept_cookie()
 
         return False, self._get_result_response_text(), cookies
 
     def _accept_cookie(self):
         try:
             cookie_btn = self._driver.find_element_by_xpath('//*[@id="cn-accept-cookie"]')
-            cookie_btn.click()
+            ActionChains(self._driver).move_to_element(cookie_btn).click().perform()
             time.sleep(3)
         except Exception:
             pass
 
     def _key_in_search_bar(self, search_no: str):
         text_area = self._driver.find_element_by_xpath('//*[@id="edit-containers"]')
-        text_area.send_keys(search_no)
+        ActionChains(self._driver).move_to_element(text_area).click().perform()
+        self.slow_type(text_area, search_no)
         time.sleep(3)
 
     def _press_search_button(self):
         search_btn = self._driver.find_element_by_xpath('//*[@id="transaction-form"]/div[3]/button')
-        search_btn.click()
-        time.sleep(10)
+        ActionChains(self._driver).move_to_element(search_btn).click().perform()
+        time.sleep(90)
+        self.scroll_down()
+        self.scroll_up()
 
     def _get_google_recaptcha(self):
         try:
@@ -410,7 +438,7 @@ class ContentGetter(ChromeContentGetter):
     def _get_result_response_text(self):
         result_table_css = "div#transaction-detail-result table"
 
-        self._wait_for_appear(css=result_table_css, wait_sec=15)
+        self._wait_for_appear(css=result_table_css, wait_sec=20)
         return self._driver.page_source
 
     def _wait_for_appear(self, css: str, wait_sec: int):
@@ -424,6 +452,26 @@ class ContentGetter(ChromeContentGetter):
 
     def _save_screenshot(self):
         self._driver.save_screenshot("screenshot.png")
+
+    def _human_action(self):
+        try:
+            self._driver.find_element_by_xpath('//*[@id="transaction-form"]/div[1]/fieldset[1]/ul/li[2]/label').click()
+            time.sleep(1)
+            self._driver.find_element_by_xpath('//*[@id="transaction-form"]/div[1]/fieldset[1]/ul/li[1]/label').click()
+            time.sleep(1)
+            self._driver.find_element_by_xpath('//*[@id="transaction-form"]/div[1]/fieldset[1]/ul/li[3]/label').click()
+            time.sleep(1)
+        except:  # noqa: E722
+            pass
+
+        element_pathes = {
+            "LAX": '//*[@id="transaction-form"]/div[1]/fieldset[1]/ul/li[1]/label',
+            "OAK": '//*[@id="transaction-form"]/div[1]/fieldset[1]/ul/li[2]/label',
+            "OTHERS": '//*[@id="transaction-form"]/div[1]/fieldset[1]/ul/li[3]/label',
+        }
+        element_path = element_pathes.get(self._company.upper_short, element_pathes["OTHERS"])
+        self._driver.find_element_by_xpath(element_path).click()
+        time.sleep(1)
 
 
 class VesselVoyageTdExtractor(BaseTableCellExtractor):
