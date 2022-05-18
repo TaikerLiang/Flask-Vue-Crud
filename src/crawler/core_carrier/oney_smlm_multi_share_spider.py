@@ -12,6 +12,7 @@ from crawler.core.base_new import (
     SEARCH_TYPE_CONTAINER,
     SEARCH_TYPE_MBL,
 )
+from crawler.core.description import DATA_NOT_FOUND_DESC, SUSPICIOUS_OPERATION_DESC
 from crawler.core.exceptions_new import (
     FormatError,
     MaxRetryError,
@@ -191,14 +192,15 @@ class OneySmlmSharedSpider(BaseMultiCarrierSpider):
                 raise SuspiciousOperationError(
                     task_id=meta["task_ids"][0],
                     search_type=self.search_type,
-                    reason=f"Unexpected request method: `{option.method}`, on (task_id, search_no): {zip_list}",
+                    reason=SUSPICIOUS_OPERATION_DESC.format(method=option.method)
+                    + f", on (task_id, search_no): {zip_list}",
                 )
             else:
                 raise SuspiciousOperationError(
                     task_id=meta["task_id"],
                     search_no=meta["search_no"],
                     search_type=self.search_type,
-                    reason=f"Unexpected request method: `{option.method}`",
+                    reason=SUSPICIOUS_OPERATION_DESC.format(method=option.method),
                 )
 
 
@@ -298,7 +300,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
                         search_no=search_no,
                         task_id=task_id,
                         status=RESULT_STATUS_ERROR,
-                        detail="Data was not found",
+                        detail=DATA_NOT_FOUND_DESC,
                     )
             elif self._search_type == SEARCH_TYPE_BOOKING:
                 if search_no in booking_no_set:
@@ -320,7 +322,7 @@ class FirstTierRoutingRule(BaseRoutingRule):
                         search_no=search_no,
                         task_id=task_id,
                         status=RESULT_STATUS_ERROR,
-                        detail="Data was not found",
+                        detail=DATA_NOT_FOUND_DESC,
                     )
 
         for container_info in container_info_list:

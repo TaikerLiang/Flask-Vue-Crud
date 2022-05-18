@@ -26,6 +26,13 @@ from crawler.core.base_new import (
     SEARCH_TYPE_CONTAINER,
     SEARCH_TYPE_MBL,
 )
+from crawler.core.description import (
+    ACCESS_DENIED_DESC,
+    DATA_NOT_FOUND_DESC,
+    MAX_RETRY_DESC,
+    SUSPICIOUS_OPERATION_DESC,
+    TIMEOUT_DESC,
+)
 from crawler.core.exceptions_new import (
     AccessDeniedError,
     FormatError,
@@ -127,7 +134,7 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
                 task_id=task_ids[0],
                 search_no=search_nos[0],
                 search_type=self.search_type,
-                reason=f"Retry more than {MAX_RETRY_COUNT} times",
+                reason=MAX_RETRY_DESC.format(action="", times=MAX_RETRY_COUNT),
             )
 
         self._retry_count += 1
@@ -161,7 +168,8 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
             raise SuspiciousOperationError(
                 task_id=meta["task_ids"][0],
                 search_type=self.search_type,
-                reason=f"Unexpected request method: `{option.method}`, on (task_id, search_no): {zip_list}",
+                reason=SUSPICIOUS_OPERATION_DESC.format(method=option.method)
+                + f", on (task_id, search_no): {zip_list}",
             )
 
 
@@ -205,7 +213,7 @@ class ContentGetter(ChromeContentGetter):
         windows = self._driver.window_handles
         self._driver.switch_to.window(windows[1])  # windows[1] is new page
         if self._is_blocked(response=Selector(text=self._driver.page_source)):
-            raise AccessDeniedError(**info_pack, reason="Blocked during searching")
+            raise AccessDeniedError(**info_pack, reason=ACCESS_DENIED_DESC.format(action="searching"))
 
         self._driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": self.block_urls})
         self._driver.execute_cdp_cmd("Network.enable", {})
@@ -223,7 +231,9 @@ class ContentGetter(ChromeContentGetter):
 
         self._search_count += 1
         if self._search_count > self.MAX_SEARCH_TIMES:
-            raise MaxRetryError(**info_pack, reason=f"Retry search more than {self.MAX_SEARCH_TIMES} times")
+            raise MaxRetryError(
+                **info_pack, reason=MAX_RETRY_DESC.format(action="searching", times=self.MAX_SEARCH_TIMES)
+            )
 
         # jump back to origin window
         windows = self._driver.window_handles
@@ -294,7 +304,9 @@ class ContentGetter(ChromeContentGetter):
 
         while True:
             if retry_times > max_retry_times:
-                raise MaxRetryError(**info_pack, reason=f"Retry more than {max_retry_times} times")
+                raise MaxRetryError(
+                    **info_pack, reason=MAX_RETRY_DESC.format(action="handling slide", times=max_retry_times)
+                )
 
             if not self._pass_verification_or_not():
                 break
@@ -517,7 +529,7 @@ class CargoTrackingRule(BaseRoutingRule):
 
     def handle_response(self, response, info_pack: Dict):
         if self.is_search_no_invalid(response):
-            yield DataNotFoundItem(**info_pack, status=RESULT_STATUS_ERROR, detail="Data was not found")
+            yield DataNotFoundItem(**info_pack, status=RESULT_STATUS_ERROR, detail=DATA_NOT_FOUND_DESC)
             return
 
         task_id = info_pack["task_id"]
@@ -579,7 +591,7 @@ class CargoTrackingRule(BaseRoutingRule):
                 self._content_getter.quit()
                 raise TimeOutError(
                     **info_pack,
-                    reason=f"Timeout during connect to {url}",
+                    reason=TIMEOUT_DESC.format(action=f"connecting to {url}"),
                 )
 
             response = Selector(text=self._content_getter.get_page_source())
@@ -809,7 +821,8 @@ class CargoTrackingRule(BaseRoutingRule):
         info_pack["search_type"] = SEARCH_TYPE_CONTAINER
         raise MaxRetryError(
             **info_pack,
-            reason=f"Container no mismatch: website={title_container_no}, ours={container_no}",
+            reason=MAX_RETRY_DESC.format(action="switching container pane", times=max_retry_times)
+            + f", container no mismatch: website={title_container_no}, ours={container_no}",
         )
 
     def _handle_container_response(

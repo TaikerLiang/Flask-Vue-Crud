@@ -8,6 +8,7 @@ from crawler.core.base_new import (
     SEARCH_TYPE_BOOKING,
     SEARCH_TYPE_MBL,
 )
+from crawler.core.description import DATA_NOT_FOUND_DESC, SUSPICIOUS_OPERATION_DESC
 from crawler.core.exceptions_new import FormatError, SuspiciousOperationError
 from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.table import BaseTable, TableExtractor
@@ -88,7 +89,7 @@ class CarrierMscuSpider(BaseCarrierSpider):
         else:
             raise SuspiciousOperationError(
                 task_id=self.task_id,
-                reason=f"Unexpected request method: `{option.method}`",
+                reason=SUSPICIOUS_OPERATION_DESC.format(method=option.method),
             )
 
 
@@ -182,7 +183,7 @@ class MainRoutingRule(BaseRoutingRule):
             yield DataNotFoundItem(
                 **info_pack,
                 status=RESULT_STATUS_ERROR,
-                detail="Data was not found",
+                detail=DATA_NOT_FOUND_DESC,
             )
             return
 

@@ -1,14 +1,14 @@
 import base64
+from io import BytesIO
 import os
 import re
 import time
-from io import BytesIO
 from typing import Dict, Optional
 
+from PIL import Image
 import cv2
 import numpy as np
 import scrapy
-from PIL import Image
 from scrapy import Selector
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver import ActionChains
@@ -24,7 +24,16 @@ from crawler.core.base_new import (
     SEARCH_TYPE_CONTAINER,
     SEARCH_TYPE_MBL,
 )
-from crawler.core.exceptions_new import AccessDeniedError, FormatError, TimeOutError
+from crawler.core.description import (
+    DATA_NOT_FOUND_DESC,
+    SUSPICIOUS_OPERATION_DESC,
+    TIMEOUT_DESC,
+)
+from crawler.core.exceptions_new import (
+    FormatError,
+    SuspiciousOperationError,
+    TimeOutError,
+)
 from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core.table import BaseTable, TableExtractor
@@ -111,11 +120,11 @@ class CarrierOoluSpider(BaseCarrierSpider):
             )
 
         else:
-            raise AccessDeniedError(
+            raise SuspiciousOperationError(
                 task_id=self.task_id,
                 search_no=self.search_no,
                 search_type=self.search_type,
-                reason=f"Unexpected request method: `{option.method}`",
+                reason=SUSPICIOUS_OPERATION_DESC.format(method=option.method),
             )
 
 
@@ -390,7 +399,7 @@ class CargoTrackingRule(BaseRoutingRule):
             self._content_getter.quit()
             raise TimeOutError(
                 **info_pack,
-                reason=f"Timeout during connect to {url}",
+                reason=TIMEOUT_DESC.format(action=f"connecting to {url}"),
             )
 
         if os.path.exists("./background01.jpg"):
@@ -406,7 +415,7 @@ class CargoTrackingRule(BaseRoutingRule):
 
     def _handle_response(self, response, info_pack: Dict):
         if self._is_search_no_invalid(response):
-            yield DataNotFoundItem(**info_pack, status=RESULT_STATUS_ERROR, detail="Data was not found")
+            yield DataNotFoundItem(**info_pack, status=RESULT_STATUS_ERROR, detail=DATA_NOT_FOUND_DESC)
             return
 
         task_id = info_pack["task_id"]
@@ -863,7 +872,7 @@ class ContainerStatusRule(BaseRoutingRule):
             self._content_getter.quit()
             raise TimeOutError(
                 **info_pack,
-                reason=f"Timeout during connect to {url}",
+                reason=TIMEOUT_DESC.format(action=f"connecting to {url}"),
             )
 
         response = Selector(text=self._content_getter.get_page_source())
