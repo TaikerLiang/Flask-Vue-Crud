@@ -32,6 +32,7 @@ class ImageAntiCaptchaService(AntiCaptchaService):
         if image_content:
             file_name = "captcha.jpeg"
             image = Image.open(io.BytesIO(image_content))
+            image = image.convert("RGB")
             image.save(file_name)
 
             captcha_text = self.solver.solve_and_return_solution(file_name)

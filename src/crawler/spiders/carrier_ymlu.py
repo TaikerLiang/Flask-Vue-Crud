@@ -1,10 +1,8 @@
 import dataclasses
-import io
 import logging
 import re
 from typing import List, Tuple, Union
 
-from python_anticaptcha import AnticaptchaClient, AnticaptchaException, ImageToTextTask
 import scrapy
 from scrapy import Selector
 
@@ -17,7 +15,6 @@ from crawler.core_carrier.base import (
 )
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
-    AntiCaptchaError,
     CarrierResponseFormatError,
     SuspiciousOperationError,
 )
@@ -37,6 +34,7 @@ from crawler.extractors.table_cell_extractors import (
     FirstTextTdExtractor,
 )
 from crawler.extractors.table_extractors import HeaderMismatchError
+from crawler.services.captcha_service import ImageAntiCaptchaService
 
 BASE_URL = "https://www.yangming.com"
 
@@ -280,16 +278,8 @@ class CaptchaRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _get_captcha(captcha_code):
-        try:
-            api_key = "fbe73f747afc996b624e8d2a95fa0f84"
-            captcha_fp = io.BytesIO(captcha_code)
-            client = AnticaptchaClient(api_key)
-            task = ImageToTextTask(captcha_fp)
-            job = client.createTask(task)
-            job.join()
-            return job.get_captcha_text()
-        except AnticaptchaException:
-            raise AntiCaptchaError()
+        captcha_solver = ImageAntiCaptchaService()
+        return captcha_solver.solve(captcha_code)
 
 
 class BookingInfoRoutingRule(BaseRoutingRule):

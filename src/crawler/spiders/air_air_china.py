@@ -1,15 +1,20 @@
-from typing import List, Dict
-import io
+from typing import Dict, List
 
-from scrapy import Request, FormRequest, Selector
-from python_anticaptcha import AnticaptchaClient, ImageToTextTask, AnticaptchaException
+from scrapy import FormRequest, Request, Selector
 
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_air.base_spiders import BaseMultiAirSpider
-from crawler.core_air.items import DebugItem, BaseAirItem, AirItem, ExportErrorData, FlightItem, HistoryItem
 from crawler.core_air.base import AIR_RESULT_STATUS_ERROR
-from crawler.core_air.exceptions import AntiCaptchaError
-from crawler.core_air.rules import RuleManager, BaseRoutingRule, RequestOption
+from crawler.core_air.base_spiders import BaseMultiAirSpider
+from crawler.core_air.items import (
+    AirItem,
+    BaseAirItem,
+    DebugItem,
+    ExportErrorData,
+    FlightItem,
+    HistoryItem,
+)
+from crawler.core_air.rules import BaseRoutingRule, RequestOption, RuleManager
+from crawler.services.captcha_service import ImageAntiCaptchaService
 
 BASE_URL = "https://www.airchinacargo.com"
 
@@ -163,16 +168,8 @@ class CaptchaRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _get_captcha(captcha_code):
-        try:
-            api_key = "fbe73f747afc996b624e8d2a95fa0f84"
-            captcha_fp = io.BytesIO(captcha_code)
-            client = AnticaptchaClient(api_key)
-            task = ImageToTextTask(captcha_fp)
-            job = client.createTask(task)
-            job.join()
-            return job.get_captcha_text()
-        except AnticaptchaException:
-            raise AntiCaptchaError()
+        captcha_solver = ImageAntiCaptchaService()
+        return captcha_solver.solve(captcha_code)
 
 
 class SearchRoutingRule(BaseRoutingRule):
