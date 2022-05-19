@@ -5,12 +5,12 @@ import requests
 import scrapy
 from scrapy.http import Response
 
-from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_AWB
-from crawler.core.exceptions import SuspiciousOperationError, TimeOutError
-from crawler.core.items import DataNotFoundItem
-from crawler.core_air.base_spiders import BaseAirSpider
-from crawler.core_air.items import AirItem, BaseAirItem, DebugItem, HistoryItem
-from crawler.core_air.request_helpers import RequestOption
+from crawler.core.base_new import RESULT_STATUS_ERROR, SEARCH_TYPE_AWB
+from crawler.core.exceptions_new import SuspiciousOperationError, TimeOutError
+from crawler.core.items_new import DataNotFoundItem, EndItem
+from crawler.core_air.base_spiders_new import BaseAirSpider
+from crawler.core_air.items_new import AirItem, BaseAirItem, DebugItem, HistoryItem
+from crawler.core_air.request_helpers_new import RequestOption
 from crawler.core_air.rules import BaseRoutingRule, RuleManager
 
 PREFIX = "784"
@@ -41,7 +41,7 @@ class AirChinaSouthernSpider(BaseAirSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, (BaseAirItem, DataNotFoundItem)):
+            if isinstance(result, (BaseAirItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -142,6 +142,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
 
             for history_item in self._construct_history_item_list(response):
                 yield history_item
+            yield EndItem(task_id=response.meta["task_id"])
 
     def _construct_air_item(self, response) -> Union[AirItem, DataNotFoundItem]:
         selector = response.css("span[id='ctl00_ContentPlaceHolder1_awbLbl'] tr td")
