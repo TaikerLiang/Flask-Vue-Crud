@@ -39,7 +39,9 @@ class TestBaseItemPipeline:
 
         # assert
         mock_collector.is_default.assert_called_once()
-        mock_send_provider_result_to_edi_client.assert_called_once_with(task_id=expected_taskid, result=expected_result)
+        mock_send_provider_result_to_edi_client.assert_called_once_with(
+            task_id=expected_taskid, item_result=expected_result
+        )
 
         # arrange
         mock_collector.is_default = Mock(return_value=False)
@@ -52,4 +54,6 @@ class TestBaseItemPipeline:
         # assert
         mock_collector.is_default.assert_called_once()
         mock_collector.build_final_data.assert_called_once()
-        mock_send_provider_result_to_edi_client.assert_called_once_with(task_id=expected_taskid, result=expected_result)
+        mock_send_provider_result_to_edi_client.assert_called_once_with(
+            task_id=expected_taskid, item_result=expected_result
+        )

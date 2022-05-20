@@ -70,6 +70,10 @@ pytest -x test
 
 ## Deploy to Scrapy Cloud
 
+Currently, shub 2.14.1 require click 7.0 but some of our packages are using click 8.0 or later.
+We suggest use [shub binary](https://github.com/scrapinghub/shub/releases/tag/v2.14.1) as a workaround.
+Once [this issue](https://github.com/scrapinghub/shub/pull/416) is resolved, we can use pip version again.
+
 ### (Prepare) Docker Login
 
 * Username is your API key

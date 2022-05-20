@@ -9,6 +9,7 @@ from crawler.core_carrier.items_new import (
 
 def verify(results):
     assert results[0] == VesselItem(
+        task_id="1",
         vessel_key=0,
         vessel="ZIM NEW YORK",
         voyage="78",
@@ -19,6 +20,7 @@ def verify(results):
     )
 
     assert results[1] == VesselItem(
+        task_id="1",
         vessel_key=1,
         vessel="ASIATIC KING",
         voyage="215",
@@ -29,6 +31,7 @@ def verify(results):
     )
 
     assert results[4] == VesselItem(
+        task_id="1",
         vessel_key=4,
         vessel="RS MISTRAL",
         voyage="4",
@@ -39,6 +42,7 @@ def verify(results):
     )
 
     assert results[5] == MblItem(
+        task_id="1",
         mbl_no="ZIMUNGB9355973",
         vessel="RS MISTRAL",
         voyage="4",
@@ -53,12 +57,14 @@ def verify(results):
     )
 
     assert results[6] == ContainerItem(
+        task_id="1",
         container_key="TEMU2114116",
         container_no="TEMU2114116",
         terminal_pod=LocationItem(name=None),
     )
 
     assert results[7] == ContainerStatusItem(
+        task_id="1",
         container_key="TEMU2114116",
         description="Empty container returned from Customer",
         local_date_time="14-Jan-2019 10:25",

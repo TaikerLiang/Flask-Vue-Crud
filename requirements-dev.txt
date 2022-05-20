@@ -4,9 +4,9 @@
 #
 #    pip-compile --output-file=requirements-dev.txt requirements-dev.in
 #
-ansible==5.7.1
+ansible==5.8.0
     # via -r requirements-dev.in
-ansible-core==2.12.5
+ansible-core==2.12.6
     # via ansible
 anticaptchaofficial==1.0.39
     # via -r src/requirements-app.txt
@@ -74,12 +74,11 @@ click==8.1.3
     #   black
     #   flask
     #   pip-tools
-    #   shub
 constantly==15.1.0
     # via
     #   -r src/requirements-app.txt
     #   twisted
-coverage[toml]==6.3.3
+coverage[toml]==6.4
     # via pytest-cov
 cryptography==36.0.2
     # via
@@ -97,10 +96,6 @@ cssselect==1.1.0
     #   scrapy
 distlib==0.3.4
     # via virtualenv
-docker-py==1.10.6
-    # via shub
-docker-pycreds==0.4.0
-    # via docker-py
 faker==13.11.0
     # via -r src/requirements-app.txt
 filelock==3.7.0
@@ -133,7 +128,7 @@ hyperlink==21.0.0
     # via
     #   -r src/requirements-app.txt
     #   twisted
-identify==2.5.0
+identify==2.5.1
     # via pre-commit
 idna==3.3
     # via
@@ -233,11 +228,11 @@ pathspec==0.9.0
     # via black
 pep517==0.12.0
     # via pip-tools
-pillow==9.1.0
+pillow==9.1.1
     # via
     #   -r requirements-dev.in
     #   pyscreeze
-pip-tools==6.6.0
+pip-tools==6.6.2
     # via -r requirements-dev.in
 platformdirs==2.5.2
     # via
@@ -952,7 +947,6 @@ pyyaml==6.0
     # via
     #   ansible-core
     #   pre-commit
-    #   shub
 queuelib==1.6.2
     # via
     #   -r src/requirements-app.txt
@@ -961,17 +955,10 @@ requests==2.27.1
     # via
     #   -r src/requirements-app.txt
     #   anticaptchaofficial
-    #   docker-py
     #   python-anticaptcha
-    #   scrapinghub
-    #   shub
     #   undetected-chromedriver
 resolvelib==0.5.4
     # via ansible-core
-retrying==1.3.3
-    # via
-    #   scrapinghub
-    #   shub
 ruamel-yaml==0.17.21
     # via
     #   -r src/requirements-app.txt
@@ -982,10 +969,8 @@ ruamel-yaml-clib==0.2.6
     #   ruamel-yaml
 rubicon-objc==0.4.2
     # via mouseinfo
-scipy==1.8.0
+scipy==1.8.1
     # via -r requirements-dev.in
-scrapinghub==2.4.0
-    # via shub
 scrapy==2.4.1
     # via -r src/requirements-app.txt
 selenium==4.1.5
@@ -999,22 +984,15 @@ service-identity==21.1.0
     # via
     #   -r src/requirements-app.txt
     #   scrapy
-shub==2.10.0
-    # via -r requirements-dev.in
 six==1.16.0
     # via
     #   -r src/requirements-app.txt
     #   automat
-    #   docker-py
-    #   docker-pycreds
     #   parsel
     #   protego
     #   python-anticaptcha
     #   python-dateutil
-    #   retrying
-    #   scrapinghub
     #   service-identity
-    #   shub
     #   virtualenv
     #   w3lib
 sniffio==1.2.0
@@ -1027,9 +1005,7 @@ sortedcontainers==2.4.0
     #   mitmproxy
     #   trio
 toml==0.10.2
-    # via
-    #   pre-commit
-    #   shub
+    # via pre-commit
 tomli==2.0.1
     # via
     #   black
@@ -1044,7 +1020,6 @@ tqdm==4.64.0
     # via
     #   -r src/requirements-app.txt
     #   pyppeteer
-    #   shub
 trio==0.20.0
     # via
     #   -r src/requirements-app.txt
@@ -1085,8 +1060,6 @@ w3lib==1.22.0
     #   itemloaders
     #   parsel
     #   scrapy
-websocket-client==1.3.2
-    # via docker-py
 websockets==10.3
     # via
     #   -r src/requirements-app.txt

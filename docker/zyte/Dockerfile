@@ -4,7 +4,9 @@ RUN set -ex \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
         unzip \
-        xvfb
+        xvfb \
+        python3-tk \
+        python3-dev
 
 
 #============================================
@@ -53,29 +55,6 @@ RUN CHROME_STRING=$(google-chrome --version) \
   && chmod 755 /opt/selenium/chromedriver-$CD_VERSION \
   && sudo ln -fs /opt/selenium/chromedriver-$CD_VERSION /usr/local/bin/chromedriver
 
-#============================================
-# PhontomJS
-#============================================
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        ca-certificates \
-        bzip2 \
-        libfontconfig \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        curl \
-    && mkdir /tmp/phantomjs \
-    && curl -L https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 \
-           | tar -xj --strip-components=1 -C /tmp/phantomjs \
-    && cd /tmp/phantomjs \
-    && mv bin/phantomjs /usr/local/bin \
-    && apt-get purge --auto-remove -y \
-        curl \
-    && apt-get clean \
-    && rm -rf /tmp/* /var/lib/apt/lists/*
 
 #============================================
 # Firefox & Geckodriver
@@ -100,12 +79,23 @@ RUN unzip /tmp/chrome-linux.zip -d ~/.local/share/pyppeteer/local-chromium/58842
 ENV OPENSSL_CONF=/etc/ssl/
 ENV TERM xterm
 ENV SCRAPY_SETTINGS_MODULE crawler.settings
+
 RUN mkdir -p /app
 WORKDIR /app
 COPY ./requirements-app.txt /app/requirements.txt
+RUN pip install pyautogui # PyObjC issue
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app
 RUN python setup.py install
 
-# run scrapy by 'docker run $DOCKER_NAME shub-image-info'
+ARG EDI_ENGINE_BASE_URL
+ARG EDI_ENGINE_USER
+ARG EDI_ENGINE_TOKEN
+ARG EDI_HOST
+ENV EDI_ENGINE_BASE_URL=${EDI_ENGINE_BASE_URL}
+ENV EDI_ENGINE_USER=${EDI_ENGINE_USER}
+ENV EDI_ENGINE_TOKEN=${EDI_ENGINE_TOKEN}
+ENV EDI_HOST=${EDI_HOST}
 
+
+# run scrapy by 'docker run $DOCKER_NAME shub-image-info'
