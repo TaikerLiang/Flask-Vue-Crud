@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Optional
 
 import bezier
 import numpy as np
-import pyautogui
 import selenium.webdriver
 from selenium.webdriver import Chrome
 from selenium.webdriver.common.by import By
@@ -110,10 +109,11 @@ class SeleniumContentGetter(BaseContentGetter):
             elem.send_keys(letter)
 
     def click_mouse(self):
+        import pyautogui
         pyautogui.click()
 
     def resting_mouse(self, end):  # move mouse to right of screen
-
+        import pyautogui
         start = pyautogui.position()
 
         x2 = (start[0] + end[0]) / 3  # midpoint x

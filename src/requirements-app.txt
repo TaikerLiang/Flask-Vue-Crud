@@ -4,11 +4,11 @@
 #
 #    pip-compile --output-file=src/requirements-app.txt src/requirements-app.in
 #
-anticaptchaofficial==1.0.34
+anticaptchaofficial==1.0.39
     # via -r src/requirements-app.in
 appdirs==1.4.4
     # via pyppeteer
-asgiref==3.4.1
+asgiref==3.5.1
     # via mitmproxy
 async-generator==1.10
     # via
@@ -23,6 +23,8 @@ attrs==21.4.0
     #   twisted
 automat==20.2.0
     # via twisted
+bezier==2021.2.12
+    # via -r src/requirements-app.in
 blinker==1.4
     # via
     #   mitmproxy
@@ -42,14 +44,13 @@ cffi==1.15.0
     # via cryptography
 charset-normalizer==2.0.12
     # via requests
-click==8.0.4
+click==8.1.3
     # via
     #   -r src/requirements-app.in
     #   flask
-    #   mitmproxy
 constantly==15.1.0
     # via twisted
-cryptography==3.4.8
+cryptography==36.0.2
     # via
     #   mitmproxy
     #   pyopenssl
@@ -60,11 +61,11 @@ cssselect==1.1.0
     # via
     #   parsel
     #   scrapy
-faker==13.2.0
+faker==13.11.0
     # via -r src/requirements-app.in
 flask==2.0.3
     # via mitmproxy
-h11==0.12.0
+h11==0.13.0
     # via
     #   mitmproxy
     #   wsproto
@@ -87,21 +88,21 @@ idna==3.3
     #   requests
     #   trio
     #   urllib3
-importlib-metadata==4.11.1
+importlib-metadata==4.11.3
     # via pyppeteer
 incremental==21.3.0
     # via twisted
-itemadapter==0.4.0
+itemadapter==0.6.0
     # via
     #   itemloaders
     #   scrapy
 itemloaders==1.0.4
     # via scrapy
-itsdangerous==2.1.0
+itsdangerous==2.1.2
     # via flask
-jinja2==3.0.3
+jinja2==3.1.2
     # via flask
-jmespath==0.10.0
+jmespath==1.0.0
     # via itemloaders
 kaitaistruct==0.9
     # via
@@ -113,15 +114,17 @@ lxml==4.8.0
     # via
     #   parsel
     #   scrapy
-markupsafe==2.1.0
+markupsafe==2.1.1
     # via jinja2
-mitmproxy==7.0.4
+mitmproxy==8.0.0
     # via -r src/requirements-app.in
 msgpack==1.0.3
     # via mitmproxy
-numpy==1.22.2
-    # via opencv-python
-opencv-python==4.5.5.62
+numpy==1.22.3
+    # via
+    #   bezier
+    #   opencv-python
+opencv-python==4.5.5.64
     # via -r src/requirements-app.in
 outcome==1.1.0
     # via trio
@@ -133,7 +136,7 @@ passlib==1.7.4
     # via mitmproxy
 protego==0.2.1
     # via scrapy
-protobuf==3.18.1
+protobuf==3.19.4
     # via mitmproxy
 publicsuffix2==2.20191221
     # via mitmproxy
@@ -155,13 +158,13 @@ pydispatcher==2.0.5
     # via scrapy
 pyee==8.2.2
     # via pyppeteer
-pyopenssl==20.0.1
+pyopenssl==22.0.0
     # via
     #   mitmproxy
     #   scrapy
     #   selenium-wire
     #   urllib3
-pyparsing==2.4.7
+pyparsing==3.0.9
     # via
     #   mitmproxy
     #   selenium-wire
@@ -175,7 +178,7 @@ pysocks==1.7.1
     # via
     #   selenium-wire
     #   urllib3
-python-anticaptcha==0.7.1
+python-anticaptcha==1.0.0
     # via -r src/requirements-app.in
 python-dateutil==2.8.2
     # via faker
@@ -187,18 +190,18 @@ requests==2.27.1
     #   anticaptchaofficial
     #   python-anticaptcha
     #   undetected-chromedriver
-ruamel-yaml==0.17.16
+ruamel-yaml==0.17.21
     # via mitmproxy
 ruamel-yaml-clib==0.2.6
     # via ruamel-yaml
 scrapy==2.4.1
     # via -r src/requirements-app.in
-selenium==4.1.0
+selenium==4.1.5
     # via
     #   -r src/requirements-app.in
     #   selenium-wire
     #   undetected-chromedriver
-selenium-wire==4.6.3
+selenium-wire==4.6.4
     # via -r src/requirements-app.in
 service-identity==21.1.0
     # via scrapy
@@ -207,7 +210,6 @@ six==1.16.0
     #   automat
     #   parsel
     #   protego
-    #   pyopenssl
     #   python-anticaptcha
     #   python-dateutil
     #   service-identity
@@ -220,7 +222,7 @@ sortedcontainers==2.4.0
     #   trio
 tornado==6.1
     # via mitmproxy
-tqdm==4.62.3
+tqdm==4.64.0
     # via pyppeteer
 trio==0.20.0
     # via
@@ -228,15 +230,15 @@ trio==0.20.0
     #   trio-websocket
 trio-websocket==0.9.2
     # via selenium
-twisted==22.1.0
+twisted==22.4.0
     # via scrapy
-typing-extensions==4.1.1
+typing-extensions==4.2.0
     # via twisted
-ujson==5.1.0
+ujson==5.2.0
     # via -r src/requirements-app.in
 undetected-chromedriver==3.1.5.post4
     # via -r src/requirements-app.in
-urllib3[secure,socks]==1.26.8
+urllib3[secure,socks]==1.26.9
     # via
     #   pyppeteer
     #   requests
@@ -248,24 +250,26 @@ w3lib==1.22.0
     #   itemloaders
     #   parsel
     #   scrapy
-websockets==10.2
+websockets==10.3
     # via
     #   pyppeteer
     #   undetected-chromedriver
 werkzeug==2.0.3
-    # via flask
-wsproto==1.0.0
+    # via
+    #   flask
+    #   selenium-wire
+wsproto==1.1.0
     # via
     #   mitmproxy
     #   selenium-wire
     #   trio-websocket
-zipp==3.7.0
+zipp==3.8.0
     # via importlib-metadata
 zope-interface==5.4.0
     # via
     #   scrapy
     #   twisted
-zstandard==0.15.2
+zstandard==0.17.0
     # via
     #   mitmproxy
     #   selenium-wire
