@@ -778,7 +778,7 @@ class ContentGetter(FirefoxContentGetter):
 
     def click_railway_button(self, idx: int):
         railway_button = self._driver.find_element_by_css_selector(
-            f"div.containerSearchBody tr:nth-child({idx + 1}) > td:nth-child(6) span"
+            f"div.containerSearchBody tr:nth-child({idx + 1}) div.poptip-trigger span"
         )
 
         railway_button.click()
