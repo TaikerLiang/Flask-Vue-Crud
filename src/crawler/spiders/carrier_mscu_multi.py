@@ -4,6 +4,7 @@ import json
 import re
 import time
 from typing import Dict, List
+from json import JSONDecodeError
 
 import scrapy
 
@@ -210,7 +211,17 @@ class MainRoutingRule(BaseRoutingRule):
             "search_type": self._search_type,
         }
 
-        json_response = json.loads(response.text)
+        try:
+            json_response = json.loads(response.text)
+        except JSONDecodeError:
+            time.sleep(5)
+            yield Restart(
+                search_nos=search_nos,
+                task_ids=task_ids,
+                reason="'IsSuccess' field of response data is False, sleep and retry",
+            )
+            return
+
         if not json_response["IsSuccess"]:
             if isinstance(json_response["Data"], str) and ("not found" in json_response["Data"]):
                 yield DataNotFoundItem(
