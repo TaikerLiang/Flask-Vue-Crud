@@ -4,7 +4,9 @@ RUN set -ex \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
         unzip \
-        xvfb
+        xvfb \
+        python3-tk \
+        python3-dev
 
 
 #============================================
@@ -108,6 +110,7 @@ ENV EDI_HOST tracking.hardcoretech.co
 RUN mkdir -p /app
 WORKDIR /app
 COPY ./requirements-app.txt /app/requirements.txt
+RUN pip install pyautogui # PyObjC issue
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app
 RUN python setup.py install
