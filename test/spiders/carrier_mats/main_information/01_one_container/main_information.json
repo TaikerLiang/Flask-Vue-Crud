@@ -1,19 +1,19 @@
 [
     {
-        "bookingNumber": "9271590",
-        "bookedDate": 1569135600000,
-        "containerNumber": "MATU233203",
-        "checkDigit": "6",
-        "consigneeName": "STRAIGHT FORWARDING INC.",
-        "shipperName": "T.H.I. GROUP LTD.",
+        "bookingNumber": "1499691",
+        "bookedDate": 1641369600000,
+        "containerNumber": "MATU234562",
+        "checkDigit": "4",
+        "consigneeName": "EVANGEL SHIPPING INC.",
+        "shipperName": "GRAND FREIGHT SERVICE LIMITED.",
         "shipperContact": "OP PERSON",
-        "shipperPhone": "57487286777",
-        "originPort": "NINGBO",
-        "destPort": "LONG BEACH",
-        "originCode": "NGB",
-        "destCode": "KMH",
-        "loadPort": "NINGBO",
-        "dischargePort": "LONG BEACH",
+        "shipperPhone": "076985189039",
+        "originPort": "SHANGHAI",
+        "destPort": "OAKLAND",
+        "originCode": "SHA",
+        "destCode": "OAK",
+        "loadPort": "SHANGHAI",
+        "dischargePort": "OAKLAND OICT",
         "blOrigin": "",
         "blDest": "",
         "oversizeLeft": "0",
@@ -25,8 +25,8 @@
         "equipmentType": "Dry Container 40'",
         "temperature": null,
         "temperatureScale": null,
-        "releaseToParty": null,
-        "sealNumber": "770104",
+        "releaseToParty": "KACHEONG INTERNATIONAL CORPORATI",
+        "sealNumber": "1121550",
         "physicalLocation": null,
         "stopInTransit": "N",
         "availableDate": null,
@@ -46,93 +46,79 @@
         "eventCode": null,
         "eventDetailCode": null,
         "eventDate": null,
-        "bookingId": 3393376,
-        "containerId": 348393,
-        "netWeight": 23388.0,
+        "bookingId": 4289051,
+        "containerId": 441081,
+        "netWeight": 22776.0,
         "events": [
             {
-                "date": 1571260260000,
-                "location": "LONG BEACH (CA)",
+                "date": 1643761200000,
+                "location": "OAKLAND (CA)",
                 "status": "RETURNED FROM CONSIGNEE            ",
-                "loadPort": "NINGBO",
-                "dischargePort": "LONG BEACH"
+                "loadPort": "SHANGHAI",
+                "dischargePort": "OAKLAND OICT"
             },
             {
-                "date": 1571236320000,
-                "location": "SHIPPERS TRANSPORT (CA)",
-                "status": "OUTGATE                             to LAND SHARK DISTRIBUTION, INC.",
-                "loadPort": "NINGBO",
-                "dischargePort": "LONG BEACH"
+                "date": 1643685300000,
+                "location": "OAKLAND OICT (CA)",
+                "status": "OUTGATE                             to UNITED BRIDGE TRUCKING CORP",
+                "loadPort": "SHANGHAI",
+                "dischargePort": "OAKLAND OICT"
             },
             {
-                "date": 1571200440000,
-                "location": "SHIPPERS TRANSPORT (CA)",
+                "date": 1643242860000,
+                "location": "OAKLAND OICT (CA)",
                 "status": "AVAILABLE                          ",
-                "loadPort": "NINGBO",
-                "dischargePort": "LONG BEACH"
+                "loadPort": "SHANGHAI",
+                "dischargePort": "OAKLAND OICT"
             },
             {
-                "date": 1571200440000,
-                "location": "SHIPPERS TRANSPORT (CA)",
-                "status": "INGATE                              Full by SHIPPERS TRANSPORT EXPRESS",
-                "loadPort": "NINGBO",
-                "dischargePort": "LONG BEACH"
+                "date": 1643242860000,
+                "location": "OAKLAND OICT (CA)",
+                "status": "DISCHARGE FROM VESSEL               MATSON NIIHAU 016",
+                "loadPort": "SHANGHAI",
+                "dischargePort": "OAKLAND OICT"
             },
             {
-                "date": 1571199540000,
-                "location": "LONG BEACH (CA)",
-                "status": "OUTGATE                             to SHIPPERS TRANSPORT EXPRESS",
-                "loadPort": "NINGBO",
-                "dischargePort": "LONG BEACH"
-            },
-            {
-                "date": 1571184480000,
-                "location": "LONG BEACH (CA)",
-                "status": "DISCHARGE FROM VESSEL               KAIMANA HILA 009",
-                "loadPort": "NINGBO",
-                "dischargePort": "LONG BEACH"
-            },
-            {
-                "date": 1570744560000,
+                "date": 1643177760000,
                 "location": "",
                 "status": "HOLD RELEASED                       - Customs Clearance",
-                "loadPort": "NINGBO",
-                "dischargePort": "LONG BEACH"
+                "loadPort": "SHANGHAI",
+                "dischargePort": "OAKLAND"
             },
             {
-                "date": 1570653480000,
+                "date": 1642607460000,
                 "location": "",
                 "status": "HOLD RELEASED                       - Hold for Payment",
-                "loadPort": "NINGBO",
-                "dischargePort": "LONG BEACH"
+                "loadPort": "SHANGHAI",
+                "dischargePort": "OAKLAND"
             },
             {
-                "date": 1570510260000,
+                "date": 1642225560000,
                 "location": "",
                 "status": "CONTAINER ON HOLD                   - Hold for Payment",
-                "loadPort": "NINGBO",
-                "dischargePort": "LONG BEACH"
+                "loadPort": "SHANGHAI",
+                "dischargePort": "OAKLAND"
             },
             {
-                "date": 1570291680000,
+                "date": 1642138200000,
+                "location": "SHANGHAI",
+                "status": "LOAD TO VESSEL                      MATSON NIIHAU 016",
+                "loadPort": "SHANGHAI",
+                "dischargePort": "OAKLAND"
+            },
+            {
+                "date": 1642095600000,
                 "location": "",
                 "status": "CONTAINER ON HOLD                   - Customs Clearance",
-                "loadPort": "NINGBO",
-                "dischargePort": "LONG BEACH"
+                "loadPort": "SHANGHAI",
+                "dischargePort": "OAKLAND"
             },
             {
-                "date": 1570140120000,
-                "location": "NINGBO",
-                "status": "LOAD TO VESSEL                      KAIMANA HILA 009",
-                "loadPort": "NINGBO",
-                "dischargePort": "LONG BEACH"
-            },
-            {
-                "date": 1569714540000,
-                "location": "NINGBO",
-                "status": "INGATE                              Full by NINGBO                                   ",
-                "loadPort": "NINGBO",
-                "dischargePort": "LONG BEACH"
+                "date": 1641893220000,
+                "location": "SHANGHAI",
+                "status": "INGATE                              Full by SHANGHAI                                 ",
+                "loadPort": "SHANGHAI",
+                "dischargePort": "OAKLAND OICT"
             }
         ],
         "shipperRefs": [],
@@ -140,6 +126,10 @@
         "commodities": [
             "FREIGHT-ALL-KINDS OR CONSOLIDA"
         ],
-        "containerOnly": false
+        "containerOnly": false,
+        "vessel": "MNX",
+        "voyage": 16,
+        "direction": "E",
+        "vesselETA": "01/27/22"
     }
 ]

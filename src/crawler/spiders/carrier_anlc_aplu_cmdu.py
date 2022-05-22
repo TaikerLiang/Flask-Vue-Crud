@@ -1,33 +1,38 @@
-import re
 import json
+import re
 from typing import Dict
 
 import scrapy
 from scrapy import Selector
 
-from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
-from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    SuspiciousOperationError,
-    DataNotFoundError,
-    CARRIER_RESULT_STATUS_ERROR,
+from crawler.core.base_new import (
+    DUMMY_URL_DICT,
+    RESULT_STATUS_ERROR,
+    SEARCH_TYPE_BOOKING,
+    SEARCH_TYPE_CONTAINER,
+    SEARCH_TYPE_MBL,
 )
-
-from crawler.core_carrier.items import (
+from crawler.core.description import DATA_NOT_FOUND_DESC, SUSPICIOUS_OPERATION_DESC
+from crawler.core.exceptions_new import FormatError, SuspiciousOperationError
+from crawler.core.items_new import DataNotFoundItem, EndItem
+from crawler.core.proxy_new import HydraproxyProxyManager
+from crawler.core_carrier.base_spiders_new import BaseCarrierSpider
+from crawler.core_carrier.items_new import (
     BaseCarrierItem,
-    MblItem,
-    LocationItem,
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
-    ExportErrorData,
+    LocationItem,
+    MblItem,
 )
-from crawler.core.proxy import HydraproxyProxyManager
-from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
-from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
+from crawler.core_carrier.request_helpers_new import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
+from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
+
+STATUS_ONE_CONTAINER = "STATUS_ONE_CONTAINER"
+STATUS_MULTI_CONTAINER = "STATUS_MULTI_CONTAINER"
+STATUS_MBL_NOT_EXIST = "STATUS_MBL_NOT_EXIST"
+STATUS_WEBSITE_SUSPEND = "STATUS_WEBSITE_SUSPEND"
 
 
 class ForceRestart:
@@ -42,14 +47,14 @@ class ShareSpider(BaseCarrierSpider):
         super(ShareSpider, self).__init__(*args, **kwargs)
 
         bill_rules = [
-            CheckIpRule(search_type=SHIPMENT_TYPE_MBL),
-            FirstTierRoutingRule(search_type=SHIPMENT_TYPE_MBL),
+            RecaptchaRule(search_type=SEARCH_TYPE_MBL),
+            SearchRoutingRule(),
             ContainerStatusRoutingRule(),
         ]
 
         booking_rules = [
-            CheckIpRule(search_type=SHIPMENT_TYPE_BOOKING),
-            FirstTierRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
+            RecaptchaRule(search_type=SEARCH_TYPE_BOOKING),
+            SearchRoutingRule(),
             ContainerStatusRoutingRule(),
         ]
 
@@ -62,6 +67,8 @@ class ShareSpider(BaseCarrierSpider):
 
         self._proxy_manager = HydraproxyProxyManager(session="share", logger=self.logger)
 
+        self._enditem_remaining_num_dict = {}
+
     def start(self):
         option = self._prepare_start()
         yield self._build_request_by(option=option)
@@ -69,7 +76,9 @@ class ShareSpider(BaseCarrierSpider):
     def _prepare_start(self):
         self._proxy_manager.renew_proxy()
 
-        option = CheckIpRule.build_request_option(search_no=self.search_no, base_url=self.base_url)
+        option = RecaptchaRule.build_request_option(
+            task_id=self.task_id, search_no=self.search_no, base_url=self.base_url
+        )
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         return proxy_option
 
@@ -82,12 +91,23 @@ class ShareSpider(BaseCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem)):
                 yield result
+            elif isinstance(result, EndItem):
+                if result.get("remaining_num"):
+                    self._enditem_remaining_num_dict.setdefault(result["task_id"], result["remaining_num"])
+                else:
+                    if not self._enditem_remaining_num_dict.get(result["task_id"]):
+                        yield result
+                    else:
+                        self._enditem_remaining_num_dict[result["task_id"]] -= 1
+                        if self._enditem_remaining_num_dict[result["task_id"]] == 0:
+                            yield result
             elif isinstance(result, RequestOption):
                 proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
                 yield self._build_request_by(option=proxy_option)
             elif isinstance(result, ForceRestart):
+                self._enditem_remaining_num_dict.pop([self.task_id], None)
                 proxy_option = self._prepare_start()
                 yield self._build_request_by(option=proxy_option)
             else:
@@ -113,7 +133,12 @@ class ShareSpider(BaseCarrierSpider):
                 meta=meta,
             )
         else:
-            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
+            raise SuspiciousOperationError(
+                task_id=self.task_id,
+                search_no=self.search_no,
+                search_type=self.search_type,
+                reason=SUSPICIOUS_OPERATION_DESC.format(method=option.method),
+            )
 
 
 class CarrierAnlcSpider(ShareSpider):
@@ -134,22 +159,22 @@ class CarrierCmduSpider(ShareSpider):
 # ---------------------------------------------------------------------------------------------------
 
 
-class CheckIpRule(BaseRoutingRule):
-    name = "IP"
+class RecaptchaRule(BaseRoutingRule):
+    name = "RECAPTCHA"
 
     def __init__(self, search_type):
-        self._sent_ips = []
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(cls, base_url, search_no):
+    def build_request_option(cls, base_url: str, task_id: str, search_no: str):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://api.myip.com",
+            url="https://www.recaptcha.net/recaptcha/enterprise/anchor?ar=1&k=6Lf1iyUaAAAAAJ2mA_9rBiiGtkxBCfO0ItCm7t-x&co=aHR0cHM6Ly93d3cuY21hLWNnbS5jb206NDQz&hl=zh-TW&size=invisible",
             meta={
-                "search_no": search_no,
                 "base_url": base_url,
+                "task_id": task_id,
+                "search_no": search_no,
             },
         )
 
@@ -157,44 +182,37 @@ class CheckIpRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        search_no = response.meta["search_no"]
         base_url = response.meta["base_url"]
+        task_id = response.meta["task_id"]
+        search_no = response.meta["search_no"]
 
-        response_json = json.loads(response.text)
-        ip = response_json["ip"]
-
-        if ip in self._sent_ips:
-            yield ForceRestart()
-            return
-
-        self._sent_ips.append(ip)
-        yield FirstTierRoutingRule.build_request_option(
-            base_url=base_url, search_no=search_no, search_type=self._search_type
+        g_recaptcha_res = response.css("#recaptcha-token ::attr(value)").get()
+        yield SearchRoutingRule.build_request_option(
+            base_url=base_url,
+            task_id=task_id,
+            search_no=search_no,
+            search_type=self._search_type,
+            g_recaptcha_res=g_recaptcha_res,
         )
 
 
 # ---------------------------------------------------------------------------------------------------
 
 
-STATUS_ONE_CONTAINER = "STATUS_ONE_CONTAINER"
-STATUS_MULTI_CONTAINER = "STATUS_MULTI_CONTAINER"
-STATUS_MBL_NOT_EXIST = "STATUS_MBL_NOT_EXIST"
-STATUS_WEBSITE_SUSPEND = "STATUS_WEBSITE_SUSPEND"
-
-
-class FirstTierRoutingRule(BaseRoutingRule):
-    name = "FIRST_TIER"
-
-    def __init__(self, search_type):
-        self._search_type = search_type
+class SearchRoutingRule(BaseRoutingRule):
+    name = "SEARCH"
 
     @classmethod
-    def build_request_option(cls, base_url, search_no, search_type) -> RequestOption:
+    def build_request_option(
+        cls, base_url: str, task_id: str, search_no: str, search_type: str, g_recaptcha_res: str
+    ) -> RequestOption:
+        search_by = "Booking" if not search_type == SEARCH_TYPE_CONTAINER else "Container"
+
         form_data = {
-            "g-recaptcha-response": "",
-            "SearchBy": "BL" if search_type == SHIPMENT_TYPE_MBL else "Booking",
-            "Reference": search_no,
-            "search": "Search",
+            "g-recaptcha-response": g_recaptcha_res,
+            "SearchViewModel.SearchBy": search_by,
+            "SearchViewModel.Reference": search_no,
+            "SearchViewModel.FromHome": "true",
         }
 
         return RequestOption(
@@ -202,69 +220,93 @@ class FirstTierRoutingRule(BaseRoutingRule):
             method=RequestOption.METHOD_POST_FORM,
             url=f"{base_url}/ebusiness/tracking/search",
             form_data=form_data,
-            meta={"search_no": search_no, "base_url": base_url},
+            headers={
+                "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.80 Safari/537.36",
+                "referer": "https://www.cma-cgm.com/ebusiness/tracking",
+            },
+            meta={
+                "base_url": base_url,
+                "task_id": task_id,
+                "search_no": search_no,
+                "search_type": search_type,
+            },
         )
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
     def handle(self, response):
-        search_no = response.meta["search_no"]
         base_url = response.meta["base_url"]
+        task_id = response.meta["task_id"]
+        search_no = response.meta["search_no"]
+        search_type = response.meta["search_type"]
+        info_pack = {
+            "task_id": task_id,
+            "search_no": search_no,
+            "search_type": search_type,
+        }
 
-        mbl_status = self._extract_mbl_status(response=response)
+        if search_type != SEARCH_TYPE_CONTAINER:
+            mbl_status = self._extract_mbl_status(response=response)
 
-        if self._search_type == SHIPMENT_TYPE_MBL:
-            basic_mbl_item = MblItem(mbl_no=search_no)
+            if search_type == SEARCH_TYPE_MBL:
+                basic_mbl_item = MblItem(mbl_no=search_no)
+            else:
+                basic_mbl_item = MblItem(booking_no=search_no)
+
+            if mbl_status == STATUS_ONE_CONTAINER:
+                yield basic_mbl_item
+                routing_rule = ContainerStatusRoutingRule()
+                for item in routing_rule.handle(response=response):
+                    yield item
+
+                yield EndItem(task_id=task_id)
+
+            elif mbl_status == STATUS_MULTI_CONTAINER:
+                yield basic_mbl_item
+                container_list = self._extract_container_list(response=response)
+
+                for container_no in container_list:
+                    yield EndItem(task_id=task_id, remaining_num=1)
+                    yield RecaptchaRule(search_type=SEARCH_TYPE_CONTAINER).build_request_option(
+                        base_url=base_url, task_id=task_id, search_no=container_no
+                    )
+
+                if not container_list:
+                    yield EndItem(task_id=task_id)
+
+            elif mbl_status == STATUS_WEBSITE_SUSPEND:
+                raise FormatError(**info_pack, reason="Website suspend")
+
+            else:  # STATUS_MBL_NOT_EXIST
+                yield DataNotFoundItem(
+                    **info_pack,
+                    status=RESULT_STATUS_ERROR,
+                    detail=DATA_NOT_FOUND_DESC,
+                )
+
         else:
-            basic_mbl_item = MblItem(booking_no=search_no)
-
-        if mbl_status == STATUS_ONE_CONTAINER:
-            yield basic_mbl_item
             routing_rule = ContainerStatusRoutingRule()
             for item in routing_rule.handle(response=response):
                 yield item
 
-        elif mbl_status == STATUS_MULTI_CONTAINER:
-            yield basic_mbl_item
-            container_list = self._extract_container_list(response=response)
+            yield EndItem(task_id=task_id)
 
-            for container_no in container_list:
-                yield ContainerStatusRoutingRule.build_request_option(
-                    container_no=container_no, base_url=base_url, search_no=search_no, search_type=self._search_type
-                )
+    def _extract_mbl_status(self, response: Selector):
+        invalid = bool(response.css("div.no-result"))
+        single = bool(response.css("#trackingsearchsection"))
+        multi = bool(response.css("#multiresultssection"))
 
-        elif mbl_status == STATUS_WEBSITE_SUSPEND:
-            raise DataNotFoundError()
-
-        else:  # STATUS_MBL_NOT_EXIST
-            if self._search_type == SHIPMENT_TYPE_MBL:
-                yield ExportErrorData(mbl_no=search_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found")
-            elif self._search_type == SHIPMENT_TYPE_BOOKING:
-                yield ExportErrorData(
-                    booking_no=search_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found"
-                )
-
-    @staticmethod
-    def _extract_mbl_status(response: Selector):
-        result_message = response.css("div#wrapper h2::text").get()
-
-        maybe_suspend_message = response.css("h1 + p::text").get()
-
-        if maybe_suspend_message == (
-            "We have decided to temporarily suspend all access to our eCommerce websites to protect our customers."
-        ):
-            return STATUS_WEBSITE_SUSPEND
-        elif result_message is None:
-            return STATUS_ONE_CONTAINER
-        elif result_message.strip() == "Results":
-            return STATUS_MULTI_CONTAINER
-        else:
+        if invalid:
             return STATUS_MBL_NOT_EXIST
+        if single:
+            return STATUS_ONE_CONTAINER
+        if multi:
+            return STATUS_MULTI_CONTAINER
+        return STATUS_WEBSITE_SUSPEND
 
-    @staticmethod
-    def _extract_container_list(response: Selector):
-        container_list = response.css("td[data-ctnr=id] a::text").getall()
+    def _extract_container_list(self, response: Selector):
+        container_list = response.css("dl.container-ref a::text").getall()
         return container_list
 
 
@@ -272,25 +314,33 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
     name = "CONTAINER_STATUS"
 
     @classmethod
-    def build_request_option(cls, container_no, base_url, search_no, search_type) -> RequestOption:
-        search_criteria = "BL" if search_type == SHIPMENT_TYPE_MBL else "Booking"
+    def build_request_option(cls, container_no: str, search_no: str, task_id: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=(
-                f"{base_url}/ebusiness/tracking/detail/{container_no}?SearchCriteria={search_criteria}&"
-                f"SearchByReference={search_no}"
-            ),
-            meta={"container_no": container_no},
+            url=DUMMY_URL_DICT["eval_edi"],
+            meta={
+                "task_id": task_id,
+                "search_no": search_no,
+                "container_no": container_no,
+            },
         )
 
     def get_save_name(self, response) -> str:
         container_no = response.meta["container_no"]
-        return f"container_status_{container_no}.html"
+        return f"container_status_{container_no}.json"
 
     def handle(self, response):
-        container_info = self._extract_page_title(response=response)
-        main_info = self._extract_tracking_no_map(response=response)
+        task_id = response.meta["task_id"]
+        search_no = response.meta["search_no"]
+        info_pack = {
+            "task_id": task_id,
+            "search_no": search_no,
+            "search_type": SEARCH_TYPE_CONTAINER,
+        }
+
+        container_no = self._extract_container_no(response=response)
+        main_info = self._extract_tracking_no_map(response=response, info_pack=info_pack)
 
         yield MblItem(
             por=LocationItem(name=main_info["por"]),
@@ -301,120 +351,100 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             ata=main_info["pod_ata"],
         )
 
-        container_no = container_info["container_no"]
-
         yield ContainerItem(
             container_key=container_no,
             container_no=container_no,
         )
 
-        container_status_list = self._extract_container_status(response=response)
+        response_dict = self._get_response_dict(response=response)
+        container_status_list = self._extract_container_status(response_dict=response_dict)
         for container_status in container_status_list:
             yield ContainerStatusItem(
                 container_key=container_no,
-                local_date_time=container_status["local_date_time"],
+                local_date_time=container_status["local_date_time"].replace(",", ""),
                 description=container_status["description"],
                 location=LocationItem(name=container_status["location"]),
                 est_or_actual=container_status["est_or_actual"],
                 facility=container_status["facility"],
             )
 
-    @staticmethod
-    def _extract_page_title(response: Selector):
-        page_title_selector = response.css("div.o-pagetitle")
+    def _extract_container_no(self, response: Selector):
+        return response.css("ul.resume-filter strong::text").get()
+
+    def _extract_tracking_no_map(self, response: Selector, info_pack: Dict):
+        status = response.css("div.status span::text").get()
+        pod_time = " ".join(response.css("div.status span strong::text").getall())
+
+        pod_eta, pod_ata = None, None
+        if status:
+            if status.strip() == "ETA Berth at POD":
+                pod_eta = pod_time.strip()
+            elif status.strip() == "Arrived at POD":
+                pod_eta = None
+                pod_ata = pod_time.strip()
+            elif status.strip() == "Remaining":
+                pod_eta = None
+            else:
+                raise FormatError(**info_pack, reason=f"Unknown status {repr(status)}")
+
+        pod, dest = None, None
+
+        timeline_divs = response.css("div.timeline--item-description")
+        pod_rule = SpecificSpanTextExistMatchRule("POD")
+        pod_div = find_selector_from(selectors=timeline_divs, rule=pod_rule)
+        if pod_div:
+            pod = pod_div.css("strong::text").get()
+
+        dest_rule = SpecificSpanTextExistMatchRule("FPD")
+        dest_div = find_selector_from(selectors=timeline_divs, rule=dest_rule)
+        if dest_div:
+            dest = dest_div.css("strong::text").get()
 
         return {
-            "container_no": page_title_selector.css("span.o-pagetitle--container span::text").get(),
-            "container_quantity": page_title_selector.css("span.o-pagetitle--container abbr::text").get(),
-        }
-
-    @staticmethod
-    def _extract_tracking_no_map(response: Selector):
-        map_selector = response.css("div.o-trackingnomap")
-
-        pod_time = map_selector.css("dl.o-trackingnomap--info dd::text").get()
-        status = map_selector.css("dl.o-trackingnomap--info dt::text").get()
-
-        pod_ata = None
-
-        if status is None:
-            pod_eta = None
-        elif status.strip() == "ETA at POD":
-            pod_eta = pod_time.strip()
-        elif status.strip() == "Arrived at POD":
-            pod_eta = None
-            pod_ata = pod_time.strip()
-        elif status.strip() == "Remaining":
-            pod_eta = None
-        else:
-            raise CarrierResponseFormatError(reason=f"Unknown status {status!r}")
-
-        return {
-            "por": map_selector.css("li#prepol span.o-trackingnomap--place::text").get(),
-            "pol": map_selector.css("li#pol span.o-trackingnomap--place::text").get(),
-            "pod": map_selector.css("li#pod span.o-trackingnomap--place::text").get(),
-            "dest": map_selector.css("li#postpod span.o-trackingnomap--place::text").get(),
+            "por": response.css("li#prepol strong::text").get(),
+            "pol": response.css("li#pol strong::text").get(),
+            "pod": pod,
+            "dest": dest,
             "pod_eta": pod_eta,
             "pod_ata": pod_ata,
         }
 
-    @staticmethod
-    def _extract_container_status(response) -> Dict:
-        table_selector = response.css("div.o-datatable table")
-        table_locator = ContainerStatusTableLocator()
-        table_locator.parse(table=table_selector)
-        table = TableExtractor(table_locator=table_locator)
+    def _get_response_dict(self, response) -> Dict:
+        response_text = response.text
+        match = re.search(r"options\.responseData = \'(?P<response_data>.*)\'", response_text)
+        response_data = match.group("response_data")
+        return json.loads(response_data)
 
-        for index in table_locator.iter_left_header():
-            is_actual = bool(table.extract_cell("Status", index, extractor=ActualIconTdExtractor()))
+    def _extract_container_status(self, response_dict: Dict):
+        moves = (
+            response_dict.get("PastMoves", [])
+            + response_dict.get("CurrentMoves", [])
+            + response_dict.get("ProvisionalMoves", [])
+        )
+
+        for move in moves:
+            local_date_time = f"{move['DateString']} {move['TimeString']}"
+            est_or_actual = "E" if move["State"] == "NONE" else "A"
+
             yield {
-                "local_date_time": table.extract_cell("Date", index),
-                "description": table.extract_cell("Moves", index),
-                "location": table.extract_cell("Location", index, LocationTdExtractor()),
-                "est_or_actual": "A" if is_actual else "E",
-                "facility": table.extract_cell("Location", index, FacilityTextExtractor()),
+                "local_date_time": local_date_time,
+                "description": move["StatusDescription"],
+                "location": move["Location"],
+                "vessel": move["Vessel"],
+                "voyage": move["Voyage"],
+                "est_or_actual": est_or_actual,
+                "facility": move["LocationTerminal"],
             }
 
 
 # -----------------------------------------------------------------------------------------------------------
 
 
-class ContainerStatusTableLocator(BaseTable):
-    def parse(self, table: Selector):
-        title_th_list = table.css("thead th")
-        title_text_list = [title.strip() for title in title_th_list.css("::text").getall()]
-        data_tr_list = table.css("tbody tr[class]")
+class SpecificSpanTextExistMatchRule(BaseMatchRule):
+    def __init__(self, text):
+        self._text = text
 
-        for index, tr in enumerate(data_tr_list):
-            tds = tr.css("td")
-            self._left_header_set.add(index)
-            for title_index, (title, td) in enumerate(zip(title_text_list, tds)):
-                if title_index == 1:
-                    assert title == ""
-                    title = "Status"
-
-                self._td_map.setdefault(title, [])
-                self._td_map[title].append(td)
-
-
-class ActualIconTdExtractor(BaseTableCellExtractor):
-    def extract(self, cell: Selector):
-        td_i = cell.css("i").get()
-        return td_i
-
-
-class LocationTdExtractor(BaseTableCellExtractor):
-    def extract(self, cell: Selector):
-        td_i = cell.css("td::text").get().strip()
-        return td_i
-
-
-class FacilityTextExtractor(BaseTableCellExtractor):
-    def extract(self, cell: Selector):
-        facility = None
-
-        TAG_RE = re.compile(r"<[^>]+>")
-        i_text = cell.css("script#location__1::text").get(default="").strip()
-        facility = TAG_RE.sub("", i_text)
-
-        return facility
+    def check(self, selector: Selector) -> bool:
+        raw_span_text = selector.css("span::text").get()
+        span_text = raw_span_text.strip() if isinstance(raw_span_text, str) else raw_span_text
+        return self._text == span_text

@@ -4,7 +4,9 @@ RUN set -ex \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
         unzip \
-        xvfb
+        xvfb \
+        python3-tk \
+        python3-dev
 
 
 #============================================
@@ -100,7 +102,7 @@ RUN unzip /tmp/chrome-linux.zip -d ~/.local/share/pyppeteer/local-chromium/58842
 ENV OPENSSL_CONF=/etc/ssl/
 ENV TERM xterm
 ENV SCRAPY_SETTINGS_MODULE crawler.settings
-ENV EDI_ENGINE_BASE_URL http://tracking.hardcoretech.co:18110/api/
+ENV EDI_ENGINE_BASE_URL http://tracking.hardcoretech.co:18109/api/
 ENV EDI_ENGINE_USER tracking-local
 ENV EDI_ENGINE_TOKEN LK1YG0FD70TPKCG76RMSCO9HLMK7J23R5ZEJX1VM3607
 ENV EDI_HOST tracking.hardcoretech.co
@@ -108,6 +110,7 @@ ENV EDI_HOST tracking.hardcoretech.co
 RUN mkdir -p /app
 WORKDIR /app
 COPY ./requirements-app.txt /app/requirements.txt
+RUN pip install pyautogui # PyObjC issue
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app
 RUN python setup.py install

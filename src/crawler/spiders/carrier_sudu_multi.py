@@ -1,41 +1,41 @@
+import asyncio
 import dataclasses
 import re
-import logging
-import asyncio
 import time
-from typing import Tuple, List, Optional
+from typing import List, Optional, Tuple
 
-from scrapy import Selector, FormRequest, Request
-from pyppeteer.errors import TimeoutError, PageError
+from pyppeteer.errors import PageError, TimeoutError
+from scrapy import FormRequest, Request, Selector
 
-from crawler.core.table import BaseTable, TableExtractor
+from crawler.core.base import RESULT_STATUS_FATAL
 from crawler.core.defines import BaseContentGetter
 from crawler.core.proxy import HydraproxyProxyManager, ProxyManager
+from crawler.core.pyppeteer import PyppeteerContentGetter
+from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
-from crawler.core.pyppeteer import PyppeteerContentGetter
-from crawler.core.base import RESULT_STATUS_FATAL
-
-from crawler.core_carrier.items import (
-    BaseCarrierItem,
-    MblItem,
-    LocationItem,
-    VesselItem,
-    ContainerItem,
-    ExportErrorData,
-    ContainerStatusItem,
-    DebugItem,
-)
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
-    SuspiciousOperationError,
     ProxyMaxRetryError,
+    SuspiciousOperationError,
 )
-from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
+from crawler.core_carrier.items import (
+    BaseCarrierItem,
+    ContainerItem,
+    ContainerStatusItem,
+    DebugItem,
+    ExportErrorData,
+    LocationItem,
+    MblItem,
+    VesselItem,
+)
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
+from crawler.extractors.selector_finder import (
+    CssQueryTextStartswithMatchRule,
+    find_selector_from,
+)
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
-
 
 BASE_URL = "https://www.hamburgsud-line.com/linerportal/pages/hsdg/tnt.xhtml"
 
@@ -152,7 +152,7 @@ class MblRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://google.com",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={"mbl_nos": mbl_nos, "task_ids": task_ids},
         )
 
@@ -196,6 +196,9 @@ class MblRoutingRule(BaseRoutingRule):
                             yield result
                         else:
                             raise RuntimeError()
+                    if not voyage_contents:
+                        asyncio.get_event_loop().run_until_complete(self.driver.find_and_scroll())  # search again
+                        continue
                     asyncio.get_event_loop().run_until_complete(self.driver.go_back_from_container_detail_page())
             else:
                 voyage_contents = asyncio.get_event_loop().run_until_complete(self.driver.get_voyage_contents())
@@ -302,7 +305,6 @@ class MblRoutingRule(BaseRoutingRule):
             for voyage_spec in [departure_voyage_spec, arrival_voyage_spec]:
                 if not voyage_spec:
                     continue
-
                 voyage_routing = self._extract_voyage_routing(
                     voyage_routing_responses=voyage_content_selectors,
                     location=voyage_spec.location.strip(),
@@ -327,34 +329,31 @@ class MblRoutingRule(BaseRoutingRule):
         # voyage part
         departure_voyages = []
         arrival_voyages = []
+
         for container_status in container_statuses:
             vessel = container_status["vessel"]
             location = container_status["location"]
+            location = location.replace("Place ", "").strip()
 
-            for container_status in container_statuses:
-                vessel = container_status["vessel"]
-                location = container_status["location"]
-                location = location.replace("Place ", "").strip()
+            if vessel and location == por:
+                voyage_spec = VoyageSpec(
+                    direction="Departure",
+                    container_key=container_key,
+                    voyage_key=container_status["voyage_css_id"],
+                    location=por,
+                    container_no=container_no,
+                )
+                departure_voyages.append(voyage_spec)
 
-                if vessel and location == por:
-                    voyage_spec = VoyageSpec(
-                        direction="Departure",
-                        container_key=container_key,
-                        voyage_key=container_status["voyage_css_id"],
-                        location=por,
-                        container_no=container_no,
-                    )
-                    departure_voyages.append(voyage_spec)
-
-                elif vessel and location == final_dest:
-                    voyage_spec = VoyageSpec(
-                        direction="Arrival",
-                        container_key=container_key,
-                        voyage_key=container_status["voyage_css_id"],
-                        location=final_dest,
-                        container_no=container_no,
-                    )
-                    arrival_voyages.append(voyage_spec)
+            elif vessel and location == final_dest:
+                voyage_spec = VoyageSpec(
+                    direction="Arrival",
+                    container_key=container_key,
+                    voyage_key=container_status["voyage_css_id"],
+                    location=final_dest,
+                    container_no=container_no,
+                )
+                arrival_voyages.append(voyage_spec)
 
         first_departure_voyage = None
         if departure_voyages:
@@ -483,7 +482,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={"mbl_nos": mbl_nos, "task_ids": task_ids},
         )
 
@@ -508,15 +507,18 @@ class ContentGetter(PyppeteerContentGetter):
         super().__init__(proxy_manager, is_headless=is_headless)
 
     async def search(self, search_no: str):
-        await self.page.goto(BASE_URL)
-        await asyncio.sleep(40)
+        await self.page.goto(BASE_URL, options={"waitUntil": "networkidle0", "timeout": 30000})
+        await asyncio.sleep(5)
         await self.page.type("textarea[id$=inputReferences]", search_no)
         await asyncio.sleep(2)
+        await self.find_and_scroll()
+
+        return await self.page.content()
+
+    async def find_and_scroll(self):
         await self.page.click("button[id$=search-submit]")
         await asyncio.sleep(5)
         await self.scroll_down()
-
-        return await self.page.content()
 
     async def get_voyage_contents(self):
         # the voyage pages in different container status are the same
@@ -542,9 +544,17 @@ class ContentGetter(PyppeteerContentGetter):
         return contents
 
     async def _get_distinct_voyage_links(self):
-        links = await self.page.querySelectorAll("a[id*='voyageDetailsLink']")
-        voyage_num_link_map = {await self._get_voyage_link_text(link): link for link in links}
-        return list(voyage_num_link_map.values())
+        vessel_links = await self.page.querySelectorAll("a[onclick*='vesselInfo']")
+        voyage_links = await self.page.querySelectorAll("a[id*='voyageDetailsLink']")
+
+        vessel_voyage_link_map = {}  # use (vessel name, voyage number) pair as key
+        for vessel_link, voyage_link in zip(vessel_links, voyage_links):
+            vessel_text = await self._get_voyage_link_text(vessel_link)
+            voyage_text = await self._get_voyage_link_text(voyage_link)
+            map_key = f"{vessel_text} - {voyage_text}"
+            vessel_voyage_link_map[map_key] = voyage_link
+
+        return list(vessel_voyage_link_map.values())
 
     async def _get_voyage_link_text(self, link_elem_handle):
         return await self.page.evaluate("""e => e.textContent""", link_elem_handle)
@@ -610,8 +620,8 @@ class VesselVoyageTdExtractor(BaseTableCellExtractor):
         voyage_cell = a_list[1]
 
         return {
-            "vessel": vessel_cell.css("::text").get().strip(),
-            "voyage": voyage_cell.css("::text").get().strip(),
+            "vessel": vessel_cell.css("::text").get("").strip(),
+            "voyage": voyage_cell.css("::text").get("").strip(),
             "voyage_css_id": voyage_cell.css("::attr(id)").get(),
         }
 

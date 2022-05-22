@@ -1,30 +1,33 @@
+import base64
+import json
+import random
 import re
 import string
-import random
+import urllib.parse
 from typing import Dict, List
 
+import Crypto.Cipher.AES
 import scrapy
-from anticaptchaofficial.imagecaptcha import *
 
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
-from crawler.core_carrier.items import (
-    BaseCarrierItem,
-    ExportErrorData,
-    MblItem,
-    LocationItem,
-    VesselItem,
-    ContainerItem,
-    ContainerStatusItem,
-    DebugItem,
-)
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
     SuspiciousOperationError,
 )
-from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
-from crawler.services.captcha_service import CaptchaSolverService
+from crawler.core_carrier.items import (
+    BaseCarrierItem,
+    ContainerItem,
+    ContainerStatusItem,
+    DebugItem,
+    ExportErrorData,
+    LocationItem,
+    MblItem,
+    VesselItem,
+)
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
+from crawler.services.captcha_service import ImageAntiCaptchaService
 
 SITC_BASE_URL = "https://api.sitcline.com"
 
@@ -32,13 +35,16 @@ SITC_BASE_URL = "https://api.sitcline.com"
 class CarrierSitcSpider(BaseCarrierSpider):
     name = "carrier_sitc"
 
+    handle_httpstatus_list = [428, 502]
+    max_428_502_error_retry_times = 3
+
     def __init__(self, *args, **kwargs):
         super(CarrierSitcSpider, self).__init__(*args, **kwargs)
 
         rules = [
             Captcha1RoutingRule(),
             LoginRoutingRule(),
-            Captcha2RoutingRule(),
+            # Captcha2RoutingRule(),
             BasicInfoRoutingRule(),
             ContainerStatusRoutingRule(),
         ]
@@ -55,6 +61,15 @@ class CarrierSitcSpider(BaseCarrierSpider):
         yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
+
+        if response.status in CarrierSitcSpider.handle_httpstatus_list and self.max_428_502_error_retry_times != 0:
+            yield DebugItem(info=f"{response.status} error, remaining retry times {self.max_428_502_error_retry_times}")
+
+            self.max_428_502_error_retry_times -= 1
+            for request in self.start():
+                yield request
+
+            return
 
         if routing_rule.name != "CAPTCHA1" and routing_rule.name != "CAPTCHA2":
             save_name = routing_rule.get_save_name(response=response)
@@ -113,8 +128,8 @@ class Captcha1RoutingRule(BaseRoutingRule):
     def handle(self, response):
         mbl_no = response.meta["mbl_no"]
         rand_str = response.meta["rand_str"]
-        captcha_solver = CaptchaSolverService()
-        captcha_code = captcha_solver.solve_image(image_content=response.body)
+        captcha_solver = ImageAntiCaptchaService()
+        captcha_code = captcha_solver.solve(image_content=response.body)
 
         yield LoginRoutingRule.build_request_option(mbl_no=mbl_no, rand_str=rand_str, captcha_code=captcha_code)
 
@@ -151,55 +166,51 @@ class LoginRoutingRule(BaseRoutingRule):
         mbl_no = response.meta["mbl_no"]
         response_dict = json.loads(response.text)
         token = f"{response_dict['token_type']} {response_dict['access_token']}"
-        print("token: ", token)
+        yield DebugItem(info=f"token: {token}")
 
-        yield Captcha2RoutingRule.build_request_option(mbl_no=mbl_no, token=token)
+        yield BasicInfoRoutingRule.build_request_option(mbl_no=mbl_no, token=token)
 
 
 # -------------------------------------------------------------------------------
 
 
-class Captcha2RoutingRule(BaseRoutingRule):
-    name = "CAPTCHA2"
-
-    @classmethod
-    def build_request_option(cls, mbl_no, token: str) -> RequestOption:
-        rand_str = "".join(random.choice(string.digits) for _ in range(17))
-
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=f"{SITC_BASE_URL}/code?randomStr={rand_str}",
-            headers={"Content-Type": "application/text"},
-            meta={"mbl_no": mbl_no, "rand_str": rand_str, "token": token},
-        )
-
-    def handle(self, response):
-        mbl_no = response.meta["mbl_no"]
-        rand_str = response.meta["rand_str"]
-        token = response.meta["token"]
-        captcha_solver = CaptchaSolverService()
-        captcha_code = captcha_solver.solve_image(image_content=response.body)
-
-        yield BasicInfoRoutingRule.build_request_option(
-            mbl_no=mbl_no, rand_str=rand_str, captcha_code=captcha_code, token=token
-        )
+# class Captcha2RoutingRule(BaseRoutingRule):
+#     name = "CAPTCHA2"
+#
+#     @classmethod
+#     def build_request_option(cls, mbl_no, token: str) -> RequestOption:
+#         print('Captcha2RoutingRule, Paul')
+#         rand_str = "".join(random.choice(string.digits) for _ in range(17))
+#
+#         return RequestOption(
+#             rule_name=cls.name,
+#             method=RequestOption.METHOD_GET,
+#             url=f"{SITC_BASE_URL}/code?randomStr={rand_str}",
+#             headers={"Content-Type": "application/text"},
+#             meta={"mbl_no": mbl_no, "rand_str": rand_str, "token": token},
+#         )
+#
+#     def handle(self, response):
+#         mbl_no = response.meta["mbl_no"]
+#         rand_str = response.meta["rand_str"]
+#         token = response.meta["token"]
+#         captcha_solver = CaptchaSolverService()
+#         captcha_code = captcha_solver.solve_image(image_content=response.body)
+#
+#         yield BasicInfoRoutingRule.build_request_option(
+#             mbl_no=mbl_no, rand_str=rand_str, captcha_code=captcha_code, token=token
+#         )
 
 
 class BasicInfoRoutingRule(BaseRoutingRule):
     name = "BASIC_INFO"
 
     @classmethod
-    def build_request_option(cls, mbl_no: str, rand_str: str, captcha_code: str, token: str) -> RequestOption:
+    def build_request_option(cls, mbl_no: str, token: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url=f"{SITC_BASE_URL}/doc/cargoTrack/search?blNo={mbl_no}&containerNo=&code={captcha_code}&randomStr={rand_str}",
-            headers={
-                "Content-Type": "application/json",
-                "authorization": token,
-                "TenantId": "2",
-            },
+            url=f"{SITC_BASE_URL}/doc/cargoTrack/searchTrack16601?blNo={urllib.parse.quote_plus(CipherAES().encrypt(mbl_no))}&containerNo=&randomStr=",
             meta={"mbl_no": mbl_no, "token": token},
         )
 
@@ -329,7 +340,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_POST_BODY,
-            url=f"{SITC_BASE_URL}/doc/cargoTrack/detail?blNo={mbl_no}&containerNo={container_no}",
+            url=f"{SITC_BASE_URL}/doc/cargoTrack/movementDetail?blNo={mbl_no}&containerNo={urllib.parse.quote_plus(CipherAES().encrypt(container_no))}",
             headers={
                 "Content-Type": "application/json",
                 "authorization": token,
@@ -370,3 +381,22 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
             )
 
         return container_status_list
+
+
+class CipherAES:
+    KEY = "sitc20220228sitc"
+    IV = "sitc20220228sitc"
+
+    def __init__(self):
+        self.cipher = Crypto.Cipher.AES.new(
+            self.KEY.encode("latin-1"), Crypto.Cipher.AES.MODE_CBC, self.IV.encode("latin-1")
+        )
+
+    def encrypt(self, text):
+        cipher_text = b"".join([self.cipher.encrypt(i) for i in self._pad(text.encode("latin-1"))])
+        encrypted_text = base64.b64encode(cipher_text).decode("latin-1").rstrip()
+
+        return encrypted_text
+
+    def _pad(self, text):
+        yield text + b"\0" * (len(self.KEY) - len(text))

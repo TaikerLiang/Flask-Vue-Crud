@@ -5,13 +5,15 @@ from typing import Dict, List
 import scrapy
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
+from crawler.core.proxy import HydraproxyProxyManager
 
 
 BASE_URL = "https://www.lbct.com"
-MAX_PAGE_NUM = 20
+MAX_PAGE_NUM = 10
 
 
 class TerminalLbctSpider(BaseMultiTerminalSpider):
@@ -21,6 +23,8 @@ class TerminalLbctSpider(BaseMultiTerminalSpider):
     def __init__(self, *args, **kwargs):
         super(TerminalLbctSpider, self).__init__(*args, **kwargs)
 
+        self._proxy_manager = HydraproxyProxyManager(session="wac8", logger=self.logger)
+
         rules = [
             ContainerRoutingRule(),
             NextRoundRoutingRule(),
@@ -29,9 +33,15 @@ class TerminalLbctSpider(BaseMultiTerminalSpider):
         self._rule_manager = RuleManager(rules=rules)
 
     def start(self):
+        yield self._prepare_start()
+
+    def _prepare_start(self):
+        self._proxy_manager.renew_proxy()
+
         unique_container_nos = list(self.cno_tid_map.keys())
         option = ContainerRoutingRule.build_request_option(container_no_list=unique_container_nos)
-        yield self._build_request_by(option=option)
+        proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
+        return self._build_request_by(option=proxy_option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -42,14 +52,15 @@ class TerminalLbctSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
                     result["task_id"] = t_id
                     yield result
             elif isinstance(result, RequestOption):
-                yield self._build_request_by(option=result)
+                proxy_option = self._proxy_manager.apply_proxy_to_request_option(result)
+                yield self._build_request_by(option=proxy_option)
             else:
                 raise RuntimeError()
 
@@ -90,11 +101,14 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_no_list = response.meta["container_no_list"]
+        cur_container_no_list = container_no_list[:MAX_PAGE_NUM]
         response_dict = json.loads(response.text)
 
         for response in response_dict:
-            if not response["containerId"] in container_no_list:
+            if not response["containerId"] in cur_container_no_list:
                 continue
+            else:
+                cur_container_no_list.remove(response["containerId"])
 
             container_info = self._extract_container_info(response=response)
 
@@ -118,6 +132,13 @@ class ContainerRoutingRule(BaseRoutingRule):
                 # new field
                 owed=container_info["owed"],
                 full_empty=container_info["full/empty"],
+            )
+
+        for container_no in cur_container_no_list:
+            yield ExportErrorData(
+                container_no=container_no,
+                detail="Data was not found",
+                status=TERMINAL_RESULT_STATUS_ERROR,
             )
 
         yield NextRoundRoutingRule.build_request_option(container_no_list=container_no_list)
@@ -175,7 +196,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "container_no_list": container_no_list,
             },

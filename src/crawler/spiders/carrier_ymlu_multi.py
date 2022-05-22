@@ -1,36 +1,41 @@
 import dataclasses
-import io
-import re
-from typing import Union, Tuple, List
 import logging
+import re
+from typing import List, Tuple, Union
 
 import scrapy
-from python_anticaptcha import AnticaptchaClient, ImageToTextTask, AnticaptchaException
 from scrapy import Selector
 
+from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.table import BaseTable, TableExtractor
+from crawler.core_carrier.base import (
+    CARRIER_RESULT_STATUS_ERROR,
+    SHIPMENT_TYPE_BOOKING,
+    SHIPMENT_TYPE_MBL,
+)
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
     ProxyMaxRetryError,
     SuspiciousOperationError,
-    AntiCaptchaError,
 )
 from crawler.core_carrier.items import (
     BaseCarrierItem,
-    ContainerStatusItem,
-    LocationItem,
-    MblItem,
     ContainerItem,
+    ContainerStatusItem,
     DebugItem,
     ExportErrorData,
+    LocationItem,
+    MblItem,
 )
-from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
-from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
-from crawler.core.table import BaseTable, TableExtractor
+from crawler.extractors.table_cell_extractors import (
+    BaseTableCellExtractor,
+    FirstTextTdExtractor,
+)
 from crawler.extractors.table_extractors import HeaderMismatchError
-from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR, SHIPMENT_TYPE_BOOKING, SHIPMENT_TYPE_MBL
+from crawler.services.captcha_service import ImageAntiCaptchaService
 
 BASE_URL = "https://www.yangming.com"
 MAX_PAGE_NUM = 10
@@ -51,11 +56,15 @@ class Restart:
 
 class CarrierYmluSpider(BaseMultiCarrierSpider):
     name = "carrier_ymlu_multi"
+    custom_settings = {
+        **BaseMultiCarrierSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super(CarrierYmluSpider, self).__init__(*args, **kwargs)
+
         self._cookie_jar_id = 1
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         bill_rules = [
             MainPageRoutingRule(),
@@ -318,16 +327,8 @@ class CaptchaRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _get_captcha(captcha_code):
-        try:
-            api_key = "fbe73f747afc996b624e8d2a95fa0f84"
-            captcha_fp = io.BytesIO(captcha_code)
-            client = AnticaptchaClient(api_key)
-            task = ImageToTextTask(captcha_fp)
-            job = client.createTask(task)
-            job.join()
-            return job.get_captcha_text()
-        except AnticaptchaException:
-            raise AntiCaptchaError()
+        captcha_solver = ImageAntiCaptchaService()
+        return captcha_solver.solve(captcha_code)
 
 
 class BookingInfoRoutingRule(BaseRoutingRule):
@@ -460,7 +461,7 @@ class BookingInfoRoutingRule(BaseRoutingRule):
     def _is_all_invalid(response: Selector):
         content_divs = response.css("[id^=ContentPlaceHolder1_rptBKNo_divContent_]")
         for div in content_divs:
-            if not "display:none" in div.css("::attr(style)").get():
+            if "display:none" not in div.css("::attr(style)").get():
                 return False
         return True
 
@@ -542,10 +543,11 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
             yield Restart("booking main info page error")
             return
 
-        mbl_no = self._extract_mbl_no(response=response)
         basic_info = self._extract_basic_info(response=response)
         pol = basic_info["pol"]
         pod = basic_info["pod"]
+
+        vessel, voyage = self._extract_vessel_voyage(response=response)
 
         routing_schedule = self._extract_routing_schedule(response=response, pol=pol, pod=pod)
 
@@ -579,6 +581,8 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
             carrier_release_date=release_status["carrier_release_date"],
             customs_release_status=release_status["customs_release_status"],
             customs_release_date=release_status["customs_release_date"],
+            vessel=vessel,
+            voyage=voyage,
         )
 
         last_free_day_dict = self._extract_last_free_day(response=response)
@@ -593,7 +597,7 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
                 container_key=container_no,
                 container_no=container_no,
                 last_free_day=last_free_day,
-                terminal=LocationItem(name=firms_code),
+                terminal_pod=LocationItem(name=firms_code),
             )
 
             follow_url = container_info["follow_url"]
@@ -637,6 +641,17 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
             "place_of_deliv": table.extract_cell(top="Delivery", extractor=span_text_td_extractor) or None,
         }
 
+    def _extract_vessel_voyage(self, response: Selector):
+        span = response.css("span#ContentPlaceHolder1_rptBKNo_lblVessel_0") or response.css(
+            "span#ContentPlaceHolder1_rptBLNo_lblVessel_0"
+        )
+        if span.css("a"):
+            vessel = span.css("a::text").get().strip()
+        else:
+            vessel = None
+        voyage = span.css("span::text").get().split("-")[-1].strip()
+        return vessel, voyage
+
     @staticmethod
     def _extract_routing_schedule(response: Selector, pol: str, pod: str):
         div = response.css("div.cargo-trackbox3")[0]
@@ -675,8 +690,8 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
         patt = re.compile(r"^(?P<date_time>\d{4}/\d{2}/\d{2} \d{2}:\d{2}) [(](?P<status>Actual|Estimated)[)]$")
 
         m = patt.match(time_status)
-        if not m:
-            raise CarrierResponseFormatError(reason=f"Routing Schedule time format error: {time_status}")
+        if not m:  # empty <date_time> case
+            return None, None
 
         time, status = m.group("date_time"), m.group("status")
         actual_time = time if status == "Actual" else None
@@ -686,7 +701,7 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_info(response: Selector):
-        table_selector = response.css(f"table#ContentPlaceHolder1_rptBLNo_gvLatestEvent_0")
+        table_selector = response.css("table#ContentPlaceHolder1_rptBLNo_gvLatestEvent_0")
         table_locator = TopHeaderIsTdTableLocator()
         table_locator.parse(table=table_selector)
         table = TableExtractor(table_locator=table_locator)
@@ -718,16 +733,16 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
             carrier_status_with_date = 'Label'
             custom_status = 'Label'
         """
-        carrier_status_with_date = response.css(f"span#ContentPlaceHolder1_rptBLNo_lblCarrierStatus_0::text").get()
+        carrier_status_with_date = response.css("span#ContentPlaceHolder1_rptBLNo_lblCarrierStatus_0::text").get()
         if carrier_status_with_date in [None, "Label"]:
             carrier_status, carrier_date = None, None
         else:
             carrier_status_with_date = carrier_status_with_date.strip()
             carrier_status, carrier_date = MainInfoRoutingRule._parse_carrier_status(carrier_status_with_date)
 
-        customs_status = response.css(f"span#ContentPlaceHolder1_rptBLNo_lblCustomsStatus_0::text").get()
+        customs_status = response.css("span#ContentPlaceHolder1_rptBLNo_lblCustomsStatus_0::text").get()
         if customs_status == "Customs Release":
-            customs_table_selector = response.css(f"table#ContentPlaceHolder1_rptBLNo_gvCustomsStatus_0")
+            customs_table_selector = response.css("table#ContentPlaceHolder1_rptBLNo_gvCustomsStatus_0")
 
             table_locator = TopHeaderIsTdTableLocator()
             table_locator.parse(table=customs_table_selector)
@@ -773,9 +788,7 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
     @staticmethod
     def _extract_firms_code(response: Selector):
         # [0]WEST BASIN CONTAINER TERMINAL [1](Firms code:Y773)
-        discharged_port_terminal_text = response.css(
-            f"span#ContentPlaceHolder1_rptBLNo_lblDischarged_0 ::text"
-        ).getall()
+        discharged_port_terminal_text = response.css("span#ContentPlaceHolder1_rptBLNo_lblDischarged_0 ::text").getall()
         if len(discharged_port_terminal_text) <= 1:
             return None
         elif len(discharged_port_terminal_text) > 2:
@@ -794,14 +807,12 @@ class BookingMainInfoPageRoutingRule(BaseRoutingRule):
         pat = re.compile(r".+:(?P<firms_code>\w{4})")
 
         m = pat.match(firms_code_text)
-        if m is None:
-            raise CarrierResponseFormatError(reason=f"Firms Code format error: `{firms_code_text}`")
-
-        return m.group("firms_code")
+        if m:
+            return m.group("firms_code")
 
     @staticmethod
     def _extract_last_free_day(response: Selector):
-        table_selector = response.css(f"table#ContentPlaceHolder1_rptBLNo_gvLastFreeDate_0")
+        table_selector = response.css("table#ContentPlaceHolder1_rptBLNo_gvLastFreeDate_0")
         if table_selector is None:
             return {}
 
@@ -899,6 +910,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
             pol = basic_info["pol"]
             pod = basic_info["pod"]
 
+            vessel, voyage = self._extract_vessel_voyage(response=response, index=index)
+
             routing_schedule = self._extract_routing_schedule(response=response, index=index, pol=pol, pod=pod)
 
             firms_code = None
@@ -932,6 +945,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
                 carrier_release_date=release_status["carrier_release_date"],
                 customs_release_status=release_status["customs_release_status"],
                 customs_release_date=release_status["customs_release_date"],
+                vessel=vessel,
+                voyage=voyage,
             )
 
             last_free_day_dict = self._extract_last_free_day(response=response, index=index)
@@ -946,7 +961,7 @@ class MainInfoRoutingRule(BaseRoutingRule):
                     container_key=container_no,
                     container_no=container_no,
                     last_free_day=last_free_day,
-                    terminal=LocationItem(name=firms_code),
+                    terminal_pod=LocationItem(name=firms_code),
                 )
 
                 follow_url = container_info["follow_url"]
@@ -1005,6 +1020,15 @@ class MainInfoRoutingRule(BaseRoutingRule):
             "place_of_deliv": table.extract_cell(top="Delivery", extractor=span_text_td_extractor) or None,
         }
 
+    def _extract_vessel_voyage(self, response: Selector, index: int):
+        span = response.css(f"span#ContentPlaceHolder1_rptBLNo_lblVessel_{index}")
+        if span.css("a"):
+            vessel = span.css("a::text").get().strip()
+        else:
+            vessel = None
+        voyage = span.css("span::text").get().split("-")[-1].strip()
+        return vessel, voyage
+
     @staticmethod
     def _extract_routing_schedule(response: Selector, index: int, pol: str, pod: str):
         div = response.css("div.cargo-trackbox3")[index]  # index the div list by the order of input mbl_nos
@@ -1044,8 +1068,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
         patt = re.compile(r"^(?P<date_time>\d{4}/\d{2}/\d{2} \d{2}:\d{2}) [(](?P<status>Actual|Estimated)[)]$")
 
         m = patt.match(time_status)
-        if not m:
-            raise CarrierResponseFormatError(reason=f"Routing Schedule time format error: {time_status}")
+        if not m:  # empty <date_time> case
+            return None, None
 
         time, status = m.group("date_time"), m.group("status")
         actual_time = time if status == "Actual" else None
@@ -1168,10 +1192,8 @@ class MainInfoRoutingRule(BaseRoutingRule):
         pat = re.compile(r".+:(?P<firms_code>\w{4})")
 
         m = pat.match(firms_code_text)
-        if m is None:
-            raise CarrierResponseFormatError(reason=f"Firms Code format error: `{firms_code_text}`")
-
-        return m.group("firms_code")
+        if m:
+            return m.group("firms_code")
 
     @staticmethod
     def _extract_last_free_day(response: Selector, index: int):
@@ -1375,7 +1397,7 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                     location=LocationItem(name=container_status["location_name"]),
                     transport=container_status["transport"] or None,
                 )
-                if "Rail" in container_status["transport"]:
+                if container_status["description"] == "Loaded on Rail":
                     rail = container_status["location_name"]
             if rail:
                 yield ContainerItem(
@@ -1459,7 +1481,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={"search_nos": search_nos, "task_ids": task_ids, "search_type": search_type},
         )
 

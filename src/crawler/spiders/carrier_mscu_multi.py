@@ -1,30 +1,43 @@
-import re
 import dataclasses
-from typing import List, Dict
+from datetime import datetime
+import json
+import re
+import time
+from typing import Dict, List
+from json import JSONDecodeError
 
 import scrapy
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING, CARRIER_RESULT_STATUS_ERROR
-from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, SuspiciousOperationError
-from crawler.core_carrier.items import (
+from crawler.core.base_new import (
+    DUMMY_URL_DICT,
+    RESULT_STATUS_ERROR,
+    SEARCH_TYPE_BOOKING,
+    SEARCH_TYPE_MBL,
+)
+from crawler.core.description import MAX_RETRY_DESC, SUSPICIOUS_OPERATION_DESC
+from crawler.core.exceptions_new import (
+    FormatError,
+    MaxRetryError,
+    SuspiciousOperationError,
+)
+from crawler.core.items_new import DataNotFoundItem, EndItem
+from crawler.core.proxy_new import HydraproxyProxyManager
+from crawler.core.table import BaseTable, TableExtractor
+from crawler.core_carrier.base_spiders_new import BaseMultiCarrierSpider
+from crawler.core_carrier.items_new import (
+    BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
+    DebugItem,
     LocationItem,
     MblItem,
-    DebugItem,
-    ExportErrorData,
-    BaseCarrierItem,
 )
-from crawler.core.proxy import HydraproxyProxyManager
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.request_helpers_new import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
-from crawler.core.table import BaseTable, TableExtractor
-from crawler.core.exceptions import FormatError
-from crawler.core.items import BaseItem
 
 URL = "https://www.msc.com"
-MAX_RETRY_COUNT = 3
+MAX_RETRY_TIMES = 10
+MAX_DOWNLOAD_ERRBACK_RETRY_TIMES = 3
 
 
 @dataclasses.dataclass
@@ -36,28 +49,34 @@ class Restart:
 
 class CarrierMscuSpider(BaseMultiCarrierSpider):
     name = "carrier_mscu_multi"
+    custom_settings = {
+        **BaseMultiCarrierSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super(CarrierMscuSpider, self).__init__(*args, **kwargs)
 
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
         self._retry_count = 0
+        self._errback_retry_count = 0
 
         bill_rules = [
-            HomePageRoutingRule(search_type=SHIPMENT_TYPE_MBL),
-            MainRoutingRule(search_type=SHIPMENT_TYPE_MBL),
+            # HomePageRoutingRule(search_type=SEARCH_TYPE_MBL),
+            MainRoutingRule(search_type=SEARCH_TYPE_MBL),
             NextRoundRoutingRule(),
         ]
 
         booking_rules = [
-            HomePageRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
-            MainRoutingRule(search_type=SHIPMENT_TYPE_BOOKING),
+            # HomePageRoutingRule(search_type=SEARCH_TYPE_BOOKING),
+            MainRoutingRule(search_type=SEARCH_TYPE_BOOKING),
             NextRoundRoutingRule(),
         ]
 
-        if self.search_type == SHIPMENT_TYPE_MBL:
+        if self.search_type == SEARCH_TYPE_MBL:
+            self._search_mode = "0"
             self._rule_manager = RuleManager(rules=bill_rules)
-        elif self.search_type == SHIPMENT_TYPE_BOOKING:
+        elif self.search_type == SEARCH_TYPE_BOOKING:
+            self._search_mode = "1"
             self._rule_manager = RuleManager(rules=booking_rules)
 
         self._proxy_manager = HydraproxyProxyManager(session="mscu", logger=self.logger)
@@ -67,15 +86,20 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         yield self._build_request_by(option=option)
 
     def _prepare_start(self, search_nos: List, task_ids: List):
-        self._proxy_manager.renew_proxy()
-        option = HomePageRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+        self._proxy_manager.renew_proxy(allow_reset=True)
+        option = MainRoutingRule.build_request_option(
+            search_nos=search_nos, task_ids=task_ids, search_mode=self._search_mode
+        )
+        # option = HomePageRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
         return proxy_option
 
     def _prepare_restart(self, search_nos: List, task_ids: List, reason: str):
-        if self._retry_count >= MAX_RETRY_COUNT:
+        if self._retry_count >= MAX_RETRY_TIMES:
             self._retry_count = 0
-            option = NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+            option = NextRoundRoutingRule.build_request_option(
+                search_nos=search_nos, task_ids=task_ids, search_mode=self._search_mode
+            )
             return self._proxy_manager.apply_proxy_to_request_option(option)
         else:
             self._retry_count += 1
@@ -84,6 +108,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
+        self._errback_retry_count = 0
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -91,7 +116,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem) or isinstance(result, BaseItem):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, RequestOption):
                 if result.rule_name == "NEXT_ROUND":
@@ -102,8 +127,14 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
             elif isinstance(result, Restart):
                 search_nos = result.search_nos
                 task_ids = result.task_ids
-                if self._retry_count >= MAX_RETRY_COUNT:
-                    yield self._build_error_data(search_no=search_nos[0], task_id=task_ids[0])
+                if self._retry_count >= MAX_RETRY_TIMES:
+                    err = MaxRetryError(
+                        task_id=task_ids[0],
+                        search_no=search_nos[0],
+                        search_type=self.search_type,
+                        reason=MAX_RETRY_DESC.format(action="proxy", times=MAX_RETRY_COUNT),
+                    )
+                    yield err.build_error_data()
                 option = self._prepare_restart(search_nos=search_nos, task_ids=task_ids, reason=result.reason)
                 yield self._build_request_by(option=option)
             else:
@@ -117,76 +148,29 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
 
         if option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
-                url=option.url,
-                meta=meta,
-                dont_filter=True,
+                url=option.url, meta=meta, headers=option.headers, dont_filter=True, errback=self._download_errback
             )
 
-        elif option.method == RequestOption.METHOD_POST_FORM:
-            return scrapy.FormRequest(
-                url=option.url,
-                formdata=option.form_data,
-                meta=meta,
-                dont_filter=True,
-            )
+        # elif option.method == RequestOption.METHOD_POST_FORM:
+        #     return scrapy.FormRequest(
+        #         url=option.url,
+        #         formdata=option.form_data,
+        #         meta=meta,
+        #         dont_filter=True,
+        #     )
         else:
-            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
-
-    def _build_error_data(self, search_no: str, task_id: str):
-        if self.search_type == SHIPMENT_TYPE_MBL:
-            return ExportErrorData(
-                mbl_no=search_no,
-                task_id=task_id,
-                status=CARRIER_RESULT_STATUS_ERROR,
-                detail="Data was not found",
-            )
-        elif self.search_type == SHIPMENT_TYPE_BOOKING:
-            return ExportErrorData(
-                mbl_no=search_no,
-                task_id=task_id,
-                status=CARRIER_RESULT_STATUS_ERROR,
-                detail="Data was not found",
+            zip_list = list(zip(meta["task_ids"], meta["search_nos"]))
+            raise SuspiciousOperationError(
+                task_id=meta["task_ids"][0],
+                reason=SUSPICIOUS_OPERATION_DESC.format(method=option.method)
+                + f", on (task_id, search_no): {zip_list}",
             )
 
+    def _download_errback(self, failure):
+        self._errback_retry_count += 1
+        yield DebugItem(info=f"download_errback {self._errback_retry_count} times, failure: {failure}")
 
-# -------------------------------------------------------------------------------
-
-
-class HomePageRoutingRule(BaseRoutingRule):
-    name = "HOME_PAGE"
-
-    def __init__(self, search_type):
-        self._search_type = search_type
-
-    @classmethod
-    def build_request_option(cls, search_nos: List, task_ids: List) -> RequestOption:
-        return RequestOption(
-            rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url="https://www.msc.com/track-a-shipment?agencyPath=twn",
-            meta={
-                "search_nos": search_nos,
-                "task_ids": task_ids,
-            },
-        )
-
-    def get_save_name(self, response) -> str:
-        return f"{self.name}.html"
-
-    def handle(self, response):
-        task_ids = response.meta["task_ids"]
-        search_nos = response.meta["search_nos"]
-
-        view_state = response.css("input#__VIEWSTATE::attr(value)").get()
-        validation = response.css("input#__EVENTVALIDATION::attr(value)").get()
-
-        yield MainRoutingRule.build_request_option(
-            search_nos=search_nos,
-            view_state=view_state,
-            validation=validation,
-            task_ids=task_ids,
-            search_type=self._search_type,
-        )
+        yield failure.request
 
 
 # -------------------------------------------------------------------------------
@@ -195,169 +179,362 @@ class HomePageRoutingRule(BaseRoutingRule):
 class MainRoutingRule(BaseRoutingRule):
     name = "MAIN"
 
-    def __init__(self, search_type):
+    def __init__(self, search_type) -> None:
         self._search_type = search_type
 
     @classmethod
-    def build_request_option(
-        cls, search_nos: List, task_ids: List, view_state, validation, search_type
-    ) -> RequestOption:
-        if search_type == SHIPMENT_TYPE_MBL:
-            drop_down_field = "containerbilloflading"
-        else:
-            drop_down_field = "bookingnumber"
-        form_data = {
-            "__EVENTTARGET": "ctl00$ctl00$plcMain$plcMain$TrackSearch$hlkSearch",
-            "__EVENTVALIDATION": validation,
-            "__VIEWSTATE": view_state,
-            "ctl00$ctl00$plcMain$plcMain$TrackSearch$txtBolSearch$TextField": search_nos[0],
-            "ctl00$ctl00$plcMain$plcMain$TrackSearch$fldTrackingType$DropDownField": drop_down_field,
-        }
-
+    def build_request_option(cls, search_nos: List, task_ids: List, search_mode: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_POST_FORM,
-            form_data=form_data,
-            url="https://www.msc.com/track-a-shipment?agencyPath=twn",
+            method=RequestOption.METHOD_GET,
+            url=f"{URL}/api/feature/tools/TrackingInfo?trackingNumber={search_nos[0]}&trackingMode={search_mode}",
+            headers={
+                "x-requested-with": "XMLHttpRequest",
+            },
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,
+                "search_mode": search_mode,
             },
         )
 
     def get_save_name(self, response) -> str:
-        return f"{self.name}.html"
+        return f"{self.name}.json"
 
     def handle(self, response):
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
-        f_err = self._build_error_format(task_id=task_ids[0], search_no=search_nos[0])
+        search_mode = response.meta["search_mode"]
+        info_pack = {
+            "task_id": task_ids[0],
+            "search_no": search_nos[0],
+            "search_type": self._search_type,
+        }
 
-        if self._is_search_no_invalid(response=response):
-            if self._search_type == SHIPMENT_TYPE_MBL:
-                yield ExportErrorData(
-                    task_id=task_ids[0],
-                    mbl_no=search_nos[0],
-                    status=CARRIER_RESULT_STATUS_ERROR,
+        try:
+            json_response = json.loads(response.text)
+        except JSONDecodeError:
+            time.sleep(5)
+            yield Restart(
+                search_nos=search_nos,
+                task_ids=task_ids,
+                reason="'IsSuccess' field of response data is False, sleep and retry",
+            )
+            return
+
+        if not json_response["IsSuccess"]:
+            if isinstance(json_response["Data"], str) and ("not found" in json_response["Data"]):
+                yield DataNotFoundItem(
+                    **info_pack,
+                    status=RESULT_STATUS_ERROR,
                     detail="Data was not found",
+                )
+                yield NextRoundRoutingRule.build_request_option(
+                    search_nos=search_nos, task_ids=task_ids, search_mode=search_mode
                 )
             else:
-                yield ExportErrorData(
-                    task_id=task_ids[0],
-                    booking_no=search_nos[0],
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail="Data was not found",
+                time.sleep(5)
+                yield Restart(
+                    search_nos=search_nos,
+                    task_ids=task_ids,
+                    reason="'IsSuccess' field of response data is False, sleep and retry",
                 )
-            yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
             return
 
-        extractor = Extractor()
-        place_of_deliv_set = set()
+        data = json_response["Data"]
+        if data["TrackingNumber"] != search_nos[0]:
+            raise FormatError(
+                **info_pack,
+                reason=f"Search number not match, ours={search_nos[0]}, website's={data['TrackingNumber']}",
+            )
 
-        try:
-            container_selector_map_list = extractor.locate_container_selector(response=response)
-        except CarrierResponseFormatError as e:
-            yield Restart(reason=e.reason, search_nos=search_nos, task_ids=task_ids)
-            return
+        main_info = self._extract_main_info(data=data, task_id=task_ids[0], info_pack=info_pack)
+        yield MblItem(**main_info)
 
-        for container_selector_map in container_selector_map_list:
-            try:
-                container_no = extractor.extract_container_no(container_selector_map)
+        current_date = datetime.strptime(data["CurrentDate"], "%d/%m/%Y")
+        bill_data = data["BillOfLadings"][0]
+        container_data_list = bill_data["ContainersInfo"]
+        for container_data in container_data_list:
+            yield ContainerItem(
+                task_id=task_ids[0],
+                container_key=container_data["ContainerNumber"],
+                container_no=container_data["ContainerNumber"],
+            )
 
-                yield ContainerItem(
-                    task_id=task_ids[0],
-                    container_key=container_no,
-                    container_no=container_no,
-                )
+            status_info_list = self._extract_status_info(
+                status_data_list=container_data["Events"],
+                current_date=current_date,
+                task_id=task_ids[0],
+                container_no=container_data["ContainerNumber"],
+            )
+            for status_info in status_info_list:
+                yield ContainerStatusItem(**status_info)
 
-                container_status_list = extractor.extract_container_status_list(container_selector_map)
-
-                for container_status in container_status_list:
-                    yield ContainerStatusItem(
-                        task_id=task_ids[0],
-                        container_key=container_no,
-                        description=container_status["description"],
-                        local_date_time=container_status["local_date_time"],
-                        location=LocationItem(name=container_status["location"]),
-                        vessel=container_status["vessel"] or None,
-                        voyage=container_status["voyage"] or None,
-                        est_or_actual=container_status["est_or_actual"],
-                    )
-
-                place_of_deliv = extractor.extract_place_of_deliv(container_selector_map)
-                place_of_deliv_set.add(place_of_deliv)
-
-            except CarrierResponseFormatError as e:
-                yield f_err.build_error_data(detail=e.reason)
-
-        if not place_of_deliv_set:
-            place_of_deliv = None
-        elif len(place_of_deliv_set) == 1:
-            place_of_deliv = list(place_of_deliv_set)[0] or None
-        else:
-            yield f_err.build_error_data(detail=f"Different place_of_deliv: `{place_of_deliv_set}`")
-            yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
-            return
-
-        try:
-            main_info = extractor.extract_main_info(response=response)
-        except CarrierResponseFormatError as e:
-            yield Restart(reason=e.reason, search_nos=search_nos, task_ids=task_ids)
-            return
-
-        latest_update = extractor.extract_latest_update(response=response)
-
-        mbl_item = MblItem(
-            task_id=task_ids[0],
-            pol=LocationItem(name=main_info["pol"]),
-            pod=LocationItem(name=main_info["pod"]),
-            etd=main_info["etd"],
-            vessel=main_info["vessel"],
-            place_of_deliv=LocationItem(name=place_of_deliv),
-            latest_update=latest_update,
+        yield EndItem(task_id=task_ids[0])
+        yield NextRoundRoutingRule.build_request_option(
+            search_nos=search_nos, task_ids=task_ids, search_mode=search_mode
         )
-        if self._search_type == SHIPMENT_TYPE_MBL:
-            mbl_item["mbl_no"] = search_nos[0]
+
+    def _extract_main_info(self, data: Dict, task_id: str, info_pack: Dict):
+        info = {}
+        bill_data = data["BillOfLadings"][0]
+        main_data = bill_data["GeneralTrackingInfo"]
+
+        if self._search_type == SEARCH_TYPE_MBL:
+            info["mbl_no"] = data["TrackingNumber"]
         else:
-            mbl_item["booking_no"] = search_nos[0]
-        yield mbl_item
+            info["booking_no"] = data["TrackingNumber"]
 
-        yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
-
-    @staticmethod
-    def _is_search_no_invalid(response: scrapy.Selector):
-        error_message = response.css("div#ctl00_ctl00_plcMain_plcMain_pnlTrackingResults > h3::text").get()
-        possible_prefix = ["Your reference number was not found", "We are unable to"]
-        for prefix in possible_prefix:
-            if error_message and prefix in error_message:
-                return True
-        return False
-
-    def _build_error_format(self, task_id: str, search_no: str):
-        if self._search_type == SHIPMENT_TYPE_MBL:
-            return FormatError(task_id=task_id, mbl_no=search_no)
+        info["task_id"] = task_id
+        info["pol"] = LocationItem(name=main_data["PortOfLoad"])
+        info["pod"] = LocationItem(name=main_data["PortOfDischarge"])
+        if main_data["ShippedTo"] != main_data["PortOfDischarge"]:
+            info["place_of_deliv"] = LocationItem(name=main_data["ShippedTo"])
         else:
-            return FormatError(task_id=task_id, booking_no=search_no)
+            info["place_of_deliv"] = LocationItem(name=None)
+
+        pattern = re.compile(r"^Tracking results provided by MSC on (?P<latest_update>.+)$")
+        m = pattern.match(data["TrackingResultsLabel"])
+        if not m:
+            raise FormatError(
+                **info_pack, reason=f"Unknown latest update message format: `{bill_data['TrackingResultsLabel']}`"
+            )
+        else:
+            info["latest_update"] = m.group("latest_update").strip()
+
+        return info
+
+    def _extract_status_info(
+        self, status_data_list: List[Dict], current_date: datetime, task_id: str, container_no: str
+    ):
+        status_info_list = []
+        for status_data in status_data_list:
+            if len(status_data["Detail"]) == 2:
+                vessel, voyage = status_data["Detail"]
+            else:
+                vessel, voyage = None, None
+
+            event_date = datetime.strptime(status_data["Date"], "%d/%m/%Y")
+
+            status_info_list.append(
+                {
+                    "task_id": task_id,
+                    "container_key": container_no,
+                    "description": status_data["Description"],
+                    "local_date_time": status_data["Date"],
+                    "location": LocationItem(name=status_data["Location"]),
+                    "vessel": vessel,
+                    "voyage": voyage,
+                    "est_or_actual": "E" if event_date > current_date else "A",
+                }
+            )
+
+        return status_info_list
+
+
+# class HomePageRoutingRule(BaseRoutingRule):
+#     name = "HOME_PAGE"
+
+#     def __init__(self, search_type):
+#         self._search_type = search_type
+
+#     @classmethod
+#     def build_request_option(cls, search_nos: List, task_ids: List) -> RequestOption:
+#         return RequestOption(
+#             rule_name=cls.name,
+#             method=RequestOption.METHOD_GET,
+#             url="https://www.msc.com/track-a-shipment?agencyPath=twn",
+#             meta={
+#                 "search_nos": search_nos,
+#                 "task_ids": task_ids,
+#             },
+#         )
+
+#     def get_save_name(self, response) -> str:
+#         return f"{self.name}.html"
+
+#     def handle(self, response):
+#         task_ids = response.meta["task_ids"]
+#         search_nos = response.meta["search_nos"]
+
+#         view_state = response.css("input#__VIEWSTATE::attr(value)").get()
+#         validation = response.css("input#__EVENTVALIDATION::attr(value)").get()
+
+#         yield MainRoutingRule.build_request_option(
+#             search_nos=search_nos,
+#             view_state=view_state,
+#             validation=validation,
+#             task_ids=task_ids,
+#             search_type=self._search_type,
+#         )
+
+
+# # -------------------------------------------------------------------------------
+
+
+# class MainRoutingRule(BaseRoutingRule):
+#     name = "MAIN"
+
+#     def __init__(self, search_type):
+#         self._search_type = search_type
+
+#     @classmethod
+#     def build_request_option(
+#         cls, search_nos: List, task_ids: List, view_state, validation, search_type
+#     ) -> RequestOption:
+#         drop_down_field = "containerbilloflading" if search_type == SEARCH_TYPE_MBL else "bookingnumber"
+#         form_data = {
+#             "__EVENTTARGET": "ctl00$ctl00$plcMain$plcMain$TrackSearch$hlkSearch",
+#             "__EVENTVALIDATION": validation,
+#             "__VIEWSTATE": view_state,
+#             "ctl00$ctl00$plcMain$plcMain$TrackSearch$txtBolSearch$TextField": search_nos[0],
+#             "ctl00$ctl00$plcMain$plcMain$TrackSearch$fldTrackingType$DropDownField": drop_down_field,
+#         }
+
+#         return RequestOption(
+#             rule_name=cls.name,
+#             method=RequestOption.METHOD_POST_FORM,
+#             form_data=form_data,
+#             url="https://www.msc.com/track-a-shipment?agencyPath=twn",
+#             meta={
+#                 "search_nos": search_nos,
+#                 "task_ids": task_ids,
+#             },
+#         )
+
+#     def get_save_name(self, response) -> str:
+#         return f"{self.name}.html"
+
+#     def handle(self, response):
+#         task_ids = response.meta["task_ids"]
+#         search_nos = response.meta["search_nos"]
+#         info_pack = {
+#             "task_id": task_ids[0],
+#             "search_no": search_nos[0],
+#             "search_type": self._search_type,
+#         }
+
+#         if self._is_search_no_invalid(response=response):
+#             yield DataNotFoundItem(
+#                 task_id=task_ids[0],
+#                 search_type=self._search_type,
+#                 search_no=search_nos[0],
+#                 status=RESULT_STATUS_ERROR,
+#                 detail="Data was not found",
+#             )
+#             yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+#             return
+
+#         extractor = Extractor(info_pack=info_pack)
+#         place_of_deliv_set = set()
+
+#         try:
+#             container_selector_map_list = extractor.locate_container_selector(response=response)
+#         except FormatError as e:
+#             yield DebugItem(info=repr(e))
+#             yield Restart(
+#                 search_nos=search_nos,
+#                 task_ids=task_ids,
+#                 reason="format error when locating container_selector_map_list",
+#             )
+#             return
+
+#         for container_selector_map in container_selector_map_list:
+#             try:
+#                 container_no = extractor.extract_container_no(container_selector_map)
+
+#                 yield ContainerItem(
+#                     task_id=task_ids[0],
+#                     container_key=container_no,
+#                     container_no=container_no,
+#                 )
+
+#                 container_status_list = extractor.extract_container_status_list(container_selector_map)
+
+#                 for container_status in container_status_list:
+#                     yield ContainerStatusItem(
+#                         task_id=task_ids[0],
+#                         container_key=container_no,
+#                         description=container_status["description"],
+#                         local_date_time=container_status["local_date_time"],
+#                         location=LocationItem(name=container_status["location"]),
+#                         vessel=container_status["vessel"] or None,
+#                         voyage=container_status["voyage"] or None,
+#                         est_or_actual=container_status["est_or_actual"],
+#                     )
+
+#                 container_info = extractor.extract_container_info(container_selector_map)
+#                 place_of_deliv_set.add(container_info["place_of_deliv"])
+
+#             except FormatError as e:
+#                 yield e.build_error_data()
+
+#         if not place_of_deliv_set:
+#             place_of_deliv = None
+#         elif len(place_of_deliv_set) == 1:
+#             place_of_deliv = list(place_of_deliv_set)[0] or None
+#         else:
+#             yield FormatError(reason=f"Different place_of_deliv: `{place_of_deliv_set}`").build_error_data()
+#             yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+#             return
+
+#         try:
+#             main_info = extractor.extract_main_info(response=response)
+#         except FormatError as e:
+#             yield DebugItem(info=repr(e))
+#             yield Restart(search_nos=search_nos, task_ids=task_ids, reason="format error when extracting main info")
+#             return
+
+#         latest_update = extractor.extract_latest_update(response=response)
+
+#         mbl_item = MblItem(
+#             task_id=task_ids[0],
+#             pol=LocationItem(name=main_info["pol"]),
+#             pod=LocationItem(name=main_info["pod"]),
+#             etd=main_info["etd"],
+#             eta=container_info["eta"],
+#             vessel=main_info["vessel"],
+#             place_of_deliv=LocationItem(name=place_of_deliv),
+#             latest_update=latest_update,
+#         )
+#         if self._search_type == SEARCH_TYPE_MBL:
+#             mbl_item["mbl_no"] = search_nos[0]
+#         else:
+#             mbl_item["booking_no"] = search_nos[0]
+#         yield mbl_item
+
+#         yield EndItem(task_id=task_ids[0])
+#         yield NextRoundRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+
+#     def _is_search_no_invalid(self, response: scrapy.Selector):
+#         error_message = response.css("div#ctl00_ctl00_plcMain_plcMain_pnlTrackingResults > h3::text").get()
+#         possible_prefix = ["Your reference number was not found", "We are unable to"]
+#         for prefix in possible_prefix:
+#             if error_message and prefix in error_message:
+#                 return True
+#         return False
 
 
 class NextRoundRoutingRule(BaseRoutingRule):
     name = "NEXT_ROUND"
 
     @classmethod
-    def build_request_option(cls, search_nos: List, task_ids: List) -> RequestOption:
+    def build_request_option(cls, search_nos: List, task_ids: List, search_mode: str) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url=DUMMY_URL_DICT["eval_edi"],
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,
+                "search_mode": search_mode,
             },
         )
 
     def handle(self, response):
         task_ids = response.meta["task_ids"]
         search_nos = response.meta["search_nos"]
+        search_mode = response.meta["search_mode"]
 
         if len(search_nos) == 1 and len(task_ids) == 1:
             return
@@ -365,26 +542,27 @@ class NextRoundRoutingRule(BaseRoutingRule):
         task_ids = task_ids[1:]
         search_nos = search_nos[1:]
 
-        yield HomePageRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+        # yield HomePageRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+        yield MainRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids, search_mode=search_mode)
 
 
 # -------------------------------------------------------------------------------
 
 
 class Extractor:
-    def __init__(self):
+    def __init__(self, info_pack: Dict):
+        self._info_pack = info_pack
         self._mbl_no_pattern = re.compile(r"^Bill of lading: (?P<mbl_no>\S+) ([(]\d+ containers?[)])?$")
         self._container_no_pattern = re.compile(r"^Container: (?P<container_no>\S+)$")
         self._latest_update_pattern = re.compile(r"^Tracking results provided by MSC on (?P<latest_update>.+)$")
 
-    @staticmethod
-    def extract_main_info(response: scrapy.Selector):
+    def extract_main_info(self, response: scrapy.Selector):
         main_outer = response.css("div#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00_pnlBOLContent")
         error_message = (
             "Can not find main information frame by css `div#ctl00_ctl00_plcMain_plcMain_rptBOL_ctl00" "_pnlBOLContent`"
         )
         if not main_outer:
-            raise CarrierResponseFormatError(reason=error_message)
+            raise FormatError(**self._info_pack, reason=error_message)
 
         table_selector = main_outer.xpath('./table[@class="resultTable singleRowTable"]')
         if not table_selector:
@@ -406,24 +584,23 @@ class Extractor:
             "vessel": table_extractor.extract_cell(top="Vessel"),
         }
 
-    @staticmethod
-    def locate_container_selector(response) -> List[Dict]:
+    def locate_container_selector(self, response) -> List[Dict]:
         container_content_list = response.css("dl.containerAccordion dd")
         map_list = []
 
         for container_content in container_content_list:
             container_no_bar = container_content.css("a.containerToggle")
             if not container_no_bar:
-                raise CarrierResponseFormatError(reason="Can not find container_no_bar !!!")
+                raise FormatError(**self._info_pack, reason="Can not find container_no_bar !!!")
 
             container_stats_table = container_content.css("table.singleRowTable")
 
             if not container_stats_table:
-                raise CarrierResponseFormatError(reason="Can not find container_stats_table !!!")
+                raise FormatError(**self._info_pack, reason="Can not find container_stats_table !!!")
 
             movements_table = container_content.css("table[class='resultTable']")
             if not movements_table:
-                raise CarrierResponseFormatError(reason="Can not find movements_table !!!")
+                raise FormatError(**self._info_pack, reason="Can not find movements_table !!!")
 
             map_list.append(
                 {
@@ -442,30 +619,21 @@ class Extractor:
 
         return self._parse_container_no(container_no_text)
 
-    def _parse_container_no(self, container_no_text):
-        """
-        Sample Text:
-            Container: GLDU7636572
-        """
-        m = self._container_no_pattern.match(container_no_text)
-
-        if not m:
-            raise CarrierResponseFormatError(reason=f"Unknown container no format: `{container_no_text}`")
-
-        return m.group("container_no")
-
-    @staticmethod
-    def extract_place_of_deliv(container_selector_map: Dict[str, scrapy.Selector]):
+    def extract_container_info(self, container_selector_map: Dict[str, scrapy.Selector]):
         table_selector = container_selector_map["container_stats_table"]
 
         table_locator = ContainerInfoTableLocator()
         table_locator.parse(table=table_selector)
         table_extractor = TableExtractor(table_locator=table_locator)
 
-        return table_extractor.extract_cell(top="Shipped to")
+        return {
+            "place_of_deliv": table_extractor.extract_cell(top="Shipped to"),
+            "eta": table_extractor.extract_cell(top="Final POD ETA")
+            if table_locator.has_header(top="Final POD ETA")
+            else None,
+        }
 
-    @staticmethod
-    def extract_container_status_list(container_selector_map: Dict[str, scrapy.Selector]):
+    def extract_container_status_list(self, container_selector_map: Dict[str, scrapy.Selector]):
         table_selector = container_selector_map["movements_table"]
 
         table_locator = ContainerStatusTableLocator()
@@ -481,7 +649,7 @@ class Extractor:
             elif schedule_status == "future":
                 est_or_actual = "E"
             else:
-                raise CarrierResponseFormatError(reason=f"Unknown schedule_status: `{schedule_status}`")
+                raise FormatError(**self._info_pack, reason=f"Unknown schedule_status: `{schedule_status}`")
 
             container_status_list.append(
                 {
@@ -500,6 +668,18 @@ class Extractor:
         latest_update_message = response.css("div#ctl00_ctl00_plcMain_plcMain_pnlTrackingResults > p::text").get()
         return self._parse_latest_update(latest_update_message)
 
+    def _parse_container_no(self, container_no_text):
+        """
+        Sample Text:
+            Container: GLDU7636572
+        """
+        m = self._container_no_pattern.match(container_no_text)
+
+        if not m:
+            raise FormatError(**self._info_pack, reason=f"Unknown container no format: `{container_no_text}`")
+
+        return m.group("container_no")
+
     def _parse_latest_update(self, latest_update_message: str):
         """
         Sample Text:
@@ -507,7 +687,9 @@ class Extractor:
         """
         m = self._latest_update_pattern.match(latest_update_message)
         if not m:
-            raise CarrierResponseFormatError(reason=f"Unknown latest update message format: `{latest_update_message}`")
+            raise FormatError(
+                **self._info_pack, reason=f"Unknown latest update message format: `{latest_update_message}`"
+            )
 
         return m.group("latest_update").strip()
 
@@ -535,8 +717,7 @@ class MainInfoTableLocator(BaseTable):
             self._td_map.setdefault(title, [])
             self._td_map[title].append(data_td)
 
-    @staticmethod
-    def _extract_top(th):
+    def _extract_top(self, th):
         th_text = th.css("::text").get()
         return th_text.strip() if isinstance(th_text, str) else ""
 
@@ -564,8 +745,7 @@ class ContainerInfoTableLocator(BaseTable):
             self._td_map.setdefault(title, [])
             self._td_map[title].append(data_td)
 
-    @staticmethod
-    def _extract_top(th):
+    def _extract_top(self, th):
         th_text = th.css("::text").get()
         return th_text.strip() if isinstance(th_text, str) else ""
 
@@ -590,7 +770,6 @@ class ContainerStatusTableLocator(BaseTable):
                 self._td_map.setdefault(title, [])
                 self._td_map[title].append(data_td)
 
-    @staticmethod
-    def _extract_top(th):
+    def _extract_top(self, th):
         top_header = th.css("::text").get()
         return top_header.strip() if isinstance(top_header, str) else ""

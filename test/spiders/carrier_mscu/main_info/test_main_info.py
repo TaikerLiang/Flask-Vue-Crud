@@ -4,10 +4,9 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
+from crawler.core.base_new import SEARCH_TYPE_MBL
 from crawler.spiders.carrier_mscu import MainRoutingRule
 from test.spiders.carrier_mscu import main_info
-
 
 # class TestDriver:
 #     def __init__(self, body_text):
@@ -44,10 +43,16 @@ def test_main_info_routing_rule(sub, mbl_no, sample_loader):
         url=url,
         body=http_text,
         encoding="utf-8",
-        request=Request(url=url, meta={"search_no": mbl_no}),
+        request=Request(
+            url=url,
+            meta={
+                "search_no": mbl_no,
+                "task_id": "1",
+            },
+        ),
     )
 
-    rule = MainRoutingRule(search_type=SHIPMENT_TYPE_MBL)
+    rule = MainRoutingRule(search_type=SEARCH_TYPE_MBL)
 
     results = list(rule.handle(response=response))
 

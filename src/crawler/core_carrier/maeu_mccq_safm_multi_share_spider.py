@@ -3,13 +3,17 @@ from typing import Dict, List, Tuple
 
 import scrapy
 
+from crawler.core.proxy import HydraproxyProxyManager
 from crawler.core_carrier.base import (
     CARRIER_RESULT_STATUS_ERROR,
     SHIPMENT_TYPE_BOOKING,
     SHIPMENT_TYPE_MBL,
 )
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.exceptions import CarrierResponseFormatError, SuspiciousOperationError
+from crawler.core_carrier.exceptions import (
+    CarrierResponseFormatError,
+    SuspiciousOperationError,
+)
 from crawler.core_carrier.items import (
     BaseCarrierItem,
     ContainerItem,
@@ -21,17 +25,18 @@ from crawler.core_carrier.items import (
 )
 from crawler.core_carrier.request_helpers import RequestOption
 from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
-from crawler.core.proxy import HydraproxyProxyManager
 
 
 class MaeuMccqSafmShareSpider(BaseMultiCarrierSpider):
     name = ""
     base_url_format = ""
+    custom_settings = {
+        **BaseMultiCarrierSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super(MaeuMccqSafmShareSpider, self).__init__(*args, **kwargs)
-
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         bill_rules = [
             MainInfoRoutingRule(SHIPMENT_TYPE_MBL),
@@ -102,10 +107,17 @@ class MainInfoRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, search_nos: List, task_ids: List, url_format: str) -> RequestOption:
+        if search_nos[0][:4] == "SEAU":
+            seau_url_format = url_format[:-4] + "seau"
+            url = seau_url_format.format(search_no=search_nos[0][4:])
+        # More special case could be added here
+        else:
+            url = url_format.format(search_no=search_nos[0])
+
         return RequestOption(
             method=RequestOption.METHOD_GET,
             rule_name=cls.name,
-            url=url_format.format(search_no=search_nos[0]),
+            url=url,
             meta={
                 "task_ids": task_ids,
                 "search_nos": search_nos,
@@ -294,7 +306,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,

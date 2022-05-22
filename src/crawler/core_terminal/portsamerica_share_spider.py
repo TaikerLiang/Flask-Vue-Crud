@@ -1,17 +1,19 @@
 import dataclasses
-from typing import Dict, List
-import time
 import re
+import time
+from typing import List
 
 import scrapy
 from scrapy import Selector
-from crawler.core.selenium import ChromeContentGetter
 
+from crawler.core.selenium import ChromeContentGetter
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
+from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError
+from crawler.utils.container_no_checker import ContainerNoChecker
 
 BASE_URL = "https://voyagertrack.portsamerica.com"
 MAX_PAGE_NUM = 20
@@ -19,7 +21,6 @@ MAX_PAGE_NUM = 20
 
 @dataclasses.dataclass
 class CompanyInfo:
-    site_name: str
     upper_short: str
     email: str
     password: str
@@ -33,7 +34,6 @@ class WarningMessage:
 class PortsamericaShareSpider(BaseMultiTerminalSpider):
     name = ""
     company_info = CompanyInfo(
-        site_name="",
         upper_short="",
         email="",
         password="",
@@ -62,7 +62,7 @@ class PortsamericaShareSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
@@ -107,7 +107,7 @@ class SearchContainerRule(BaseRoutingRule):
         container_no_list = response.meta["container_no_list"]
 
         content_getter = ContentGetter(proxy_manager=None, is_headless=True)
-        content_getter.login(company_info.email, company_info.password, company_info.site_name)
+        content_getter.login(company_info.email, company_info.password, company_info.upper_short)
 
         while True:
             resp = content_getter.search(container_no_list[:MAX_PAGE_NUM])
@@ -124,8 +124,20 @@ class SearchContainerRule(BaseRoutingRule):
     def _handle_response(cls, response, container_no_list):
         containers = cls._extract_container_info(response, len(container_no_list))
         for container in containers:
-            yield TerminalItem(
-                **container,
+            for container_no in container_no_list:
+                if container["container_no"] == ContainerNoChecker.get_checked_no(container_no):
+                    container_no_list.remove(container_no)
+                    container["container_no"] = container_no
+
+                    yield TerminalItem(
+                        **container,
+                    )
+
+        for container_no in container_no_list:
+            yield ExportErrorData(
+                container_no=container_no,
+                detail="Data was not found",
+                status=TERMINAL_RESULT_STATUS_ERROR,
             )
 
     @staticmethod
@@ -178,8 +190,8 @@ class ContentGetter(ChromeContentGetter):
         super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
         self.search_url = None
 
-    def login(self, username, password, site_name):
-        url = f"{BASE_URL}/logon?siteId={site_name}"
+    def login(self, username, password, upper_short):
+        url = f"{BASE_URL}/logon?siteId={upper_short}"
         self._driver.get(url)
         time.sleep(5)
         username_input = self._driver.find_element_by_xpath('//*[@id="UserName"]')
@@ -218,7 +230,7 @@ class TableLocator(BaseTableLocator):
         self._td_map = []
 
     def parse(self, table: Selector, numbers: int = 1):
-        titles = self._get_titles(table)
+        self._get_titles(table)
 
     def _get_titles(self, table: Selector):
         titles = table.css("th::text").getall()

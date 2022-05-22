@@ -1,10 +1,10 @@
 from typing import List
 
-from crawler.core_carrier.items import MblItem, LocationItem, ContainerItem
+from crawler.core_carrier.items import ContainerItem, LocationItem, MblItem
 
 
 def verify(results: List):
-    assert results[1] == MblItem(
+    assert results[0] == MblItem(
         booking_no="YHU739759",
         por=LocationItem(name="CHARLESTON, SC (USCHS)"),
         pol=LocationItem(name="CHARLESTON, SC (USCHS)"),
@@ -21,12 +21,14 @@ def verify(results: List):
         customs_release_date=None,
         task_id=1,
         berthing_time=None,
+        vessel="ONE STORK",
+        voyage="014W (EC4131W)",
     )
 
-    assert results[2] == ContainerItem(
+    assert results[1] == ContainerItem(
         container_key="SEGU5745335",
         container_no="SEGU5745335",
         last_free_day=None,
         task_id=1,
-        terminal=LocationItem(name=None),
+        terminal_pod=LocationItem(name=None),
     )

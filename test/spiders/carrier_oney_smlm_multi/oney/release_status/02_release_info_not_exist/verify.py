@@ -1,4 +1,4 @@
-from crawler.core_carrier.items import MblItem, ContainerItem
+from crawler.core_carrier.items_new import ContainerItem, MblItem
 
 
 def verify(results):
@@ -13,6 +13,7 @@ def verify(results):
     assert results[1] == ContainerItem(
         container_key="TCLU7088049",
         last_free_day=None,
-        terminal=None,
+        terminal_pod={"name": None},
+        terminal_deliv={"name": None},
         task_id=1,
     )

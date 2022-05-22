@@ -1,24 +1,21 @@
-import requests
 from urllib.parse import urlencode
 
+import requests
 import scrapy
 from scrapy.http import Response
 
 from crawler.core_air.base import AIR_RESULT_STATUS_ERROR
 from crawler.core_air.base_spiders import BaseAirSpider
-from crawler.core_air.exceptions import (
-    AirInvalidMawbNoError,
-    LoadWebsiteTimeOutFatal,
-)
+from crawler.core_air.exceptions import AirInvalidMawbNoError, LoadWebsiteTimeOutFatal
 from crawler.core_air.items import (
-    BaseAirItem,
     AirItem,
+    BaseAirItem,
     DebugItem,
     ExportErrorData,
     HistoryItem,
 )
 from crawler.core_air.request_helpers import RequestOption
-from crawler.core_air.rules import RuleManager, BaseRoutingRule
+from crawler.core_air.rules import BaseRoutingRule, RuleManager
 
 PREFIX = "784"
 URL = "https://tang.csair.com/EN/WebFace/Tang.WebFace.Cargo/AgentAwbBrower.aspx"
@@ -126,7 +123,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
         return f"{self.name}.json"
 
     def handle(self, response: Response):
-        if self._is_awb_not_exist(response):
+        if self._is_mawb_not_exist(response):
             mawb_no = response.meta["mawb_no"]
             yield ExportErrorData(
                 mawb_no=mawb_no,
@@ -149,7 +146,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
         for info in selector:
             basic_info.append(info.xpath("normalize-space(text())").get())
 
-        if basic_info[0] is None:
+        if not basic_info or basic_info[0] is None:
             raise AirInvalidMawbNoError()
 
         basic_info[0] = basic_info[0].split("-")[1]
@@ -216,9 +213,9 @@ class AirInfoRoutingRule(BaseRoutingRule):
         return info_list
 
     @staticmethod
-    def _is_awb_not_exist(response) -> bool:
+    def _is_mawb_not_exist(response) -> bool:
         error_info = response.css("span[id='ctl00_ContentPlaceHolder1_lblErrorInfo'] font::text").get()
-        if error_info == "Awb information does not exist":
+        if error_info == "Mawb information does not exist":
             return True
         else:
             return False

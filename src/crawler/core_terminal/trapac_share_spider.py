@@ -1,29 +1,35 @@
-import time
 import dataclasses
-import random
-import string
-from typing import List, Dict
 from datetime import datetime, timedelta
+import time
+from typing import Dict, List
 from urllib.parse import urlencode
-import ujson as json
 
 import scrapy
 from scrapy import Selector
-
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.common.exceptions import NoSuchElementException
-from anticaptchaofficial.recaptchav2proxyless import *
+import ujson as json
 
+from crawler.core.base_new import (
+    DUMMY_URL_DICT,
+    RESULT_STATUS_ERROR,
+    SEARCH_TYPE_CONTAINER,
+)
+from crawler.core.exceptions_new import (
+    GeneralFatalError,
+    SuspiciousOperationError,
+    TimeOutError,
+)
+from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.selenium import ChromeContentGetter
 from crawler.core.table import BaseTable, TableExtractor
-from crawler.core_carrier.exceptions import LoadWebsiteTimeOutError, DataNotFoundError
-from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
-from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
+from crawler.core_terminal.base_spiders_new import BaseMultiTerminalSpider
+from crawler.core_terminal.items_new import DebugItem, TerminalItem
+from crawler.core_terminal.request_helpers_new import RequestOption
+from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 
 
@@ -86,7 +92,7 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
     def start(self):
         unique_container_nos = list(self.cno_tid_map.keys())
         option = MainRoutingRule.build_request_option(
-            container_no_list=unique_container_nos, company_info=self.company_info
+            container_nos=unique_container_nos, cno_tid_map=self.cno_tid_map, company_info=self.company_info
         )
         yield self._build_request_by(option=option)
 
@@ -96,8 +102,15 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, TerminalItem):
                 c_no = result["container_no"]
+                t_ids = self.cno_tid_map[c_no]
+                for t_id in t_ids:
+                    result["task_id"] = t_id
+                    yield result
+                    yield EndItem(task_id=t_id)
+            elif isinstance(result, DataNotFoundItem):
+                c_no = result["search_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
                     result["task_id"] = t_id
@@ -106,8 +119,6 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
                 yield self._build_request_by(option=result)
             elif isinstance(result, SaveItem) and self._save:
                 self._saver.save(to=result.file_name, text=result.text)
-            elif isinstance(result, SaveItem) and not self._save:
-                raise DataNotFoundError()
 
     def _build_request_by(self, option: RequestOption):
         meta = {
@@ -133,22 +144,27 @@ class TrapacShareSpider(BaseMultiTerminalSpider):
             )
 
         else:
-            raise ValueError(f"Invalid option.method [{option.method}]")
+            map_dict = {search_no: self.cno_tid_map[search_no] for search_no in option.meta["search_nos"]}
+            raise SuspiciousOperationError(
+                task_id=self.cno_tid_map[option.meta["search_nos"][0]][0],
+                search_type=self.search_type,
+                reason=f"Unexpected request method: `{option.method}`, on (search_no: [task_id...]): {map_dict}",
+            )
 
 
 class MainRoutingRule(BaseRoutingRule):
     name = "MAIN"
 
     @classmethod
-    def build_request_option(cls, container_no_list: List, company_info: CompanyInfo) -> RequestOption:
-        url = "https://www.google.com"
+    def build_request_option(cls, container_nos: List, cno_tid_map: Dict, company_info: CompanyInfo) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=url,
+            url=DUMMY_URL_DICT["eval_edi"],
             meta={
-                "container_no_list": container_no_list,
                 "company_info": company_info,
+                "search_nos": container_nos,
+                "cno_tid_map": cno_tid_map,
             },
         )
 
@@ -157,37 +173,57 @@ class MainRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         company_info = response.meta["company_info"]
-        container_no_list = response.meta["container_no_list"]
+        container_nos = response.meta["search_nos"]
+        cno_tid_map = response.meta["cno_tid_map"]
 
         is_g_captcha, res, cookies = self._build_container_response(
-            company_info=company_info, container_no_list=container_no_list
+            company_info=company_info,
+            container_nos=container_nos,
+            cno_tid_map=cno_tid_map,
         )
-        is_g_captcha = True
         if is_g_captcha:
             yield ContentRoutingRule.build_request_option(
-                container_no_list=container_no_list, company_info=company_info, g_token=res, cookies=cookies
+                container_nos=container_nos,
+                cno_tid_map=cno_tid_map,
+                company_info=company_info,
+                g_token=res,
+                cookies=cookies,
             )
         else:
-            container_response = scrapy.Selector(text=res)
-            yield SaveItem(file_name="container.html", text=container_response.get())
+            for item in self.handle_response(response=res, container_nos=container_nos):
+                yield item
 
-            for container_info in self.extract_container_result_table(
-                response=container_response, numbers=len(container_no_list)
-            ):
-                yield TerminalItem(  # html field
-                    container_no=container_info["container_no"],  # number
-                    last_free_day=container_info["last_free_day"],  # demurrage-lfd
-                    customs_release=container_info.get("custom_release"),  # holds-customs
-                    demurrage=container_info["demurrage"],  # demurrage-amt
-                    container_spec=container_info["container_spec"],  # dimensions
-                    holds=container_info["holds"],  # demurrage-hold
-                    cy_location=container_info["cy_location"],  # yard status
-                    vessel=container_info["vessel"],  # vsl / voy
-                    voyage=container_info["voyage"],  # vsl / voy
-                )
+    def handle_response(self, response, container_nos):
+        container_response = scrapy.Selector(text=response)
+        yield SaveItem(file_name="container.html", text=container_response.get())
 
-    @staticmethod
-    def extract_container_result_table(response: scrapy.Selector, numbers: int):
+        for container_info in self._extract_container_result_table(
+            response=container_response, numbers=len(container_nos)
+        ):
+            container_no = container_info["container_no"]
+            container_nos.remove(container_no)
+
+            yield TerminalItem(  # html field
+                container_no=container_no,  # number
+                last_free_day=container_info["last_free_day"],  # demurrage-lfd
+                customs_release=container_info.get("custom_release"),  # holds-customs
+                demurrage=container_info["demurrage"],  # demurrage-amt
+                container_spec=container_info["container_spec"],  # dimensions
+                holds=container_info["holds"],  # demurrage-hold
+                cy_location=container_info["cy_location"],  # yard status
+                vessel=container_info["vessel"],  # vsl / voy
+                voyage=container_info["voyage"],  # vsl / voy
+            )
+
+        for container_no in container_nos:
+            yield DataNotFoundItem(
+                search_no=container_no,
+                search_type=SEARCH_TYPE_CONTAINER,
+                detail="Data was not found",
+                status=RESULT_STATUS_ERROR,
+            )
+
+    def _extract_container_result_table(self, response: scrapy.Selector, numbers: int):
         table = response.css('div[class="transaction-result availability"] table')
 
         table_locator = ContainerTableLocator()
@@ -214,16 +250,23 @@ class MainRoutingRule(BaseRoutingRule):
                 "voyage": voyage,
             }
 
-    @staticmethod
-    def _build_container_response(company_info: CompanyInfo, container_no_list: List):
+    def _build_container_response(self, company_info: CompanyInfo, container_nos: List, cno_tid_map: Dict):
         content_getter = ContentGetter(proxy_manager=None, is_headless=True, company_info=company_info)
-        is_g_captcha, res, cookies = content_getter.get_content(search_no=",".join(container_no_list))
-        content_getter.quit()
+        try:
+            is_g_captcha, res, cookies = content_getter.get_content(container_no_list=container_nos)
+        except TimeOutError as e:
+            map_dict = {search_no: cno_tid_map[search_no] for search_no in container_nos}
+            raise TimeOutError(
+                task_id=cno_tid_map[container_nos[0]][0],
+                search_type=SEARCH_TYPE_CONTAINER,
+                reason=f"{e.reason} on (search_no: [task_id...]): {map_dict}",
+            )
+        finally:
+            content_getter.quit()
 
         return is_g_captcha, res, cookies
 
-    @staticmethod
-    def _is_search_no_invalid(response: scrapy.Selector) -> bool:
+    def _is_search_no_invalid(self, response: scrapy.Selector) -> bool:
         return bool(response.css("tr.error-row"))
 
 
@@ -232,14 +275,14 @@ class ContentRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(
-        cls, container_no_list: List, company_info: CompanyInfo, g_token: str, cookies: Dict
+        cls, container_nos: List, cno_tid_map: Dict, company_info: CompanyInfo, g_token: str, cookies: Dict
     ) -> RequestOption:
         form_data = {
             "action": "trapac_transaction",
             "recaptcha-token": g_token,
             "terminal": company_info.upper_short,
             "transaction": "availability",
-            "containers": ",".join(container_no_list),
+            "containers": ",".join(container_nos),
             "booking": "",
             "email": "",
             "equipment_type": "CT",
@@ -273,16 +316,25 @@ class ContentRoutingRule(BaseRoutingRule):
             headers=headers,
             body=urlencode(query=form_data),
             meta={
-                "numbers": len(container_no_list),
+                "search_nos": container_nos,
+                "cno_tid_map": cno_tid_map,
             },
         )
 
     def handle(self, response):
-        numbers = response.meta["numbers"]
+        container_nos = response.meta["search_nos"]
+        cno_tid_map = response.meta["cno_tid_map"]
+        numbers = len(container_nos)
+
         resp = json.loads(response.text)
 
         if "Please complete the reCAPTCHA check and submit your request again" in resp["html"]:
-            raise DataNotFoundError()
+            map_dict = {search_no: cno_tid_map[search_no] for search_no in container_nos}
+            raise GeneralFatalError(
+                task_id=cno_tid_map[container_nos[0]][0],
+                search_type=SEARCH_TYPE_CONTAINER,
+                reason=f"reCAPTCHA check encountered on (search_no: [task_id...]): {map_dict}",
+            )
 
         resp_html = Selector(text=resp["html"])
         table = resp_html.css('div[class="transaction-result availability"] table')
@@ -313,104 +365,113 @@ class ContentGetter(ChromeContentGetter):
         super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
         self._company = company_info
 
-    def find_ua(self):
-        self._driver.get("https://www.whatsmyua.info")
-        time.sleep(15)
+    def get_content(self, container_no_list):
+        self._driver.get("https://www.trapac.com/")
+        time.sleep(10)
+        self._accept_cookie()
 
-        ua_selector = self._driver.find_element_by_css_selector(css="textarea#custom-ua-string")
-        print("find_ua:", ua_selector.text)
-
-    def find_ip(self):
-        self._driver.get("https://www.whatismyip.com.tw/")
-        time.sleep(5)
-
-        ip_selector = self._driver.find_element_by_css_selector("b span")
-        print("find_id", ip_selector.text)
-
-    def get_result_response_text(self):
-        result_table_css = "div#transaction-detail-result table"
-
-        self.wait_for_appear(css=result_table_css, wait_sec=15)
-        return self._driver.page_source
-
-    def get_content(self, search_no):
-        self._driver.get(
-            url=f"https://{self._company.lower_short}.trapac.com/quick-check/?terminal={self._company.upper_short}&transaction=availability"
-        )
-        self.accept_cookie()
-        time.sleep(2)
-        self.key_in_search_bar(search_no=search_no)
-        cookies = self.get_cookies()
-        self.press_search_button()
-
-        if self.get_google_recaptcha():
-            g_response = self.solve_google_recaptcha(self._company.lower_short)
-            return True, g_response, cookies
-
-        return False, self.get_result_response_text(), cookies
-
-    def accept_cookie(self):
-        try:
-            cookie_btn = self._driver.find_element_by_xpath('//*[@id="cn-accept-cookie"]')
-            cookie_btn.click()
-            time.sleep(3)
-        except:
-            pass
-
-    def wait_for_appear(self, css: str, wait_sec: int):
-        locator = (By.CSS_SELECTOR, css)
-        try:
-            WebDriverWait(self._driver, wait_sec).until(EC.presence_of_element_located(locator))
-        except TimeoutException:
-            current_url = self.get_current_url()
-            self._driver.quit()
-            raise LoadWebsiteTimeOutError(url=current_url)
-
-    def key_in_search_bar(self, search_no: str):
-        text_area = self._driver.find_element_by_xpath('//*[@id="edit-containers"]')
-        text_area.send_keys(search_no)
-        time.sleep(3)
-
-    def press_search_button(self):
-        search_btn = self._driver.find_element_by_xpath('//*[@id="transaction-form"]/div[3]/button')
-        search_btn.click()
+        link_pathes = {
+            "LAX": "/html/body/div[1]/div/div/div[1]/ul/li[2]/a",
+            "OAK": "/html/body/div[1]/div/div/div[1]/ul/li[2]/a",
+            "OTHERS": "/html/body/div[1]/div/div/div[1]/ul/li[4]/a",
+        }
+        link_path = link_pathes.get(self._company.upper_short, link_pathes["OTHERS"])
+        link = self._driver.find_element_by_xpath(link_path)
+        ActionChains(self._driver).move_to_element(link).click().perform()
         time.sleep(10)
 
-    def save_screenshot(self):
-        self._driver.save_screenshot("screenshot.png")
+        menu_pathes = {
+            "LAX": '//*[@id="menu-item-74"]/a',
+            "OAK": '//*[@id="menu-item-245"]/a',
+            "OTHERS": '//*[@id="menu-item-248"]/a',
+        }
+        menu_path = menu_pathes.get(self._company.upper_short, menu_pathes["OTHERS"])
+        menu = self._driver.find_element_by_xpath(menu_path)
+        ActionChains(self._driver).move_to_element(menu).click().perform()
+        time.sleep(3)
 
-    def get_g_token(self):
-        return self._driver.find_element_by_xpath('//*[@id="transaction-form"]/input').get_attribute("value")
+        self._driver.get(
+            f"https://{self._company.lower_short}.trapac.com/quick-check/?terminal={self._company.upper_short}&transaction=availability"
+        )
+        time.sleep(15)
 
-    def get_google_recaptcha(self):
+        self._human_action()
+        time.sleep(3)
+        self._key_in_search_bar(search_no="\n".join(container_no_list))
+        self._press_search_button()
+        cookies = self.get_cookies()
+        self._accept_cookie()
+
+        return False, self._get_result_response_text(), cookies
+
+    def _accept_cookie(self):
+        try:
+            cookie_btn = self._driver.find_element_by_xpath('//*[@id="cn-accept-cookie"]')
+            ActionChains(self._driver).move_to_element(cookie_btn).click().perform()
+            time.sleep(3)
+        except Exception:
+            pass
+
+    def _key_in_search_bar(self, search_no: str):
+        text_area = self._driver.find_element_by_xpath('//*[@id="edit-containers"]')
+        ActionChains(self._driver).move_to_element(text_area).click().perform()
+        self.slow_type(text_area, search_no)
+        time.sleep(3)
+
+    def _press_search_button(self):
+        search_btn = self._driver.find_element_by_xpath('//*[@id="transaction-form"]/div[3]/button')
+        ActionChains(self._driver).move_to_element(search_btn).click().perform()
+        time.sleep(90)
+        self.scroll_down()
+        self.scroll_up()
+
+    def _get_google_recaptcha(self):
         try:
             element = self._driver.find_element_by_xpath('//*[@id="recaptcha-backup"]')
             return element
         except NoSuchElementException:
             return None
 
-    def solve_google_recaptcha(self, location_name: str):
-        solver = recaptchaV2Proxyless()
-        solver.set_verbose(1)
-        solver.set_key("fbe73f747afc996b624e8d2a95fa0f84")
-        solver.set_website_url(f"https://{location_name}.trapac.com/")
-        solver.set_website_key("6LfCy7gUAAAAAHSPtJRrJIVQKeKQt_hrYbGSIpuF")
-
-        g_response = solver.solve_and_return_solution()
-
-        if g_response != 0:
-            print("g-response: " + g_response)
-            return g_response
-        else:
-            print("task finished with error " + solver.error_code)
-            return None
-
     def get_proxy_username(self, option: ProxyOption) -> str:
         return f"groups-{option.group},session-{option.session}"
 
-    @staticmethod
-    def _generate_random_string():
-        return "".join(random.choices(string.ascii_uppercase + string.digits, k=20))
+    def _get_result_response_text(self):
+        result_table_css = "div#transaction-detail-result table"
+
+        self._wait_for_appear(css=result_table_css, wait_sec=20)
+        return self._driver.page_source
+
+    def _wait_for_appear(self, css: str, wait_sec: int):
+        locator = (By.CSS_SELECTOR, css)
+        try:
+            WebDriverWait(self._driver, wait_sec).until(EC.presence_of_element_located(locator))
+        except TimeoutException:
+            current_url = self.get_current_url()
+            self._driver.quit()
+            raise TimeOutError(reason=current_url)
+
+    def _save_screenshot(self):
+        self._driver.save_screenshot("screenshot.png")
+
+    def _human_action(self):
+        try:
+            self._driver.find_element_by_xpath('//*[@id="transaction-form"]/div[1]/fieldset[1]/ul/li[2]/label').click()
+            time.sleep(1)
+            self._driver.find_element_by_xpath('//*[@id="transaction-form"]/div[1]/fieldset[1]/ul/li[1]/label').click()
+            time.sleep(1)
+            self._driver.find_element_by_xpath('//*[@id="transaction-form"]/div[1]/fieldset[1]/ul/li[3]/label').click()
+            time.sleep(1)
+        except:  # noqa: E722
+            pass
+
+        element_pathes = {
+            "LAX": '//*[@id="transaction-form"]/div[1]/fieldset[1]/ul/li[1]/label',
+            "OAK": '//*[@id="transaction-form"]/div[1]/fieldset[1]/ul/li[2]/label',
+            "OTHERS": '//*[@id="transaction-form"]/div[1]/fieldset[1]/ul/li[3]/label',
+        }
+        element_path = element_pathes.get(self._company.upper_short, element_pathes["OTHERS"])
+        self._driver.find_element_by_xpath(element_path).click()
+        time.sleep(1)
 
 
 class VesselVoyageTdExtractor(BaseTableCellExtractor):
@@ -450,8 +511,7 @@ class ContainerTableLocator(BaseTable):
                 self._td_map.setdefault(title, [])
                 self._td_map[title].append(data_td)
 
-    @staticmethod
-    def _combine_title_list(main_title_ths: List[scrapy.Selector], second_title_ths: List[scrapy.Selector]):
+    def _combine_title_list(self, main_title_ths: List[scrapy.Selector], second_title_ths: List[scrapy.Selector]):
         main_title_list = []
         main_title_accumulated_col_span = []  # [(main_title, accumulated_col_span)]
 

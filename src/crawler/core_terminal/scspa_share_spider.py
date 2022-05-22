@@ -7,10 +7,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
 from crawler.core.selenium import ChromeContentGetter
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
+from crawler.core_terminal.items import DebugItem, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
+from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 
 MAX_PAGE_NUM = 10
 
@@ -18,10 +18,13 @@ MAX_PAGE_NUM = 10
 class ScspaShareSpider(BaseMultiTerminalSpider):
     firms_code = ""
     name = ""
+    custom_settings = {
+        **BaseMultiTerminalSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         self._content_getter = ContentGetter(proxy_manager=None, is_headless=True)
 
@@ -46,10 +49,10 @@ class ScspaShareSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, TerminalItem):
                 c_no = result.get("container_no")
                 t_ids = self.cno_tid_map.get(c_no)
-                if t_ids != None:
+                if t_ids:
                     for t_id in t_ids:
                         result["task_id"] = t_id
                         yield result
@@ -88,7 +91,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://www.google.com",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "container_no_list": container_no_list,
             },
@@ -109,6 +112,7 @@ class ContainerRoutingRule(BaseRoutingRule):
     @classmethod
     def _handle_response(cls, response):
         content_table = cls._extract_content_table(response)
+
         for content in content_table:
             yield TerminalItem(
                 container_no=content[0],
@@ -122,7 +126,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         content_table = []
         response = scrapy.Selector(text=page_source)
 
-        table = response.xpath("(//table[contains(@class, 'x-grid-table')])[2]")
+        table = response.xpath("//*[@id='quickInptPtrWinGridId-body']//table")
         tr_list = table.xpath("./tbody/tr")[1:]
         for tr in tr_list:
             content_table.append(tr.xpath("./td/div/text()").getall())
@@ -136,7 +140,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={"container_no_list": container_no_list},
         )
 
@@ -153,7 +157,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
 
 class ContentGetter(ChromeContentGetter):
     USERNAME = "tk@hardcoretech.co"
-    PASSWORD = "Hardc0re"
+    PASSWORD = "Goft@220401"
     URL = "https://goport.scspa.com/scspa/index"
 
     def login(self):
@@ -189,7 +193,7 @@ class ContentGetter(ChromeContentGetter):
         while True:
             try:
                 self._driver.find_element(By.XPATH, "//div[id='tosModelPopUpWinId']")
-            except:
+            except Exception:
                 break
             else:
                 close_button = self._driver.find_element(
@@ -214,7 +218,7 @@ class ContentGetter(ChromeContentGetter):
         )
         list_tree = self._driver.find_element(By.XPATH, "//div[@id='queryListingeTreeGridId-body']")
         WebDriverWait(self._driver, 20).until(
-            EC.presence_of_element_located((By.XPATH, "//tr[2]/td/div/img[contains(@class, 'x-tree-expander')]"))
+            EC.element_to_be_clickable((By.XPATH, "//tr[2]/td/div/img[contains(@class, 'x-tree-expander')]"))
         )
         folder_toggler = list_tree.find_element(By.XPATH, "//tr[2]/td/div/img[contains(@class, 'x-tree-expander')]")
         folder_toggler.click()

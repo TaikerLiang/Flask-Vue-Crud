@@ -1,14 +1,14 @@
 import dataclasses
 import re
-from typing import Dict
 
 import scrapy
 
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.exceptions import TerminalResponseFormatError
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
+from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 
 
 @dataclasses.dataclass
@@ -21,6 +21,10 @@ class CompanyInfo:
 
 class TideworksShareSpider(BaseMultiTerminalSpider):
     name = ""
+    custom_settings = {
+        **BaseMultiTerminalSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
     company_info = CompanyInfo(
         lower_short="",
         upper_short="",
@@ -30,7 +34,6 @@ class TideworksShareSpider(BaseMultiTerminalSpider):
 
     def __init__(self, *args, **kwargs):
         super(TideworksShareSpider, self).__init__(*args, **kwargs)
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         rules = [
             LoginRoutingRule(),
@@ -56,7 +59,7 @@ class TideworksShareSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
@@ -173,7 +176,11 @@ class SearchContainerRoutingRule(BaseRoutingRule):
         company_info = response.meta["company_info"]
 
         if self._is_invalid_container_no(response=response):
-            yield InvalidContainerNoItem(container_no=container_no)
+            yield ExportErrorData(
+                container_no=container_no,
+                detail="Data was not found",
+                status=TERMINAL_RESULT_STATUS_ERROR,
+            )
             return
 
         # for ContainerDetailRoutingRule request
@@ -239,7 +246,7 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         return container_no
 
     def _extract_container_info(self, response: scrapy.Selector):
-        pattern = re.compile(r"^(?P<vessel>[\w\s]+)/")
+        pattern = re.compile(r"^(?P<vessel>.+)/")
         container_info = {}
 
         div_selectors = response.css("div.col-sm-4 div")
@@ -322,6 +329,11 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
     def _extract_extra_container_info_div_text_colsm6(div: scrapy.Selector):
         div_text_list = div.css("::text").getall()
         div_text_list = [r.strip() for r in div_text_list if r.strip()]
+        if div_text_list[0][:6] == "Holds:":
+            lambda_sub = lambda text: re.sub(r"\r\n\s*", "\n", text)
+            div_text_list = [lambda_sub(r) for r in div_text_list if lambda_sub(r)]
+            div_text = "\n".join(div_text_list)
+            return div_text[:5], div_text[7:]  # fix index error
 
         if len(div_text_list) >= 2:
             return div_text_list[0].replace(":", ""), div_text_list[1]

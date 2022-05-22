@@ -3,22 +3,31 @@ import time
 from typing import Dict, List
 from urllib.parse import urlencode
 
-
 import scrapy
 from scrapy.http import Response
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.exceptions import TerminalInvalidContainerNoError
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem, InvalidDataFieldItem
-from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
+from crawler.core.base_new import DUMMY_URL_DICT
 from crawler.core.selenium import ChromeContentGetter
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
+from crawler.core_terminal.exceptions import (
+    LoginNotSuccessFatal,
+    TerminalInvalidContainerNoError,
+)
+from crawler.core_terminal.items import (
+    DebugItem,
+    ExportErrorData,
+    InvalidDataFieldItem,
+    TerminalItem,
+)
+from crawler.core_terminal.request_helpers import RequestOption
+from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 
 BASE_URL = "http://webaccess.gaports.com/express/"
-MAX_PAGE_NUM = 20
+MAX_PAGE_NUM = 30
 
 
 class GpaShareSpider(BaseMultiTerminalSpider):
@@ -51,16 +60,12 @@ class GpaShareSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if True in [isinstance(result, item) for item in [TerminalItem, InvalidDataFieldItem]]:
+            if True in [isinstance(result, item) for item in [TerminalItem, InvalidDataFieldItem, ExportErrorData]]:
                 c_no = result.get("container_no")
-                t_ids = self.cno_tid_map.get(c_no)
-                if t_ids != None:
-                    for t_id in t_ids:
-                        result["task_id"] = t_id
-                        yield result
-            elif isinstance(result, InvalidContainerNoItem):
-                result["task_id"] = self.task_ids
-                yield result
+                t_ids = self.cno_tid_map.get(c_no, [])
+                for t_id in t_ids:
+                    result["task_id"] = t_id
+                    yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
             else:
@@ -102,7 +107,7 @@ class LoginRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://www.google.com",
+            url=DUMMY_URL_DICT["eval_edi"],
             meta={
                 "container_no_list": container_no_list,
             },
@@ -115,10 +120,21 @@ class LoginRoutingRule(BaseRoutingRule):
         container_no_list = response.meta.get("container_no_list")
         browser = ContentGetter(proxy_manager=None, is_headless=True)
         browser.login()
+
+        # Check if account is blocked
+        self._raise_if_login_fail(page=browser._driver.page_source)
+
         cookies = browser.get_cookies_dict()
         browser.close()
 
         yield ToContainerPageRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
+
+    def _raise_if_login_fail(self, page: str):
+        selector = scrapy.Selector(text=page)
+        text = selector.css("table.contentArea div#printContent p > font::text").get()
+        if text and text.strip() == "Help is available from your system administrator.":
+            msg = selector.css("table.contentArea div#printContent font > b::text").get()
+            raise LoginNotSuccessFatal(success_status=msg)
 
 
 class ToContainerPageRoutingRule(BaseRoutingRule):
@@ -179,17 +195,27 @@ class ContainerRoutingRule(BaseRoutingRule):
 
     def handle(self, response):
         container_no_list = response.meta.get("container_no_list")
+        container_nos_in_paging = container_no_list[:MAX_PAGE_NUM]
         cookies = response.meta.get("cookies")
         try:
             table = self._get_table_list(response)
         except TerminalInvalidContainerNoError:
-            yield InvalidContainerNoItem(container_no=container_no_list[:MAX_PAGE_NUM])
+            for container_no in container_nos_in_paging:
+                yield ExportErrorData(
+                    container_no=container_no,
+                    detail="Data was not found",
+                    status=TERMINAL_RESULT_STATUS_ERROR,
+                )
         else:
             info_list = self._extract_info_list(table)
             for info in info_list:
                 if info.get("invalid"):
+                    if info.get("invalid").get("container_no") in container_nos_in_paging:
+                        container_nos_in_paging.remove(info.get("invalid").get("container_no"))
                     yield info.get("invalid")
                 else:
+                    if info.get("container_no") in container_nos_in_paging:
+                        container_nos_in_paging.remove(info.get("container_no"))
                     yield TerminalItem(
                         container_no=info.get("container_no"),
                         available=info.get("available"),
@@ -197,7 +223,14 @@ class ContainerRoutingRule(BaseRoutingRule):
                         carrier_release=info.get("line_release"),
                         customs_release=info.get("customs_release"),
                     )
-            yield NextRoundRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
+            for container_no in container_nos_in_paging:
+                yield ExportErrorData(
+                    container_no=container_no,
+                    detail="Data was not found",
+                    status=TERMINAL_RESULT_STATUS_ERROR,
+                )
+
+        yield NextRoundRoutingRule.build_request_option(container_no_list=container_no_list, cookies=cookies)
 
     def _get_table_list(self, response: Response) -> List[List]:
         tr_selector = response.css("tbody[class='tablebody1'] tr")
@@ -206,9 +239,7 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         table = []
         for tr in tr_selector:
-            data = []
-            data.append(tr.css("td:nth-child(1) img::attr(title)").get())
-            data.append(tr.css("td:nth-child(2) a::text").get())
+            data = [tr.css("td:nth-child(1) img::attr(title)").get(), tr.css("td:nth-child(2) a::text").get()]
             data.extend(tr.css("td::text").getall())
             table.append(data)
 
@@ -263,8 +294,9 @@ class ContainerRoutingRule(BaseRoutingRule):
             invalid_data_field_item["valid_data_dict"].update({"available": ["Yes", "No"]})
             invalid_data_field_item["invalid_data_dict"].update({"available": available})
 
-        if location != "C" and location != "V" and location != "Y":
-            invalid_data_field_item["valid_data_dict"].update({"location": ["C", "V", "Y"]})
+        location = location.split("-")[0]
+        if len(location) != 1:
+            invalid_data_field_item["valid_data_dict"].update({"location": ["C", "V", "Y", "T"]})
             invalid_data_field_item["invalid_data_dict"].update({"location": location})
 
         if invalid_data_field_item["valid_data_dict"]:
@@ -281,7 +313,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url=DUMMY_URL_DICT["eval_edi"],
             meta={"container_no_list": container_no_list, "cookies": cookies},
         )
 
@@ -298,8 +330,8 @@ class NextRoundRoutingRule(BaseRoutingRule):
 
 
 class ContentGetter(ChromeContentGetter):
-    USERNAME = "cli2"
-    PASSWORD = "Hardc0re"
+    USERNAME = "bho1"
+    PASSWORD = "hb3843"
     LOGIN_URL = BASE_URL + "secure/Today.jsp?Facility=GCT"
 
     def login(self):

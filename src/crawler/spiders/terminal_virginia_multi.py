@@ -3,16 +3,16 @@ import json
 from scrapy import Request, FormRequest, Selector
 
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem, InvalidContainerNoItem
+from crawler.core_terminal.items import BaseTerminalItem, DebugItem, TerminalItem
 from crawler.core_terminal.rules import RuleManager, BaseRoutingRule, RequestOption
 from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
 
-BASE_URL = 'http://propassva.portofvirginia.com'
+BASE_URL = "http://propassva.portofvirginia.com"
 
 
 class TerminalVirginiaMultiSpider(BaseMultiTerminalSpider):
-    firms_code = ''
-    name = 'terminal_virginia_multi'
+    firms_code = ""
+    name = "terminal_virginia_multi"
 
     def __init__(self, *args, **kwargs):
         super(TerminalVirginiaMultiSpider, self).__init__(*args, **kwargs)
@@ -30,7 +30,7 @@ class TerminalVirginiaMultiSpider(BaseMultiTerminalSpider):
             yield self._build_request_by(option=option)
 
     def parse(self, response):
-        yield DebugItem(info={'meta': dict(response.meta)})
+        yield DebugItem(info={"meta": dict(response.meta)})
 
         routing_rule = self._rule_manager.get_rule_by_response(response=response)
 
@@ -67,39 +67,39 @@ class TerminalVirginiaMultiSpider(BaseMultiTerminalSpider):
                 dont_filter=True,
             )
         else:
-            raise ValueError(f'Invalid option.method [{option.method}]')
+            raise ValueError(f"Invalid option.method [{option.method}]")
 
 
 # -------------------------------------------------------------------------------
 
 
 class ContainerRoutingRule(BaseRoutingRule):
-    name = 'CONTAINER'
+    name = "CONTAINER"
 
     @classmethod
     def build_request_option(cls, container_no) -> RequestOption:
-        url = f'{BASE_URL}/api/containers?search={container_no}'
+        url = f"{BASE_URL}/api/containers?search={container_no}"
 
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=url,
             meta={
-                'container_no': container_no,
+                "container_no": container_no,
             },
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.json'
+        return f"{self.name}.json"
 
     def handle(self, response):
-        container_no = response.meta['container_no']
+        container_no = response.meta["container_no"]
 
         response_json = json.loads(response.text)
 
         for container_bar in response_json:
-            fac = container_bar['facility']
-            gkey = container_bar['gkey']
+            fac = container_bar["facility"]
+            gkey = container_bar["gkey"]
             yield ContainerDetailRoutingRule.build_request_option(container_no=container_no, gkey=gkey, facility=fac)
 
 
@@ -107,21 +107,21 @@ class ContainerRoutingRule(BaseRoutingRule):
 
 
 class ContainerDetailRoutingRule(BaseRoutingRule):
-    name = 'CONTAINER_DETAIL'
+    name = "CONTAINER_DETAIL"
 
     @classmethod
     def build_request_option(cls, container_no: str, gkey: str, facility: str) -> RequestOption:
-        url = f'{BASE_URL}/api/containers/{gkey}/{facility}'
+        url = f"{BASE_URL}/api/containers/{gkey}/{facility}"
 
         return RequestOption(
-            rule_name=cls.name, method=RequestOption.METHOD_GET, url=url, meta={'container_no': container_no}
+            rule_name=cls.name, method=RequestOption.METHOD_GET, url=url, meta={"container_no": container_no}
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name}.json'
+        return f"{self.name}.json"
 
     def handle(self, response):
-        container_no = response.meta['container_no']
+        container_no = response.meta["container_no"]
         # it conclude Container data
 
         yield TerminalItem(container_no=container_no)

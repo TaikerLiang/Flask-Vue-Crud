@@ -1,11 +1,11 @@
 from pathlib import Path
+from test.spiders.terminal_ets import container
 
 import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.core_terminal.ets_share_spider import ContainerRoutingRule
-from test.spiders.terminal_ets import container
 
 
 @pytest.fixture
@@ -16,17 +16,19 @@ def sample_loader(sample_loader):
 
 
 @pytest.mark.parametrize(
-    "sub,container_no",
+    "sub,container_nos",
     [
         ("01_without_demurrage", "EISU8049563"),
         ("02_with_demurrage_appointment", "EMCU5268400"),
         ("03_diff_customs_release", "EITU1162062"),
+        ("04_container_no_error", "EITU1162062/,EITU1162062"),
     ],
 )
-def test_container_handle(sub, container_no, sample_loader):
+def test_container_handle(sub, container_nos, sample_loader):
     json_text = sample_loader.read_file(sub, "sample.json")
 
-    option = ContainerRoutingRule.build_request_option(container_no_list=[container_no], sk="")
+    container_no_list = container_nos.split(",")
+    option = ContainerRoutingRule.build_request_option(container_no_list=container_no_list, sk="")
 
     response = TextResponse(
         url=option.url,

@@ -13,6 +13,8 @@ class ExportErrorData(BaseRailItem):
     status = scrapy.Field()
     detail = scrapy.Field()
     traceback_info = scrapy.Field()
+    container_no = scrapy.Field()
+    task_id = scrapy.Field()
 
 
 class RailItem(BaseRailItem):
@@ -42,13 +44,17 @@ class RailItem(BaseRailItem):
 
     @property
     def key(self):
-        return self['task_id']
+        return self["task_id"]
 
 
 class DebugItem(BaseRailItem):
     info = scrapy.Field()
 
 
-class InvalidContainerNoItem(BaseRailItem):
+class InvalidItem(BaseRailItem):
     task_id = scrapy.Field()
     container_no = scrapy.Field()
+
+
+class InvalidContainerNoItem(InvalidItem):
+    pass

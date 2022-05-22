@@ -1,19 +1,20 @@
-from typing import List, Dict
-import io
-import random
 import dataclasses
+import json
+import random
 import re
+from typing import Dict, List
 
 import scrapy
 from scrapy.http import HtmlResponse
-import PIL.Image as Image
-from anticaptchaofficial.imagecaptcha import *
 
-from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem, InvalidContainerNoItem
-from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
+from crawler.core_terminal.exceptions import DriverMaxRetryError
+from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
+from crawler.core_terminal.request_helpers import RequestOption
+from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
+from crawler.services.captcha_service import ImageAntiCaptchaService
 
 
 @dataclasses.dataclass
@@ -23,6 +24,12 @@ class CompanyInfo:
 
 
 BASE_URL = "https://www.etslink.com"
+MAX_RETRY_COUNT = 3
+MAX_PAGE_NUM = 20
+
+
+class Restart:
+    pass
 
 
 class EtsShareSpider(BaseMultiTerminalSpider):
@@ -44,20 +51,24 @@ class EtsShareSpider(BaseMultiTerminalSpider):
         ]
         self._proxy_manager = HydraproxyProxyManager(session="share", logger=self.logger)
         self._rule_manager = RuleManager(rules=rules)
+        self._retry_count = 0
 
     def start(self):
+        yield self._prepare_start()
+
+    def _prepare_start(self):
+        if self._retry_count > MAX_RETRY_COUNT:
+            raise DriverMaxRetryError()
+
+        self._retry_count += 1
+
         self._proxy_manager.renew_proxy()
         unique_container_nos = list(self.cno_tid_map.keys())
-        option = self._prepare_start(unique_container_nos=unique_container_nos)
-        yield self._build_request_by(option=option)
-
-    def _prepare_start(self, unique_container_nos: List):
-        self._proxy_manager.renew_proxy()
         option = MainPageRoutingRule.build_request_option(
             container_no_list=unique_container_nos, company_info=self.company_info
         )
         proxy_option = self._proxy_manager.apply_proxy_to_request_option(option=option)
-        return proxy_option
+        return self._build_request_by(option=proxy_option)
 
     def parse(self, response):
         yield DebugItem(info={"meta": dict(response.meta)})
@@ -68,7 +79,7 @@ class EtsShareSpider(BaseMultiTerminalSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, TerminalItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, TerminalItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 if c_no:
                     t_ids = self.cno_tid_map[c_no]
@@ -77,6 +88,8 @@ class EtsShareSpider(BaseMultiTerminalSpider):
                         yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
+            elif isinstance(result, Restart):
+                yield self._prepare_start()
             else:
                 raise RuntimeError()
 
@@ -183,21 +196,8 @@ class CaptchaRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _get_captcha_str(captcha_code):
-        file_name = "captcha.jpeg"
-        image = Image.open(io.BytesIO(captcha_code))
-        image.save(file_name)
-        # api_key = 'f7dd6de6e36917b41d05505d249876c3'
-        api_key = "fbe73f747afc996b624e8d2a95fa0f84"
-        solver = imagecaptcha()
-        solver.set_verbose(1)
-        solver.set_key(api_key)
-
-        captcha_text = solver.solve_and_return_solution(file_name)
-        if captcha_text != 0:
-            return captcha_text
-        else:
-            print("task finished with error ", solver.error_code)
-            return ""
+        captcha_solver = ImageAntiCaptchaService()
+        return captcha_solver.solve(captcha_code)
 
     @staticmethod
     def _get_random_number():
@@ -234,7 +234,11 @@ class LoginRoutingRule(BaseRoutingRule):
         container_no_list = response.meta["container_no_list"]
 
         response_dict = json.loads(response.text)
-        sk = response_dict["_sk"]
+        print(response_dict)
+        sk = response_dict.get("_sk")
+        if not sk:
+            yield Restart()
+            return
 
         yield ContainerRoutingRule.build_request_option(container_no_list=container_no_list, sk=sk)
 
@@ -249,7 +253,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             "PI_TMNL_ID": "?cma_env_loc",
             "PI_CTRY_CODE": "?cma_env_ctry",
             "PI_STATE_CODE": "?cma_env_state",
-            "PI_CNTR_NO": "\n".join(container_no_list[:20]),
+            "PI_CNTR_NO": "\n".join(container_no_list[:MAX_PAGE_NUM]),
             "_sk": sk,
             "page": "1",
             "start": "0",
@@ -272,17 +276,34 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         container_info_list = self._extract_container_info(response=response)
 
+        if self._is_container_no_error(container_info_list=container_info_list):
+            if len(container_no_list) > 1:
+                yield DebugItem(
+                    info="Contains abnormal container_no in this round of paging, search each container_no individually"
+                )
+                sk = response.meta["sk"]
+                for c_no in container_no_list[:MAX_PAGE_NUM]:
+                    yield ContainerRoutingRule.build_request_option(container_no_list=[c_no], sk=sk)
+
+                yield NextRoundRoutingRule.build_request_option(container_no_list=container_no_list, sk=sk)
+
+            return
+
         if self._is_container_no_invalid_with_msg(container_info_list=container_info_list):
-            for c_no in container_no_list[:20]:
-                yield InvalidContainerNoItem(
+            for c_no in container_no_list[:MAX_PAGE_NUM]:
+                yield ExportErrorData(
                     container_no=c_no,
+                    detail="Data was not found",
+                    status=TERMINAL_RESULT_STATUS_ERROR,
                 )
 
         for container_info in container_info_list:
             if self._is_container_no_invalid_with_term_name(container_info=container_info):
                 c_no = re.sub("<.*?>", "", container_info["PO_CNTR_NO"])
-                yield InvalidContainerNoItem(
+                yield ExportErrorData(
                     container_no=c_no,
+                    detail="Data was not found",
+                    status=TERMINAL_RESULT_STATUS_ERROR,
                 )
             else:
                 yield TerminalItem(
@@ -338,16 +359,20 @@ class ContainerRoutingRule(BaseRoutingRule):
         if len(container_info_list) == 1:
             return container_info_list[0]["PO_MSG"] == "No data found."
 
+    def _is_container_no_error(self, container_info_list: List):
+        if len(container_info_list) == 1:
+            return (container_info_list[0]["PO_MSG"] or "").split(".")[0] == "Search condition error"
+
 
 class NextRoundRoutingRule(BaseRoutingRule):
-    name = "NEXY_ROUND"
+    name = "NEXT_ROUND"
 
     @classmethod
     def build_request_option(cls, container_no_list: List, sk) -> RequestOption:
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={
                 "container_no_list": container_no_list,
                 "sk": sk,
@@ -358,9 +383,9 @@ class NextRoundRoutingRule(BaseRoutingRule):
         container_no_list = response.meta["container_no_list"]
         sk = response.meta["sk"]
 
-        if len(container_no_list) <= 20:  # page size == 20
+        if len(container_no_list) <= MAX_PAGE_NUM:
             return
 
-        container_no_list = container_no_list[20:]
+        container_no_list = container_no_list[MAX_PAGE_NUM:]
 
         yield ContainerRoutingRule.build_request_option(container_no_list=container_no_list, sk=sk)

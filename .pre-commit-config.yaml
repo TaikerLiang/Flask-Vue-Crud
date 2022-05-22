@@ -1,12 +1,42 @@
+default_stages: [commit, push]
+exclude: |
+  (?x)(
+    ^\. |
+    ^client/src/assets/
+  )
+fail_fast: false
 repos:
-  - repo: https://github.com/ambv/black
-    rev: stable
-    hooks:
-    - id: black
-      language_version: python3.8
-      args:
-      - --line-length=120
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v3.4.0
     hooks:
+      - id: end-of-file-fixer
       - id: trailing-whitespace
+  - repo: https://github.com/myint/autoflake
+    rev: v1.4
+    hooks:
+      - id: autoflake
+        args:
+          - --in-place
+          - --remove-unused-variables
+          - --remove-all-unused-imports
+          - --ignore-init-module-imports # TODO: remove this
+  - repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+        args: [
+          "--profile", "black",
+          "--force-sort-within-sections",
+          "--project", "test",
+        ]
+  - repo: https://github.com/psf/black
+    rev: 22.3.0
+    hooks:
+      - id: black
+        args:
+          - --target-version=py310
+          - --line-length=120
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 4.0.1
+    hooks:
+      - id: flake8

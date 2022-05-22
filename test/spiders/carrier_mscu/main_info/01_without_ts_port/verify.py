@@ -1,4 +1,9 @@
-from crawler.core_carrier.items import MblItem, ContainerItem, ContainerStatusItem, LocationItem
+from crawler.core_carrier.items_new import (
+    ContainerItem,
+    ContainerStatusItem,
+    LocationItem,
+    MblItem,
+)
 
 
 def verify(results):
@@ -32,6 +37,7 @@ def verify(results):
         pol=LocationItem(name="NINGBO, CN"),
         pod=LocationItem(name="LONG BEACH, US"),
         etd="18/09/2019",
+        eta=None,
         vessel="MSC BERYL",
         place_of_deliv=LocationItem(name="LONG BEACH, US"),
         latest_update="05.11.2021 at 03:23 Central Europe Standard Time",

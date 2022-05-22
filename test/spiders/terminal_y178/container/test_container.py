@@ -4,7 +4,8 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_terminal.items import InvalidContainerNoItem
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
+from crawler.core_terminal.items import ExportErrorData
 from crawler.spiders.terminal_y178 import ContainerRoutingRule
 from test.spiders.terminal_y178 import container
 
@@ -47,12 +48,20 @@ def test_container_routing_rule(sub, container_no, sample_loader):
 
 @pytest.mark.skip
 @pytest.mark.parametrize(
-    "sub,container_no,invalid_no_item",
+    "sub,container_no",
     [
-        ("e01_invalid_container_no", "TGBU678745", InvalidContainerNoItem),
+        ("e01_invalid_container_no", "TGBU678745"),
     ],
 )
-def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader):
+def test_invalid_container_no(sub, container_no, sample_loader):
+    expect_data_list = [
+        ExportErrorData(
+            container_no=container_no,
+            detail="Data was not found",
+            status=TERMINAL_RESULT_STATUS_ERROR,
+        ),
+    ]
+
     httptext = sample_loader.read_file(sub, "sample.html")
 
     request_option = ContainerRoutingRule.build_request_option(container_no_list=[container_no])
@@ -68,4 +77,4 @@ def test_invalid_container_no(sub, container_no, invalid_no_item, sample_loader)
     )
 
     rule = ContainerRoutingRule()
-    assert list(rule.handle(response=response)) == [invalid_no_item(container_no=container_no)]
+    assert list(rule.handle(response=response)) == expect_data_list

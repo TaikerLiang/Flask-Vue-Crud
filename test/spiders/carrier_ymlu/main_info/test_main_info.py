@@ -4,8 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.exceptions import CarrierInvalidMblNoError
-from crawler.spiders.carrier_ymlu import MainInfoRoutingRule, HiddenFormSpec
+from crawler.spiders.carrier_ymlu import HiddenFormSpec, MainInfoRoutingRule
 from test.spiders.carrier_ymlu import main_info
 
 
@@ -24,6 +23,7 @@ def sample_loader(sample_loader):
         ("03_no_release", "I209365239"),
         ("04_multi_containers", "W241061370"),
         ("05_with_firm_code", "W226020752"),
+        ("05_with_empty_firm_code", "I209431722"),
         ("06_ip_blocked", "E209048375"),
         ("07_delivery_without_time_status", "W209139591"),
         ("08_to_be_advised_ver2", "W470030608"),

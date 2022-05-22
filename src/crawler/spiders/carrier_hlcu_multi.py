@@ -1,35 +1,34 @@
-from time import sleep
-from typing import Dict, List
+import time
+from typing import List
 
 import scrapy
 from scrapy.selector import Selector
+from selenium.common.exceptions import ElementNotInteractableException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import TimeoutException
 
 from crawler.core.base import DUMMY_URL_DICT
+from crawler.core.selenium import ChromeContentGetter
+from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
 from crawler.core_carrier.exceptions import (
     CarrierResponseFormatError,
-    SuspiciousOperationError,
     LoadWebsiteTimeOutError,
+    SuspiciousOperationError,
 )
 from crawler.core_carrier.items import (
     BaseCarrierItem,
-    ExportErrorData,
-    LocationItem,
     ContainerItem,
     ContainerStatusItem,
     DebugItem,
+    ExportErrorData,
+    LocationItem,
 )
 from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
-from crawler.core.selenium import ChromeContentGetter
-from crawler.core.table import TableExtractor, BaseTable
-from crawler.extractors.table_cell_extractors import BaseTableCellExtractor, FirstTextTdExtractor
-
+from crawler.core_carrier.rules import BaseRoutingRule, RequestOptionQueue, RuleManager
+from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
 
 BASE_URL = "https://www.hapag-lloyd.com/en"
 SEARCH_URL = f"{BASE_URL}/online-business/track/track-by-booking-solution.html"
@@ -39,11 +38,13 @@ MAX_RETRY_COUNT = 1
 
 class CarrierHlcuSpider(BaseMultiCarrierSpider):
     name = "carrier_hlcu_multi"
+    custom_settings = {
+        **BaseMultiCarrierSpider.custom_settings,  # type: ignore
+        "CONCURRENT_REQUESTS": "1",
+    }
 
     def __init__(self, *args, **kwargs):
         super(CarrierHlcuSpider, self).__init__(*args, **kwargs)
-
-        self.custom_settings.update({"CONCURRENT_REQUESTS": "1"})
 
         self._content_getter = ContentGetter(proxy_manager=None, is_headless=True)
         self._content_getter.connect()
@@ -132,7 +133,12 @@ class TracingRoutingRule(BaseRoutingRule):
         current_mbl_no = mbl_nos[0]
         current_task_id = task_ids[0]
 
-        mbl_page = self._content_getter.get_mbl_page(mbl_no=current_mbl_no)
+        try:
+            mbl_page = self._content_getter.get_mbl_page(mbl_no=current_mbl_no, need_handle_popup=True)
+        except LoadWebsiteTimeOutError as e:
+            yield DebugItem(info=f"page_source: {self._content_getter._driver.page_source}")
+            raise e
+
         selector = Selector(text=mbl_page)
 
         if self._is_mbl_no_invalid(selector):
@@ -145,10 +151,8 @@ class TracingRoutingRule(BaseRoutingRule):
             yield NextRoundRoutingRule.build_request_option(mbl_nos=mbl_nos, task_ids=task_ids)
             return
 
-        container_nos = []
-        if self._is_container_nos_exist(selector):
-            container_nos = self._extract_container_nos(response=selector)
-        else:
+        container_nos = self._extract_container_nos(response=selector)
+        if not container_nos:
             yield ExportErrorData(
                 mbl_no=current_mbl_no,
                 task_id=current_task_id,
@@ -197,15 +201,10 @@ class TracingRoutingRule(BaseRoutingRule):
         error_message.strip()
         return error_message.startswith("DOCUMENT does not exist.")
 
-    def _is_container_nos_exist(self, response):
-        table_selector = response.css("table[id='tracing_by_booking_f:hl27']")
-        if table_selector:
-            return True
-        else:
-            return False
-
     def _extract_container_nos(self, response):
         table_selector = response.css("table[id='tracing_by_booking_f:hl27']")
+        if not table_selector:
+            return []
 
         table_locator = ContainerInfoTableLocator()
         table_locator.parse(table=table_selector)
@@ -215,6 +214,9 @@ class TracingRoutingRule(BaseRoutingRule):
         container_list = []
         for left in table_locator.iter_left_header():
             container_no_text = table.extract_cell(top="Container No.", left=left, extractor=span_extractor)
+            if not container_no_text:
+                continue
+
             company, no = container_no_text.split()
             container_list.append(company + no)
 
@@ -279,7 +281,7 @@ class NextRoundRoutingRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url="https://api.myip.com/",
+            url="https://eval.edi.hardcoretech.co/c/livez",
             meta={"mbl_nos": mbl_nos, "task_ids": task_ids},
         )
 
@@ -371,23 +373,13 @@ class ContainerStatusTableLocator(BaseTable):
 class ContentGetter(ChromeContentGetter):
     def __init__(self, proxy_manager, is_headless):
         super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
+        # If using proxy on hlcu website, may cause page reload infinitely and make hcaptcha not solvable
+        # super().__init__(proxy_manager=None, is_headless=is_headless, need_anticaptcha=True)
         self.retry_count = 0
 
     def connect(self):
         self._driver.get(SEARCH_URL)
-
-        try:
-            WebDriverWait(self._driver, 10).until(
-                EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, "button.save-preference-btn-handler.onetrust-close-btn-handler")
-                )
-            )
-            button = self._driver.find_element(
-                By.CSS_SELECTOR, "button.save-preference-btn-handler.onetrust-close-btn-handler"
-            )
-            button.click()
-        except TimeoutException:
-            self.restart()
+        time.sleep(5)
 
     def restart(self):
         if self.retry_count >= MAX_RETRY_COUNT:
@@ -395,10 +387,20 @@ class ContentGetter(ChromeContentGetter):
 
         self.retry_count += 1
         self._driver.close()
+
+        super().__init__(proxy_manager=self._proxy_manager, is_headless=self.is_headless)
         self.connect()
 
-    def get_mbl_page(self, mbl_no):
+    def get_mbl_page(self, mbl_no: str, need_handle_popup: bool = False):
         self._driver.get(f"{SEARCH_URL}?blno={mbl_no}")
+
+        if need_handle_popup:
+            try:
+                self._confirm_privacy_choices()
+            except TimeoutException:
+                self.restart()
+                self.get_mbl_page(mbl_no, need_handle_popup)
+
         return self._driver.page_source
 
     def get_container_page(self, index):
@@ -406,3 +408,13 @@ class ContentGetter(ChromeContentGetter):
         self._driver.find_elements(By.CSS_SELECTOR, "button[value='Details']")[0].click()
         page_source = self._driver.page_source
         return page_source
+
+    def _confirm_privacy_choices(self):
+        confirm_button_css = "button.save-preference-btn-handler.onetrust-close-btn-handler"
+
+        WebDriverWait(self._driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, confirm_button_css)))
+        button = self._driver.find_element(By.CSS_SELECTOR, confirm_button_css)
+        try:
+            button.click()
+        except ElementNotInteractableException:
+            pass

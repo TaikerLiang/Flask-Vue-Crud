@@ -2,31 +2,34 @@ import abc
 import dataclasses
 import json
 import re
+from typing import Dict, List, Match, Pattern, Union
 from urllib.parse import urlencode
-from typing import List, Pattern, Match, Dict, Union
 
 import scrapy
+from scrapy.selector.unified import Selector
 
 from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
 from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import (
+    AccessDeniedError,
     CarrierResponseFormatError,
     SuspiciousOperationError,
-    AccessDeniedError,
 )
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
 from crawler.core_carrier.items import (
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
-    LocationItem,
     DebugItem,
     ExportErrorData,
+    LocationItem,
 )
-from crawler.core_carrier.base import CARRIER_RESULT_STATUS_ERROR
-from crawler.extractors.selector_finder import CssQueryTextStartswithMatchRule, find_selector_from
-from scrapy.selector.unified import Selector
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
+from crawler.extractors.selector_finder import (
+    CssQueryTextStartswithMatchRule,
+    find_selector_from,
+)
 
 BASE_URL = "http://www.aclcargo.com"
 MAX_RETRY_COUNT = 3
@@ -116,7 +119,7 @@ class CheckIpRule(BaseRoutingRule):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=f"https://api.myip.com",
+            url="https://api.myip.com",
             meta={
                 "mbl_no": mbl_no,
             },

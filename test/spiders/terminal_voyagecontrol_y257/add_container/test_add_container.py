@@ -4,7 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import HtmlResponse
 
-from crawler.core_terminal.items import InvalidContainerNoItem
+from crawler.core_terminal.items import ExportErrorData
 from crawler.core_terminal.voyagecontrol_share_spider import AddContainerToTraceRoutingRule
 from crawler.spiders.terminal_voyagecontrol_y257 import TerminalFenixSpider
 from test.spiders.terminal_voyagecontrol_y257 import add_container
@@ -50,12 +50,12 @@ def test_add_container_handle(sub, container_no, sample_loader):
 
 @pytest.mark.skip
 @pytest.mark.parametrize(
-    "sub,container_no,status_code,invalid_no_item",
+    "sub,container_no,status_code",
     [
-        ("e01_invalid_container", "CMAU5610314", 502, InvalidContainerNoItem),
+        ("e01_invalid_container", "CMAU5610314", 502),
     ],
 )
-def test_add_container_handle_error(sub, container_no, status_code, invalid_no_item, sample_loader):
+def test_add_container_handle_error(sub, container_no, status_code, sample_loader):
     option = AddContainerToTraceRoutingRule.build_request_option(
         container_nos=[container_no],
         authorization_token="",

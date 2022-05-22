@@ -3,6 +3,8 @@ import time
 from urllib3.exceptions import ReadTimeoutError
 from typing import List, Dict
 
+from pyppeteer import logging
+from pyppeteer.errors import ElementHandleError, TimeoutError
 import scrapy
 from scrapy import Selector
 from selenium.webdriver.support.ui import WebDriverWait
@@ -18,32 +20,32 @@ from crawler.core_carrier.base import (
     SHIPMENT_TYPE_MBL,
     SHIPMENT_TYPE_BOOKING,
 )
-from crawler.core_carrier.base_spiders import (
-    BaseCarrierSpider,
+from crawler.core.items_new import DataNotFoundItem, EndItem
+from crawler.core.proxy_new import HydraproxyProxyManager, ProxyManager
+from crawler.core.pyppeteer import PyppeteerContentGetter
+from crawler.core_carrier.base_spiders_new import (
     CARRIER_DEFAULT_SETTINGS,
     DISABLE_DUPLICATE_REQUEST_FILTER,
+    BaseCarrierSpider,
 )
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
-from crawler.core_carrier.items import (
-    MblItem,
+from crawler.core_carrier.items_new import (
     BaseCarrierItem,
-    LocationItem,
-    VesselItem,
     ContainerItem,
     ContainerStatusItem,
-    ExportErrorData,
     DebugItem,
+    LocationItem,
+    MblItem,
+    VesselItem,
 )
-from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    LoadWebsiteTimeOutError,
-    BaseCarrierError,
-    SuspiciousOperationError,
-)
+from crawler.core_carrier.request_helpers_new import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RequestOptionQueue, RuleManager
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
+from crawler.extractors.table_extractors import (
+    BaseTableLocator,
+    HeaderMismatchError,
+    TableExtractor,
+)
 
 WHLC_BASE_URL = "https://www.wanhai.com/views/Main.xhtml"
 COOKIES_RETRY_LIMIT = 3
@@ -94,7 +96,7 @@ class CarrierWhlcSpider(BaseCarrierSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseCarrierItem):
+            if isinstance(result, (BaseCarrierItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, RequestOption):
                 self._request_queue.add_request(result)
@@ -128,17 +130,15 @@ class CarrierWhlcSpider(BaseCarrierSpider):
                 meta=meta,
             )
         else:
-            raise SuspiciousOperationError(msg=f"Unexpected request method: `{option.method}`")
+            raise SuspiciousOperationError(
+                task_id=self.task_id,
+                search_no=self.search_no,
+                search_type=self.search_type,
+                reason=SUSPICIOUS_OPERATION_DESC.format(method=option.method),
+            )
 
 
 # -------------------------------------------------------------------------------
-
-
-class CarrierIpBlockError(BaseCarrierError):
-    status = CARRIER_RESULT_STATUS_FATAL
-
-    def build_error_data(self):
-        return ExportErrorData(status=self.status, detail="<ip-block-error>")
 
 
 class MblRoutingRule(BaseRoutingRule):
@@ -185,6 +185,11 @@ class MblRoutingRule(BaseRoutingRule):
 
         for idx in range(len(container_list)):
             container_no = container_list[idx]["container_no"]
+            info_pack = {
+                "task_id": task_id,
+                "search_no": container_no,
+                "search_type": SEARCH_TYPE_CONTAINER,
+            }
 
             yield ContainerItem(
                 container_key=container_no,
@@ -248,13 +253,13 @@ class MblRoutingRule(BaseRoutingRule):
         return_list = []
         for left in table_locator.iter_left_headers():
             container_no_text = table.extract_cell("Ctnr No.", left)
-            container_no = self._parse_container_no_from(text=container_no_text)
+            container_no = self._parse_container_no_from(text=container_no_text, info_pack=info_pack)
 
             detail_j_idt_text = table.extract_cell("More detail", left, JidtTdExtractor())
-            detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text)
+            detail_j_idt = self._parse_detail_j_idt_from(text=detail_j_idt_text, info_pack=info_pack)
 
             history_j_idt_text = table.extract_cell("More History", left, JidtTdExtractor())
-            history_j_idt = self._parse_history_j_idt_from(text=history_j_idt_text)
+            history_j_idt = self._parse_history_j_idt_from(text=history_j_idt_text, info_pack=info_pack)
 
             return_list.append(
                 {
@@ -266,38 +271,49 @@ class MblRoutingRule(BaseRoutingRule):
 
         return return_list
 
-    def _parse_container_no_from(self, text):
+    def _parse_container_no_from(self, text: str, info_pack: Dict):
         if not text:
-            raise CarrierResponseFormatError("container_no not found")
+            raise FormatError(
+                **info_pack,
+                reason="container_no not found",
+            )
 
         m = self._container_patt.match(text)
         if not m:
-            raise CarrierResponseFormatError("container_no not match")
+            raise FormatError(
+                **info_pack,
+                reason="container_no not match",
+            )
 
         return m.group("container_no")
 
-    def _parse_detail_j_idt_from(self, text: str) -> str:
+    def _parse_detail_j_idt_from(self, text: str, info_pack: Dict) -> str:
         if not text:
             return ""
 
         m = self._j_idt_patt.search(text)
         if not m:
-            raise CarrierResponseFormatError("detail_j_idt not match")
+            raise FormatError(
+                **info_pack,
+                reason="detail_j_idt not match",
+            )
 
         return m.group("j_idt")
 
-    def _parse_history_j_idt_from(self, text: str) -> str:
+    def _parse_history_j_idt_from(self, text: str, info_pack: Dict) -> str:
         if not text:
             return ""
 
         m = self._j_idt_patt.search(text)
         if not m:
-            raise CarrierResponseFormatError("History_j_idt not match")
+            raise FormatError(
+                **info_pack,
+                reason="History_j_idt not match",
+            )
 
         return m.group("j_idt")
 
-    @staticmethod
-    def _extract_date_information(response) -> Dict:
+    def _extract_date_information(self, response: scrapy.Selector, info_pack: Dict) -> Dict:
         pattern = re.compile(r"^(?P<vessel>[^/]+) / (?P<voyage>[^/]+)$")
 
         match_rule = NameOnTableMatchRule(name="2. Departure Date / Arrival Date Information")
@@ -305,7 +321,10 @@ class MblRoutingRule(BaseRoutingRule):
         table_selector = find_selector_from(selectors=response.css("table.tbl-list"), rule=match_rule)
 
         if table_selector is None:
-            raise CarrierResponseFormatError(reason="data information table not found")
+            raise FormatError(
+                **info_pack,
+                reason="data information table not found",
+            )
 
         location_table_locator = LocationLeftTableLocator()
         location_table_locator.parse(table=table_selector)
@@ -340,12 +359,14 @@ class MblRoutingRule(BaseRoutingRule):
             "pol_etd": date_table.extract_cell(top=date_index, left="Departure Date"),
         }
 
-    @staticmethod
-    def _extract_container_status(response) -> List:
+    def _extract_container_status(self, response: scrapy.Selector, info_pack: Dict) -> List:
         table_selector = response.css("table.tbl-list")
 
         if not table_selector:
-            raise CarrierResponseFormatError(reason="container status table not found")
+            raise FormatError(
+                **info_pack,
+                reason="container status table not found",
+            )
 
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table_selector)
@@ -389,6 +410,7 @@ class BookingRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
+        task_id = response.meta["task_id"]
         search_no = response.meta["search_no"]
         driver = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
         cookies = driver.get_cookies_dict_from_main_page()
@@ -430,6 +452,12 @@ class BookingRoutingRule(BaseRoutingRule):
 
         for idx in range(len(container_nos)):
             container_no = container_nos[idx]
+            info_pack = {
+                "task_id": task_id,
+                "search_no": container_no,
+                "search_type": SEARCH_TYPE_CONTAINER,
+            }
+
             # history page
             driver.go_booking_history_page(idx + 2)
             history_selector = Selector(text=driver.get_page_source())
@@ -493,8 +521,7 @@ class BookingRoutingRule(BaseRoutingRule):
 
         return table_locator.get_container_no_list()
 
-    @classmethod
-    def _make_container_status_items(cls, container_no, event_list):
+    def _make_container_status_items(self, container_no, event_list):
         container_statuses = []
         for container_status in event_list:
             container_statuses.append(
@@ -507,12 +534,11 @@ class BookingRoutingRule(BaseRoutingRule):
             )
         return container_statuses
 
-    @staticmethod
-    def _extract_container_status(response) -> List:
+    def _extract_container_status(self, response: scrapy.Selector, info_pack: Dict) -> List:
         table_selector = response.css("table.tbl-list")
 
         if not table_selector:
-            raise CarrierResponseFormatError(reason="container status table not found")
+            raise FormatError(**info_pack, reason="container status table not found")
 
         table_locator = ContainerStatusTableLocator()
         table_locator.parse(table=table_selector)
@@ -637,7 +663,7 @@ class BookingBasicTableLocator(BaseTableLocator):
     def get_cell(self, top, left=None) -> Selector:
         return self._td_map[top]
 
-    def has_header(self, top=None, left=None) -> bool:
+    def has_header(self, top=None, left=None):
         pass
 
 
@@ -661,7 +687,7 @@ class BookingVesselTableLocator(BaseTableLocator):
     def get_cell(self, top, left=None) -> Selector:
         return self._td_map[top]
 
-    def has_header(self, top=None, left=None) -> bool:
+    def has_header(self, top=None, left=None):
         pass
 
 

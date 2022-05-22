@@ -1,48 +1,24 @@
-import pprint
-import os
-import traceback
 from collections import OrderedDict
-from typing import Dict, Union
-from scrapy import item
+import pprint
+import traceback
+from typing import Dict, Optional
 
 from scrapy.exceptions import DropItem
 
-from . import items as carrier_items
-from .base import (
+from crawler.core.pipelines import BaseItemPipeline
+from crawler.core_carrier import items as carrier_items
+from crawler.core_carrier.base import (
     CARRIER_RESULT_STATUS_DATA,
     CARRIER_RESULT_STATUS_DEBUG,
     CARRIER_RESULT_STATUS_FATAL,
     SHIPMENT_TYPE_BOOKING,
     SHIPMENT_TYPE_MBL,
-    CARRIER_RESULT_STATUS_ERROR,
 )
-from crawler.services.edi_service import EdiClientService
-
-
-class BaseItemPipeline:
-    def __init__(self):
-        # edi client setting
-        user = os.environ.get("EDI_ENGINE_USER")
-        token = os.environ.get("EDI_ENGINE_TOKEN")
-        url = (os.environ.get("EDI_ENGINE_BASE_URL") or "") + "tracking-carrier/local/"
-        self.edi_client = EdiClientService(url=url, edi_user=user, edi_token=token)
-
-    def handle_err_result(self, collector, task_id: int, result: Dict):
-        if collector.is_default():
-            status_code, text = self.edi_client.send_provider_result_back(
-                task_id=task_id, provider_code="scrapy_cloud_api", item_result=result
-            )
-        else:
-            item_result = collector.build_final_data()
-            status_code, text = self.edi_client.send_provider_result_back(
-                task_id=task_id, provider_code="scrapy_cloud_api", item_result=item_result
-            )
-        return status_code, text
 
 
 class CarrierItemPipeline(BaseItemPipeline):
     def __init__(self):
-        super().__init__()
+        super().__init__("tracking-carrier/local/")
 
     @classmethod
     def get_setting_name(cls):
@@ -78,7 +54,7 @@ class CarrierItemPipeline(BaseItemPipeline):
             else:
                 raise DropItem(f"unknown item: {item}")
 
-        except:
+        except Exception:
             spider.mark_error()
             status = CARRIER_RESULT_STATUS_FATAL
             detail = traceback.format_exc()
@@ -99,9 +75,7 @@ class CarrierItemPipeline(BaseItemPipeline):
 
         task_id = item_result.get("request_args", {}).get("task_id")
         if task_id:
-            status_code, text = self.edi_client.send_provider_result_back(
-                task_id=task_id, provider_code="scrapy_cloud_api", item_result=item_result
-            )
+            status_code, text = self.send_provider_result_to_edi_client(task_id=task_id, item_result=item_result)
             res.append({"task_id": task_id, "status_code": status_code, "text": text, "data": item_result})
             return res
         else:
@@ -117,7 +91,7 @@ class CarrierItemPipeline(BaseItemPipeline):
 
 class CarrierMultiItemsPipeline(BaseItemPipeline):
     def __init__(self):
-        super().__init__()
+        super().__init__("tracking-carrier/local/")
         self._collector_map = {}
 
     @classmethod
@@ -167,7 +141,7 @@ class CarrierMultiItemsPipeline(BaseItemPipeline):
                 return debug_data
             else:
                 raise DropItem(f"unknown item: {item}")
-        except:
+        except Exception:
             spider.mark_error()
             status = CARRIER_RESULT_STATUS_FATAL
             detail = traceback.format_exc()
@@ -187,9 +161,7 @@ class CarrierMultiItemsPipeline(BaseItemPipeline):
             else:
                 item_result = collector.build_final_data()
             if item_result:
-                status_code, text = self.edi_client.send_provider_result_back(
-                    task_id=task_id, provider_code="scrapy_cloud_api", item_result=item_result
-                )
+                status_code, text = self.send_provider_result_to_edi_client(task_id=task_id, item_result=item_result)
                 res.append({"task_id": task_id, "status_code": status_code, "text": text, "data": item_result})
 
         return res
@@ -267,7 +239,7 @@ class CarrierResultCollector:
             "rail_status": [],
         }
 
-    def build_final_data(self) -> Union[Dict, None]:
+    def build_final_data(self) -> Optional[Dict]:
         # remove task_id, task_id is just for link different items in same task
         if "task_id" in self._basic:
             del self._basic["task_id"]

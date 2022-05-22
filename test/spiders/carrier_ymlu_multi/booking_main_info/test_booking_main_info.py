@@ -4,7 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.spiders.carrier_ymlu_multi import BookingMainInfoPageRoutingRule, HiddenFormSpec
+from crawler.spiders.carrier_ymlu_multi import BookingMainInfoPageRoutingRule
 from test.spiders.carrier_ymlu_multi import booking_main_info
 
 
@@ -22,10 +22,11 @@ def sample_loader(sample_loader):
         ("02_no_xta", "YHU726505", 1),
         ("03_no_release", "YLX392063", 1),
         ("04_multi_containers", "YHU734257", 1),
-        ("05_firms_code_parsing_error", "YHU731790", 1),
+        ("05_empty_firms_code", "YHU731790", 1),
         ("06_ip_blocked", "E209048375", 1),
         ("07_delivery_without_time_status", "YLX392742", 1),
         ("08_to_be_advised_ver2", "YHU739759", 1),
+        ("09_no_mbl_no", "YLX400679", 1),
     ],
 )
 def test_booking_main_info_page_routing_rule(sub, booking_no, task_id, sample_loader):

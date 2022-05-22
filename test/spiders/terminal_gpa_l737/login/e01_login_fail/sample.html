@@ -1,0 +1,758 @@
+<html><head>
+  
+  
+
+
+<meta http-equiv="Pragma" content="No-Cache">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta http-equiv="Expires" content="Tue Aug 22 18:53:10 GMT 1975">
+<meta http-equiv="X-UA-Compatible" content="IE=9">
+
+
+
+
+
+
+
+<title>Error</title>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" language="JavaScript">
+
+// Webaccess JavaScript Library (c) 2000 Fortuity Consulting. All Rights Reserved.
+///////////////////////////////////////////////////////////////
+// specify the name of a servlet that responds to requests:
+var servletName = "Dispatcher";
+///////////////////////////////////////////////////////////////
+// Extract the URL of the current directory (the application context):
+function getContext()
+{
+firstSlashes = window.location.href.indexOf("//");
+secondSlash = window.location.href.indexOf("/",firstSlashes + 2);
+thirdSlash = window.location.href.indexOf("/",secondSlash + 1);
+var path = window.location.href.substring(0,thirdSlash + 1);
+return path;
+}
+///////////////////////////////////////////////////////////////
+// Make a request for a report to a dispatcher servlet, specifying host type,
+// report name, format (HTML, spreadsheet, etc), and a single parameter:
+function requestReport(hostType, reportName, format)
+{
+url = (getContext() + "servlet/" + servletName + "?method=displayReport&hostType=" + hostType + "&param=" + reportName + "&format=" + format + "&id=1648628637307");
+open(url, "_top");
+return true;
+}
+///////////////////////////////////////////////////////////////
+// Make a request to a dispatcher servlet, specifying method and parameter:
+function requestMethod(method, param)
+{
+if (method == 'displayReport') {
+url =(getContext() + "displayReport.do?param="+ param +"&id=1648628637307"); } 
+else {
+if (method == 'containerSearch') {
+url =(getContext() + "containerSearch.do?method=" + method + "&param="+ param +"&id=1648628637307"); } 
+else {
+url = (getContext() + "servlet/" + servletName + "?method=" + method + "&param=" + param + "&id=1648628637307");
+}
+}
+open(url, "_top");
+return true;
+}
+///////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+// Make a request to a dispatcher servlet, specifying method and parameter:
+function blMethod(param,line) 
+{
+url = (getContext() + "servlet/Dispatcher?javaFormClassName=com.navis.webaccess.V2.forms.EquipmentQueryForm&method=querySubmit&fldName=bolNbr&bolNbr="+ param +"&blLineId="+line+"&bookingID=&nbr=&equipmentClass=CTR&methodToBeForwarded=savedQueryEquipmentEnter&dummy="+ param + "&submit=Search" );
+open(url, "_top");
+return true;
+}
+///////////////////////////////////////////////////////////////
+// Make a request to a dispatcher servlet, specifying method, parameter:,and public param
+///////////////////////////////////////////////////////////////
+// Helps in opening a new window from a text link:
+function nullFunction() { }
+///////////////////////////////////////////////////////////////
+// Open a new window with a request to a dispatcher servlet, specifying method and parameter:
+function newWindow(method, param)
+{
+url = (getContext() + "servlet/" + servletName + "?method=" + method + "&param=" + param + "&id=1648628637307");
+windowHandle = window.open(url, "new");
+}
+// Set focus. If field is disabled don't apply focus.
+function setFocus( fieldID ) {
+if ( fieldID == null ) {
+alert(' Field name is null ' );
+return ;
+}
+if ( !fieldID.disabled) {
+fieldID.focus();
+}
+}
+ function popUpHelpWindow(url){ 
+	 if(window.win && !window.win.closed)  { 
+		window.win.close(); 
+	 } 
+	 win = window.open(url,'helpWindow','width=850,height=700,resizable=yes'); 
+ } 
+function prePopulateForm(form,formFields){  
+form = eval(form); 
+if(formFields == 'null' || form == null) 
+	return; 
+formelems = form.elements; 
+for(j=0;j<formelems.length;j++){  
+	// Populate Form Fields 
+	if(formelems[j].name != '' && formFields.indexOf(formelems[j].name) != -1){ 
+		var temp = formFields.indexOf(formelems[j].name+'='); 
+		var begin = formFields.substring(temp).indexOf('=') +1+temp; 
+		var end = formFields.substring(begin).indexOf('&') + begin; 
+formelems[j].value = formFields.substring(begin,end); 
+	} 
+ } 
+} 
+///////////////////////////////////////////////////////////////
+// Submit a form to a dispatcher servlet, specifying a method to use for processing:
+function submitForm(form, method)
+{
+form.method = "POST";
+form.action = (getContext() + "servlet/" + servletName + "?method=" + method);
+form.submit();
+return true;
+}
+///////////////////////////////////////////////////////////////
+// Convert to a spreadsheet by uploading content of certain tables:
+function toExcel()
+{
+if(!document.getElementById) {;
+alert("Cannot convert to spreadsheet. Feature not supported by your browser. Please upgrade your browser.");
+return;
+}
+data = "";
+var count = 1;
+var table = "";
+while (table != null) {
+tableName = "Detail" + count;
+table = document.getElementById(tableName);
+if (table != null) {
+var evenCounter = 1;
+rows = table.getElementsByTagName("tr");
+for (var i = 0; i < rows.length; i++) {
+cells = rows[i].getElementsByTagName("td");
+for (var j = 0; j < cells.length; j++) {
+cellContents = cells[j].childNodes[0].nodeValue;
+if (cellContents == null | cellContents == "") {
+if (cells[j].childNodes[0].childNodes[0] != null ) {
+childCellContents = cells[j].childNodes[0].childNodes[0].nodeValue;
+cellContents = childCellContents;
+}
+}
+if (cellContents != null) data = data + cellContents + "\t";
+if (evenCounter % 2 != 1) data = data + "\n";
+evenCounter++;
+}
+}
+}
+data = data + "\n";
+count++
+}
+count = 1;
+var table = "";
+while (table != null) {
+tableName = "Table" + count;
+table = document.getElementById(tableName);
+if (table != null) {
+labels = table.getElementsByTagName("th");
+loopmax = labels.length;
+for (var l = 0; l < loopmax; l++) {
+labelContents = labels[l].childNodes[0].nodeValue;
+if (labelContents != null) data = data + labelContents + "\t";
+if (labels[l].colSpan > 1) {
+colspan = labels[l].colSpan;
+var colnum = 0;
+for (var m = 1; m < colspan; m++) {
+colnum = m + 1;
+data = data + labelContents + " Col#" + colnum + "\t";
+}
+loopmax = loopmax - colspan;
+}
+}
+rows = table.getElementsByTagName("tr");
+for (var i = 0; i < rows.length; i++) {
+cells = rows[i].getElementsByTagName("td");
+for (var j = 0; j < cells.length; j++) {
+cellContents = cells[j].childNodes[0].nodeValue;
+if (cellContents == null | cellContents == "") {
+childCellContents = cells[j].childNodes[0].childNodes[0].nodeValue;
+cellContents = childCellContents;
+}
+if (cellContents != null) data = data + cellContents + "\t";
+}
+data = data + "\n";
+}
+}
+data = data + "\n";
+count++
+}
+document.toSpreadsheet.dataToConvert.value = data;
+document.toSpreadsheet.method = "POST";
+document.toSpreadsheet.action = (getContext() + "spreadsheet.jsp");
+document.toSpreadsheet.submit();
+return true;
+}
+///////////////////////////////////////////////////////////////
+// Set a base URL so all relative links are formed relative to the docroot of the web application:
+document.write("<BASE HREF=" + getContext() + ">");
+
+</script><base href="http://webaccess.gaports.com/express/">
+
+
+
+
+
+
+
+
+
+<link rel="STYLESHEET" type="text/css" href="/express/css/modules/tooltip.css">
+<link rel="STYLESHEET" type="text/css" href="/express/css/main.css">
+<link rel="STYLESHEET" type="text/css" href="/express/n4standard.css">
+
+
+
+<link rel="STYLESHEET" type="text/css" href="/express/n4addendum.css">
+
+<link rel="STYLESHEET" type="text/css" href="/express/skins/gpa/n4client.css">
+
+
+
+
+
+
+
+
+<script type="text/javascript">
+
+    ///////////////////////////////////////////////////////////////
+    // If the platform is Macintosh, use the Macintosh style sheet.
+    if (navigator.platform.indexOf('Mac') != -1) {
+        document.write('<link rel="stylesheet" href="/express/macstyle.css">');
+// Otherwise, use the Windows style sheet.
+    }
+
+    function MM_preloadImages() { //v3.0
+        var d=document; if(d.images){ if(!d.MM_p) d.MM_p=new Array();
+            var i,j=d.MM_p.length,a=MM_preloadImages.arguments; for(i=0; i<a.length; i++)
+                if (a[i].indexOf("#")!=0){ d.MM_p[j]=new Image; d.MM_p[j++].src=a[i];}}
+    }
+    function MM_swapImgRestore() { //v3.0
+        var i,x,a=document.MM_sr; for(i=0;a&&i<a.length&&(x=a[i])&&x.oSrc;i++) x.src=x.oSrc;
+    }
+    function MM_findObj(n, d) { //v4.0
+        var p,i,x;  if(!d) d=document; if((p=n.indexOf("?"))>0&&parent.frames.length) {
+            d=parent.frames[n.substring(p+1)].document; n=n.substring(0,p);}
+        if(!(x=d[n])&&d.all) x=d.all[n]; for (i=0;!x&&i<d.forms.length;i++) x=d.forms[i][n];
+        for(i=0;!x&&d.layers&&i<d.layers.length;i++) x=MM_findObj(n,d.layers[i].document);
+        if(!x && document.getElementById) x=document.getElementById(n); return x;
+    }
+    function MM_swapImage() { //v3.0
+        var i,j=0,x,a=MM_swapImage.arguments; document.MM_sr=new Array; for(i=0;i<(a.length-2);i+=3)
+            if ((x=MM_findObj(a[i]))!=null){document.MM_sr[j++]=x; if(!x.oSrc) x.oSrc=x.src; x.src=a[i+2];}
+    }
+    function MM_showHideLayers() { //v3.0
+        var i,p,v,obj,args=MM_showHideLayers.arguments;
+        for (i=0; i<(args.length-2); i+=3) if ((obj=MM_findObj(args[i]))!=null) { v=args[i+2];
+            if (obj.style) { obj=obj.style; v=(v=='show')?'visible':(v='hide')?'hidden':v; }
+            obj.visibility=v; }
+    }
+    function MM_jumpMenu(targ,selObj,restore){ //v3.0
+        eval(targ+".location='"+selObj.options[selObj.selectedIndex].value+"'");
+        if (restore) selObj.selectedIndex=0;
+    }
+    var commonImgRoot = 'images/'; // N4 framework image modules
+    var cssModuleRoot = 'css/modules/'; // N4 framework css modules
+</script><link rel="stylesheet" href="/express/macstyle.css">
+<script type="text/javascript" src="/express/includes/ImageSwap.js"></script>
+<script type="text/javascript" src="/express/includes/popupWindow.js"></script>
+<script type="text/javascript" src="/express/javascript/browserSniff.js"></script>
+<script type="text/javascript" src="/express/javascript/ieEmulation.js"></script>
+<script type="text/javascript" src="/express/javascript/common.js"></script>
+<script type="text/javascript" src="/express/javascript/globalEvents.js"></script>
+<script type="text/javascript" src="/express/javascript/autocomplete.js"></script>
+<script type="text/javascript" src="/express/javascript/lovHandlers.js"></script>
+<script type="text/javascript" src="/express/javascript/getOptions.js"></script>
+<!--script type="text/javascript" src="javascript/n4calendar.js" type="text/javascript"></script-->
+<script type="text/javascript" src="/express/javascript/dropShadow.js"></script></head><body class="navbody"><div class="dropShadow" id="dropShadow"></div>
+<script src="/express/includes/simplecalendar.js" type="text/javascript"></script><style>
+#container {
+position : absolute;
+left : 100px;
+top : 100px;
+width : 112px;
+height : 165px;
+clip:rect(0px 124px 165px 0px);
+visibility : hidden;
+z-index : 2;
+background-color : #CCCCCC
+}
+</style>
+<div id="container" onmouseout="calendarTimeout();" onmouseover="if (timeoutId) clearTimeout(timeoutId);"></div>
+<script src="/express/javascript/paging.js" type="text/javascript"></script>
+<script language="JavaScript">
+/*
+* @(#)query.js $Revision: 1.2 $ $Date: 2005/11/04 20:06:27 $
+*
+* Copyright Navis Corporation 2005
+* All Rights Reserved
+*
+* This file defines functions used by query infrastructure
+*
+* @version $Revision: 1.2 $ $Date: 2005/11/04 20:06:27 $
+* @author: Hoa Lu
+*/
+
+function addQueryParameter(url, key, value)
+{
+    var i = url.indexOf(key + "=");
+    if(i != -1)
+    {
+        // if key param is already on the url, replace the value with the current value.
+        var begin = url.substring(i).indexOf('=') + 1 + i;
+        var end = url.substring(begin).indexOf('&');
+        if(end == -1)
+            end = url.length;
+        else
+            end = end + begin;
+        url = url.substring(0,begin) + value + url.substring(end, url.length);
+    }
+    else
+    {
+        // else add the key param onto the url;
+        var prefix = '';
+        if(url.indexOf("?") == -1)
+            prefix = '?';
+        else if(url.charAt(url.length) != '&')
+            prefix = '&';
+        url = url + prefix + key + '=' + escape(value);
+    }
+    return url;
+}
+
+</script>
+
+<script>
+    var dateFormatOverride ='dd-mmm-yyyy';//  'dd-mon-yyyy';
+    //options: 'dd-mmm-yyyy', 'dd-mon-yyyy', dd-mm-yyyy', 'mm-dd-yyyy', 'mon-dd-yyyy', 'yyyy-mm-dd', 'dd/mm/yyyy', 'mm/dd/yyyy'
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+	
+<script language="Javascript1.3">
+	function setTdWidth(){
+		var screenPx=self.screen.width;
+		var logoPx=screenPx-310;
+		//setStyleById('webaccess_head', 'width',screenPx-20);
+		document.getElementById('cell1').width = logoPx;
+		document.getElementById('cell2').width = '300px';
+		document.getElementById('cell3').width = '10px';
+	}
+	function setStyleById(i, p, v) {
+		var n = document.getElementById(i);
+		n.style[p] = v;
+	}
+	function validate(){
+		field = document.searchForm.fldName;
+		bookingFieldNew(document.searchForm.dummy);
+		searchField = eval('document.searchForm.'+field.value);
+		var searchValue = document.searchForm.dummy.value;
+		if(searchValue.length == 0){
+			if(field.value == 'equipmentID'){
+				alert('Please enter the equipmentID');
+			}
+			else if(field.value == 'bookingID'){
+				alert('Please enter the bookingID');
+			}
+			else if(field.value == 'nbr'){
+				alert('Please enter the nbr');
+			}
+			else{
+				alert('Please enter the '+field.value);
+			}
+			return false;
+		}
+		else if(searchValue.indexOf("*") === -1){
+		}
+		else {
+			if(field.value == 'equipmentID'){
+				alert('Wild Card search cannot be done for equipmentID.');
+			}
+			else if(field.value == 'bookingID'){
+				alert('Wild Card search cannot be done for bookingID.');
+			}
+			else if(field.value == 'nbr'){
+				alert('Wild Card search cannot be done for Gate Transaction.');
+			}
+			else{
+				alert('Please enter the '+field.value);
+			}
+			return false;
+		}
+		searchField.value=document.searchForm.dummy.value;
+		document.searchForm.submit.disabled=true;
+		document.searchForm.submit.className = "disable_button";
+		return true;
+	}
+
+	function assignApplicationType(field){
+        <!-- var optn = $("input[name='Facility']:checked").val();                                  -->
+        <!-- "GCT";                                 -->
+        <!-- location.href="secure/Today.jsp?Facility="+$("input[name='Facility']:checked").val();  -->
+        <!-- alert("pageBegin_new.inc: Selected Facility: "+optn);                                  -->
+        location.href = "http://webaccess.gaports.com/express/secure/Today.jsp?Facility=" + field;
+    }
+
+	function assign(field){
+
+		document.searchForm.fldName.value = field;
+		if(field == 'equipmentID'){
+			document.searchForm.javaFormClassName.value = 'com.navis.webaccess.V2.forms.EquipmentQueryForm';
+		}
+		if(field == 'bookingID'){
+			document.searchForm.javaFormClassName.value = 'com.navis.webaccess.V2.forms.ReservationQueryForm';
+		}
+		if(field == 'nbr'){
+			document.searchForm.javaFormClassName.value = 'com.navis.webaccess.V2.forms.GateQueryForm';
+		}
+	}
+
+	function bookingFieldNew(o){
+	  //o.value=o.value.toUpperCase();
+	  o.value=o.value.toUpperCase().replace(/([~!@#$%^&()+|\\}[{;:\'\"/.,<>?])/g,"");
+	  o.value = (o.value).replace(/^\s+|\s+$/g,"");
+	}
+
+
+
+function updateUI(){
+		var imgSrc;
+		allImages = document.getElementsByTagName('img');
+		allTbody = document.getElementsByTagName('tbody');
+		for(i=0; i<allImages.length; i++){
+				if(allImages[i].src.indexOf('images/table_rivet_dkgray.gif') != -1){
+					allImages[i].style.visibility = 'hidden';
+				}
+				if(allImages[i].src.indexOf('images/Add_Entry.gif') != -1){
+					imgSrc = allImages[i].src.substr(0,allImages[i].src.indexOf('Add_Entry.gif'));
+					imgSrc += 'icons/add.gif'
+					allImages[i].src = imgSrc;
+				}
+				if(allImages[i].src.indexOf('images/Remove.gif') != -1){
+					imgSrc = allImages[i].src.substr(0,allImages[i].src.indexOf('Remove.gif'));
+					imgSrc += 'icons/delete.gif'
+					allImages[i].src = imgSrc;
+				}
+		}
+
+		for(i=0; i<allTbody.length; i++){
+			if(allTbody[i].className == 'tablebody1' || allTbody[i].className == 'countChildren'){
+				for(j=0; j<allTbody[i].childNodes.length; j++){
+						if(j%2 && allTbody[i].childNodes[j].nodeName == 'TR'){
+							allTbody[i].childNodes[j].className = 'odd';
+						}
+						else if(allTbody[i].childNodes[j].nodeName == 'TR'){
+							allTbody[i].childNodes[j].className = 'even';
+						}
+				}
+			}
+		}
+
+}
+	function bookingField(o){
+	//  o.value=o.value.toUpperCase().replace(/([^0-9A-Z\ \_])/g,"");
+	  o.value=o.value.toUpperCase().replace(/([~!@#$%^&*()+|\\}[{;:\'\"/.,<>?])/g,"");
+	}
+</script>
+
+
+<table class="mainTable" border="1" cellspacing="0" cellpadding="0" width="100%" height="100%">
+    <tbody><tr valign="top">
+        <td>
+            <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tbody><tr valign="top" id="mainRow1">
+                    <td class="brandingArea">
+                        <div id="webaccess_head" style="visibility:visible;overflow:auto">
+                            <table class="transparent" width="100%" cellpadding="0" cellspacing="0">
+                                <tbody><tr>
+                                    <td id="cell1" width="1130">
+                                        <div class="branding">
+                                            
+                                            <img src="/express/skins/gpa/logo.gif" alt="WebAccess" width="240" height="46" style="padding: 5px;">
+
+                                            
+                                            <!--
+                                                <td class="d1">
+                                                    
+                                                            Facility: GCT
+                                                    
+                                                 <td nowrap="nowrap" style="width:500px;text-align:center">
+                                                 </td>
+                                            -->
+                                        </div>
+                                    </td>
+                                    <td class="loginArea" align="right" id="cell2" width="300px">
+                                        <br><table width="100%" cellpadding="0" cellspacing="3" border="0" style="margin-right:3px;">
+                                            <tbody><tr>
+                                                <th class="l2">User</th>
+                                                <td class="d2">guest</td>
+                                                <td nowrap="nowrap" style="width:80px;text-align:center">
+                                                    
+                                                    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+                                                    <script>
+                                                        $(document).ready(function(){
+
+                                                            $("input[type='button']").on('click', function(){
+                                                                var radioValue = $("input[name='Facility']:checked").val();
+                                                            });
+                                                        });
+
+                                                    </script>
+                                                    <a onclick="login()" class="button2" style="width:70px">Log In</a>
+
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <th class="l2">
+                                                    Company
+                                                </th>
+                                                <td class="d2">
+                                                    
+                                                </td>
+                                                <td>&nbsp;</td>
+                                            </tr>
+
+                                            <tr>
+                                                
+
+                                                <td class="d2"> <br>
+
+                                                    
+                                                    Terminal Facility : <br>
+                                                    <input type="radio" id="SiteARP" name="Facility" value="ARP" onclick="assignApplicationType('ARP');">
+                                                    <label for="SiteARP">ARP</label>
+                                                    <input type="radio" id="SiteOTP" name="Facility" value="OT" onclick="assignApplicationType('OT');">
+                                                    <label for="SiteOTP">OT</label>
+                                                    <input type="radio" id="SiteGPA" name="Facility" checked="" value="GCT" "="">
+                                                    <label for="SiteGPA">GCT</label>
+                                                    
+                                                <!-- <td>&nbsp;GCT</td> -->
+                                            </td></tr>
+                                        </tbody></table>
+                                    </td>
+                                    <td id="cell3" width="10px"><img src="/express/images/s.gif" height="1"></td>
+                                </tr>
+                            </tbody></table>
+
+                            <table class="transparent" width="100%" cellpadding="0" cellspacing="0">
+                                <tbody><tr>
+                                    <td class="globalNavigationArea">
+                                        <table id="mainMenu">
+                                            <tbody><tr>
+                                                
+                                                <td class="subLink" nowrap="true">
+                                                    
+                                                    <a href="http://webaccess.gaports.com">Home</a>
+                                                    
+                                                </td>
+                                                
+                                            </tr>
+                                        </tbody></table>
+                                    </td>
+                                    <td>&nbsp;</td>
+                                    <td width="100%" align="right" valign="middle" nowrap="nowrap">
+                                        
+                                    </td>
+                                    <td width="8"><img src="/express/images/s.gif" width="8" height="1"></td>
+                                </tr>
+                            </tbody></table>
+                        </div>
+                    </td>
+                </tr>
+                
+                <tr valign="top" id="mainRow2">
+                    <td>
+                        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                            <!-- begin shim row -->
+                            <tbody><tr class="shim">
+                                <td><img src="/express/images/s.gif" width="200" height="1"></td>
+                                <td width="1"><img src="/express/images/s.gif" width="1" height="1"></td>
+                                <td width="100%"><img src="/express/images/s.gif" width="200" height="1"></td>
+                            </tr>
+                            <!-- end shim row -->
+
+                            <tr valign="top">
+                                <td>
+                                    <div id="left_nav_table" style="visibility:visible;">
+                                        <table width="100%" border="0" cellspacing="3" cellpadding="3" class="leftNavTable">
+                                            
+
+
+                                            
+                                            <tbody><tr>
+                                                <td class="searchArea">
+                                                    
+                                                    <form action="servlet/Dispatcher" name="searchForm" onsubmit="javascript:return validate(document.searchForm.fldName.value)">
+
+                                                        <input type="hidden" name="javaFormClassName" value="com.navis.webaccess.V2.forms.EquipmentQueryForm">
+                                                        <input type="hidden" name="method" value="querySubmit">
+                                                        <input type="hidden" name="fldName" value="equipmentID">
+                                                        <input type="hidden" name="equipmentID">
+                                                        <input type="hidden" name="bookingID">
+                                                        <input type="hidden" name="nbr">
+                                                        <input type="hidden" name="equipmentClass" value="CTR">
+                                                        <b>Search For</b>	<br>
+                                                        <input type="radio" name="methodToBeForwarded" value="savedQueryEquipmentEnter" checked="" onclick="assign('equipmentID')" disabled=""> Equipment <br>
+                                                        <input type="radio" name="methodToBeForwarded" value="savedQueryReservationEnter" onclick="assign('bookingID')" disabled=""> Booking <br>
+                                                        <input type="radio" name="methodToBeForwarded" value="savedQueryGateEnter" onclick="assign('nbr')" disabled=""> Gate Transactions <br>
+                                                        <br>
+                                                        <input type="text" name="dummy" size="15" maxlength="100" disabled="">
+                                                        <br>
+                                                        <button type="submit" class="button1" value="submit" name="submit" disabled="">Search</button> <br>
+
+
+
+                                                    </form>
+
+
+
+                                                </td>
+                                            </tr>
+
+                                        </tbody></table>
+                                    </div>
+                                    
+                                    <script language="Javascript1.3">
+		    document.searchForm.dummy.disabled=true;
+		    document.searchForm.methodToBeForwarded[0].disabled=true;
+		    document.searchForm.methodToBeForwarded[1].disabled=true;
+		    document.searchForm.methodToBeForwarded[2].disabled=true;
+		    document.searchForm.submit.disabled=true;
+		</script>
+                                    
+
+                                </td>
+                                <td width="1" class="shim">
+                                    <div id="left_line" style="visibility:visible;">
+                                        <img src="/express/images/s.gif" width="1" height="1">
+                                    </div>
+                                </td>
+                                <td width="100%">
+
+                                    <!-- begin breadcrumb trail table -->
+                                    <div id="breadbrumb" style="visibility:visible;">
+                                        <table width="100%" border="0" cellspacing="3" cellpadding="0">
+                                            <tbody><tr>
+                                                <td class="breadCrumbsArea">
+                                                    
+                                                    
+                                                    
+                                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Mar 30, 2022 04:23:57 AM EDT
+
+                                                </td>
+
+                                            </tr>
+                                        </tbody></table>
+                                    </div>
+                                    <!-- end breadbrumb trail table -->
+
+                                    <!-- begin status area table -->
+                                    <!-- NOTE:  this table sets the width for the status area  -->
+                                    <table border="0" cellspacing="3" cellpadding="0">
+                                        <tbody><tr>
+                                            <td>
+                                                <div id="statusArea" class="statusArea"></div></td>
+                                        </tr>
+                                    </tbody></table>
+                                    <!-- end status area table -->
+
+                                    <!-- begin content table -->
+                                    <table width="100%" border="0" cellspacing="0" cellpadding="0" class="contentArea">
+                                        <tbody><tr valign="top">
+                                            <td>
+                                                <!-- begin error messages -->
+                                                
+                                                <script>
+                                                    setTdWidth();
+
+
+                                                    function login()
+                                                    {
+                                                        var optn = $("input[name='Facility']:checked").val();
+                                                        if (optn === null || optn === "null" ||optn === "undefined") {
+                                                            alert("Please choose Terminal Facility");
+                                                            return false;
+                                                        } else {
+                                                            return true;
+                                                        }
+
+                                                        console.log(optn);
+                                                        "GCT";
+                                                        location.href="secure/Today.jsp?Facility="+$("input[name='Facility']:checked").val();
+                                                    }
+
+                                                </script>
+                                                <!-- end error messages -->
+                                                <!-- begin content -->
+                                                <div id="printContent">
+
+
+  <div align="center">
+  <pre> </pre>
+    <table border="5" cellspacing="5" cellpadding="5">
+    <tbody><tr><td>
+      <font face="Arial, Helvetica, sans-serif" color="red">
+      <b>You have exceeded the number of allowable login attempts.<br>For your protection your account has been blocked.<br>Please contact your administrator.<br> <a href="mailto:customerservice@gaports.com">customerservice@gaports.com</a></b>
+
+      </font>
+      <p>
+      <font face="Arial, Helvetica, sans-serif" color="black">
+      Help is available from your system administrator.
+
+      </font>
+    </p></td></tr>
+    </tbody></table>
+  </div>
+
+
+
+</div></td></tr></tbody></table></td></tr></tbody></table></td></tr></tbody></table></td></tr></tbody></table></body></html>

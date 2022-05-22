@@ -4,19 +4,20 @@ from typing import List
 
 import scrapy
 from scrapy import Selector
-
-from crawler.core_rail.base_spiders import BaseMultiRailSpider
-from crawler.core_rail.exceptions import DriverMaxRetryError, RailInvalidContainerNoError
-from crawler.core_rail.items import BaseRailItem, RailItem, DebugItem, InvalidContainerNoItem
-from crawler.core_rail.request_helpers import RequestOption
-from crawler.core_rail.rules import RuleManager, BaseRoutingRule
-from crawler.core.selenium import ChromeContentGetter
 from selenium.common.exceptions import StaleElementReferenceException
-from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
+
+from crawler.core.selenium import ChromeContentGetter
+from crawler.core_rail.base import RAIL_RESULT_STATUS_ERROR
+from crawler.core_rail.base_spiders import BaseMultiRailSpider
+from crawler.core_rail.exceptions import DriverMaxRetryError
+from crawler.core_rail.items import BaseRailItem, DebugItem, ExportErrorData, RailItem
+from crawler.core_rail.request_helpers import RequestOption
+from crawler.core_rail.rules import BaseRoutingRule, RuleManager
 
 BASE_URL = "https://www8.cpr.ca"
 MAX_RETRY_COUNT = 3
@@ -60,7 +61,7 @@ class RailCPSpider(BaseMultiRailSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, RailItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, RailItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
@@ -143,7 +144,11 @@ class ContainerRoutingRule(BaseRoutingRule):
             info = container_infos[c_no]
 
             if info["load_empty"] == "":
-                yield InvalidContainerNoItem(container_no=c_no)
+                yield ExportErrorData(
+                    container_no=c_no,
+                    detail="Data was not found",
+                    status=RAIL_RESULT_STATUS_ERROR,
+                )
                 continue
 
             yield RailItem(
@@ -335,7 +340,7 @@ class ContainerInfoTableParser:
 
 class ContentGetter(ChromeContentGetter):
     USER_NAME = "gftracking"
-    PASS_WORD = "Hardcore20221"
+    PASS_WORD = "Hardcore202204"
 
     def _login(self):
         self._driver.get("https://www8.cpr.ca/cx/sap/bc/ui5_ui5/ui2/ushell/shells/abap/Fiorilaunchpad.html?#Shell-home")

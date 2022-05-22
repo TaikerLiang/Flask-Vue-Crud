@@ -4,7 +4,7 @@ import pytest
 from scrapy import Request
 from scrapy.http import TextResponse
 
-from crawler.core_carrier.base import SHIPMENT_TYPE_MBL
+from crawler.core.base_new import SEARCH_TYPE_MBL
 from crawler.spiders.carrier_mscu_multi import MainRoutingRule
 from test.spiders.carrier_mscu_multi import main_info
 
@@ -26,17 +26,20 @@ def sample_loader(sample_loader):
     ],
 )
 def test_main_info_routing_rule(sub, mbl_no, sample_loader):
-    http_text = sample_loader.read_file(sub, "sample.html")
+    http_text = sample_loader.read_file(sub, "sample.json")
 
     url = "https://www.msc.com/track-a-shipment?agencyPath=twn"
     response = TextResponse(
         url=url,
         body=http_text,
         encoding="utf-8",
-        request=Request(url=url, meta={"search_nos": [mbl_no], "task_ids": ["1"],},),
+        request=Request(
+            url=url,
+            meta={"search_nos": [mbl_no], "task_ids": ["1"], "search_mode": "0"},
+        ),
     )
 
-    rule = MainRoutingRule(search_type=SHIPMENT_TYPE_MBL)
+    rule = MainRoutingRule(search_type=SEARCH_TYPE_MBL)
     results = list(rule.handle(response=response))
 
     verify_module = sample_loader.load_sample_module(sub, "verify")

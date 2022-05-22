@@ -4,17 +4,17 @@
 #
 #    pip-compile --output-file=requirements-dev.txt requirements-dev.in
 #
-ansible==4.9.0
+ansible==5.7.1
     # via -r requirements-dev.in
-ansible-core==2.11.6
+ansible-core==2.12.5
     # via ansible
-anticaptchaofficial==1.0.31
+anticaptchaofficial==1.0.39
     # via -r src/requirements-app.txt
 appdirs==1.4.4
     # via
     #   -r src/requirements-app.txt
     #   pyppeteer
-asgiref==3.4.1
+asgiref==3.5.1
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
@@ -23,7 +23,7 @@ async-generator==1.10
     #   -r src/requirements-app.txt
     #   trio
     #   trio-websocket
-attrs==21.2.0
+attrs==21.4.0
     # via
     #   -r src/requirements-app.txt
     #   automat
@@ -36,9 +36,9 @@ automat==20.2.0
     # via
     #   -r src/requirements-app.txt
     #   twisted
-backports.entry-points-selectable==1.1.1
-    # via virtualenv
-black==21.11b1
+bezier==2021.2.12
+    # via -r src/requirements-app.txt
+black==22.3.0
     # via -r requirements-dev.in
 blinker==1.4
     # via
@@ -54,6 +54,7 @@ certifi==2021.10.8
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
+    #   pyppeteer
     #   requests
     #   selenium-wire
     #   urllib3
@@ -63,25 +64,24 @@ cffi==1.15.0
     #   cryptography
 cfgv==3.3.1
     # via pre-commit
-charset-normalizer==2.0.7
+charset-normalizer==2.0.12
     # via
     #   -r src/requirements-app.txt
     #   requests
-click==8.0.3
+click==8.1.3
     # via
     #   -r src/requirements-app.txt
     #   black
     #   flask
-    #   mitmproxy
     #   pip-tools
     #   shub
 constantly==15.1.0
     # via
     #   -r src/requirements-app.txt
     #   twisted
-coverage[toml]==6.2
+coverage[toml]==6.3.3
     # via pytest-cov
-cryptography==3.4.8
+cryptography==36.0.2
     # via
     #   -r src/requirements-app.txt
     #   ansible-core
@@ -95,21 +95,21 @@ cssselect==1.1.0
     #   -r src/requirements-app.txt
     #   parsel
     #   scrapy
-distlib==0.3.3
+distlib==0.3.4
     # via virtualenv
 docker-py==1.10.6
     # via shub
 docker-pycreds==0.4.0
     # via docker-py
-faker==9.5.0
+faker==13.11.0
     # via -r src/requirements-app.txt
-filelock==3.4.0
+filelock==3.7.0
     # via virtualenv
-flask==2.0.2
+flask==2.0.3
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
-h11==0.12.0
+h11==0.13.0
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
@@ -133,7 +133,7 @@ hyperlink==21.0.0
     # via
     #   -r src/requirements-app.txt
     #   twisted
-identify==2.4.0
+identify==2.5.0
     # via pre-commit
 idna==3.3
     # via
@@ -142,7 +142,7 @@ idna==3.3
     #   requests
     #   trio
     #   urllib3
-importlib-metadata==4.8.1
+importlib-metadata==4.11.3
     # via
     #   -r src/requirements-app.txt
     #   pyppeteer
@@ -152,7 +152,7 @@ incremental==21.3.0
     #   twisted
 iniconfig==1.1.1
     # via pytest
-itemadapter==0.4.0
+itemadapter==0.6.0
     # via
     #   -r src/requirements-app.txt
     #   itemloaders
@@ -161,16 +161,16 @@ itemloaders==1.0.4
     # via
     #   -r src/requirements-app.txt
     #   scrapy
-itsdangerous==2.0.1
+itsdangerous==2.1.2
     # via
     #   -r src/requirements-app.txt
     #   flask
-jinja2==3.0.2
+jinja2==3.1.2
     # via
     #   -r src/requirements-app.txt
     #   ansible-core
     #   flask
-jmespath==0.10.0
+jmespath==1.0.0
     # via
     #   -r src/requirements-app.txt
     #   itemloaders
@@ -183,18 +183,20 @@ ldap3==2.9.1
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
-lxml==4.6.3
+lxml==4.8.0
     # via
     #   -r src/requirements-app.txt
     #   parsel
     #   scrapy
-markupsafe==2.0.1
+markupsafe==2.1.1
     # via
     #   -r src/requirements-app.txt
     #   jinja2
-mitmproxy==7.0.4
+mitmproxy==8.0.0
     # via -r src/requirements-app.txt
-msgpack==1.0.2
+mouseinfo==0.1.3
+    # via pyautogui
+msgpack==1.0.3
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
@@ -202,11 +204,13 @@ mypy-extensions==0.4.3
     # via black
 nodeenv==1.6.0
     # via pre-commit
-numpy==1.21.2
+numpy==1.22.3
     # via
     #   -r src/requirements-app.txt
+    #   bezier
     #   opencv-python
-opencv-python==4.5.3.56
+    #   scipy
+opencv-python==4.5.5.64
     # via -r src/requirements-app.txt
 outcome==1.1.0
     # via
@@ -229,23 +233,25 @@ pathspec==0.9.0
     # via black
 pep517==0.12.0
     # via pip-tools
-pillow==8.4.0
+pillow==9.1.0
+    # via
+    #   -r requirements-dev.in
+    #   pyscreeze
+pip-tools==6.6.0
     # via -r requirements-dev.in
-pip-tools==6.4.0
-    # via -r requirements-dev.in
-platformdirs==2.4.0
+platformdirs==2.5.2
     # via
     #   black
     #   virtualenv
 pluggy==1.0.0
     # via pytest
-pre-commit==2.15.0
+pre-commit==2.19.0
     # via -r requirements-dev.in
-protego==0.1.16
+protego==0.2.1
     # via
     #   -r src/requirements-app.txt
     #   scrapy
-protobuf==3.18.1
+protobuf==3.19.4
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
@@ -253,7 +259,7 @@ publicsuffix2==2.20191221
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
-py==1.10.0
+py==1.11.0
     # via
     #   -r src/requirements-app.txt
     #   anticaptchaofficial
@@ -269,10 +275,14 @@ pyasn1-modules==0.2.8
     # via
     #   -r src/requirements-app.txt
     #   service-identity
-pycparser==2.20
+pyautogui==0.9.53
+    # via -r requirements-dev.in
+pycparser==2.21
     # via
     #   -r src/requirements-app.txt
     #   cffi
+pycryptodome==3.14.1
+    # via -r src/requirements-app.txt
 pydispatcher==2.0.5
     # via
     #   -r src/requirements-app.txt
@@ -281,14 +291,624 @@ pyee==8.2.2
     # via
     #   -r src/requirements-app.txt
     #   pyppeteer
-pyopenssl==20.0.1
+pygetwindow==0.0.9
+    # via pyautogui
+pymsgbox==1.0.9
+    # via pyautogui
+pyobjc==8.5
+    # via pyautogui
+pyobjc-core==8.5
+    # via
+    #   pyautogui
+    #   pyobjc
+    #   pyobjc-framework-accessibility
+    #   pyobjc-framework-accounts
+    #   pyobjc-framework-addressbook
+    #   pyobjc-framework-adservices
+    #   pyobjc-framework-adsupport
+    #   pyobjc-framework-applescriptkit
+    #   pyobjc-framework-applescriptobjc
+    #   pyobjc-framework-applicationservices
+    #   pyobjc-framework-apptrackingtransparency
+    #   pyobjc-framework-audiovideobridging
+    #   pyobjc-framework-authenticationservices
+    #   pyobjc-framework-automaticassessmentconfiguration
+    #   pyobjc-framework-automator
+    #   pyobjc-framework-avfoundation
+    #   pyobjc-framework-avkit
+    #   pyobjc-framework-businesschat
+    #   pyobjc-framework-calendarstore
+    #   pyobjc-framework-callkit
+    #   pyobjc-framework-cfnetwork
+    #   pyobjc-framework-classkit
+    #   pyobjc-framework-cloudkit
+    #   pyobjc-framework-cocoa
+    #   pyobjc-framework-collaboration
+    #   pyobjc-framework-colorsync
+    #   pyobjc-framework-contacts
+    #   pyobjc-framework-contactsui
+    #   pyobjc-framework-coreaudio
+    #   pyobjc-framework-coreaudiokit
+    #   pyobjc-framework-corebluetooth
+    #   pyobjc-framework-coredata
+    #   pyobjc-framework-corehaptics
+    #   pyobjc-framework-corelocation
+    #   pyobjc-framework-coremedia
+    #   pyobjc-framework-coremediaio
+    #   pyobjc-framework-coremidi
+    #   pyobjc-framework-coreml
+    #   pyobjc-framework-coremotion
+    #   pyobjc-framework-coreservices
+    #   pyobjc-framework-corespotlight
+    #   pyobjc-framework-coretext
+    #   pyobjc-framework-corewlan
+    #   pyobjc-framework-cryptotokenkit
+    #   pyobjc-framework-datadetection
+    #   pyobjc-framework-devicecheck
+    #   pyobjc-framework-dictionaryservices
+    #   pyobjc-framework-discrecording
+    #   pyobjc-framework-discrecordingui
+    #   pyobjc-framework-diskarbitration
+    #   pyobjc-framework-dvdplayback
+    #   pyobjc-framework-eventkit
+    #   pyobjc-framework-exceptionhandling
+    #   pyobjc-framework-executionpolicy
+    #   pyobjc-framework-externalaccessory
+    #   pyobjc-framework-fileprovider
+    #   pyobjc-framework-fileproviderui
+    #   pyobjc-framework-findersync
+    #   pyobjc-framework-fsevents
+    #   pyobjc-framework-gamecenter
+    #   pyobjc-framework-gamecontroller
+    #   pyobjc-framework-gamekit
+    #   pyobjc-framework-gameplaykit
+    #   pyobjc-framework-imagecapturecore
+    #   pyobjc-framework-imserviceplugin
+    #   pyobjc-framework-inputmethodkit
+    #   pyobjc-framework-installerplugins
+    #   pyobjc-framework-instantmessage
+    #   pyobjc-framework-intents
+    #   pyobjc-framework-intentsui
+    #   pyobjc-framework-iosurface
+    #   pyobjc-framework-ituneslibrary
+    #   pyobjc-framework-kernelmanagement
+    #   pyobjc-framework-latentsemanticmapping
+    #   pyobjc-framework-launchservices
+    #   pyobjc-framework-libdispatch
+    #   pyobjc-framework-linkpresentation
+    #   pyobjc-framework-localauthentication
+    #   pyobjc-framework-localauthenticationembeddedui
+    #   pyobjc-framework-mailkit
+    #   pyobjc-framework-mapkit
+    #   pyobjc-framework-mediaaccessibility
+    #   pyobjc-framework-medialibrary
+    #   pyobjc-framework-mediaplayer
+    #   pyobjc-framework-mediatoolbox
+    #   pyobjc-framework-metal
+    #   pyobjc-framework-metalkit
+    #   pyobjc-framework-metalperformanceshaders
+    #   pyobjc-framework-metalperformanceshadersgraph
+    #   pyobjc-framework-metrickit
+    #   pyobjc-framework-mlcompute
+    #   pyobjc-framework-modelio
+    #   pyobjc-framework-multipeerconnectivity
+    #   pyobjc-framework-naturallanguage
+    #   pyobjc-framework-netfs
+    #   pyobjc-framework-network
+    #   pyobjc-framework-networkextension
+    #   pyobjc-framework-notificationcenter
+    #   pyobjc-framework-opendirectory
+    #   pyobjc-framework-osakit
+    #   pyobjc-framework-oslog
+    #   pyobjc-framework-passkit
+    #   pyobjc-framework-pencilkit
+    #   pyobjc-framework-photos
+    #   pyobjc-framework-photosui
+    #   pyobjc-framework-preferencepanes
+    #   pyobjc-framework-pushkit
+    #   pyobjc-framework-quartz
+    #   pyobjc-framework-quicklookthumbnailing
+    #   pyobjc-framework-replaykit
+    #   pyobjc-framework-safariservices
+    #   pyobjc-framework-scenekit
+    #   pyobjc-framework-screencapturekit
+    #   pyobjc-framework-screensaver
+    #   pyobjc-framework-screentime
+    #   pyobjc-framework-scriptingbridge
+    #   pyobjc-framework-searchkit
+    #   pyobjc-framework-security
+    #   pyobjc-framework-securityfoundation
+    #   pyobjc-framework-securityinterface
+    #   pyobjc-framework-servicemanagement
+    #   pyobjc-framework-shazamkit
+    #   pyobjc-framework-social
+    #   pyobjc-framework-soundanalysis
+    #   pyobjc-framework-speech
+    #   pyobjc-framework-spritekit
+    #   pyobjc-framework-storekit
+    #   pyobjc-framework-syncservices
+    #   pyobjc-framework-systemconfiguration
+    #   pyobjc-framework-systemextensions
+    #   pyobjc-framework-uniformtypeidentifiers
+    #   pyobjc-framework-usernotifications
+    #   pyobjc-framework-usernotificationsui
+    #   pyobjc-framework-videosubscriberaccount
+    #   pyobjc-framework-videotoolbox
+    #   pyobjc-framework-virtualization
+    #   pyobjc-framework-vision
+    #   pyobjc-framework-webkit
+pyobjc-framework-accessibility==8.5
+    # via pyobjc
+pyobjc-framework-accounts==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-cloudkit
+pyobjc-framework-addressbook==8.5
+    # via pyobjc
+pyobjc-framework-adservices==8.5
+    # via pyobjc
+pyobjc-framework-adsupport==8.5
+    # via pyobjc
+pyobjc-framework-applescriptkit==8.5
+    # via pyobjc
+pyobjc-framework-applescriptobjc==8.5
+    # via pyobjc
+pyobjc-framework-applicationservices==8.5
+    # via pyobjc
+pyobjc-framework-apptrackingtransparency==8.5
+    # via pyobjc
+pyobjc-framework-audiovideobridging==8.5
+    # via pyobjc
+pyobjc-framework-authenticationservices==8.5
+    # via pyobjc
+pyobjc-framework-automaticassessmentconfiguration==8.5
+    # via pyobjc
+pyobjc-framework-automator==8.5
+    # via pyobjc
+pyobjc-framework-avfoundation==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-mediaplayer
+pyobjc-framework-avkit==8.5
+    # via pyobjc
+pyobjc-framework-businesschat==8.5
+    # via pyobjc
+pyobjc-framework-calendarstore==8.5
+    # via pyobjc
+pyobjc-framework-callkit==8.5
+    # via pyobjc
+pyobjc-framework-cfnetwork==8.5
+    # via pyobjc
+pyobjc-framework-classkit==8.5
+    # via pyobjc
+pyobjc-framework-cloudkit==8.5
+    # via pyobjc
+pyobjc-framework-cocoa==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-accessibility
+    #   pyobjc-framework-accounts
+    #   pyobjc-framework-addressbook
+    #   pyobjc-framework-adservices
+    #   pyobjc-framework-adsupport
+    #   pyobjc-framework-applescriptkit
+    #   pyobjc-framework-applescriptobjc
+    #   pyobjc-framework-applicationservices
+    #   pyobjc-framework-apptrackingtransparency
+    #   pyobjc-framework-audiovideobridging
+    #   pyobjc-framework-authenticationservices
+    #   pyobjc-framework-automaticassessmentconfiguration
+    #   pyobjc-framework-automator
+    #   pyobjc-framework-avfoundation
+    #   pyobjc-framework-avkit
+    #   pyobjc-framework-businesschat
+    #   pyobjc-framework-calendarstore
+    #   pyobjc-framework-callkit
+    #   pyobjc-framework-cfnetwork
+    #   pyobjc-framework-classkit
+    #   pyobjc-framework-cloudkit
+    #   pyobjc-framework-collaboration
+    #   pyobjc-framework-colorsync
+    #   pyobjc-framework-contacts
+    #   pyobjc-framework-contactsui
+    #   pyobjc-framework-coreaudio
+    #   pyobjc-framework-coreaudiokit
+    #   pyobjc-framework-corebluetooth
+    #   pyobjc-framework-coredata
+    #   pyobjc-framework-corehaptics
+    #   pyobjc-framework-corelocation
+    #   pyobjc-framework-coremedia
+    #   pyobjc-framework-coremediaio
+    #   pyobjc-framework-coremidi
+    #   pyobjc-framework-coreml
+    #   pyobjc-framework-coremotion
+    #   pyobjc-framework-corespotlight
+    #   pyobjc-framework-coretext
+    #   pyobjc-framework-corewlan
+    #   pyobjc-framework-cryptotokenkit
+    #   pyobjc-framework-datadetection
+    #   pyobjc-framework-devicecheck
+    #   pyobjc-framework-discrecording
+    #   pyobjc-framework-discrecordingui
+    #   pyobjc-framework-diskarbitration
+    #   pyobjc-framework-dvdplayback
+    #   pyobjc-framework-eventkit
+    #   pyobjc-framework-exceptionhandling
+    #   pyobjc-framework-executionpolicy
+    #   pyobjc-framework-externalaccessory
+    #   pyobjc-framework-fileprovider
+    #   pyobjc-framework-findersync
+    #   pyobjc-framework-fsevents
+    #   pyobjc-framework-gamecenter
+    #   pyobjc-framework-gamecontroller
+    #   pyobjc-framework-gamekit
+    #   pyobjc-framework-gameplaykit
+    #   pyobjc-framework-imagecapturecore
+    #   pyobjc-framework-imserviceplugin
+    #   pyobjc-framework-inputmethodkit
+    #   pyobjc-framework-installerplugins
+    #   pyobjc-framework-instantmessage
+    #   pyobjc-framework-intents
+    #   pyobjc-framework-iosurface
+    #   pyobjc-framework-ituneslibrary
+    #   pyobjc-framework-kernelmanagement
+    #   pyobjc-framework-latentsemanticmapping
+    #   pyobjc-framework-linkpresentation
+    #   pyobjc-framework-localauthentication
+    #   pyobjc-framework-localauthenticationembeddedui
+    #   pyobjc-framework-mailkit
+    #   pyobjc-framework-mapkit
+    #   pyobjc-framework-mediaaccessibility
+    #   pyobjc-framework-medialibrary
+    #   pyobjc-framework-mediatoolbox
+    #   pyobjc-framework-metal
+    #   pyobjc-framework-metalkit
+    #   pyobjc-framework-metrickit
+    #   pyobjc-framework-mlcompute
+    #   pyobjc-framework-modelio
+    #   pyobjc-framework-multipeerconnectivity
+    #   pyobjc-framework-naturallanguage
+    #   pyobjc-framework-netfs
+    #   pyobjc-framework-network
+    #   pyobjc-framework-networkextension
+    #   pyobjc-framework-notificationcenter
+    #   pyobjc-framework-opendirectory
+    #   pyobjc-framework-osakit
+    #   pyobjc-framework-oslog
+    #   pyobjc-framework-passkit
+    #   pyobjc-framework-pencilkit
+    #   pyobjc-framework-photos
+    #   pyobjc-framework-photosui
+    #   pyobjc-framework-preferencepanes
+    #   pyobjc-framework-pushkit
+    #   pyobjc-framework-quartz
+    #   pyobjc-framework-quicklookthumbnailing
+    #   pyobjc-framework-replaykit
+    #   pyobjc-framework-safariservices
+    #   pyobjc-framework-scenekit
+    #   pyobjc-framework-screensaver
+    #   pyobjc-framework-screentime
+    #   pyobjc-framework-scriptingbridge
+    #   pyobjc-framework-security
+    #   pyobjc-framework-securityfoundation
+    #   pyobjc-framework-securityinterface
+    #   pyobjc-framework-servicemanagement
+    #   pyobjc-framework-shazamkit
+    #   pyobjc-framework-social
+    #   pyobjc-framework-soundanalysis
+    #   pyobjc-framework-speech
+    #   pyobjc-framework-spritekit
+    #   pyobjc-framework-storekit
+    #   pyobjc-framework-syncservices
+    #   pyobjc-framework-systemconfiguration
+    #   pyobjc-framework-systemextensions
+    #   pyobjc-framework-uniformtypeidentifiers
+    #   pyobjc-framework-usernotifications
+    #   pyobjc-framework-usernotificationsui
+    #   pyobjc-framework-videosubscriberaccount
+    #   pyobjc-framework-videotoolbox
+    #   pyobjc-framework-virtualization
+    #   pyobjc-framework-vision
+    #   pyobjc-framework-webkit
+pyobjc-framework-collaboration==8.5
+    # via pyobjc
+pyobjc-framework-colorsync==8.5
+    # via pyobjc
+pyobjc-framework-contacts==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-contactsui
+pyobjc-framework-contactsui==8.5
+    # via pyobjc
+pyobjc-framework-coreaudio==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-avfoundation
+    #   pyobjc-framework-coreaudiokit
+pyobjc-framework-coreaudiokit==8.5
+    # via pyobjc
+pyobjc-framework-corebluetooth==8.5
+    # via pyobjc
+pyobjc-framework-coredata==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-cloudkit
+    #   pyobjc-framework-syncservices
+pyobjc-framework-corehaptics==8.5
+    # via pyobjc
+pyobjc-framework-corelocation==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-cloudkit
+    #   pyobjc-framework-mapkit
+pyobjc-framework-coremedia==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-avfoundation
+    #   pyobjc-framework-oslog
+    #   pyobjc-framework-screencapturekit
+    #   pyobjc-framework-videotoolbox
+pyobjc-framework-coremediaio==8.5
+    # via pyobjc
+pyobjc-framework-coremidi==8.5
+    # via pyobjc
+pyobjc-framework-coreml==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-vision
+pyobjc-framework-coremotion==8.5
+    # via pyobjc
+pyobjc-framework-coreservices==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-dictionaryservices
+    #   pyobjc-framework-launchservices
+    #   pyobjc-framework-searchkit
+pyobjc-framework-corespotlight==8.5
+    # via pyobjc
+pyobjc-framework-coretext==8.5
+    # via pyobjc
+pyobjc-framework-corewlan==8.5
+    # via pyobjc
+pyobjc-framework-cryptotokenkit==8.5
+    # via pyobjc
+pyobjc-framework-datadetection==8.5
+    # via pyobjc
+pyobjc-framework-devicecheck==8.5
+    # via pyobjc
+pyobjc-framework-dictionaryservices==8.5
+    # via pyobjc
+pyobjc-framework-discrecording==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-discrecordingui
+pyobjc-framework-discrecordingui==8.5
+    # via pyobjc
+pyobjc-framework-diskarbitration==8.5
+    # via pyobjc
+pyobjc-framework-dvdplayback==8.5
+    # via pyobjc
+pyobjc-framework-eventkit==8.5
+    # via pyobjc
+pyobjc-framework-exceptionhandling==8.5
+    # via pyobjc
+pyobjc-framework-executionpolicy==8.5
+    # via pyobjc
+pyobjc-framework-externalaccessory==8.5
+    # via pyobjc
+pyobjc-framework-fileprovider==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-fileproviderui
+pyobjc-framework-fileproviderui==8.5
+    # via pyobjc
+pyobjc-framework-findersync==8.5
+    # via pyobjc
+pyobjc-framework-fsevents==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-coreservices
+pyobjc-framework-gamecenter==8.5
+    # via pyobjc
+pyobjc-framework-gamecontroller==8.5
+    # via pyobjc
+pyobjc-framework-gamekit==8.5
+    # via pyobjc
+pyobjc-framework-gameplaykit==8.5
+    # via pyobjc
+pyobjc-framework-imagecapturecore==8.5
+    # via pyobjc
+pyobjc-framework-imserviceplugin==8.5
+    # via pyobjc
+pyobjc-framework-inputmethodkit==8.5
+    # via pyobjc
+pyobjc-framework-installerplugins==8.5
+    # via pyobjc
+pyobjc-framework-instantmessage==8.5
+    # via pyobjc
+pyobjc-framework-intents==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-intentsui
+pyobjc-framework-intentsui==8.5
+    # via pyobjc
+pyobjc-framework-iosurface==8.5
+    # via pyobjc
+pyobjc-framework-ituneslibrary==8.5
+    # via pyobjc
+pyobjc-framework-kernelmanagement==8.5
+    # via pyobjc
+pyobjc-framework-latentsemanticmapping==8.5
+    # via pyobjc
+pyobjc-framework-launchservices==8.5
+    # via pyobjc
+pyobjc-framework-libdispatch==8.5
+    # via pyobjc
+pyobjc-framework-linkpresentation==8.5
+    # via pyobjc
+pyobjc-framework-localauthentication==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-localauthenticationembeddedui
+pyobjc-framework-localauthenticationembeddedui==8.5
+    # via pyobjc
+pyobjc-framework-mailkit==8.5
+    # via pyobjc
+pyobjc-framework-mapkit==8.5
+    # via pyobjc
+pyobjc-framework-mediaaccessibility==8.5
+    # via pyobjc
+pyobjc-framework-medialibrary==8.5
+    # via pyobjc
+pyobjc-framework-mediaplayer==8.5
+    # via pyobjc
+pyobjc-framework-mediatoolbox==8.5
+    # via pyobjc
+pyobjc-framework-metal==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-metalkit
+    #   pyobjc-framework-metalperformanceshaders
+pyobjc-framework-metalkit==8.5
+    # via pyobjc
+pyobjc-framework-metalperformanceshaders==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-metalperformanceshadersgraph
+pyobjc-framework-metalperformanceshadersgraph==8.5
+    # via pyobjc
+pyobjc-framework-metrickit==8.5
+    # via pyobjc
+pyobjc-framework-mlcompute==8.5
+    # via pyobjc
+pyobjc-framework-modelio==8.5
+    # via pyobjc
+pyobjc-framework-multipeerconnectivity==8.5
+    # via pyobjc
+pyobjc-framework-naturallanguage==8.5
+    # via pyobjc
+pyobjc-framework-netfs==8.5
+    # via pyobjc
+pyobjc-framework-network==8.5
+    # via pyobjc
+pyobjc-framework-networkextension==8.5
+    # via pyobjc
+pyobjc-framework-notificationcenter==8.5
+    # via pyobjc
+pyobjc-framework-opendirectory==8.5
+    # via pyobjc
+pyobjc-framework-osakit==8.5
+    # via pyobjc
+pyobjc-framework-oslog==8.5
+    # via pyobjc
+pyobjc-framework-passkit==8.5
+    # via pyobjc
+pyobjc-framework-pencilkit==8.5
+    # via pyobjc
+pyobjc-framework-photos==8.5
+    # via pyobjc
+pyobjc-framework-photosui==8.5
+    # via pyobjc
+pyobjc-framework-preferencepanes==8.5
+    # via pyobjc
+pyobjc-framework-pushkit==8.5
+    # via pyobjc
+pyobjc-framework-quartz==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-accessibility
+    #   pyobjc-framework-applicationservices
+    #   pyobjc-framework-avfoundation
+    #   pyobjc-framework-avkit
+    #   pyobjc-framework-coretext
+    #   pyobjc-framework-gamekit
+    #   pyobjc-framework-instantmessage
+    #   pyobjc-framework-linkpresentation
+    #   pyobjc-framework-mapkit
+    #   pyobjc-framework-medialibrary
+    #   pyobjc-framework-modelio
+    #   pyobjc-framework-oslog
+    #   pyobjc-framework-quicklookthumbnailing
+    #   pyobjc-framework-scenekit
+    #   pyobjc-framework-spritekit
+    #   pyobjc-framework-videotoolbox
+    #   pyobjc-framework-vision
+pyobjc-framework-quicklookthumbnailing==8.5
+    # via pyobjc
+pyobjc-framework-replaykit==8.5
+    # via pyobjc
+pyobjc-framework-safariservices==8.5
+    # via pyobjc
+pyobjc-framework-scenekit==8.5
+    # via pyobjc
+pyobjc-framework-screencapturekit==8.5
+    # via pyobjc
+pyobjc-framework-screensaver==8.5
+    # via pyobjc
+pyobjc-framework-screentime==8.5
+    # via pyobjc
+pyobjc-framework-scriptingbridge==8.5
+    # via pyobjc
+pyobjc-framework-searchkit==8.5
+    # via pyobjc
+pyobjc-framework-security==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-localauthentication
+    #   pyobjc-framework-securityfoundation
+    #   pyobjc-framework-securityinterface
+pyobjc-framework-securityfoundation==8.5
+    # via pyobjc
+pyobjc-framework-securityinterface==8.5
+    # via pyobjc
+pyobjc-framework-servicemanagement==8.5
+    # via pyobjc
+pyobjc-framework-shazamkit==8.5
+    # via pyobjc
+pyobjc-framework-social==8.5
+    # via pyobjc
+pyobjc-framework-soundanalysis==8.5
+    # via pyobjc
+pyobjc-framework-speech==8.5
+    # via pyobjc
+pyobjc-framework-spritekit==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-gameplaykit
+pyobjc-framework-storekit==8.5
+    # via pyobjc
+pyobjc-framework-syncservices==8.5
+    # via pyobjc
+pyobjc-framework-systemconfiguration==8.5
+    # via pyobjc
+pyobjc-framework-systemextensions==8.5
+    # via pyobjc
+pyobjc-framework-uniformtypeidentifiers==8.5
+    # via pyobjc
+pyobjc-framework-usernotifications==8.5
+    # via
+    #   pyobjc
+    #   pyobjc-framework-usernotificationsui
+pyobjc-framework-usernotificationsui==8.5
+    # via pyobjc
+pyobjc-framework-videosubscriberaccount==8.5
+    # via pyobjc
+pyobjc-framework-videotoolbox==8.5
+    # via pyobjc
+pyobjc-framework-virtualization==8.5
+    # via pyobjc
+pyobjc-framework-vision==8.5
+    # via pyobjc
+pyobjc-framework-webkit==8.5
+    # via pyobjc
+pyopenssl==22.0.0
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
     #   scrapy
     #   selenium-wire
     #   urllib3
-pyparsing==2.4.7
+pyparsing==3.0.9
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
@@ -298,28 +918,36 @@ pyperclip==1.8.2
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
-pyppeteer==0.2.6
+    #   mouseinfo
+pyppeteer==1.0.2
     # via -r src/requirements-app.txt
 pyppeteer-stealth==2.7.3
     # via -r src/requirements-app.txt
+pyrect==0.2.0
+    # via pygetwindow
+pyscreeze==0.1.28
+    # via pyautogui
 pysocks==1.7.1
     # via
     #   -r src/requirements-app.txt
     #   selenium-wire
-pytest==6.2.5
+    #   urllib3
+pytest==7.1.2
     # via
     #   -r requirements-dev.in
     #   pytest-cov
 pytest-cov==3.0.0
     # via -r requirements-dev.in
-python-anticaptcha==0.7.1
+python-anticaptcha==1.0.0
     # via -r src/requirements-app.txt
 python-dateutil==2.8.2
     # via
     #   -r src/requirements-app.txt
     #   faker
-python-dotenv==0.19.2
+python-dotenv==0.20.0
     # via -r requirements-dev.in
+pytweening==1.0.4
+    # via pyautogui
 pyyaml==6.0
     # via
     #   ansible-core
@@ -329,9 +957,7 @@ queuelib==1.6.2
     # via
     #   -r src/requirements-app.txt
     #   scrapy
-regex==2021.11.10
-    # via black
-requests==2.26.0
+requests==2.27.1
     # via
     #   -r src/requirements-app.txt
     #   anticaptchaofficial
@@ -339,29 +965,35 @@ requests==2.26.0
     #   python-anticaptcha
     #   scrapinghub
     #   shub
+    #   undetected-chromedriver
 resolvelib==0.5.4
     # via ansible-core
 retrying==1.3.3
     # via
     #   scrapinghub
     #   shub
-ruamel.yaml==0.17.16
+ruamel-yaml==0.17.21
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
-ruamel.yaml.clib==0.2.6
+ruamel-yaml-clib==0.2.6
     # via
     #   -r src/requirements-app.txt
-    #   ruamel.yaml
-scrapinghub==2.3.1
+    #   ruamel-yaml
+rubicon-objc==0.4.2
+    # via mouseinfo
+scipy==1.8.0
+    # via -r requirements-dev.in
+scrapinghub==2.4.0
     # via shub
 scrapy==2.4.1
     # via -r src/requirements-app.txt
-selenium==4.0.0
+selenium==4.1.5
     # via
     #   -r src/requirements-app.txt
     #   selenium-wire
-selenium-wire==4.5.6
+    #   undetected-chromedriver
+selenium-wire==4.6.4
     # via -r src/requirements-app.txt
 service-identity==21.1.0
     # via
@@ -374,9 +1006,9 @@ six==1.16.0
     #   -r src/requirements-app.txt
     #   automat
     #   docker-py
+    #   docker-pycreds
     #   parsel
     #   protego
-    #   pyopenssl
     #   python-anticaptcha
     #   python-dateutil
     #   retrying
@@ -394,30 +1026,26 @@ sortedcontainers==2.4.0
     #   -r src/requirements-app.txt
     #   mitmproxy
     #   trio
-text-unidecode==1.3
-    # via
-    #   -r src/requirements-app.txt
-    #   faker
 toml==0.10.2
     # via
     #   pre-commit
-    #   pytest
     #   shub
-tomli==1.2.2
+tomli==2.0.1
     # via
     #   black
     #   coverage
     #   pep517
+    #   pytest
 tornado==6.1
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
-tqdm==4.62.3
+tqdm==4.64.0
     # via
     #   -r src/requirements-app.txt
     #   pyppeteer
     #   shub
-trio==0.19.0
+trio==0.20.0
     # via
     #   -r src/requirements-app.txt
     #   selenium
@@ -426,18 +1054,20 @@ trio-websocket==0.9.2
     # via
     #   -r src/requirements-app.txt
     #   selenium
-twisted==21.7.0
+twisted==22.4.0
     # via
     #   -r src/requirements-app.txt
     #   scrapy
-typing-extensions==3.10.0.2
+typing-extensions==4.2.0
     # via
     #   -r src/requirements-app.txt
     #   black
     #   twisted
-ujson==4.2.0
+ujson==5.2.0
     # via -r src/requirements-app.txt
-urllib3[secure]==1.26.7
+undetected-chromedriver==3.1.5.post4
+    # via -r src/requirements-app.txt
+urllib3[secure,socks]==1.26.9
     # via
     #   -r src/requirements-app.txt
     #   pyppeteer
@@ -447,7 +1077,7 @@ urwid==2.1.2
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
-virtualenv==20.10.0
+virtualenv==20.14.1
     # via pre-commit
 w3lib==1.22.0
     # via
@@ -455,34 +1085,36 @@ w3lib==1.22.0
     #   itemloaders
     #   parsel
     #   scrapy
-websocket-client==1.2.1
+websocket-client==1.3.2
     # via docker-py
-websockets==9.1
+websockets==10.3
     # via
     #   -r src/requirements-app.txt
     #   pyppeteer
-werkzeug==2.0.2
+    #   undetected-chromedriver
+werkzeug==2.0.3
     # via
     #   -r src/requirements-app.txt
     #   flask
-wheel==0.37.0
+    #   selenium-wire
+wheel==0.37.1
     # via pip-tools
-wsproto==1.0.0
+wsproto==1.1.0
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
     #   selenium-wire
     #   trio-websocket
-zipp==3.6.0
+zipp==3.8.0
     # via
     #   -r src/requirements-app.txt
     #   importlib-metadata
-zope.interface==5.4.0
+zope-interface==5.4.0
     # via
     #   -r src/requirements-app.txt
     #   scrapy
     #   twisted
-zstandard==0.15.2
+zstandard==0.17.0
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy

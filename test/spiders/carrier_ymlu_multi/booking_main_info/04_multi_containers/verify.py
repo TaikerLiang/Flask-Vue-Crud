@@ -1,7 +1,6 @@
 from typing import List
 
-from crawler.core_carrier.items import MblItem, LocationItem, ContainerItem
-from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.items import ContainerItem, LocationItem, MblItem
 
 
 def verify(results: List):
@@ -22,6 +21,8 @@ def verify(results: List):
         customs_release_date=None,
         task_id=1,
         berthing_time="2021/11/20 04:00",
+        vessel="ONE STORK",
+        voyage="014W (EC4131W)",
     )
 
     assert results[1] == ContainerItem(
@@ -29,7 +30,7 @@ def verify(results: List):
         container_no="FSCU8038064",
         last_free_day=None,
         task_id=1,
-        terminal=LocationItem(name=None),
+        terminal_pod=LocationItem(name=None),
     )
 
     assert results[5] == ContainerItem(
@@ -37,5 +38,5 @@ def verify(results: List):
         container_no="TEMU8505289",
         last_free_day=None,
         task_id=1,
-        terminal=LocationItem(name=None),
+        terminal_pod=LocationItem(name=None),
     )

@@ -1,19 +1,22 @@
 import time
 from typing import List
-from crawler.core.selenium import ChromeContentGetter
 
 import scrapy
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 
+from crawler.core.base_new import RESULT_STATUS_ERROR
 from crawler.core.proxy import HydraproxyProxyManager
-from crawler.core_rail.base_spiders import BaseMultiRailSpider
-from crawler.core_rail.exceptions import RailResponseFormatError, DriverMaxRetryError
-from crawler.core_rail.items import BaseRailItem, RailItem, DebugItem, InvalidContainerNoItem
-from crawler.core_rail.request_helpers import RequestOption
-from crawler.core_rail.rules import RuleManager, BaseRoutingRule
-from crawler.extractors.table_extractors import BaseTableCellExtractor
+from crawler.core.selenium import ChromeContentGetter
 from crawler.core.table import BaseTable, TableExtractor
-
+from crawler.core_rail.base_spiders import BaseMultiRailSpider
+from crawler.core_rail.exceptions import DriverMaxRetryError, RailResponseFormatError
+from crawler.core_rail.items import BaseRailItem, DebugItem, ExportErrorData, RailItem
+from crawler.core_rail.request_helpers import RequestOption
+from crawler.core_rail.rules import BaseRoutingRule, RuleManager
+from crawler.extractors.table_extractors import BaseTableCellExtractor
 
 MAX_RETRY_COUNT = 3
 
@@ -61,7 +64,7 @@ class RailNSSpider(BaseMultiRailSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, RailItem) or isinstance(result, InvalidContainerNoItem):
+            if isinstance(result, RailItem) or isinstance(result, ExportErrorData):
                 c_no = result["container_no"]
                 t_ids = self.cno_tid_map[c_no]
                 for t_id in t_ids:
@@ -95,6 +98,7 @@ class RailNSSpider(BaseMultiRailSpider):
             return scrapy.Request(
                 url=option.url,
                 meta=meta,
+                dont_filter=True,
             )
 
         else:
@@ -104,12 +108,12 @@ class RailNSSpider(BaseMultiRailSpider):
 class ContainerRoutingRule(BaseRoutingRule):
     name = "CONTAINER"
 
-    ERROR_BTN_XPATH = "/html/body/div[16]/div[2]/div[2]/div/div/a[1]"
-    ERROR_P_XPATH = "/html/body/div[16]/div[2]/div[1]/div/div/div[1]/div/div/div[2]/div/div/div[1]/p"
+    ERROR_BTN_CSS = "button[aria-label='No Results Found']"
+    ERROR_H5_CSS = "div.mat-list-text h5"
 
     @classmethod
     def build_request_option(cls, container_nos, proxy_manager) -> RequestOption:
-        url = "https://api.myip.com"
+        url = "https://eval.edi.hardcoretech.co/c/livez"
 
         cls._proxy_manager = proxy_manager
         return RequestOption(
@@ -127,24 +131,35 @@ class ContainerRoutingRule(BaseRoutingRule):
         event_code_mapper = EventCodeMapper()
         content_getter = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
 
+        response_text = ""
         try:
             response_text = content_getter.search(container_nos=container_nos)
-        except TimeoutException:
+        except (TimeoutException, NoSuchElementException):
             yield Restart()
+            content_getter.close()
             return
         response = scrapy.Selector(text=response_text)
 
         invalid_container_nos = []
-        if self._is_some_container_nos_invalid(response=response):
-            invalid_container_nos = self._extract_invalid_container_nos(response=response, container_nos=container_nos)
-            for cno in invalid_container_nos:
-                yield InvalidContainerNoItem(container_no=cno)
+        # if self._is_some_container_nos_invalid(response=response):
+        #     invalid_container_nos = self._extract_invalid_container_nos(response=response, container_nos=container_nos)
+        #     for cno in invalid_container_nos:
+        #         yield ExportErrorData(
+        #             container_no=cno,
+        #             detail="Data was not found",
+        #             status=RAIL_RESULT_STATUS_ERROR,
+        #         )
 
         container_infos = self._extract_container_infos(response=response)
         for valid_c_no in set(container_nos) - set(invalid_container_nos):
             valid_c_no_without_check_code = valid_c_no[:-1]
             c_no_info = container_infos.get(valid_c_no_without_check_code)
             if c_no_info is None:
+                yield ExportErrorData(
+                    container_no=valid_c_no,
+                    detail="Data was not found",
+                    status=RESULT_STATUS_ERROR,
+                )
                 continue
 
             yield RailItem(
@@ -184,22 +199,24 @@ class ContainerRoutingRule(BaseRoutingRule):
         return container_info
 
     def _is_some_container_nos_invalid(self, response: scrapy.Selector) -> bool:
-        error_btn = response.xpath(self.ERROR_BTN_XPATH)
+        error_btn = response.css(self.ERROR_BTN_CSS)
 
         return bool(error_btn)
 
     def _extract_invalid_container_nos(self, response: scrapy.Selector, container_nos: List) -> List:
         # should map to original input container_no
-        error_p = response.xpath(self.ERROR_P_XPATH)
-        if not error_p:
-            raise RailResponseFormatError(reason=f"xpath: `{self.ERROR_P_XPATH}` can't find error text")
+        error_h5 = response.css(self.ERROR_H5_CSS)
+        if not error_h5:
+            raise RailResponseFormatError(reason=f"css: `{self.ERROR_H5_CSS}` can't find error text")
 
-        raw_invalid_container_nos = error_p.css("::text").getall()[1:-1]  # 0: title, -1: space
+        raw_invalid_container_nos = error_h5.css("::text").getall()
         invalid_container_nos = [cno.replace(" ", "") for cno in raw_invalid_container_nos]
 
         full_invalid_container_nos = []
         for cno in container_nos:
-            if cno[:-1] in invalid_container_nos:
+            # cno[:-1] (FANU3051380)
+            # cno[:4] + cno[5:] (NYKU0751886)
+            if cno[:-1] in invalid_container_nos or cno[:4] + cno[5:] in invalid_container_nos:
                 full_invalid_container_nos.append(cno)
 
         return full_invalid_container_nos
@@ -207,15 +224,18 @@ class ContainerRoutingRule(BaseRoutingRule):
 
 class ContentGetter(ChromeContentGetter):
     USER_NAME = "hvv26"
-    PASS_WORD = "Goft0108"
+    PASS_WORD = "Goft0401"
     LOGIN_URL = "https://accessns.web.ocp01.nscorp.com/auth/login"
 
     def _login(self):
         self._driver.get(self.LOGIN_URL)
         time.sleep(60)
-        username = self._driver.find_element_by_xpath("//*[@id='mat-input-0']")
+        WebDriverWait(self._driver, 30).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "input[formcontrolname='username']"))
+        )
+        username = self._driver.find_element_by_css_selector("input[formcontrolname='username']")
         username.send_keys(self.USER_NAME)
-        password = self._driver.find_element_by_xpath("//*[@id='mat-input-1']")
+        password = self._driver.find_element_by_css_selector("input[formcontrolname='password']")
         password.send_keys(self.PASS_WORD)
         time.sleep(3)
 
@@ -229,11 +249,23 @@ class ContentGetter(ChromeContentGetter):
             self._is_first = False
 
         # search
-        self._driver.find_element_by_xpath('//*[@id="mat-input-2"]').send_keys(",".join(container_nos))
+        WebDriverWait(self._driver, 30).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, "textarea[formcontrolname='equipments']"))
+        )
+        self._driver.find_element_by_css_selector("textarea[formcontrolname='equipments']").send_keys(
+            ",".join(container_nos)
+        )
         time.sleep(3)
         search_btn = self._driver.find_element_by_css_selector('button[aria-label="Search button"]')
         search_btn.click()
         time.sleep(60)
+
+        error_btn = None
+        try:
+            error_btn = self._driver.find_element_by_css_selector("button[aria-label='No Results Found']")
+            error_btn.click()
+        except NoSuchElementException:  # all container_nos are valid
+            pass
 
         return self.get_page_source()
 
@@ -242,19 +274,23 @@ class TrackAndTraceTableLocator(BaseTable):
     def parse(self, table: scrapy.Selector):
         titles = table.css("span.ag-header-cell-text ::text").getall()
         titles = [t.strip() for t in titles]
-
-        content_divs = table.css(".ag-center-cols-container > div")
+        content_divs = table.css(".ag-center-cols-container div[role='row']")
 
         for row_num, div in enumerate(content_divs):
-            data_divs = div.css("div")[1:]
+            data_divs = div.css("div")
 
             for data_id, data_div in enumerate(data_divs):
-                title_id = data_id
+                colindex = data_div.css("div::attr(aria-colindex)").extract()
+                if len(colindex) > 1:
+                    continue
+
+                title_id = int(colindex[0]) - 1
                 title = titles[title_id]
 
                 self._td_map.setdefault(title, [])
                 self._td_map[title].append(data_div)
-                self.add_left_header_set(row_num)
+
+            self.add_left_header_set(row_num)
 
 
 class DivCellExtractor(BaseTableCellExtractor):

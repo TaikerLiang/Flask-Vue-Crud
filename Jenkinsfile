@@ -1,11 +1,6 @@
 #!/usr/bin/env groovy
 import groovy.transform.Field
 
-
-@Field def PYTHON_DOCKER_IMAGE = 'python:3.8.2'
-
-@Field def SHUB_APIKEY_CREDENTIAL_ID = 'scrapinghub-hardcore-apikey'
-
 @Field def SLACK_CHANNEL = '#edi-jenkins'
 
 @Field def STATUS_SUCCESS = 'Success'
@@ -17,63 +12,41 @@ import groovy.transform.Field
 
 
 pipeline {
-    agent any
-    environment {
-        GIT_COMMIT_SHORT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-    }
+    agent { node { label "hardcore-worker" } }
     stages {
-        stage('Test') {
-            agent {
-                docker {
-                    image "${PYTHON_DOCKER_IMAGE}"
-                }
-            }
-            when {
-                anyOf {
-                    branch 'develop'
-                    branch 'stage'
-                    branch 'master'
-                    changeRequest()
-                }
-            }
-            environment {
-                HOME = "$WORKSPACE"
-                PYTHONDONTWRITEBYTECODE = 1
-                PYTHONUNBUFFERED = 1
-            }
+        stage('Checkout') {
             steps {
-                runTest()
-            }
-            post {
-                always {
-                    junit 'pytest_report.xml'
-                    cobertura coberturaReportFile: 'pytest_coverage.xml'
-                }
-                success {
-                    onSuccess('Test')
-                }
-                failure {
-                    onFail('Test')
+                checkout scm
+                script {
+                    env.git_commit_short = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                 }
             }
         }
-        stage('Deploy') {
-            when {
-                anyOf {
-                    branch 'stage'
-                    branch 'master'
-                }
-            }
+        stage('Build') {
+            when { expression { env.BRANCH_NAME in ['dockerize', 'develop'] } }
             steps {
-                setupDevEnv()
-                runDeploy()
+                runBuild()
             }
             post {
                 success {
-                    onSuccess('Deploy')
+                    onSuccess('Build')
                 }
                 failure {
-                    onFail('Deploy')
+                    onFail('Build')
+                }
+            }
+        }
+        stage('Push') {
+            when { expression { env.BRANCH_NAME in ['dockerize', 'develop'] } }
+            steps {
+                runPush()
+            }
+            post {
+                success {
+                    onSuccess('Push')
+                }
+                failure {
+                    onFail('Push')
                 }
             }
         }
@@ -83,37 +56,29 @@ pipeline {
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 
-
-def runTest() {
-    def userPipPackageBase = sh([returnStdout: true, script: 'python -m site --user-base']).trim()
-    echo "userPipPackageBase=${userPipPackageBase}"
-
-    sh "pip install -e '.[dev]' --user --no-cache"
-    sh "${userPipPackageBase}/bin/epsc test --pytest-args='-vv -p no:cacheprovider --junitxml=pytest_report.xml --cov=src/ --cov-report=xml:pytest_coverage.xml'"
-}
-
-def runDeploy() {
-    echo "runDeploy base on branch=${BRANCH_NAME}"
-    withCredentials([string(credentialsId: SHUB_APIKEY_CREDENTIAL_ID, variable: 'SHUB_APIKEY')]) {
-        sh 'docker login images.scrapinghub.com --username=${SHUB_APIKEY} --password=" "'
-        execAnsiblePlaybook("-i servers/${BRANCH_NAME} -v deploy.yml")
-    }
-}
-
-def setupDevEnv() {
-    withPythonEnv('python') {
-        sh 'pip install -r requirements-dev.txt'
-    }
-}
-
-def execAnsiblePlaybook(argv) {
-    withPythonEnv('python') {
-        dir('playbooks') {
-            sh "ansible-playbook ${argv}"
+def runBuild() {
+    def scriptPath = 'docker/bin'
+    try {
+        dir(scriptPath) {
+            sh './build.sh'
         }
     }
+    catch (Exception e) {
+        throw e
+    }
 }
 
+def runPush() {
+    def scriptPath = 'docker/bin'
+    try {
+        dir(scriptPath) {
+            sh './push-ecr.sh'
+        }
+    }
+    catch (Exception e) {
+        throw e
+    }
+}
 
 def onSuccess(stage) {
     def info = "${stage} Success"
@@ -128,7 +93,7 @@ def onFail(stage) {
 def notifySlackStatus(status, info) {
     def duration = getBuildDuration()
     def color = (status == STATUS_SUCCESS) ? COLOR_OK : COLOR_ERROR
-    def message = "${JOB_NAME} - ${BUILD_DISPLAY_NAME} (${GIT_COMMIT_SHORT}) ${info} after ${duration} (<${BUILD_URL}|URL>)"
+    def message = "${JOB_NAME} - ${BUILD_DISPLAY_NAME} (${env.git_commit_short}) ${info} after ${duration} (<${BUILD_URL}|URL>)"
     echo message
 
     slackSend([channel: SLACK_CHANNEL, color: color, message: message])
