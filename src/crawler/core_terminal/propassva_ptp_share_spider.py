@@ -270,8 +270,8 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
                     demurrage=self._extract_demurrage_info(container),
                     customs_release=release_info["CUSTOMS"],
                     freight_release=release_info["FREIGHT"],
-                    carrier=container["unitinfo"]["ownerline_scac"],
-                    container_spec=container["unitinfo"]["unitsztype_cd"],
+                    carrier=container["unitinfo"].get("ownerline_scac", ""),
+                    container_spec=container["unitinfo"].get("unitsztype_cd", ""),
                     vessel=vessel_info["vessel"],
                     voyage=vessel_info["voyage"],
                 )
@@ -325,6 +325,7 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
                     "vessel": arrive_info["vesselinfo"].get("vessel_nm"),
                     "voyage": arrive_info["vesselinfo"].get("voyage_nbr"),
                 }
+
         return {
             "vessel": None,
             "voyage": None,

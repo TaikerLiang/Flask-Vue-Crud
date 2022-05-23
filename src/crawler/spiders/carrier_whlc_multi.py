@@ -1,29 +1,37 @@
 import re
 import time
-from urllib3.exceptions import ReadTimeoutError
-from typing import List, Dict
+from typing import Dict, List, Optional
 
-from pyppeteer.errors import NetworkError, PageError, TimeoutError
 import scrapy
 from scrapy import Selector
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as ec
-from selenium.webdriver.common.by import By
 from selenium.common.exceptions import (
-    NoSuchElementException,
     NoAlertPresentException,
-    UnexpectedAlertPresentException,
+    NoSuchElementException,
     TimeoutException,
+    UnexpectedAlertPresentException,
 )
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as ec
+from selenium.webdriver.support.ui import WebDriverWait
+from urllib3.exceptions import ReadTimeoutError
 
+from crawler.core.base_new import (
+    DUMMY_URL_DICT,
+    RESULT_STATUS_ERROR,
+    SEARCH_TYPE_BOOKING,
+    SEARCH_TYPE_MBL,
+)
+from crawler.core.description import DATA_NOT_FOUND_DESC, SUSPICIOUS_OPERATION_DESC
+from crawler.core.exceptions_new import (
+    FormatError,
+    SuspiciousOperationError,
+    TimeOutError,
+)
+from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.proxy import HydraproxyProxyManager
-from crawler.core.selenium import FirefoxContentGetter
-from crawler.core_carrier.base import CARRIER_RESULT_STATUS_FATAL, SHIPMENT_TYPE_MBL, SHIPMENT_TYPE_BOOKING
+from crawler.core.selenium import ChromeContentGetter
 from crawler.core_carrier.base_spiders import BaseMultiCarrierSpider
-from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule, RequestOptionQueue
 from crawler.core_carrier.items import (
-    MblItem,
     BaseCarrierItem,
     ContainerItem,
     ContainerStatusItem,
@@ -32,20 +40,17 @@ from crawler.core_carrier.items import (
     MblItem,
     VesselItem,
 )
-from crawler.core_carrier.exceptions import (
-    CarrierResponseFormatError,
-    LoadWebsiteTimeOutError,
-    BaseCarrierError,
-    SuspiciousOperationError,
-    CarrierInvalidSearchNoError,
-    CARRIER_RESULT_STATUS_ERROR,
-)
+from crawler.core_carrier.request_helpers import RequestOption
+from crawler.core_carrier.rules import BaseRoutingRule, RequestOptionQueue, RuleManager
 from crawler.extractors.selector_finder import BaseMatchRule, find_selector_from
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError, TableExtractor
+from crawler.extractors.table_extractors import (
+    BaseTableLocator,
+    HeaderMismatchError,
+    TableExtractor,
+)
+from crawler.services.captcha_service import GoogleRecaptchaV2Service
 
-WHLC_BASE_URL = "https://www.wanhai.com/views/Main.xhtml"
-COOKIES_RETRY_LIMIT = 3
 WHLC_BASE_URL = "https://www.wanhai.com/views/cargoTrack/CargoTrack.xhtml"
 COOKIES_RETRY_LIMIT = 3
 
@@ -60,28 +65,34 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
     def __init__(self, *args, **kwargs):
         super(CarrierWhlcSpider, self).__init__(*args, **kwargs)
 
+        self._content_getter = ContentGetter(
+            HydraproxyProxyManager(session="whlc", logger=self.logger), is_headless=True
+        )
+        # self._content_getter = ContentGetter(None, is_headless=True)
+
         self._retry_count = 0
-        bill_rules = [MblRoutingRule()]
-        booking_rules = [BookingRoutingRule()]
+        bill_rules = [
+            MblRoutingRule(content_getter=self._content_getter),
+            NextRoundRoutingRule(search_type=self.search_type),
+        ]
+        booking_rules = [
+            BookingRoutingRule(content_getter=self._content_getter),
+            NextRoundRoutingRule(search_type=self.search_type),
+        ]
 
         if self.search_type == SEARCH_TYPE_MBL:
             self._rule_manager = RuleManager(rules=bill_rules)
         elif self.search_type == SEARCH_TYPE_BOOKING:
             self._rule_manager = RuleManager(rules=booking_rules)
 
-        self._proxy_manager = HydraproxyProxyManager(session="whlc", logger=self.logger)
         self._request_queue = RequestOptionQueue()
 
     def start(self):
-        if self.search_type == SHIPMENT_TYPE_MBL:
-            request_option = MblRoutingRule.build_request_option(
-                mbl_nos=self.search_nos, task_ids=self.task_ids, proxy_manager=self._proxy_manager
-            )
+        if self.search_type == SEARCH_TYPE_MBL:
+            request_option = MblRoutingRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids)
             yield self._build_request_by(option=request_option)
         else:
-            request_option = BookingRoutingRule.build_request_option(
-                search_nos=self.search_nos, task_ids=self.task_ids, proxy_manager=self._proxy_manager
-            )
+            request_option = BookingRoutingRule.build_request_option(search_nos=self.search_nos, task_ids=self.task_ids)
             yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -98,7 +109,7 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
             elif isinstance(result, RequestOption):
                 self._request_queue.add_request(result)
             else:
-                raise RuntimeError()
+                pass
 
         if not self._request_queue.is_empty():
             request_option = self._request_queue.get_next_request()
@@ -122,9 +133,9 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
             )
         elif option.method == RequestOption.METHOD_GET:
             return scrapy.Request(
+                method="GET",
                 url=option.url,
                 headers=option.headers,
-                cookies=option.cookies,
                 meta=meta,
                 dont_filter=True,
             )
@@ -144,145 +155,63 @@ class CarrierWhlcSpider(BaseMultiCarrierSpider):
 class MblRoutingRule(BaseRoutingRule):
     name = "MBL_RULE"
 
-    def __init__(self):
+    def __init__(self, content_getter):
         self._container_patt = re.compile(r"^(?P<container_no>\w+)")
         self._j_idt_patt = re.compile(r"'(?P<j_idt>j_idt[^,]+)':'(?P=j_idt)'")
-        self._search_type = SHIPMENT_TYPE_MBL
+        self._search_type = SEARCH_TYPE_MBL
+        self._driver = content_getter
 
     @classmethod
-    def build_request_option(cls, mbl_nos, task_ids, proxy_manager):
-        cls._proxy_manager = proxy_manager
+    def build_request_option(cls, search_nos: List[str], task_ids: List[str]):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=DUMMY_URL_DICT["eval_edi"],
-            meta={"search_nos": mbl_nos, "task_ids": task_ids},
+            meta={"mbl_nos": search_nos, "task_ids": task_ids},
         )
 
     def handle(self, response):
-        task_ids = response.meta["task_ids"]
-        mbl_nos = response.meta["mbl_nos"]
-        driver = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
+        task_ids = response.meta["task_ids"][:1]
+        mbl_nos = response.meta["mbl_nos"][:1]
 
-        for mbl_no, task_id in zip(mbl_nos, task_ids):
-            try:
-                driver.get_cookies_dict_from_main_page()
-                driver.search(search_no=mbl_no, search_type=self._search_type)
-            except ReadTimeoutError:
-                raise LoadWebsiteTimeOutError(url=WHLC_BASE_URL)
+        info_pack = {"task_id": task_ids[0], "search_no": mbl_nos[0], "search_type": self._search_type}
 
-            try:
-                driver.check_alert()
-                driver.close_alert()
-                yield ExportErrorData(
-                    task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found"
-                )
-                continue
-            except UnexpectedAlertPresentException:
-                driver.close_alert()
-            except NoAlertPresentException:
-                pass
+        try:
+            self._driver.multi_search(search_nos=mbl_nos, search_type=self._search_type)
+        except ReadTimeoutError:
+            raise TimeOutError(**info_pack, reason="Timeout for multi search function")
 
-            response_selector = Selector(text=driver.get_page_source())
-            container_list = self.extract_container_info(response_selector)
-            # mbl_no_set = self.get_mbl_no_set_from(container_list=container_list)
-            yield MblItem(task_id=task_id, mbl_no=mbl_no)
-
-            # for mbl_no, task_id in zip(mbl_nos, task_ids):
-            #     if mbl_no in mbl_no_set:
-            #         yield MblItem(task_id=task_id, mbl_no=mbl_no)
-            #     else:
-            #         yield ExportErrorData(
-            #             task_id=task_id, mbl_no=mbl_no, status=CARRIER_RESULT_STATUS_ERROR, detail="Data was not found"
-            #         )
-            #         continue
-
-            for idx in range(len(container_list)):
-                container_no = container_list[idx]["container_no"]
-                mbl_no = container_list[idx]["mbl_no"]
-                index = mbl_nos.index(mbl_no)
-                task_id = task_ids[index]
-
-                yield ContainerItem(
+        try:
+            self._driver.check_alert()
+            for mbl_no, task_id in zip(mbl_nos, task_ids):
+                yield DataNotFoundItem(
                     task_id=task_id,
-                    container_key=container_no,
-                    container_no=container_no,
+                    search_no=mbl_no,
+                    search_type=self._search_type,
+                    status=RESULT_STATUS_ERROR,
+                    detail=DATA_NOT_FOUND_DESC,
                 )
+            return
+        except (NoAlertPresentException, UnexpectedAlertPresentException):
+            pass
 
-                # detail page
-                try:
-                    driver.go_detail_page(idx + 2)
-                    detail_selector = Selector(text=driver.get_page_source())
-                    date_information = self.extract_date_information(detail_selector)
+        response_selector = Selector(text=self._driver.get_page_source())
+        container_list = self.extract_container_info(response_selector, task_ids=task_ids, mbl_nos=mbl_nos)
 
-                    yield VesselItem(
-                        task_id=task_id,
-                        vessel_key=f"{date_information['pol_vessel']} / {date_information['pol_voyage']}",
-                        vessel=date_information["pol_vessel"],
-                        voyage=date_information["pol_voyage"],
-                        pol=LocationItem(un_lo_code=date_information["pol_un_lo_code"]),
-                        etd=date_information["pol_etd"],
-                    )
+        for item in self.handle_mbl_items(container_list=container_list, task_ids=task_ids, mbl_nos=mbl_nos):
+            yield item
 
-                    yield VesselItem(
-                        task_id=task_id,
-                        vessel_key=f"{date_information['pod_vessel']} / {date_information['pod_voyage']}",
-                        vessel=date_information["pod_vessel"],
-                        voyage=date_information["pod_voyage"],
-                        pod=LocationItem(un_lo_code=date_information["pod_un_lo_code"]),
-                        eta=date_information["pod_eta"],
-                    )
+        for item in self.handle_container_items(container_list=container_list, task_ids=task_ids, mbl_nos=mbl_nos):
+            yield item
 
-                    driver.close()
-                    driver.switch_to_last()
-                except NoSuchElementException:
-                    pass
-                except TimeoutException:
-                    yield ExportErrorData(
-                        task_id=task_id,
-                        mbl_no=mbl_no,
-                        status=CARRIER_RESULT_STATUS_ERROR,
-                        detail="Load detail page timeout",
-                    )
-                    driver.close()
-                    driver.switch_to_last()
-                    continue
-
-                # history page
-                try:
-                    driver.go_history_page(idx + 2)
-                    history_selector = Selector(text=driver.get_page_source())
-                    container_status_list = self.extract_container_status(history_selector)
-
-                    for container_status in container_status_list:
-                        yield ContainerStatusItem(
-                            task_id=task_id,
-                            container_key=container_no,
-                            local_date_time=container_status["local_date_time"],
-                            description=container_status["description"],
-                            location=LocationItem(name=container_status["location_name"]),
-                        )
-                except NoSuchElementException:
-                    pass
-                except TimeoutException:
-                    yield ExportErrorData(
-                        task_id=task_id,
-                        mbl_no=mbl_no,
-                        status=CARRIER_RESULT_STATUS_ERROR,
-                        detail="Load status page timeout",
-                    )
-                    driver.close()
-                    driver.switch_to_last()
-                    continue
-
-                driver.close()
-                driver.switch_to_last()
-            driver.close()
+        yield NextRoundRoutingRule.build_request_option(
+            search_nos=response.meta["mbl_nos"], task_ids=response.meta["task_ids"]
+        )
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
-    def extract_container_info(self, response: scrapy.Selector) -> List:
+    def extract_container_info(self, response: scrapy.Selector, task_ids: List, mbl_nos: List) -> List:
         table_selector = response.css("table.tbl-list")[0]
         table_locator = ContainerListTableLocator()
         table_locator.parse(table=table_selector)
@@ -311,6 +240,106 @@ class MblRoutingRule(BaseRoutingRule):
             )
 
         return return_list
+
+    def handle_mbl_items(self, container_list: List, task_ids: List, mbl_nos: List):
+        mbl_no_set = self._get_mbl_no_set_from(container_list=container_list)
+        for mbl_no, task_id in zip(mbl_nos, task_ids):
+            if mbl_no in mbl_no_set:
+                yield MblItem(task_id=task_id, mbl_no=mbl_no)
+            else:
+                yield DataNotFoundItem(
+                    task_id=task_id,
+                    search_no=mbl_no,
+                    search_type=self._search_type,
+                    status=RESULT_STATUS_ERROR,
+                    detail="Data was not found",
+                )
+
+    def handle_container_items(self, container_list: List, task_ids: List, mbl_nos: List):
+        for idx in range(len(container_list)):
+            container_no = container_list[idx]["container_no"]
+            mbl_no = container_list[idx]["mbl_no"]
+            index = mbl_nos.index(mbl_no)
+            task_id = task_ids[index]
+
+            info_pack = {"task_id": task_id, "search_no": mbl_no, "search_type": self._search_type}
+
+            yield ContainerItem(
+                task_id=task_id,
+                container_key=container_no,
+                container_no=container_no,
+            )
+
+            for item in self.handle_detail_page(idx=idx, info_pack=info_pack):
+                yield item
+
+            for item in self.handle_history_page(idx=idx, info_pack=info_pack, container_no=container_no):
+                yield item
+
+        if self._driver.get_num_of_tabs() > 1:
+            self._driver.close()
+            self._driver.switch_to_last()
+
+    def handle_detail_page(self, idx: int, info_pack: Dict):
+        try:
+            self._driver.go_detail_page(idx + 2)
+            detail_selector = Selector(text=self._driver.get_page_source())
+            date_information = self._extract_date_information(detail_selector, info_pack=info_pack)
+
+            yield VesselItem(
+                task_id=info_pack["task_id"],
+                vessel_key=f"{date_information['pol_vessel']} / {date_information['pol_voyage']}",
+                vessel=date_information["pol_vessel"],
+                voyage=date_information["pol_voyage"],
+                pol=LocationItem(un_lo_code=date_information["pol_un_lo_code"]),
+                etd=date_information["pol_etd"],
+            )
+
+            yield VesselItem(
+                task_id=info_pack["task_id"],
+                vessel_key=f"{date_information['pod_vessel']} / {date_information['pod_voyage']}",
+                vessel=date_information["pod_vessel"],
+                voyage=date_information["pod_voyage"],
+                pod=LocationItem(un_lo_code=date_information["pod_un_lo_code"]),
+                eta=date_information["pod_eta"],
+            )
+
+            if self._driver.get_num_of_tabs() > 2:
+                self._driver.close()
+                self._driver.switch_to_last()
+
+        except TimeoutException:
+            raise TimeOutError(**info_pack, reason="Timeout for search history page")
+            self._driver.close()
+            self._driver.switch_to_last()
+        except NoSuchElementException:
+            pass
+
+    def handle_history_page(self, idx: int, info_pack: Dict, container_no: str):
+        try:
+            self._driver.go_history_page(idx + 2)
+            history_selector = Selector(text=self._driver.get_page_source())
+            container_status_list = self._extract_container_status(history_selector, info_pack=info_pack)
+
+            for container_status in container_status_list:
+                yield ContainerStatusItem(
+                    task_id=info_pack["task_id"],
+                    container_key=container_no,
+                    local_date_time=container_status["local_date_time"],
+                    description=container_status["description"],
+                    location=LocationItem(name=container_status["location_name"]),
+                )
+
+            if self._driver.get_num_of_tabs() > 2:
+                self._driver.close()
+                self._driver.switch_to_last()
+
+        except NoSuchElementException:
+            pass
+        except TimeoutException:
+            raise TimeOutError(**info_pack, reason="Timeout for search history page")
+            self._driver.close()
+            self._driver.switch_to_last()
 
     def _parse_container_no_from(self, text: Optional[str], task_ids: List[str], mbl_nos: List[str]):
         if not text:
@@ -467,19 +496,20 @@ class MblRoutingRule(BaseRoutingRule):
 class BookingRoutingRule(BaseRoutingRule):
     name = "BOOKING"
 
-    def __init__(self):
-        self._search_type = SHIPMENT_TYPE_BOOKING
+    def __init__(self, content_getter):
+        self._search_type = SEARCH_TYPE_BOOKING
         self._container_patt = re.compile(r"^(?P<container_no>\w+)")
+        self._driver: Optional[ContentGetter] = None
+        self._driver = content_getter
 
     @classmethod
-    def build_request_option(cls, search_nos, task_ids, proxy_manager):
-        cls._proxy_manager = proxy_manager
+    def build_request_option(cls, search_nos: List[str], task_ids: List[str]):
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
             url=DUMMY_URL_DICT["eval_edi"],
             meta={
-                "search_nos": search_nos,
+                "booking_nos": search_nos,
                 "task_ids": task_ids,
             },
         )
@@ -488,136 +518,127 @@ class BookingRoutingRule(BaseRoutingRule):
         return f"{self.name}.html"
 
     def handle(self, response):
-        task_ids = response.meta["task_ids"]
-        search_nos = response.meta["search_nos"]
-        driver = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
-        cookies = driver.get_cookies_dict_from_main_page()
-        try:
-            driver.multi_search(search_nos=search_nos, search_type=self._search_type)
-        except ReadTimeoutError:
-            raise LoadWebsiteTimeOutError(url=WHLC_BASE_URL)
+        task_ids = response.meta["task_ids"][:1]
+        booking_nos = response.meta["booking_nos"][:1]
+        info_pack = {"task_id": task_ids[0], "search_no": booking_nos[0], "search_type": self._search_type}
 
         try:
-            driver.check_alert()
-            for booking_no, task_id in zip(search_nos, task_ids):
-                yield ExportErrorData(
+            self._driver.multi_search(search_nos=booking_nos, search_type=self._search_type)
+        except ReadTimeoutError:
+            raise TimeOutError(**info_pack, reason="Timeout for multi search function")
+
+        try:
+            self._driver.check_alert()
+            for booking_no, task_id in zip(booking_nos, task_ids):
+                yield DataNotFoundItem(
                     task_id=task_id,
-                    booking_no=booking_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail="Data was not found",
+                    search_no=booking_no,
+                    search_type=self._search_type,
+                    status=RESULT_STATUS_ERROR,
+                    detail=DataNotFoundItem,
                 )
             return
         except (NoAlertPresentException, UnexpectedAlertPresentException):
             pass
 
-        response_selector = Selector(text=driver.get_page_source())
-        if self.is_search_no_invalid(response=response_selector):
-            raise CarrierInvalidSearchNoError(search_type=self._search_type)
-        booking_list = self.extract_booking_list(response_selector)
-        book_no_set = self.get_book_no_set_from(booking_list=booking_list)
+        response_selector = Selector(text=self._driver.get_page_source())
+        booking_list = self._extract_booking_list(response_selector, task_ids=task_ids, search_nos=booking_nos)
 
-        for task_id, search_no in zip(task_ids, search_nos):
-            if search_no not in book_no_set:
-                yield DataNotFoundItem(
-                    task_id=task_id,
-                    search_no=search_no,
-                    search_type=self._search_type,
-                    status=RESULT_STATUS_ERROR,
-                    detail=DATA_NOT_FOUND_DESC,
-                )
+        for item in self.handle_booking_items(booking_list=booking_list, task_ids=task_ids, booking_nos=booking_nos):
+            yield item
 
-        prev_task_id = ""
+        yield NextRoundRoutingRule.build_request_option(
+            search_nos=response.meta["booking_nos"], task_ids=response.meta["task_ids"]
+        )
+
+    def handle_booking_items(self, booking_list: List, task_ids: List, booking_nos: List):
         for b_idx in range(len(booking_list)):
-            search_no = booking_list[b_idx]["booking_no"]
-            index = search_nos.index(search_no)
+            booking_no = booking_list[b_idx]["booking_no"]
+            index = booking_nos.index(booking_no)
             task_id = task_ids[index]
 
-            if prev_task_id != task_id:
-                if prev_task_id:
-                    yield EndItem(task_id=prev_task_id)
+            info_pack = {"task_id": task_id, "search_no": booking_list, "search_type": self._search_type}
 
-                prev_task_id = task_id
+            for item in self.handle_detail_page(idx=b_idx, info_pack=info_pack):
+                yield item
 
+        if self._driver.get_num_of_tabs() > 1:
+            self._driver.close()
+            self._driver.switch_to_last()
+
+    def handle_detail_page(self, idx: int, info_pack: Dict):
+        try:
+            self._driver.go_detail_page(idx + 2)  # only one booking_no to click
+        except TimeoutException:
+            raise TimeOutError(**info_pack, reason="Timeout for search booking detail page")
+            self._driver.close()
+            self._driver.switch_to_last()
+        except NoSuchElementException:
+            pass
+
+        basic_info = self._extract_basic_info(Selector(text=self._driver.get_page_source()))
+        vessel_info = self._extract_vessel_info(Selector(text=self._driver.get_page_source()))
+
+        yield MblItem(
+            task_id=info_pack["task_id"],
+            booking_no=info_pack["search_no"],
+        )
+
+        yield VesselItem(
+            task_id=info_pack["task_id"],
+            vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
+            vessel=basic_info["vessel"],
+            voyage=basic_info["voyage"],
+            pol=LocationItem(name=vessel_info["pol"]),
+            etd=vessel_info["etd"],
+        )
+
+        yield VesselItem(
+            task_id=info_pack["task_id"],
+            vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
+            vessel=basic_info["vessel"],
+            voyage=basic_info["voyage"],
+            pod=LocationItem(name=vessel_info["pod"]),
+            eta=vessel_info["eta"],
+        )
+
+        container_nos = self._extract_container_no_and_status_links(Selector(text=self._driver.get_page_source()))
+
+        for item in self.handle_container_page(container_nos=container_nos, info_pack=info_pack):
+            yield item
+
+        if self._driver.get_num_of_tabs() > 2:
+            self._driver.close()
+            self._driver.switch_to_last()
+
+    def handle_container_page(self, container_nos: List[str], info_pack: Dict):
+        for idx in range(len(container_nos)):
+            container_no = container_nos[idx]
             try:
-                driver.go_detail_page(b_idx + 2)  # only one booking_no to click
+                self._driver.go_booking_history_page(idx + 2)
             except TimeoutException:
-                yield ExportErrorData(
-                    task_id=task_id,
-                    booking_no=search_no,
-                    status=CARRIER_RESULT_STATUS_ERROR,
-                    detail="Load detail page timeout",
-                )
-                driver.close()
-                driver.switch_to_last()
-                continue
-            basic_info = self.extract_basic_info(Selector(text=driver.get_page_source()))
-            vessel_info = self.extract_vessel_info(Selector(text=driver.get_page_source()))
+                raise TimeOutError(**info_pack, reason="Timeout for search booking container page")
+                self._driver.close()
+                self._driver.switch_to_last()
+            except NoSuchElementException:
+                pass
+            history_selector = Selector(text=self._driver.get_page_source())
 
-            yield MblItem(
-                task_id=task_id,
-                booking_no=search_no,
+            event_list = self._extract_container_status(response=history_selector, info_pack=info_pack)
+            container_status_items = self._make_container_status_items(info_pack["task_id"], container_no, event_list)
+
+            yield ContainerItem(
+                task_id=info_pack["task_id"],
+                container_key=container_no,
+                container_no=container_no,
             )
 
-            yield VesselItem(
-                task_id=task_id,
-                vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
-                vessel=basic_info["vessel"],
-                voyage=basic_info["voyage"],
-                pol=LocationItem(name=vessel_info["pol"]),
-                etd=vessel_info["etd"],
-            )
+            for item in container_status_items:
+                yield item
 
-            yield VesselItem(
-                task_id=task_id,
-                vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
-                vessel=basic_info["vessel"],
-                voyage=basic_info["voyage"],
-                pod=LocationItem(name=vessel_info["pod"]),
-                eta=vessel_info["eta"],
-            )
-
-            container_nos = self.extract_container_no_and_status_links(Selector(text=driver.get_page_source()))
-
-            for idx in range(len(container_nos)):
-                container_no = container_nos[idx]
-                # history page
-                try:
-                    driver.go_booking_history_page(idx + 2)
-                except TimeoutException:
-                    yield ExportErrorData(
-                        task_id=task_id,
-                        booking_no=search_no,
-                        status=CARRIER_RESULT_STATUS_ERROR,
-                        detail="Load status page timeout",
-                    )
-                    driver.close()
-                    driver.switch_to_last()
-                    continue
-                history_selector = Selector(text=driver.get_page_source())
-
-                event_list = self.extract_container_status(response=history_selector)
-                container_status_items = self.make_container_status_items(task_id, container_no, event_list)
-
-                yield ContainerItem(
-                    task_id=task_id,
-                    container_key=container_no,
-                    container_no=container_no,
-                )
-
-                for item in container_status_items:
-                    yield item
-
-                driver.close()
-                driver.switch_to_last()
-
-            driver.close()
-            driver.switch_to_last()
-        driver.quit()
-
-    def _is_search_no_invalid(self, response):
-        if response.css("input#q_ref_no1"):
-            return True
-        return False
+            if self._driver.get_num_of_tabs() > 2:
+                self._driver.close()
+                self._driver.switch_to_last()
 
     def _extract_booking_list(self, response: scrapy.Selector, task_ids: List[str], search_nos: List[str]) -> List:
         table_selector = response.css("table.tbl-list")[0]
@@ -763,32 +784,71 @@ class BookingRoutingRule(BaseRoutingRule):
         return return_list
 
 
-class ContentGetter(FirefoxContentGetter):
-    def __init__(self, proxy_manager, is_headless):
+# -------------------------------------------------------------------------------
+
+
+class NextRoundRoutingRule(BaseRoutingRule):
+    name = "ROUTING"
+
+    def __init__(self, search_type: str):
+        self._search_type = search_type
+
+    @classmethod
+    def build_request_option(cls, search_nos: List[str], task_ids: List[str]) -> RequestOption:
+        return RequestOption(
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url="https://eval.edi.hardcoretech.co/c/livez",
+            meta={"search_nos": search_nos, "task_ids": task_ids},
+        )
+
+    def handle(self, response):
+        task_ids = response.meta["task_ids"]
+        search_nos = response.meta["search_nos"]
+
+        if len(search_nos) == 1 and len(task_ids) == 1:
+            return
+
+        task_ids = task_ids[1:]
+        search_nos = search_nos[1:]
+        if self._search_type == SEARCH_TYPE_BOOKING:
+            yield BookingRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+        else:
+            yield MblRoutingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
+
+
+class ContentGetter(ChromeContentGetter):
+    def __init__(self, proxy_manager, is_headless: bool):
         super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
 
         self._type_select_text_map = {
-            SHIPMENT_TYPE_MBL: "BL no.",
-            SHIPMENT_TYPE_BOOKING: "Book No.",
+            SEARCH_TYPE_MBL: "BL no.",
+            SEARCH_TYPE_BOOKING: "Book No.",
         }
 
-    def get_cookies_dict_from_main_page(self):
-        self._driver.get(f"{WHLC_BASE_URL}")
-        time.sleep(5)
-        # self._driver.get_screenshot_as_file("output-1.png")
-        cookies = self._driver.get_cookies()
+    def _pass_recaptcha(self):
+        site_key = "6Ld38BkUAAAAAPATwit3FXvga1PI6iVTb6zgXw62"
 
-        return self._transformat_to_dict(cookies=cookies)
-
-    def get_view_state(self):
-        view_state_elem = self._driver.find_element_by_css_selector('input[name="javax.faces.ViewState"]')
-        view_state = view_state_elem.get_attribute("value")
-        return view_state
+        try:
+            g_url = self.get_current_url()
+            if self._driver.find_element_by_id("main-iframe").get_attribute("src"):
+                self._driver.switch_to.frame(self._driver.find_element_by_id("main-iframe"))
+                time.sleep(1)
+                g_captcha_solver = GoogleRecaptchaV2Service()
+                token = g_captcha_solver.solve(g_url, site_key)
+                time.sleep(2)
+                self.execute_script('onCaptchaFinished("{}");'.format(token))
+                time.sleep(10)
+                self._driver.switch_to.default_content()
+                time.sleep(1)
+                return
+        except NoSuchElementException:
+            return
 
     def search(self, search_no, search_type):
+        self._driver.get(f"{WHLC_BASE_URL}/views/cargoTrack/CargoTrack.xhtml")
         select_text = self._type_select_text_map[search_type]
-
-        WebDriverWait(self._driver, 30).until(ec.invisibility_of_element_located((By.CSS_SELECTOR, "div#loader")))
+        WebDriverWait(self._driver, 30).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "div#loader")))
         self._driver.find_element_by_xpath(f"//*[@id='cargoType']/option[text()='{select_text}']").click()
         time.sleep(1)
         input_ele = self._driver.find_element_by_xpath('//*[@id="q_ref_no1"]')
@@ -801,8 +861,15 @@ class ContentGetter(FirefoxContentGetter):
         self._driver.switch_to.window(self._driver.window_handles[-1])
 
     def multi_search(self, search_nos, search_type):
+        self._driver.get(
+            "https://www.wanhai.com/views/cargoTrack/CargoTrack.xhtml?file_num=65580&parent_id=64738&top_file_num=64735"
+        )
+        time.sleep(20)
+        self._pass_recaptcha()
+        WebDriverWait(self._driver, 30).until(
+            ec.visibility_of_element_located((By.CSS_SELECTOR, "#cargoTrackListBean"))
+        )
         select_text = self._type_select_text_map[search_type]
-
         self._driver.find_element_by_xpath(f"//*[@id='cargoType']/option[text()='{select_text}']").click()
         time.sleep(1)
 
@@ -812,7 +879,7 @@ class ContentGetter(FirefoxContentGetter):
             time.sleep(0.5)
         time.sleep(3)
         self._driver.find_element_by_xpath('//*[@id="Query"]').click()
-        time.sleep(10)
+        time.sleep(20)
         self._driver.switch_to.window(self._driver.window_handles[-1])
 
     def close_alert(self):
@@ -823,17 +890,17 @@ class ContentGetter(FirefoxContentGetter):
             ec.element_to_be_clickable((By.XPATH, f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u'))
         )
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u').click()
-        time.sleep(2)
+        time.sleep(1)
         self._driver.switch_to.window(self._driver.window_handles[-1])
+        self._pass_recaptcha()
         WebDriverWait(self._driver, 30).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "table.tbl-list")))
-        time.sleep(3)
 
     def go_history_page(self, idx: int):
         self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[11]/u').click()
         time.sleep(2)
         self._driver.switch_to.window(self._driver.window_handles[-1])
+        self._pass_recaptcha()
         WebDriverWait(self._driver, 30).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "table.tbl-list")))
-        time.sleep(3)
 
     def go_booking_history_page(self, idx: int):
         # '/html/body/div[2]/div[1]/div/form/table[5]/tbody/tr[2]/td[2]/a'
@@ -843,7 +910,6 @@ class ContentGetter(FirefoxContentGetter):
         time.sleep(2)
         self._driver.switch_to.window(self._driver.window_handles[-1])
         WebDriverWait(self._driver, 30).until(ec.visibility_of_element_located((By.CSS_SELECTOR, "table.tbl-list")))
-        time.sleep(3)
 
     def switch_to_last(self):
         self._driver.switch_to.window(self._driver.window_handles[-1])
@@ -1036,8 +1102,6 @@ class LocationLeftTableLocator(BaseTableLocator):
     def has_header(self, top=None, left=None) -> bool:
         return (top is None) and (left in self._left_header_set)
 
-    def has_header(self, top=None, left=None) -> bool:
-        return (top is None) and (left in self._left_header_set)
 
 class DateLeftTableLocator(BaseTableLocator):
     """
