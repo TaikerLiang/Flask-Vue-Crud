@@ -8,13 +8,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
-from crawler.core.base import RESULT_STATUS_ERROR, SEARCH_TYPE_AWB
-from crawler.core.exceptions import MaxRetryError, SuspiciousOperationError
-from crawler.core.items import DataNotFoundItem
+from crawler.core.base_new import RESULT_STATUS_ERROR, SEARCH_TYPE_AWB
+from crawler.core.exceptions_new import MaxRetryError, SuspiciousOperationError
+from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.selenium import FirefoxContentGetter
-from crawler.core_air.base_spiders import BaseMultiAirSpider
-from crawler.core_air.items import AirItem, BaseAirItem, DebugItem, HistoryItem
-from crawler.core_air.request_helpers import RequestOption
+from crawler.core_air.base_spiders_new import BaseMultiAirSpider
+from crawler.core_air.items_new import AirItem, BaseAirItem, DebugItem, HistoryItem
+from crawler.core_air.request_helpers_new import RequestOption
 from crawler.core_air.rules import BaseRoutingRule, RuleManager
 from crawler.services.captcha_service import ImageAntiCaptchaService
 
@@ -52,7 +52,7 @@ class AirChinaEasternSpider(BaseMultiAirSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, (BaseAirItem, DataNotFoundItem)):
+            if isinstance(result, (BaseAirItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -136,6 +136,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
         history_list = self._extract_history_info(response_dict)
         for history in history_list:
             yield HistoryItem(task_id=task_id, **history)
+        yield EndItem(task_id=task_id)
 
     def _is_mawb_no_invalid(self, response):
         if "ErrorMessage" in response:
@@ -179,7 +180,7 @@ class ContentGetter(FirefoxContentGetter):
             EC.frame_to_be_available_and_switch_to_it((By.CSS_SELECTOR, "iframe#mtcaptcha-iframe-1"))
         )
         for i in range(CAPTCHA_RETRY_LIMIT):
-            captcha_text = self._solve_captcha(task_id, mno_tid_map)
+            captcha_text = self._solve_captcha()
             search_bar = self._driver.find_element_by_css_selector("input#mtcap-inputtext-1")
             search_bar.send_keys(captcha_text)
             time.sleep(3)
@@ -197,7 +198,7 @@ class ContentGetter(FirefoxContentGetter):
             reason=f"anti-captcha fail, on (search_no: [task_id...]): {mno_tid_map}",
         )
 
-    def _solve_captcha(self, task_id, mno_tid_map):
+    def _solve_captcha(self):
         response = scrapy.Selector(text=self.get_page_source())
         src = response.css("img.mtcap-show-if-nocss::attr(src)").get()
         pattern = re.compile(r"data:image/png;base64,(?P<base64>.+)$")
