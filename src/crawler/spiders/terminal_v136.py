@@ -99,7 +99,7 @@ class LoginRoutingRule(BaseRoutingRule):
         url = f"{BASE_URL}/Lynx/VITTerminalAccess/Login.aspx"
         form_data = {
             "User": "hard202006010",
-            "Pass": "QP3XYk[PZOt6IG",
+            "Pass": "cBYVNPGqBbdu{2",
         }
 
         return RequestOption(
