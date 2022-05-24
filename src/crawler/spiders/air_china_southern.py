@@ -1,20 +1,16 @@
+from typing import Union
 from urllib.parse import urlencode
 
 import requests
 import scrapy
 from scrapy.http import Response
 
-from crawler.core_air.base import AIR_RESULT_STATUS_ERROR
-from crawler.core_air.base_spiders import BaseAirSpider
-from crawler.core_air.exceptions import AirInvalidMawbNoError, LoadWebsiteTimeOutFatal
-from crawler.core_air.items import (
-    AirItem,
-    BaseAirItem,
-    DebugItem,
-    ExportErrorData,
-    HistoryItem,
-)
-from crawler.core_air.request_helpers import RequestOption
+from crawler.core.base_new import RESULT_STATUS_ERROR, SEARCH_TYPE_AWB
+from crawler.core.exceptions_new import SuspiciousOperationError, TimeOutError
+from crawler.core.items_new import DataNotFoundItem, EndItem
+from crawler.core_air.base_spiders_new import BaseAirSpider
+from crawler.core_air.items_new import AirItem, BaseAirItem, DebugItem, HistoryItem
+from crawler.core_air.request_helpers_new import RequestOption
 from crawler.core_air.rules import BaseRoutingRule, RuleManager
 
 PREFIX = "784"
@@ -45,7 +41,7 @@ class AirChinaSouthernSpider(BaseAirSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseAirItem):
+            if isinstance(result, (BaseAirItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -68,7 +64,12 @@ class AirChinaSouthernSpider(BaseAirSpider):
                 dont_filter=True,
             )
         else:
-            raise ValueError(f"Invalid option.method [{option.method}]")
+            raise SuspiciousOperationError(
+                task_id=self.task_id,
+                search_no=self.mawb_no,
+                search_type=self.search_type,
+                reason=f"Unexpected request method: `{option.method}`",
+            )
 
 
 class AirInfoRoutingRule(BaseRoutingRule):
@@ -80,7 +81,12 @@ class AirInfoRoutingRule(BaseRoutingRule):
         if response.status_code == 200:
             response_text = response.text
         else:
-            raise LoadWebsiteTimeOutFatal()
+            raise TimeOutError(
+                task_id=task_id,
+                search_no=mawb_no,
+                search_type=SEARCH_TYPE_AWB,
+                reason=f"unexpected HTTP status: {str(response.status_code)}",
+            )
 
         prompt = 'value="'
         start_pos = response_text.find(prompt, response_text.find("__VIEWSTATE")) + len(prompt)
@@ -115,7 +121,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
             },
             meta={
                 "task_id": task_id,
-                "mawb_no": mawb_no,
+                "search_no": mawb_no,
             },
         )
 
@@ -124,34 +130,44 @@ class AirInfoRoutingRule(BaseRoutingRule):
 
     def handle(self, response: Response):
         if self._is_mawb_not_exist(response):
-            mawb_no = response.meta["mawb_no"]
-            yield ExportErrorData(
-                mawb_no=mawb_no,
-                status=AIR_RESULT_STATUS_ERROR,
+            yield DataNotFoundItem(
+                task_id=response.meta["task_id"],
+                search_no=response.meta["search_no"],
+                search_type=SEARCH_TYPE_AWB,
+                status=RESULT_STATUS_ERROR,
                 detail="Data was not found",
             )
         else:
-            try:
-                yield self._construct_air_item(response)
+            yield self._construct_air_item(response)
 
-                for history_item in self._construct_history_item_list(response):
-                    yield history_item
-            except AirInvalidMawbNoError as e:
-                yield e.build_error_data()
+            for history_item in self._construct_history_item_list(response):
+                yield history_item
+            yield EndItem(task_id=response.meta["task_id"])
 
-    @staticmethod
-    def _construct_air_item(response) -> AirItem:
+    def _construct_air_item(self, response) -> Union[AirItem, DataNotFoundItem]:
         selector = response.css("span[id='ctl00_ContentPlaceHolder1_awbLbl'] tr td")
         basic_info = []
         for info in selector:
             basic_info.append(info.xpath("normalize-space(text())").get())
 
         if not basic_info or basic_info[0] is None:
-            raise AirInvalidMawbNoError()
+            return DataNotFoundItem(
+                task_id=response.meta["task_id"],
+                search_no=response.meta["search_no"],
+                search_type=SEARCH_TYPE_AWB,
+                status=RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
 
         basic_info[0] = basic_info[0].split("-")[1]
-        if basic_info[0] != response.meta["mawb_no"]:
-            raise AirInvalidMawbNoError()
+        if basic_info[0] != response.meta["search_no"]:
+            return DataNotFoundItem(
+                task_id=response.meta["task_id"],
+                search_no=response.meta["search_no"],
+                search_type=SEARCH_TYPE_AWB,
+                status=RESULT_STATUS_ERROR,
+                detail="Data was not found",
+            )
 
         routing_city = basic_info[2].split("--")
         basic_info[1] = routing_city[0].split("(")[0]
@@ -181,7 +197,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
         return AirItem(
             {
                 "task_id": response.meta["task_id"],
-                "mawb": response.meta["mawb_no"],
+                "mawb": response.meta["search_no"],
                 "origin": basic_info[1],
                 "destination": basic_info[2],
                 "pieces": basic_info[4],
@@ -191,8 +207,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
             }
         )
 
-    @staticmethod
-    def _construct_history_item_list(response):
+    def _construct_history_item_list(self, response):
         info_list = []
         status_selector = response.css("table[id='ctl00_ContentPlaceHolder1_gvCargoState'] tr")
         for tr_selector in status_selector[1:]:
@@ -212,8 +227,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
 
         return info_list
 
-    @staticmethod
-    def _is_mawb_not_exist(response) -> bool:
+    def _is_mawb_not_exist(self, response) -> bool:
         error_info = response.css("span[id='ctl00_ContentPlaceHolder1_lblErrorInfo'] font::text").get()
         if error_info == "Mawb information does not exist":
             return True

@@ -1,6 +1,6 @@
 from typing import List
 
-from crawler.core_air.items import AirItem, HistoryItem
+from crawler.core_air.items_new import AirItem, HistoryItem
 
 
 def verify(results: List):

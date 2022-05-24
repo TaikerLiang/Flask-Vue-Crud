@@ -5,7 +5,6 @@ from scrapy import Request
 from scrapy.http import TextResponse
 
 from crawler.spiders.air_china_southern import AirInfoRoutingRule
-from crawler.spiders.air_china_southern import PREFIX
 from test.spiders.air_china_southern import routing_rule
 
 
@@ -26,17 +25,15 @@ def sample_loader(sample_loader):
 def test_routing_rule_handle(sub, mawb_no, sample_loader):
     http_text = sample_loader.read_file(sub, "sample.html")
 
-    url = (
-        f"https://tang.csair.com/EN/WebFace/Tang.WebFace.Cargo/AgentAwbBrower.aspx?"
-        f"awbprefix={PREFIX}&awbno={mawb_no}&lan=en-us"
-    )
+    option = AirInfoRoutingRule.build_request_option(task_id="1", mawb_no=mawb_no)
+
     response = TextResponse(
-        url=url,
+        url=option.url,
         body=http_text,
         encoding="utf-8",
         request=Request(
-            url=url,
-            meta={"mawb_no": mawb_no, "task_id": "1"},
+            url=option.url,
+            meta=option.meta,
         ),
     )
 
