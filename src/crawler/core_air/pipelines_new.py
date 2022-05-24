@@ -126,7 +126,7 @@ class AirMultiItemsPipeline(BaseItemPipeline):
         self._default_collector = AirResultCollector(request_args=spider.request_args)
 
         try:
-            collector = self._collector_map[item.key] if item.key else self._default_collector
+            collector = self._collector_map[item["task_id"]] if "task_id" in item else self._default_collector
 
             if isinstance(item, air_items.AirItem):
                 collector.collect_air_item(item=item)
