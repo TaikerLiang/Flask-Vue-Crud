@@ -351,18 +351,20 @@ class CarrierResultCollector:
         return self._is_end
 
     def is_default(self):
-        return False if self._basic else True
+        return not bool(self._basic)
 
     def has_error(self):
-        return True if self._error else False
+        return bool(self._error)
 
     def has_not_found(self):
-        return True if self._not_found else False
+        return bool(self._not_found)
 
     def get_error_item(self):
-        self._error.update({"request_args": self._request_args})
-        return self._error
+        item = self._error.copy()
+        item.update({"request_args": self._request_args})
+        return item
 
     def get_not_found_item(self):
-        self._not_found.update({"request_args": self._request_args})
-        return self._not_found
+        item = self._not_found.copy()
+        item.update({"request_args": self._request_args})
+        return item

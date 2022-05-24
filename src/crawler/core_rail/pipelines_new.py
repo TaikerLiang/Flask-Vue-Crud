@@ -228,18 +228,20 @@ class RailResultCollector:
         return {k: v for k, v in item.items() if not k.startswith("_")}
 
     def is_default(self):
-        return False if self._rail else True
+        return not bool(self._rail)
 
     def has_not_found(self):
-        return True if self._not_found else False
+        return bool(self._not_found)
 
     def has_error(self):
-        return True if self._error else False
+        return bool(self._error)
 
     def get_error_item(self):
-        self._error.update({"request_args": self._request_args})
-        return self._error
+        item = self._error.copy()
+        item.update({"request_args": self._request_args})
+        return item
 
     def get_not_found_item(self):
-        self._not_found.update({"request_args": self._request_args})
-        return self._not_found
+        item = self._not_found.copy()
+        item.update({"request_args": self._request_args})
+        return item
