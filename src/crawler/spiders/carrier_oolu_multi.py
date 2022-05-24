@@ -3,11 +3,13 @@ import dataclasses
 from io import BytesIO
 import logging
 import os
+import random
 import re
 import time
 from typing import Dict, List, Optional
 
 from PIL import Image
+import bezier
 import cv2
 import numpy as np
 import scrapy
@@ -27,14 +29,12 @@ from crawler.core.base_new import (
     SEARCH_TYPE_MBL,
 )
 from crawler.core.description import (
-    ACCESS_DENIED_DESC,
     DATA_NOT_FOUND_DESC,
     MAX_RETRY_DESC,
     SUSPICIOUS_OPERATION_DESC,
     TIMEOUT_DESC,
 )
 from crawler.core.exceptions_new import (
-    AccessDeniedError,
     FormatError,
     MaxRetryError,
     SuspiciousOperationError,
@@ -87,6 +87,7 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
     def __init__(self, *args, **kwargs):
         super(CarrierOoluSpider, self).__init__(*args, **kwargs)
         self._retry_count = 0
+        self._use_proxy = False
         self._content_getter = self._make_content_getter()
 
         bill_rules = [
@@ -146,7 +147,10 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
         return CargoTrackingRule.build_request_option(search_nos=search_nos, task_ids=task_ids)
 
     def _make_content_getter(self):
-        return ContentGetter(proxy_manager=HydraproxyProxyManager(session="oolu", logger=self.logger), is_headless=True)
+        proxy = HydraproxyProxyManager(session="oolu", logger=self.logger) if self._use_proxy else None
+        if not self._use_proxy:
+            self._use_proxy = True
+        return ContentGetter(proxy_manager=proxy, is_headless=True)
 
     def _build_request_by(self, option: RequestOption):
         meta = {
@@ -197,103 +201,38 @@ class ContentGetter(ChromeContentGetter):
 
         self._driver.set_page_load_timeout(120)
 
-        self._search_count = 0
-        self._first = True
-
-    def goto(self):
-        self._driver.get("https://www.oocl.com/eng/ourservices/eservices/cargotracking/Pages/cargotracking.aspx")
-        time.sleep(10)
-
     def search_and_return(self, info_pack: Dict):
         search_no = info_pack["search_no"]
         search_type = info_pack["search_type"]
+        url = (
+            "https://pbservice.moc.oocl.com/party/cargotracking"
+            "/ct_search_from_other_domain.jsf?ANONYMOUS_BEHAVIOR=BUILD_UP"
+            "&domainName=PARTY_DOMAIN&ENTRY_TYPE=OOCL&ENTRY=MCC"
+            f'&ctSearchType={"BL" if search_type == SEARCH_TYPE_MBL else "BC"}'
+            f"&ctShipmentNumber={search_no}"
+        )
+        self._driver.get(url)
 
-        self._search(search_no=search_no, search_type=search_type)
-        time.sleep(30)
-        windows = self._driver.window_handles
-        self._driver.switch_to.window(windows[1])  # windows[1] is new page
-        if self._is_blocked(response=Selector(text=self._driver.page_source)):
-            raise AccessDeniedError(**info_pack, reason=ACCESS_DENIED_DESC.format(action="searching"))
+        if self._is_blocked():
+            return ""
 
         self._driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": self.block_urls})
         self._driver.execute_cdp_cmd("Network.enable", {})
 
         if self._pass_verification_or_not():
+            self._driver.delete_cookie("CSH_DF")  # Magic cookie, delete it to prevent from being blocked.
             self._handle_with_slide(info_pack=info_pack)
-            time.sleep(10)
 
-        self._first = False
-        self._search_count = 0
         return self._driver.page_source
-
-    def search_again_and_return(self, info_pack: Dict):
-        self._driver.close()
-
-        self._search_count += 1
-        if self._search_count > self.MAX_SEARCH_TIMES:
-            raise MaxRetryError(
-                **info_pack, reason=MAX_RETRY_DESC.format(action="searching", times=self.MAX_SEARCH_TIMES)
-            )
-
-        # jump back to origin window
-        windows = self._driver.window_handles
-        assert len(windows) == 1
-        self._driver.switch_to.window(windows[0])
-
-        self._driver.refresh()
-        time.sleep(3)
-        return self.search_and_return(info_pack=info_pack)
-
-    def get_window_handles(self):
-        return self._driver.window_handles
-
-    def switch_to_first(self):
-        self._driver.switch_to.window(self._driver.window_handles[0])
-
-    # def close_current_window_and_jump_to_origin(self):
-    #     self._driver.close()
-
-    #     # jump back to origin window
-    #     windows = self._driver.window_handles
-    #     assert len(windows) == 1
-    #     self._driver.switch_to.window(windows[0])
 
     def find_container_btn_and_click(self, container_btn_css: str, container_no: str):
         container_btn = self._driver.find_element_by_css_selector(container_btn_css)
         container_btn.click()
 
-    def _search(self, search_no, search_type):
-        try:
-            # handle cookies
-            cookie_accept_btn = WebDriverWait(self._driver, 20).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, "form > button#btn_cookie_accept"))
-            )
-            cookie_accept_btn.click()
-            time.sleep(2)
-        except Exception:
-            pass
-
-        drop_down_btn = self._driver.find_element_by_css_selector("button[data-id='ooclCargoSelector']")
-        drop_down_btn.click()
-        if search_type == SEARCH_TYPE_MBL:
-            bl_select = self._driver.find_element_by_css_selector("li[data-original-index='0'] > a")
-        else:
-            bl_select = self._driver.find_element_by_css_selector("li[data-original-index='1'] > a")
-
-        bl_select.click()
-
-        time.sleep(2)
-        search_bar = self._driver.find_element_by_css_selector("input#SEARCH_NUMBER")
-        search_bar.clear()
-        time.sleep(1)
-        search_bar.send_keys(search_no)
-        time.sleep(2)
-        search_btn = self._driver.find_element_by_css_selector("a#container_btn")
-        search_btn.click()
-
-    def _is_blocked(self, response):
-        res = response.xpath("/html/body/title/text()").extract()
-        if res and str(res[0]) == "Error":
+    def _is_blocked(self):
+        response = Selector(text=self._driver.page_source)
+        res = response.xpath("/html/body/strong/text()").extract()
+        if res and str(res[0]).startswith("Connection from current IP address is blocked"):
             return True
         else:
             return False
@@ -415,47 +354,39 @@ class ContentGetter(ChromeContentGetter):
         time.sleep(5)
 
     def _get_track(self, distance):
-        """
-        follow Newton's laws of motion
-        ①v=v0+at
-        ②s=v0t+(1/2)at²
-        ③v²-v0²=2as
-        """
-        track = []
-        current = 0
-        # start to slow until 4/5 of total distance
-        mid = distance * 4 / 5
-        # time period
-        t = 0.2
-        # initial speed
-        v = 50
+        start = 0, random.randint(-10, 10)
+        end = distance, random.randint(-10, 10)
 
-        while current < distance:
-            if current < mid:
-                # acceleration
-                a = 3
-            else:
-                # acceleration
-                a = -10
-            # # initial speed v0
-            v0 = v
-            # x = v0t + 1/2 * a * t^2
-            move = v0 * t + 1 / 2 * a * t * t
-            # current speed, v = v0 + at
-            v = v0 + a * t
-            current += move
-            track.append(round(move))
+        x2 = (start[0] + end[0]) / 3
+        y2 = (start[1] + end[1]) / 3
 
-        return track
+        control1_X = (start[0] + x2) / 3
+        control2_X = (end[0] + x2) / 3
+
+        control1 = control1_X, y2
+        control2 = control2_X, y2
+
+        control_points = np.array([start, control1, control2, end])
+        points = np.array([control_points[:, 0], control_points[:, 1]])
+        degree = 3
+        curve = bezier.Curve(points, degree)
+
+        curve_steps = 10
+
+        return [curve.evaluate(j / curve_steps) for j in range(1, curve_steps + 1)]
 
     def _move_to_gap(self, slider, track):
-        ActionChains(self._driver).click_and_hold(slider).perform()
+        actions = ActionChains(self._driver)
+        actions.click_and_hold(slider)
 
-        for x in track:
-            ActionChains(self._driver).move_by_offset(xoffset=x, yoffset=0).perform()
-        time.sleep(0.5)  # move to the right place and take a break
-        ActionChains(self._driver).release().perform()
-        time.sleep(4)
+        last_x = 0
+        last_y = 0
+        for (x, y) in track:
+            actions.move_by_offset(xoffset=x - last_x, yoffset=y - last_y).pause(float(random.uniform(0.003, 0.05)))
+            last_x = x
+            last_y = y
+        actions.pause(0.5)
+        actions.release().perform()
 
 
 # -------------------------------------------------------------------------------
@@ -496,19 +427,11 @@ class CargoTrackingRule(BaseRoutingRule):
         }
 
         try:
-            windows = self._content_getter.get_window_handles()
-            if len(windows) > 1:
-                self._content_getter.close()
-                self._content_getter.switch_to_first()
-            else:
-                self._content_getter.goto()
-
             res = self._content_getter.search_and_return(info_pack=info_pack)
             response = Selector(text=res)
 
-            while self.is_no_response(response=response):
-                res = self._content_getter.search_again_and_return(info_pack=info_pack)
-                response = Selector(text=res)
+            if self.is_no_response(response=response):
+                raise Exception("no response")
         except Exception as e:
             yield Restart(search_nos=search_nos, task_ids=task_ids, reason=repr(e))
             return
