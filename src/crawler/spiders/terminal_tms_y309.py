@@ -1,4 +1,4 @@
-from crawler.core_terminal.tms_share_spider import TmsSharedSpider, CompanyInfo
+from crawler.core_terminal.tms_share_spider import CompanyInfo, TmsSharedSpider
 
 
 class TerminalPctSpider(TmsSharedSpider):
@@ -6,6 +6,6 @@ class TerminalPctSpider(TmsSharedSpider):
     name = "terminal_tms_long_beach_multi"
     terminal_id = 1
     company_info = CompanyInfo(
-        email="HardcoreTK",
-        password="Goft@220128",
+        email="Hardcore",
+        password="Goft@220222",
     )
