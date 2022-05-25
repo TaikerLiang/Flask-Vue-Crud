@@ -8,13 +8,13 @@ ansible==5.8.0
     # via -r requirements-dev.in
 ansible-core==2.12.6
     # via ansible
-anticaptchaofficial==1.0.39
+anticaptchaofficial==1.0.40
     # via -r src/requirements-app.txt
 appdirs==1.4.4
     # via
     #   -r src/requirements-app.txt
     #   pyppeteer
-asgiref==3.5.1
+asgiref==3.5.2
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
@@ -50,7 +50,7 @@ brotli==1.0.9
     #   -r src/requirements-app.txt
     #   mitmproxy
     #   selenium-wire
-certifi==2021.10.8
+certifi==2022.5.18.1
     # via
     #   -r src/requirements-app.txt
     #   mitmproxy
@@ -96,7 +96,7 @@ cssselect==1.1.0
     #   scrapy
 distlib==0.3.4
     # via virtualenv
-faker==13.11.0
+faker==13.11.1
     # via -r src/requirements-app.txt
 filelock==3.7.0
     # via virtualenv
@@ -137,7 +137,7 @@ idna==3.3
     #   requests
     #   trio
     #   urllib3
-importlib-metadata==4.11.3
+importlib-metadata==4.11.4
     # via
     #   -r src/requirements-app.txt
     #   pyppeteer
@@ -199,7 +199,7 @@ mypy-extensions==0.4.3
     # via black
 nodeenv==1.6.0
     # via pre-commit
-numpy==1.22.3
+numpy==1.22.4
     # via
     #   -r src/requirements-app.txt
     #   bezier
@@ -230,7 +230,7 @@ pep517==0.12.0
     # via pip-tools
 pillow==9.1.1
     # via
-    #   -r requirements-dev.in
+    #   -r src/requirements-app.txt
     #   pyscreeze
 pip-tools==6.6.2
     # via -r requirements-dev.in
@@ -1038,7 +1038,7 @@ typing-extensions==4.2.0
     #   -r src/requirements-app.txt
     #   black
     #   twisted
-ujson==5.2.0
+ujson==5.3.0
     # via -r src/requirements-app.txt
 undetected-chromedriver==3.1.5.post4
     # via -r src/requirements-app.txt
