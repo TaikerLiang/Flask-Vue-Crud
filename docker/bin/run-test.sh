@@ -34,4 +34,4 @@ docker run \
     --rm \
     --workdir=/root/ \
     "$LOCAL_CRAWLER_REPO:$VCS_REF" \
-    pytest -x test
+    pip install Pillow pytest && pytest -x test --disable-warnings
