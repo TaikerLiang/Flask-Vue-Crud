@@ -331,7 +331,7 @@ class ContentGetter(ChromeContentGetter):
                 self.retry(mbl_no)
             finally:
                 if self.check_denied():
-                    return
+                    return ""
 
         rnd = random.randint(1, 8)
         if rnd > 6:
