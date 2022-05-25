@@ -259,9 +259,11 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
         return {
             "discharge_date": container_info["Unload Date"],
             "ready_for_pick_up": container_info["Available for pickup"],
+            "available": container_info["Available for pickup"],
             "container_spec": container_info["Size/Type"],
             "carrier": container_info["Line"],
             "cy_location": container_info["Location"],
+            "yard_location": container_info["Location"],
             "vessel": vessel,
             "weight": self._reformat_weight(container_info["Weight"]),
         }
@@ -327,11 +329,13 @@ class ContainerDetailRoutingRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_extra_container_info_div_text_colsm6(div: scrapy.Selector):
+        def re_sub(text):
+            return re.sub(r"\r\n\s*", "\n", text)
+
         div_text_list = div.css("::text").getall()
         div_text_list = [r.strip() for r in div_text_list if r.strip()]
         if div_text_list[0][:6] == "Holds:":
-            lambda_sub = lambda text: re.sub(r"\r\n\s*", "\n", text)
-            div_text_list = [lambda_sub(r) for r in div_text_list if lambda_sub(r)]
+            div_text_list = [re_sub(r) for r in div_text_list if re_sub(r)]
             div_text = "\n".join(div_text_list)
             return div_text[:5], div_text[7:]  # fix index error
 

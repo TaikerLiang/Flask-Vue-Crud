@@ -39,6 +39,7 @@ class TerminalItem(BaseTerminalItem):
     weight = scrapy.Field()
     hazardous = scrapy.Field()
     chassis_no = scrapy.Field()
+    yard_location = scrapy.Field()
 
     # tti field
     demurrage_due = scrapy.Field()

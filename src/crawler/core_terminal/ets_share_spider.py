@@ -309,6 +309,7 @@ class ContainerRoutingRule(BaseRoutingRule):
                 )
             else:
                 yield TerminalItem(
+                    available=container_info["PO_AVAILABLE_IND"],
                     container_no=container_info["PO_CNTR_NO"],
                     ready_for_pick_up=container_info["PO_AVAILABLE_IND"],
                     customs_release=container_info["PO_USA_STATUS"],
@@ -322,6 +323,7 @@ class ContainerRoutingRule(BaseRoutingRule):
                     ),
                     holds=container_info["PO_TMNL_HOLD_IND"],
                     cy_location=container_info["PO_YARD_LOC"],
+                    yard_location=container_info["PO_YARD_LOC"],
                     # extra field name
                     service=container_info["PO_SVC_QFR_DESC"],
                     carrier_release=container_info["PO_CARRIER_STATUS"],

@@ -116,6 +116,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             container_info = self._extract_container_info(response=response)
 
             yield TerminalItem(
+                available=container_info["available"],
                 container_no=container_info["container_no"],
                 carrier_release=container_info["freight_hold"],
                 customs_release=container_info["customs_hold"],
@@ -127,6 +128,7 @@ class ContainerRoutingRule(BaseRoutingRule):
                 carrier=container_info["carrier"],
                 container_spec=container_info["type"],
                 cy_location=container_info["location"],
+                yard_location=container_info["location"],
                 vessel=container_info["vessel"],
                 voyage=container_info["voyage"],
                 # on html
@@ -168,6 +170,7 @@ class ContainerRoutingRule(BaseRoutingRule):
         # discharge_date = m.group('discharge_date')
 
         return {
+            "available": response["available"],
             "container_no": response["containerId"],
             "discharge_date": response["discharged"],
             "type": response["type"],
@@ -179,6 +182,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             "voyage": response["inboundVoyageNumber"],
             "carrier": response["line"],
             "location": response["location"],
+            "yard_location": response["location"],
             "full/empty": response["freightKind"],
             "tmf_hold": tmf,
             "customs_hold": customs,

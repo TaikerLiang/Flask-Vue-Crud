@@ -222,6 +222,7 @@ class ContainerRoutingRule(BaseRoutingRule):
                         last_free_day=info.get("last_free_day"),
                         carrier_release=info.get("line_release"),
                         customs_release=info.get("customs_release"),
+                        yard_location=info.get("yard_location"),
                     )
             for container_no in container_nos_in_paging:
                 yield ExportErrorData(
@@ -263,6 +264,7 @@ class ContainerRoutingRule(BaseRoutingRule):
             info = {}
 
             info["container_no"] = container_no
+            info["yard_location"] = location
 
             if available == "Yes":
                 info["available"] = True

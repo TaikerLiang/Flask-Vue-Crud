@@ -170,6 +170,10 @@ class SearchContainerRule(BaseRoutingRule):
                     "ready_for_pick_up": "".join(tds[i * 17 + 2].xpath(".//text()").extract())
                     .strip()
                     .replace("\xa0", " "),
+                    "available": "".join(tds[i * 17 + 2].xpath(".//label/text()").extract())
+                    .strip()
+                    .replace("\xa0", " "),
+                    "yard_location": " ".join([text.strip() for text in tds[i * 17 + 3].xpath(".//text()").extract()]),
                     "gate_out_date": gate_out_date,
                     "appointment_date": appointment_date.strip(),
                     "customs_release": "".join(tds[i * 17 + 6].xpath(".//text()").extract()).strip(),

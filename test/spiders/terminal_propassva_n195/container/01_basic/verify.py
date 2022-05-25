@@ -16,6 +16,7 @@ def verify(results: List):
         container_spec="40HC",
         vessel="CMA CGM MAGELLAN",
         voyage="MAGE-0MBAEW1",
+        yard_location="GATE IN",
     )
     assert results[1] == TerminalItem(
         available="2022-03-07T19:56:00",
@@ -29,6 +30,7 @@ def verify(results: List):
         container_spec=None,
         vessel="AL QIBLA",
         voyage="ALQI-024W",
+        yard_location="GATE OUT",
     )
     assert results[2] == TerminalItem(
         available=None,
@@ -42,4 +44,5 @@ def verify(results: List):
         container_spec="40HC",
         vessel="MSC ELMA",
         voyage="ELMA-UL211W",
+        yard_location="ON VESSEL",
     )

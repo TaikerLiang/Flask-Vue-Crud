@@ -1,24 +1,26 @@
 import dataclasses
-from typing import Dict, List
 import time
-from crawler.core.selenium import ChromeContentGetter
-from crawler.core.table import BaseTable, TableExtractor
+from typing import Dict, List
 
 import scrapy
 from scrapy import Selector
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support.wait import WebDriverWait
 from urllib3.exceptions import ReadTimeoutError
 
-from crawler.core.base import DUMMY_URL_DICT
-from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.exceptions import TerminalResponseFormatError, DriverMaxRetryError
-from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
+from crawler.core.selenium import ChromeContentGetter
+from crawler.core.table import BaseTable, TableExtractor
 from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
+from crawler.core_terminal.exceptions import (
+    DriverMaxRetryError,
+    TerminalResponseFormatError,
+)
+from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
+from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 from crawler.extractors.table_cell_extractors import BaseTableCellExtractor
 
 BASE_URL = "https://tms.itslb.com"
@@ -175,20 +177,8 @@ class SeleniumRoutingRule(BaseRoutingRule):
         extra_container_info = cls._extract_extra_container_info(response)
 
         yield TerminalItem(
-            container_no=container_info["container_no"],
-            carrier_release=extra_container_info["freight_release"],
-            customs_release=extra_container_info["customs_release"],
-            appointment_date=container_info["appointment_date"],
-            ready_for_pick_up=container_info["ready_for_pick_up"],
-            last_free_day=container_info["last_free_day"],
-            demurrage=extra_container_info["demurrage"],
-            carrier=container_info["carrier"],
-            container_spec=container_info["container_spec"],
-            vessel=extra_container_info["vessel"],
-            mbl_no=extra_container_info["mbl_no"],
-            voyage=extra_container_info["voyage"],
-            gate_out_date=extra_container_info["gate_out_date"],
-            chassis_no=container_info["chassis_no"],
+            **container_info,
+            **extra_container_info,
         )
 
     @staticmethod
@@ -206,6 +196,7 @@ class SeleniumRoutingRule(BaseRoutingRule):
             return {
                 "appointment_date": table.extract_cell("Dschg Date", left),
                 "ready_for_pick_up": table.extract_cell("Pick Up", left),
+                "available": table.extract_cell("Pick Up", left),
                 "last_free_day": table.extract_cell("LFD", left),
                 "container_no": table.extract_cell("Container#", left, TdSpanExtractor()),
                 "carrier": table.extract_cell("Line", left),
@@ -235,7 +226,7 @@ class SeleniumRoutingRule(BaseRoutingRule):
         return {
             "vessel": left_table.extract_cell(left=0, top="Vessel"),
             "customs_release": left_table.extract_cell(left=0, top="Customs"),
-            "freight_release": left_table.extract_cell(left=0, top="Freight"),
+            "carrier_release": left_table.extract_cell(left=0, top="Freight"),
             "voyage": middle_table.extract_cell(left=0, top="Voyage"),
             "gate_out_date": middle_table.extract_cell(left=0, top="Spot"),
             "mbl_no": right_table.extract_cell(left=0, top="B/L#"),
