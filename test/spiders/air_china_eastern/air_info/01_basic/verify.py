@@ -1,20 +1,20 @@
 from typing import List
 
-from crawler.core_air.items import AirItem, HistoryItem
+from crawler.core_air.items_new import AirItem, HistoryItem
 
 
 def verify(results: List):
     assert results[0] == AirItem(
-        mawb='81231625',
-        task_id='1',
-        origin='LAX',
-        destination='PVG',
+        mawb="81231625",
+        task_id="1",
+        origin="LAX",
+        destination="PVG",
         pieces=7,
-        weight='3675 K',
-        current_state='DLV',
+        weight="3675 K",
+        current_state="DLV",
     )
     assert results[1] == HistoryItem(
-        task_id='1',
+        task_id="1",
         status="Booked",
         pieces=7,
         weight="367",
@@ -23,7 +23,7 @@ def verify(results: List):
         flight_number="CK222",
     )
     assert results[2] == HistoryItem(
-        task_id='1',
+        task_id="1",
         status="Booked",
         pieces=7,
         weight="367",
@@ -32,7 +32,7 @@ def verify(results: List):
         flight_number="CK222",
     )
     assert results[22] == HistoryItem(
-        task_id='1',
+        task_id="1",
         status="Consignee notified - hold for pick-up",
         pieces=7,
         weight="3675",
@@ -41,7 +41,7 @@ def verify(results: List):
         flight_number="",
     )
     assert results[23] == HistoryItem(
-        task_id='1',
+        task_id="1",
         status="Arrived",
         pieces=7,
         weight="3675",
@@ -50,7 +50,7 @@ def verify(results: List):
         flight_number="CK222",
     )
     assert results[24] == HistoryItem(
-        task_id='1',
+        task_id="1",
         status="Delivered",
         pieces=7,
         weight="3675",

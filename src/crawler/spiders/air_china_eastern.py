@@ -8,18 +8,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from crawler.core.base_new import RESULT_STATUS_ERROR, SEARCH_TYPE_AWB
+from crawler.core.exceptions_new import MaxRetryError, SuspiciousOperationError
+from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.selenium import FirefoxContentGetter
-from crawler.core_air.base import AIR_RESULT_STATUS_ERROR, AIR_RESULT_STATUS_FATAL
-from crawler.core_air.base_spiders import BaseMultiAirSpider
-from crawler.core_air.exceptions import AntiCaptchaError
-from crawler.core_air.items import (
-    AirItem,
-    BaseAirItem,
-    DebugItem,
-    ExportErrorData,
-    HistoryItem,
-)
-from crawler.core_air.request_helpers import RequestOption
+from crawler.core_air.base_spiders_new import BaseMultiAirSpider
+from crawler.core_air.items_new import AirItem, BaseAirItem, DebugItem, HistoryItem
+from crawler.core_air.request_helpers_new import RequestOption
 from crawler.core_air.rules import BaseRoutingRule, RuleManager
 from crawler.services.captcha_service import ImageAntiCaptchaService
 
@@ -41,14 +36,9 @@ class AirChinaEasternSpider(BaseMultiAirSpider):
 
     def start(self):
         driver = ContentGetter()
-        try:
-            driver.handle_cookie()
-            token = driver.handle_captcha()
-            driver.close()
-        except AntiCaptchaError:
-            yield ExportErrorData(status=AIR_RESULT_STATUS_FATAL, detail="<anti-captcha-error>")
-            driver.close()
-            return
+        driver.handle_cookie()
+        token = driver.handle_captcha(task_id=self.mno_tid_map[self.mawb_nos[0]][0], mno_tid_map=self.mno_tid_map)
+        driver.close()
 
         for mawb_no, task_id in zip(self.mawb_nos, self.task_ids):
             option = AirInfoRoutingRule.build_request_option(mawb_no=mawb_no, task_id=task_id, token=token)
@@ -62,7 +52,7 @@ class AirChinaEasternSpider(BaseMultiAirSpider):
         self._saver.save(to=save_name, text=response.text)
 
         for result in routing_rule.handle(response=response):
-            if isinstance(result, BaseAirItem):
+            if isinstance(result, (BaseAirItem, DataNotFoundItem, EndItem)):
                 yield result
             elif isinstance(result, RequestOption):
                 yield self._build_request_by(option=result)
@@ -91,7 +81,12 @@ class AirChinaEasternSpider(BaseMultiAirSpider):
                 headers=option.headers,
             )
         else:
-            raise ValueError(f"Invalid option.method [{option.method}]")
+            raise SuspiciousOperationError(
+                task_id=option.meta["task_id"],
+                search_no=option.meta["search_no"],
+                search_type=self.search_type,
+                reason=f"Unexpected request method: `{option.method}`",
+            )
 
 
 class AirInfoRoutingRule(BaseRoutingRule):
@@ -115,35 +110,40 @@ class AirInfoRoutingRule(BaseRoutingRule):
                 }
             ),
             meta={
-                "mawb_no": mawb_no,
+                "search_no": mawb_no,
                 "task_id": task_id,
             },
         )
 
     def get_save_name(self, response) -> str:
-        return f'{self.name} {response.meta["mawb_no"]}.json'
+        return f'{self.name} {response.meta["search_no"]}.json'
 
     def handle(self, response):
-        mawb_no = response.meta["mawb_no"]
+        mawb_no = response.meta["search_no"]
         task_id = response.meta["task_id"]
         response_dict = json.loads(response.text)
-        if self.is_mawb_no_invalid(response_dict):
-            yield ExportErrorData(
-                status=AIR_RESULT_STATUS_ERROR, detail="Data was not found", task_id=task_id, mawb_no=mawb_no
+        if self._is_mawb_no_invalid(response_dict):
+            yield DataNotFoundItem(
+                status=RESULT_STATUS_ERROR,
+                detail="Data was not found",
+                task_id=task_id,
+                search_no=mawb_no,
+                search_type=SEARCH_TYPE_AWB,
             )
             return
-        air_info = self.extract_air_info(response_dict)
+        air_info = self._extract_air_info(response_dict)
         yield AirItem(task_id=task_id, mawb=mawb_no, **air_info)
-        history_list = self.extract_history_info(response_dict)
+        history_list = self._extract_history_info(response_dict)
         for history in history_list:
             yield HistoryItem(task_id=task_id, **history)
+        yield EndItem(task_id=task_id)
 
-    def is_mawb_no_invalid(self, response):
+    def _is_mawb_no_invalid(self, response):
         if "ErrorMessage" in response:
             return True
         return False
 
-    def extract_air_info(self, response):
+    def _extract_air_info(self, response):
         current_state = response["Segments"]["Segment"][-1]["StatusCode"]
         return {
             "pieces": response["NumberOfPieces"],
@@ -153,7 +153,7 @@ class AirInfoRoutingRule(BaseRoutingRule):
             "current_state": current_state,
         }
 
-    def extract_history_info(self, response):
+    def _extract_history_info(self, response):
         history_list = []
         for event in response["Segments"]["Segment"]:
             history_list.append(
@@ -175,7 +175,7 @@ class ContentGetter(FirefoxContentGetter):
         cookie_btn = WebDriverWait(self._driver, 30).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "a.cb-enable")))
         cookie_btn.click()
 
-    def handle_captcha(self):
+    def handle_captcha(self, task_id, mno_tid_map):
         WebDriverWait(self._driver, 30).until(
             EC.frame_to_be_available_and_switch_to_it((By.CSS_SELECTOR, "iframe#mtcaptcha-iframe-1"))
         )
@@ -192,7 +192,11 @@ class ContentGetter(FirefoxContentGetter):
                 )
                 return token
         self._driver.switch_to.default_content()
-        raise AntiCaptchaError()
+        raise MaxRetryError(
+            task_id=task_id,
+            search_type=SEARCH_TYPE_AWB,
+            reason=f"anti-captcha fail, on (search_no: [task_id...]): {mno_tid_map}",
+        )
 
     def _solve_captcha(self):
         response = scrapy.Selector(text=self.get_page_source())
