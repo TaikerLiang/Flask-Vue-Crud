@@ -57,7 +57,7 @@ def run_scrapy_spider(
 
     if results:
         result = results[0]
-        if result["detail"].startswith("AccessDeniedError"):
+        if result["detail"].startswith("<access-denied>"):
             raise AccessDeniedError(result["detail"])
         else:
             raise Exception(result["detail"])
