@@ -1,26 +1,27 @@
-import asyncio
 import re
-from typing import Dict, List
+import time
+from urllib3.exceptions import ReadTimeoutError
+from typing import List, Dict
 
 from pyppeteer import logging
 from pyppeteer.errors import ElementHandleError, TimeoutError
 import scrapy
 from scrapy import Selector
-from urllib3.exceptions import ReadTimeoutError
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as ec
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException, UnexpectedAlertPresentException
+import scrapy
+from scrapy import Selector
+from selenium.common.exceptions import NoSuchElementException, NoAlertPresentException
 
-from crawler.core.base_new import (
-    DUMMY_URL_DICT,
-    RESULT_STATUS_ERROR,
-    SEARCH_TYPE_BOOKING,
-    SEARCH_TYPE_CONTAINER,
-    SEARCH_TYPE_MBL,
-)
-from crawler.core.defines import BaseContentGetter
-from crawler.core.description import SUSPICIOUS_OPERATION_DESC, TIMEOUT_DESC
-from crawler.core.exceptions_new import (
-    FormatError,
-    SuspiciousOperationError,
-    TimeOutError,
+from crawler.core.proxy import HydraproxyProxyManager
+from crawler.core.selenium import FirefoxContentGetter
+from crawler.core_carrier.base import (
+    CARRIER_RESULT_STATUS_ERROR,
+    CARRIER_RESULT_STATUS_FATAL,
+    SHIPMENT_TYPE_MBL,
+    SHIPMENT_TYPE_BOOKING,
 )
 from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.proxy_new import HydraproxyProxyManager, ProxyManager
@@ -64,11 +65,9 @@ class CarrierWhlcSpider(BaseCarrierSpider):
     def __init__(self, *args, **kwargs):
         super(CarrierWhlcSpider, self).__init__(*args, **kwargs)
 
-        self._driver = WhlcContentGetter(proxy_manager=HydraproxyProxyManager(session="whlc", logger=self.logger))
+        bill_rules = [MblRoutingRule()]
 
-        bill_rules = [MblRoutingRule(content_getter=self._driver)]
-
-        booking_rules = [BookingRoutingRule(content_getter=self._driver)]
+        booking_rules = [BookingRoutingRule()]
 
         if self.mbl_no:
             self._rule_manager = RuleManager(rules=bill_rules)
@@ -77,13 +76,18 @@ class CarrierWhlcSpider(BaseCarrierSpider):
             self._rule_manager = RuleManager(rules=booking_rules)
             self.search_no = self.booking_no
 
+        self._proxy_manager = HydraproxyProxyManager(session="whlc", logger=self.logger)
         self._request_queue = RequestOptionQueue()
 
     def start(self):
         if self.mbl_no:
-            request_option = MblRoutingRule.build_request_option(task_id=self.task_id, search_no=self.search_no)
+            request_option = MblRoutingRule.build_request_option(
+                search_no=self.search_no, proxy_manager=self._proxy_manager
+            )
         else:
-            request_option = BookingRoutingRule.build_request_option(task_id=self.task_id, search_no=self.search_no)
+            request_option = BookingRoutingRule.build_request_option(
+                search_no=self.search_no, proxy_manager=self._proxy_manager
+            )
         yield self._build_request_by(option=request_option)
 
     def parse(self, response):
@@ -143,40 +147,42 @@ class CarrierWhlcSpider(BaseCarrierSpider):
 class MblRoutingRule(BaseRoutingRule):
     name = "MBL_RULE"
 
-    def __init__(self, content_getter: BaseContentGetter):
-        self._search_type = SEARCH_TYPE_MBL
-        self.driver = content_getter
+    def __init__(self):
         self._container_patt = re.compile(r"^(?P<container_no>\w+)")
         self._j_idt_patt = re.compile(r"'(?P<j_idt>j_idt[^,]+)':'(?P=j_idt)'")
 
     @classmethod
-    def build_request_option(cls, task_id: str, search_no: str):
+    def build_request_option(cls, search_no, proxy_manager):
+        cls._proxy_manager = proxy_manager
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=DUMMY_URL_DICT["eval_edi"],
-            meta={"task_id": task_id, "search_no": search_no},
+            url=f"https://api.myip.com",
+            meta={"mbl_no": search_no},
         )
 
     def handle(self, response):
-        task_id = response.meta["task_id"]
-        mbl_no = response.meta["search_no"]
-        info_pack = {
-            "task_id": task_id,
-            "search_no": mbl_no,
-            "search_type": self._search_type,
-        }
+        mbl_no = response.meta["mbl_no"]
+        driver = ContentGetter(proxy_manager=self._proxy_manager, is_headless=False)
+        cookies = driver.get_cookies_dict_from_main_page()
+        try:
+            driver.search_mbl(mbl_no)
+        except ReadTimeoutError:
+            raise LoadWebsiteTimeOutError(url=WHLC_BASE_URL)
 
         try:
-            page_source = asyncio.get_event_loop().run_until_complete(
-                self.driver.search(search_no=mbl_no, search_type=self._search_type)
+            driver.check_alert()
+            yield ExportErrorData(
+                mbl_no=mbl_no,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail="Data was not found",
             )
-        except (ReadTimeoutError, TimeoutError):
-            # the case of invalid mbl_no is included in the case of TimeoutError
-            raise TimeOutError(**info_pack, reason=TIMEOUT_DESC.format(action="driver.search()"))
+            return
+        except (NoAlertPresentException, UnexpectedAlertPresentException):
+            pass
 
-        response_selector = Selector(text=page_source)
-        container_list = self._extract_container_info(response=response_selector, info_pack=info_pack)
+        response_selector = Selector(text=driver.get_page_source())
+        container_list = self._extract_container_info(response_selector)
 
         yield MblItem(mbl_no=mbl_no)
 
@@ -195,87 +201,54 @@ class MblRoutingRule(BaseRoutingRule):
 
             # detail page
             try:
-                for item in self._handle_detail_page(idx=idx, info_pack=info_pack):
-                    yield item
-            except ElementHandleError:
-                pass
-            except TimeoutError:
-                yield DataNotFoundItem(
-                    **info_pack,
-                    status=RESULT_STATUS_ERROR,
-                    detail="Load detail page timeout",
+                driver.go_detail_page(idx + 2)
+                detail_selector = Selector(text=driver.get_page_source())
+                date_information = self._extract_date_information(detail_selector)
+
+                yield VesselItem(
+                    vessel_key=f"{date_information['pol_vessel']} / {date_information['pol_voyage']}",
+                    vessel=date_information["pol_vessel"],
+                    voyage=date_information["pol_voyage"],
+                    pol=LocationItem(un_lo_code=date_information["pol_un_lo_code"]),
+                    etd=date_information["pol_etd"],
                 )
-                self.driver.close_page_and_switch_last()
-                continue
+
+                yield VesselItem(
+                    vessel_key=f"{date_information['pod_vessel']} / {date_information['pod_voyage']}",
+                    vessel=date_information["pod_vessel"],
+                    voyage=date_information["pod_voyage"],
+                    pod=LocationItem(un_lo_code=date_information["pod_un_lo_code"]),
+                    eta=date_information["pod_eta"],
+                )
+
+                driver.close()
+                driver.switch_to_last()
+            except NoSuchElementException:
+                pass
 
             # history page
             try:
-                for item in self._handle_history_page(idx=idx, info_pack=info_pack):
-                    yield item
-            except ElementHandleError:
-                pass
-            except TimeoutError:
-                yield DataNotFoundItem(
-                    **info_pack,
-                    status=RESULT_STATUS_ERROR,
-                    detail="Load status page timeout",
-                )
-                self.driver.close_page_and_switch_last()
-                continue
+                driver.go_history_page(idx + 2)
+                history_selector = Selector(text=driver.get_page_source())
+                container_status_list = self._extract_container_status(history_selector)
 
-            yield EndItem(task_id=task_id)
-            self.driver.close_page_and_switch_last()
-        asyncio.get_event_loop().run_until_complete(self.driver.close_page())
+                for container_status in container_status_list:
+                    yield ContainerStatusItem(
+                        container_key=container_no,
+                        local_date_time=container_status["local_date_time"],
+                        description=container_status["description"],
+                        location=LocationItem(name=container_status["location_name"]),
+                    )
+            except NoSuchElementException:
+                pass
+
+            driver.close()
+            driver.switch_to_last()
 
     def get_save_name(self, response) -> str:
         return f"{self.name}.html"
 
-    def _handle_detail_page(self, idx: int, info_pack: Dict):
-        try:
-            page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(idx + 2))
-        except FormatError as e:
-            # This exception is used to notify that the link of detail page is disappeared, thus no handling continued
-            yield DebugItem(
-                info=f"{e.reason}, on (task_id: search_no): {info_pack['task_id']}: {info_pack['search_no']}"
-            )
-            return
-
-        detail_selector = Selector(text=page_source)
-        date_information = self._extract_date_information(response=detail_selector, info_pack=info_pack)
-
-        yield VesselItem(
-            vessel_key=f"{date_information['pol_vessel']} / {date_information['pol_voyage']}",
-            vessel=date_information["pol_vessel"],
-            voyage=date_information["pol_voyage"],
-            pol=LocationItem(un_lo_code=date_information["pol_un_lo_code"]),
-            etd=date_information["pol_etd"],
-        )
-
-        yield VesselItem(
-            vessel_key=f"{date_information['pod_vessel']} / {date_information['pod_voyage']}",
-            vessel=date_information["pod_vessel"],
-            voyage=date_information["pod_voyage"],
-            pod=LocationItem(un_lo_code=date_information["pod_un_lo_code"]),
-            eta=date_information["pod_eta"],
-        )
-
-        self.driver.close_page_and_switch_last()
-
-    def _handle_history_page(self, idx: int, info_pack: Dict):
-        container_no = info_pack["search_no"]
-        page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_history_page(idx + 2))
-        history_selector = Selector(text=page_source)
-        container_status_list = self._extract_container_status(response=history_selector, info_pack=info_pack)
-
-        for container_status in container_status_list:
-            yield ContainerStatusItem(
-                container_key=container_no,
-                local_date_time=container_status["local_date_time"],
-                description=container_status["description"],
-                location=LocationItem(name=container_status["location_name"]),
-            )
-
-    def _extract_container_info(self, response: scrapy.Selector, info_pack: Dict) -> List:
+    def _extract_container_info(self, response: scrapy.Selector) -> List:
         table_selector = response.css("table.tbl-list")[0]
         table_locator = ContainerListTableLocator()
         table_locator.parse(table=table_selector)
@@ -422,18 +395,18 @@ class MblRoutingRule(BaseRoutingRule):
 class BookingRoutingRule(BaseRoutingRule):
     name = "BOOKING"
 
-    def __init__(self, content_getter: BaseContentGetter):
-        self._search_type = SEARCH_TYPE_BOOKING
-        self.driver = content_getter
+    def __init__(self):
+        self._search_type = SHIPMENT_TYPE_BOOKING
         self._container_patt = re.compile(r"^(?P<container_no>\w+)")
 
     @classmethod
-    def build_request_option(cls, task_id: str, search_no: str):
+    def build_request_option(cls, search_no, proxy_manager):
+        cls._proxy_manager = proxy_manager
         return RequestOption(
             rule_name=cls.name,
             method=RequestOption.METHOD_GET,
-            url=DUMMY_URL_DICT["eval_edi"],
-            meta={"task_id": task_id, "search_no": search_no},
+            url=f"https://api.myip.com",
+            meta={"search_no": search_no},
         )
 
     def get_save_name(self, response) -> str:
@@ -442,49 +415,25 @@ class BookingRoutingRule(BaseRoutingRule):
     def handle(self, response):
         task_id = response.meta["task_id"]
         search_no = response.meta["search_no"]
-        info_pack = {
-            "task_id": task_id,
-            "search_no": search_no,
-            "search_type": SEARCH_TYPE_BOOKING,
-        }
+        driver = ContentGetter(proxy_manager=self._proxy_manager, is_headless=True)
+        cookies = driver.get_cookies_dict_from_main_page()
+        driver.search(search_no=search_no, search_type=self._search_type)
 
-        try:
-            page_source = asyncio.get_event_loop().run_until_complete(
-                self.driver.search(search_no=search_no, search_type=self._search_type)
+        response_selector = Selector(text=driver.get_page_source())
+        if self._is_search_no_invalid(response=response_selector):
+            yield ExportErrorData(
+                booking_no=search_no,
+                status=CARRIER_RESULT_STATUS_ERROR,
+                detail="Data was not found",
             )
-        except (ReadTimeoutError, TimeoutError):
-            # the case of invalid mbl_no is included in the case of TimeoutError
-            raise TimeOutError(**info_pack, reason=TIMEOUT_DESC.format(action="driver.search()"))
-
-        try:
-            page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_detail_page(2))
-        except TimeoutError:
-            yield DataNotFoundItem(
-                task_id=task_id,
-                search_no=search_no,
-                search_type=SEARCH_TYPE_BOOKING,
-                status=RESULT_STATUS_ERROR,
-                detail="Load detail page timeout",
-            )
-            self.driver.quit()
+            driver.quit()
             return
 
-        for item in self._handle_booking_detail_page(response=page_source, search_no=search_no):
-            yield item
+        driver.go_detail_page(2)  # only one booking_no to click
+        basic_info = self._extract_basic_info(Selector(text=driver.get_page_source()))
+        vessel_info = self._extract_vessel_info(Selector(text=driver.get_page_source()))
 
-        for item in self._handle_booking_history_page(response=page_source, task_id=task_id):
-            yield item
-
-        yield EndItem(task_id=task_id)
-        self.driver.close_page_and_switch_last()
-
-    def _handle_booking_detail_page(self, response, search_no):
-        basic_info = self._extract_basic_info(Selector(text=response))
-        vessel_info = self._extract_vessel_info(Selector(text=response))
-
-        yield MblItem(
-            booking_no=search_no,
-        )
+        yield MblItem(booking_no=search_no)
 
         yield VesselItem(
             vessel_key=f"{basic_info['vessel']} / {basic_info['voyage']}",
@@ -502,8 +451,7 @@ class BookingRoutingRule(BaseRoutingRule):
             eta=vessel_info["eta"],
         )
 
-    def _handle_booking_history_page(self, response, task_id: str):
-        container_nos = self._extract_container_no_and_status_links(Selector(text=response))
+        container_nos = self._extract_container_no_and_status_links(Selector(text=driver.get_page_source()))
 
         for idx in range(len(container_nos)):
             container_no = container_nos[idx]
@@ -514,19 +462,10 @@ class BookingRoutingRule(BaseRoutingRule):
             }
 
             # history page
-            try:
-                page_source = asyncio.get_event_loop().run_until_complete(self.driver.go_booking_history_page(idx + 2))
-            except TimeoutError:
-                yield DataNotFoundItem(
-                    **info_pack,
-                    status=RESULT_STATUS_ERROR,
-                    detail="Load status page timeout",
-                )
-                self.driver.close_page_and_switch_last()
-                continue
+            driver.go_booking_history_page(idx + 2)
+            history_selector = Selector(text=driver.get_page_source())
 
-            history_selector = Selector(text=page_source)
-            event_list = self._extract_container_status(response=history_selector, info_pack=info_pack)
+            event_list = self._extract_container_status(response=history_selector)
             container_status_items = self._make_container_status_items(container_no, event_list)
 
             yield ContainerItem(
@@ -537,7 +476,16 @@ class BookingRoutingRule(BaseRoutingRule):
             for item in container_status_items:
                 yield item
 
-            self.driver.close_page_and_switch_last()
+            driver.close()
+            driver.switch_to_last()
+
+        driver.quit()
+
+    @staticmethod
+    def _is_search_no_invalid(response):
+        if response.css("input#q_ref_no1"):
+            return True
+        return False
 
     def _extract_basic_info(self, response: scrapy.Selector):
         tables = response.css("table.tbl-list")
@@ -616,86 +564,93 @@ class BookingRoutingRule(BaseRoutingRule):
         return return_list
 
 
-class WhlcContentGetter(PyppeteerContentGetter):
-    def __init__(self, proxy_manager: ProxyManager = None):
-        super().__init__(proxy_manager, is_headless=True)
-        logging.disable(logging.DEBUG)
+class ContentGetter(FirefoxContentGetter):
+    def __init__(self, proxy_manager, is_headless):
+        super().__init__(proxy_manager=proxy_manager, is_headless=is_headless)
 
-        self._type_select_num_map = {
-            SEARCH_TYPE_MBL: "2",
-            SEARCH_TYPE_BOOKING: "4",
+        self._type_select_text_map = {
+            SHIPMENT_TYPE_MBL: "BL no.",
+            SHIPMENT_TYPE_BOOKING: "Book No.",
         }
 
-    async def search(self, search_no, search_type):
-        await self.page.goto(WHLC_BASE_URL, options={"timeout": 60000})
-        await asyncio.sleep(3)
-        select_num = self._type_select_num_map[search_type]
-        await self.page.waitForSelector("#cargoType")
-        await self.page.select("#cargoType", select_num)
-        await asyncio.sleep(1)
-        await self.page.type("#q_ref_no1", search_no)
-        await asyncio.sleep(3)
-        await self.page.click("#quick_ctnr_query")
-        await asyncio.sleep(10)
-        await self.switch_to_last()
-        await self.page.waitForSelector("table.tbl-list", options={"waitUntil": "networkidle0"})
-        await asyncio.sleep(5)
-        return await self.page.content()
+    def get_cookies_dict_from_main_page(self):
+        self._driver.get(f"{WHLC_BASE_URL}")
+        time.sleep(5)
+        # self._driver.get_screenshot_as_file("output-1.png")
+        cookies = self._driver.get_cookies()
 
-    async def go_detail_page(self, idx: int):
-        row_selector = f"#cargoTrackListBean > table > tbody > tr:nth-child({idx})"
-        await self.page.waitForSelector(
-            f"{row_selector} > td:nth-child(1)",
-            options={"timeout": 60000},
+        return self._transformat_to_dict(cookies=cookies)
+
+    def get_view_state(self):
+        view_state_elem = self._driver.find_element_by_css_selector('input[name="javax.faces.ViewState"]')
+        view_state = view_state_elem.get_attribute("value")
+        return view_state
+
+    def search_mbl(self, mbl_no):
+        WebDriverWait(self._driver, 30).until(
+            ec.element_to_be_clickable((By.XPATH, "//*[@id='cargoType']/option[text()='BL no.']"))
         )
+        self._driver.find_element_by_xpath("//*[@id='cargoType']/option[text()='BL no.']").click()
+        time.sleep(2)
+        input_ele = self._driver.find_element_by_xpath('//*[@id="q_ref_no1"]')
+        input_ele.send_keys(mbl_no)
+        time.sleep(2)
+        self._driver.find_element_by_xpath('//*[@id="quick_ctnr_query"]').click()
+        time.sleep(10)
+        self._driver.switch_to.window(self._driver.window_handles[-1])
 
-        click_selector = f"{row_selector} > td:nth-child(1) > u"
+    def search(self, search_no, search_type):
+        select_text = self._type_select_text_map[search_type]
 
-        # Sometimes the link of detail page is disappeared
-        if not await self.page.querySelector(click_selector):
-            raise FormatError(reason="Link of detail page is disappeared")
+        self._driver.find_element_by_xpath(f"//*[@id='cargoType']/option[text()='{select_text}']").click()
+        time.sleep(1)
+        input_ele = self._driver.find_element_by_xpath('//*[@id="q_ref_no1"]')
+        input_ele.send_keys(search_no)
+        time.sleep(3)
+        self._driver.find_element_by_xpath('//*[@id="quick_ctnr_query"]').click()
+        time.sleep(10)
+        self._driver.switch_to.window(self._driver.window_handles[-1])
 
-        await self.page.click(click_selector)
-        await asyncio.sleep(10)
-        await self.switch_to_last()
-        await self.page.waitForSelector("table.tbl-list")
-        await asyncio.sleep(3)
-        return await self.page.content()
+    def go_detail_page(self, idx: int):
+        WebDriverWait(self._driver, 30).until(
+            ec.element_to_be_clickable((By.XPATH, f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u'))
+        )
+        print("=========== go_detail_page ===========")
+        self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[1]/u').click()
+        time.sleep(5)
+        self._driver.switch_to.window(self._driver.window_handles[-1])
 
-    async def go_history_page(self, idx: int):
-        await self.page.waitForSelector(
-            f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u"
-        ),
-        await self.page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(11) > u"),
-        await asyncio.sleep(10)
-        await self.switch_to_last()
-        await self.page.waitForSelector("table.tbl-list")
-        await asyncio.sleep(3)
-        return await self.page.content()
+    def go_history_page(self, idx: int):
+        print("=========== go_history_page ===========")
+        self._driver.find_element_by_xpath(f'//*[@id="cargoTrackListBean"]/table/tbody/tr[{idx}]/td[11]/u').click()
+        time.sleep(15)
+        self._driver.switch_to.window(self._driver.window_handles[-1])
 
-    async def go_booking_history_page(self, idx: int):
-        await self.page.waitForSelector(
-            f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"
-        ),
-        await self.page.click(f"#cargoTrackListBean > table > tbody > tr:nth-child({idx}) > td:nth-child(2) > a"),
-        await asyncio.sleep(10),
-        await self.switch_to_last()
-        await self.page.waitForSelector("table.tbl-list")
-        await asyncio.sleep(3)
-        return await self.page.content()
+    def go_booking_history_page(self, idx: int):
+        print("=========== go_booking_history_page ===========")
+        # '/html/body/div[2]/div[1]/div/form/table[5]/tbody/tr[2]/td[2]/a'
+        self._driver.find_element_by_xpath(
+            f"/html/body/div[2]/div[1]/div/form/table[5]/tbody/tr[{idx}]/td[2]/a"
+        ).click()
+        time.sleep(10)
+        self._driver.switch_to.window(self._driver.window_handles[-1])
 
-    async def close_page(self):
-        await self.page.close()
-        await asyncio.sleep(1)
+    def switch_to_last(self):
+        self._driver.switch_to.window(self._driver.window_handles[-1])
+        time.sleep(1)
 
-    async def switch_to_last(self):
-        pages = await self.browser.pages()
-        self.page = pages[-1]
-        await asyncio.sleep(3)
+    def check_alert(self):
+        alert = self._driver.switch_to.alert
+        text = alert.text
 
-    def close_page_and_switch_last(self):
-        asyncio.get_event_loop().run_until_complete(self.close_page())
-        asyncio.get_event_loop().run_until_complete(self.switch_to_last())
+    @staticmethod
+    def _transformat_to_dict(cookies: List[Dict]) -> Dict:
+        return_cookies = {}
+
+        for d in cookies:
+            return_cookies[d["name"]] = d["value"]
+
+        return return_cookies
 
 
 class BookingBasicTableLocator(BaseTableLocator):

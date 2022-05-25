@@ -1,6 +1,7 @@
 import os
 import random
 import time
+import logging
 from typing import Any, Dict, List, Optional
 
 import bezier
@@ -17,6 +18,9 @@ from undetected_chromedriver import Chrome as UCChrome
 from crawler.core.defines import BaseContentGetter
 from crawler.core.proxy import ProxyManager
 from crawler.plugin.plugin_loader import PluginLoader
+
+logging.getLogger("seleniumwire").setLevel(logging.ERROR)
+logging.getLogger("hpack").setLevel(logging.INFO)
 
 
 class SeleniumContentGetter(BaseContentGetter):
@@ -46,6 +50,9 @@ class SeleniumContentGetter(BaseContentGetter):
     def scroll_to_bottom_of_page(self):
         self.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
+    def get_screenshot_as_file(self, filename: str):
+        self._driver.get_screenshot_as_file(filename)
+
     def get_page_source(self):
         return self._driver.page_source
 
@@ -54,6 +61,16 @@ class SeleniumContentGetter(BaseContentGetter):
 
     def get_cookies_dict(self) -> Dict:
         return {cookie_obj.get("name"): cookie_obj.get("value") for cookie_obj in self._driver.get_cookies()}
+
+    def get_cookie_str(self):
+        cookies_str = ""
+        for key, value in self.get_cookies_dict().items():
+            cookies_str += f"{key}={value}; "
+
+        return cookies_str
+
+    def get_num_of_tabs(self):
+        return len(self._driver.window_handles)
 
     def switch_to_last_window(self):
         windows = self._driver.window_handles
@@ -73,7 +90,7 @@ class SeleniumContentGetter(BaseContentGetter):
 
     def check_alert(self):
         alert = self._driver.switch_to.alert
-        alert.text
+        return alert.text
 
     def execute_recaptcha_callback_fun(self, token: str):
         # ref: https://stackoverflow.com/questions/66476952/anti-captcha-not-working-validation-happening-before-callback-selenium
