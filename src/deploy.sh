@@ -1,20 +1,26 @@
 # -t: options, prd/eval/dev
+# -s: skip test if passing yes
 # ex: sh deploy -t prd
 
-while getopts t: flag
+while getopts ":s:t:" flag
 do
     case "${flag}" in
         t) target=${OPTARG};;
+        s) skip=${OPTARG};;
     esac
 done
 
-cd .. && python -m pytest test/ --disable-warnings
-existed=$?
-cd src
+if [ "x$skip" != "xyes" ]; then
+    cd .. && python -m pytest test/ --disable-warnings
+    existed=$?
+    cd src
 
-if [ $existed = 1 ]
-then
-    exit 0
+    if [ $existed = 1 ]
+    then
+        exit 0
+    fi
+else
+    echo "Tests are skipped."
 fi
 
 if [ "x$target" = "xprd" ]; then
