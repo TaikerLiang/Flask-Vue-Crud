@@ -1,4 +1,4 @@
-# -t: options, prd/eval/dev
+# -t: options, prd/eval/dev/qa
 # -s: skip test if passing yes
 # ex: sh deploy -t prd
 
@@ -47,5 +47,5 @@ elif [ "x$target" = "xdev" ]; then
     shub image push 592363
     shub image deploy 592363
 else
-    echo "invalid -t paramter, one of prd/eval/dev only"
+    echo "invalid -t paramter, one of prd/eval/dev/qa only"
 fi
