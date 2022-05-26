@@ -22,7 +22,6 @@ else
     echo "Building image $LOCAL_CRAWLER_REPO:$VCS_REF ..."
 
     docker build \
-            --platform linux/amd64 \
         -f docker/local-crawler/Dockerfile \
         -t "$LOCAL_CRAWLER_REPO:$VCS_REF" \
         --build-arg VERSION="${TAG}" \
@@ -31,7 +30,6 @@ fi
 
 EP_SC_TEST_CONTAINER_NAME=ep-sc-$(date +%s)
 docker run \
-        --platform linux/amd64 \
     --name "$EP_SC_TEST_CONTAINER_NAME" \
     --rm \
     --workdir=/root/ \
