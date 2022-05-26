@@ -4,13 +4,12 @@ from typing import Dict, List
 
 import scrapy
 
-from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
-from crawler.core_terminal.items import DebugItem, TerminalItem, ExportErrorData
-from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
-from crawler.core_terminal.request_helpers import RequestOption
-from crawler.core_terminal.rules import RuleManager, BaseRoutingRule
 from crawler.core.proxy import HydraproxyProxyManager
-
+from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
+from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
+from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
+from crawler.core_terminal.request_helpers import RequestOption
+from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
 
 BASE_URL = "https://www.lbct.com"
 MAX_PAGE_NUM = 10
@@ -71,11 +70,7 @@ class TerminalLbctSpider(BaseMultiTerminalSpider):
         }
 
         if option.method == RequestOption.METHOD_GET:
-            return scrapy.Request(
-                url=option.url,
-                meta=meta,
-                dont_filter=True,
-            )
+            return scrapy.Request(url=option.url, meta=meta, dont_filter=True, headers=option.headers)
 
         else:
             raise RuntimeError()
@@ -93,7 +88,15 @@ class ContainerRoutingRule(BaseRoutingRule):
         url = f'{BASE_URL}/CargoSearch/GetMultiCargoSearchJson?timestamp={timestamp}&listOfSearchId={",".join(container_no_list[:MAX_PAGE_NUM])}'
 
         return RequestOption(
-            rule_name=cls.name, method=RequestOption.METHOD_GET, url=url, meta={"container_no_list": container_no_list}
+            rule_name=cls.name,
+            method=RequestOption.METHOD_GET,
+            url=url,
+            headers={
+                "Referer": "https://www.lbct.com/CargoSearch/SearchFromHome?HttpMethod=GET&InsertionMode=Replace&LoadingElementDuration=0&OnBegin=onBegin_cargosearch1&OnComplete=onComplete_cargosearch1&OnFailure=onFailure_cargosearch1&OnSuccess=onSuccess_cargosearch1&UpdateTargetId=mainContent",
+                "Accept": "application/json, text/javascript, */*; q=0.01",
+                "Accept-Language": "en-US,en;q=0.9",
+            },
+            meta={"container_no_list": container_no_list},
         )
 
     def get_save_name(self, response) -> str:
