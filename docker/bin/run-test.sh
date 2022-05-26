@@ -34,4 +34,4 @@ docker run \
     --rm \
     --workdir=/root/ \
     "$LOCAL_CRAWLER_REPO:$VCS_REF" \
-    pip install pytest && pytest -x test --disable-warnings
+    bash -c "pip install pytest && pytest -x test --disable-warnings"
