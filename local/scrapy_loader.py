@@ -41,8 +41,11 @@ def run_scrapy_spider(
     dispatcher.connect(crawler_results, signal=signals.item_dropped)
 
     def crawler_closed(signal, reason, spider):
-        content_getter = spider._content_getter or spider.content_getter
-        if not content_getter:
+        try:
+            content_getter = spider._content_getter or spider.content_getter
+            if not content_getter:
+                return
+        except AttributeError:
             return
 
         content_getter.close()

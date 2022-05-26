@@ -372,7 +372,7 @@ class ContentGetter(ChromeContentGetter):
 
         link_pathes = {
             "LAX": "/html/body/div[1]/div/div/div[1]/ul/li[2]/a",
-            "OAK": "/html/body/div[1]/div/div/div[1]/ul/li[2]/a",
+            "OAK": "/html/body/div[1]/div/div/div[1]/ul/li[3]/a",
             "OTHERS": "/html/body/div[1]/div/div/div[1]/ul/li[4]/a",
         }
         link_path = link_pathes.get(self._company.upper_short, link_pathes["OTHERS"])
