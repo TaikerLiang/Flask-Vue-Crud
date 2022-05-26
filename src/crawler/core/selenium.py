@@ -1,7 +1,7 @@
+import logging
 import os
 import random
 import time
-import logging
 from typing import Any, Dict, List, Optional
 
 import bezier
@@ -61,6 +61,10 @@ class SeleniumContentGetter(BaseContentGetter):
 
     def get_cookies_dict(self) -> Dict:
         return {cookie_obj.get("name"): cookie_obj.get("value") for cookie_obj in self._driver.get_cookies()}
+
+    def delete_all_cookies(self):
+        self._driver.delete_all_cookies()
+        time.sleep(5)
 
     def get_cookie_str(self):
         cookies_str = ""
@@ -127,10 +131,12 @@ class SeleniumContentGetter(BaseContentGetter):
 
     def click_mouse(self):
         import pyautogui
+
         pyautogui.click()
 
     def resting_mouse(self, end):  # move mouse to right of screen
         import pyautogui
+
         start = pyautogui.position()
 
         x2 = (start[0] + end[0]) / 3  # midpoint x
@@ -239,6 +245,12 @@ class ChromeContentGetter(SeleniumContentGetter):
 
         self._driver.execute_cdp_cmd("Network.setBlockedURLs", {"urls": default_block_urls + block_urls})
         self._driver.execute_cdp_cmd("Network.enable", {})
+        send_command = ("POST", "/session/$sessionId/chromium/send_command")
+        self._driver.command_executor._commands["SEND_COMMAND"] = send_command
+
+    def delete_all_cookies(self):
+        self._driver.execute("SEND_COMMAND", dict(cmd="Network.clearBrowserCookies", params={}))
+        time.sleep(5)
 
 
 class FirefoxContentGetter(SeleniumContentGetter):
