@@ -150,7 +150,10 @@ class CarrierOoluSpider(BaseMultiCarrierSpider):
         proxy = HydraproxyProxyManager(session="oolu", logger=self.logger) if self._use_proxy else None
         if not self._use_proxy:
             self._use_proxy = True
-        return ContentGetter(proxy_manager=proxy, is_headless=True)
+        content_getter = ContentGetter(proxy_manager=proxy, is_headless=True)
+        if proxy:
+            content_getter.delete_all_cookies()
+        return content_getter
 
     def _build_request_by(self, option: RequestOption):
         meta = {
