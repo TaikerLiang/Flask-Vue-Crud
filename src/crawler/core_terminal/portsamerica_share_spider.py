@@ -7,12 +7,14 @@ import scrapy
 from scrapy import Selector
 
 from crawler.core.selenium import ChromeContentGetter
+from crawler.core.table import TableExtractor
 from crawler.core_terminal.base import TERMINAL_RESULT_STATUS_ERROR
 from crawler.core_terminal.base_spiders import BaseMultiTerminalSpider
 from crawler.core_terminal.items import DebugItem, ExportErrorData, TerminalItem
 from crawler.core_terminal.request_helpers import RequestOption
 from crawler.core_terminal.rules import BaseRoutingRule, RuleManager
-from crawler.extractors.table_extractors import BaseTableLocator, HeaderMismatchError
+from crawler.extractors.table_cell_extractors import FirstTextTdExtractor
+from crawler.extractors.table_extractors import TopHeaderTableLocator
 from crawler.utils.container_no_checker import ContainerNoChecker
 
 BASE_URL = "https://voyagertrack.portsamerica.com"
@@ -142,15 +144,16 @@ class SearchContainerRule(BaseRoutingRule):
 
     @staticmethod
     def _extract_container_info(resp: Selector, numbers: int):
-        # table = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table')
-        # table_locator = TableLocator()
-        # table_locator.parse(table=table, numbers=numbers)
-
+        table = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table')
+        locator = TopHeaderTableLocator()
+        locator.parse(table)
+        extractor = TableExtractor(locator)
+        available_extractor = FirstTextTdExtractor(css_query="label::text")
         res = []
-        tds = resp.xpath('//*[@id="divImportContainerGridPanel"]/div[1]/table/tbody/tr/td')
-        for i in range(int(len(tds) / 17)):
-            appointment_date = "".join(tds[i * 17 + 5].xpath(".//text()").extract())
-            gate_out_date = "".join(tds[i * 17 + 3].xpath(".//text()").extract()).strip()
+
+        for row in locator.iter_left_header():
+            appointment_date = extractor.extract_cell("Appointment Time", row)
+            gate_out_date = extractor.extract_cell("Current State", row)
 
             if re.search("([0-9]+/[0-9]+/[0-9]{4}[0-9]{4}-[0-9]{4})", appointment_date):
                 date_split_list = appointment_date.split("/")
@@ -166,23 +169,21 @@ class SearchContainerRule(BaseRoutingRule):
 
             res.append(
                 {
-                    "container_no": "".join(tds[i * 17 + 1].xpath(".//text()").extract()).strip().replace("-", ""),
-                    "ready_for_pick_up": "".join(tds[i * 17 + 2].xpath(".//text()").extract())
+                    "container_no": extractor.extract_cell("Container Number", row).strip().replace("-", ""),
+                    "ready_for_pick_up": extractor.extract_cell("Available", row).strip().replace("\xa0", " "),
+                    "available": extractor.extract_cell("Available", row, available_extractor)
                     .strip()
                     .replace("\xa0", " "),
-                    "available": "".join(tds[i * 17 + 2].xpath(".//label/text()").extract())
-                    .strip()
-                    .replace("\xa0", " "),
-                    "yard_location": " ".join([text.strip() for text in tds[i * 17 + 3].xpath(".//text()").extract()]),
+                    "yard_location": extractor.extract_cell("Current State", row),
                     "gate_out_date": gate_out_date,
                     "appointment_date": appointment_date.strip(),
-                    "customs_release": "".join(tds[i * 17 + 6].xpath(".//text()").extract()).strip(),
-                    "carrier_release": "".join(tds[i * 17 + 7].xpath(".//text()").extract()).strip(),
-                    "holds": "".join(tds[i * 17 + 9].xpath(".//text()").extract()).strip(),
-                    "demurrage": "".join(tds[i * 17 + 11].xpath(".//text()").extract()).strip(),
-                    "last_free_day": "".join(tds[i * 17 + 12].xpath(".//text()").extract()).strip(),
-                    "carrier": "".join(tds[i * 17 + 13].xpath(".//text()").extract()).strip(),
-                    "container_spec": "".join(tds[i * 17 + 14].xpath(".//text()").extract()).strip(),
+                    "customs_release": extractor.extract_cell("Customs Status", row).strip(),
+                    "carrier_release": extractor.extract_cell("Freight Status", row).strip(),
+                    "holds": extractor.extract_cell("Misc. Holds", row).strip(),
+                    "demurrage": extractor.extract_cell("Demurrage Amount", row).strip(),
+                    "last_free_day": extractor.extract_cell("Last Free Day", row).strip(),
+                    "carrier": extractor.extract_cell("SSCO", row).strip(),
+                    "container_spec": extractor.extract_cell("Type", row).strip(),
                 }
             )
 
@@ -227,21 +228,3 @@ class ContentGetter(ChromeContentGetter):
         time.sleep(8)
 
         return self._driver.page_source
-
-
-class TableLocator(BaseTableLocator):
-    def __init__(self):
-        self._td_map = []
-
-    def parse(self, table: Selector, numbers: int = 1):
-        self._get_titles(table)
-
-    def _get_titles(self, table: Selector):
-        titles = table.css("th::text").getall()
-        return [title.strip() for title in titles]
-
-    def get_cell(self, left, top=None) -> Selector:
-        try:
-            return self._td_map[left][top]
-        except (KeyError, IndexError) as err:
-            raise HeaderMismatchError(repr(err))
