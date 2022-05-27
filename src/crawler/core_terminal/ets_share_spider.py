@@ -90,6 +90,8 @@ class EtsShareSpider(BaseMultiTerminalSpider):
                 yield self._build_request_by(option=result)
             elif isinstance(result, Restart):
                 yield self._prepare_start()
+            elif isinstance(result, DebugItem):
+                yield result
             else:
                 raise RuntimeError()
 
