@@ -209,7 +209,7 @@ class ChromeContentGetter(SeleniumContentGetter):
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-notifications")
         options.add_argument("--enable-javascript")
-        options.add_argument("--disable-gpu")  # 規避部分chrome gpu bug
+        options.add_argument("--ignore-gpu-blocklist")
         options.add_argument("--disable-dev-shm-usage")  # 使用共享內存RAM
         options.add_argument("--no-sandbox")
         options.add_argument("--window-size=1920,1080")
