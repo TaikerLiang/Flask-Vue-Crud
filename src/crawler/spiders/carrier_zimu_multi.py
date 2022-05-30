@@ -40,6 +40,7 @@ class CarrierZimuSpider(BaseMultiCarrierSpider):
 
         rules = [
             MultiMainInfoRoutingRule(self._content_getter),
+            NextRoundRoutingRule(),
         ]
 
         self._rule_manager = RuleManager(rules=rules)
@@ -77,6 +78,7 @@ class CarrierZimuSpider(BaseMultiCarrierSpider):
                 url=option.url,
                 cookies=option.cookies,
                 meta=meta,
+                dont_filter=True,
                 callback=self.parse,
             )
         else:
