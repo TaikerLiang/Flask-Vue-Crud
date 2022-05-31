@@ -16,14 +16,13 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                checkoutWithTags()
                 script {
                     env.git_commit_short = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                 }
             }
         }
         stage('Build') {
-            when { expression { env.BRANCH_NAME in ['dockerize', 'develop'] } }
             steps {
                 runBuild()
             }
@@ -36,8 +35,21 @@ pipeline {
                 }
             }
         }
+        stage('Test') {
+            steps {
+                runTest()
+            }
+            post {
+                success {
+                    onSuccess('Test')
+                }
+                failure {
+                    onFail('Test')
+                }
+            }
+        }
         stage('Push') {
-            when { expression { env.BRANCH_NAME in ['dockerize', 'develop'] } }
+            when { expression { env.BRANCH_NAME in ['dockerize', 'develop', 'master', 'stage'] } }
             steps {
                 runPush()
             }
@@ -55,6 +67,25 @@ pipeline {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
+def checkoutWithTags() {
+    checkout([
+        $class: 'GitSCM',
+        branches: scm.branches,
+        extensions: scm.extensions + [[
+            $class: 'CloneOption',
+            noTags: false,
+            reference: '',
+            shallow: true,
+
+            // default depth is 1, which will make "git describe" fail to get right tag
+            // so we add a rough buffer here
+            // to make sure travel at most 300 commits depth, we can find the latest tag
+            depth: 300,
+        ]],
+        doGenerateSubmoduleConfigurations: scm.doGenerateSubmoduleConfigurations,
+        userRemoteConfigs: scm.userRemoteConfigs,
+    ])
+}
 
 def runBuild() {
     def scriptPath = 'docker/bin'
@@ -73,6 +104,18 @@ def runPush() {
     try {
         dir(scriptPath) {
             sh './push-ecr.sh'
+        }
+    }
+    catch (Exception e) {
+        throw e
+    }
+}
+
+def runTest() {
+    def scriptPath = 'docker/bin'
+    try {
+        dir(scriptPath) {
+            sh './run-test.sh'
         }
     }
     catch (Exception e) {

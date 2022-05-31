@@ -3,7 +3,6 @@
 set -euo pipefail
 
 LOCAL_CRAWLER_REPO="hardcore/ep-sc-local-crawler"
-ZYTE_REPO="hardcore/ep-sc-zyte"
 
 TAG=$(git describe --always --tags)
 VCS_REF=$(git rev-parse --short HEAD)
@@ -15,7 +14,7 @@ declare -xr REPO_ROOT
 cd "$REPO_ROOT"
 
 # ========================================================================
-# Build Local Crawler Docker Image
+# Build Docker Image
 # ========================================================================
 if docker image inspect "$LOCAL_CRAWLER_REPO:$VCS_REF" > /dev/null 2>&1; then
     echo "$LOCAL_CRAWLER_REPO:$VCS_REF image exists"
@@ -29,16 +28,10 @@ else
         --build-arg VCS_REF="${VCS_REF}" .
 fi
 
-# ========================================================================
-# Build Zyte Docker Image
-# ========================================================================
-if docker image inspect "$ZYTE_REPO:$VCS_REF" > /dev/null 2>&1; then
-    echo "$ZYTE_REPO:$VCS_REF image exists"
-else
-    echo "Building image $ZYTE_REPO:$VCS_REF ..."
-
-    docker build \
-        -f docker/zyte/Dockerfile \
-        -t "$ZYTE_REPO:$VCS_REF" \
-        ./src
-fi
+EP_SC_TEST_CONTAINER_NAME=ep-sc-$(date +%s)
+docker run \
+    --name "$EP_SC_TEST_CONTAINER_NAME" \
+    --rm \
+    --workdir=/root/ \
+    "$LOCAL_CRAWLER_REPO:$VCS_REF" \
+    bash -c "pip install pytest && pytest -x test --disable-warnings"

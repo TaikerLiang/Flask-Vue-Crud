@@ -1,8 +1,9 @@
 FROM debian:stable
 
 RUN apt-get update && apt-get install -y xvfb chromium-common=99.0.4844.74-1~deb11u1 chromium=99.0.4844.74-1~deb11u1 python3 python3-pip python3-tk python3-dev
-COPY ./requirements-dev-linux.txt /root/requirements-dev.txt
-RUN pip3 install -r /root/requirements-dev.txt
+COPY ./src/requirements-app.txt /root/requirements-app.txt
+RUN pip3 install pyautogui # PyObjC issue
+RUN pip3 install --no-cache-dir -r /root/requirements-app.txt
 
 # Fetch chromedriver
 RUN apt-get install -y wget unzip
