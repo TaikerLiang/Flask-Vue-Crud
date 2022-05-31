@@ -274,6 +274,7 @@ class GetContainerNoRoutingRule(BaseRoutingRule):
                     container_spec=(container["unitinfo"] or dict()).get("unitsztype_cd", ""),
                     vessel=vessel_info["vessel"],
                     voyage=vessel_info["voyage"],
+                    yard_location=container["drayunitstatus_desc"],
                 )
                 search_container_nos.remove(container["unit_nbr"])
             remove_containers.append(container["unit_nbr"])

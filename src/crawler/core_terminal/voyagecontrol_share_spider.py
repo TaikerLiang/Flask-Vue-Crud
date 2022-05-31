@@ -253,11 +253,13 @@ class ListTracedContainerRoutingRule(BaseRoutingRule):
                 {
                     "container_no": container["containerId"],
                     "ready_for_pick_up": container_status,
+                    "available": container_status,
                     "appointment_date": container["status"].get("APPOINTMENT_HOLD", ""),
                     "last_free_day": container["status"].get("PORT_LFD", ""),
                     "demurrage": container["status"].get("DEMURRAGE", ""),
                     "holds": container["status"].get("HOLD_INFO", ""),
                     "cy_location": container["status"].get("LOCATIONDETAILS", ""),
+                    "yard_location": container["status"].get("LOCATIONDETAILS", ""),
                     # release information might be elsewhere(i.e. container inquiry) for fenix
                     "customs_release": container["status"].get("CUSTOMS", ""),
                     "carrier_release": container["status"].get("FREIGHT", ""),

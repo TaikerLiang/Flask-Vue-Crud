@@ -151,10 +151,12 @@ class ContainerRoutingRule(BaseRoutingRule):
 
         for row in resp["aaData"]:
             yield TerminalItem(
+                available=row[1],
                 container_no=row[2],
                 holds=row[5],
                 customs_release=row[6],
                 carrier_release=row[7],
+                yard_location=row[8],
                 last_free_day=self._get_last_free_day(row[9], row[10]),
             )
 
