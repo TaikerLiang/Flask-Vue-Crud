@@ -1,6 +1,6 @@
 import json
 import time
-from typing import Dict
+from typing import Dict, List
 
 import scrapy
 
@@ -9,15 +9,15 @@ from crawler.core_carrier.base_spiders import BaseCarrierSpider
 from crawler.core_carrier.exceptions import SuspiciousOperationError
 from crawler.core_carrier.items import (
     BaseCarrierItem,
-    MblItem,
     ContainerItem,
     ContainerStatusItem,
-    LocationItem,
-    ExportErrorData,
     DebugItem,
+    ExportErrorData,
+    LocationItem,
+    MblItem,
 )
 from crawler.core_carrier.request_helpers import RequestOption
-from crawler.core_carrier.rules import RuleManager, BaseRoutingRule
+from crawler.core_carrier.rules import BaseRoutingRule, RuleManager
 
 URL = "http://www.nbosco.com/sebusiness/ecm/ContainerMovement/selectCmContainerCurrent"
 
@@ -132,12 +132,12 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
         return "records" not in data
 
     @staticmethod
-    def _extract_mbl_no(records: Dict) -> str:
+    def _extract_mbl_no(records: List[Dict]) -> str:
         mbl_no = records[0]["blNo"]
         return mbl_no
 
     @staticmethod
-    def _extract_container_status_list(records: Dict):
+    def _extract_container_status_list(records: List[Dict]):
         container_status_list = []
         for record in records:
             container_status_list.append(
@@ -146,8 +146,8 @@ class ContainerStatusRoutingRule(BaseRoutingRule):
                     "description": record["movementCode"],
                     "local_date_time": record["eventDate"],
                     "location_name": record["eventPort"],
-                    "vessel": record["vesselCode"],
-                    "voyage": record["voyageNo"],
+                    "vessel": record.get("vesselCode", ""),
+                    "voyage": record.get("voyageNo", ""),
                 }
             )
 
