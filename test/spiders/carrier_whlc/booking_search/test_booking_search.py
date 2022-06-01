@@ -1,11 +1,11 @@
 from pathlib import Path
-from test.spiders.carrier_whlc import booking_search
 
 import pytest
 from scrapy import Selector
 
 from crawler.core.base_new import SEARCH_TYPE_CONTAINER
 from crawler.spiders.carrier_whlc import BookingRoutingRule
+from test.spiders.carrier_whlc import booking_search
 
 
 @pytest.fixture
@@ -26,7 +26,7 @@ def test_extract_basic_info(sub, booking_no, sample_loader):
 
     response_selector = Selector(text=html_text)
 
-    routing_rule = BookingRoutingRule(content_getter=None)
+    routing_rule = BookingRoutingRule()
     results = routing_rule._extract_basic_info(response_selector)
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
@@ -44,7 +44,7 @@ def test_extract_vessel_info(sub, booking_no, sample_loader):
 
     response_selector = Selector(text=html_text)
 
-    routing_rule = BookingRoutingRule(content_getter=None)
+    routing_rule = BookingRoutingRule()
     results = routing_rule._extract_vessel_info(response_selector)
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
@@ -62,7 +62,7 @@ def test_extract_container_no_and_status_links(sub, booking_no, sample_loader):
 
     response_selector = Selector(text=html_text)
 
-    routing_rule = BookingRoutingRule(content_getter=None)
+    routing_rule = BookingRoutingRule()
     results = list(routing_rule._extract_container_no_and_status_links(response_selector))
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
@@ -85,7 +85,7 @@ def test_extract_container_status(sub, booking_no, container_no, sample_loader):
 
     response_selector = Selector(text=html_text)
 
-    routing_rule = BookingRoutingRule(content_getter=None)
+    routing_rule = BookingRoutingRule()
     results = list(routing_rule._extract_container_status(response=response_selector, info_pack=info_pack))
 
     verify_module = sample_loader.load_sample_module(sub, "verify")
