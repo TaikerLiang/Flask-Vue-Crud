@@ -1,10 +1,10 @@
 import dataclasses
 from datetime import datetime
 import json
+from json import JSONDecodeError
 import re
 import time
 from typing import Dict, List
-from json import JSONDecodeError
 
 import scrapy
 
@@ -132,7 +132,7 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
                         task_id=task_ids[0],
                         search_no=search_nos[0],
                         search_type=self.search_type,
-                        reason=MAX_RETRY_DESC.format(action="proxy", times=MAX_RETRY_COUNT),
+                        reason=MAX_RETRY_DESC.format(action="proxy", times=MAX_RETRY_TIMES),
                     )
                     yield err.build_error_data()
                 option = self._prepare_restart(search_nos=search_nos, task_ids=task_ids, reason=result.reason)
@@ -151,13 +151,10 @@ class CarrierMscuSpider(BaseMultiCarrierSpider):
                 url=option.url, meta=meta, headers=option.headers, dont_filter=True, errback=self._download_errback
             )
 
-        # elif option.method == RequestOption.METHOD_POST_FORM:
-        #     return scrapy.FormRequest(
-        #         url=option.url,
-        #         formdata=option.form_data,
-        #         meta=meta,
-        #         dont_filter=True,
-        #     )
+        elif option.method == RequestOption.METHOD_POST_BODY:
+            return scrapy.Request(
+                method="POST", url=option.url, headers=option.headers, body=option.body, meta=meta, dont_filter=True
+            )
         else:
             zip_list = list(zip(meta["task_ids"], meta["search_nos"]))
             raise SuspiciousOperationError(
@@ -184,13 +181,20 @@ class MainRoutingRule(BaseRoutingRule):
 
     @classmethod
     def build_request_option(cls, search_nos: List, task_ids: List, search_mode: str) -> RequestOption:
+
+        form_data = {"trackingNumber": search_nos[0], "trackingMode": "0"}
+
         return RequestOption(
             rule_name=cls.name,
-            method=RequestOption.METHOD_GET,
-            url=f"{URL}/api/feature/tools/TrackingInfo?trackingNumber={search_nos[0]}&trackingMode={search_mode}",
+            method=RequestOption.METHOD_POST_BODY,
+            url=f"{URL}/api/feature/tools/TrackingInfo",
             headers={
                 "x-requested-with": "XMLHttpRequest",
+                "content-type": "application/json",
+                "origin": URL,
+                "referer": f"{URL}/en/track-a-shipment",
             },
+            body=json.dumps(form_data),
             meta={
                 "search_nos": search_nos,
                 "task_ids": task_ids,
