@@ -15,11 +15,7 @@ from crawler.core.base_new import (
     SEARCH_TYPE_BOOKING,
     SEARCH_TYPE_MBL,
 )
-from crawler.core.description import (
-    DATA_NOT_FOUND_DESC,
-    SUSPICIOUS_OPERATION_DESC,
-    TIMEOUT_DESC,
-)
+from crawler.core.description import DATA_NOT_FOUND_DESC, SUSPICIOUS_OPERATION_DESC
 from crawler.core.exceptions_new import SuspiciousOperationError, TimeOutError
 from crawler.core.items_new import DataNotFoundItem, EndItem
 from crawler.core.selenium import FirefoxContentGetter
@@ -740,7 +736,7 @@ class ContentGetter(FirefoxContentGetter):
     def search_and_return(self, info_pack: Dict, is_booking: bool = True):
         if self._is_first:
             self._is_first = False
-            self._handle_cookie(info_pack=info_pack)
+            self._handle_cookie()
 
         if is_booking:
             trackingType = "BOOKING"
@@ -795,18 +791,15 @@ class ContentGetter(FirefoxContentGetter):
         time.sleep(1)
         return res
 
-    def _handle_cookie(self, info_pack: Dict):
+    def _handle_cookie(self):
         try:
             accept_btn = WebDriverWait(self._driver, 10).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, "button[class='ivu-btn ivu-btn-primary ivu-btn-large']"))
             )
+            accept_btn.click()
+            time.sleep(1)
         except (TimeoutException, ReadTimeoutError):
-            raise TimeOutError(**info_pack, reason=TIMEOUT_DESC.format(action="_handle_cookie()"))
-
-        # accept cookie
-        time.sleep(1)
-        accept_btn.click()
-        time.sleep(1)
+            pass
 
 
 def get_container_key(container_no: str):
